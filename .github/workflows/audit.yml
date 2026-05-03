@@ -1,0 +1,67 @@
+name: Daily BM Audit
+
+# Auto-runs the deep audit + the original health audit every day at 8 AM ET
+# (12 UTC). Also runnable on-demand from the Actions tab.
+#
+# On failure: GitHub natively emails the workflow's commit author + repo
+# admins (configured in github.com/settings/notifications). It ALSO opens
+# a tracking issue so failures can't be missed.
+#
+# Required repo secret (Settings → Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN  — sbp_... (read-only project access)
+
+on:
+  schedule:
+    - cron: "0 12 * * *"     # 8 AM ET daily
+  workflow_dispatch:           # manual run from Actions tab
+  push:
+    paths:
+      - "scripts/health-audit.mjs"
+      - "scripts/audit-deep.mjs"
+      - ".github/workflows/audit.yml"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write   # needed to file failure issue
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run health-audit (7 cats)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -o pipefail
+          node scripts/health-audit.mjs 2>&1 | tee /tmp/health.log
+
+      - name: Run audit-deep (17 cats)
+        if: always()
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -o pipefail
+          node scripts/audit-deep.mjs 2>&1 | tee /tmp/deep.log
+
+      - name: File a tracking issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const date = new Date().toISOString().slice(0,10);
+            const health = fs.existsSync('/tmp/health.log') ? fs.readFileSync('/tmp/health.log','utf8') : '(health audit did not run)';
+            const deep   = fs.existsSync('/tmp/deep.log')   ? fs.readFileSync('/tmp/deep.log','utf8')   : '(deep audit did not run)';
+            const body = `**Run:** ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}\n\n## Health audit\n\`\`\`\n${health}\n\`\`\`\n\n## Deep audit\n\`\`\`\n${deep}\n\`\`\``;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: `🔴 BM audit failed ${date}`,
+              body:  body,
+              labels: ['audit-failure', 'priority:high'],
+            });

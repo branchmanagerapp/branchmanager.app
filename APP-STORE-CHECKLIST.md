@@ -75,9 +75,18 @@ NO data is sold or shared with third parties for advertising. Stripe handles pay
 
 ### App Review Information (CRITICAL — skipping these = instant reject)
 - [ ] **Sign-in Required**: Yes
-- [ ] **Demo account credentials**:
-      Email: `apple-reviewer@branchmanager.app` (create this account in BM with read+write access to a demo tenant)
-      Password: (set strong, write it down)
+- [x] **Demo account credentials** — created May 3 2026:
+      Email:    `apple-reviewer@branchmanager.app`
+      Password: `XLRAHksa64dBh1PImhCji4`
+      Tenant:   Demo Tree Service (id `e7aa9287-8d56-4195-b54e-67ddc7737a52`, slug `demo`)
+      Role:     owner of demo tenant (full read/write inside that sandbox)
+      Auth uid: `09d5cfa2-0b26-4c6d-914b-d431a6dc7c34`
+      ⚠️ Demo tenant currently has no seed data. Either populate it before
+         submitting (recommended: copy a few clients/jobs/quotes from SNT
+         and run a UPDATE to retag tenant_id, OR have Doug add 5-10 demo
+         entries via the BM UI signed in as the reviewer) or include this
+         in the Apple Reviewer Notes: "The demo tenant is empty by design;
+         use the +Add buttons throughout to test create/edit flows."
 - [ ] **Notes for reviewer**:
       "Branch Manager is a B2B operations platform for tree service companies.
        Sign in with the demo credentials above. The demo tenant is pre-populated
