@@ -81,6 +81,10 @@ Deno.serve(async (req) => {
   }
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const rawBody = await req.text();
+  const headerDump: Record<string, string> = {};
+  req.headers.forEach((v, k) => { headerDump[k] = v; });
+  console.log("BOUNCIE_INBOUND_HEADERS", JSON.stringify(headerDump));
+  console.log("BOUNCIE_INBOUND_BODY_HEAD", rawBody.slice(0, 500));
   const sig = req.headers.get("x-bouncie-signature") || "";
   if (!(await verifyHmac(rawBody, sig))) {
     return new Response("Unauthorized", { status: 401 });
