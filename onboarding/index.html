@@ -246,23 +246,19 @@ var STEP_CONTENT = {
     return '<div style="max-width:600px;margin:40px auto;padding:20px;">'
       + '<h2 style="font-size:20px;margin-bottom:12px;">Driver\'s License + Motor Vehicle Record Release</h2>'
       + '<div style="background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;margin-bottom:16px;">'
-      + '<p style="margin-bottom:12px;color:#334155;">Required for any employee who will operate a company vehicle (truck, chipper truck, bucket truck).</p>'
-      + '<h3 style="font-size:14px;margin:14px 0 8px;">Driver information</h3>'
-      + '<label style="display:block;margin-bottom:8px;font-size:13px;">License number<input type="text" id="s13dl" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
-      + '<label style="display:block;margin-bottom:8px;font-size:13px;">State<input type="text" id="s13state" placeholder="NY" maxlength="2" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;text-transform:uppercase;"></label>'
-      + '<label style="display:block;margin-bottom:8px;font-size:13px;">Expiration date<input type="date" id="s13exp" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
-      + '<label style="display:block;margin-bottom:8px;font-size:13px;">Class &mdash; <em>D / DJ / CDL-A / CDL-B / CDL-C</em><input type="text" id="s13class" placeholder="D" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
-      + '<label style="display:block;margin-bottom:8px;font-size:13px;">Endorsements (if any)<input type="text" id="s13end" placeholder="e.g. air brakes, tanker" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
-      + '<h3 style="font-size:14px;margin:18px 0 8px;">License photos</h3>'
-      + '<p style="font-size:12px;color:#64748b;margin-bottom:8px;">Upload (or take with phone camera) clear photos of the front and back of your license. Stored securely in BM &mdash; no paper copy needed.</p>'
+      + '<p style="margin-bottom:12px;color:#334155;">Required for any employee who will operate a company vehicle. Just upload your license &mdash; the AI assistant reads the info from the photo. No typing.</p>'
+      + '<h3 style="font-size:14px;margin:14px 0 8px;">Step 1 &mdash; License photos</h3>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">'
       + '<label style="display:block;cursor:pointer;"><div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px;">Front</div><input type="file" id="s13front" accept="image/*" capture="environment" onchange="onbDlPreview(this,\'s13front-prev\')" style="display:none;"><div id="s13front-prev" onclick="document.getElementById(\'s13front\').click()" style="border:2px dashed #cbd5e1;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;background:#f8fafc;">\u{1F4F7} Tap to upload front</div></label>'
       + '<label style="display:block;cursor:pointer;"><div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px;">Back</div><input type="file" id="s13back" accept="image/*" capture="environment" onchange="onbDlPreview(this,\'s13back-prev\')" style="display:none;"><div id="s13back-prev" onclick="document.getElementById(\'s13back\').click()" style="border:2px dashed #cbd5e1;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;background:#f8fafc;">\u{1F4F7} Tap to upload back</div></label>'
       + '</div>'
-      + '<h3 style="font-size:14px;margin:18px 0 8px;">MVR release authorization</h3>'
-      + '<p style="font-size:13px;color:#475569;line-height:1.7;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">I authorize <strong>Second Nature Tree LLC</strong> and its insurance carriers to obtain my motor vehicle abstract from the NY DMV (or my state of license) for the purpose of verifying my driving record. I understand this authorization remains valid throughout my employment and may be re-run periodically.</p>'
+      + '<h3 style="font-size:14px;margin:18px 0 8px;">Step 2 &mdash; AI extracts the fields</h3>'
+      + '<button type="button" onclick="onbDlExtract()" style="width:100%;padding:12px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">\u{2728} Read License with AI</button>'
+      + '<div id="s13-extract-result" style="margin-top:12px;"></div>'
+      + '<h3 style="font-size:14px;margin:22px 0 8px;">Step 3 &mdash; MVR release authorization</h3>'
+      + '<p style="font-size:13px;color:#475569;line-height:1.7;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">I authorize <strong>Second Nature Tree LLC</strong> and its insurance carriers to obtain my motor vehicle abstract from the NY DMV (or my state of license) to verify my driving record. This authorization remains valid throughout my employment.</p>'
       + '</div>'
-      + signoffHTML('s13', 'License info is accurate, photos uploaded, and I authorize the MVR release', true, 'Crew Lead name')
+      + signoffHTML('s13', 'Photos uploaded, license info confirmed, and I authorize the MVR release', true, 'Crew Lead name')
       + '</div>';
   },
   's5': function() { return trainingStep('s5', 'PPE Training', 'dKAeQaod7Dw', '<li>Hard hat (Class E) — always on site</li><li>Safety glasses + face shield (when running saw)</li><li>Hearing protection (chipper/chainsaw)</li><li>Chainsaw chaps — always when operating</li><li>Steel-toe boots</li><li>Cut-resistant gloves</li>', 'PPE is provided by the company at no cost. Steel-toe boots: employee provides their own (can be worn off-site per OSHA 1910.132(h)).', 'I watched the PPE video and understand the requirements'); },
@@ -332,6 +328,78 @@ function onbDlPreview(input, previewId) {
     try { localStorage.setItem('bm-onboarding-' + previewId, dataUrl); } catch(e) {}
   };
   reader.readAsDataURL(file);
+}
+
+// AI Vision DL field extraction (s13). Sends the front-of-license photo
+// to the ai-chat edge fn → Claude Vision → returns structured JSON.
+// User confirms the extracted fields (or overrides on misread) before signing.
+function onbDlExtract() {
+  var resultBox = document.getElementById('s13-extract-result');
+  var frontDataUrl = localStorage.getItem('bm-onboarding-s13front-prev');
+  if (!frontDataUrl) {
+    resultBox.innerHTML = '<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#7f1d1d;">Upload the FRONT of the license first.</div>';
+    return;
+  }
+  // Strip "data:image/jpeg;base64," prefix — Anthropic API expects raw base64
+  var match = frontDataUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+  if (!match) {
+    resultBox.innerHTML = '<div style="color:#7f1d1d;font-size:13px;">Could not read the uploaded image. Try a different photo.</div>';
+    return;
+  }
+  var mediaType = match[1];
+  var base64Data = match[2];
+  resultBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:#0369a1;font-size:13px;padding:10px;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #0ea5e9;border-top-color:transparent;border-radius:50%;animation:onbspin 0.8s linear infinite;"></span> Reading license...</div><style>@keyframes onbspin { to { transform: rotate(360deg); } }</style>';
+  var apiKey = (window.bmClaudeKey ? window.bmClaudeKey() : null) || localStorage.getItem('bm-claude-key') || '';
+  fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      apiKey: apiKey,
+      model: 'claude-haiku-4-5',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } },
+          { type: 'text', text: 'Read this US driver\'s license image. Return ONLY a valid JSON object — no prose, no markdown, no code fences — with these fields: license_number (string), state (2-letter code), expiration (YYYY-MM-DD), date_of_birth (YYYY-MM-DD or null), class (string e.g. "D", "CDL-A"), endorsements (string or null), full_name (string). If a field is unreadable, use null.' }
+        ]
+      }]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    var text = '';
+    if (res.content && res.content[0] && res.content[0].text) text = res.content[0].text.trim();
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+    var parsed;
+    try { parsed = JSON.parse(text); } catch(e) {
+      resultBox.innerHTML = '<div style="color:#7f1d1d;font-size:13px;padding:10px;">AI couldn\'t parse the license. Raw: ' + text.substring(0, 200) + '</div>';
+      return;
+    }
+    try { localStorage.setItem('bm-onboarding-s13-dl-fields', JSON.stringify(parsed)); } catch(e) {}
+    var rows = [
+      ['License #', parsed.license_number],
+      ['State', parsed.state],
+      ['Expiration', parsed.expiration],
+      ['Class', parsed.class],
+      ['Endorsements', parsed.endorsements || '—'],
+      ['Name on license', parsed.full_name],
+      ['DOB', parsed.date_of_birth || '—']
+    ];
+    var html = '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;">'
+      + '<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:10px;">✨ AI extracted these fields:</div>'
+      + '<table style="width:100%;font-size:13px;">';
+    rows.forEach(function(r) {
+      html += '<tr><td style="padding:4px 8px 4px 0;color:#64748b;width:130px;">' + r[0] + '</td><td style="padding:4px 0;font-weight:600;color:#0f172a;">' + (r[1] || '—') + '</td></tr>';
+    });
+    html += '</table>'
+      + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;font-size:12px;color:#475569;">If anything looks wrong, retake the photo and click Read License again. Otherwise sign below.</div>'
+      + '</div>';
+    resultBox.innerHTML = html;
+  })
+  .catch(function(err) {
+    resultBox.innerHTML = '<div style="color:#7f1d1d;font-size:13px;padding:10px;">AI lookup failed: ' + (err.message || err) + '</div>';
+  });
 }
 
 function initSigCanvas(canvasId) {
