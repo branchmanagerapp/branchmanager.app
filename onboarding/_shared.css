@@ -1,0 +1,121 @@
+/* Branch Manager — Onboarding shared stylesheet
+   Linked from every onboarding doc so the packet looks like one product.
+   Page-specific tweaks live in each file's own <style> block and override
+   anything here.
+   --------------------------------------------------------------------- */
+
+:root {
+  --brand-green:        #1b5e20;
+  --brand-green-dark:   #166534;
+  --brand-green-bg:     #f0fdf4;
+  --text:               #0f172a;
+  --text-muted:         #64748b;
+  --text-dim:           #94a3b8;
+  --border:             #e2e8f0;
+  --border-soft:        #f1f5f9;
+  --bg:                 #f8fafc;
+  --warn:               #dc2626;
+  --warn-bg:            #fef2f2;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Standard page topbar — matches new-hire.html so every doc has the same
+   green-square logo + title + subtitle pattern. Add to <body> with:
+     <header class="ob-topbar">
+       <div class="ob-topbar-logo">🌳</div>
+       <div><h1>Page title</h1><p>Subtitle / context</p></div>
+     </header>
+*/
+.ob-topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.ob-topbar-logo {
+  width: 36px; height: 36px;
+  background: var(--brand-green);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 18px;
+  flex-shrink: 0;
+}
+.ob-topbar h1 { font-size: 16px; font-weight: 700; }
+.ob-topbar p  { font-size: 12px; color: var(--text-muted); }
+.ob-topbar a.ob-back {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.ob-topbar a.ob-back:hover { background: var(--bg); }
+
+/* Standard page width + padding for body content (forms, agreements). */
+.ob-wrap { max-width: 700px; margin: 0 auto; padding: 20px; }
+
+/* H2 brand-bar pattern (used by handbook + agreement) */
+.ob-h2-bar { font-size: 16px; margin-top: 28px; padding-bottom: 4px;
+             border-bottom: 2px solid var(--brand-green); color: var(--brand-green); }
+
+/* Standard signature line for printable forms */
+.ob-sig-line {
+  border-bottom: 1px solid #000;
+  display: inline-block;
+  width: 240px;
+  margin: 0 8px;
+}
+
+/* Standard primary button */
+.ob-btn {
+  padding: 12px 20px;
+  background: var(--brand-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ob-btn:hover { background: var(--brand-green-dark); }
+.ob-btn-outline {
+  background: #fff;
+  color: var(--brand-green);
+  border: 2px solid var(--brand-green);
+}
+
+/* Footer with company contact — paste into every doc for consistency */
+.ob-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* Print: hide sticky topbar, drop background tints, full width */
+@media print {
+  .ob-topbar { position: static; box-shadow: none; }
+  body { background: #fff; padding: 0; }
+  .ob-wrap { max-width: none; padding: 12px; }
+  .ob-btn { display: none; }
+}

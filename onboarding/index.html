@@ -113,6 +113,14 @@
       <div class="cl-check" id="ck-s4"></div>
       <div><div class="cl-item-label">Direct Deposit + Emergency</div><div class="cl-item-meta">2 min</div></div>
     </div>
+    <div class="cl-item" data-step="s12" onclick="loadStep('s12')">
+      <div class="cl-check" id="ck-s12"></div>
+      <div><div class="cl-item-label">DB-120 + PFL Statement</div><div class="cl-item-meta">1 min · <span class="cl-tag">NY STATE</span></div></div>
+    </div>
+    <div class="cl-item" data-step="s13" onclick="loadStep('s13')">
+      <div class="cl-check" id="ck-s13"></div>
+      <div><div class="cl-item-label">Driver's License + MVR Release</div><div class="cl-item-meta">2 min · drivers only</div></div>
+    </div>
 
     <!-- Safety Training -->
     <div class="cl-section">⚠️ Safety Training</div>
@@ -170,7 +178,7 @@
 </div>
 
 <script>
-var STEPS = ['intake','s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','handbook','service-agreement','role-training'];
+var STEPS = ['intake','s1','s2','s3','s4','s12','s13','s5','s6','s7','s8','s9','s10','s11','handbook','service-agreement','role-training'];
 var state = JSON.parse(localStorage.getItem('onboard-v3') || '{}');
 var activeStep = null;
 
@@ -220,6 +228,43 @@ var STEP_CONTENT = {
       + signoffHTML('s4', 'Direct deposit and emergency contact submitted', false)
       + '</div>';
   },
+  's12': function() {
+    return '<div style="max-width:600px;margin:40px auto;padding:20px;">'
+      + '<h2 style="font-size:20px;margin-bottom:12px;">NY Statutory Disability + Paid Family Leave</h2>'
+      + '<div style="background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;margin-bottom:16px;">'
+      + '<p style="margin-bottom:12px;color:#334155;">New York State requires every employer to provide statutory <strong>Disability Benefits (DBL)</strong> and <strong>Paid Family Leave (PFL)</strong> coverage. You are notified of your rights at hire.</p>'
+      + '<h3 style="font-size:14px;margin:14px 0 8px;">Carrier on file</h3>'
+      + '<ul style="margin-left:20px;line-height:1.9;color:#334155;font-size:14px;"><li><strong>NYSIF</strong> &mdash; New York State Insurance Fund</li><li>Your DBL coverage covers off-the-job illness/injury (~50% of avg weekly wage, up to state cap)</li><li>Your PFL coverage covers bonding, family care, military exigency (up to 12 weeks/yr)</li></ul>'
+      + '<h3 style="font-size:14px;margin:14px 0 8px;">Required notices</h3>'
+      + '<ul style="margin-left:20px;line-height:1.9;color:#334155;font-size:14px;"><li><a href="https://www.wcb.ny.gov/content/main/forms/db120-1.pdf" target="_blank" style="color:#1b5e20;font-weight:600;">\u{1F4C4} DB-120.1 Notice of Compliance &rarr;</a></li><li><a href="https://paidfamilyleave.ny.gov/system/files/documents/2023/01/2023-pfl-statement-of-rights.pdf" target="_blank" style="color:#1b5e20;font-weight:600;">\u{1F4C4} PFL Statement of Rights &rarr;</a></li></ul>'
+      + '</div>'
+      + '<div style="background:#fef9c3;border-left:3px solid #ca8a04;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:13px;color:#713f12;">Click each link above to open and read the PDF. Then sign below to digitally acknowledge receipt &mdash; that satisfies the NY notice-at-hire requirement under ESIGN + NY ESRA. No paper needed.</div>'
+      + signoffHTML('s12', 'I read DB-120.1 and the PFL Statement of Rights and acknowledge receipt', false)
+      + '</div>';
+  },
+  's13': function() {
+    return '<div style="max-width:600px;margin:40px auto;padding:20px;">'
+      + '<h2 style="font-size:20px;margin-bottom:12px;">Driver\'s License + Motor Vehicle Record Release</h2>'
+      + '<div style="background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;margin-bottom:16px;">'
+      + '<p style="margin-bottom:12px;color:#334155;">Required for any employee who will operate a company vehicle (truck, chipper truck, bucket truck).</p>'
+      + '<h3 style="font-size:14px;margin:14px 0 8px;">Driver information</h3>'
+      + '<label style="display:block;margin-bottom:8px;font-size:13px;">License number<input type="text" id="s13dl" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
+      + '<label style="display:block;margin-bottom:8px;font-size:13px;">State<input type="text" id="s13state" placeholder="NY" maxlength="2" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;text-transform:uppercase;"></label>'
+      + '<label style="display:block;margin-bottom:8px;font-size:13px;">Expiration date<input type="date" id="s13exp" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
+      + '<label style="display:block;margin-bottom:8px;font-size:13px;">Class &mdash; <em>D / DJ / CDL-A / CDL-B / CDL-C</em><input type="text" id="s13class" placeholder="D" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
+      + '<label style="display:block;margin-bottom:8px;font-size:13px;">Endorsements (if any)<input type="text" id="s13end" placeholder="e.g. air brakes, tanker" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;margin-top:4px;"></label>'
+      + '<h3 style="font-size:14px;margin:18px 0 8px;">License photos</h3>'
+      + '<p style="font-size:12px;color:#64748b;margin-bottom:8px;">Upload (or take with phone camera) clear photos of the front and back of your license. Stored securely in BM &mdash; no paper copy needed.</p>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">'
+      + '<label style="display:block;cursor:pointer;"><div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px;">Front</div><input type="file" id="s13front" accept="image/*" capture="environment" onchange="onbDlPreview(this,\'s13front-prev\')" style="display:none;"><div id="s13front-prev" onclick="document.getElementById(\'s13front\').click()" style="border:2px dashed #cbd5e1;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;background:#f8fafc;">\u{1F4F7} Tap to upload front</div></label>'
+      + '<label style="display:block;cursor:pointer;"><div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px;">Back</div><input type="file" id="s13back" accept="image/*" capture="environment" onchange="onbDlPreview(this,\'s13back-prev\')" style="display:none;"><div id="s13back-prev" onclick="document.getElementById(\'s13back\').click()" style="border:2px dashed #cbd5e1;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;background:#f8fafc;">\u{1F4F7} Tap to upload back</div></label>'
+      + '</div>'
+      + '<h3 style="font-size:14px;margin:18px 0 8px;">MVR release authorization</h3>'
+      + '<p style="font-size:13px;color:#475569;line-height:1.7;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">I authorize <strong>Second Nature Tree LLC</strong> and its insurance carriers to obtain my motor vehicle abstract from the NY DMV (or my state of license) for the purpose of verifying my driving record. I understand this authorization remains valid throughout my employment and may be re-run periodically.</p>'
+      + '</div>'
+      + signoffHTML('s13', 'License info is accurate, photos uploaded, and I authorize the MVR release', true, 'Crew Lead name')
+      + '</div>';
+  },
   's5': function() { return trainingStep('s5', 'PPE Training', 'dKAeQaod7Dw', '<li>Hard hat (Class E) — always on site</li><li>Safety glasses + face shield (when running saw)</li><li>Hearing protection (chipper/chainsaw)</li><li>Chainsaw chaps — always when operating</li><li>Steel-toe boots</li><li>Cut-resistant gloves</li>', 'PPE is provided by the company at no cost. Steel-toe boots: employee provides their own (can be worn off-site per OSHA 1910.132(h)).', 'I watched the PPE video and understand the requirements'); },
   's6': function() { return trainingStep('s6', 'Fall Protection', 'el6rdee5jAo', '<li>Fall protection required at <strong>6 feet</strong></li><li>Climbing saddle + climbing line = fall protection in tree</li><li>Bucket truck: full body harness + lanyard</li><li>Inspect all gear daily — no exceptions</li>', 'Falls are the #1 killer of tree workers. 45% of all fatalities.', 'I completed fall protection training including hands-on demo'); },
   's7': function() { return trainingStep('s7', 'Electrical Hazard Awareness', 'ILGSn9Rx8f8', '<li><strong>10 feet minimum</strong> from any power line</li><li>Only utility company works within 10 feet</li><li>Assume ALL lines are energized</li><li>Con Ed: (914) 681-6500 · NYSEG: (800) 572-1131</li>', 'Electrocution is the #2 cause of death in tree care.', 'I will never work within 10 feet of a power line'); },
@@ -267,6 +312,26 @@ function signoffHTML(id, ackText, hasTrainer, trainerLabel) {
 function clearSigCanvas(canvasId) {
   var c = document.getElementById(canvasId);
   if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+}
+
+// License-photo upload (s13). Captures camera or library image,
+// shows thumb preview, saves base64 to localStorage so the signed
+// step record + downstream forms can pull it. Cloud archive lands
+// in onboarding_uploads table on completeStep() — TODO migration.
+function onbDlPreview(input, previewId) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var dataUrl = ev.target.result;
+    var prev = document.getElementById(previewId);
+    if (prev) {
+      prev.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:120px;border-radius:6px;">';
+      prev.style.border = '2px solid #1b5e20';
+    }
+    try { localStorage.setItem('bm-onboarding-' + previewId, dataUrl); } catch(e) {}
+  };
+  reader.readAsDataURL(file);
 }
 
 function initSigCanvas(canvasId) {
