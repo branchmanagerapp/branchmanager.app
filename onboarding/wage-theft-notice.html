@@ -103,6 +103,17 @@
         var roleMap = { groundsperson: 'Groundsperson', climber: 'Climber', crew_lead: 'Crew Lead', operator: 'Operator' };
         td.innerHTML = '☑ ' + (roleMap[emp.role] || emp.role) + '<br>Tree removal, pruning, chipping, stump grinding, cleanup, equipment operation';
       }
+      // Allowances — render checked/unchecked from intake selection
+      if (td.closest('tr') && td.closest('tr').querySelector('th') && td.closest('tr').querySelector('th').textContent.includes('Allowances')) {
+        var taken = emp.allowances || ['none'];
+        var has = function(k) { return taken.indexOf(k) >= 0 ? '☑' : '☐'; };
+        td.innerHTML = has('none') + ' None &nbsp; ' + has('tips') + ' Tips &nbsp; ' + has('meals') + ' Meals &nbsp; ' + has('lodging') + ' Lodging';
+      }
+      // Pay method — render based on auto-derived intake value
+      if (td.closest('tr') && td.closest('tr').querySelector('th') && td.closest('tr').querySelector('th').textContent.includes('Pay Method')) {
+        var dd = emp.payMethod === 'direct_deposit';
+        td.innerHTML = (dd ? '☑' : '☐') + ' Direct Deposit &nbsp; ' + (dd ? '☐' : '☑') + ' Check';
+      }
     });
     // Add a banner
     var banner = document.createElement('div');

@@ -103,6 +103,15 @@
           </select>
         </div>
       </div>
+      <div class="field" style="margin-top:8px;"><label>Allowances taken (NY Wage Theft Notice)</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#475569;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" name="allowance" value="none" checked> None</label>
+          <label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" name="allowance" value="tips"> Tips</label>
+          <label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" name="allowance" value="meals"> Meals</label>
+          <label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" name="allowance" value="lodging"> Lodging</label>
+        </div>
+        <div class="help">Tree-service hires are almost always "None" — leave default unless this employee earns tips or gets meals/lodging deductions.</div>
+      </div>
     </div>
 
     <!-- EMERGENCY CONTACT -->
@@ -164,6 +173,12 @@ document.getElementById('intake-form').addEventListener('submit', function(e) {
 
   emp.fullName = emp.firstName + ' ' + emp.lastName;
   emp.overtimeRate = (parseFloat(emp.payRate) * 1.5).toFixed(2);
+  // Allowances: collect every checked box → array. Default "none" stays selected when nothing else is.
+  emp.allowances = Array.from(document.querySelectorAll('input[name="allowance"]:checked'))
+    .map(function(el) { return el.value; });
+  // Auto-derive pay method from direct-deposit fields. If bank info is filled, the
+  // employee is on direct deposit; if the section is blank they get a paper check.
+  emp.payMethod = (emp.bankName && emp.routing && emp.account) ? 'direct_deposit' : 'check';
   emp.createdAt = new Date().toISOString();
 
   // 1. Save to localStorage for other forms to read
