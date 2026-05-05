@@ -312,6 +312,13 @@ async function runUpsells(): Promise<{ sent: number; skipped: number }> {
 
   let sent = 0, skipped = 0;
 
+  // Per-client dedup tracker — prevents the May 5 2026 incident where Basquali
+  // got 3 upsell emails in 14 seconds because 3 separate paid invoices all
+  // crossed the 28-day threshold in the same cron tick. We now dedup BY CLIENT,
+  // not by invoice. One upsell per client per 60-day window, no matter how
+  // many of their invoices are paid.
+  const clientsHitThisRun = new Set<string>();
+
   for (const inv of invoices) {
     try {
       // If paid_date is set, verify it's also in the right window (paid_date takes priority)
@@ -320,7 +327,28 @@ async function runUpsells(): Promise<{ sent: number; skipped: number }> {
         if (pd > new Date(until).getTime() || pd < new Date(since).getTime()) { skipped++; continue; }
       }
 
+      // Per-invoice dedup (legacy — covers same-invoice re-runs of the same cron tick)
       if (await alreadySent("upsell_30d", inv.id)) { skipped++; continue; }
+
+      // Per-client dedup THIS RUN (Basquali fix)
+      if (inv.client_id && clientsHitThisRun.has(inv.client_id)) { skipped++; continue; }
+
+      // Per-client dedup ACROSS RUNS — refuse if this client got any upsell in
+      // the last 60 days regardless of which invoice triggered it.
+      if (inv.client_id) {
+        const sixtyDaysAgo = new Date(Date.now() - 60 * 86400_000).toISOString();
+        const { data: recent } = await sb
+          .from("communications")
+          .select("id")
+          .eq("tenant_id", TENANT_ID)
+          .eq("client_id", inv.client_id)
+          .eq("channel", "email")
+          .eq("status", "sent")
+          .gte("created_at", sixtyDaysAgo)
+          .filter("metadata->>trigger", "eq", "upsell_30d")
+          .limit(1);
+        if (recent && recent.length > 0) { skipped++; continue; }
+      }
 
       let email = "";
       let firstName = (inv.client_name || "").split(" ")[0] || "there";
@@ -329,6 +357,9 @@ async function runUpsells(): Promise<{ sent: number; skipped: number }> {
         if (cl?.email) { email = cl.email; firstName = (cl.name || "").split(" ")[0] || firstName; }
       }
       if (!email) { skipped++; continue; }
+
+      // Mark this client as hit BEFORE actually sending (covers the rest of THIS run)
+      if (inv.client_id) clientsHitThisRun.add(inv.client_id);
 
       const invoiceNum = inv.invoice_number ? `#${inv.invoice_number}` : "";
       const subject    = `Ready for your next tree service, ${firstName}?`;
