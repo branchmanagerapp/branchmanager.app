@@ -740,7 +740,6 @@ var QuotesPage = {
           banner.innerHTML = '<div><strong style="color:#e65100;">📋 Recovered draft</strong><span style="font-size:13px;color:var(--text-light);margin-left:8px;">' + UI.esc(rd.clientName || 'Unsaved quote') + ' — ' + liCount + ' line item' + (liCount === 1 ? '' : 's') + ' — ' + new Date(rd.savedAt).toLocaleTimeString() + '</span></div>'
             + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
             + '<button onclick="QuotesPage._restoreAutoSave()" class="btn btn-primary" style="font-size:12px;padding:4px 12px;">Restore</button>'
-            + '<button onclick="alert(localStorage.getItem(\'' + QuotesPage._autoSaveKey + '\'))" class="btn btn-outline" style="font-size:12px;padding:4px 10px;">Show data</button>'
             + '<button onclick="this.parentElement.parentElement.remove();localStorage.removeItem(\'' + QuotesPage._autoSaveKey + '\');localStorage.removeItem(\'' + QuotesPage._autoSaveKey + '-recovery\');QuotesPage._pendingRestore=null;" class="btn btn-outline" style="font-size:12px;padding:4px 12px;">Discard</button>'
             + '</div>';
           var formEl = document.getElementById('quote-form');

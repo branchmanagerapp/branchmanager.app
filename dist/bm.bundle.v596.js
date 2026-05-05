@@ -795,10 +795,52 @@ var DB = (function() {
     } catch(e) {}
   }
 
+  // ── Poison-pill guard — refuse to upload demo/fixture data to cloud ──
+  // Last line of defense against the Apr 23 / Apr 30 / May 5 fabricate-data
+  // incidents. If a row in clients/jobs/invoices/requests/quotes carries the
+  // exact (name, phone) signature of a demo seed, REFUSE to push it. Logs
+  // loud and locally so Doug sees the warning. Names from the disabled
+  // seedDemo() function — the only thing that has ever generated these.
+  var FABRICATED_NAME_PHONES = {
+    'brian heermance|6462284455': true,
+    'ken phillips|9145550102': true,
+    'cynthia ferral|3477761419': true,
+    'christina eckhart|4237401778': true,  // matches the real client too — block phantom IDs only (see below)
+    'marlene colangelo|9145550199': true,
+    'george grant|9145550177': true
+  };
+  // Real customer client_ids that ARE legit (allow-list — these have never been fabricated;
+  // the corresponding seedDemo dupes had deterministic 6d6f70xx-xxxx ids instead).
+  var REAL_CLIENT_ID_ALLOWLIST = {
+    '3a8282c5-12a9-4a2f-b64d-b6030938dcfb': true   // Christina Eckhart (real, since 2025-10-30)
+    // Add other ids here if more real overlaps emerge
+  };
+  function _looksFabricated(table, record) {
+    if (table !== 'clients' && table !== 'jobs' && table !== 'invoices' && table !== 'requests' && table !== 'quotes') return false;
+    var name = (record.name || record.clientName || '').trim().toLowerCase();
+    var phone = String(record.phone || '').replace(/\D/g, '').slice(-10);
+    if (!name || !phone) return false;
+    var key = name + '|' + phone;
+    if (!FABRICATED_NAME_PHONES[key]) return false;
+    // Allow-list: real customers with these names whose ids are known-good
+    if (table === 'clients' && REAL_CLIENT_ID_ALLOWLIST[record.id]) return false;
+    if (record.clientId && REAL_CLIENT_ID_ALLOWLIST[record.clientId]) return false;
+    return true;
+  }
+
   function _pushToCloud(key, record, method) {
     try {
       var table = REMOTE_TABLE[key];
       if (!table) return;
+      if (_looksFabricated(table, record)) {
+        console.error('[DB push BLOCKED] fabricated-data fingerprint detected — refusing to upload', table, record);
+        try {
+          var blocked = JSON.parse(localStorage.getItem('bm-blocked-fabricated') || '[]');
+          blocked.unshift({ at: new Date().toISOString(), table: table, record: record });
+          localStorage.setItem('bm-blocked-fabricated', JSON.stringify(blocked.slice(0, 100)));
+        } catch(e) {}
+        return;
+      }
       // If a full cloud pull is in progress, defer the push so it can't be overwritten
       if (window._bmSyncLock) {
         console.debug('[DB push] sync lock active, deferring', table, record.id);
@@ -1188,6 +1230,27 @@ var DB = (function() {
     getById: function(id) { return expenses.getAll().find(function(r) { return r.id === id; }) || null; }
   };
 
+  // ── Payments (read-only — Stripe webhook + manual entry are sources of truth) ──
+  var payments = {
+    getAll: function() { try { return JSON.parse(localStorage.getItem('bm-payments')) || []; } catch(e) { return []; } },
+    getById: function(id) { return payments.getAll().find(function(p) { return p.id === id; }) || null; },
+    getByClient: function(clientId, clientName) {
+      var nameKey = (clientName || '').trim().toLowerCase();
+      return payments.getAll().filter(function(p) {
+        if (clientId && p.clientId === clientId) return true;
+        if (nameKey && (p.clientName || '').trim().toLowerCase() === nameKey) return true;
+        return false;
+      });
+    },
+    getByInvoice: function(invoiceId, invoiceNumber) {
+      return payments.getAll().filter(function(p) {
+        if (invoiceId && p.invoiceId === invoiceId) return true;
+        if (invoiceNumber && p.invoiceNumber === invoiceNumber) return true;
+        return false;
+      });
+    }
+  };
+
   // ── Time Entries ──
   var timeEntries = {
     getAll: function() { return getAll(KEYS.timeEntries); },
@@ -1270,36 +1333,31 @@ var DB = (function() {
     return imported;
   }
 
-  // ── Seed demo data ──
+  // ── Seed demo data — DISABLED v593 (May 5 2026) ──
+  //
+  // PERMANENTLY OFF. This function used to spawn 6 demo clients (Brian
+  // Heermance, Ken Phillips, Cynthia Ferral, Christina Eckhart, Marlene
+  // Colangelo, George Grant) plus jobs/invoices/requests if localStorage
+  // was empty. Side effect: every time the cache cleared (new browser,
+  // signed out, iOS reinstall) it re-seeded LOCAL → CloudSync uploaded →
+  // Supabase ended up with daily duplicates of real customers. Caused
+  // 12 phantom client rows on 2026-05-03 / 2026-05-04 (Christina Eckhart's
+  // page showed two phantom job #312 rows, etc.).
+  //
+  // Three of the names (Brian, Ken, Christina) are REAL Doug clients, so
+  // duplicates polluted real customer data. This violates the
+  // NEVER-fabricate-data rule (MEMORY.md). Demo seeding is gone for good.
+  // If you want a sandbox, use a separate tenant/project.
   function seedDemo() {
-    if (clients.count() > 0) return; // Already has data
-    services.seed();
-
-    // Demo clients
-    var demoClients = [
-      { name: 'Brian Heermance', address: '7 Lynwood Court, Cortlandt Manor, NY 10567', phone: '(646) 228-4455', email: 'bpwh1@outlook.com', status: 'active' },
-      { name: 'Ken Phillips', company: '130 BBQ', address: '130 Smith Street, Peekskill, NY 10566', phone: '(914) 555-0102', email: 'ken@130bbq.com', status: 'active' },
-      { name: 'Cynthia Ferral', address: '11 Piping Brook Lane, Bedford, NY 10506', phone: '(347) 776-1419', email: 'cynthiaferral@gmail.com', status: 'lead' },
-      { name: 'Christina Eckhart', address: '7 East Willow Street, Beacon, NY 12508', phone: '(423) 740-1778', email: '', status: 'active' },
-      { name: 'Marlene Colangelo', address: '25 Oak Drive, Peekskill, NY 10566', phone: '(914) 555-0199', email: 'marlene@email.com', status: 'active' },
-      { name: 'George Grant', address: '44 Maple Ave, Cortlandt Manor, NY 10567', phone: '(914) 555-0177', email: 'george@email.com', status: 'active' }
-    ];
-    demoClients.forEach(function(c) { clients.create(c); });
-
-    // Demo jobs
-    var clientList = clients.getAll();
-    jobs.create({ clientId: clientList[3].id, clientName: 'Christina Eckhart', property: '7 East Willow Street, Beacon, NY 12508', jobNumber: 312, scheduledDate: '2026-03-16', status: 'late', total: 2500, description: 'Tree removal', crew: ['Doug Brown', 'Catherine Conway', 'Ryan Knapp'] });
-    jobs.create({ clientId: clientList[0].id, clientName: 'Brian Heermance', property: '7 Lynwood Court, Cortlandt Manor, NY 10567', jobNumber: 315, scheduledDate: '2026-03-22', status: 'scheduled', total: 1800, description: 'Pruning - 3 oaks', crew: ['Doug Brown'] });
-
-    // Demo invoices
-    invoices.create({ clientId: clientList[4].id, clientName: 'Marlene Colangelo', invoiceNumber: 377, subject: 'For Services Rendered', total: 108, balance: 108, status: 'sent', dueDate: '2026-03-25' });
-    invoices.create({ clientId: clientList[5].id, clientName: 'George Grant', invoiceNumber: 378, subject: 'For Services Rendered', total: 46, balance: 46, status: 'sent', dueDate: '2026-03-28' });
-    invoices.create({ clientId: clientList[1].id, clientName: 'Ken Phillips', invoiceNumber: 376, subject: 'For Services Rendered', total: 216.75, balance: 0, status: 'paid', paidDate: '2026-03-13' });
-
-    // Demo requests
-    requests.create({ clientId: clientList[0].id, clientName: 'Brian Heermance', property: '7 Lynwood Court, Cortlandt Manor, NY 10567', phone: '(646) 228-4455', email: 'bpwh1@outlook.com', status: 'new', source: 'Google Search', notes: '' });
-    requests.create({ clientId: clientList[2].id, clientName: 'Cynthia Ferral', property: '11 Piping Brook Lane, Bedford, NY 10506', phone: '(347) 776-1419', email: 'cynthiaferral@gmail.com', status: 'new', source: 'Facebook', notes: '' });
+    // HARD KILLED v594. Three fabricate-data incidents traced to this path.
+    // Body deleted, no opt-in flag, no callsite. Throws if invoked.
+    throw new Error('seedDemo is permanently disabled. See db.js comment + MEMORY.md NEVER-fabricate-data rule.');
   }
+  // Run services.seed() ONCE at boot if services table is empty. These are
+  // PRICING-TEMPLATE rows (Tree Removal, Pruning, etc.) — not customer data.
+  // Safe to seed because they're fixed templates Doug uses in quotes; a cloud
+  // wipe should regenerate them. If you ever want them gone, edit services.seed.
+  try { services.seed(); } catch(e) {}
 
   // Team members — uses the generic create/update/remove so bm-team → Supabase team_members syncs automatically
   var team = {
@@ -1349,6 +1407,7 @@ var DB = (function() {
     quotes: quotes,
     jobs: jobs,
     invoices: invoices,
+    payments: payments,
     services: services,
     expenses: expenses,
     timeEntries: timeEntries,
@@ -1373,8 +1432,8 @@ var DB = (function() {
   };
 })();
 
-// Auto-seed demo data on first load
-DB.seedDemo();
+// Auto-seed REMOVED v594. seedDemo() now throws — never call it. Pricing-template
+// services.seed() runs inside the IIFE above (one-shot, idempotent, not customer data).
 
 // Kick off tenant resolution — idempotent, safe to call every page load.
 // Runs async; writes cache to localStorage once resolved. Retries later if
@@ -3440,6 +3499,9 @@ var ClientsPage = {
     var clientJobs = DB.jobs.getAll().filter(function(j) { return j.clientId === id || (j.clientName || '').trim().toLowerCase() === cName; });
     var clientInvoices = DB.invoices.getAll().filter(function(i) { return i.clientId === id || (i.clientName || '').trim().toLowerCase() === cName; });
     var clientQuotes = DB.quotes.getAll().filter(function(q) { return q.clientId === id || (q.clientName || '').trim().toLowerCase() === cName; });
+    var clientPayments = (DB.payments && DB.payments.getByClient) ? DB.payments.getByClient(id, c.name) : [];
+    clientPayments.sort(function(a, b){ return (b.date || b.createdAt || '').localeCompare(a.date || a.createdAt || ''); });
+    var lifetimePaid = clientPayments.reduce(function(s, p){ return s + (Number(p.amount) || 0); }, 0);
     var totalRevenue = clientInvoices.filter(function(i) { return i.status === 'paid'; }).reduce(function(s, i) { return s + (i.total || 0); }, 0);
     var totalOutstanding = clientInvoices.filter(function(i) { return i.status !== 'paid'; }).reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
     var totalInvoiced = clientInvoices.reduce(function(s, i) { return s + (i.total || 0); }, 0);
@@ -3709,7 +3771,36 @@ var ClientsPage = {
     } else {
       html += '<div style="font-size:13px;color:var(--text-light);">No invoices yet.</div>';
     }
-    html += '</div></div>' // close cd-billing
+    html += '</div>'; // close invoices card
+
+    // ── Payment History card ──
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;margin-top:14px;">'
+      +     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +       '<h3 style="font-size:16px;font-weight:700;margin:0;">💰 Payment History (' + clientPayments.length + ')</h3>'
+      +       (clientPayments.length ? '<div style="font-size:13px;color:var(--text-light);">Lifetime paid: <strong style="color:var(--green-dark);">' + UI.money(lifetimePaid) + '</strong></div>' : '')
+      +     '</div>';
+    if (clientPayments.length) {
+      html += '<table class="data-table"><thead><tr><th>Date</th><th>Method</th><th>Invoice</th><th>Source</th><th style="text-align:right;">Amount</th></tr></thead><tbody>';
+      clientPayments.forEach(function(p) {
+        var methodIcon = p.method === 'card' ? '💳' : (p.method === 'check' ? '📝' : (p.method === 'cash' ? '💵' : (p.method === 'ach' ? '🏦' : '💰')));
+        var methodLabel = (p.method || 'other').toUpperCase();
+        var invLabel = p.invoiceNumber ? '#' + p.invoiceNumber : (p.invoiceId ? '—' : '—');
+        var sourceLabel = p.source === 'jobber' ? '<span style="font-size:10px;background:#fff3e0;color:#e07c24;padding:2px 6px;border-radius:10px;">JOBBER</span>' :
+                          p.source === 'stripe' ? '<span style="font-size:10px;background:#e3f2fd;color:#1976d2;padding:2px 6px;border-radius:10px;">STRIPE</span>' :
+                          '<span style="font-size:10px;background:#f5f5f5;color:#666;padding:2px 6px;border-radius:10px;">' + (p.source || 'manual').toUpperCase() + '</span>';
+        html += '<tr>'
+          + '<td style="white-space:nowrap;color:var(--text-light);font-size:12px;">' + UI.dateShort(p.date || p.createdAt) + '</td>'
+          + '<td>' + methodIcon + ' ' + methodLabel + '</td>'
+          + '<td>' + (p.invoiceNumber ? '<strong>#' + p.invoiceNumber + '</strong>' : '<span style="color:var(--text-light);">—</span>') + '</td>'
+          + '<td>' + sourceLabel + '</td>'
+          + '<td style="text-align:right;font-weight:700;color:var(--green-dark);">' + UI.money(p.amount || 0) + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--text-light);">No payments recorded yet.</div>';
+    }
+    html += '</div></div>' // close payment-history card AND cd-billing
 
       // ══════════════════════════════════════════════════════════
       // COMMS TAB — activity timeline + CommsLog
@@ -4590,6 +4681,7 @@ var RequestsPage = {
       + '<table class="data-table"><thead><tr>'
       + '<th style="width:32px;"><input type="checkbox" onchange="document.querySelectorAll(\'.req-check\').forEach(function(cb){cb.checked=event.target.checked;});RequestsPage._updateBulk();" title="Select all"></th>'
       + self._sortTh('Client', 'clientName')
+      + '<th>Phone</th>'
       + self._sortTh('Description', 'service')
       + self._sortTh('Property', 'property')
       + self._sortTh('Requested', 'createdAt')
@@ -4597,7 +4689,7 @@ var RequestsPage = {
       + '</tr></thead><tbody>';
 
     if (page.length === 0) {
-      html += '<tr><td colspan="6">' + (self._search ? '<div style="text-align:center;padding:24px;color:var(--text-light);">No requests match "' + self._search + '"</div>' : UI.emptyState('&#128229;', 'No requests yet', 'New requests from your website form will appear here.')) + '</td></tr>';
+      html += '<tr><td colspan="7">' + (self._search ? '<div style="text-align:center;padding:24px;color:var(--text-light);">No requests match "' + self._search + '"</div>' : UI.emptyState('&#128229;', 'No requests yet', 'New requests from your website form will appear here.')) + '</td></tr>';
     } else {
       page.forEach(function(r) {
         var isOverdue = self._isOverdue(r);
@@ -4609,11 +4701,32 @@ var RequestsPage = {
         var desc = r.service || r.notes || '';
         var prop = r.property || '';
 
+        // Phone display: format as (XXX) XXX-XXXX, link as tel:.
+        // Fall back to the linked client's phone when the request itself doesn't carry one.
+        var phRaw = (r.phone || '').replace(/\D/g, '');
+        if (phRaw.length < 10 && r.clientId) {
+          var linked = DB.clients.getById(r.clientId);
+          if (linked && linked.phone) phRaw = linked.phone.replace(/\D/g, '');
+        }
+        var phCell = '<span style="color:var(--text-light);">—</span>';
+        if (phRaw.length >= 10) {
+          var p10 = phRaw.slice(-10);
+          var phFmt = '(' + p10.slice(0,3) + ') ' + p10.slice(3,6) + '-' + p10.slice(6);
+          phCell = '<a href="tel:+1' + p10 + '" onclick="event.stopPropagation()" style="color:var(--accent);text-decoration:none;font-size:13px;white-space:nowrap;">' + phFmt + '</a>';
+        }
+
+        // Property cell: clickable to Maps if present
+        var propCell = '<span style="color:var(--text-light);">—</span>';
+        if (prop) {
+          propCell = '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(prop) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--accent);text-decoration:none;display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(prop) + '">📍 ' + UI.esc(prop) + '</a>';
+        }
+
         html += '<tr style="cursor:pointer;' + rowBg + '" onclick="RequestsPage.showDetail(\'' + r.id + '\')">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="req-check" value="' + r.id + '" onchange="RequestsPage._updateBulk()" style="width:16px;height:16px;"></td>'
           + '<td><strong>' + UI.esc(r.clientName || 'Unknown') + '</strong></td>'
+          + '<td>' + phCell + '</td>'
           + '<td style="font-size:13px;color:var(--text-light);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(desc) + '">' + UI.esc(desc || '—') + '</td>'
-          + '<td style="font-size:13px;color:var(--text-light);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(prop) + '">' + UI.esc(prop || '—') + '</td>'
+          + '<td style="font-size:13px;">' + propCell + '</td>'
           + '<td style="white-space:nowrap;">' + UI.dateShort(r.createdAt) + '</td>'
           + '<td>' + UI.statusBadge(displayStatus) + '</td>'
           + '</tr>';
@@ -4636,6 +4749,25 @@ var RequestsPage = {
         var desc = r.service || r.notes || '';
         if (desc.length > 60) desc = desc.substring(0, 60) + '...';
         var returning = r.clientId ? '<span style="display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;background:#e8f0fe;color:#2b6cb0;margin-left:6px;font-weight:600;">Returning</span>' : '';
+
+        // Mobile phone link (with fallback to linked client's phone)
+        var mPhRaw = (r.phone || '').replace(/\D/g, '');
+        if (mPhRaw.length < 10 && r.clientId) {
+          var mLinked = DB.clients.getById(r.clientId);
+          if (mLinked && mLinked.phone) mPhRaw = mLinked.phone.replace(/\D/g, '');
+        }
+        var mPhHtml = '';
+        if (mPhRaw.length >= 10) {
+          var mp10 = mPhRaw.slice(-10);
+          var mPhFmt = '(' + mp10.slice(0,3) + ') ' + mp10.slice(3,6) + '-' + mp10.slice(6);
+          mPhHtml = '<a href="tel:+1' + mp10 + '" onclick="event.stopPropagation()" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;display:inline-block;margin-top:2px;">📞 ' + mPhFmt + '</a>';
+        }
+        // Mobile property → Maps link
+        var mPropHtml = '';
+        if (r.property) {
+          mPropHtml = '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(r.property) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:12px;color:var(--accent);text-decoration:none;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(r.property) + '</a>';
+        }
+
         html += '<div data-rid="' + r.id + '" class="request-card" style="background:' + cardBg + ';border:1px solid ' + cardBorder + ';border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04);-webkit-tap-highlight-color:transparent;display:flex;align-items:flex-start;gap:10px;">'
           + '<div onclick="event.stopPropagation()" style="flex-shrink:0;padding-top:2px;"><input type="checkbox" class="req-check" value="' + r.id + '" onchange="RequestsPage._updateBulk()" style="width:18px;height:18px;"></div>'
           + '<div style="flex:1;min-width:0;">'
@@ -4643,7 +4775,8 @@ var RequestsPage = {
           +   '<div style="flex:1;min-width:0;">'
           +     '<div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(r.clientName || 'Unknown') + returning + '</div>'
           +     (desc ? '<div style="font-size:13px;color:var(--text);margin-top:4px;">' + UI.esc(desc) + '</div>' : '')
-          +     (r.property ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(r.property) + '</div>' : '')
+          +     mPhHtml
+          +     mPropHtml
           +   '</div>'
           +   '<div style="flex-shrink:0;">' + UI.statusBadge(displayStatus) + '</div>'
           + '</div>'
@@ -5963,7 +6096,6 @@ var QuotesPage = {
           banner.innerHTML = '<div><strong style="color:#e65100;">📋 Recovered draft</strong><span style="font-size:13px;color:var(--text-light);margin-left:8px;">' + UI.esc(rd.clientName || 'Unsaved quote') + ' — ' + liCount + ' line item' + (liCount === 1 ? '' : 's') + ' — ' + new Date(rd.savedAt).toLocaleTimeString() + '</span></div>'
             + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
             + '<button onclick="QuotesPage._restoreAutoSave()" class="btn btn-primary" style="font-size:12px;padding:4px 12px;">Restore</button>'
-            + '<button onclick="alert(localStorage.getItem(\'' + QuotesPage._autoSaveKey + '\'))" class="btn btn-outline" style="font-size:12px;padding:4px 10px;">Show data</button>'
             + '<button onclick="this.parentElement.parentElement.remove();localStorage.removeItem(\'' + QuotesPage._autoSaveKey + '\');localStorage.removeItem(\'' + QuotesPage._autoSaveKey + '-recovery\');QuotesPage._pendingRestore=null;" class="btn btn-outline" style="font-size:12px;padding:4px 12px;">Discard</button>'
             + '</div>';
           var formEl = document.getElementById('quote-form');
@@ -10242,7 +10374,6 @@ var InvoicesPage = {
       })()
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
-      +   '<button onclick="InvoicesPage._generateFromJobs()" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid #e07c24;background:#fff3e0;color:#e07c24;cursor:pointer;font-weight:600;">⚡ Generate from Jobs</button>'
       +   '<div class="search-box" style="min-width:200px;max-width:280px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
       +     '<input type="text" placeholder="Search invoices..." value="' + UI.esc(self._search) + '" oninput="InvoicesPage._search=this.value;InvoicesPage._page=0;loadPage(\'invoices\')">'
@@ -11826,7 +11957,11 @@ var SchedulePage = {
     // Media Center moved into SocialBranch. If you want recurring admin reminders
     // back, build them with explicit user opt-in instead of seeding on every render.
     var today = SchedulePage._localDateStr(new Date());
+    // v587: archived jobs hidden from calendar by default; toggle reveals them
+    // for cases like scheduling social-media posts about completed past jobs.
+    var showArchived = localStorage.getItem('bm-cal-show-archived') === 'true';
     var allJobs = DB.jobs.getAll();
+    if (!showArchived) allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
     var todayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === today; });
 
     // Today summary (compact — just count, no big card)
@@ -11866,6 +12001,7 @@ var SchedulePage = {
       +   '</div>'
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
+      +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
       + '</div>';
 
@@ -11958,6 +12094,7 @@ var SchedulePage = {
     var d = SchedulePage.currentDate;
     var dateStr = SchedulePage._localDateStr(d);
     var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
 
     var html = '';
@@ -12091,6 +12228,12 @@ var SchedulePage = {
     loadPage('schedule');
   },
 
+  _toggleArchived: function() {
+    var current = localStorage.getItem('bm-cal-show-archived') === 'true';
+    localStorage.setItem('bm-cal-show-archived', current ? 'false' : 'true');
+    loadPage('schedule');
+  },
+
   _photosEnabled: function() {
     return localStorage.getItem('bm-cal-photos') !== 'false';
   },
@@ -12142,6 +12285,7 @@ var SchedulePage = {
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var today = SchedulePage._localDateStr(new Date());
     var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var html = '';
 
     // Unscheduled jobs panel
@@ -12234,6 +12378,7 @@ var SchedulePage = {
     var daysInMonth = new Date(year, month + 1, 0).getDate();
     var today = SchedulePage._localDateStr(new Date());
     var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
     var html = '';
@@ -16491,27 +16636,87 @@ var DailyInspection = {
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;">';
 
     // Header / summary
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">'
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">'
       + '<div><div style="font-weight:700;font-size:14px;">Fleet pre-trip — ' + today + '</div>'
       + '<div style="font-size:12px;color:var(--text-light);">FMCSA/DOT-compliant checklists. Tap a vehicle to start.</div></div>'
-      + '<div style="font-size:13px;color:var(--green-dark);font-weight:700;">' + completedToday.length + ' / ' + DailyInspection._vehicles.length + ' done today</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:' + (completedToday.length === DailyInspection._vehicles.length ? 'var(--green-dark)' : '#e65100') + ';">'
+      +   '<span style="font-size:18px;">' + (completedToday.length === DailyInspection._vehicles.length ? '✓' : '⏳') + '</span>'
+      +   completedToday.length + ' / ' + DailyInspection._vehicles.length + ' done'
+      + '</div>'
       + '</div>';
 
-    // Fleet grid
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">';
+    // Build per-vehicle history map for "last completed" timestamps
+    var historyAll = [];
+    try { historyAll = JSON.parse(localStorage.getItem('bm-inspection-history') || '[]'); } catch(e) {}
+    var lastByVeh = {};
+    historyAll.forEach(function(r) {
+      if (!r.vehicle) return;
+      if (!lastByVeh[r.vehicle] || r.date > lastByVeh[r.vehicle].date) lastByVeh[r.vehicle] = r;
+    });
+
+    // Maintenance count per vehicle (from Bouncie OBD events)
+    var maintByVeh = {};
+    openMaint.forEach(function(m) {
+      var key = m.vehicle_id || m.vehicle || '';
+      if (!key) return;
+      maintByVeh[key] = (maintByVeh[key] || 0) + 1;
+    });
+
+    // Yesterday's date for "missed" detection
+    var yesterdayDt = new Date(); yesterdayDt.setDate(yesterdayDt.getDate() - 1);
+    var yesterday = yesterdayDt.toISOString().split('T')[0];
+
+    // Fleet grid — richer cards (v577)
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">';
     DailyInspection._vehicles.forEach(function(v) {
       var done = DailyInspection.isCompleteForVehicle(v.id);
-      var bg = done ? '#e8f5e9' : 'var(--bg)';
-      var bd = done ? '#2e7d32' : 'var(--border)';
-      html += '<button type="button" onclick="DailyInspection.startVehicle(\'' + v.id + '\')" '
-        + 'style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:10px;padding:12px;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:center;">'
-        + '<span style="font-size:26px;">' + v.icon + '</span>'
-        + '<div style="flex:1;min-width:0;">'
-        +   '<div style="font-size:13px;font-weight:700;color:var(--text);">' + v.label + '</div>'
-        +   '<div style="font-size:11px;color:var(--text-light);">' + (v.dot ? 'DOT required · ' : '') + v.items.reduce(function(s,sec){return s+sec[1].length;},0) + ' checks</div>'
-        +   '<div style="font-size:11px;margin-top:2px;color:' + (done ? '#2e7d32' : '#e65100') + ';font-weight:600;">' + (done ? '✓ Inspected today' : '○ Not started') + '</div>'
+      var last = lastByVeh[v.id];
+      var checkCount = v.items.reduce(function(s,sec){return s+sec[1].length;},0);
+      var maintCount = maintByVeh[v.id] || 0;
+
+      // Status pill — done / due / missed (last < yesterday)
+      var pill, pillBg, pillFg, accent;
+      if (done) {
+        pill = '✓ DONE'; pillBg = '#dcfce7'; pillFg = '#166534'; accent = '#22c55e';
+      } else if (last && last.date < yesterday) {
+        pill = '⚠ MISSED'; pillBg = '#fee2e2'; pillFg = '#991b1b'; accent = '#dc2626';
+      } else {
+        pill = '○ DUE'; pillBg = '#fef3c7'; pillFg = '#92400e'; accent = '#f59e0b';
+      }
+
+      // Last-completed line
+      var lastLine;
+      if (done) {
+        lastLine = 'Inspected today' + (last && last.driver ? ' · ' + UI.esc(last.driver) : '');
+      } else if (last) {
+        var lastDt = new Date(last.date + 'T00:00:00');
+        var ageDays = Math.floor((Date.now() - lastDt.getTime()) / 86400000);
+        var ageStr = ageDays === 0 ? 'today' : ageDays === 1 ? 'yesterday' : ageDays + 'd ago';
+        lastLine = 'Last: ' + ageStr + (last.driver ? ' · ' + UI.esc(last.driver) : '');
+      } else {
+        lastLine = 'No history';
+      }
+
+      html += '<div style="background:#fff;border:1px solid var(--border);border-left:4px solid ' + accent + ';border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:box-shadow .15s;" '
+        + 'onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.06)\'" onmouseout="this.style.boxShadow=\'none\'" '
+        + 'onclick="DailyInspection.startVehicle(\'' + v.id + '\')">'
+        // Top row: icon + label + status pill
+        + '<div style="display:flex;align-items:center;gap:10px;">'
+        +   '<span style="font-size:30px;line-height:1;">' + v.icon + '</span>'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-size:14px;font-weight:700;color:var(--text);">' + UI.esc(v.label) + '</div>'
+        +     '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">' + (v.dot ? 'DOT · ' : '') + checkCount + ' checks</div>'
+        +   '</div>'
+        +   '<span style="background:' + pillBg + ';color:' + pillFg + ';padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.3px;white-space:nowrap;">' + pill + '</span>'
         + '</div>'
-        + '</button>';
+        // Middle: last-completed line
+        + '<div style="font-size:12px;color:var(--text-light);">' + lastLine + '</div>'
+        // Bottom: maintenance flag + CTA
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px dashed var(--border);">'
+        +   (maintCount ? '<span style="font-size:11px;color:#b45309;font-weight:600;">⚠ ' + maintCount + ' maint flag' + (maintCount === 1 ? '' : 's') + '</span>' : '<span style="font-size:11px;color:var(--text-light);">No maint flags</span>')
+        +   '<span style="background:' + (done ? 'transparent' : accent) + ';color:' + (done ? accent : '#fff') + ';border:1px solid ' + accent + ';padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;">' + (done ? 'Re-check →' : 'Inspect →') + '</span>'
+        + '</div>'
+        + '</div>';
     });
     html += '</div>';
 
@@ -17513,7 +17718,7 @@ var CrewView = {
     // Upsert to crew_locations. tenant_id is now defaulted at the DB level
     // (May 2 hardening) but set explicitly here too — defense in depth.
     SupabaseDB.client.from('crew_locations').upsert({
-      tenant_id: '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+      tenant_id: window.resolveTenantId(),
       user_id: userId,
       user_name: userName,
       role: (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.role : 'crew_member',
@@ -21268,7 +21473,7 @@ var FleetPage = {
     var name = document.getElementById('fleet-name').value.trim();
     if (!name) { UI.toast('Name is required', 'error'); return; }
     var row = {
-      tenant_id: window.CURRENT_TENANT_ID || '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+      tenant_id: window.resolveTenantId(),
       name: name,
       nickname: document.getElementById('fleet-nick').value.trim() || null,
       license_plate: document.getElementById('fleet-plate').value.trim() || null,
@@ -21530,6 +21735,16 @@ var Dialpad = {
    * POST https://dialpad.com/api/v2/call
    * { phone_number: "+1...", outbound_caller_id: "+1..." }
    */
+  // (May 2 2026) Rewrote — was browser-direct POST to dialpad.com/api/v2/call
+  // which CORS-rejects, then fell through to a fake-timer modal that pretended
+  // to track call state but was just a setInterval disconnected from any real
+  // call. Doug saw the "weird timer" + calls not actually placing.
+  //
+  // New behavior: use the dialpad:// or tel: deep link to hand off to the
+  // native Dialpad app or system dialer, log the attempt, show a brief toast.
+  // The actual call state will surface in BM via the dialpad-webhook events
+  // (call.ringing → call.completed) which already write to communications.
+  // No fake timer.
   call: function(toPhone, clientId, clientName) {
     var cleanPhone = Dialpad._cleanPhone(toPhone);
     if (!cleanPhone) {
@@ -21537,40 +21752,22 @@ var Dialpad = {
       return;
     }
 
-    // Log call attempt
+    // Log call attempt locally so it shows up in client comms history.
     Dialpad._logComm(clientId, 'call', 'outbound', 'Called ' + (clientName || Dialpad._formatPhone(cleanPhone)));
 
-    if (Dialpad.isConfigured()) {
-      // Try Dialpad API call initiation
-      fetch('https://dialpad.com/api/v2/call', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + Dialpad.apiKey
-        },
-        body: JSON.stringify({
-          phone_number: '+' + cleanPhone
-        })
-      }).then(function(resp) {
-        if (resp.ok) {
-          UI.toast('Calling via Dialpad...');
-          Dialpad._showCallTimer(clientId, clientName, toPhone);
-        } else {
-          // Fallback to tel:
-          window.open('tel:' + cleanPhone);
-          UI.toast('Opening phone dialer');
-          Dialpad._showCallTimer(clientId, clientName, toPhone);
-        }
-      }).catch(function() {
-        window.open('tel:' + cleanPhone);
-        Dialpad._showCallTimer(clientId, clientName, toPhone);
-      });
+    // Hand off to the OS dialer / Dialpad app. tel: opens whichever is set as
+    // the default phone handler — on iPhone with Dialpad installed, that's
+    // Dialpad. On macOS Continuity, it routes through the iPhone. On desktop
+    // without a phone handler, it does nothing (toast warns).
+    var url = 'tel:' + cleanPhone;
+    var win = window.open(url);
+    if (win === null || typeof win === 'undefined') {
+      UI.toast('Opening dialer for ' + Dialpad._formatPhone(cleanPhone), 'success');
     } else {
-      // No API key — use tel: link (opens Dialpad app if installed, or phone)
-      window.open('tel:' + cleanPhone);
-      UI.toast('Opening phone dialer');
-      Dialpad._showCallTimer(clientId, clientName, toPhone);
+      UI.toast('Calling ' + (clientName || Dialpad._formatPhone(cleanPhone)) + '…', 'success');
     }
+    // No modal, no fake timer. Real call state arrives via dialpad-webhook
+    // events and will appear in the Call Center / client comms automatically.
   },
 
   // ── Call Timer Modal (like Jobber) ───────────────────
@@ -28135,7 +28332,6 @@ var SettingsPage = {
       + '<button class="btn btn-outline" onclick="SettingsPage.deduplicateTags()">Fix Duplicate Tags</button>'
       + '<button class="btn btn-outline" onclick="SettingsPage.reconcileOrphans()">🔗 Reconcile Orphan Records</button>'
       + '<button class="btn btn-outline" onclick="SettingsPage.auditAIData()">🔍 Audit AI-Created Data</button>'
-      + '<button class="btn btn-outline" onclick="SettingsPage.resetDemo()">Reset to Demo Data</button>'
       + '<button class="btn" style="background:var(--red);color:#fff;" onclick="SettingsPage.clearAll()">Clear All Data</button>'
       + '</div>'
       + '<div id="audit-result" style="font-size:12px;color:var(--text-light);">"Audit AI-Created Data" lists every row any Claude session has added to your DB — clients/quotes/jobs/invoices — so you can spot-check and delete fakes.</div>'
@@ -28496,14 +28692,9 @@ var SettingsPage = {
     reader.readAsText(file);
   },
 
-  resetDemo: function() {
-    UI.confirm('Reset all data to demo? This will erase current data.', function() {
-      Object.values(DB.KEYS).forEach(function(k) { localStorage.removeItem(k); });
-      DB.seedDemo();
-      UI.toast('Demo data restored');
-      loadPage('settings');
-    });
-  },
+  // resetDemo REMOVED v594. Demo seeding caused 3 fabricate-data incidents
+  // (Apr 23 / Apr 30 / May 5). Permanently disabled. Use Clear All Data if
+  // you actually want to wipe and start fresh.
 
   clearAll: function() {
     // Two-stage confirm — must type exactly "DELETE" to proceed.
@@ -32287,7 +32478,10 @@ var ChipDrops = {
   _pins: [],
   _rtSubInited: false,
 
-  TENANT_ID: '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+  // Phase 2 — pulled from the global tenant resolver (window.resolveTenantId,
+  // defined in src/supabase.js). Resolver itself has the SNT fallback —
+  // single source of truth so friend-tenant migration is a one-line change.
+  get TENANT_ID() { return window.resolveTenantId(); },
 
   render: function() {
     ChipDrops._kickFetch();
@@ -35959,9 +36153,35 @@ var SupabaseDB = {
 
   _connect: function(url, key) {
     try {
-      SupabaseDB.client = window.supabase.createClient(url, key);
+      // Multi-tenant Phase 2 (May 2 2026): every Supabase request now carries
+      // X-Tenant-ID so the new mt_anon_* RLS policies can resolve the right
+      // tenant via current_tenant_id(). For SNT today the header is
+      // 93af4348-... — same UUID the legacy snt_anon_* policies hardcode, so
+      // BOTH policy families pass during the dual-write cutover. When friend's
+      // tenant lands, BM will resolve a different tenant_id from URL/auth,
+      // mt_anon_* fires for them, snt_anon_* doesn't (literal mismatch).
+      // Phase 2 — resolve tenant from (in priority order):
+      //   1. window.CURRENT_TENANT_ID (set by hostname resolver in index.html)
+      //   2. Cloudflare Worker injected X-Tenant-ID (visible via meta tag if needed)
+      //   3. localStorage bm-tenant-id (multi-tenant signed-in user picked one)
+      //   4. SNT fallback for backwards compat during rollout
+      var resolveTenantHeader = function() {
+        try {
+          if (window.CURRENT_TENANT_ID) return window.CURRENT_TENANT_ID;
+          var stored = localStorage.getItem('bm-tenant-id');
+          if (stored) return stored;
+        } catch(e) {}
+        return '93af4348-8bba-4045-ac3e-5e71ec1cc8c5'; // SNT fallback during Phase 2 rollout
+      };
+      // Expose the resolver so other modules don't need their own copy.
+      window.resolveTenantId = resolveTenantHeader;
+      SupabaseDB.client = window.supabase.createClient(url, key, {
+        global: {
+          headers: { 'X-Tenant-ID': resolveTenantHeader() }
+        }
+      });
       SupabaseDB.ready = true;
-      if (SupabaseDB._debug) console.debug('Supabase connected:', url);
+      if (SupabaseDB._debug) console.debug('Supabase connected:', url, 'tenant:', resolveTenantHeader());
 
       // Check if RLS policies are properly configured
       SupabaseDB._checkRLS();
@@ -38077,7 +38297,7 @@ var Templates = {
  * Reads come from cache (fast, synchronous). Writes go to both cache + cloud.
  */
 var CloudSync = {
-  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'services', 'expenses', 'time_entries'],
+  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments', 'services', 'expenses', 'time_entries'],
   syncing: false,
   lastSync: 0,
 
@@ -41301,7 +41521,7 @@ var SocialBranch = {
     var city = document.getElementById('c-city').value.trim();
     if (!name) { UI.toast('Name required', 'error'); return; }
     var row = {
-      tenant_id: window.CURRENT_TENANT_ID || '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+      tenant_id: window.resolveTenantId(),
       name: name,
       city: city || null,
       active: true
@@ -47995,6 +48215,13 @@ var TaskReminders = {
   },
 
   // Open task form as a floating bottom-sheet overlay (works from any page)
+  // v588: collapse/expand the dashboard tasks widget
+  _toggleCollapse: function() {
+    var current = localStorage.getItem('bm-tasks-widget-collapsed') === 'true';
+    localStorage.setItem('bm-tasks-widget-collapsed', current ? 'false' : 'true');
+    if (typeof loadPage === 'function' && window._currentPage === 'dashboard') loadPage('dashboard');
+  },
+
   _openOverlay: function(taskId, prefill) {
     var old = document.getElementById('bm-task-overlay');
     if (old) old.remove();
@@ -48493,18 +48720,39 @@ var TaskReminders = {
 
     var prioMap = { urgent: '#c62828', high: '#e65100', medium: '#1976d2', low: '#6c757d' };
 
+    // v588: collapsable — state persisted in localStorage. Collapsed shows
+    // header + counts only; expanded shows the task rows below. Chevron
+    // toggles. Default expanded for first-time users.
+    var collapsed = localStorage.getItem('bm-tasks-widget-collapsed') === 'true';
+
     var html = '<div style="background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
 
     // ── Header ──
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-      + '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Tasks</h3>'
-      + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + allIncomplete.length + ' open</div>'
+    var overdueCount = overdue.length;
+    var todayCount = today.length;
+    var subtitle = allIncomplete.length + ' open'
+      + (overdueCount ? ' · ' + overdueCount + ' overdue' : '')
+      + (todayCount ? ' · ' + todayCount + ' today' : '');
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;' + (collapsed ? '' : 'margin-bottom:12px;') + '">'
+      + '<div onclick="TaskReminders._toggleCollapse()" style="cursor:pointer;flex:1;display:flex;align-items:center;gap:8px;">'
+      +   '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Tasks</h3>'
+      +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + subtitle + '</div>'
+      +   '</div>'
       + '</div>'
       + '<div style="display:flex;gap:6px;align-items:center;">'
-      + '<button onclick="TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">+ New</button>'
-      + '<button onclick="loadPage(\'taskreminders\')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);">View All →</button>'
+      + '<button onclick="event.stopPropagation();TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">+ New</button>'
+      + '<button onclick="event.stopPropagation();loadPage(\'taskreminders\')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);">View All →</button>'
+      + '<button onclick="event.stopPropagation();TaskReminders._toggleCollapse()" title="' + (collapsed ? 'Expand' : 'Collapse') + '" style="background:none;border:1px solid var(--border);padding:5px 9px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);line-height:1;">'
+      +   '<span style="display:inline-block;transition:transform .15s;transform:rotate(' + (collapsed ? '-90' : '0') + 'deg);">▼</span>'
+      + '</button>'
       + '</div>'
       + '</div>';
+
+    // Bail out early if collapsed — task rows skipped, quick-add bar skipped
+    if (collapsed) {
+      html += '</div>';
+      return html;
+    }
 
     // ── Task rows ──
     if (shown.length > 0) {
@@ -48727,7 +48975,8 @@ var TeamChat = {
   _loading: {},       // { channel: bool }
   _sub: null,         // Supabase real-time channel handle
   _lastRead: {},      // { channel: timestampMs }  — persisted to localStorage
-  TENANT_ID: '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+  // Phase 2 — resolved per-call via the central resolver in src/supabase.js.
+  get TENANT_ID() { return window.resolveTenantId(); },
 
   // ── Supabase client shortcut ──────────────────────────────────────────
   _sb: function() {
@@ -51832,7 +52081,7 @@ var CallCenter = {
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (sb) {
       await sb.from('communications').insert({
-        client_id: thr.clientId || null, channel: 'sms', direction: 'outbound',
+        client_id: thr.clientId || null, type: 'sms', channel: 'sms', direction: 'outbound',
         status: sent ? 'sent' : 'sent_fallback', body: msg,
         to_number: '+' + thr.phone, from_number: null,
         dialpad_id: 'bm-out-' + Date.now(),
@@ -52304,7 +52553,8 @@ var PermitsPage = {
  *   bm-ins-agent     → { name, email, phone, agency }
  */
 var InsurancePage = {
-  _tab: 'certs',          // 'certs' | 'policies' | 'agent'
+  _tab: 'compliance',     // 'compliance' | 'certs' | 'policies' | 'agent'
+  _compliance: null,      // cached cloud compliance_documents_with_status rows
 
   // ── Storage helpers ───────────────────────────────────────────────────
   _getPolicies: function() { try { return JSON.parse(localStorage.getItem('bm-ins-policies') || '[]'); } catch(e) { return []; } },
@@ -52315,13 +52565,77 @@ var InsurancePage = {
   _saveAgent: function(d) { localStorage.setItem('bm-ins-agent', JSON.stringify(d)); },
   _id: function() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 5); },
 
+  // ── Cloud compliance_documents (v578+) ────────────────────────────────
+  // Async fetch then re-render. Uses tenant-scoped RLS via SupabaseDB.client.
+  _fetchCompliance: function() {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) {
+      InsurancePage._compliance = []; return;
+    }
+    SupabaseDB.client
+      .from('compliance_documents_with_status')
+      .select('*')
+      .order('expires_date', { ascending: true, nullsFirst: false })
+      .then(function(res) {
+        if (res && !res.error) {
+          var prevLen = (InsurancePage._compliance || []).length;
+          InsurancePage._compliance = res.data || [];
+          // Re-render only if we're still on the insurance page + data changed
+          if (typeof loadPage === 'function' && window._currentPage === 'insurance' && prevLen !== InsurancePage._compliance.length) {
+            loadPage('insurance');
+          }
+        } else {
+          console.warn('[insurance] compliance_documents fetch failed', res && res.error);
+          InsurancePage._compliance = [];
+        }
+      });
+  },
+
+  // Friendly labels for compliance kinds
+  _kindLabel: function(k) {
+    var map = {
+      'wc_policy': 'Workers Comp Policy',
+      'db_policy': 'Disability Benefits',
+      'pfl_policy': 'Paid Family Leave',
+      'general_liability': 'General Liability',
+      'auto_liability': 'Commercial Auto',
+      'umbrella': 'Umbrella / Excess',
+      'pesticide_cert': 'Pesticide Cert',
+      'tcia_member': 'TCIA Membership',
+      'isa_member': 'ISA Membership',
+      'usdot_registration': 'US DOT Registration',
+      'mcs150_biennial': 'MCS-150 Biennial',
+      'dos_biennial': 'NY DOS Biennial',
+      'sales_tax_cert': 'Sales Tax Cert',
+      'vehicle_registration': 'Vehicle Registration',
+      'vehicle_inspection': 'NY Inspection',
+      'driver_license': 'Driver License',
+      'cdl': 'CDL',
+      'dot_medical_card': 'DOT Medical Card',
+      'osha_z133_training': 'ANSI Z133 Training',
+      'first_aid_cpr_cert': 'First Aid / CPR',
+      'business_license_local': 'Local Business License',
+      'home_improvement_contractor': 'HIC License'
+    };
+    return map[k] || k.replace(/_/g, ' ');
+  },
+
   // ── Render ────────────────────────────────────────────────────────────
   render: function() {
     var policies = InsurancePage._getPolicies();
     var certs = InsurancePage._getCerts();
     var agent = InsurancePage._getAgent();
 
-    // Expiry warnings
+    // Kick async compliance fetch — re-renders when data lands
+    if (InsurancePage._compliance === null) {
+      InsurancePage._compliance = []; // prevent duplicate fetches
+      InsurancePage._fetchCompliance();
+    }
+    var compliance = InsurancePage._compliance || [];
+    var compExpired = compliance.filter(function(c) { return c.status === 'expired'; });
+    var compExpiringSoon = compliance.filter(function(c) { return c.status === 'expiring_soon'; });
+    var compNoExpiry = compliance.filter(function(c) { return c.status === 'no_expiry' && c.active; });
+
+    // Expiry warnings (legacy localStorage policies)
     var now = Date.now();
     var expiring = policies.filter(function(p) {
       if (!p.expiry) return false;
@@ -52336,42 +52650,213 @@ var InsurancePage = {
 
     // Header
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">'
-      + '<h2 style="margin:0;">🛡️ Insurance</h2>'
-      + '<button onclick="InsurancePage._newCert()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Request COI</button>'
+      + '<h2 style="margin:0;">🛡️ Insurance & Compliance</h2>'
+      + '<div style="display:flex;gap:8px;">'
+      +   '<button onclick="InsurancePage._editCompliance(null)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">+ Add License/Cert</button>'
+      +   '<button onclick="InsurancePage._newCert()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Request COI</button>'
+      + '</div>'
       + '</div>';
 
-    // Alerts
-    if (expired.length) {
+    // Combined alerts (legacy policies + cloud compliance)
+    var totalExpired = expired.length + compExpired.length;
+    var totalExpiringSoon = expiring.length + compExpiringSoon.length;
+    if (totalExpired) {
+      var labels = expired.map(function(p) { return p.type + ' (' + (p.carrier || '') + ')'; })
+        .concat(compExpired.map(function(c) { return InsurancePage._kindLabel(c.kind) + ' #' + (c.number || ''); }));
       html += '<div style="background:#fdecea;border:1px solid #e57373;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#c62828;">'
-        + '⚠️ <strong>' + expired.length + ' policy' + (expired.length > 1 ? 'ies' : 'y') + ' EXPIRED:</strong> '
-        + expired.map(function(p) { return p.type + ' (' + (p.carrier || '') + ')'; }).join(', ')
-        + ' — update your policy info.</div>';
+        + '⚠️ <strong>' + totalExpired + ' EXPIRED:</strong> ' + labels.join(', ')
+        + ' — renew immediately.</div>';
     }
-    if (expiring.length) {
+    if (totalExpiringSoon) {
+      var labels2 = expiring.map(function(p) {
+        var d = Math.ceil((new Date(p.expiry).getTime() - now) / 86400000);
+        return p.type + ' (' + d + 'd)';
+      }).concat(compExpiringSoon.map(function(c) {
+        return InsurancePage._kindLabel(c.kind) + ' (' + (c.days_until_expiry != null ? c.days_until_expiry + 'd' : '?') + ')';
+      }));
       html += '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#e65100;">'
-        + '⏳ <strong>' + expiring.length + ' policy expiring within 60 days:</strong> '
-        + expiring.map(function(p) {
-            var days = Math.ceil((new Date(p.expiry).getTime() - now) / 86400000);
-            return p.type + ' (expires in ' + days + 'd)';
-          }).join(', ')
+        + '⏳ <strong>' + totalExpiringSoon + ' expiring soon:</strong> ' + labels2.join(', ')
         + '</div>';
+    }
+    if (compNoExpiry.length) {
+      html += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#1e40af;">'
+        + 'ℹ ' + compNoExpiry.length + ' license/cert with no expiry on file — '
+        + '<a onclick="InsurancePage._tab=\'compliance\';loadPage(\'insurance\')" style="color:#1e40af;text-decoration:underline;cursor:pointer;">add expiration dates</a> for renewal alerts.</div>';
     }
 
     // Tabs
-    var tabs = [['certs','📄 Certificates (' + certs.length + ')'], ['policies','🗂️ Policies (' + policies.length + ')'], ['agent','👤 Agent']];
-    html += '<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;">';
+    var tabs = [
+      ['compliance','🛂 Compliance (' + compliance.length + ')'],
+      ['certs','📄 Certificates (' + certs.length + ')'],
+      ['policies','🗂️ Policies (' + policies.length + ')'],
+      ['agent','👤 Agent']
+    ];
+    html += '<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto;">';
     tabs.forEach(function(t) {
       var active = InsurancePage._tab === t[0];
       html += '<button onclick="InsurancePage._tab=\'' + t[0] + '\';loadPage(\'insurance\')" style="padding:10px 18px;border:none;background:none;font-size:14px;font-weight:' + (active?'700':'500') + ';color:' + (active?'var(--green-dark)':'var(--text-light)') + ';border-bottom:2px solid ' + (active?'var(--green-dark)':'transparent') + ';margin-bottom:-2px;cursor:pointer;white-space:nowrap;">' + t[1] + '</button>';
     });
     html += '</div>';
 
-    if (InsurancePage._tab === 'certs') html += InsurancePage._renderCerts(certs);
+    if (InsurancePage._tab === 'compliance') html += InsurancePage._renderCompliance(compliance);
+    else if (InsurancePage._tab === 'certs') html += InsurancePage._renderCerts(certs);
     else if (InsurancePage._tab === 'policies') html += InsurancePage._renderPolicies(policies);
     else html += InsurancePage._renderAgent(agent);
 
     html += '</div>';
     return html;
+  },
+
+  // ── Compliance tab — cloud-backed (compliance_documents_with_status) ──
+  _renderCompliance: function(rows) {
+    if (!rows.length) {
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;">'
+        + '<div style="font-size:36px;margin-bottom:12px;">🛂</div>'
+        + '<h3 style="margin:0 0 8px;">No compliance docs yet</h3>'
+        + '<p style="color:var(--text-light);font-size:14px;margin:0 0 20px;">Track WC, DBL, GL, Auto, Pesticide Cert, TCIA, ISA, USDOT, NY DOS, vehicle reg, CDL, etc. in one place. Renewal alerts at 30/60/90 days.</p>'
+        + '<button onclick="InsurancePage._editCompliance(null)" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Add First License/Cert</button>'
+        + '</div>';
+    }
+
+    // Group by status: expired → expiring_soon → no_expiry → active
+    var statusOrder = { 'expired': 0, 'expiring_soon': 1, 'no_expiry': 2, 'active': 3, 'archived': 4 };
+    var sorted = rows.slice().sort(function(a, b) {
+      var d = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      if (d !== 0) return d;
+      // Same bucket — order by expires asc (sooner first)
+      if (a.expires_date && b.expires_date) return new Date(a.expires_date) - new Date(b.expires_date);
+      return (a.kind || '').localeCompare(b.kind || '');
+    });
+
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">';
+    sorted.forEach(function(c) {
+      var statusMeta = ({
+        'expired':       { color: '#dc2626', bg: '#fee2e2', label: '⚠ EXPIRED' },
+        'expiring_soon': { color: '#b45309', bg: '#fef3c7', label: '⏳ ' + (c.days_until_expiry || '?') + 'd left' },
+        'active':        { color: '#15803d', bg: '#dcfce7', label: '✓ Active (' + (c.days_until_expiry || '?') + 'd)' },
+        'no_expiry':     { color: '#475569', bg: '#f1f5f9', label: '— No expiry set' },
+        'archived':      { color: '#94a3b8', bg: '#f8fafc', label: 'Archived' }
+      })[c.status] || { color: '#475569', bg: '#f1f5f9', label: c.status };
+
+      html += '<div style="background:#fff;border:1px solid var(--border);border-left:4px solid ' + statusMeta.color + ';border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px;">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-weight:700;font-size:14px;">' + UI.esc(InsurancePage._kindLabel(c.kind)) + '</div>'
+        +     (c.number ? '<div style="font-size:12px;color:var(--text-light);font-family:monospace;">' + UI.esc(c.number) + '</div>' : '')
+        +   '</div>'
+        +   '<span style="background:' + statusMeta.bg + ';color:' + statusMeta.color + ';padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;">' + statusMeta.label + '</span>'
+        + '</div>'
+        + (c.issuer ? '<div style="font-size:12px;color:var(--text-light);">Issuer: <strong style="color:var(--text);">' + UI.esc(c.issuer) + '</strong></div>' : '')
+        + (c.expires_date ? '<div style="font-size:12px;color:var(--text-light);">Expires: <strong style="color:' + statusMeta.color + ';">' + InsurancePage._fmtDate(c.expires_date) + '</strong></div>' : '')
+        + (c.notes ? '<div style="font-size:11px;color:var(--text-light);line-height:1.4;margin-top:2px;">' + UI.esc(c.notes) + '</div>' : '')
+        + '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
+        +   '<button onclick="InsurancePage._editCompliance(\'' + c.id + '\')" style="flex:1;background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;">' + (c.expires_date ? 'Edit' : '+ Set expiry') + '</button>'
+        +   (c.renewal_url ? '<a href="' + UI.esc(c.renewal_url) + '" target="_blank" rel="noopener" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;text-decoration:none;color:var(--text);">↗ Renew</a>' : '')
+        + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+    return html;
+  },
+
+  // ── Compliance edit modal ──────────────────────────────────────────────
+  _editCompliance: function(id) {
+    var existing = id ? (InsurancePage._compliance || []).find(function(c) { return c.id === id; }) : null;
+    var kinds = [
+      ['wc_policy','Workers Comp Policy'], ['db_policy','Disability Benefits'], ['pfl_policy','Paid Family Leave'],
+      ['general_liability','General Liability'], ['auto_liability','Commercial Auto'], ['umbrella','Umbrella / Excess'],
+      ['pesticide_cert','Pesticide Cert'], ['tcia_member','TCIA Membership'], ['isa_member','ISA Membership'],
+      ['usdot_registration','US DOT Registration'], ['mcs150_biennial','MCS-150 Biennial'],
+      ['dos_biennial','NY DOS Biennial'], ['sales_tax_cert','Sales Tax Cert'],
+      ['vehicle_registration','Vehicle Registration'], ['vehicle_inspection','NY Inspection'],
+      ['driver_license','Driver License'], ['cdl','CDL'], ['dot_medical_card','DOT Medical Card'],
+      ['osha_z133_training','ANSI Z133 Training'], ['first_aid_cpr_cert','First Aid / CPR'],
+      ['business_license_local','Local Business License'], ['home_improvement_contractor','HIC License']
+    ];
+    var html = '<div style="max-width:540px;">'
+      + '<h3 style="margin:0 0 14px;">' + (existing ? 'Edit license/cert' : 'Add license/cert') + '</h3>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Type'
+      +   '<select id="cd-kind" ' + (existing ? 'disabled' : '') + ' style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      +     kinds.map(function(k) { return '<option value="' + k[0] + '"' + (existing && existing.kind === k[0] ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('')
+      +   '</select>'
+      + '</label>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Number / Policy ID'
+      +   '<input type="text" id="cd-number" value="' + UI.esc((existing && existing.number) || '') + '" placeholder="e.g. WC-32079-H19" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      + '</label>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Issuer'
+      +   '<input type="text" id="cd-issuer" value="' + UI.esc((existing && existing.issuer) || '') + '" placeholder="e.g. NYSIF, NY DEC, FMCSA" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      + '</label>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      +   '<label style="font-size:12px;font-weight:600;color:#475569;">Issued date'
+      +     '<input type="date" id="cd-issued" value="' + ((existing && existing.issued_date) || '') + '" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      +   '</label>'
+      +   '<label style="font-size:12px;font-weight:600;color:#475569;">Expires date'
+      +     '<input type="date" id="cd-expires" value="' + ((existing && existing.expires_date) || '') + '" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      +   '</label>'
+      + '</div>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Renewal URL (deep link to issuer portal)'
+      +   '<input type="url" id="cd-renewal" value="' + UI.esc((existing && existing.renewal_url) || '') + '" placeholder="https://..." style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      + '</label>'
+      + '<label style="display:block;margin-bottom:14px;font-size:12px;font-weight:600;color:#475569;">Notes'
+      +   '<textarea id="cd-notes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;font-family:inherit;resize:vertical;">' + UI.esc((existing && existing.notes) || '') + '</textarea>'
+      + '</label>'
+      + '<div style="display:flex;justify-content:space-between;gap:8px;">'
+      +   (existing ? '<button onclick="InsurancePage._archiveCompliance(\'' + existing.id + '\')" style="background:none;border:1px solid #fecaca;color:#b91c1c;padding:9px 14px;border-radius:6px;font-size:13px;cursor:pointer;">Archive</button>' : '<span></span>')
+      +   '<div style="display:flex;gap:8px;">'
+      +     '<button onclick="UI.closeModal()" style="background:var(--bg);border:1px solid var(--border);padding:9px 14px;border-radius:6px;font-size:13px;cursor:pointer;">Cancel</button>'
+      +     '<button onclick="InsurancePage._saveCompliance(' + (existing ? '\'' + existing.id + '\'' : 'null') + ')" style="background:var(--green-dark);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+    UI.modal(html);
+  },
+
+  _saveCompliance: function(id) {
+    var row = {
+      kind: document.getElementById('cd-kind').value,
+      number: document.getElementById('cd-number').value.trim() || null,
+      issuer: document.getElementById('cd-issuer').value.trim() || null,
+      issued_date: document.getElementById('cd-issued').value || null,
+      expires_date: document.getElementById('cd-expires').value || null,
+      renewal_url: document.getElementById('cd-renewal').value.trim() || null,
+      notes: document.getElementById('cd-notes').value.trim() || null,
+    };
+    if (!row.kind) { UI.toast('Pick a type', 'error'); return; }
+    if (id) {
+      bmSafeCall(SupabaseDB.client.from('compliance_documents').update(row).eq('id', id), 'update compliance')
+        .then(function(res) {
+          if (!res.error) {
+            UI.toast('✓ Saved', 'success');
+            UI.closeModal();
+            InsurancePage._compliance = null; // force re-fetch
+            loadPage('insurance');
+          }
+        });
+    } else {
+      row.tenant_id = window.resolveTenantId ? window.resolveTenantId() : '93af4348-8bba-4045-ac3e-5e71ec1cc8c5';
+      bmSafeCall(SupabaseDB.client.from('compliance_documents').insert(row), 'add compliance')
+        .then(function(res) {
+          if (!res.error) {
+            UI.toast('✓ Added', 'success');
+            UI.closeModal();
+            InsurancePage._compliance = null;
+            loadPage('insurance');
+          }
+        });
+    }
+  },
+
+  _archiveCompliance: function(id) {
+    if (!confirm('Archive this license/cert? It will stop appearing in the list and stop firing renewal alerts. (Soft-archive — data preserved.)')) return;
+    bmSafeCall(SupabaseDB.client.from('compliance_documents').update({ active: false }).eq('id', id), 'archive compliance')
+      .then(function(res) {
+        if (!res.error) {
+          UI.toast('✓ Archived', 'success');
+          UI.closeModal();
+          InsurancePage._compliance = null;
+          loadPage('insurance');
+        }
+      });
   },
 
   // ── Certificates tab ──────────────────────────────────────────────────
