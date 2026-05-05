@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 577; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 578; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -1001,7 +1001,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v577.min.js"></script>
+<script defer src="dist/bm.bundle.v578.min.js"></script>
 
 
 
@@ -1370,22 +1370,30 @@ var OperationsHub = {
     var tabs = [
       ['dispatch', 'Dispatch'],
       ['fleet', 'Fleet'],
-      ['equipment', 'Equipment'],
+      ['gear', '🛻 Pre-Trip & Equipment'],
       ['hiringpool', '🤝 Hiring Pool'],
       ['chipdrops', 'Chip Drops'],
-      ['pretrip', 'Pre-Trip'],
       ['chat', 'Chat & Tasks'],
       ['weather', '🌤 Weather']
     ];
+    // v577 — collapsed Equipment + Pre-Trip into single "Pre-Trip & Equipment" tab
+    // (vehicles you inspect daily AND the gear you check / sign out are the same
+    // mental model: today's fleet health). Old deep links #pretrip and #equipment
+    // still resolve to their standalone page modules below.
     var r = _renderHubTabs('_opsTab', tabs, 'dispatch');
     var body = '';
     try {
       if (r.tab === 'dispatch') body = DispatchPage.render();
       else if (r.tab === 'fleet') body = (typeof FleetPage !== 'undefined' ? FleetPage.render() : '<div style="padding:16px;color:var(--text-light);">Fleet module not loaded.</div>');
-      else if (r.tab === 'equipment') body = EquipmentPage.render();
+      else if (r.tab === 'gear') {
+        // Pre-Trip first (today's must-do), then Equipment (assets) below
+        body = (typeof DailyInspection !== 'undefined' ? DailyInspection.render() : '<div style="padding:16px;color:var(--text-light);">Pre-Trip module not loaded.</div>')
+          + '<div style="height:1px;background:var(--border);margin:24px 0;"></div>'
+          + '<h3 style="margin:0 0 12px;font-size:16px;font-weight:700;">🧰 Equipment</h3>'
+          + (typeof EquipmentPage !== 'undefined' ? EquipmentPage.render() : '<div style="padding:16px;color:var(--text-light);">Equipment module not loaded.</div>');
+      }
       else if (r.tab === 'hiringpool') body = (typeof HiringPool !== 'undefined' ? HiringPool.render() : '<div style="padding:16px;color:var(--text-light);">Hiring Pool module not loaded.</div>');
       else if (r.tab === 'chipdrops') body = (typeof ChipDrops !== 'undefined' ? ChipDrops.render() : '<div style="padding:16px;color:var(--text-light);">Chip Drops module not loaded.</div>');
-      else if (r.tab === 'pretrip') body = (typeof DailyInspection !== 'undefined' ? DailyInspection.render() : '<div style="padding:16px;color:var(--text-light);">Pre-Trip module not loaded.</div>');
       else if (r.tab === 'chat') body = (typeof TaskReminders !== 'undefined' ? TaskReminders.render() : '<div style="padding:16px;color:var(--text-light);">Chat & Tasks module not loaded.</div>');
       else if (r.tab === 'weather') body = (typeof Weather !== 'undefined' ? Weather.renderPage() : '<div style="padding:16px;color:var(--text-light);">Weather module not loaded.</div>');
     } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }

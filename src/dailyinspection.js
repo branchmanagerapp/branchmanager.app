@@ -220,27 +220,87 @@ var DailyInspection = {
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;">';
 
     // Header / summary
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">'
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">'
       + '<div><div style="font-weight:700;font-size:14px;">Fleet pre-trip — ' + today + '</div>'
       + '<div style="font-size:12px;color:var(--text-light);">FMCSA/DOT-compliant checklists. Tap a vehicle to start.</div></div>'
-      + '<div style="font-size:13px;color:var(--green-dark);font-weight:700;">' + completedToday.length + ' / ' + DailyInspection._vehicles.length + ' done today</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:' + (completedToday.length === DailyInspection._vehicles.length ? 'var(--green-dark)' : '#e65100') + ';">'
+      +   '<span style="font-size:18px;">' + (completedToday.length === DailyInspection._vehicles.length ? '✓' : '⏳') + '</span>'
+      +   completedToday.length + ' / ' + DailyInspection._vehicles.length + ' done'
+      + '</div>'
       + '</div>';
 
-    // Fleet grid
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">';
+    // Build per-vehicle history map for "last completed" timestamps
+    var historyAll = [];
+    try { historyAll = JSON.parse(localStorage.getItem('bm-inspection-history') || '[]'); } catch(e) {}
+    var lastByVeh = {};
+    historyAll.forEach(function(r) {
+      if (!r.vehicle) return;
+      if (!lastByVeh[r.vehicle] || r.date > lastByVeh[r.vehicle].date) lastByVeh[r.vehicle] = r;
+    });
+
+    // Maintenance count per vehicle (from Bouncie OBD events)
+    var maintByVeh = {};
+    openMaint.forEach(function(m) {
+      var key = m.vehicle_id || m.vehicle || '';
+      if (!key) return;
+      maintByVeh[key] = (maintByVeh[key] || 0) + 1;
+    });
+
+    // Yesterday's date for "missed" detection
+    var yesterdayDt = new Date(); yesterdayDt.setDate(yesterdayDt.getDate() - 1);
+    var yesterday = yesterdayDt.toISOString().split('T')[0];
+
+    // Fleet grid — richer cards (v577)
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">';
     DailyInspection._vehicles.forEach(function(v) {
       var done = DailyInspection.isCompleteForVehicle(v.id);
-      var bg = done ? '#e8f5e9' : 'var(--bg)';
-      var bd = done ? '#2e7d32' : 'var(--border)';
-      html += '<button type="button" onclick="DailyInspection.startVehicle(\'' + v.id + '\')" '
-        + 'style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:10px;padding:12px;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:center;">'
-        + '<span style="font-size:26px;">' + v.icon + '</span>'
-        + '<div style="flex:1;min-width:0;">'
-        +   '<div style="font-size:13px;font-weight:700;color:var(--text);">' + v.label + '</div>'
-        +   '<div style="font-size:11px;color:var(--text-light);">' + (v.dot ? 'DOT required · ' : '') + v.items.reduce(function(s,sec){return s+sec[1].length;},0) + ' checks</div>'
-        +   '<div style="font-size:11px;margin-top:2px;color:' + (done ? '#2e7d32' : '#e65100') + ';font-weight:600;">' + (done ? '✓ Inspected today' : '○ Not started') + '</div>'
+      var last = lastByVeh[v.id];
+      var checkCount = v.items.reduce(function(s,sec){return s+sec[1].length;},0);
+      var maintCount = maintByVeh[v.id] || 0;
+
+      // Status pill — done / due / missed (last < yesterday)
+      var pill, pillBg, pillFg, accent;
+      if (done) {
+        pill = '✓ DONE'; pillBg = '#dcfce7'; pillFg = '#166534'; accent = '#22c55e';
+      } else if (last && last.date < yesterday) {
+        pill = '⚠ MISSED'; pillBg = '#fee2e2'; pillFg = '#991b1b'; accent = '#dc2626';
+      } else {
+        pill = '○ DUE'; pillBg = '#fef3c7'; pillFg = '#92400e'; accent = '#f59e0b';
+      }
+
+      // Last-completed line
+      var lastLine;
+      if (done) {
+        lastLine = 'Inspected today' + (last && last.driver ? ' · ' + UI.esc(last.driver) : '');
+      } else if (last) {
+        var lastDt = new Date(last.date + 'T00:00:00');
+        var ageDays = Math.floor((Date.now() - lastDt.getTime()) / 86400000);
+        var ageStr = ageDays === 0 ? 'today' : ageDays === 1 ? 'yesterday' : ageDays + 'd ago';
+        lastLine = 'Last: ' + ageStr + (last.driver ? ' · ' + UI.esc(last.driver) : '');
+      } else {
+        lastLine = 'No history';
+      }
+
+      html += '<div style="background:#fff;border:1px solid var(--border);border-left:4px solid ' + accent + ';border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:box-shadow .15s;" '
+        + 'onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.06)\'" onmouseout="this.style.boxShadow=\'none\'" '
+        + 'onclick="DailyInspection.startVehicle(\'' + v.id + '\')">'
+        // Top row: icon + label + status pill
+        + '<div style="display:flex;align-items:center;gap:10px;">'
+        +   '<span style="font-size:30px;line-height:1;">' + v.icon + '</span>'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-size:14px;font-weight:700;color:var(--text);">' + UI.esc(v.label) + '</div>'
+        +     '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">' + (v.dot ? 'DOT · ' : '') + checkCount + ' checks</div>'
+        +   '</div>'
+        +   '<span style="background:' + pillBg + ';color:' + pillFg + ';padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.3px;white-space:nowrap;">' + pill + '</span>'
         + '</div>'
-        + '</button>';
+        // Middle: last-completed line
+        + '<div style="font-size:12px;color:var(--text-light);">' + lastLine + '</div>'
+        // Bottom: maintenance flag + CTA
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px dashed var(--border);">'
+        +   (maintCount ? '<span style="font-size:11px;color:#b45309;font-weight:600;">⚠ ' + maintCount + ' maint flag' + (maintCount === 1 ? '' : 's') + '</span>' : '<span style="font-size:11px;color:var(--text-light);">No maint flags</span>')
+        +   '<span style="background:' + (done ? 'transparent' : accent) + ';color:' + (done ? accent : '#fff') + ';border:1px solid ' + accent + ';padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;">' + (done ? 'Re-check →' : 'Inspect →') + '</span>'
+        + '</div>'
+        + '</div>';
     });
     html += '</div>';
 
