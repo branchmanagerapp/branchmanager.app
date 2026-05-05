@@ -24,7 +24,10 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 // Owner-only gate — verifies caller's Supabase Auth JWT and confirms either
 // (a) email is in OWNER_EMAILS or (b) team_members role in (owner, admin).
-const OWNER_EMAILS = ['info@peekskilltree.com', 'doug@peekskilltree.com'];
+// TODO white-label: read tenant owner allow-list from tenants.config.owner_emails
+// when a 2nd real tenant is onboarded. Currently SNT-only since these are
+// admin functions Doug calls personally.
+const OWNER_EMAILS = (Deno.env.get('OWNER_EMAILS_OVERRIDE')?.split(',') ?? ['info@peekskilltree.com', 'doug@peekskilltree.com']);
 async function requireOwner(req: Request): Promise<{ ok: true; userId: string; email: string } | { ok: false; status: number; error: string }> {
   const auth = req.headers.get('Authorization') || '';
   const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';

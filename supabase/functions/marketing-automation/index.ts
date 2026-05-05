@@ -30,6 +30,7 @@ const RESEND_API_KEY      = Deno.env.get("RESEND_API_KEY") ?? "";
 
 // Phase 2 — these were hardcoded SNT values. Now loaded per-tenant inside the
 // run loop. Kept here as fallbacks if a tenant's config is missing fields.
+// SNT default fallback — only fires when tenants.config is missing the value
 const FALLBACK_FROM_EMAIL    = Deno.env.get("RESEND_FROM_EMAIL") ?? "Second Nature Tree <onboarding@resend.dev>";
 const FALLBACK_REPLY_TO      = "info@peekskilltree.com";
 const FALLBACK_REVIEW_URL    = "https://g.page/r/CcVkZHV_EKlEEBM/review";

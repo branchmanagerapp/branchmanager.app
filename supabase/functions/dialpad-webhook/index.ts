@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       } else if (keyword === "START") {
         autoReply = "You're opted back in. Reply STOP to unsubscribe.";
       } else if (keyword === "HELP") {
-        autoReply = "Second Nature Tree Service. Reply STOP to unsubscribe. Standard msg/data rates may apply. Call (914) 391-5233.";
+        autoReply = `${(tenant?.config?.company_name as string) ?? "Second Nature Tree Service"}. Reply STOP to unsubscribe. Standard msg/data rates may apply. Call ${(tenant?.config?.company_phone as string) ?? "(914) 391-5233"}.`;
       }
 
       // Patch clients.sms_opt_out for matched client (by last-10 phone)
@@ -556,11 +556,11 @@ Deno.serve(async (req) => {
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           from: Deno.env.get("RESEND_FROM_EMAIL") ?? "Second Nature Tree <onboarding@resend.dev>",
-          to: ["info@peekskilltree.com"],
+          to: [(tenant?.config?.company_email as string) ?? "info@peekskilltree.com"],
           subject,
           text,
           html,
-          reply_to: "info@peekskilltree.com",
+          reply_to: (tenant?.config?.company_email as string) ?? "info@peekskilltree.com",
         }),
       }).catch((e) => console.warn("doug-alert email failed:", e));
     }

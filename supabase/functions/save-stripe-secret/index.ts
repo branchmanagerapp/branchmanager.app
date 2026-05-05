@@ -25,7 +25,10 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // (a) email is in OWNER_EMAILS or (b) team_members row exists with role
 // in (owner, admin). Was previously open: anyone could POST {tenantId,
 // secretKey:'sk_attacker'} and redirect payments to attacker's Stripe.
-const OWNER_EMAILS = ['info@peekskilltree.com', 'doug@peekskilltree.com'];
+// TODO white-label: read tenant owner allow-list from tenants.config.owner_emails
+// when a 2nd real tenant is onboarded. Currently SNT-only since these are
+// admin functions Doug calls personally.
+const OWNER_EMAILS = (Deno.env.get('OWNER_EMAILS_OVERRIDE')?.split(',') ?? ['info@peekskilltree.com', 'doug@peekskilltree.com']);
 async function requireOwner(req: Request): Promise<{ ok: true; userId: string; email: string } | { ok: false; status: number; error: string }> {
   const auth = req.headers.get('Authorization') || '';
   const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';

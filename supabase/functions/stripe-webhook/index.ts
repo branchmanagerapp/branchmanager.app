@@ -157,6 +157,7 @@ async function sendReceipt(params: {
     total,
     paidDate,
     lineItems,
+    // SNT-default fallbacks — only fire when tenants.config is missing the field
     coName:         String(coConfig.company_name ?? 'Second Nature Tree Service'),
     coPhone:        String(coConfig.company_phone ?? '(914) 391-5233'),
     coWebsite:      String(coConfig.company_website ?? 'https://peekskilltree.com'),
@@ -166,7 +167,7 @@ async function sendReceipt(params: {
     instagramUrl:   String(coConfig.instagram_url ?? ''),
   });
 
-  const textBody = `Hi ${firstName},\n\nThank you for your payment of ${money(total)}! Your account is paid in full.\n\nInvoice #${invoiceNumber}\n${inv.subject ? 'Job: ' + inv.subject + '\n' : ''}Amount Paid: ${money(total)}\nDate: ${paidDate}\n\n${coConfig.google_review_url ? 'Happy with our work? We\'d love a Google review!\n' + coConfig.google_review_url + '\n\n' : ''}Thanks,\nDoug Brown\n${coConfig.company_name ?? 'Second Nature Tree Service'}\n${coConfig.company_phone ?? '(914) 391-5233'}`;
+  const textBody = `Hi ${firstName},\n\nThank you for your payment of ${money(total)}! Your account is paid in full.\n\nInvoice #${invoiceNumber}\n${inv.subject ? 'Job: ' + inv.subject + '\n' : ''}Amount Paid: ${money(total)}\nDate: ${paidDate}\n\n${coConfig.google_review_url ? 'Happy with our work? We\'d love a Google review!\n' + coConfig.google_review_url + '\n\n' : ''}Thanks,\n${coConfig.owner_name ?? "Doug Brown"}\n${coConfig.company_name ?? 'Second Nature Tree Service'}\n${coConfig.company_phone ?? '(914) 391-5233'}`;
 
   const subject = `Payment Receipt — Invoice #${invoiceNumber} · ${money(total)} · ${coConfig.company_name ?? 'Second Nature Tree Service'}`;
 
@@ -382,7 +383,7 @@ serve(async (req: Request) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: 'info@peekskilltree.com',
+            to: String(coConfig.company_email ?? 'info@peekskilltree.com'),
             subject: `💳 Payment received — Invoice #${invoiceNumber} — $${amountDollars.toFixed(2)}`,
             html: notifyHtml,
             text: notifyText
@@ -412,7 +413,7 @@ serve(async (req: Request) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: 'info@peekskilltree.com',
+            to: String(coConfig.company_email ?? 'info@peekskilltree.com'),
             subject: `🚨 Stripe webhook: invoice not found for paid session`,
             html: alertHtml,
             text: alertText

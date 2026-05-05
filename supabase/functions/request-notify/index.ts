@@ -1,12 +1,14 @@
 /**
- * Branch Manager — New Request Notification
+ * Branch Manager — New Request Notification (multi-tenant)
  * Supabase Edge Function
  *
  * Called by book.html after a customer submits a service request.
  * Sends:
- *   1. SMS alert to Doug (914) 391-5233 via Twilio
- *   2. Email notification to info@peekskilltree.com via Resend
+ *   1. SMS alert to the tenant's owner phone (tenants.config.sms_from_number)
+ *   2. Email notification to the tenant's company_email
  *   3. Confirmation email to customer (if email provided)
+ *
+ * Tenant resolution: X-Tenant-ID header. Falls back to SNT.
  *
  * Deploy:
  *   supabase functions deploy request-notify --no-verify-jwt
@@ -16,23 +18,23 @@
  *   supabase secrets set TWILIO_ACCOUNT_SID=AC...
  *   supabase secrets set TWILIO_AUTH_TOKEN=...
  *   supabase secrets set TWILIO_FROM=+1XXXXXXXXXX
+ *
+ * v598: white-label Slice 2 — every hardcoded SNT string now driven by
+ * tenants.config via loadTenantBranding().
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { resolveTenantId } from '../_shared/tenant.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { resolveTenantId, loadTenantBranding, TenantBranding } from '../_shared/tenant.ts';
 
-// Resend is the email provider. SendGrid fallback removed v349 (free tier suits volume,
-// cleaner API, Resend trial expires May 22 2026 and we've verified Resend works).
 const RESEND_API_KEY    = Deno.env.get('RESEND_API_KEY')     ?? '';
 const TWILIO_SID        = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
 const TWILIO_TOKEN      = Deno.env.get('TWILIO_AUTH_TOKEN')  ?? '';
 const TWILIO_FROM       = Deno.env.get('TWILIO_FROM')        ?? '';
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')       ?? '';
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const NOTIFY_PHONE      = '+19143915233'; // Doug
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID' };
 
-// ── DB insert via PostgREST (service-role bypasses RLS) ────────────────────
 async function insertRequest(row: Record<string, unknown>) {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     console.warn('Supabase env missing; skipping DB insert');
@@ -57,9 +59,8 @@ async function insertRequest(row: Record<string, unknown>) {
   return { ok: true, id: Array.isArray(d) ? d[0]?.id : d?.id };
 }
 
-// ── SMS via Twilio ─────────────────────────────────────────────────────────
 async function sendSMS(to: string, body: string) {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM) return;
+  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM || !to) return;
   const creds = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
   const form = new URLSearchParams({ From: TWILIO_FROM, To: to, Body: body });
   await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
@@ -69,9 +70,9 @@ async function sendSMS(to: string, body: string) {
   });
 }
 
-// ── Email — Resend ─────────────────────────────────────────────────────────
-async function sendEmail(to: string, _toName: string, subject: string, text: string, html?: string) {
+async function sendEmail(b: TenantBranding, to: string, subject: string, text: string, html?: string) {
   if (!RESEND_API_KEY) { console.warn('RESEND_API_KEY not set; skipping email'); return; }
+  const fromHeader = `${b.from_name} <${b.from_email}>`;
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -79,17 +80,12 @@ async function sendEmail(to: string, _toName: string, subject: string, text: str
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      // RESEND_FROM_EMAIL env var lets us flip the From address without redeploy.
-      // Default = onboarding@resend.dev (shared sandbox sender, works without
-      // domain verification). After GoDaddy transfer + Cloudflare DNS + Resend
-      // domain verification (Apr 25 2026 plan), run:
-      //   supabase secrets set RESEND_FROM_EMAIL="Second Nature Tree <info@peekskilltree.com>"
-      from: Deno.env.get('RESEND_FROM_EMAIL') ?? 'Second Nature Tree <onboarding@resend.dev>',
+      from: fromHeader,
       to: [to],
       subject,
       text,
       html: html || undefined,
-      reply_to: 'info@peekskilltree.com'
+      reply_to: b.email
     })
   });
   if (!r.ok) {
@@ -98,24 +94,35 @@ async function sendEmail(to: string, _toName: string, subject: string, text: str
   }
 }
 
-// ── Main handler ───────────────────────────────────────────────────────────
+function esc(s: string): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function telHref(phone: string): string {
+  return String(phone || '').replace(/\D/g, '');
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS });
   }
-  // Verify probes get 200 (UptimeRobot HEAD, etc.) — was 500-ing on req.json()
   if (req.method === 'GET' || req.method === 'HEAD') {
     return new Response('request-notify ok', { status: 200, headers: CORS });
   }
 
   try {
+    const tenantId = resolveTenantId(req);
+    const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const b = await loadTenantBranding(sb, tenantId);
+
     const data = await req.json();
     const { name, phone, email, address, service, details, source } = data;
 
-    // Basic spam-gate. Without this, anyone with the function URL can spam
-    // junk into the requests table + trigger SMS/email cost (Twilio + Resend).
-    // Real submissions from book.html always carry a name plus at least one
-    // contact channel, so reject anything missing both.
     const nameClean = (name || '').toString().trim();
     const phoneDigits = (phone || '').toString().replace(/\D/g, '');
     const emailClean = (email || '').toString().trim();
@@ -129,11 +136,9 @@ serve(async (req: Request) => {
     }
 
     const firstName = nameClean.split(' ')[0] || 'Someone';
+    const phoneTel = telHref(b.phone);
 
-    // 0. Persist to `requests` table FIRST (service-role bypasses RLS).
-    //    Column map — real schema: client_name, client_phone, email, property,
-    //    source, status, notes, title, tenant_id, priority, created_at, updated_at.
-    //    Service type lives in `title` (no `service` column). Message lives in `notes`.
+    // 0. Persist to `requests` table FIRST.
     const nowIso = new Date().toISOString();
     const insertResult = await insertRequest({
       client_name: name || 'Unknown',
@@ -146,48 +151,48 @@ serve(async (req: Request) => {
       source: source || 'Website form',
       status: 'new',
       priority: 'normal',
-      tenant_id: resolveTenantId(req),
+      tenant_id: tenantId,
       created_at: nowIso,
       updated_at: nowIso
     });
 
-    // 1. SMS to Doug
+    // 1. SMS to tenant owner
     const smsBody = `🌳 New request!\n${name || '—'} · ${service || 'Tree service'}\n📍 ${address || '—'}\n📞 ${phone || '—'}\nOpen BM: branchmanager.app/`;
-    await sendSMS(NOTIFY_PHONE, smsBody);
+    if (b.sms_from_number) await sendSMS(b.sms_from_number, smsBody);
 
     // 2. Email alert to team
     const teamSubject = `🌳 New request — ${service || 'Service'} — ${name}`;
     const teamBody = `New service request submitted via website.\n\nName:    ${name || '—'}\nPhone:   ${phone || '—'}\nEmail:   ${email || '—'}\nAddress: ${address || '—'}\nService: ${service || '—'}\nDetails: ${details || '—'}\n\nView in Branch Manager:\nhttps://branchmanager.app/`;
-    await sendEmail('info@peekskilltree.com', 'Team', teamSubject, teamBody);
+    await sendEmail(b, b.email, teamSubject, teamBody);
 
     // 3. Confirmation email to customer
     if (email) {
-      const custSubject = 'We received your request — Second Nature Tree Service';
-      const custText = `Hi ${firstName},\n\nThanks for reaching out! We received your request for ${service || 'tree service'} at ${address || 'your property'}.\n\nWe typically respond within 2 hours during business hours. We'll call or text you at ${phone || 'the number you provided'} to set up a free estimate.\n\nQuestions? Reply to this email or call/text (914) 391-5233.\n\n— Doug & Catherine\nSecond Nature Tree Service\nPeekskill, NY · Licensed & Insured · WC-32079 / PC-50644\npeekskilltree.com`;
+      const custSubject = `We received your request — ${b.business_name}`;
+      const custText = `Hi ${firstName},\n\nThanks for reaching out! We received your request for ${service || 'service'} at ${address || 'your property'}.\n\nWe typically respond within 2 hours during business hours. We'll call or text you at ${phone || 'the number you provided'} to set up a free estimate.\n\nQuestions? Reply to this email or call/text ${b.phone}.\n\n— ${b.owner_name}\n${b.business_name}\n${b.address_short} · ${b.license_text}\n${b.website_display}`;
 
       const custHtml = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;">
-  <div style="background:#1a3c12;padding:24px 28px;border-radius:10px 10px 0 0;">
-    <div style="color:#fff;font-size:22px;font-weight:800;">🌳 Second Nature Tree Service</div>
-    <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:4px;">Peekskill, NY · (914) 391-5233</div>
+  <div style="background:${b.brand_color};padding:24px 28px;border-radius:10px 10px 0 0;">
+    <div style="color:#fff;font-size:22px;font-weight:800;">🌳 ${esc(b.business_name)}</div>
+    <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:4px;">${esc(b.address_short)} · ${esc(b.phone)}</div>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e8e8e8;border-radius:0 0 10px 10px;">
-    <h2 style="color:#1a3c12;font-size:20px;margin:0 0 12px;">Request Received! ✅</h2>
-    <p style="color:#444;font-size:15px;line-height:1.6;">Hi ${firstName},</p>
-    <p style="color:#444;font-size:15px;line-height:1.6;">Thanks for reaching out! We got your request for <strong>${service || 'tree service'}</strong> at <strong>${address || 'your property'}</strong>.</p>
-    <div style="background:#f0f7f0;border-left:3px solid #1a3c12;border-radius:0 8px 8px 0;padding:14px 16px;margin:16px 0;font-size:14px;color:#333;">
+    <h2 style="color:${b.brand_color};font-size:20px;margin:0 0 12px;">Request Received! ✅</h2>
+    <p style="color:#444;font-size:15px;line-height:1.6;">Hi ${esc(firstName)},</p>
+    <p style="color:#444;font-size:15px;line-height:1.6;">Thanks for reaching out! We got your request for <strong>${esc(service || 'service')}</strong> at <strong>${esc(address || 'your property')}</strong>.</p>
+    <div style="background:#f0f7f0;border-left:3px solid ${b.brand_color};border-radius:0 8px 8px 0;padding:14px 16px;margin:16px 0;font-size:14px;color:#333;">
       We typically respond within <strong>2 hours</strong> during business hours.<br>
-      We'll reach out at <strong>${phone || 'the number you provided'}</strong> to schedule your free estimate.
+      We'll reach out at <strong>${esc(phone || 'the number you provided')}</strong> to schedule your free estimate.
     </div>
     <p style="color:#444;font-size:15px;line-height:1.6;">Questions? Reply to this email or call/text us directly:</p>
-    <a href="tel:9143915233" style="display:inline-block;background:#1a3c12;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;margin-top:4px;">📞 (914) 391-5233</a>
-    <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #eee;padding-top:16px;">Second Nature Tree Service · Peekskill, NY · Licensed & Insured · WC-32079 / PC-50644</p>
+    <a href="tel:${phoneTel}" style="display:inline-block;background:${b.brand_color};color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;margin-top:4px;">📞 ${esc(b.phone)}</a>
+    <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #eee;padding-top:16px;">${esc(b.business_name)} · ${esc(b.address_short)} · ${esc(b.license_text)}</p>
   </div>
 </div>`;
 
-      await sendEmail(email, firstName, custSubject, custText, custHtml);
+      await sendEmail(b, email, custSubject, custText, custHtml);
     }
 
-    return new Response(JSON.stringify({ ok: true, inserted: insertResult }), {
+    return new Response(JSON.stringify({ ok: true, tenant: tenantId, inserted: insertResult }), {
       headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   } catch (err) {

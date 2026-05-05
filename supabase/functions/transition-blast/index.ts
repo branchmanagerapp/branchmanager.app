@@ -19,6 +19,10 @@
 // The `confirm: "send-it"` gate is a second seatbelt so a stray request
 // can't fire 285 emails. Both flags must be set to actually send.
 
+
+// NOTE: when un-paused, must call resolveTenantId(req) + loadTenantBranding(sb, id)
+// at top of serve() and bind result to a `BRANDING` variable so the inline
+// templates below resolve. Currently paused per MEMORY.md (Basquali incident).
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { resolveTenantId } from '../_shared/tenant.ts';
 
@@ -33,7 +37,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 // behavior where `confirm:"send-it"` (literal string in source comments)
 // was the only gate. Caller must include `Authorization: Bearer <jwt>`
 // where jwt is the supabase session access_token.
-const OWNER_EMAILS = ['info@peekskilltree.com', 'doug@peekskilltree.com'];
+const OWNER_EMAILS = (Deno.env.get('OWNER_EMAILS_OVERRIDE')?.split(',') ?? ['info@${BRANDING.website_display}', 'doug@${BRANDING.website_display}']);
 async function requireOwner(req: Request): Promise<{ ok: true; userId: string; email: string } | { ok: false; status: number; error: string }> {
   const auth = req.headers.get('Authorization') || '';
   const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -61,7 +65,7 @@ async function requireOwner(req: Request): Promise<{ ok: true; userId: string; e
 function buildEmail(firstName: string) {
   const text = `Hi ${firstName},
 
-Just a quick note from Doug at Second Nature Tree — we've moved to a new client portal at:
+Just a quick note from us — we've moved to a new client portal at:
 
 https://branchmanager.app/
 
@@ -74,14 +78,14 @@ https://branchmanager.app/book.html
 
 Thanks for your continued trust.
 
-— Doug & Catherine
-Second Nature Tree Service
-(914) 391-5233
-peekskilltree.com`;
+— ${BRANDING.owner_name}
+${BRANDING.business_name}
+${BRANDING.phone}
+${BRANDING.website_display}`;
 
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;color:#222;">
   <div style="background:#1a3c12;padding:24px 28px;border-radius:10px 10px 0 0;">
-    <div style="color:#fff;font-size:20px;font-weight:800;">Second Nature Tree Service</div>
+    <div style="color:#fff;font-size:20px;font-weight:800;">${BRANDING.business_name}</div>
     <div style="color:rgba(255,255,255,.8);font-size:13px;margin-top:4px;">Peekskill, NY · (914) 391-5233</div>
   </div>
   <div style="background:#fff;padding:28px;border:1px solid #e8e8e8;border-radius:0 0 10px 10px;line-height:1.6;font-size:15px;">
@@ -94,7 +98,7 @@ peekskilltree.com`;
     <p>Older emails with <code>clienthub.getjobber.com</code> links will still work for a short transition period, but please use the new portal going forward.</p>
     <p>To request new work, you can still call or text us at <a href="tel:9143915233" style="color:#1a3c12;font-weight:600;">(914) 391-5233</a>, or use the <a href="https://branchmanager.app/book.html" style="color:#1a3c12;">website form</a>.</p>
     <p>Thanks for your continued trust.</p>
-    <p style="margin-top:20px;">— Doug &amp; Catherine<br>Second Nature Tree Service</p>
+    <p style="margin-top:20px;">— ${BRANDING.owner_name}<br>${BRANDING.business_name}</p>
     <p style="font-size:11px;color:#999;border-top:1px solid #eee;padding-top:14px;margin-top:24px;">Licensed &amp; Insured · WC-32079 / PC-50644</p>
   </div>
 </div>`;
@@ -109,13 +113,13 @@ async function sendOne(to: string, firstName: string) {
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       // RESEND_FROM_EMAIL secret to flip post-Resend-verification:
-      //   supabase secrets set RESEND_FROM_EMAIL="Second Nature Tree <info@peekskilltree.com>"
-      from: Deno.env.get('RESEND_FROM_EMAIL') ?? 'Second Nature Tree <onboarding@resend.dev>',
+      //   supabase secrets set RESEND_FROM_EMAIL="Second Nature Tree <info@${BRANDING.website_display}>"
+      from: Deno.env.get('RESEND_FROM_EMAIL') ?? `${BRANDING.from_name} <${BRANDING.from_email}>`,
       to: [to],
-      subject: 'A quick heads-up — Second Nature Tree has a new client portal',
+      subject: `A quick heads-up — ${BRANDING.business_short_name} has a new client portal`,
       text,
       html,
-      reply_to: 'info@peekskilltree.com'
+      reply_to: 'info@${BRANDING.website_display}'
     })
   });
   if (r.ok) return { ok: true, id: (await r.json()).id };
@@ -172,7 +176,7 @@ serve(async (req: Request) => {
         eligible_count: eligible.length,
         first_3_previews: eligible.slice(0, 3).map(e => ({
           to: e.email,
-          subject: 'A quick heads-up — Second Nature Tree has a new client portal',
+          subject: `A quick heads-up — ${BRANDING.business_short_name} has a new client portal`,
           first_line: `Hi ${e.firstName},`
         })),
         next_step: 'Re-call with {dry_run:false, confirm:"send-it"} to actually send.'
