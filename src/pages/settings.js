@@ -287,6 +287,25 @@ var SettingsPage = {
       + '<div style="margin-top:14px;text-align:right;"><button onclick="SettingsPage.saveCompliance()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">Save</button></div>'
       + '</div></details>';
 
+    // ─── 🎨 White-label Branding (tenants.config) ───
+    // v600: edits go DIRECTLY to tenants.config in Supabase. The templating
+    // in /branding.js + edge functions reads from this row, so changes here
+    // immediately affect onboarding pages, customer portal, quote-notify,
+    // request-notify, portal-auth, dialpad-webhook auto-replies, stripe
+    // receipts, etc.
+    //
+    // Loaded async (renders skeleton, fills in once Supabase responds).
+    html += cardOpen('🎨 White-label Branding <span style="font-weight:400;color:var(--text-light);font-size:12px;margin-left:6px;">tenants.config — affects emails, portal, onboarding</span>')
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;line-height:1.5;">These values populate every customer-facing email signature, the onboarding flow, the customer portal header, and the legal docs new hires sign. <strong>Edits here go live immediately</strong> — no redeploy needed.</div>'
+      + '<div id="wl-branding-form" style="position:relative;min-height:200px;">'
+      +   '<div style="text-align:center;padding:40px 0;color:var(--text-light);">⏳ Loading tenant config…</div>'
+      + '</div>'
+      + '<div style="margin-top:14px;text-align:right;"><button onclick="SettingsPage.saveBranding()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;" id="wl-save-btn" disabled>Save</button></div>'
+      + '</div></details>';
+
+    // Kick off async load of the tenant config + render the form
+    setTimeout(function(){ if (typeof SettingsPage._loadBrandingForm === 'function') SettingsPage._loadBrandingForm(); }, 80);
+
     // ─── 🔗 Vendor & Utility Logins ───
     // Stores URL + username + account # for each site Doug uses. Passwords are
     // EXPLICITLY NOT STORED — guidance points to Apple Keychain / 1Password.
@@ -2363,6 +2382,155 @@ var SettingsPage = {
     if (!el) return;
     if (!url) { el.outerHTML = '<div id="co-logo-preview" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:#f9fafb;display:flex;align-items:center;justify-content:center;font-size:20px;">🌳</div>'; return; }
     el.outerHTML = '<img id="co-logo-preview" src="' + url.replace(/"/g,'&quot;') + '" style="width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#f9fafb;" onerror="this.style.display=\'none\'">';
+  },
+
+  // ── White-label Branding (tenants.config) ─────────────────────────────────
+  // Loads the current tenant's row, renders a form, lets Doug edit + save.
+  // Saves go to tenants.config in Supabase. The /branding.js bootstrap +
+  // every edge fn read from this row, so changes appear immediately on next
+  // page load / next email send. No redeploy needed.
+  _loadBrandingForm: function() {
+    var box = document.getElementById('wl-branding-form');
+    if (!box) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = (DB && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!sb || !tid) {
+      box.innerHTML = '<div style="background:#fff3cd;border:1px solid #ffe082;border-radius:8px;padding:12px;color:#7e2d10;font-size:13px;">⚠ Cloud sync required to edit white-label branding. Sign in to Supabase first.</div>';
+      return;
+    }
+    sb.from('tenants').select('id, name, config').eq('id', tid).single().then(function(res) {
+      if (res.error || !res.data) {
+        box.innerHTML = '<div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:12px;color:#c62828;font-size:13px;">Failed to load tenant: ' + UI.esc(String(res.error && res.error.message || 'no row')) + '</div>';
+        return;
+      }
+      var c = res.data.config || {};
+      var f = function(id, label, val, hint, type) {
+        type = type || 'text';
+        return '<div style="margin-bottom:10px;">'
+          + '<label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">' + UI.esc(label) + (hint ? ' <span style="font-weight:400;color:var(--text-light);font-size:11px;">· ' + UI.esc(hint) + '</span>' : '') + '</label>'
+          + '<input id="wl-' + id + '" type="' + type + '" value="' + UI.esc(val == null ? '' : String(val)) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;">'
+          + '</div>';
+      };
+      var html = ''
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'
+        + '<div>'
+        +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">Names</div>'
+        +   f('company_name', 'Display name', c.company_name, 'used in headers, subject lines')
+        +   f('legal_name', 'Legal name', c.legal_name, 'with LLC/Inc — used in legal docs')
+        +   f('business_short_name', 'Short name', c.business_short_name, 'for casual references')
+        +   f('owner_name', 'Owner name', c.owner_name, 'used in handbook/signature blocks')
+        + '</div>'
+        + '<div>'
+        +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">Contact</div>'
+        +   f('company_phone', 'Phone', c.company_phone, '(XXX) XXX-XXXX')
+        +   f('company_email', 'Email', c.company_email, '', 'email')
+        +   f('company_website', 'Website', c.company_website, 'with https://', 'url')
+        +   f('sms_from_number', 'SMS from number', c.sms_from_number, '+1 E.164 format')
+        + '</div>'
+        + '</div>'
+        + '<div style="margin-top:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">Address</div>'
+        + '<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;">'
+        +   f('address_line1', 'Street', c.address_line1)
+        +   f('address_line2', 'Suite / floor', c.address_line2, 'optional')
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;">'
+        +   f('city', 'City', c.city)
+        +   f('state', 'State', c.state, '2-letter')
+        +   f('state_full', 'State (full)', c.state_full, 'New York')
+        +   f('zip', 'ZIP', c.zip)
+        + '</div>'
+        + '<div style="margin-top:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">Branding</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">'
+        +   '<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Brand color <span style="font-weight:400;color:var(--text-light);font-size:11px;">· hex</span></label>'
+        +     '<div style="display:flex;gap:8px;align-items:center;">'
+        +     '<input id="wl-brand_color" type="color" value="' + UI.esc(c.brand_color || '#1a3c12') + '" style="width:40px;height:36px;border:1px solid var(--border);border-radius:6px;padding:0;cursor:pointer;">'
+        +     '<input id="wl-brand_color_text" value="' + UI.esc(c.brand_color || '#1a3c12') + '" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:ui-monospace,monospace;box-sizing:border-box;">'
+        +     '</div></div>'
+        +   f('logo_url', 'Logo URL', c.logo_url, 'public image URL', 'url')
+        +   '<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Vertical</label>'
+        +     '<select id="wl-vertical" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;">'
+        +     ['tree_service','lawn_care','snow_removal','plumbing','hvac','electrical','cleaning','handyman','other'].map(function(v){
+              return '<option value="' + v + '"' + (c.vertical === v ? ' selected' : '') + '>' + v.replace(/_/g,' ') + '</option>';
+            }).join('')
+        +     '</select></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'
+        +   f('effective_date', 'Handbook effective date', c.effective_date, 'e.g. April 2026')
+        +   f('license_text', 'License footer text', c.license_text, 'shown in email footers')
+        + '</div>'
+
+        + '<details style="margin-top:18px;background:#f0f7f0;border:1px solid #c8e6c9;border-radius:8px;padding:0;overflow:hidden;">'
+        + '<summary style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:#1b5e20;list-style:none;">📧 Preview email signature</summary>'
+        + '<div id="wl-preview" style="padding:14px;background:#fff;font-size:13px;color:#444;line-height:1.6;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border-top:1px solid #c8e6c9;"></div>'
+        + '</details>';
+      box.innerHTML = html;
+      var btn = document.getElementById('wl-save-btn'); if (btn) btn.disabled = false;
+
+      // Color picker sync
+      var picker = document.getElementById('wl-brand_color');
+      var hex = document.getElementById('wl-brand_color_text');
+      if (picker && hex) {
+        picker.oninput = function() { hex.value = picker.value; SettingsPage._renderBrandingPreview(); };
+        hex.oninput = function() { if (/^#[0-9a-f]{6}$/i.test(hex.value)) { picker.value = hex.value; SettingsPage._renderBrandingPreview(); } };
+      }
+      // Live preview as the user edits any field
+      ['wl-company_name','wl-owner_name','wl-company_phone','wl-company_email','wl-company_website','wl-address_line1','wl-city','wl-state','wl-zip','wl-license_text'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.oninput = SettingsPage._renderBrandingPreview;
+      });
+      SettingsPage._renderBrandingPreview();
+    });
+  },
+
+  _renderBrandingPreview: function() {
+    var box = document.getElementById('wl-preview');
+    if (!box) return;
+    var v = function(id, fb) { var el = document.getElementById('wl-' + id); return (el && el.value) ? el.value : (fb || ''); };
+    var name = v('company_name', 'Your Business');
+    var owner = v('owner_name', 'Owner');
+    var phone = v('company_phone', '(555) 555-0100');
+    var email = v('company_email', 'hello@example.com');
+    var website = v('company_website', 'https://example.com');
+    var addr = [v('address_line1'), v('address_line2'), v('city') + ', ' + v('state') + ' ' + v('zip')].filter(Boolean).join(', ');
+    var color = v('brand_color', '#1a3c12');
+    var license = v('license_text', 'Licensed & Fully Insured');
+    var websiteDisplay = String(website).replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    box.innerHTML = '<div>Hi <strong>Customer</strong>,</div>'
+      + '<div style="margin-top:10px;">Thanks for approving your quote — we\'ll be in touch shortly.</div>'
+      + '<div style="margin-top:14px;">— ' + UI.esc(owner) + '</div>'
+      + '<div><strong>' + UI.esc(name) + '</strong></div>'
+      + '<div>' + UI.esc(phone) + ' · <a href="mailto:' + UI.esc(email) + '" style="color:' + UI.esc(color) + ';">' + UI.esc(email) + '</a></div>'
+      + '<div><a href="' + UI.esc(website) + '" style="color:' + UI.esc(color) + ';">' + UI.esc(websiteDisplay) + '</a></div>'
+      + '<div style="font-size:11px;color:#888;margin-top:12px;border-top:1px solid #eee;padding-top:8px;">' + UI.esc(name) + ' · ' + UI.esc(addr) + ' · ' + UI.esc(license) + '</div>';
+  },
+
+  saveBranding: function() {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = (DB && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!sb || !tid) { UI.toast('Cloud sync required', 'error'); return; }
+    var keys = ['company_name','legal_name','business_short_name','owner_name',
+                'company_phone','company_email','company_website','sms_from_number',
+                'address_line1','address_line2','city','state','state_full','zip',
+                'logo_url','vertical','effective_date','license_text'];
+    var patch = {};
+    keys.forEach(function(k){
+      var el = document.getElementById('wl-' + k);
+      if (el) patch[k] = el.value.trim();
+    });
+    // brand_color from text input (synced with picker)
+    var bc = document.getElementById('wl-brand_color_text');
+    if (bc && /^#[0-9a-f]{6}$/i.test(bc.value)) patch.brand_color = bc.value;
+
+    var btn = document.getElementById('wl-save-btn'); if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    sb.from('tenants').select('config').eq('id', tid).single().then(function(res) {
+      if (res.error) { if (btn) { btn.disabled = false; btn.textContent = 'Save'; } UI.toast('Load failed', 'error'); return; }
+      var merged = Object.assign({}, res.data.config || {}, patch);
+      sb.from('tenants').update({ config: merged }).eq('id', tid).then(function(r2) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+        if (r2.error) { UI.toast('Save failed: ' + r2.error.message, 'error'); return; }
+        UI.toast('Branding saved ✅ — affects emails, portal, onboarding immediately');
+      });
+    });
   },
 
   saveSocialLinks: function() {
