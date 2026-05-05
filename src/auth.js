@@ -98,7 +98,7 @@ var Auth = {
       try {
         var { data, error } = await SupabaseDB.client.auth.signInWithPassword({ email: email, password: password });
         if (error) throw error;
-        Auth.user = { email: data.user.email, id: data.user.id, role: 'owner', name: 'Doug Brown' };
+        Auth.user = { email: data.user.email, id: data.user.id, role: 'owner', name: (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('ownerName')) || 'Owner' };
         Auth.role = 'owner';
         localStorage.setItem('bm-session', JSON.stringify(Auth.user));
         window.location.reload();
@@ -116,9 +116,9 @@ var Auth = {
     var customHashes = {};
     try { customHashes = JSON.parse(localStorage.getItem('bm-auth-hashes') || '{}'); } catch(e) {}
     var users = {
-      'info@peekskilltree.com': { hash: customHashes['info@peekskilltree.com'] || '28006cfd', role: 'owner', name: 'Doug Brown' },
+      'info@peekskilltree.com': { hash: customHashes['info@peekskilltree.com'] || '28006cfd', role: 'owner', name: (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('ownerName')) || 'Owner' },
       'crew@peekskilltree.com': { hash: customHashes['crew@peekskilltree.com'] || '14b65440', role: 'crew_lead', name: 'Crew Lead' },
-      'doug@peekskilltree.com': { hash: customHashes['doug@peekskilltree.com'] || '28006cfd', role: 'owner', name: 'Doug Brown' }
+      'doug@peekskilltree.com': { hash: customHashes['doug@peekskilltree.com'] || '28006cfd', role: 'owner', name: (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('ownerName')) || 'Owner' }
     };
 
     var user = users[emailLower];

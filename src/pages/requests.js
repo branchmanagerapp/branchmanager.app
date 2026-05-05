@@ -883,7 +883,7 @@ var RequestsPage = {
       + (r.notes ? '📋 Details: ' + r.notes + '\n' : '')
       + (r.property ? '📍 Property: ' + r.property + '\n' : '')
       + '\nFeel free to call or text us at ' + co.phone + ' with any questions.\n\n'
-      + 'Doug Brown\n' + co.name + '\n' + co.phone + '\n' + co.email + '\nLicensed & Fully Insured';
+      + CompanyInfo.get('ownerName') + '\n' + co.name + '\n' + co.phone + '\n' + co.email + '\nLicensed & Fully Insured';
 
     var html = '<div style="padding:4px;">'
       + '<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#1a3c12;">📧 Sending to <strong>' + r.email + '</strong></div>'

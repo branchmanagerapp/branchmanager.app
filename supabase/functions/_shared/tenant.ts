@@ -90,7 +90,7 @@ export interface TenantBranding {
   business_name: string;       // "Second Nature Tree Service"
   business_short_name: string; // "Second Nature Tree"
   legal_name: string;          // "Second Nature Tree Service LLC"
-  owner_name: string;          // "Doug Brown"
+  owner_name: string;
   phone: string;               // "(914) 391-5233"
   email: string;               // "info@peekskilltree.com"
   website: string;             // "https://peekskilltree.com"
@@ -119,7 +119,7 @@ const SNT_DEFAULTS: TenantBranding = {
   business_name: "Second Nature Tree Service",
   business_short_name: "Second Nature Tree",
   legal_name: "Second Nature Tree Service LLC",
-  owner_name: "Doug Brown",
+  owner_name: "Owner",
   phone: "(914) 391-5233",
   email: "info@peekskilltree.com",
   website: "https://peekskilltree.com",

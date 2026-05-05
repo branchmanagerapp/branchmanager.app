@@ -19,7 +19,7 @@
  *   {{business_name}}        - "Second Nature Tree Service"
  *   {{business_short_name}}  - "Second Nature Tree"
  *   {{legal_name}}           - "Second Nature Tree Service LLC"
- *   {{owner_name}}           - "Doug Brown"
+ *   {{owner_name}}           - tenant owner name
  *   {{phone}}                - "(914) 391-5233"
  *   {{email}}                - "info@peekskilltree.com"
  *   {{website}}              - "https://peekskilltree.com"
@@ -66,7 +66,7 @@
     business_name: 'Second Nature Tree Service',
     business_short_name: 'Second Nature Tree',
     legal_name: 'Second Nature Tree Service LLC',
-    owner_name: 'Doug Brown',
+    owner_name: 'Owner',
     phone: '(914) 391-5233',
     email: 'info@peekskilltree.com',
     website: 'https://peekskilltree.com',

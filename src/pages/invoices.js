@@ -641,7 +641,7 @@ var InvoicesPage = {
       + 'Pay online (card, or tip optional):\n' + payLink + '\n\n'
       + 'Want to see all your invoices, quotes & job history any time? Get a portal link: https://branchmanager.app/portal.html\n\n'
       + 'Questions? Reply to this email or call/text ' + InvoicesPage._co().phone + '.\n\n'
-      + 'Thanks,\nDoug Brown\n' + InvoicesPage._co().name + '\n' + InvoicesPage._co().phone + '\n' + InvoicesPage._co().website;
+      + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + InvoicesPage._co().name + '\n' + InvoicesPage._co().phone + '\n' + InvoicesPage._co().website;
 
     // Branded HTML email
     var _c = InvoicesPage._co();
@@ -781,7 +781,7 @@ var InvoicesPage = {
       + 'Date: ' + paidDate + '\n\n'
       + 'It was a pleasure working with you. If you\'re happy with our service, we\'d love a Google review!\n\n'
       + (_c.googleReview ? _c.googleReview + '\n\n' : '')
-      + 'Thanks,\nDoug Brown\n' + _c.name + '\n' + _c.phone;
+      + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + _c.name + '\n' + _c.phone;
 
     // Line items summary
     var liRows = '';

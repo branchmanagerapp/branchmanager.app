@@ -6,7 +6,7 @@
 var TimeTrackPage = {
   _tab: 'mine',
 
-  get currentUser() { return (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : 'Doug Brown'; },
+  get currentUser() { return (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : (CompanyInfo.get('ownerName') || 'Owner'); },
 
   get isOwnerOrManager() {
     if (typeof Auth === 'undefined' || !Auth.user) return true; // default to full access

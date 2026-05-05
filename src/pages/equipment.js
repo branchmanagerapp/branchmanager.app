@@ -424,7 +424,7 @@ var EquipmentPage = {
   showCheckout: function() {
     var equipment = EquipmentPage.getAll().filter(function(e) { return e.status === 'active'; });
     var team = JSON.parse(localStorage.getItem('bm-team') || '[]');
-    if (team.length === 0) team = [{ name: 'Doug Brown' }];
+    if (team.length === 0) team = [{ name: CompanyInfo.get('ownerName') || 'Owner' }];
     var todayJobs = DB.jobs.getAll().filter(function(j) {
       var today = new Date().toISOString().split('T')[0];
       return j.scheduledDate && j.scheduledDate.substring(0, 10) === today;

@@ -1277,7 +1277,7 @@ var ClientsPage = {
       // Header
       + '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--border);">'
       + '<div><div style="font-size:18px;font-weight:800;color:#1a3c12;">' + ClientsPage._co().name + '</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">1 Highland Industrial Park · Peekskill, NY 10566</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">' + UI.esc(CompanyInfo.get('address')) + '</div>'
       + '<div style="font-size:12px;color:var(--text-light);">' + ClientsPage._co().phone + ' · ' + ClientsPage._co().website + '</div></div>'
       + '<div style="text-align:right;"><div style="font-size:20px;font-weight:800;">Account Statement</div>'
       + '<div style="font-size:12px;color:var(--text-light);">As of ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</div></div>'

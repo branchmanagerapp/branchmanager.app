@@ -554,7 +554,7 @@ var InsurancePage = {
         waiver ? '→ Please include a Waiver of Subrogation in favor of the holder.' : '',
         '',
         'Thank you,',
-        'Second Nature Tree Service',
+        CompanyInfo.get('name'),
         '(914) 391-5233'
       ].filter(function(l) { return l !== ''; }).join('\n');
 
@@ -598,7 +598,7 @@ var InsurancePage = {
     var policies = InsurancePage._getPolicies();
     var policyList = policies.length ? policies.map(function(p) { return p.type; }).join(', ') : 'General Liability, Workers Compensation, Commercial Auto';
     var subject = 'COI Request (Follow-up) — ' + (cert.holderName || cert.clientName);
-    var body = 'Hi ' + (agent.name || 'there') + ',\n\nFollowing up on my COI request for:\n\nCertificate Holder: ' + (cert.holderName || '') + '\n' + (cert.holderAddr ? 'Address: ' + cert.holderAddr + '\n' : '') + (cert.description ? 'Project: ' + cert.description + '\n' : '') + '\nPolicies: ' + policyList + '\n' + (cert.additionalInsured ? '\n→ Additional Insured required\n' : '') + (cert.waiverSubrogation ? '\n→ Waiver of Subrogation required\n' : '') + '\nThank you,\nSecond Nature Tree Service';
+    var body = 'Hi ' + (agent.name || 'there') + ',\n\nFollowing up on my COI request for:\n\nCertificate Holder: ' + (cert.holderName || '') + '\n' + (cert.holderAddr ? 'Address: ' + cert.holderAddr + '\n' : '') + (cert.description ? 'Project: ' + cert.description + '\n' : '') + '\nPolicies: ' + policyList + '\n' + (cert.additionalInsured ? '\n→ Additional Insured required\n' : '') + (cert.waiverSubrogation ? '\n→ Waiver of Subrogation required\n' : '') + '\nThank you,\n' + CompanyInfo.get('name');
     window.location.href = 'mailto:' + encodeURIComponent(agent.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   },
 

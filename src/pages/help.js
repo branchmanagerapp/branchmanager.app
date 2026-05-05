@@ -77,9 +77,9 @@ var HelpPage = {
     // ── Contact / support ────────────────────────────────────────────────
     html += '<div style="background:linear-gradient(135deg,#1a3c12,#00836c);border-radius:14px;padding:24px 28px;color:#fff;text-align:center;">'
       + '<div style="font-size:22px;font-weight:900;margin-bottom:8px;">Need help?</div>'
-      + '<div style="font-size:14px;opacity:.85;margin-bottom:18px;">Branch Manager is built by Second Nature Tree Service. Have a question or found a bug?</div>'
+      + '<div style="font-size:14px;opacity:.85;margin-bottom:18px;">Branch Manager is built by ' + UI.esc(CompanyInfo.get('name')) + '. Have a question or found a bug?</div>'
       + '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">'
-      + '<a href="mailto:info@peekskilltree.com" style="background:rgba(255,255,255,.15);color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;border:1px solid rgba(255,255,255,.3);">📧 Email Us</a>'
+      + '<a href="mailto:' + UI.esc(CompanyInfo.get('email')) + '" style="background:rgba(255,255,255,.15);color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;border:1px solid rgba(255,255,255,.3);">📧 Email Us</a>'
       + '<a href="tel:9143915233" style="background:#fff;color:#1a3c12;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">📞 (914) 391-5233</a>'
       + '</div>'
       + '</div>';

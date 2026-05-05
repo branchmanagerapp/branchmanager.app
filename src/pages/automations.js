@@ -307,7 +307,7 @@ var AutomationsPage = {
           + '📋 Quote #' + q.quoteNumber + ' — ' + UI.money(q.total) + '\n\n'
           + '👉 View & approve online:\n' + approvalLink + '\n\n'
           + 'Happy to answer any questions — just reply or call ' + AutomationsPage._co().phone + '.\n\n'
-          + 'Thanks,\nDoug Brown\n' + AutomationsPage._co().name;
+          + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name;
         if (typeof Email !== 'undefined') Email.send(email, sub1, body1, { silent: !!AutomationsPage._silentMode });
         DB.quotes.update(q.id, { followup1SentAt: new Date().toISOString(), status: 'awaiting' });
         sent++;
@@ -320,7 +320,7 @@ var AutomationsPage = {
         var body2 = 'Hi ' + firstName + ',\n\nOne last follow-up on your quote for ' + UI.money(q.total) + '.\n\n'
           + '👉 ' + approvalLink + '\n\n'
           + 'If the timing isn\'t right, no worries at all — we\'ll be here when you need us.\n\n'
-          + 'Thanks,\nDoug Brown\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone;
+          + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone;
         if (typeof Email !== 'undefined') Email.send(email, sub2, body2, { silent: !!AutomationsPage._silentMode });
         DB.quotes.update(q.id, { followup2SentAt: new Date().toISOString() });
         sent++;
@@ -355,7 +355,7 @@ var AutomationsPage = {
         var body1 = 'Hi ' + firstName + ',\n\nThis is a friendly reminder that Invoice #' + inv.invoiceNumber + ' for ' + UI.money(inv.balance || inv.total) + ' was due on ' + UI.dateShort(inv.dueDate) + '.\n\n'
           + '👉 Pay online:\n' + payLink + '\n\n'
           + 'We accept credit card, check, or cash. If you have any questions, please call ' + AutomationsPage._co().phone + '.\n\n'
-          + 'Thanks,\nDoug Brown\n' + AutomationsPage._co().name;
+          + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name;
         if (typeof Email !== 'undefined') Email.send(email, sub1, body1, { silent: !!AutomationsPage._silentMode });
         DB.invoices.update(inv.id, { followup1SentAt: new Date().toISOString(), status: 'overdue' });
         sent++;
@@ -368,7 +368,7 @@ var AutomationsPage = {
         var body2 = 'Hi ' + firstName + ',\n\nInvoice #' + inv.invoiceNumber + ' for ' + UI.money(inv.balance || inv.total) + ' is now ' + daysOverdue + ' days past due.\n\n'
           + '👉 ' + payLink + '\n\n'
           + 'Please reach out if there\'s an issue — ' + AutomationsPage._co().phone + ' or reply to this email.\n\n'
-          + 'Thanks,\nDoug Brown\n' + AutomationsPage._co().name;
+          + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name;
         if (typeof Email !== 'undefined') Email.send(email, sub2, body2, { silent: !!AutomationsPage._silentMode });
         DB.invoices.update(inv.id, { followup2SentAt: new Date().toISOString() });
         sent++;
@@ -427,7 +427,7 @@ var AutomationsPage = {
         + (job.description ? '📋 ' + job.description + '\n' : '')
         + (job.crew && job.crew.length ? '👷 Crew: ' + job.crew.join(', ') + '\n' : '')
         + '\nIf you need to reschedule, please call ' + AutomationsPage._co().phone + ' as soon as possible.\n\n'
-        + 'Thank you,\nDoug Brown\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone;
+        + 'Thank you,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone;
       if (typeof Email !== 'undefined') Email.send(email, subject, body, { silent: !!AutomationsPage._silentMode });
       DB.jobs.update(job.id, { reminderSentAt: new Date().toISOString() });
       sent++;
@@ -474,7 +474,7 @@ var AutomationsPage = {
         + 'If you have a moment, we\'d love to hear about your experience. Leaving a quick Google review helps other homeowners in the area find trusted tree care:\n\n'
         + '⭐ Leave a Review: ' + reviewLink + '\n\n'
         + 'It takes less than a minute and means the world to our small business.\n\n'
-        + 'Thank you for your support,\nDoug Brown\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone + '\n' + AutomationsPage._co().website;
+        + 'Thank you for your support,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone + '\n' + AutomationsPage._co().website;
       if (typeof Email !== 'undefined') Email.send(email, subject, body, { silent: !!AutomationsPage._silentMode });
       DB.jobs.update(job.id, { reviewSentAt: new Date().toISOString() });
       sent++;

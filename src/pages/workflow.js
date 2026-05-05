@@ -344,7 +344,7 @@ var Workflow = {
       + '✅ Review & Approve Online:\n' + approveLink + '\n\n'
       + 'You can approve, request changes, or ask questions directly from that link.\n\n'
       + 'We can usually schedule within 1-2 weeks of approval. Give us a call anytime at ' + Workflow._co().phone + '.\n\n'
-      + 'Doug Brown\n' + Workflow._co().name + '\n' + Workflow._co().phone + '\n' + Workflow._co().email;
+      + CompanyInfo.get('ownerName') + '\n' + Workflow._co().name + '\n' + Workflow._co().phone + '\n' + Workflow._co().email;
 
     var html = '<div style="padding:16px;">'
       + '<div style="margin-bottom:16px;">'
@@ -458,7 +458,7 @@ var Workflow = {
       + '💳 Pay Online (card):\n' + payLink + '\n\n'
       + 'Or pay by check payable to ' + Workflow._co().name + '.\n\n'
       + 'Thank you for choosing ' + Workflow._co().name + '!\n\n'
-      + 'Doug Brown\n' + Workflow._co().phone + '\n' + Workflow._co().email;
+      + CompanyInfo.get('ownerName') + '\n' + Workflow._co().phone + '\n' + Workflow._co().email;
 
     var html = '<div style="padding:16px;">'
       + '<div style="margin-bottom:16px;">'
@@ -660,7 +660,7 @@ var Workflow = {
         var thankSubject = 'Thank you for your payment — ' + Workflow._co().name;
         var thankBody = 'Hi ' + firstName + ',\n\nThank you for your payment of ' + UI.money(amount) + '! Invoice #' + (inv.invoiceNumber || '') + ' is now paid in full.\n\n'
           + 'We appreciate your business and look forward to serving you again.\n\n'
-          + 'Thank you,\nDoug Brown\n' + Workflow._co().name + '\n' + Workflow._co().phone + '\n' + Workflow._co().website;
+          + 'Thank you,\n' + CompanyInfo.get('ownerName') + '\n' + Workflow._co().name + '\n' + Workflow._co().phone + '\n' + Workflow._co().website;
         Email.send(clientEmail, thankSubject, thankBody);
       }
     } else {

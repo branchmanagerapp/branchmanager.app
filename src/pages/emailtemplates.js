@@ -48,7 +48,7 @@ var EmailTemplates = {
         + 'Your quote (#{{quoteNumber}}) came to {{quoteTotal}}. If you have any questions about the scope of work or pricing, I am happy to walk through it with you.\n\n'
         + 'We have availability coming up soon and would love to get you on the schedule. Just reply to this email or give us a call at {{companyPhone}} to get started.\n\n'
         + 'Thanks,\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}\n'
         + '{{companyPhone}}'
     },
@@ -65,7 +65,7 @@ var EmailTemplates = {
         + 'If your plans have changed or you went in a different direction, no worries at all. But if you are still thinking it over, I am here to answer any questions.\n\n'
         + 'You can reach me directly at {{companyPhone}} or just reply to this email.\n\n'
         + 'Best,\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}'
     },
 
@@ -80,7 +80,7 @@ var EmailTemplates = {
         + 'If you have already sent payment, please disregard this message. Otherwise, the remaining balance of {{invoiceBalance}} can be paid at your earliest convenience.\n\n'
         + 'If you have any questions about the invoice, feel free to reach out.\n\n'
         + 'Thank you,\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}\n'
         + '{{companyPhone}}'
     },
@@ -96,7 +96,7 @@ var EmailTemplates = {
         + 'We understand things can slip through the cracks. If there is an issue with the invoice or you need to discuss payment arrangements, please do not hesitate to reach out.\n\n'
         + 'You can call or text us at {{companyPhone}}, or reply to this email.\n\n'
         + 'Thank you for your prompt attention.\n\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}'
     },
 
@@ -119,7 +119,7 @@ var EmailTemplates = {
         + 'Please make sure the work area is accessible and any vehicles or items are moved away from the trees.\n\n'
         + 'If you have any questions before your appointment, call us at {{companyPhone}}.\n\n'
         + 'See you soon!\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}'
     },
 
@@ -135,7 +135,7 @@ var EmailTemplates = {
         + 'If you were happy with the service, it would mean a lot if you could leave us a quick Google review. It only takes a minute and really helps our small business:\n\n'
         + '{{reviewLink}}\n\n'
         + 'Thank you for choosing {{companyName}}. We appreciate your business and hope to work with you again!\n\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyPhone}}'
     },
 
@@ -156,7 +156,7 @@ var EmailTemplates = {
         + '- No need to be home if the trees are visible from the yard\n\n'
         + 'If you need to reschedule, just call or text me at {{companyPhone}}.\n\n'
         + 'Looking forward to meeting you!\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}'
     },
 
@@ -172,7 +172,7 @@ var EmailTemplates = {
         + 'And if you know anyone who needs tree work, we would love a referral. Word of mouth is how we have built our business!\n\n'
         + 'Thanks again for choosing {{companyName}}.\n\n'
         + 'Best,\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyPhone}}'
     },
 
@@ -190,7 +190,7 @@ var EmailTemplates = {
         + '3. You receive a detailed quote with pricing\n\n'
         + 'If this is urgent (storm damage, hazardous tree), please call us directly at {{companyPhone}} for priority service.\n\n'
         + 'We look forward to helping you!\n\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}\n'
         + '{{companyPhone}}'
     },
@@ -209,7 +209,7 @@ var EmailTemplates = {
         + '- Pets are secured indoors if possible\n\n'
         + 'Our crew typically arrives in the morning. If anything has changed or you need to reschedule, please call us at {{companyPhone}} as soon as possible.\n\n'
         + 'See you tomorrow!\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyName}}'
     },
 
@@ -227,7 +227,7 @@ var EmailTemplates = {
         + '- Free wood chip delivery with any removal job\n\n'
         + 'Whether you need pruning, removal, stump grinding, or just want a professional to check on your trees, give us a call at {{companyPhone}} or reply to this email.\n\n'
         + 'Thanks for being a valued customer of {{companyName}}!\n\n'
-        + 'Doug Brown\n'
+        + CompanyInfo.get('ownerName') + '\n'
         + '{{companyPhone}}'
     }
   },

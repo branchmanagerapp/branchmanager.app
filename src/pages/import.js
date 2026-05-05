@@ -49,7 +49,7 @@ var ImportPage = {
     // Quick import from URL (for Jobber email links)
     html += '<div style="background:#f0f8e8;border-radius:12px;padding:20px;border:1px solid #c8e6c9;margin-top:16px;">'
       + '<h3 style="font-size:15px;margin-bottom:8px;">💡 Tip: Your old system emails exports</h3>'
-      + '<p style="font-size:13px;color:var(--text-light);margin:0;">Check <strong>info@peekskilltree.com</strong> for export emails with CSV attachments. Download each one, then upload it above.</p>'
+      + '<p style="font-size:13px;color:var(--text-light);margin:0;">Check <strong>' + UI.esc(CompanyInfo.get('email')) + '</strong> for export emails with CSV attachments. Download each one, then upload it above.</p>'
       + '</div>';
 
     return html;

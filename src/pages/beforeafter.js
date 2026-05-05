@@ -772,7 +772,7 @@ var BeforeAfter = {
       + 'https://share.google/mLwSzzZXwc5fuFRU4\n\n'
       + 'Thank you for choosing ' + co.name + '!\n\n'
       + 'Best regards,\n'
-      + 'Doug Brown\n'
+      + CompanyInfo.get('ownerName') + '\n'
       + co.name + '\n'
       + co.phone + '\n'
       + co.email;

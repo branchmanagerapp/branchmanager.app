@@ -2528,6 +2528,20 @@ var SettingsPage = {
       sb.from('tenants').update({ config: merged }).eq('id', tid).then(function(r2) {
         if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
         if (r2.error) { UI.toast('Save failed: ' + r2.error.message, 'error'); return; }
+        // Also write through to localStorage so synchronous CompanyInfo.get()
+        // reads (in src/pages/*.js) see the new values without a reload.
+        var lsMap = {
+          company_name: 'bm-co-name', company_phone: 'bm-co-phone',
+          company_email: 'bm-co-email', company_website: 'bm-co-website',
+          owner_name: 'bm-co-owner-name', legal_name: 'bm-co-legal-name',
+          business_short_name: 'bm-co-short-name', license_text: 'bm-co-license-text',
+          brand_color: 'bm-co-brand-color', logo_url: 'bm-co-logo'
+        };
+        Object.keys(lsMap).forEach(function(k){ if (patch[k] !== undefined) try { localStorage.setItem(lsMap[k], patch[k]); } catch(e) {} });
+        // Compose address into a single bm-co-address string for legacy CompanyInfo callers
+        var addr = [patch.address_line1, patch.address_line2].filter(Boolean).join(', ');
+        if (patch.city && patch.state && patch.zip) addr += (addr ? ', ' : '') + patch.city + ', ' + patch.state + ' ' + patch.zip;
+        if (addr) try { localStorage.setItem('bm-co-address', addr); } catch(e) {}
         UI.toast('Branding saved ✅ — affects emails, portal, onboarding immediately');
       });
     });

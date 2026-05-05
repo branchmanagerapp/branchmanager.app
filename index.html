@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 600; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 601; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -975,7 +975,7 @@
           <div class="topbar-avatar" onclick="this.querySelector('.avatar-menu').classList.toggle('open')">
             <span id="topbar-avatar-initials">DB</span>
             <div class="avatar-menu">
-              <div class="avatar-menu-header">Doug Brown<br><span>Owner · Second Nature Tree Service</span></div>
+              <div class="avatar-menu-header" id="avatar-menu-header"><span data-bind="ownerName">Owner</span><br><span>Owner · <span data-bind="companyName">Branch Manager</span></span></div>
               <button onclick="loadPage('employeecenter')"><i data-lucide="user" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>My Account</button>
               <button onclick="loadPage('settings')"><i data-lucide="settings" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Settings</button>
               <button onclick="loadPage('help')"><i data-lucide="help-circle" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Help & Onboarding</button>
@@ -1001,7 +1001,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v600.min.js"></script>
+<script defer src="dist/bm.bundle.v601.min.js"></script>
 
 
 

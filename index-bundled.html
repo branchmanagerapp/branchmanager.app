@@ -922,7 +922,7 @@
           <div class="topbar-avatar" onclick="this.querySelector('.avatar-menu').classList.toggle('open')">
             <span id="topbar-avatar-initials">DB</span>
             <div class="avatar-menu">
-              <div class="avatar-menu-header">Doug Brown<br><span>Owner · Second Nature Tree Service</span></div>
+              <div class="avatar-menu-header" id="avatar-menu-header"><span data-bind="ownerName">Owner</span><br><span>Owner · <span data-bind="companyName">Branch Manager</span></span></div>
               <button onclick="loadPage('employeecenter')"><i data-lucide="user" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>My Account</button>
               <button onclick="loadPage('settings')"><i data-lucide="settings" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Settings</button>
               <button onclick="window.open('https://peekskilltree.com','_blank')"><i data-lucide="external-link" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>View Website</button>

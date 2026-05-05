@@ -36,7 +36,7 @@ const FALLBACK_REPLY_TO      = "info@peekskilltree.com";
 const FALLBACK_REVIEW_URL    = "https://g.page/r/CcVkZHV_EKlEEBM/review";
 const FALLBACK_COMPANY_NAME  = "Second Nature Tree Service";
 const FALLBACK_COMPANY_PHONE = "(914) 391-5233";
-const FALLBACK_OWNER_NAME    = "Doug Brown";
+const FALLBACK_OWNER_NAME    = "Owner";
 const FALLBACK_ADDRESS       = "Second Nature Tree LLC · 1 Highland Industrial Park, Peekskill, NY 10566";
 
 // Per-tenant context populated per iteration in the main handler.

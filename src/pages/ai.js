@@ -540,7 +540,7 @@ var AI = {
       + '• Company: ' + coName + '\n'
       + '• Location: Peekskill, NY (serves Westchester & Putnam counties)\n'
       + '• Phone: ' + coPhone + ' | Email: ' + coEmail + '\n'
-      + '• Owner: Doug Brown\n'
+      + '• Owner: ' + CompanyInfo.get('ownerName') + '\n'
       + '• Licenses: WC-32079 (Westchester), PC-50644 (Putnam)\n'
       + '• Services: Tree removal, pruning, stump grinding, cabling, bucket truck work, storm damage, lot clearing, firewood, snow removal\n'
       + '• Reviews: 5.0★ / 100 Google reviews\n\n'
@@ -560,7 +560,7 @@ var AI = {
       + '• For pricing estimates, use the recent job data and NY/Westchester market rates\n'
       + '• For emails/texts, write them ready to copy-paste — professional but warm\n'
       + '• For business analysis, reference the actual live numbers above\n'
-      + '• When writing client communications, sign as Doug Brown, ' + coName + '\n'
+      + '• When writing client communications, sign as ' + CompanyInfo.get('ownerName') + ', ' + coName + '\n'
       + '• Use dollar amounts when discussing pricing\n';
   },
 

@@ -7,7 +7,7 @@
  */
 var BM_CONFIG = {
   companyName:     'Second Nature Tree Service',
-  ownerName:       'Doug Brown',
+  ownerName:       '',
   phone:           '(914) 391-5233',
   phoneTel:        '+19143915233',      // tel: link format
   phoneDigits:     '9143915233',        // no punctuation, for tel: hrefs
@@ -101,7 +101,11 @@ var CompanyInfo = (function() {
     yelpUrl:         { ls: 'bm-co-yelp',       bm: null },
     nextdoorUrl:     { ls: 'bm-co-nextdoor',   bm: null },
     taxRate:         { ls: 'bm-tax-rate',       bm: null, def: '8.375' },
-    ownerName:       { ls: null,                bm: 'ownerName' },
+    ownerName:       { ls: 'bm-co-owner-name',  bm: 'ownerName' },
+    legalName:       { ls: 'bm-co-legal-name',  bm: null, def: 'Second Nature Tree Service LLC' },
+    businessShortName:{ ls: 'bm-co-short-name', bm: null, def: 'Second Nature Tree' },
+    licenseText:     { ls: 'bm-co-license-text',bm: null, def: 'Licensed & Fully Insured' },
+    brandColor:      { ls: 'bm-co-brand-color', bm: null, def: '#1a3c12' },
     logo:            { ls: 'bm-co-logo',        bm: 'logoUrl' }
   };
 

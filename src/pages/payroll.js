@@ -39,7 +39,7 @@ var PayrollPage = {
   _getEmployees: function() {
     var team = JSON.parse(localStorage.getItem('bm-team') || '[]');
     if (team.length === 0) {
-      team = [{ id: 'owner', name: 'Doug Brown', role: 'owner', rate: 0, active: true }];
+      team = [{ id: 'owner', name: CompanyInfo.get('ownerName') || 'Owner', role: 'owner', rate: 0, active: true }];
     }
     return team.filter(function(t) { return t.active !== false; });
   },

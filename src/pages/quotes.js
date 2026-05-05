@@ -295,7 +295,7 @@ var QuotesPage = {
         + 'I wanted to follow up on the ' + _ft + ' I sent over for ' + (q.description || 'tree services') + '.\n\n'
         + 'Quote #' + q.quoteNumber + ' — ' + UI.money(q.total) + '\n\n'
         + 'Do you have any questions or would you like to move forward? Just reply to this email or give me a call at ' + _co2.phone + '.\n\n'
-        + 'Thanks,\nDoug Brown\n' + _co2.name + '\n' + _co2.phone + '\n' + _co2.website;
+        + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + _co2.name + '\n' + _co2.phone + '\n' + _co2.website;
       Email.send(email, subject, body).then(function(r) {
         if (r && r.success) UI.toast('Follow-up sent to ' + email);
         else UI.toast('Follow-up logged — email failed (' + ((r && r.hint) || 'check Resend key in Supabase secrets') + ')');
@@ -2040,7 +2040,7 @@ var QuotesPage = {
       + 'Click the green button at the bottom to view, approve, or request changes — no login required.\n\n'
       + 'This ' + _terml + ' is valid for 30 days.\n\n'
       + 'Questions? Reply to this email or call ' + _co.phone + '.\n\n'
-      + 'Thanks,\nDoug Brown\n' + _co.name;
+      + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + _co.name;
     var defaultSms = QuotesPage._buildSmsBody(id);
 
     var emailDisabledAttr = hasEmail ? '' : 'disabled';

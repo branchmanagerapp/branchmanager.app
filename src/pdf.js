@@ -50,7 +50,7 @@ var PDF = {
       phone: CompanyInfo.get('phone'),
       email: CompanyInfo.get('email'),
       website: CompanyInfo.get('website'),
-      address: localStorage.getItem('bm-co-address') || '1 Highland Industrial Park, Peekskill, NY 10566',
+      address: CompanyInfo.get('address') || '',
       licenses: CompanyInfo.get('licenses')
     };
   },

@@ -167,7 +167,7 @@ async function sendReceipt(params: {
     instagramUrl:   String(coConfig.instagram_url ?? ''),
   });
 
-  const textBody = `Hi ${firstName},\n\nThank you for your payment of ${money(total)}! Your account is paid in full.\n\nInvoice #${invoiceNumber}\n${inv.subject ? 'Job: ' + inv.subject + '\n' : ''}Amount Paid: ${money(total)}\nDate: ${paidDate}\n\n${coConfig.google_review_url ? 'Happy with our work? We\'d love a Google review!\n' + coConfig.google_review_url + '\n\n' : ''}Thanks,\n${coConfig.owner_name ?? "Doug Brown"}\n${coConfig.company_name ?? 'Second Nature Tree Service'}\n${coConfig.company_phone ?? '(914) 391-5233'}`;
+  const textBody = `Hi ${firstName},\n\nThank you for your payment of ${money(total)}! Your account is paid in full.\n\nInvoice #${invoiceNumber}\n${inv.subject ? 'Job: ' + inv.subject + '\n' : ''}Amount Paid: ${money(total)}\nDate: ${paidDate}\n\n${coConfig.google_review_url ? 'Happy with our work? We\'d love a Google review!\n' + coConfig.google_review_url + '\n\n' : ''}Thanks,\n${coConfig.owner_name ?? "Owner"}\n${coConfig.company_name ?? 'Second Nature Tree Service'}\n${coConfig.company_phone ?? '(914) 391-5233'}`;
 
   const subject = `Payment Receipt — Invoice #${invoiceNumber} · ${money(total)} · ${coConfig.company_name ?? 'Second Nature Tree Service'}`;
 

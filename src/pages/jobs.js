@@ -388,7 +388,7 @@ var JobsPage = {
 
     var smsMsg = 'Hi ' + firstName + '! It was great working with you. If you have a moment, we\'d really appreciate a quick Google review — it helps us a lot:\n' + reviewLink + '\nThank you! — Doug, ' + JobsPage._co().name;
     var emailSubject = 'Quick favor — leave us a review?';
-    var emailBody = 'Hi ' + firstName + ',\n\nThank you for choosing ' + JobsPage._co().name + '! We hope you\'re happy with the work.\n\nIf you have a moment, a Google review would mean the world to us:\n' + reviewLink + '\n\nIt only takes 30 seconds and helps us reach more homeowners in the area.\n\nThank you!\n— Doug Brown\n' + JobsPage._co().name + '\n' + JobsPage._co().phone + ' · ' + JobsPage._co().website;
+    var emailBody = 'Hi ' + firstName + ',\n\nThank you for choosing ' + JobsPage._co().name + '! We hope you\'re happy with the work.\n\nIf you have a moment, a Google review would mean the world to us:\n' + reviewLink + '\n\nIt only takes 30 seconds and helps us reach more homeowners in the area.\n\nThank you!\n— ' + CompanyInfo.get('ownerName') + '\n' + JobsPage._co().name + '\n' + JobsPage._co().phone + ' · ' + JobsPage._co().website;
 
     var html = '<div style="margin-bottom:12px;background:var(--green-bg);border-radius:8px;padding:10px 14px;font-size:13px;">'
       + '⭐ Requesting a review for <strong>' + UI.esc(j.clientName) + '</strong> · Job #' + (j.jobNumber || '') + '</div>'
