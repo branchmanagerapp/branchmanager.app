@@ -420,6 +420,13 @@ var TaskReminders = {
   },
 
   // Open task form as a floating bottom-sheet overlay (works from any page)
+  // v588: collapse/expand the dashboard tasks widget
+  _toggleCollapse: function() {
+    var current = localStorage.getItem('bm-tasks-widget-collapsed') === 'true';
+    localStorage.setItem('bm-tasks-widget-collapsed', current ? 'false' : 'true');
+    if (typeof loadPage === 'function' && window._currentPage === 'dashboard') loadPage('dashboard');
+  },
+
   _openOverlay: function(taskId, prefill) {
     var old = document.getElementById('bm-task-overlay');
     if (old) old.remove();
@@ -918,18 +925,37 @@ var TaskReminders = {
 
     var prioMap = { urgent: '#c62828', high: '#e65100', medium: '#1976d2', low: '#6c757d' };
 
+    // v588: collapsable — state persisted in localStorage. Collapsed shows
+    // header + counts only; expanded shows the task rows below. Chevron
+    // toggles. Default expanded for first-time users.
+    var collapsed = localStorage.getItem('bm-tasks-widget-collapsed') === 'true';
+
     var html = '<div style="background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
 
     // ── Header ──
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-      + '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Tasks</h3>'
-      + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + allIncomplete.length + ' open</div>'
+    var overdueCount = overdue.length;
+    var todayCount = today.length;
+    var subtitle = allIncomplete.length + ' open'
+      + (overdueCount ? ' · ' + overdueCount + ' overdue' : '')
+      + (todayCount ? ' · ' + todayCount + ' today' : '');
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;' + (collapsed ? '' : 'margin-bottom:12px;') + '">'
+      + '<div onclick="TaskReminders._toggleCollapse()" style="cursor:pointer;flex:1;display:flex;align-items:center;gap:8px;">'
+      +   '<span style="display:inline-block;transition:transform .15s;transform:rotate(' + (collapsed ? '-90' : '0') + 'deg);font-size:12px;color:var(--text-light);">▼</span>'
+      +   '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Tasks</h3>'
+      +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + subtitle + '</div>'
+      +   '</div>'
       + '</div>'
       + '<div style="display:flex;gap:6px;align-items:center;">'
-      + '<button onclick="TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">+ New</button>'
-      + '<button onclick="loadPage(\'taskreminders\')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);">View All →</button>'
+      + '<button onclick="event.stopPropagation();TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">+ New</button>'
+      + '<button onclick="event.stopPropagation();loadPage(\'taskreminders\')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);">View All →</button>'
       + '</div>'
       + '</div>';
+
+    // Bail out early if collapsed — task rows skipped, quick-add bar skipped
+    if (collapsed) {
+      html += '</div>';
+      return html;
+    }
 
     // ── Task rows ──
     if (shown.length > 0) {
