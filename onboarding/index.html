@@ -196,15 +196,22 @@ var STEP_CONTENT = {
   's1': function() {
     return '<div style="max-width:600px;margin:40px auto;padding:20px;">'
       + '<h2 style="font-size:20px;margin-bottom:12px;">I-9 Employment Eligibility</h2>'
-      + '<p style="color:#64748b;margin-bottom:16px;">Federal law requires every employee to prove they\'re authorized to work in the U.S.</p>'
+      + '<p style="color:#64748b;margin-bottom:16px;">Federal law requires every employee to prove they\'re authorized to work in the U.S. Upload one document from <strong>List A</strong>, or one each from <strong>List B</strong> and <strong>List C</strong>. The AI reads the fields off the photo — no typing.</p>'
       + '<div style="background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;margin-bottom:16px;">'
-      + '<h3 style="font-size:15px;margin-bottom:10px;">What to bring:</h3>'
-      + '<ul style="margin-left:20px;line-height:2;color:#334155;"><li>Driver\'s license + Social Security card, <strong>OR</strong></li><li>Valid U.S. passport</li></ul>'
-      + '<p style="margin-top:12px;font-size:13px;color:#64748b;">Must be completed within 3 business days of first day.</p>'
-      + '<p style="margin-top:12px;"><a href="https://www.uscis.gov/i-9" target="_blank" style="color:#1b5e20;font-weight:600;">📄 Download I-9 Form from USCIS →</a></p>'
+      + '<h3 style="font-size:14px;margin:0 0 8px;">Step 1 — Pick your document set</h3>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
+      +   '<button type="button" onclick="onbI9SetMode(\'list_a\')" id="i9-mode-a" style="padding:10px;background:var(--bg);border:2px solid #e2e8f0;border-radius:8px;font-size:12px;cursor:pointer;text-align:left;"><strong>List A</strong> — 1 doc<br><span style="color:#64748b;">Passport · Permanent Resident Card · EAD</span></button>'
+      +   '<button type="button" onclick="onbI9SetMode(\'list_bc\')" id="i9-mode-bc" style="padding:10px;background:var(--bg);border:2px solid #e2e8f0;border-radius:8px;font-size:12px;cursor:pointer;text-align:left;"><strong>List B + C</strong> — 2 docs<br><span style="color:#64748b;">DL/State ID + SSN card or birth cert</span></button>'
       + '</div>'
-      + '<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:13px;color:#7f1d1d;">⚠️ You must physically verify the employee\'s ID documents. A photocopy or video is not sufficient.</div>'
-      + signoffHTML('s1', 'I-9 completed — original IDs examined in person', true)
+      + '<h3 style="font-size:14px;margin:14px 0 8px;">Step 2 — Upload photos</h3>'
+      + '<div id="i9-upload-area" style="margin-bottom:10px;"><p style="font-size:12px;color:#94a3b8;">Pick a list above to start.</p></div>'
+      + '<h3 style="font-size:14px;margin:18px 0 8px;">Step 3 — AI reads the fields</h3>'
+      + '<button type="button" onclick="onbI9Extract()" style="width:100%;padding:12px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">✨ Read documents with AI</button>'
+      + '<div id="s1-extract-result" style="margin-top:12px;"></div>'
+      + '</div>'
+      + '<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:13px;color:#7f1d1d;">⚠ Federal I-9 still requires you to physically inspect the original document(s) in person before signing. Uploads + AI extract are for the digital record, not a substitute for in-person verification.</div>'
+      + '<p style="margin:0 0 12px;font-size:13px;"><a href="https://www.uscis.gov/i-9" target="_blank" style="color:#1b5e20;font-weight:600;">\u{1F4C4} Download blank Form I-9 from USCIS →</a> (employee fills Section 1, employer fills Section 2 after physical inspection)</p>'
+      + signoffHTML('s1', 'I attest I physically inspected the original document(s) in person and the photos uploaded match what I saw', true, 'Employer / HR name')
       + '</div>';
   },
   's2': function() {
@@ -467,6 +474,123 @@ function onbDlExtract() {
     html += '</table>'
       + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;font-size:12px;color:#475569;">If anything looks wrong, retake the photo and click Read License again. Otherwise sign below.</div>'
       + '</div>';
+    resultBox.innerHTML = html;
+  })
+  .catch(function(err) {
+    resultBox.innerHTML = '<div style="color:#7f1d1d;font-size:13px;padding:10px;">AI lookup failed: ' + (err.message || err) + '</div>';
+  });
+}
+
+// I-9 (s1) — pick List A or List B+C upload mode and render the right widgets.
+// Reuses onbDlPreview() for the actual upload→Storage→localStorage pipeline.
+function onbI9SetMode(mode) {
+  window._i9Mode = mode;
+  var area = document.getElementById('i9-upload-area');
+  var aBtn = document.getElementById('i9-mode-a');
+  var bcBtn = document.getElementById('i9-mode-bc');
+  if (aBtn) aBtn.style.borderColor = mode === 'list_a' ? '#1b5e20' : '#e2e8f0';
+  if (bcBtn) bcBtn.style.borderColor = mode === 'list_bc' ? '#1b5e20' : '#e2e8f0';
+  if (!area) return;
+  function dropzone(id, label) {
+    return '<label style="display:block;cursor:pointer;">'
+      +   '<div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px;">' + label + '</div>'
+      +   '<input type="file" id="' + id + '" accept="image/*" capture="environment" onchange="onbDlPreview(this,\'' + id + '-prev\')" style="display:none;">'
+      +   '<div id="' + id + '-prev" onclick="document.getElementById(\'' + id + '\').click()" style="border:2px dashed #cbd5e1;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;background:#f8fafc;">📷 Tap to upload</div>'
+      + '</label>';
+  }
+  if (mode === 'list_a') {
+    area.innerHTML =
+      '<p style="font-size:12px;color:#64748b;margin:0 0 8px;">Upload one List A doc — front + back if applicable. Examples: US Passport, Permanent Resident Card (Green Card), Employment Authorization Document.</p>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      +   dropzone('s1a-front', 'Front')
+      +   dropzone('s1a-back', 'Back (if doc has one)')
+      + '</div>';
+  } else if (mode === 'list_bc') {
+    area.innerHTML =
+      '<p style="font-size:12px;color:#64748b;margin:0 0 8px;">Upload one List B doc (proves identity) AND one List C doc (proves work auth).</p>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
+      +   dropzone('s1b-front', 'List B — DL/State ID front')
+      +   dropzone('s1b-back', 'List B — back')
+      + '</div>'
+      + '<div>'
+      +   dropzone('s1c-front', 'List C — SSN card / birth cert / etc.')
+      + '</div>';
+  }
+}
+
+// I-9 AI Vision extract — runs on whichever photos are uploaded for the
+// selected mode. Pulls all available image dataURLs from localStorage,
+// sends them as a multi-image content array to Claude with a structured
+// prompt requesting per-doc fields.
+function onbI9Extract() {
+  var resultBox = document.getElementById('s1-extract-result');
+  var mode = window._i9Mode || '';
+  if (!mode) {
+    resultBox.innerHTML = '<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#7f1d1d;">Pick a list (A or B+C) first.</div>';
+    return;
+  }
+  // Collect uploaded photos for the active mode
+  var keys = mode === 'list_a'
+    ? ['s1a-front-prev', 's1a-back-prev']
+    : ['s1b-front-prev', 's1b-back-prev', 's1c-front-prev'];
+  var images = [];
+  keys.forEach(function(k) {
+    var dataUrl = localStorage.getItem('bm-onboarding-' + k);
+    if (dataUrl) {
+      var match = dataUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+      if (match) images.push({ key: k, mediaType: match[1], data: match[2] });
+    }
+  });
+  if (!images.length) {
+    resultBox.innerHTML = '<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#7f1d1d;">Upload at least one photo first.</div>';
+    return;
+  }
+  resultBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:#0369a1;font-size:13px;padding:10px;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #0ea5e9;border-top-color:transparent;border-radius:50%;animation:onbspin 0.8s linear infinite;"></span> Reading ' + images.length + ' document' + (images.length === 1 ? '' : 's') + '...</div>';
+  var apiKey = (window.bmClaudeKey ? window.bmClaudeKey() : null) || localStorage.getItem('bm-claude-key') || '';
+  // Build content: one image block per upload, then a text instruction
+  var content = images.map(function(img) {
+    return { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } };
+  });
+  content.push({ type: 'text', text: 'These are I-9 supporting document photos for an employee. For EACH image, identify what it is and extract its fields. Return ONLY a valid JSON array — no prose, no markdown, no code fences. Each element shape: {doc_kind: "us_passport"|"permanent_resident_card"|"employment_authorization_document"|"drivers_license"|"state_id"|"social_security_card"|"birth_certificate"|"other", doc_number: string|null, full_name: string|null, date_of_birth: "YYYY-MM-DD"|null, expiration: "YYYY-MM-DD"|null, country_or_state: string|null, list_classification: "A"|"B"|"C"|"unknown"}. ' + images.length + ' image' + (images.length === 1 ? '' : 's') + ' provided.' });
+  fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: apiKey, model: 'claude-haiku-4-5', max_tokens: 800, messages: [{ role: 'user', content: content }] })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    var text = '';
+    if (res.content && res.content[0] && res.content[0].text) text = res.content[0].text.trim();
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+    var parsed;
+    try { parsed = JSON.parse(text); } catch(e) {
+      resultBox.innerHTML = '<div style="color:#7f1d1d;font-size:13px;padding:10px;">AI couldn\'t parse the documents. Raw: ' + text.substring(0, 200) + '</div>';
+      return;
+    }
+    if (!Array.isArray(parsed)) parsed = [parsed];
+    try { localStorage.setItem('bm-onboarding-s1-i9-fields', JSON.stringify(parsed)); } catch(e) {}
+    // Render: card per doc
+    var html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    parsed.forEach(function(d, idx) {
+      var rows = [
+        ['Document', (d.doc_kind || 'unknown').replace(/_/g, ' ')],
+        ['List', d.list_classification || 'unknown'],
+        ['Number', d.doc_number],
+        ['Name', d.full_name],
+        ['DOB', d.date_of_birth],
+        ['Expires', d.expiration],
+        ['Country/State', d.country_or_state]
+      ];
+      html += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;">'
+        + '<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:10px;">✨ Document #' + (idx + 1) + ' — AI extracted:</div>'
+        + '<table style="width:100%;font-size:13px;">';
+      rows.forEach(function(r) {
+        html += '<tr><td style="padding:4px 8px 4px 0;color:#64748b;width:130px;">' + r[0] + '</td><td style="padding:4px 0;font-weight:600;color:#0f172a;">' + (r[1] || '—') + '</td></tr>';
+      });
+      html += '</table></div>';
+    });
+    html += '<div style="font-size:12px;color:#475569;padding:8px 0;">Look right? Sign below to attest. If anything is wrong or unreadable, retake the photo and click Read documents again.</div>';
+    html += '</div>';
     resultBox.innerHTML = html;
   })
   .catch(function(err) {
