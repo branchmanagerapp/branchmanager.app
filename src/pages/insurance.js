@@ -13,7 +13,8 @@
  *   bm-ins-agent     → { name, email, phone, agency }
  */
 var InsurancePage = {
-  _tab: 'certs',          // 'certs' | 'policies' | 'agent'
+  _tab: 'compliance',     // 'compliance' | 'certs' | 'policies' | 'agent'
+  _compliance: null,      // cached cloud compliance_documents_with_status rows
 
   // ── Storage helpers ───────────────────────────────────────────────────
   _getPolicies: function() { try { return JSON.parse(localStorage.getItem('bm-ins-policies') || '[]'); } catch(e) { return []; } },
@@ -24,13 +25,77 @@ var InsurancePage = {
   _saveAgent: function(d) { localStorage.setItem('bm-ins-agent', JSON.stringify(d)); },
   _id: function() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 5); },
 
+  // ── Cloud compliance_documents (v578+) ────────────────────────────────
+  // Async fetch then re-render. Uses tenant-scoped RLS via SupabaseDB.client.
+  _fetchCompliance: function() {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) {
+      InsurancePage._compliance = []; return;
+    }
+    SupabaseDB.client
+      .from('compliance_documents_with_status')
+      .select('*')
+      .order('expires_date', { ascending: true, nullsFirst: false })
+      .then(function(res) {
+        if (res && !res.error) {
+          var prevLen = (InsurancePage._compliance || []).length;
+          InsurancePage._compliance = res.data || [];
+          // Re-render only if we're still on the insurance page + data changed
+          if (typeof loadPage === 'function' && window._currentPage === 'insurance' && prevLen !== InsurancePage._compliance.length) {
+            loadPage('insurance');
+          }
+        } else {
+          console.warn('[insurance] compliance_documents fetch failed', res && res.error);
+          InsurancePage._compliance = [];
+        }
+      });
+  },
+
+  // Friendly labels for compliance kinds
+  _kindLabel: function(k) {
+    var map = {
+      'wc_policy': 'Workers Comp Policy',
+      'db_policy': 'Disability Benefits',
+      'pfl_policy': 'Paid Family Leave',
+      'general_liability': 'General Liability',
+      'auto_liability': 'Commercial Auto',
+      'umbrella': 'Umbrella / Excess',
+      'pesticide_cert': 'Pesticide Cert',
+      'tcia_member': 'TCIA Membership',
+      'isa_member': 'ISA Membership',
+      'usdot_registration': 'US DOT Registration',
+      'mcs150_biennial': 'MCS-150 Biennial',
+      'dos_biennial': 'NY DOS Biennial',
+      'sales_tax_cert': 'Sales Tax Cert',
+      'vehicle_registration': 'Vehicle Registration',
+      'vehicle_inspection': 'NY Inspection',
+      'driver_license': 'Driver License',
+      'cdl': 'CDL',
+      'dot_medical_card': 'DOT Medical Card',
+      'osha_z133_training': 'ANSI Z133 Training',
+      'first_aid_cpr_cert': 'First Aid / CPR',
+      'business_license_local': 'Local Business License',
+      'home_improvement_contractor': 'HIC License'
+    };
+    return map[k] || k.replace(/_/g, ' ');
+  },
+
   // ── Render ────────────────────────────────────────────────────────────
   render: function() {
     var policies = InsurancePage._getPolicies();
     var certs = InsurancePage._getCerts();
     var agent = InsurancePage._getAgent();
 
-    // Expiry warnings
+    // Kick async compliance fetch — re-renders when data lands
+    if (InsurancePage._compliance === null) {
+      InsurancePage._compliance = []; // prevent duplicate fetches
+      InsurancePage._fetchCompliance();
+    }
+    var compliance = InsurancePage._compliance || [];
+    var compExpired = compliance.filter(function(c) { return c.status === 'expired'; });
+    var compExpiringSoon = compliance.filter(function(c) { return c.status === 'expiring_soon'; });
+    var compNoExpiry = compliance.filter(function(c) { return c.status === 'no_expiry' && c.active; });
+
+    // Expiry warnings (legacy localStorage policies)
     var now = Date.now();
     var expiring = policies.filter(function(p) {
       if (!p.expiry) return false;
@@ -45,42 +110,213 @@ var InsurancePage = {
 
     // Header
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">'
-      + '<h2 style="margin:0;">🛡️ Insurance</h2>'
-      + '<button onclick="InsurancePage._newCert()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Request COI</button>'
+      + '<h2 style="margin:0;">🛡️ Insurance & Compliance</h2>'
+      + '<div style="display:flex;gap:8px;">'
+      +   '<button onclick="InsurancePage._editCompliance(null)" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">+ Add License/Cert</button>'
+      +   '<button onclick="InsurancePage._newCert()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Request COI</button>'
+      + '</div>'
       + '</div>';
 
-    // Alerts
-    if (expired.length) {
+    // Combined alerts (legacy policies + cloud compliance)
+    var totalExpired = expired.length + compExpired.length;
+    var totalExpiringSoon = expiring.length + compExpiringSoon.length;
+    if (totalExpired) {
+      var labels = expired.map(function(p) { return p.type + ' (' + (p.carrier || '') + ')'; })
+        .concat(compExpired.map(function(c) { return InsurancePage._kindLabel(c.kind) + ' #' + (c.number || ''); }));
       html += '<div style="background:#fdecea;border:1px solid #e57373;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#c62828;">'
-        + '⚠️ <strong>' + expired.length + ' policy' + (expired.length > 1 ? 'ies' : 'y') + ' EXPIRED:</strong> '
-        + expired.map(function(p) { return p.type + ' (' + (p.carrier || '') + ')'; }).join(', ')
-        + ' — update your policy info.</div>';
+        + '⚠️ <strong>' + totalExpired + ' EXPIRED:</strong> ' + labels.join(', ')
+        + ' — renew immediately.</div>';
     }
-    if (expiring.length) {
+    if (totalExpiringSoon) {
+      var labels2 = expiring.map(function(p) {
+        var d = Math.ceil((new Date(p.expiry).getTime() - now) / 86400000);
+        return p.type + ' (' + d + 'd)';
+      }).concat(compExpiringSoon.map(function(c) {
+        return InsurancePage._kindLabel(c.kind) + ' (' + (c.days_until_expiry != null ? c.days_until_expiry + 'd' : '?') + ')';
+      }));
       html += '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#e65100;">'
-        + '⏳ <strong>' + expiring.length + ' policy expiring within 60 days:</strong> '
-        + expiring.map(function(p) {
-            var days = Math.ceil((new Date(p.expiry).getTime() - now) / 86400000);
-            return p.type + ' (expires in ' + days + 'd)';
-          }).join(', ')
+        + '⏳ <strong>' + totalExpiringSoon + ' expiring soon:</strong> ' + labels2.join(', ')
         + '</div>';
+    }
+    if (compNoExpiry.length) {
+      html += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#1e40af;">'
+        + 'ℹ ' + compNoExpiry.length + ' license/cert with no expiry on file — '
+        + '<a onclick="InsurancePage._tab=\'compliance\';loadPage(\'insurance\')" style="color:#1e40af;text-decoration:underline;cursor:pointer;">add expiration dates</a> for renewal alerts.</div>';
     }
 
     // Tabs
-    var tabs = [['certs','📄 Certificates (' + certs.length + ')'], ['policies','🗂️ Policies (' + policies.length + ')'], ['agent','👤 Agent']];
-    html += '<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;">';
+    var tabs = [
+      ['compliance','🛂 Compliance (' + compliance.length + ')'],
+      ['certs','📄 Certificates (' + certs.length + ')'],
+      ['policies','🗂️ Policies (' + policies.length + ')'],
+      ['agent','👤 Agent']
+    ];
+    html += '<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto;">';
     tabs.forEach(function(t) {
       var active = InsurancePage._tab === t[0];
       html += '<button onclick="InsurancePage._tab=\'' + t[0] + '\';loadPage(\'insurance\')" style="padding:10px 18px;border:none;background:none;font-size:14px;font-weight:' + (active?'700':'500') + ';color:' + (active?'var(--green-dark)':'var(--text-light)') + ';border-bottom:2px solid ' + (active?'var(--green-dark)':'transparent') + ';margin-bottom:-2px;cursor:pointer;white-space:nowrap;">' + t[1] + '</button>';
     });
     html += '</div>';
 
-    if (InsurancePage._tab === 'certs') html += InsurancePage._renderCerts(certs);
+    if (InsurancePage._tab === 'compliance') html += InsurancePage._renderCompliance(compliance);
+    else if (InsurancePage._tab === 'certs') html += InsurancePage._renderCerts(certs);
     else if (InsurancePage._tab === 'policies') html += InsurancePage._renderPolicies(policies);
     else html += InsurancePage._renderAgent(agent);
 
     html += '</div>';
     return html;
+  },
+
+  // ── Compliance tab — cloud-backed (compliance_documents_with_status) ──
+  _renderCompliance: function(rows) {
+    if (!rows.length) {
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;">'
+        + '<div style="font-size:36px;margin-bottom:12px;">🛂</div>'
+        + '<h3 style="margin:0 0 8px;">No compliance docs yet</h3>'
+        + '<p style="color:var(--text-light);font-size:14px;margin:0 0 20px;">Track WC, DBL, GL, Auto, Pesticide Cert, TCIA, ISA, USDOT, NY DOS, vehicle reg, CDL, etc. in one place. Renewal alerts at 30/60/90 days.</p>'
+        + '<button onclick="InsurancePage._editCompliance(null)" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Add First License/Cert</button>'
+        + '</div>';
+    }
+
+    // Group by status: expired → expiring_soon → no_expiry → active
+    var statusOrder = { 'expired': 0, 'expiring_soon': 1, 'no_expiry': 2, 'active': 3, 'archived': 4 };
+    var sorted = rows.slice().sort(function(a, b) {
+      var d = (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      if (d !== 0) return d;
+      // Same bucket — order by expires asc (sooner first)
+      if (a.expires_date && b.expires_date) return new Date(a.expires_date) - new Date(b.expires_date);
+      return (a.kind || '').localeCompare(b.kind || '');
+    });
+
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">';
+    sorted.forEach(function(c) {
+      var statusMeta = ({
+        'expired':       { color: '#dc2626', bg: '#fee2e2', label: '⚠ EXPIRED' },
+        'expiring_soon': { color: '#b45309', bg: '#fef3c7', label: '⏳ ' + (c.days_until_expiry || '?') + 'd left' },
+        'active':        { color: '#15803d', bg: '#dcfce7', label: '✓ Active (' + (c.days_until_expiry || '?') + 'd)' },
+        'no_expiry':     { color: '#475569', bg: '#f1f5f9', label: '— No expiry set' },
+        'archived':      { color: '#94a3b8', bg: '#f8fafc', label: 'Archived' }
+      })[c.status] || { color: '#475569', bg: '#f1f5f9', label: c.status };
+
+      html += '<div style="background:#fff;border:1px solid var(--border);border-left:4px solid ' + statusMeta.color + ';border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px;">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-weight:700;font-size:14px;">' + UI.esc(InsurancePage._kindLabel(c.kind)) + '</div>'
+        +     (c.number ? '<div style="font-size:12px;color:var(--text-light);font-family:monospace;">' + UI.esc(c.number) + '</div>' : '')
+        +   '</div>'
+        +   '<span style="background:' + statusMeta.bg + ';color:' + statusMeta.color + ';padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;">' + statusMeta.label + '</span>'
+        + '</div>'
+        + (c.issuer ? '<div style="font-size:12px;color:var(--text-light);">Issuer: <strong style="color:var(--text);">' + UI.esc(c.issuer) + '</strong></div>' : '')
+        + (c.expires_date ? '<div style="font-size:12px;color:var(--text-light);">Expires: <strong style="color:' + statusMeta.color + ';">' + InsurancePage._fmtDate(c.expires_date) + '</strong></div>' : '')
+        + (c.notes ? '<div style="font-size:11px;color:var(--text-light);line-height:1.4;margin-top:2px;">' + UI.esc(c.notes) + '</div>' : '')
+        + '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
+        +   '<button onclick="InsurancePage._editCompliance(\'' + c.id + '\')" style="flex:1;background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;">' + (c.expires_date ? 'Edit' : '+ Set expiry') + '</button>'
+        +   (c.renewal_url ? '<a href="' + UI.esc(c.renewal_url) + '" target="_blank" rel="noopener" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;text-decoration:none;color:var(--text);">↗ Renew</a>' : '')
+        + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+    return html;
+  },
+
+  // ── Compliance edit modal ──────────────────────────────────────────────
+  _editCompliance: function(id) {
+    var existing = id ? (InsurancePage._compliance || []).find(function(c) { return c.id === id; }) : null;
+    var kinds = [
+      ['wc_policy','Workers Comp Policy'], ['db_policy','Disability Benefits'], ['pfl_policy','Paid Family Leave'],
+      ['general_liability','General Liability'], ['auto_liability','Commercial Auto'], ['umbrella','Umbrella / Excess'],
+      ['pesticide_cert','Pesticide Cert'], ['tcia_member','TCIA Membership'], ['isa_member','ISA Membership'],
+      ['usdot_registration','US DOT Registration'], ['mcs150_biennial','MCS-150 Biennial'],
+      ['dos_biennial','NY DOS Biennial'], ['sales_tax_cert','Sales Tax Cert'],
+      ['vehicle_registration','Vehicle Registration'], ['vehicle_inspection','NY Inspection'],
+      ['driver_license','Driver License'], ['cdl','CDL'], ['dot_medical_card','DOT Medical Card'],
+      ['osha_z133_training','ANSI Z133 Training'], ['first_aid_cpr_cert','First Aid / CPR'],
+      ['business_license_local','Local Business License'], ['home_improvement_contractor','HIC License']
+    ];
+    var html = '<div style="max-width:540px;">'
+      + '<h3 style="margin:0 0 14px;">' + (existing ? 'Edit license/cert' : 'Add license/cert') + '</h3>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Type'
+      +   '<select id="cd-kind" ' + (existing ? 'disabled' : '') + ' style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      +     kinds.map(function(k) { return '<option value="' + k[0] + '"' + (existing && existing.kind === k[0] ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('')
+      +   '</select>'
+      + '</label>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Number / Policy ID'
+      +   '<input type="text" id="cd-number" value="' + UI.esc((existing && existing.number) || '') + '" placeholder="e.g. WC-32079-H19" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      + '</label>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Issuer'
+      +   '<input type="text" id="cd-issuer" value="' + UI.esc((existing && existing.issuer) || '') + '" placeholder="e.g. NYSIF, NY DEC, FMCSA" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      + '</label>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      +   '<label style="font-size:12px;font-weight:600;color:#475569;">Issued date'
+      +     '<input type="date" id="cd-issued" value="' + ((existing && existing.issued_date) || '') + '" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      +   '</label>'
+      +   '<label style="font-size:12px;font-weight:600;color:#475569;">Expires date'
+      +     '<input type="date" id="cd-expires" value="' + ((existing && existing.expires_date) || '') + '" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      +   '</label>'
+      + '</div>'
+      + '<label style="display:block;margin-bottom:10px;font-size:12px;font-weight:600;color:#475569;">Renewal URL (deep link to issuer portal)'
+      +   '<input type="url" id="cd-renewal" value="' + UI.esc((existing && existing.renewal_url) || '') + '" placeholder="https://..." style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;">'
+      + '</label>'
+      + '<label style="display:block;margin-bottom:14px;font-size:12px;font-weight:600;color:#475569;">Notes'
+      +   '<textarea id="cd-notes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin-top:4px;font-family:inherit;resize:vertical;">' + UI.esc((existing && existing.notes) || '') + '</textarea>'
+      + '</label>'
+      + '<div style="display:flex;justify-content:space-between;gap:8px;">'
+      +   (existing ? '<button onclick="InsurancePage._archiveCompliance(\'' + existing.id + '\')" style="background:none;border:1px solid #fecaca;color:#b91c1c;padding:9px 14px;border-radius:6px;font-size:13px;cursor:pointer;">Archive</button>' : '<span></span>')
+      +   '<div style="display:flex;gap:8px;">'
+      +     '<button onclick="UI.closeModal()" style="background:var(--bg);border:1px solid var(--border);padding:9px 14px;border-radius:6px;font-size:13px;cursor:pointer;">Cancel</button>'
+      +     '<button onclick="InsurancePage._saveCompliance(' + (existing ? '\'' + existing.id + '\'' : 'null') + ')" style="background:var(--green-dark);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+    UI.modal(html);
+  },
+
+  _saveCompliance: function(id) {
+    var row = {
+      kind: document.getElementById('cd-kind').value,
+      number: document.getElementById('cd-number').value.trim() || null,
+      issuer: document.getElementById('cd-issuer').value.trim() || null,
+      issued_date: document.getElementById('cd-issued').value || null,
+      expires_date: document.getElementById('cd-expires').value || null,
+      renewal_url: document.getElementById('cd-renewal').value.trim() || null,
+      notes: document.getElementById('cd-notes').value.trim() || null,
+    };
+    if (!row.kind) { UI.toast('Pick a type', 'error'); return; }
+    if (id) {
+      bmSafeCall(SupabaseDB.client.from('compliance_documents').update(row).eq('id', id), 'update compliance')
+        .then(function(res) {
+          if (!res.error) {
+            UI.toast('✓ Saved', 'success');
+            UI.closeModal();
+            InsurancePage._compliance = null; // force re-fetch
+            loadPage('insurance');
+          }
+        });
+    } else {
+      row.tenant_id = window.resolveTenantId ? window.resolveTenantId() : '93af4348-8bba-4045-ac3e-5e71ec1cc8c5';
+      bmSafeCall(SupabaseDB.client.from('compliance_documents').insert(row), 'add compliance')
+        .then(function(res) {
+          if (!res.error) {
+            UI.toast('✓ Added', 'success');
+            UI.closeModal();
+            InsurancePage._compliance = null;
+            loadPage('insurance');
+          }
+        });
+    }
+  },
+
+  _archiveCompliance: function(id) {
+    if (!confirm('Archive this license/cert? It will stop appearing in the list and stop firing renewal alerts. (Soft-archive — data preserved.)')) return;
+    bmSafeCall(SupabaseDB.client.from('compliance_documents').update({ active: false }).eq('id', id), 'archive compliance')
+      .then(function(res) {
+        if (!res.error) {
+          UI.toast('✓ Archived', 'success');
+          UI.closeModal();
+          InsurancePage._compliance = null;
+          loadPage('insurance');
+        }
+      });
   },
 
   // ── Certificates tab ──────────────────────────────────────────────────
