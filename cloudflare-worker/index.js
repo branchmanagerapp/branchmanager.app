@@ -2,8 +2,8 @@
 // Deployed to: branchmanager.app + clients.branchmanager.app
 //
 // Routes:
-//   clients.branchmanager.app/*   → smartlawnny-cloud.github.io/branchmanager.app/portal/*
-//   branchmanager.app/*           → smartlawnny-cloud.github.io/branchmanager.app/*
+//   clients.branchmanager.app/*   → branchmanagerapp.github.io/branchmanager.app/portal/*
+//   branchmanager.app/*           → branchmanagerapp.github.io/branchmanager.app/*
 //
 // History:
 //   Apr 25 2026 — initial proxy created (BM white-label phase 1, v418)
@@ -26,7 +26,7 @@ const BUST_PATHS = new Set([
   '/version.json',
 ]);
 
-const ORIGIN = 'https://smartlawnny-cloud.github.io/branchmanager.app';
+const ORIGIN = 'https://branchmanagerapp.github.io/branchmanager.app';
 
 // Phase 2 — subdomain → tenant_id map. Adding a new tenant: register
 // {subdomain}.branchmanager.app DNS at Cloudflare, add a row here, seed
@@ -110,7 +110,7 @@ export default {
 
       const target = ORIGIN + path + url.search;
       const upstreamReq = new Request(target, request);
-      upstreamReq.headers.set('Host', 'smartlawnny-cloud.github.io');
+      upstreamReq.headers.set('Host', 'branchmanagerapp.github.io');
 
       const upstream = await fetch(upstreamReq, { redirect: 'manual' });
       return applySecurityHeaders(new Response(upstream.body, upstream));
@@ -119,7 +119,7 @@ export default {
     // ── Main BM domain (apex) or tenant subdomain ──
     const target = ORIGIN + url.pathname + url.search;
     const upstreamReq = new Request(target, request);
-    upstreamReq.headers.set('Host', 'smartlawnny-cloud.github.io');
+    upstreamReq.headers.set('Host', 'branchmanagerapp.github.io');
     if (tenantId) {
       // Stamp the tenant id so edge functions reached via the BM bundle
       // know which tenant the user is operating as. The bundle ALSO
