@@ -296,6 +296,7 @@ var RequestsPage = {
       + '<table class="data-table"><thead><tr>'
       + '<th style="width:32px;"><input type="checkbox" onchange="document.querySelectorAll(\'.req-check\').forEach(function(cb){cb.checked=event.target.checked;});RequestsPage._updateBulk();" title="Select all"></th>'
       + self._sortTh('Client', 'clientName')
+      + '<th>Phone</th>'
       + self._sortTh('Description', 'service')
       + self._sortTh('Property', 'property')
       + self._sortTh('Requested', 'createdAt')
@@ -303,7 +304,7 @@ var RequestsPage = {
       + '</tr></thead><tbody>';
 
     if (page.length === 0) {
-      html += '<tr><td colspan="6">' + (self._search ? '<div style="text-align:center;padding:24px;color:var(--text-light);">No requests match "' + self._search + '"</div>' : UI.emptyState('&#128229;', 'No requests yet', 'New requests from your website form will appear here.')) + '</td></tr>';
+      html += '<tr><td colspan="7">' + (self._search ? '<div style="text-align:center;padding:24px;color:var(--text-light);">No requests match "' + self._search + '"</div>' : UI.emptyState('&#128229;', 'No requests yet', 'New requests from your website form will appear here.')) + '</td></tr>';
     } else {
       page.forEach(function(r) {
         var isOverdue = self._isOverdue(r);
@@ -315,11 +316,32 @@ var RequestsPage = {
         var desc = r.service || r.notes || '';
         var prop = r.property || '';
 
+        // Phone display: format as (XXX) XXX-XXXX, link as tel:.
+        // Fall back to the linked client's phone when the request itself doesn't carry one.
+        var phRaw = (r.phone || '').replace(/\D/g, '');
+        if (phRaw.length < 10 && r.clientId) {
+          var linked = DB.clients.getById(r.clientId);
+          if (linked && linked.phone) phRaw = linked.phone.replace(/\D/g, '');
+        }
+        var phCell = '<span style="color:var(--text-light);">—</span>';
+        if (phRaw.length >= 10) {
+          var p10 = phRaw.slice(-10);
+          var phFmt = '(' + p10.slice(0,3) + ') ' + p10.slice(3,6) + '-' + p10.slice(6);
+          phCell = '<a href="tel:+1' + p10 + '" onclick="event.stopPropagation()" style="color:var(--accent);text-decoration:none;font-size:13px;white-space:nowrap;">' + phFmt + '</a>';
+        }
+
+        // Property cell: clickable to Maps if present
+        var propCell = '<span style="color:var(--text-light);">—</span>';
+        if (prop) {
+          propCell = '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(prop) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--accent);text-decoration:none;display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(prop) + '">📍 ' + UI.esc(prop) + '</a>';
+        }
+
         html += '<tr style="cursor:pointer;' + rowBg + '" onclick="RequestsPage.showDetail(\'' + r.id + '\')">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="req-check" value="' + r.id + '" onchange="RequestsPage._updateBulk()" style="width:16px;height:16px;"></td>'
           + '<td><strong>' + UI.esc(r.clientName || 'Unknown') + '</strong></td>'
+          + '<td>' + phCell + '</td>'
           + '<td style="font-size:13px;color:var(--text-light);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(desc) + '">' + UI.esc(desc || '—') + '</td>'
-          + '<td style="font-size:13px;color:var(--text-light);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(prop) + '">' + UI.esc(prop || '—') + '</td>'
+          + '<td style="font-size:13px;">' + propCell + '</td>'
           + '<td style="white-space:nowrap;">' + UI.dateShort(r.createdAt) + '</td>'
           + '<td>' + UI.statusBadge(displayStatus) + '</td>'
           + '</tr>';
@@ -342,6 +364,25 @@ var RequestsPage = {
         var desc = r.service || r.notes || '';
         if (desc.length > 60) desc = desc.substring(0, 60) + '...';
         var returning = r.clientId ? '<span style="display:inline-block;font-size:10px;padding:1px 6px;border-radius:8px;background:#e8f0fe;color:#2b6cb0;margin-left:6px;font-weight:600;">Returning</span>' : '';
+
+        // Mobile phone link (with fallback to linked client's phone)
+        var mPhRaw = (r.phone || '').replace(/\D/g, '');
+        if (mPhRaw.length < 10 && r.clientId) {
+          var mLinked = DB.clients.getById(r.clientId);
+          if (mLinked && mLinked.phone) mPhRaw = mLinked.phone.replace(/\D/g, '');
+        }
+        var mPhHtml = '';
+        if (mPhRaw.length >= 10) {
+          var mp10 = mPhRaw.slice(-10);
+          var mPhFmt = '(' + mp10.slice(0,3) + ') ' + mp10.slice(3,6) + '-' + mp10.slice(6);
+          mPhHtml = '<a href="tel:+1' + mp10 + '" onclick="event.stopPropagation()" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;display:inline-block;margin-top:2px;">📞 ' + mPhFmt + '</a>';
+        }
+        // Mobile property → Maps link
+        var mPropHtml = '';
+        if (r.property) {
+          mPropHtml = '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(r.property) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:12px;color:var(--accent);text-decoration:none;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(r.property) + '</a>';
+        }
+
         html += '<div data-rid="' + r.id + '" class="request-card" style="background:' + cardBg + ';border:1px solid ' + cardBorder + ';border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04);-webkit-tap-highlight-color:transparent;display:flex;align-items:flex-start;gap:10px;">'
           + '<div onclick="event.stopPropagation()" style="flex-shrink:0;padding-top:2px;"><input type="checkbox" class="req-check" value="' + r.id + '" onchange="RequestsPage._updateBulk()" style="width:18px;height:18px;"></div>'
           + '<div style="flex:1;min-width:0;">'
@@ -349,7 +390,8 @@ var RequestsPage = {
           +   '<div style="flex:1;min-width:0;">'
           +     '<div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(r.clientName || 'Unknown') + returning + '</div>'
           +     (desc ? '<div style="font-size:13px;color:var(--text);margin-top:4px;">' + UI.esc(desc) + '</div>' : '')
-          +     (r.property ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(r.property) + '</div>' : '')
+          +     mPhHtml
+          +     mPropHtml
           +   '</div>'
           +   '<div style="flex-shrink:0;">' + UI.statusBadge(displayStatus) + '</div>'
           + '</div>'
