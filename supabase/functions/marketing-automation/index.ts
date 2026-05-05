@@ -125,6 +125,7 @@ async function logSend(clientId: string | null, triggerType: string, recordId: s
   await sb.from("communications").insert({
     tenant_id:  TENANT_ID,
     client_id:  clientId || null,
+    type:       "email",
     channel:    "email",
     direction:  "outbound",
     status:     status,

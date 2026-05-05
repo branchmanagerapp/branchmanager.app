@@ -204,6 +204,7 @@ Deno.serve(async (req) => {
     const { error: commErr } = await sb.from("communications").insert({
       tenant_id: TENANT_ID,
       client_id: clientId,
+      type: "email",
       channel: "email",
       direction: "inbound",
       from_number: null,
@@ -225,6 +226,7 @@ Deno.serve(async (req) => {
     const { error: commErr } = await sb.from("communications").insert({
       tenant_id: TENANT_ID,
       client_id: clientId,
+      type: "email",
       channel: "email",
       direction: "inbound",
       body: `Spam complaint → ${recipient}`,

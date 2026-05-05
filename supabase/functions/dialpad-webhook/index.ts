@@ -158,6 +158,7 @@ Deno.serve(async (req) => {
   // invisible in the call center UI).
   let row: any = {
     tenant_id: TENANT_ID,
+    type: "call",
     channel: "call",
     direction: "inbound",
     from_number: data.from_number || data.external_number || data.from || null,
@@ -171,13 +172,16 @@ Deno.serve(async (req) => {
   };
 
   if (event.startsWith("sms")) {
+    row.type = "sms";
     row.channel = "sms";
     row.direction = data.direction === "outbound" ? "outbound" : "inbound";
     row.body = data.text || data.message || data.body || null;
   } else if (event.startsWith("voicemail")) {
+    row.type = "voicemail";
     row.channel = "voicemail";
     row.body = data.transcription || data.transcript || null;
   } else if (event.startsWith("call")) {
+    row.type = "call";
     row.channel = "call";
     row.direction = data.direction === "outbound" ? "outbound" : "inbound";
   }

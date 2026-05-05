@@ -685,7 +685,7 @@ var CallCenter = {
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (sb) {
       await sb.from('communications').insert({
-        client_id: thr.clientId || null, channel: 'sms', direction: 'outbound',
+        client_id: thr.clientId || null, type: 'sms', channel: 'sms', direction: 'outbound',
         status: sent ? 'sent' : 'sent_fallback', body: msg,
         to_number: '+' + thr.phone, from_number: null,
         dialpad_id: 'bm-out-' + Date.now(),
