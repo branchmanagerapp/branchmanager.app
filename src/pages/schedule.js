@@ -22,7 +22,11 @@ var SchedulePage = {
     // Media Center moved into SocialBranch. If you want recurring admin reminders
     // back, build them with explicit user opt-in instead of seeding on every render.
     var today = SchedulePage._localDateStr(new Date());
+    // v587: archived jobs hidden from calendar by default; toggle reveals them
+    // for cases like scheduling social-media posts about completed past jobs.
+    var showArchived = localStorage.getItem('bm-cal-show-archived') === 'true';
     var allJobs = DB.jobs.getAll();
+    if (!showArchived) allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
     var todayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === today; });
 
     // Today summary (compact — just count, no big card)
@@ -62,6 +66,7 @@ var SchedulePage = {
       +   '</div>'
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
+      +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
       + '</div>';
 
@@ -154,6 +159,7 @@ var SchedulePage = {
     var d = SchedulePage.currentDate;
     var dateStr = SchedulePage._localDateStr(d);
     var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
 
     var html = '';
@@ -287,6 +293,12 @@ var SchedulePage = {
     loadPage('schedule');
   },
 
+  _toggleArchived: function() {
+    var current = localStorage.getItem('bm-cal-show-archived') === 'true';
+    localStorage.setItem('bm-cal-show-archived', current ? 'false' : 'true');
+    loadPage('schedule');
+  },
+
   _photosEnabled: function() {
     return localStorage.getItem('bm-cal-photos') !== 'false';
   },
@@ -338,6 +350,7 @@ var SchedulePage = {
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var today = SchedulePage._localDateStr(new Date());
     var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var html = '';
 
     // Unscheduled jobs panel
@@ -430,6 +443,7 @@ var SchedulePage = {
     var daysInMonth = new Date(year, month + 1, 0).getDate();
     var today = SchedulePage._localDateStr(new Date());
     var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
     var html = '';
