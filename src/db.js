@@ -224,10 +224,52 @@ var DB = (function() {
     } catch(e) {}
   }
 
+  // ── Poison-pill guard — refuse to upload demo/fixture data to cloud ──
+  // Last line of defense against the Apr 23 / Apr 30 / May 5 fabricate-data
+  // incidents. If a row in clients/jobs/invoices/requests/quotes carries the
+  // exact (name, phone) signature of a demo seed, REFUSE to push it. Logs
+  // loud and locally so Doug sees the warning. Names from the disabled
+  // seedDemo() function — the only thing that has ever generated these.
+  var FABRICATED_NAME_PHONES = {
+    'brian heermance|6462284455': true,
+    'ken phillips|9145550102': true,
+    'cynthia ferral|3477761419': true,
+    'christina eckhart|4237401778': true,  // matches the real client too — block phantom IDs only (see below)
+    'marlene colangelo|9145550199': true,
+    'george grant|9145550177': true
+  };
+  // Real customer client_ids that ARE legit (allow-list — these have never been fabricated;
+  // the corresponding seedDemo dupes had deterministic 6d6f70xx-xxxx ids instead).
+  var REAL_CLIENT_ID_ALLOWLIST = {
+    '3a8282c5-12a9-4a2f-b64d-b6030938dcfb': true   // Christina Eckhart (real, since 2025-10-30)
+    // Add other ids here if more real overlaps emerge
+  };
+  function _looksFabricated(table, record) {
+    if (table !== 'clients' && table !== 'jobs' && table !== 'invoices' && table !== 'requests' && table !== 'quotes') return false;
+    var name = (record.name || record.clientName || '').trim().toLowerCase();
+    var phone = String(record.phone || '').replace(/\D/g, '').slice(-10);
+    if (!name || !phone) return false;
+    var key = name + '|' + phone;
+    if (!FABRICATED_NAME_PHONES[key]) return false;
+    // Allow-list: real customers with these names whose ids are known-good
+    if (table === 'clients' && REAL_CLIENT_ID_ALLOWLIST[record.id]) return false;
+    if (record.clientId && REAL_CLIENT_ID_ALLOWLIST[record.clientId]) return false;
+    return true;
+  }
+
   function _pushToCloud(key, record, method) {
     try {
       var table = REMOTE_TABLE[key];
       if (!table) return;
+      if (_looksFabricated(table, record)) {
+        console.error('[DB push BLOCKED] fabricated-data fingerprint detected — refusing to upload', table, record);
+        try {
+          var blocked = JSON.parse(localStorage.getItem('bm-blocked-fabricated') || '[]');
+          blocked.unshift({ at: new Date().toISOString(), table: table, record: record });
+          localStorage.setItem('bm-blocked-fabricated', JSON.stringify(blocked.slice(0, 100)));
+        } catch(e) {}
+        return;
+      }
       // If a full cloud pull is in progress, defer the push so it can't be overwritten
       if (window._bmSyncLock) {
         console.debug('[DB push] sync lock active, deferring', table, record.id);
@@ -736,13 +778,15 @@ var DB = (function() {
   // NEVER-fabricate-data rule (MEMORY.md). Demo seeding is gone for good.
   // If you want a sandbox, use a separate tenant/project.
   function seedDemo() {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem('bm-allow-demo-seed') !== 'true') {
-      return; // Hard off unless explicit opt-in flag set
-    }
-    if (clients.count() > 0) return;
-    services.seed();
-    // (Body removed — see commit v593. Set localStorage 'bm-allow-demo-seed=true' to re-enable for dev only.)
+    // HARD KILLED v594. Three fabricate-data incidents traced to this path.
+    // Body deleted, no opt-in flag, no callsite. Throws if invoked.
+    throw new Error('seedDemo is permanently disabled. See db.js comment + MEMORY.md NEVER-fabricate-data rule.');
   }
+  // Run services.seed() ONCE at boot if services table is empty. These are
+  // PRICING-TEMPLATE rows (Tree Removal, Pruning, etc.) — not customer data.
+  // Safe to seed because they're fixed templates Doug uses in quotes; a cloud
+  // wipe should regenerate them. If you ever want them gone, edit services.seed.
+  try { services.seed(); } catch(e) {}
 
   // Team members — uses the generic create/update/remove so bm-team → Supabase team_members syncs automatically
   var team = {
@@ -817,8 +861,8 @@ var DB = (function() {
   };
 })();
 
-// Auto-seed demo data on first load
-DB.seedDemo();
+// Auto-seed REMOVED v594. seedDemo() now throws — never call it. Pricing-template
+// services.seed() runs inside the IIFE above (one-shot, idempotent, not customer data).
 
 // Kick off tenant resolution — idempotent, safe to call every page load.
 // Runs async; writes cache to localStorage once resolved. Retries later if

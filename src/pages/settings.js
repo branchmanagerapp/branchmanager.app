@@ -1406,7 +1406,6 @@ var SettingsPage = {
       + '<button class="btn btn-outline" onclick="SettingsPage.deduplicateTags()">Fix Duplicate Tags</button>'
       + '<button class="btn btn-outline" onclick="SettingsPage.reconcileOrphans()">🔗 Reconcile Orphan Records</button>'
       + '<button class="btn btn-outline" onclick="SettingsPage.auditAIData()">🔍 Audit AI-Created Data</button>'
-      + '<button class="btn btn-outline" onclick="SettingsPage.resetDemo()">Reset to Demo Data</button>'
       + '<button class="btn" style="background:var(--red);color:#fff;" onclick="SettingsPage.clearAll()">Clear All Data</button>'
       + '</div>'
       + '<div id="audit-result" style="font-size:12px;color:var(--text-light);">"Audit AI-Created Data" lists every row any Claude session has added to your DB — clients/quotes/jobs/invoices — so you can spot-check and delete fakes.</div>'
@@ -1767,14 +1766,9 @@ var SettingsPage = {
     reader.readAsText(file);
   },
 
-  resetDemo: function() {
-    UI.confirm('Reset all data to demo? This will erase current data.', function() {
-      Object.values(DB.KEYS).forEach(function(k) { localStorage.removeItem(k); });
-      DB.seedDemo();
-      UI.toast('Demo data restored');
-      loadPage('settings');
-    });
-  },
+  // resetDemo REMOVED v594. Demo seeding caused 3 fabricate-data incidents
+  // (Apr 23 / Apr 30 / May 5). Permanently disabled. Use Clear All Data if
+  // you actually want to wipe and start fresh.
 
   clearAll: function() {
     // Two-stage confirm — must type exactly "DELETE" to proceed.
