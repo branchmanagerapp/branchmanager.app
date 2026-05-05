@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Data Deletion Instructions — Second Nature Tree Service</title>
-<meta name="description" content="How to request deletion of your personal data from Second Nature Tree Service.">
+<title>Data Deletion Instructions — {{business_name}}</title>
+<meta name="description" content="How to request deletion of your personal data from {{business_name}}.">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f5f6f8; color:#222; line-height:1.6; }
@@ -25,13 +25,14 @@
   .mailto-btn:hover { background:#2d5a27; text-decoration:none; }
   footer { border-top:1px solid #e0e0e0; margin-top:40px; padding-top:20px; font-size:13px; color:#777; }
 </style>
+  <script src="branding.js"></script>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="tree">🌳</div>
     <div>
-      <h1>Second Nature Tree Service</h1>
+      <h1>{{business_name}}</h1>
       <div class="tag">Data Deletion Instructions</div>
     </div>
   </div>
@@ -43,7 +44,7 @@
   <p>We respect your right to control your personal information. This page explains how to request deletion of data we hold about you.</p>
 
   <h2>How to Request Deletion</h2>
-  <p>Send an email to <strong><a href="mailto:info@peekskilltree.com?subject=Data%20Deletion%20Request">info@peekskilltree.com</a></strong> with the subject line <em>Data Deletion Request</em> and include:</p>
+  <p>Send an email to <strong><a href="mailto:{{email}}?subject=Data%20Deletion%20Request">{{email}}</a></strong> with the subject line <em>Data Deletion Request</em> and include:</p>
   <ul>
     <li>Your full name</li>
     <li>The email address or phone number associated with your account</li>
@@ -51,7 +52,7 @@
   </ul>
 
   <p>
-    <a class="mailto-btn" href="mailto:info@peekskilltree.com?subject=Data%20Deletion%20Request&body=Please%20delete%20my%20personal%20data.%0A%0AName%3A%0AEmail%20or%20phone%20on%20file%3A%0A">📧 Send Deletion Request</a>
+    <a class="mailto-btn" href="mailto:{{email}}?subject=Data%20Deletion%20Request&body=Please%20delete%20my%20personal%20data.%0A%0AName%3A%0AEmail%20or%20phone%20on%20file%3A%0A">📧 Send Deletion Request</a>
   </p>
 
   <h2>What Gets Deleted</h2>
@@ -79,7 +80,7 @@
   <p>If you contacted us through our Facebook or Instagram accounts, you can also remove our app's access to your data:</p>
   <ol>
     <li>Open <strong>Facebook Settings → Security and Login → Apps and Websites</strong> (or the equivalent on Instagram).</li>
-    <li>Find the "Second Nature Tree Service" or "Branch Manager" entry.</li>
+    <li>Find the "{{business_name}}" or "Branch Manager" entry.</li>
     <li>Click <strong>Remove</strong>. This revokes our access going forward.</li>
   </ol>
   <p>Revoking access doesn't delete data we already have. To delete that data, also email us as described above.</p>
@@ -89,14 +90,14 @@
 
   <h2>Contact</h2>
   <div class="box">
-    <strong>Second Nature Tree Service, LLC</strong><br>
-    Peekskill, NY · Licensed & Insured · WC-32079 / PC-50644<br>
-    Email: <a href="mailto:info@peekskilltree.com">info@peekskilltree.com</a><br>
-    Phone: <a href="tel:+19143915233">(914) 391-5233</a>
+    <strong>{{legal_name}}</strong><br>
+    {{address_short}} · Licensed & Insured · WC-32079 / PC-50644<br>
+    Email: <a href="mailto:{{email}}">{{email}}</a><br>
+    Phone: <a href="tel:+1{{phone_e164}}">{{phone}}</a>
   </div>
 
   <footer>
-    <a href="https://peekskilltree.com">Home</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a>
+    <a href="{{website}}">Home</a> · <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a>
   </footer>
 </div>
 </body>

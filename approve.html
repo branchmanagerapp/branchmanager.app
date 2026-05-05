@@ -82,6 +82,7 @@
       .line-table th:nth-child(3), .line-table td:nth-child(3) { display: none; }
     }
   </style>
+  <script src="branding.js"></script>
 </head>
 <body>
   <div class="page">
@@ -356,7 +357,7 @@
 
     // ── NY Westchester/Putnam HIC required disclosures (≥$500 jobs) ─────
     var HIC_HTML = '<div class="hic-box" role="region" aria-label="Required legal disclosures">'
-      + '<p><strong>Right to Cancel.</strong> You, the buyer, may cancel this transaction at any time prior to midnight of the third business day after the date of this contract. To cancel, deliver a signed and dated written notice of cancellation to Second Nature Tree Service, 1 Highland Industrial Park, Peekskill, NY 10566, or email info@peekskilltree.com. Cancellation must be received within three business days.</p>'
+      + '<p><strong>Right to Cancel.</strong> You, the buyer, may cancel this transaction at any time prior to midnight of the third business day after the date of this contract. To cancel, deliver a signed and dated written notice of cancellation to {{business_name}}, {{address_full}}, or email {{email}}. Cancellation must be received within three business days.</p>'
       + '<p><strong>Mechanic\'s Lien Notice.</strong> Under New York law, this contractor or any subcontractor who performs work or supplies materials for your home may have a lien against your real property if not paid. You have the right to require that the contractor post a payment bond or maintain a separate bank account for your funds.</p>'
       + '<p><strong>Licensed &amp; Insured.</strong> Westchester County HIC #WC-32079 · Putnam County HIC #PC-50644</p>'
       + '</div>';

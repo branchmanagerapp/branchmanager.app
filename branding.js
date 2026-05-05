@@ -114,6 +114,8 @@
     addrParts.push(t.city + ', ' + t.state + ' ' + t.zip);
     t.address_full = addrParts.join(', ');
     t.address_short = t.city + ', ' + t.state;
+    // website_display: hostname only (no protocol/path) for inline display in legal text
+    t.website_display = String(t.website || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
 
     return t;
   }

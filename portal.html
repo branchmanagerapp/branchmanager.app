@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Portal — Second Nature Tree</title>
+  <title>My Portal — {{business_short_name}}</title>
   <meta name="robots" content="noindex, nofollow">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -60,6 +60,7 @@
     .footer a{color:#1a3c12;text-decoration:none}
     @media(max-width:480px){.page{padding:12px}.photos-grid{grid-template-columns:repeat(2,1fr)}.summary-bar{grid-template-columns:1fr}}
   </style>
+  <script src="branding.js"></script>
 </head>
 <body>
 <div class="page">
@@ -123,7 +124,7 @@ function showLogin() {
     '<div style="margin-top:40px;">'
     + '<div style="text-align:center;margin-bottom:24px;">'
     + '<div style="background:#1a3c12;color:#fff;width:64px;height:64px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;">🌳</div>'
-    + '<h1 style="font-size:22px;font-weight:700;">Second Nature Tree</h1>'
+    + '<h1 style="font-size:22px;font-weight:700;">{{business_short_name}}</h1>'
     + '<p style="font-size:13px;color:#888;margin-top:4px;">Customer Portal</p>'
     + '</div>'
     + '<div class="login-card">'

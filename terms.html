@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Terms of Service — Second Nature Tree Service</title>
-<meta name="description" content="Terms of Service for Second Nature Tree Service and the Branch Manager app.">
+<title>Terms of Service — {{business_name}}</title>
+<meta name="description" content="Terms of Service for {{business_name}} and the Branch Manager app.">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f5f6f8; color:#222; line-height:1.6; }
@@ -23,13 +23,14 @@
   .box { background:#f0f7f0; border-left:4px solid #1a8a5c; padding:14px 18px; border-radius:0 6px 6px 0; margin:18px 0; font-size:14px; }
   footer { border-top:1px solid #e0e0e0; margin-top:40px; padding-top:20px; font-size:13px; color:#777; }
 </style>
+  <script src="branding.js"></script>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="tree">🌳</div>
     <div>
-      <h1>Second Nature Tree Service</h1>
+      <h1>{{business_name}}</h1>
       <div class="tag">Terms of Service</div>
     </div>
   </div>
@@ -38,10 +39,10 @@
 <div class="container">
   <p class="updated">Last updated: April 23, 2026</p>
 
-  <p>These Terms of Service ("Terms") govern your use of <a href="https://peekskilltree.com">peekskilltree.com</a>, the booking form, our SMS updates, and the Branch Manager staff app (collectively, the "Service"), operated by Second Nature Tree Service, LLC ("we", "us"). By using the Service you agree to these Terms.</p>
+  <p>These Terms of Service ("Terms") govern your use of <a href="{{website}}">{{website_display}}</a>, the booking form, our SMS updates, and the Branch Manager staff app (collectively, the "Service"), operated by {{legal_name}} ("we", "us"). By using the Service you agree to these Terms.</p>
 
   <h2>1. Services We Provide</h2>
-  <p>We perform residential and commercial tree work in Peekskill, NY and surrounding areas: pruning, removal, stump grinding, cabling, emergency storm response, and related services. A separate written estimate governs each job; these Terms only cover your use of this website and related digital tools.</p>
+  <p>We perform residential and commercial tree work in {{address_short}} and surrounding areas: pruning, removal, stump grinding, cabling, emergency storm response, and related services. A separate written estimate governs each job; these Terms only cover your use of this website and related digital tools.</p>
 
   <h2>2. Estimates and Bookings</h2>
   <ul>
@@ -66,7 +67,7 @@
   </ul>
 
   <h2>6. Intellectual Property</h2>
-  <p>All content on this site — photos, text, the Branch Manager app itself — is the property of Second Nature Tree Service, LLC unless credited otherwise. You may not copy, resell, or modify it without written permission.</p>
+  <p>All content on this site — photos, text, the Branch Manager app itself — is the property of {{legal_name}} unless credited otherwise. You may not copy, resell, or modify it without written permission.</p>
 
   <h2>7. Third-Party Services</h2>
   <p>The Service uses third-party tools including Supabase, Stripe, Twilio, Resend, and Dialpad. Their terms apply to any interaction with their systems.</p>
@@ -75,7 +76,7 @@
   <p>The Service is provided "as is" without warranties of any kind. Tree work is inherently variable — quoted prices can change based on conditions uncovered during the job; we'll always communicate changes before proceeding.</p>
 
   <h2>9. Limitation of Liability</h2>
-  <p>To the fullest extent allowed by law, Second Nature Tree Service, LLC is not liable for indirect, incidental, or consequential damages arising from your use of the Service. Total liability for any claim relating to the website or app is limited to $100 or the amount you paid us in the prior 12 months, whichever is greater. Physical tree-service work is governed by the written contract for that job, which is independent of these Terms.</p>
+  <p>To the fullest extent allowed by law, {{legal_name}} is not liable for indirect, incidental, or consequential damages arising from your use of the Service. Total liability for any claim relating to the website or app is limited to $100 or the amount you paid us in the prior 12 months, whichever is greater. Physical tree-service work is governed by the written contract for that job, which is independent of these Terms.</p>
 
   <h2>10. Indemnification</h2>
   <p>You agree to defend and indemnify us against any claims arising from your misuse of the Service or violation of these Terms.</p>
@@ -88,14 +89,14 @@
 
   <h2>13. Contact</h2>
   <div class="box">
-    <strong>Second Nature Tree Service, LLC</strong><br>
-    Peekskill, NY · Licensed & Insured · WC-32079 / PC-50644<br>
-    Email: <a href="mailto:info@peekskilltree.com">info@peekskilltree.com</a><br>
-    Phone: <a href="tel:+19143915233">(914) 391-5233</a>
+    <strong>{{legal_name}}</strong><br>
+    {{address_short}} · Licensed & Insured · WC-32079 / PC-50644<br>
+    Email: <a href="mailto:{{email}}">{{email}}</a><br>
+    Phone: <a href="tel:+1{{phone_e164}}">{{phone}}</a>
   </div>
 
   <footer>
-    <a href="https://peekskilltree.com">Home</a> · <a href="privacy.html">Privacy Policy</a> · <a href="data-deletion.html">Data Deletion</a>
+    <a href="{{website}}">Home</a> · <a href="privacy.html">Privacy Policy</a> · <a href="data-deletion.html">Data Deletion</a>
   </footer>
 </div>
 </body>

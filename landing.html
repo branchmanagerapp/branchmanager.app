@@ -143,6 +143,7 @@
   .footer-byline { color: #6f8169; max-width: 320px; line-height: 1.55; font-size: 13px; }
   .footer-bottom { border-top: 1px solid #1d2e1a; padding-top: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: #6f8169; }
 </style>
+  <script src="branding.js"></script>
 </head>
 <body>
 
@@ -262,8 +263,8 @@
   <div class="container">
     <div class="cta-strip">
       <h2>Ready to see it on your business?</h2>
-      <p>Branch Manager is in active use at Second Nature Tree Service in Peekskill, NY. We're onboarding a small group of additional tree service companies. Reach out and we'll set up a 20-minute walkthrough on real data.</p>
-      <a class="btn btn-primary" href="mailto:info@peekskilltree.com?subject=Branch%20Manager%20demo%20request">Request a demo</a>
+      <p>Branch Manager is in active use at {{business_name}} in {{address_short}}. We're onboarding a small group of additional tree service companies. Reach out and we'll set up a 20-minute walkthrough on real data.</p>
+      <a class="btn btn-primary" href="mailto:{{email}}?subject=Branch%20Manager%20demo%20request">Request a demo</a>
     </div>
   </div>
 </section>
@@ -278,7 +279,7 @@
           Branch Manager
         </div>
         <div class="footer-byline">
-          The all-in-one operations platform for tree service companies. Built by Second Nature Tree LLC in Peekskill, NY.
+          The all-in-one operations platform for tree service companies. Built by {{legal_name}} in {{address_short}}.
         </div>
       </div>
       <div class="footer-col">
@@ -290,8 +291,8 @@
       </div>
       <div class="footer-col">
         <h5>Company</h5>
-        <a href="mailto:info@peekskilltree.com">Contact</a>
-        <a href="https://peekskilltree.com">Tree services</a>
+        <a href="mailto:{{email}}">Contact</a>
+        <a href="{{website}}">Tree services</a>
       </div>
       <div class="footer-col">
         <h5>Legal</h5>
@@ -300,7 +301,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <div>© 2026 Second Nature Tree LLC · Peekskill, NY</div>
+      <div>© 2026 {{legal_name}} · {{address_short}}</div>
       <div>Licensed &amp; insured · WC-32079 / PC-50644</div>
     </div>
   </div>

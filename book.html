@@ -37,6 +37,7 @@
   .info a { color:#4a8a10; }
   .stars { color:#f9a825; font-size:14px; margin-top:8px; }
 </style>
+  <script src="branding.js"></script>
 </head>
 <body>
 
@@ -67,7 +68,7 @@
         </div>
         <div class="field">
           <label class="required">Property Address</label>
-          <input type="text" id="b-address" required placeholder="123 Main St, Peekskill, NY">
+          <input type="text" id="b-address" required placeholder="123 Main St, {{address_short}}">
         </div>
         <div class="field">
           <label class="required">Service Needed</label>
@@ -256,7 +257,9 @@ function submitRequest(e) {
       if (ref) {
         var host = '';
         try { host = new URL(ref).hostname; } catch(e) {}
-        if (host && host.indexOf('peekskilltree.com') < 0) {
+        var ownHost = '';
+        try { if (window.BRANDING && window.BRANDING.website) ownHost = new URL(window.BRANDING.website).hostname; } catch(e) {}
+        if (host && (!ownHost || host.indexOf(ownHost) < 0)) {
           if (/google/.test(host))   return 'Google (organic)';
           if (/facebook|fb\./i.test(host)) return 'Facebook';
           if (/instagram/.test(host)) return 'Instagram';
