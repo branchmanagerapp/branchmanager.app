@@ -437,8 +437,22 @@ Deno.serve(async (req) => {
 
   // ── Auto-create a BM request for inbound voicemails or missed inbound calls.
   // This surfaces phone leads in the Requests page without manual entry.
+  //
+  // GATED behind DIALPAD_AUTOCREATE_REQUESTS env var (default DISABLED) per
+  // Doug 2026-05-05: "stop leads coming into requests". Reasons:
+  //  • Today saw 15+ auto-created request rows for unidentified phone callers,
+  //    flooding the Requests inbox with low-signal noise (most calls are not
+  //    leads — wrong numbers, robocalls, returning customers).
+  //  • Each call fires 3 webhook events (ringing/completed/voicemail) — even
+  //    with the 5-min dedup, duplicates leaked through.
+  //  • Doug wants Requests to stay clean for explicit bookings (book.html) +
+  //    manual entries; phone leads belong in Leads Center → Missed tab where
+  //    they already surface as call rows.
+  //
+  // Re-enable by: supabase secrets set DIALPAD_AUTOCREATE_REQUESTS=true
   let requestId: string | null = null;
-  const isMissedInbound = row.direction === "inbound" && (
+  const AUTOCREATE_REQUESTS = Deno.env.get("DIALPAD_AUTOCREATE_REQUESTS") === "true";
+  const isMissedInbound = AUTOCREATE_REQUESTS && row.direction === "inbound" && (
     row.channel === "voicemail" ||
     (row.channel === "call" && (row.status === "missed" || row.status === "no-answer" || row.status === "voicemail"))
   );
