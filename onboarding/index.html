@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Second Nature Tree Service — Onboarding</title>
+<title>{{business_name}} — Onboarding</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:-apple-system,system-ui,'Segoe UI',sans-serif; background:#f8fafc; color:#0f172a; display:flex; height:100vh; overflow:hidden; }
@@ -63,6 +63,7 @@
     .content-pane { width:100%; }
   }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
@@ -70,7 +71,7 @@
 <div class="content-pane" id="content-pane">
   <div class="welcome" id="welcome">
     <div style="font-size:56px;margin-bottom:12px;">🌳</div>
-    <h1>Welcome to Second Nature Tree</h1>
+    <h1>Welcome to {{business_short_name}}</h1>
     <p id="welcome-text">Complete each step in the checklist on the right. Click any step to begin.</p>
     <button class="start-btn" onclick="loadStep('intake')">Start Onboarding →</button>
   </div>
@@ -173,7 +174,7 @@
   </div>
 
   <div class="cl-footer">
-    Second Nature Tree Service<br>1 Highland Industrial Park, Peekskill, NY
+    {{business_name}}<br>{{address_line1}}, {{address_short}}
   </div>
 </div>
 
@@ -263,7 +264,7 @@ var STEP_CONTENT = {
       + '<button type="button" onclick="onbDlExtract()" style="width:100%;padding:12px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">\u{2728} Read License with AI</button>'
       + '<div id="s13-extract-result" style="margin-top:12px;"></div>'
       + '<h3 style="font-size:14px;margin:22px 0 8px;">Step 3 &mdash; MVR release authorization</h3>'
-      + '<p style="font-size:13px;color:#475569;line-height:1.7;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">I authorize <strong>Second Nature Tree LLC</strong> and its insurance carriers to obtain my motor vehicle abstract from the NY DMV (or my state of license) to verify my driving record. This authorization remains valid throughout my employment.</p>'
+      + '<p style="font-size:13px;color:#475569;line-height:1.7;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">I authorize <strong>{{legal_name}}</strong> and its insurance carriers to obtain my motor vehicle abstract from the NY DMV (or my state of license) to verify my driving record. This authorization remains valid throughout my employment.</p>'
       + '</div>'
       + signoffHTML('s13', 'Photos uploaded, license info confirmed, and I authorize the MVR release', true, 'Crew Lead name')
       + '</div>';
@@ -272,13 +273,13 @@ var STEP_CONTENT = {
   's6': function() { return trainingStep('s6', 'Fall Protection', 'el6rdee5jAo', '<li>Fall protection required at <strong>6 feet</strong></li><li>Climbing saddle + climbing line = fall protection in tree</li><li>Bucket truck: full body harness + lanyard</li><li>Inspect all gear daily — no exceptions</li>', 'Falls are the #1 killer of tree workers. 45% of all fatalities.', 'I completed fall protection training including hands-on demo'); },
   's7': function() { return trainingStep('s7', 'Electrical Hazard Awareness', 'ILGSn9Rx8f8', '<li><strong>10 feet minimum</strong> from any power line</li><li>Only utility company works within 10 feet</li><li>Assume ALL lines are energized</li><li>Con Ed: (914) 681-6500 · NYSEG: (800) 572-1131</li>', 'Electrocution is the #2 cause of death in tree care.', 'I will never work within 10 feet of a power line'); },
   's8': function() { return trainingStep('s8', 'Hazard Communication', 'yRGLMigkWMA', '<li>We use: bar oil, 2-cycle fuel, hydraulic fluid</li><li>SDS binder is on the truck</li><li>Never remove labels or use unmarked containers</li><li>No smoking within 20 feet of fuel</li>', null, 'I know where the SDS binder is and understand chemical handling'); },
-  's9': function() { return trainingStep('s9', 'NY Sexual Harassment Prevention', '6NsBN42B80Q', '<li>All NY employers must provide at hire + annually</li><li>Zero tolerance policy</li><li>Report to Doug Brown (owner) — no retaliation</li><li>External: NY Division of Human Rights (888) 392-3644</li>', null, 'I completed NY sexual harassment prevention training'); },
+  's9': function() { return trainingStep('s9', 'NY Sexual Harassment Prevention', '6NsBN42B80Q', '<li>All NY employers must provide at hire + annually</li><li>Zero tolerance policy</li><li>Report to {{owner_name}} (owner) — no retaliation</li><li>External: NY Division of Human Rights (888) 392-3644</li>', null, 'I completed NY sexual harassment prevention training'); },
   's10': function() {
     return '<div style="max-width:600px;margin:40px auto;padding:20px;">'
       + '<h2 style="font-size:20px;margin-bottom:12px;">Emergency Action Plan</h2>'
       + '<div style="background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;margin-bottom:16px;">'
       + '<h3 style="font-size:15px;margin-bottom:10px;">Save these numbers in your phone:</h3>'
-      + '<ul style="margin-left:20px;line-height:2.2;color:#334155;font-size:15px;"><li><strong>911</strong> — call first, always</li><li><strong>Doug Brown:</strong> (914) 391-5233</li><li><strong>Hudson Valley Hospital:</strong> (914) 737-9000</li><li><strong>Poison Control:</strong> (800) 222-1222</li></ul>'
+      + '<ul style="margin-left:20px;line-height:2.2;color:#334155;font-size:15px;"><li><strong>911</strong> — call first, always</li><li><strong>{{owner_name}}:</strong> {{phone}}</li><li><strong>Hudson Valley Hospital:</strong> (914) 737-9000</li><li><strong>Poison Control:</strong> (800) 222-1222</li></ul>'
       + '<p style="margin-top:12px;font-size:14px;"><strong>First aid kit + fire extinguisher</strong> on every truck. Check location daily.</p>'
       + '</div>'
       + signoffHTML('s10', 'I saved emergency numbers and know first aid kit locations', true)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crew Lead Training — Second Nature Tree Service</title>
+<title>Crew Lead Training — {{business_name}}</title>
 <link rel="stylesheet" href="_shared.css">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -29,6 +29,7 @@
   .video-slot { background:#000; border-radius:8px; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; margin-bottom:16px; color:#fff; font-size:14px; text-align:center; padding:20px; }
   .signoff { background:#f3e8ff; border-radius:8px; padding:14px; margin-top:12px; font-size:13px; }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
@@ -92,7 +93,7 @@
     <div class="mod-body">
       <div class="video-slot">▶ Video: Talking to Clients</div>
       <ol class="steps">
-        <li><strong>Introduce yourself</strong> when you arrive. "Hi, I'm [name] from Second Nature Tree. We're here for [job]."</li>
+        <li><strong>Introduce yourself</strong> when you arrive. "Hi, I'm [name] from {{business_short_name}}. We're here for [job]."</li>
         <li><strong>Walk the job</strong> with the client if they're home. Confirm what's being done. Ask about access, pets, concerns.</li>
         <li><strong>During work:</strong> Keep noise conversations short. Don't blast music. Be professional.</li>
         <li><strong>Scope changes:</strong> If the client asks for extra work, say "Let me check with Doug on pricing for that." Never promise free add-ons.</li>
@@ -169,7 +170,7 @@
 
   <div style="text-align:center;padding:30px;">
     <a href="index.html" style="padding:12px 24px;background:#1b5e20;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">← Back to Onboarding</a>
-    <p style="font-size:13px;color:#999;margin-top:16px;">Second Nature Tree Service LLC · Peekskill, NY</p>
+    <p style="font-size:13px;color:#999;margin-top:16px;">{{legal_name}} · {{address_short}}</p>
   </div>
 </div>
 <script src="onboarding-sig.js"></script>

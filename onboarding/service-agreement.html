@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Service Agreement — Second Nature Tree Service</title>
+<title>Service Agreement — {{business_name}}</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,6 +42,7 @@
   @media (max-width: 600px) { .meta-grid { grid-template-columns: 1fr; } .card { padding: 20px 18px; } }
   @media print { body { background: #fff; } .page { padding: 0; } .card { box-shadow: none; border-radius: 0; } .sig-area { page-break-inside: avoid; } }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 <div class="page">
@@ -51,7 +52,7 @@
       <div style="font-size:16px;color:#666;">Loading your service agreement…</div>
     </div>
   </div>
-  <div class="footer">Second Nature Tree Service LLC &nbsp;·&nbsp; (914) 391-5233 &nbsp;·&nbsp; Licensed &amp; Fully Insured</div>
+  <div class="footer">{{legal_name}} &nbsp;·&nbsp; {{phone}} &nbsp;·&nbsp; Licensed &amp; Fully Insured</div>
 </div>
 
 <script>
@@ -103,9 +104,9 @@ function renderAgreement(app, q) {
 
   app.innerHTML =
     '<div class="header">'
-    + '<div class="header-logo">🌳 Second Nature Tree Service LLC</div>'
+    + '<div class="header-logo">🌳 {{legal_name}}</div>'
     + '<h1>Tree Service Agreement</h1>'
-    + '<div class="header-sub">Second Nature Tree LLC · Peekskill, NY 10566</div>'
+    + '<div class="header-sub">{{legal_name}} · {{city}}, {{state}} {{zip}}</div>'
     + '</div>'
     + '<div class="card">'
 
@@ -140,7 +141,7 @@ function signaturePad() {
     + '<span>I consent to signing this agreement electronically. My electronic signature has the same legal effect as a handwritten signature under the federal ESIGN Act and NY ESRA. I have read and agree to all terms described in this Service Agreement.</span>'
     + '</label>'
     + '<button class="btn-sign" onclick="submitSig()">✅ Sign Service Agreement</button>'
-    + '<p style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">Contractor: Doug Brown, Owner — Second Nature Tree LLC</p>';
+    + '<p style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">Contractor: {{owner_name}}, Owner — {{legal_name}}</p>';
 }
 
 // ── Already-signed badge ──────────────────────────────────────────────────────
@@ -198,7 +199,7 @@ async function submitSig() {
     document.getElementById('sig-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   } catch(e) {
-    alert('Could not save signature — please call (914) 391-5233.');
+    alert('Could not save signature — please call ' + (window.BRANDING ? window.BRANDING.phone : 'us') + '.');
     if (btn) { btn.textContent = '✅ Sign Service Agreement'; btn.disabled = false; }
   }
 }
@@ -236,9 +237,9 @@ function initCanvas() {
 function renderStatic(app) {
   app.innerHTML =
     '<div class="header">'
-    + '<div class="header-logo">🌳 Second Nature Tree Service LLC</div>'
+    + '<div class="header-logo">🌳 {{legal_name}}</div>'
     + '<h1>Tree Service Agreement</h1>'
-    + '<div class="header-sub">Second Nature Tree LLC · Peekskill, NY 10566</div>'
+    + '<div class="header-sub">{{legal_name}} · {{city}}, {{state}} {{zip}}</div>'
     + '</div>'
     + '<div class="card">'
     + '<div class="meta-grid">'
@@ -260,7 +261,7 @@ function renderStatic(app) {
     + '<div style="font-size:12px;font-weight:700;color:#666;margin-bottom:24px;">CONTRACTOR</div>'
     + '<div style="border-bottom:1px solid #000;margin-bottom:8px;">&nbsp;</div>'
     + '<div style="font-size:11px;color:#999;">Signature &nbsp;·&nbsp; Date: ___________</div>'
-    + '<div style="font-size:11px;color:#555;margin-top:8px;">Doug Brown, Owner<br>Second Nature Tree LLC</div>'
+    + '<div style="font-size:11px;color:#555;margin-top:8px;">{{owner_name}}, Owner<br>{{legal_name}}</div>'
     + '</div>'
     + '</div>'
     + '</div>';
@@ -270,7 +271,7 @@ function renderStatic(app) {
 function agreementBody() {
   return ''
     + '<h2>1. Scope of Work</h2>'
-    + '<p>Second Nature Tree Service LLC ("Contractor") agrees to perform the tree work described in the attached quote at the property listed above. Work includes only what is explicitly listed in the quote — any additional work requires a separate written agreement and additional charges.</p>'
+    + '<p>{{legal_name}} ("Contractor") agrees to perform the tree work described in the attached quote at the property listed above. Work includes only what is explicitly listed in the quote — any additional work requires a separate written agreement and additional charges.</p>'
 
     + '<h2>2. Payment Terms</h2>'
     + '<ul>'
@@ -321,8 +322,8 @@ function agreementBody() {
     + '<p>This Service Agreement and the attached quote constitute the entire agreement between the parties regarding the described work. Any modifications must be in writing and signed by both parties. This Agreement shall be governed by the laws of the State of New York.</p>'
 
     + '<div style="margin-top:16px;padding:12px 16px;background:#f8faf8;border-radius:8px;border-left:3px solid #1a3c12;">'
-    + '<p style="font-size:12px;color:#555;"><strong>Second Nature Tree Service LLC</strong> &nbsp;·&nbsp; 1 Highland Industrial Park, Peekskill, NY 10566<br>'
-    + '(914) 391-5233 &nbsp;·&nbsp; info@peekskilltree.com &nbsp;·&nbsp; Licensed &amp; Fully Insured<br>'
+    + '<p style="font-size:12px;color:#555;"><strong>{{legal_name}}</strong> &nbsp;·&nbsp; {{address_full}}<br>'
+    + '{{phone}} &nbsp;·&nbsp; {{email}} &nbsp;·&nbsp; Licensed &amp; Fully Insured<br>'
     + 'WC-32079 (Westchester) &nbsp;·&nbsp; PC-50644 (Putnam)</p>'
     + '</div>';
 }

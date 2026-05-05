@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NY Wage Theft Prevention Act Notice — Second Nature Tree Service</title>
+<title>NY Wage Theft Prevention Act Notice — {{business_name}}</title>
 <link rel="stylesheet" href="_shared.css">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -19,6 +19,7 @@
   .legal { font-size:11px; color:#666; margin-top:20px; line-height:1.6; }
   @media print { body { padding:0; font-size:12px; } }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
@@ -27,10 +28,10 @@
 <p class="notice">This notice must be provided to each employee at time of hire. Retain signed copy for 6 years.</p>
 
 <table>
-  <tr><th>Employer Name</th><td>Second Nature Tree Service LLC<br>d/b/a Second Nature Tree</td></tr>
-  <tr><th>DBA (Doing Business As)</th><td>Second Nature Tree Service</td></tr>
-  <tr><th>Employer Address</th><td>1 Highland Industrial Park<br>Peekskill, NY 10566</td></tr>
-  <tr><th>Employer Phone</th><td>(914) 391-5233</td></tr>
+  <tr><th>Employer Name</th><td>{{legal_name}}<br>d/b/a {{business_short_name}}</td></tr>
+  <tr><th>DBA (Doing Business As)</th><td>{{business_name}}</td></tr>
+  <tr><th>Employer Address</th><td>{{address_line1}}<br>{{city}}, {{state}} {{zip}}</td></tr>
+  <tr><th>Employer Phone</th><td>{{phone}}</td></tr>
   <tr><th>Employer EIN</th><td>83-2374535</td></tr>
 </table>
 
@@ -63,11 +64,11 @@
   • If pay rate changes, employer must provide 7 days advance written notice (or with next paycheck for increases).<br>
   • Employer must also provide a wage statement (pay stub) with each payment showing hours, rates, deductions, and dates.<br>
   • Failure to comply: $50/day penalty per employee (up to $5,000) plus potential civil liability.<br><br>
-  <strong>At-Will Employment:</strong> Employment with Second Nature Tree Service LLC is "at-will." Either party may end the employment relationship at any time, for any lawful reason, with or without cause or notice.
+  <strong>At-Will Employment:</strong> Employment with {{legal_name}} is "at-will." Either party may end the employment relationship at any time, for any lawful reason, with or without cause or notice.
 </div>
 
 <div style="text-align:center;margin-top:30px;font-size:11px;color:#999;">
-  Second Nature Tree Service LLC · 1 Highland Industrial Park, Peekskill, NY 10566 · (914) 391-5233
+  {{legal_name}} · {{address_full}} · {{phone}}
 </div>
 
 <script src="onboarding-sig.js"></script>
@@ -125,13 +126,17 @@
 
 // Signature pads
 var _emp = OnboardingSig.getEmployee();
-OnboardingSig.createPad('sig-wt-employee', {
-  docKey: 'wage-theft', id: 'employee', label: 'Employee Signature',
-  prefillName: _emp ? _emp.fullName : ''
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-wt-employee', {
+    docKey: 'wage-theft', id: 'employee', label: 'Employee Signature',
+    prefillName: _emp ? _emp.fullName : ''
+  });
 });
-OnboardingSig.createPad('sig-wt-employer', {
-  docKey: 'wage-theft', id: 'employer', label: 'Employer Signature',
-  prefillName: 'Doug Brown'
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-wt-employer', {
+    docKey: 'wage-theft', id: 'employer', label: 'Employer Signature',
+    prefillName: (window.BRANDING && window.BRANDING.owner_name) || ''
+  });
 });
 </script>
 </body>

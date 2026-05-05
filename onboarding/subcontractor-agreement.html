@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Subcontractor Agreement — Second Nature Tree Service</title>
+<title>Subcontractor Agreement — {{business_name}}</title>
 <style>
   body { font-family:system-ui,sans-serif; max-width:700px; margin:0 auto; padding:20px; color:#1a1a1a; line-height:1.7; font-size:13px; }
   h1 { font-size:20px; text-align:center; margin-bottom:2px; }
@@ -14,13 +14,14 @@
   .sig-line { border-bottom:1px solid #000; display:inline-block; width:180px; margin:0 6px; }
   @media print { body { padding:10px; } }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
 <h1>Independent Contractor / Subcontractor Agreement</h1>
-<div class="sub">Second Nature Tree Service LLC</div>
+<div class="sub">{{legal_name}}</div>
 
-<p><strong>This Agreement</strong> is between Second Nature Tree Service LLC ("Company") and <span class="fill"></span> ("Subcontractor"), effective <span class="fill" style="min-width:120px;"></span>.</p>
+<p><strong>This Agreement</strong> is between {{legal_name}} ("Company") and <span class="fill"></span> ("Subcontractor"), effective <span class="fill" style="min-width:120px;"></span>.</p>
 
 <h2>1. Relationship</h2>
 <p>Subcontractor is an independent contractor, not an employee. Subcontractor is responsible for their own taxes, insurance, and equipment unless otherwise specified. No employment benefits (health insurance, PTO, workers' comp) are provided by the Company.</p>
@@ -69,17 +70,21 @@
 <div id="sig-sub-contractor" style="margin-top:8px;"></div>
 
 <div style="text-align:center;margin-top:24px;font-size:10px;color:#999;">
-  Second Nature Tree Service LLC · Peekskill, NY 10566 · (914) 391-5233
+  {{legal_name}} · {{city}}, {{state}} {{zip}} · {{phone}}
 </div>
 
 <script src="onboarding-sig.js"></script>
 <script>
-OnboardingSig.createPad('sig-sub-company', {
-  docKey: 'subcontractor', id: 'company', label: 'Company Signature',
-  prefillName: 'Doug Brown'
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-sub-company', {
+    docKey: 'subcontractor', id: 'company', label: 'Company Signature',
+    prefillName: (window.BRANDING && window.BRANDING.owner_name) || ''
+  });
 });
-OnboardingSig.createPad('sig-sub-contractor', {
-  docKey: 'subcontractor', id: 'contractor', label: 'Subcontractor Signature'
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-sub-contractor', {
+    docKey: 'subcontractor', id: 'contractor', label: 'Subcontractor Signature'
+  });
 });
 </script>
 </body>

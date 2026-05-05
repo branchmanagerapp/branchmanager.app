@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Employment Agreement — Second Nature Tree Service</title>
+<title>Employment Agreement — {{business_name}}</title>
 <link rel="stylesheet" href="_shared.css">
 <style>
   body { font-family:system-ui,sans-serif; max-width:700px; margin:0 auto; padding:20px; color:#1a1a1a; line-height:1.7; font-size:13px; }
@@ -17,11 +17,12 @@
   .sig-line { border-bottom:1px solid #000; display:inline-block; width:180px; margin:0 6px; }
   @media print { body { padding:10px; } }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
 <h1>Employment Agreement</h1>
-<div class="sub">Second Nature Tree Service LLC · Peekskill, NY</div>
+<div class="sub">{{legal_name}} · {{address_short}}</div>
 
 <div class="row">
   <div><strong>Employee:</strong> <span class="fill" id="emp-name"></span></div>
@@ -34,7 +35,7 @@
 <div><strong>Pay Rate:</strong> $<span class="fill" id="emp-rate" style="min-width:80px;"></span> per hour &nbsp; <strong>Overtime:</strong> $<span class="fill" id="emp-ot" style="min-width:80px;"></span> per hour (1.5x)</div>
 
 <h2>1. At-Will Employment</h2>
-<p>Your employment with Second Nature Tree Service LLC ("Company") is at-will. Either you or the Company may end the employment relationship at any time, for any lawful reason, with or without cause or notice. Nothing in this agreement creates a guarantee of continued employment.</p>
+<p>Your employment with {{legal_name}} ("Company") is at-will. Either you or the Company may end the employment relationship at any time, for any lawful reason, with or without cause or notice. Nothing in this agreement creates a guarantee of continued employment.</p>
 
 <h2>2. Duties & Expectations</h2>
 <ul>
@@ -80,7 +81,7 @@
 <p>The Company maintains a zero-tolerance drug and alcohol policy on all job sites and while operating Company vehicles or equipment. Reporting to work impaired or possessing controlled substances on a job site is grounds for immediate termination.</p>
 
 <h2>8. Workers' Compensation</h2>
-<p>You are covered by Workers' Compensation insurance through NYSIF from your first day. All work-related injuries must be reported to your crew lead and Doug Brown immediately — no matter how minor. Delayed reporting may affect your benefits.</p>
+<p>You are covered by Workers' Compensation insurance through NYSIF from your first day. All work-related injuries must be reported to your crew lead and {{owner_name}} immediately — no matter how minor. Delayed reporting may affect your benefits.</p>
 
 <h2>9. Dispute Resolution</h2>
 <p>Any disputes arising from this agreement will be resolved through good-faith discussion. If unresolved, disputes will be submitted to mediation in Westchester County, NY before any legal action.</p>
@@ -92,8 +93,8 @@
 <div id="sig-ea-employer" style="margin-top:8px;"></div>
 
 <div style="text-align:center;margin-top:24px;font-size:10px;color:#999;">
-  Second Nature Tree Service LLC · 1 Highland Industrial Park, Peekskill, NY 10566<br>
-  (914) 391-5233 · info@peekskilltree.com · Licensed & Fully Insured
+  {{legal_name}} · {{address_full}}<br>
+  {{phone}} · {{email}} · {{license_text}}
 </div>
 
 <script src="onboarding-sig.js"></script>
@@ -116,13 +117,17 @@
 
 // Signature pads
 var _emp = OnboardingSig.getEmployee();
-OnboardingSig.createPad('sig-ea-employee', {
-  docKey: 'employment-agreement', id: 'employee', label: 'Employee Signature',
-  prefillName: _emp ? _emp.fullName : ''
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-ea-employee', {
+    docKey: 'employment-agreement', id: 'employee', label: 'Employee Signature',
+    prefillName: _emp ? _emp.fullName : ''
+  });
 });
-OnboardingSig.createPad('sig-ea-employer', {
-  docKey: 'employment-agreement', id: 'employer', label: 'Employer Signature',
-  prefillName: 'Doug Brown'
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-ea-employer', {
+    docKey: 'employment-agreement', id: 'employer', label: 'Employer Signature',
+    prefillName: (window.BRANDING && window.BRANDING.owner_name) || ''
+  });
 });
 </script>
 </body>

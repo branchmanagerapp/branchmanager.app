@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Required Safety Training — Second Nature Tree Service</title>
+<title>Required Safety Training — {{business_name}}</title>
 <link rel="stylesheet" href="_shared.css">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -50,6 +50,7 @@
   .ack button:disabled { background:#ccc; }
   .completion { display:none; background:#f0fdf4; border:2px solid #22c55e; border-radius:12px; padding:24px; text-align:center; margin-bottom:20px; }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
@@ -82,7 +83,7 @@
       <iframe class="video-embed" src="https://www.youtube.com/embed/dKAeQaod7Dw" style="display:none" allowfullscreen loading="lazy"></iframe>
       <p class="video-note">OSHA PPE Training — covers selection, use, maintenance, and employer obligations</p>
 
-      <h4 style="font-size:14px;margin-bottom:8px;">Second Nature Tree Required PPE:</h4>
+      <h4 style="font-size:14px;margin-bottom:8px;">{{business_short_name}} Required PPE:</h4>
       <ol class="steps">
         <li><strong>Hard hat</strong> (Class E) — worn at ALL times on the job site, even during cleanup</li>
         <li><strong>Safety glasses / face shield</strong> — glasses minimum; face shield when running saw</li>
@@ -111,7 +112,7 @@
 
       <div class="ack">
         <h4>Acknowledgment</h4>
-        <label><input type="checkbox" id="mod1-ack"> I have watched the PPE training video and understand the PPE requirements for my position at Second Nature Tree Service.</label>
+        <label><input type="checkbox" id="mod1-ack"> I have watched the PPE training video and understand the PPE requirements for my position at {{business_name}}.</label>
         <input type="text" placeholder="Your full name (digital signature)" id="mod1-sig">
         <button onclick="completeMod('mod1')" id="mod1-btn">Sign & Complete Module</button>
       </div>
@@ -247,8 +248,8 @@
 
       <ol class="steps">
         <li><strong>NY law requires:</strong> ALL employers must provide annual sexual harassment prevention training</li>
-        <li><strong>Zero tolerance:</strong> Second Nature Tree has a zero tolerance policy for harassment of any kind</li>
-        <li><strong>Reporting:</strong> Report to Doug Brown (owner) immediately. You will not face retaliation for reporting.</li>
+        <li><strong>Zero tolerance:</strong> {{business_short_name}} has a zero tolerance policy for harassment of any kind</li>
+        <li><strong>Reporting:</strong> Report to {{owner_name}} (owner) immediately. You will not face retaliation for reporting.</li>
         <li><strong>Bystander intervention:</strong> If you see harassment, you have a responsibility to report it</li>
         <li><strong>External reporting:</strong> NY Division of Human Rights: (888) 392-3644</li>
       </ol>
@@ -277,20 +278,20 @@
       <iframe class="video-embed" src="https://www.youtube.com/embed/BhKqxpDr_IQ" allowfullscreen loading="lazy"></iframe>
       <p class="video-note">Emergency procedures and first aid for tree care operations</p>
 
-      <h4 style="font-size:14px;margin-bottom:8px;">Second Nature Tree Emergency Procedures:</h4>
+      <h4 style="font-size:14px;margin-bottom:8px;">{{business_short_name}} Emergency Procedures:</h4>
       <ol class="steps">
         <li><strong>Call 911 first.</strong> Always. Don't try to drive someone to the hospital — call EMS.</li>
         <li><strong>Nearest hospital:</strong> Hudson Valley Hospital, 1980 Crompond Rd, Cortlandt Manor, NY — (914) 737-9000</li>
         <li><strong>First aid kit:</strong> On every truck. Check it weekly. Know where it is before you need it.</li>
         <li><strong>Fire extinguisher:</strong> On every truck. Know how to use it (PASS: Pull, Aim, Squeeze, Sweep).</li>
-        <li><strong>Report to Doug:</strong> Call (914) 391-5233 within 1 hour of ANY incident, injury, or near-miss.</li>
+        <li><strong>Report to Doug:</strong> Call {{phone}} within 1 hour of ANY incident, injury, or near-miss.</li>
         <li><strong>OSHA reporting:</strong> Fatality = report within 8 hours. Hospitalization/amputation/eye loss = 24 hours.</li>
         <li><strong>Workers' Comp:</strong> All injuries are covered. File a claim immediately through Doug — NYSIF carrier.</li>
       </ol>
 
       <div class="key-point">🏥 <strong>Save these numbers in your phone NOW:</strong><br>
         911 (obvious but listed)<br>
-        Doug Brown: (914) 391-5233<br>
+        {{owner_name}}: {{phone}}<br>
         Hudson Valley Hospital: (914) 737-9000<br>
         Poison Control: (800) 222-1222<br>
         OSHA: (800) 321-OSHA</div>
@@ -315,7 +316,7 @@
 
   <div style="text-align:center;padding:20px;">
     <a href="index.html" style="padding:10px 20px;background:#1b5e20;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">← Back to Onboarding</a>
-    <p style="font-size:11px;color:#999;margin-top:16px;">Records retained per OSHA 29 CFR 1904 and NY Labor Law.<br>Second Nature Tree Service LLC · Peekskill, NY 10566</p>
+    <p style="font-size:11px;color:#999;margin-top:16px;">Records retained per OSHA 29 CFR 1904 and NY Labor Law.<br>{{legal_name}} · {{city}}, {{state}} {{zip}}</p>
   </div>
 </div>
 

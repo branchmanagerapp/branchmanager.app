@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Vehicle Inspection — Second Nature Tree</title>
+<title>Daily Vehicle Inspection — {{business_short_name}}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:system-ui,sans-serif; background:#fff; color:#1a1a1a; max-width:600px; margin:0 auto; padding:16px; }
@@ -28,6 +28,7 @@
   .footer { text-align:center; font-size:10px; color:#999; margin-top:16px; }
   @media print { .btn { display:none; } }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
@@ -97,7 +98,7 @@
 <button class="btn" onclick="window.print()">🖨 Print Inspection</button>
 
 <div class="footer">
-  Second Nature Tree Service LLC · Peekskill, NY · (914) 391-5233<br>
+  {{legal_name}} · {{address_short}} · {{phone}}<br>
   Retain vehicle inspection records for 1 year per FMCSA 396.13
 </div>
 
@@ -116,9 +117,11 @@ if (_emp && _emp.fullName) {
   var dateEl = document.querySelector('.top-row input[type="date"]');
   if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
 }
-OnboardingSig.createPad('sig-vi-driver', {
-  docKey: 'vehicle-inspection', id: 'driver', label: 'Driver Signature',
-  prefillName: _emp ? _emp.fullName : ''
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-vi-driver', {
+    docKey: 'vehicle-inspection', id: 'driver', label: 'Driver Signature',
+    prefillName: _emp ? _emp.fullName : ''
+  });
 });
 </script>
 </body>

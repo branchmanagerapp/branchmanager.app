@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Incident Report — Second Nature Tree Service</title>
+<title>Incident Report — {{business_name}}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:system-ui,sans-serif; background:#fff; color:#1a1a1a; max-width:700px; margin:0 auto; padding:20px; }
@@ -25,11 +25,12 @@
   .footer { text-align:center; font-size:10px; color:#999; margin-top:20px; }
   @media print { .btn { display:none; } body { padding:10px; font-size:11px; } input,textarea,select { border:none; border-bottom:1px solid #ccc; border-radius:0; padding:4px 0; } }
 </style>
+  <script src="_branding.js"></script>
 </head>
 <body>
 
 <h1>Workplace Incident / Injury Report</h1>
-<div class="sub">Second Nature Tree Service LLC — OSHA 301 Equivalent</div>
+<div class="sub">{{legal_name}} — OSHA 301 Equivalent</div>
 <div class="legal">Complete within 24 hours of incident. Retain for 5 years per OSHA 29 CFR 1904.</div>
 
 <fieldset>
@@ -117,7 +118,7 @@
 <button class="btn" onclick="window.print()">🖨 Print Report</button>
 
 <div class="footer">
-  Second Nature Tree Service LLC · 1 Highland Industrial Park, Peekskill, NY 10566 · (914) 391-5233<br>
+  {{legal_name}} · {{address_full}} · {{phone}}<br>
   OSHA reporting: Fatality within 8 hrs · Hospitalization/amputation/eye loss within 24 hrs · Call (800) 321-OSHA<br>
   Workers' Comp carrier: NYSIF · WC-32079 (Westchester) · PC-50644 (Putnam)<br>
   Retain for 5 years per 29 CFR 1904.33
@@ -126,13 +127,17 @@
 <script src="onboarding-sig.js"></script>
 <script>
 var _emp = OnboardingSig.getEmployee();
-OnboardingSig.createPad('sig-ir-reporter', {
-  docKey: 'incident-report', id: 'reporter', label: 'Report Filed By — Signature',
-  prefillName: _emp ? _emp.fullName : ''
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-ir-reporter', {
+    docKey: 'incident-report', id: 'reporter', label: 'Report Filed By — Signature',
+    prefillName: _emp ? _emp.fullName : ''
+  });
 });
-OnboardingSig.createPad('sig-ir-owner', {
-  docKey: 'incident-report', id: 'owner', label: 'Owner Review — Signature',
-  prefillName: 'Doug Brown'
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-ir-owner', {
+    docKey: 'incident-report', id: 'owner', label: 'Owner Review — Signature',
+    prefillName: (window.BRANDING && window.BRANDING.owner_name) || ''
+  });
 });
 </script>
 
