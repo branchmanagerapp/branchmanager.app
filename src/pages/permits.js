@@ -48,7 +48,7 @@ var PermitsPage = {
 
   // ── AI lookup for unknown jurisdictions ───────────────────────────────
   _lookupViaAI: function(address, callback) {
-    var apiKey = window.bmClaudeKey ? window.bmClaudeKey() : null;
+    var apiKey = window.bmAIKey ? window.bmAIKey() : null;
     var edgeUrl = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat';
 
     var prompt = 'You are a permit research assistant for a tree service company operating in New York State.\n\n'

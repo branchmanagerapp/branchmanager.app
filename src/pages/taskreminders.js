@@ -1054,7 +1054,7 @@ var TaskReminders = {
 
   _aiEnrichTask: function(description) {
     return new Promise(function(resolve, reject) {
-      var apiKey = (window.bmClaudeKey ? window.bmClaudeKey() : null)
+      var apiKey = (window.bmAIKey ? window.bmAIKey() : null)
                  || localStorage.getItem('bm-claude-key') || '';
       if (!apiKey) {
         // No AI key — return minimal prefill

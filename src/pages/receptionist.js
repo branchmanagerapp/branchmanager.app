@@ -1,7 +1,7 @@
 /**
  * Branch Manager — Receptionist v2
  * Dialpad integration hub: call log, SMS inbox, voicemail, settings
- * Mirrors Jobber's communication features through Dialpad
+ * Mirrors legacy system's communication features through Dialpad
  */
 var Receptionist = {
   _tab: 'calls',

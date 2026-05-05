@@ -1,5 +1,5 @@
 /**
- * Branch Manager — Embedded Collect Payment (Jobber-style)
+ * Branch Manager — Embedded Collect Payment (legacy system-style)
  *
  * Multi-invoice card collection with Stripe Elements. User picks any
  * combination of unpaid invoices for a single client (or any client),

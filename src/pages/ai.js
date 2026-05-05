@@ -23,7 +23,7 @@ var AI = {
       + '<div style="display:flex;align-items:center;gap:10px;">'
       + '<div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#D4A574 0%,#C4956A 100%);display:flex;align-items:center;justify-content:center;">'
       + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
-      + '<div><div style="font-weight:700;font-size:15px;">Claude</div>'
+      + '<div><div style="font-weight:700;font-size:15px;">AI</div>'
       + '<div style="font-size:11px;color:var(--text-light);">Your tree service business assistant</div></div></div>'
       + '<div style="display:flex;gap:4px;">'
       + '<button onclick="AI._copyConversation();" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-light);padding:4px 8px;" title="Copy conversation">📋 Copy</button>'
@@ -39,7 +39,7 @@ var AI = {
         + '<div style="text-align:center;max-width:340px;">'
         + '<div style="font-size:48px;margin-bottom:16px;">🤖</div>'
         + '<h3 style="margin-bottom:8px;">Connect AI Assistant</h3>'
-        + '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Enter your Anthropic API key to enable AI-powered estimates, client emails, and business insights. Your key is stored locally — never sent to anyone but Anthropic.</p>'
+        + '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Enter your AI API key to enable AI-powered estimates, client emails, and business insights. Your key is stored locally — never sent to anyone but AI provider.</p>'
         + '<input type="password" id="ai-key-input" placeholder="sk-ant-api03-..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;">'
         + '<button class="btn btn-primary" onclick="AI._saveKey();AI._refreshInline();" style="width:100%;">Connect</button>'
         + '<p style="font-size:11px;color:var(--text-light);margin-top:12px;">Get a key at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">console.anthropic.com</a></p>'
@@ -114,7 +114,7 @@ var AI = {
     var context = AI._buildContext();
     AI._loading = true;
     AI._showTyping();
-    AI._callClaude(context, text).then(function(response) {
+    AI._callAI(context, text).then(function(response) {
       AI._loading = false;
       AI._removeTyping();
       AI._messages.push({ role: 'assistant', content: response });
@@ -197,7 +197,7 @@ var AI = {
       + '<div style="display:flex;align-items:center;gap:10px;">'
       + '<div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#D4A574 0%,#C4956A 100%);display:flex;align-items:center;justify-content:center;">'
       + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
-      + '<div><div style="font-weight:700;font-size:15px;">Claude</div>'
+      + '<div><div style="font-weight:700;font-size:15px;">AI</div>'
       + '<div style="font-size:11px;color:var(--text-light);">Your tree service assistant</div></div></div>'
       + '<div style="display:flex;gap:4px;">'
       + '<button onclick="AI._copyConversation()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-light);padding:4px 8px;" title="Copy conversation">📋</button>'
@@ -211,7 +211,7 @@ var AI = {
         + '<div style="text-align:center;max-width:320px;">'
         + '<div style="font-size:40px;margin-bottom:12px;">🤖</div>'
         + '<h3 style="margin-bottom:8px;">Connect AI Assistant</h3>'
-        + '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Enter your Anthropic API key to enable AI-powered estimates, client emails, and business insights.</p>'
+        + '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Enter your AI API key to enable AI-powered estimates, client emails, and business insights.</p>'
         + '<input type="password" id="ai-key-input" placeholder="sk-ant-..." style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;">'
         + '<button class="btn btn-primary" onclick="AI._saveKey()" style="width:100%;">Connect</button>'
         + '<p style="font-size:11px;color:var(--text-light);margin-top:12px;">Key is stored locally on your device only. Get one at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">console.anthropic.com</a></p>'
@@ -285,7 +285,7 @@ var AI = {
       + (isUser ? 'background:var(--accent);color:#fff;' : 'background:linear-gradient(135deg,#D4A574,#C4956A);color:#fff;') + '">'
       + (isUser ? '👤' : '✦') + '</div>'
       + '<div style="flex:1;max-width:calc(100% - 44px);">'
-      + '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;' + (isUser ? 'text-align:right;' : '') + '">' + (isUser ? 'You' : 'Claude') + '</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;' + (isUser ? 'text-align:right;' : '') + '">' + (isUser ? 'You' : 'AI') + '</div>'
       + '<div id="' + msgId + '" style="background:' + (isUser ? 'var(--accent)' : 'var(--bg)') + ';color:' + (isUser ? '#fff' : 'var(--text)') + ';padding:10px 14px;border-radius:' + (isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px') + ';font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">'
       + AI._formatResponse(msg.content) + '</div>'
       + copyBtn
@@ -347,7 +347,7 @@ var AI = {
       if (input) input.disabled = false;
     };
 
-    AI._callClaude(context, text).then(function(response) {
+    AI._callAI(context, text).then(function(response) {
       restoreBtn();
       AI._removeTyping();
       AI._messages.push({ role: 'assistant', content: response });
@@ -359,7 +359,7 @@ var AI = {
     }).catch(function(err) {
       restoreBtn();
       AI._removeTyping();
-      AI._messages.push({ role: 'assistant', content: '❌ Error: ' + (err.message || 'Could not connect to Claude. Check your API key.') });
+      AI._messages.push({ role: 'assistant', content: '❌ Error: ' + (err.message || 'Could not connect to AI. Check your API key.') });
       AI._refreshMessages();
       AI._scrollToBottom();
     });
@@ -535,7 +535,7 @@ var AI = {
     var coName = CompanyInfo.get('name');
     var coPhone = CompanyInfo.get('phone');
     var coEmail = CompanyInfo.get('email');
-    return 'You are Claude, an AI assistant built into Branch Manager — a field service management app for ' + coName + ' in Peekskill, NY.\n\n'
+    return 'You are AI, an AI assistant built into Branch Manager — a field service management app for ' + coName + ' in Peekskill, NY.\n\n'
       + 'BUSINESS CONTEXT:\n'
       + '• Company: ' + coName + '\n'
       + '• Location: Peekskill, NY (serves Westchester & Putnam counties)\n'
@@ -564,7 +564,7 @@ var AI = {
       + '• Use dollar amounts when discussing pricing\n';
   },
 
-  _callClaude: function(systemPrompt, userMessage) {
+  _callAI: function(systemPrompt, userMessage) {
     return new Promise(function(resolve, reject) {
       // Build messages array with history for context
       var apiMessages = [];
@@ -581,7 +581,7 @@ var AI = {
           max_tokens: 1024,
           system: systemPrompt,
           messages: apiMessages,
-          apiKey: window.bmClaudeKey() || AI._apiKey
+          apiKey: window.bmAIKey() || AI._apiKey
         })
       })
       .then(function(res) {
@@ -596,7 +596,7 @@ var AI = {
         if (data.content && data.content[0]) {
           resolve(data.content[0].text);
         } else {
-          reject(new Error('No response from Claude'));
+          reject(new Error('No response from AI'));
         }
       })
       .catch(function(err) {
@@ -610,7 +610,7 @@ var AI = {
     if (!container) return;
     container.innerHTML += '<div id="ai-typing" style="display:flex;gap:8px;margin-bottom:16px;">'
       + '<div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#D4A574,#C4956A);display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0;">✦</div>'
-      + '<div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Claude</div>'
+      + '<div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">AI</div>'
       + '<div style="background:var(--bg);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px;">'
       + '<span class="typing-dots" style="display:inline-flex;gap:4px;">'
       + '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-light);animation:blink 1.4s infinite both;animation-delay:0s;"></span>'
@@ -678,7 +678,7 @@ var AI = {
   _copyConversation: function() {
     if (AI._messages.length === 0) { UI.toast('No conversation to copy', 'error'); return; }
     var text = AI._messages.map(function(m) {
-      return (m.role === 'user' ? 'You' : 'Claude') + ':\n' + m.content;
+      return (m.role === 'user' ? 'You' : 'AI') + ':\n' + m.content;
     }).join('\n\n---\n\n');
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(function() { UI.toast('Conversation copied!'); });

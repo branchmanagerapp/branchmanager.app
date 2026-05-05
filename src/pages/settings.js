@@ -967,20 +967,20 @@ var SettingsPage = {
     if (aiServerManaged) {
       html += '<div style="background:var(--green-bg);border:1px solid var(--green-light);border-radius:8px;padding:12px;font-size:12px;color:var(--text);">'
         +   '<div style="font-weight:700;margin-bottom:4px;">🔒 Key lives only on Supabase</div>'
-        +   'BM calls Claude through the <code>ai-chat</code> edge function, which reads <code>ANTHROPIC_API_KEY</code> from its own secrets store. Your key is never in localStorage, never in JS, never on any device.<br><br>'
+        +   'BM calls the AI through the <code>ai-chat</code> edge function, which reads <code>ANTHROPIC_API_KEY</code> from its own secrets store. Your key is never in localStorage, never in JS, never on any device.<br><br>'
         +   '<strong>One-time setup (in Terminal):</strong>'
         +   '<pre style="background:#1a1a1a;color:#e8e8e8;padding:10px;border-radius:6px;margin-top:8px;font-size:11px;overflow-x:auto;white-space:pre-wrap;">supabase secrets set ANTHROPIC_API_KEY=sk-ant-api03-...\nsupabase functions deploy ai-chat --no-verify-jwt</pre>'
         +   'After that, every device signed in sees ✅ — nobody has to paste a key anywhere.'
         + '</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">'
-        +   '<button onclick="SettingsPage._testClaudeKey()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">🧪 Test server key</button>'
+        +   '<button onclick="SettingsPage._testAIKey()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">🧪 Test server key</button>'
         + '</div>'
         + '<div id="claude-test-result" style="margin-top:10px;font-size:12px;"></div>';
     } else {
       html += '<div style="margin-bottom:8px;"><input type="password" id="claude-ai-key" value="' + aiKey + '" placeholder="sk-ant-api03-..." style="width:100%;padding:10px;border:2px solid ' + (aiOk ? 'var(--green-light)' : 'var(--border)') + ';border-radius:8px;font-size:14px;box-sizing:border-box;"></div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
         + '<button onclick="var k=document.getElementById(\'claude-ai-key\').value.trim();if(!k){UI.toast(\'Paste your key first\',\'error\');return;}localStorage.setItem(\'bm-claude-key\',k);if(typeof AI!==\'undefined\'){AI._apiKey=k;}UI.toast(\'AI Assistant connected! ✅\');loadPage(\'settings\');" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Save Key</button>'
-        + '<button onclick="SettingsPage._testClaudeKey()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">🧪 Test</button>'
+        + '<button onclick="SettingsPage._testAIKey()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">🧪 Test</button>'
         + (aiOk ? '<button onclick="SettingsPage._removeKey(\'bm-claude-key\',\'AI Assistant\')" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Remove</button>' : '')
         + '</div>'
         + '<div id="claude-test-result" style="margin-top:10px;font-size:12px;"></div>'
@@ -1211,9 +1211,9 @@ var SettingsPage = {
       + '<button class="btn btn-primary" onclick="SettingsPage._migratePhotos()" ' + (localPhotoStats.base64 === 0 ? 'disabled' : '') + ' style="font-size:13px;">'
       + (localPhotoStats.base64 === 0 ? '✓ All local photos synced' : '⬆ Upload ' + localPhotoStats.base64 + ' local photos')
       + '</button>'
-      + '<button class="btn btn-outline" onclick="SettingsPage._migrateJobberPhotos()" style="font-size:13px;">⬆ Move Jobber quote photos to bucket</button>'
+      + '<button class="btn btn-outline" onclick="SettingsPage._migrateLegacyPhotos()" style="font-size:13px;">⬆ Migrate legacy quote photos</button>'
       + '</div>'
-      + '<div style="font-size:11px;color:#1a5276;margin-top:8px;font-style:italic;">Jobber import stored ~612 photos as base64 inside quote line items. Moving them to the bucket shrinks the DB and speeds up quote loads.</div>'
+      + '<div style="font-size:11px;color:#1a5276;margin-top:8px;font-style:italic;">Legacy import stored ~612 photos as base64 inside quote line items. Moving them to the bucket shrinks the DB and speeds up quote loads.</div>'
       + '</div>';
 
     // Stripe / Dialpad / SendJim cards removed from Database & Storage —
@@ -1427,7 +1427,7 @@ var SettingsPage = {
       + '<button class="btn btn-outline" onclick="SettingsPage.auditAIData()">🔍 Audit AI-Created Data</button>'
       + '<button class="btn" style="background:var(--red);color:#fff;" onclick="SettingsPage.clearAll()">Clear All Data</button>'
       + '</div>'
-      + '<div id="audit-result" style="font-size:12px;color:var(--text-light);">"Audit AI-Created Data" lists every row any Claude session has added to your DB — clients/quotes/jobs/invoices — so you can spot-check and delete fakes.</div>'
+      + '<div id="audit-result" style="font-size:12px;color:var(--text-light);">"Audit AI-Created Data" lists every row any AI session has added to your DB — clients/quotes/jobs/invoices — so you can spot-check and delete fakes.</div>'
       + '</div>';
 
     // ═══ /GROUP: Data Import / Export / Backup ═══
@@ -1496,7 +1496,7 @@ var SettingsPage = {
       + '<button onclick="loadPage(\'permissions\')" style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;font-size:13px;font-weight:600;color:var(--text);"><span style="font-size:18px;">🛡</span><div>Permissions & Roles<div style="font-size:11px;font-weight:400;color:var(--text-light);margin-top:2px;">RBAC roles, 25 permissions</div></div></button>'
       + '<button onclick="loadPage(\'customfields\')" style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;font-size:13px;font-weight:600;color:var(--text);"><span style="font-size:18px;">🔧</span><div>Custom Fields<div style="font-size:11px;font-weight:400;color:var(--text-light);margin-top:2px;">Add fields to clients, jobs, quotes</div></div></button>'
       + '<button onclick="loadPage(\'backup\')" style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;font-size:13px;font-weight:600;color:var(--text);"><span style="font-size:18px;">💾</span><div>Backup & Restore<div style="font-size:11px;font-weight:400;color:var(--text-light);margin-top:2px;">Export/import all data</div></div></button>'
-      + '<button onclick="loadPage(\'import\')" style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;font-size:13px;font-weight:600;color:var(--text);"><span style="font-size:18px;">📥</span><div>Import Data<div style="font-size:11px;font-weight:400;color:var(--text-light);margin-top:2px;">CSV, Jobber, bulk import</div></div></button>'
+      + '<button onclick="loadPage(\'import\')" style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;font-size:13px;font-weight:600;color:var(--text);"><span style="font-size:18px;">📥</span><div>Import Data<div style="font-size:11px;font-weight:400;color:var(--text-light);margin-top:2px;">CSV, bulk import</div></div></button>'
       + '</div></div>';
 
     // ═══ /GROUP: Security + Admin ═══
@@ -2140,18 +2140,18 @@ var SettingsPage = {
     loadPage('settings');
   },
 
-  _migrateJobberPhotos: async function() {
+  _migrateLegacyPhotos: async function() {
     if (!SupabaseDB || !SupabaseDB.ready) { UI.toast('Supabase not connected', 'error'); return; }
     if (!confirm('Move all base64 photos out of quote line_items into the storage bucket?\n\nThis can take several minutes for hundreds of photos. Safe to interrupt and re-run — already-migrated photos are skipped.')) return;
 
     var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
-    UI.toast('Scanning all quotes (ignoring tenant to catch legacy Jobber imports)...');
-    // IMPORTANT: fetch ALL quotes, not filtered by tenant. Jobber imports
+    UI.toast('Scanning all quotes (ignoring tenant to catch legacy imports)...');
+    // IMPORTANT: fetch ALL quotes, not filtered by tenant. legacy system imports
     // often have tenant_id=NULL which .eq('tenant_id', tid) would skip.
     var { data: quotes, error } = await SupabaseDB.client.from('quotes').select('id, tenant_id, line_items');
     if (error) { UI.toast('Fetch failed: ' + error.message, 'error'); return; }
     if (!quotes || !quotes.length) { UI.toast('No quotes returned from Supabase — check RLS', 'error'); return; }
-    console.debug('[MigrateJobber] Fetched ' + quotes.length + ' quotes');
+    console.debug('[MigrateLegacy] Fetched ' + quotes.length + ' quotes');
     var withPhotos = quotes.filter(function(q) {
       if (!q.line_items || !q.line_items.length) return false;
       return q.line_items.some(function(it) {
@@ -2160,7 +2160,7 @@ var SettingsPage = {
       });
     });
     UI.toast('Found ' + withPhotos.length + ' quote(s) with base64 photos to migrate');
-    console.debug('[MigrateJobber] ' + withPhotos.length + ' quotes have base64 photos');
+    console.debug('[MigrateLegacy] ' + withPhotos.length + ' quotes have base64 photos');
     if (!withPhotos.length) { UI.toast('Nothing to migrate — all photos already URLs ✓'); return; }
 
     var quotesTouched = 0, photosMigrated = 0, photosFailed = 0;
@@ -2193,7 +2193,7 @@ var SettingsPage = {
             newPhotos.push(pub.data.publicUrl);
 
             // Also write a metadata row so it shows up in galleries
-            var meta = { record_type: 'quote', record_id: quote.id, url: pub.data.publicUrl, storage_path: path, name: 'jobber_' + li + '_' + pi + '.' + ext, label: item.species || item.service || '', taken_at: new Date().toISOString() };
+            var meta = { record_type: 'quote', record_id: quote.id, url: pub.data.publicUrl, storage_path: path, name: 'legacy_' + li + '_' + pi + '.' + ext, label: item.species || item.service || '', taken_at: new Date().toISOString() };
             if (quote.tenant_id) meta.tenant_id = quote.tenant_id;
             else if (tid) meta.tenant_id = tid;
             await SupabaseDB.client.from('photos').insert(meta);
@@ -2224,7 +2224,7 @@ var SettingsPage = {
     UI.toast('Done — ' + photosMigrated + ' photos moved across ' + quotesTouched + ' quotes' + (photosFailed ? ' (' + photosFailed + ' failed)' : ' ✓'));
   },
 
-  _testClaudeKey: function() {
+  _testAIKey: function() {
     var keyEl = document.getElementById('claude-ai-key');
     var resultEl = document.getElementById('claude-test-result');
     var serverManaged = AIConfig.serverManaged();
@@ -2248,7 +2248,7 @@ var SettingsPage = {
       return res.json().then(function(body){ return { ok: res.ok, status: res.status, body: body }; });
     }).then(function(r) {
       if (r.ok && r.body && r.body.content && r.body.content[0]) {
-        if (resultEl) resultEl.innerHTML = '<span style="color:var(--green-dark);font-weight:600;">✅ Connected — Claude replied: "' + (r.body.content[0].text || '').trim().slice(0, 40) + '"</span>';
+        if (resultEl) resultEl.innerHTML = '<span style="color:var(--green-dark);font-weight:600;">✅ Connected — AI replied: "' + (r.body.content[0].text || '').trim().slice(0, 40) + '"</span>';
       } else {
         var msg = (r.body && (r.body.error && (r.body.error.message || r.body.error)) || r.body && r.body.message) || ('HTTP ' + r.status);
         if (resultEl) resultEl.innerHTML = '<span style="color:#dc3545;font-weight:600;">❌ Failed: ' + UI.esc(String(msg)) + '</span>';

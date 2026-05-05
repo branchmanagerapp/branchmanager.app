@@ -1,6 +1,6 @@
 /**
  * Branch Manager — Requests Page v3
- * Matches Jobber: filter chips, stat cards, row actions, detail view
+ * Matches legacy system: filter chips, stat cards, row actions, detail view
  */
 var RequestsPage = {
 

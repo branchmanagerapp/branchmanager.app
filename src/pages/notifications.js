@@ -143,7 +143,7 @@ var NotificationsPage = {
     requests.forEach(function(r) {
       allCount++;
       if (r.createdAt && r.createdAt < ninetyDaysAgo) return;
-      // Treat literal string 'Unknown' as empty (legacy Jobber-imported requests stored that)
+      // Treat literal string 'Unknown' as empty (legacy legacy system-imported requests stored that)
       var cn = (r.clientName || '').trim();
       if (cn.toLowerCase() === 'unknown') cn = '';
       var reqWho = cn || r.phone || r.email || 'New Contact';

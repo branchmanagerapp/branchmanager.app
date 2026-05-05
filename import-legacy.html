@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Import Jobber Data — Branch Manager</title>
+<title>Import Legacy Data — Branch Manager</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; color: #1a1a1a; }
@@ -24,7 +24,7 @@ h1 { font-size: 22px; margin-bottom: 4px; }
 </head>
 <body>
 
-<h1>Import Jobber Data</h1>
+<h1>Import Legacy Data</h1>
 <p class="sub">Pushes line items + payments directly to Supabase. Writes to both localStorage and cloud.</p>
 
 <div class="info ok" id="status-line">Checking Supabase connection…</div>
@@ -70,7 +70,7 @@ h1 { font-size: 22px; margin-bottom: 4px; }
 <!-- ═══ FUZZY MATCH ═══ -->
 <div class="card">
   <h3>🔍 Fuzzy Match Unmatched Records <span class="tag">59 quotes + 49 jobs</span></h3>
-  <p>Matches unmatched Jobber quotes/jobs by client name + date (within 3 days). Creates new Supabase records for any that still don't match.</p>
+  <p>Matches unmatched legacy quotes/jobs by client name + date (within 3 days). Creates new Supabase records for any that still don't match.</p>
   <div class="file-row">
     <input type="file" id="fuzzy-quotes-file" accept=".json">
     <button onclick="fuzzyMatchQuotes()">Fuzzy Match Quotes</button>
@@ -183,21 +183,21 @@ function mapLineItem(li) {
 // ── QUOTES ──
 async function importQuotes() {
   try {
-    var jobberQuotes = await readFile('quotes-file');
+    var legacyQuotes = await readFile('quotes-file');
     var log = makeLog('quotes-log');
-    if (!Array.isArray(jobberQuotes)) { log('ERROR: Expected JSON array'); return; }
+    if (!Array.isArray(legacyQuotes)) { log('ERROR: Expected JSON array'); return; }
 
     log('Fetching existing Supabase quotes…');
     var supaQuotes = await fetchAll('quotes', 'id,quote_number,line_items');
-    log('Supabase has ' + supaQuotes.length + ' quotes. Jobber JSON has ' + jobberQuotes.length + '.');
+    log('Supabase has ' + supaQuotes.length + ' quotes. legacy JSON has ' + legacyQuotes.length + '.');
 
     var byNum = {};
     supaQuotes.forEach(function(q) { byNum[String(q.quote_number)] = q; });
 
     var matched = 0, updated = 0, skipped = 0, missing = 0, photoCount = 0, errors = 0;
 
-    for (var i = 0; i < jobberQuotes.length; i++) {
-      var jq = jobberQuotes[i];
+    for (var i = 0; i < legacyQuotes.length; i++) {
+      var jq = legacyQuotes[i];
       var existing = byNum[String(jq.quoteNumber)];
       if (!existing) { missing++; continue; }
       matched++;
@@ -233,21 +233,21 @@ async function importQuotes() {
 // ── JOBS ──
 async function importJobs() {
   try {
-    var jobberJobs = await readFile('jobs-file');
+    var legacyJobs = await readFile('jobs-file');
     var log = makeLog('jobs-log');
-    if (!Array.isArray(jobberJobs)) { log('ERROR: Expected JSON array'); return; }
+    if (!Array.isArray(legacyJobs)) { log('ERROR: Expected JSON array'); return; }
 
     log('Fetching existing Supabase jobs…');
     var supaJobs = await fetchAll('jobs', 'id,job_number,line_items');
-    log('Supabase has ' + supaJobs.length + ' jobs. Jobber JSON has ' + jobberJobs.length + '.');
+    log('Supabase has ' + supaJobs.length + ' jobs. legacy JSON has ' + legacyJobs.length + '.');
 
     var byNum = {};
     supaJobs.forEach(function(j) { byNum[String(j.job_number)] = j; });
 
     var matched = 0, updated = 0, skipped = 0, missing = 0, errors = 0;
 
-    for (var i = 0; i < jobberJobs.length; i++) {
-      var jj = jobberJobs[i];
+    for (var i = 0; i < legacyJobs.length; i++) {
+      var jj = legacyJobs[i];
       var existing = byNum[String(jj.jobNumber)];
       if (!existing) { missing++; continue; }
       matched++;
@@ -278,9 +278,9 @@ async function importJobs() {
 // ── PAYMENTS (Supabase + localStorage mirror) ──
 async function importPayments() {
   try {
-    var jobberPayments = await readFile('payments-file');
+    var legacyPayments = await readFile('payments-file');
     var log = makeLog('payments-log');
-    if (!Array.isArray(jobberPayments)) { log('ERROR: Expected JSON array'); return; }
+    if (!Array.isArray(legacyPayments)) { log('ERROR: Expected JSON array'); return; }
 
     // Check payments table exists
     var check = await fetch(SUPA_URL + '/rest/v1/payments?select=id&limit=1', { headers: supaHeaders() });
@@ -309,7 +309,7 @@ async function importPayments() {
     var linked = 0, orphaned = 0, inserted = 0, duplicates = 0, errors = 0;
     var toInsert = [];
 
-    jobberPayments.forEach(function(p) {
+    legacyPayments.forEach(function(p) {
       var ts = p.date ? new Date(p.date).getTime() : 0;
       var key = (p.clientName || '') + '|' + ts + '|' + parseFloat(p.amount);
       if (existingKeys[key]) { duplicates++; return; }
@@ -326,7 +326,7 @@ async function importPayments() {
         status: p.status || 'SUCCEEDED',
         client_name: p.clientName || '',
         client_id: clientId,
-        source: 'jobber_import'
+        source: 'legacy_import'
       });
     });
 
@@ -416,15 +416,15 @@ async function migrateLocalToSupa() {
 // ── FUZZY MATCH QUOTES ──
 async function fuzzyMatchQuotes() {
   try {
-    var jobberQuotes = await readFile('fuzzy-quotes-file');
+    var legacyQuotes = await readFile('fuzzy-quotes-file');
     var log = makeLog('fuzzy-log');
 
     var supaQuotes = await fetchAll('quotes', 'id,quote_number,client_name,created_at,total,line_items');
     var matchedNumbers = {};
     supaQuotes.forEach(function(q) { matchedNumbers[String(q.quote_number)] = true; });
 
-    var unmatched = jobberQuotes.filter(function(jq) { return !matchedNumbers[String(jq.quoteNumber)]; });
-    log('Found ' + unmatched.length + ' Jobber quotes not in Supabase by number.');
+    var unmatched = legacyQuotes.filter(function(jq) { return !matchedNumbers[String(jq.quoteNumber)]; });
+    log('Found ' + unmatched.length + ' legacy quotes not in Supabase by number.');
 
     var fuzzy = 0, still = 0, updated = 0, errors = 0;
     var photoCount = 0;
@@ -465,15 +465,15 @@ async function fuzzyMatchQuotes() {
 // ── FUZZY MATCH JOBS ──
 async function fuzzyMatchJobs() {
   try {
-    var jobberJobs = await readFile('fuzzy-jobs-file');
+    var legacyJobs = await readFile('fuzzy-jobs-file');
     var log = makeLog('fuzzy-log');
 
     var supaJobs = await fetchAll('jobs', 'id,job_number,client_name,created_at,total,line_items');
     var matchedNumbers = {};
     supaJobs.forEach(function(j) { matchedNumbers[String(j.job_number)] = true; });
 
-    var unmatched = jobberJobs.filter(function(jj) { return !matchedNumbers[String(jj.jobNumber)]; });
-    log('Found ' + unmatched.length + ' Jobber jobs not in Supabase by number.');
+    var unmatched = legacyJobs.filter(function(jj) { return !matchedNumbers[String(jj.jobNumber)]; });
+    log('Found ' + unmatched.length + ' legacy jobs not in Supabase by number.');
 
     var fuzzy = 0, still = 0, updated = 0, errors = 0;
 

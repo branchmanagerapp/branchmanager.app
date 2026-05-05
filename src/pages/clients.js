@@ -1036,7 +1036,7 @@ var ClientsPage = {
         var methodIcon = p.method === 'card' ? '💳' : (p.method === 'check' ? '📝' : (p.method === 'cash' ? '💵' : (p.method === 'ach' ? '🏦' : '💰')));
         var methodLabel = (p.method || 'other').toUpperCase();
         var invLabel = p.invoiceNumber ? '#' + p.invoiceNumber : (p.invoiceId ? '—' : '—');
-        var sourceLabel = p.source === 'jobber' ? '<span style="font-size:10px;background:#fff3e0;color:#e07c24;padding:2px 6px;border-radius:10px;">JOBBER</span>' :
+        var sourceLabel = p.source === 'legacy' ? '<span style="font-size:10px;background:#fff3e0;color:#e07c24;padding:2px 6px;border-radius:10px;">JOBBER</span>' :
                           p.source === 'stripe' ? '<span style="font-size:10px;background:#e3f2fd;color:#1976d2;padding:2px 6px;border-radius:10px;">STRIPE</span>' :
                           '<span style="font-size:10px;background:#f5f5f5;color:#666;padding:2px 6px;border-radius:10px;">' + (p.source || 'manual').toUpperCase() + '</span>';
         html += '<tr>'

@@ -1,6 +1,6 @@
 /**
  * Branch Manager — AI Tree ID (Beta)
- * Take a photo of a tree → Claude Vision identifies species, DBH, condition
+ * Take a photo of a tree → AI vision identifies species, DBH, condition
  * Returns a line-item-ready result with suggested service + price
  */
 var AITreeID = {
@@ -55,7 +55,7 @@ var AITreeID = {
     if (!AIConfig.available()) {
       html += '<div style="background:#fff3e0;border:1px solid #ffe0b2;border-radius:10px;padding:14px;margin-top:16px;text-align:center;">'
         + '<div style="font-size:14px;font-weight:600;color:#e65100;">⚠️ AI Key Required</div>'
-        + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">Go to Settings → Integrations → paste your Claude API key</div>'
+        + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">Go to Settings → Integrations → paste your AI API key</div>'
         + '<button onclick="loadPage(\'settings\')" class="btn btn-outline" style="margin-top:8px;font-size:12px;">Open Settings</button>'
         + '</div>';
     }
@@ -86,7 +86,7 @@ var AITreeID = {
         resultsEl.innerHTML = '<div style="text-align:center;padding:24px;">'
           + '<div style="font-size:32px;margin-bottom:8px;">🔍</div>'
           + '<div style="font-size:15px;font-weight:600;">Analyzing tree...</div>'
-          + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">Claude AI is identifying species, size, and condition</div>'
+          + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">AI is identifying species, size, and condition</div>'
           + '</div>';
       }
 
@@ -114,7 +114,7 @@ var AITreeID = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apiKey: (window.bmClaudeKey ? window.bmClaudeKey() : aiKey) || aiKey,
+        apiKey: (window.bmAIKey ? window.bmAIKey() : aiKey) || aiKey,
         model: 'claude-haiku-4-5',
         max_tokens: 500,
         messages: [{

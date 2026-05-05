@@ -348,7 +348,7 @@
   .data-table tr:last-child td { border:none; }
   .data-table td:first-child { font-weight:500; }
 
-  /* Card-style list (Airbnb/Jobber look) */
+  /* Card-style list (Airbnb/legacy system look) */
   /* Only mouse-hover devices get the lift. Touch devices previously jumped on every scroll
      because :active fires during scroll-touch. Now we use shadow-only feedback on tap. */
   @media (hover: hover) {
@@ -396,7 +396,7 @@
 
   html.bm-bottom-nav #bottom-nav { display: grid !important; }
 
-  /* Floating "+" FAB — Jobber-style, only in bottom-nav mode */
+  /* Floating "+" FAB — legacy system-style, only in bottom-nav mode */
   #bm-fab {
     display: none;
     position: fixed;
@@ -847,7 +847,7 @@
       <h1>Branch Manager <span>Second Nature Tree Service</span></h1>
     </div>
     <div class="sidebar-nav">
-      <!-- Core nav — matches Jobber -->
+      <!-- Core nav — matches legacy system -->
       <button class="nav-item active" data-page="dashboard"><span class="icon"><i data-lucide="layout-dashboard" class="li"></i></span> Home</button>
       <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
       <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>

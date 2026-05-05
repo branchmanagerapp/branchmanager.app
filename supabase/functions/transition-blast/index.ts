@@ -71,7 +71,7 @@ https://branchmanager.app/
 
 Your history — past quotes, invoices, appointments, and property photos — is already there. Future quotes and invoices will come from this address and link you to the new portal directly.
 
-Older emails with "clienthub.getjobber.com" links will still work for a short transition period, but please use branchmanager.app going forward.
+Older emails with "the previous portal" links will still work for a short transition period, but please use branchmanager.app going forward.
 
 To request new work, you can still call or text (914) 391-5233, or use the website form at:
 https://branchmanager.app/book.html
@@ -95,7 +95,7 @@ ${BRANDING.website_display}`;
       <a href="https://branchmanager.app/" style="display:inline-block;background:#1a3c12;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Open my portal</a>
     </p>
     <p>Your history — past quotes, invoices, appointments, and property photos — is already there. Future quotes and invoices will come from this address and link you in directly.</p>
-    <p>Older emails with <code>clienthub.getjobber.com</code> links will still work for a short transition period, but please use the new portal going forward.</p>
+    <p>Older emails with <code>the previous portal</code> links will still work for a short transition period, but please use the new portal going forward.</p>
     <p>To request new work, you can still call or text us at <a href="tel:9143915233" style="color:#1a3c12;font-weight:600;">(914) 391-5233</a>, or use the <a href="https://branchmanager.app/book.html" style="color:#1a3c12;">website form</a>.</p>
     <p>Thanks for your continued trust.</p>
     <p style="margin-top:20px;">— ${BRANDING.owner_name}<br>${BRANDING.business_name}</p>

@@ -55,7 +55,7 @@ var VideoQuote = {
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;">'
       +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">'
       +     '<div><strong style="font-size:13px;">Narration notes <span style="font-weight:400;color:var(--text-light);">(optional)</span></strong>'
-      +       '<div style="font-size:11px;color:var(--text-light);">Describe what you see — Claude reads this with the frames.</div></div>'
+      +       '<div style="font-size:11px;color:var(--text-light);">Describe what you see — AI reads this with the frames.</div></div>'
       +     '<button onclick="VideoQuote._toggleDictate()" id="vq-mic-btn" type="button" style="background:var(--white);color:var(--text);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;">'
       +       '<i data-lucide="mic" style="width:14px;height:14px;"></i><span>Dictate</span></button>'
       +   '</div>'
@@ -85,11 +85,11 @@ var VideoQuote = {
     // Results area
     html += '<div id="vq-results"></div>';
 
-    // API key warning — only if user has explicitly opted out of server-managed Claude
+    // API key warning — only if user has explicitly opted out of server-managed AI
     if (!AIConfig.available()) {
       html += '<div style="background:#fff3e0;border:1px solid #ffe0b2;border-radius:10px;padding:14px;margin-top:16px;text-align:center;">'
         + '<div style="font-size:14px;font-weight:600;color:#e65100;">AI Key Required</div>'
-        + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">Go to Settings → Integrations → paste your Claude API key</div>'
+        + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">Go to Settings → Integrations → paste your AI API key</div>'
         + '<button onclick="loadPage(\'settings\')" class="btn btn-outline" style="margin-top:8px;font-size:12px;">Open Settings</button>'
         + '</div>';
     }
@@ -367,7 +367,7 @@ var VideoQuote = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apiKey: (window.bmClaudeKey ? window.bmClaudeKey() : aiKey) || aiKey,
+        apiKey: (window.bmAIKey ? window.bmAIKey() : aiKey) || aiKey,
         model: 'claude-sonnet-4-5',
         max_tokens: 500,
         messages: [{

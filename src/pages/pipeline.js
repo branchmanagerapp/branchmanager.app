@@ -1,7 +1,7 @@
 /**
  * Branch Manager — Pipeline (Kanban Board)
  * Visual drag-and-drop board tracking leads through stages
- * Like Jobber's Pipeline feature
+ * Like legacy system's Pipeline feature
  */
 var PipelinePage = {
   stages: [
@@ -58,7 +58,7 @@ var PipelinePage = {
       return moved && new Date(moved) >= monthStart;
     }).reduce(function(s, d) { return s + (d.value || 0); }, 0);
 
-    // Jobber-style stat cards
+    // legacy system-style stat cards
     var activeDeals = deals.filter(function(d) { return d.stage !== 'won' && d.stage !== 'lost'; });
     var activeValue = activeDeals.reduce(function(s,d){ return s + (d.value||0); }, 0);
     var lostCount = stageStats.lost ? stageStats.lost.count : 0;

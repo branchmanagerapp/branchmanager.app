@@ -1,6 +1,6 @@
 /**
  * Branch Manager — Schedule / Calendar Page
- * Jobber-style with Today agenda, Week, and Month views
+ * legacy system-style with Today agenda, Week, and Month views
  */
 var SchedulePage = {
   view: 'month', // v388: default to month view (was week)

@@ -52,7 +52,7 @@ var Workflow = {
       html += '</div>';
     }
 
-    // Jobs ready to invoice — filter by scheduledDate within 60 days to skip old Jobber import data
+    // Jobs ready to invoice — filter by scheduledDate within 60 days to skip old legacy import data
     var cutoff60 = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0];
     var completedNoInvoice = jobs.filter(function(j) {
       return j.status === 'completed' && !j.invoiceId && j.scheduledDate && j.scheduledDate >= cutoff60;

@@ -37,7 +37,7 @@ var WeeklySummary = {
     return d >= start && d <= end;
   },
 
-  // Returns true if date is the Jobber mass-import window (not real activity)
+  // Returns true if date is the legacy system mass-import window (not real activity)
   _isImportArtifact: function(dateVal) {
     if (!dateVal) return false;
     var day = String(dateVal).substring(0, 10);

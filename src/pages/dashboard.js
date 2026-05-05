@@ -3,7 +3,7 @@
  */
 var DashboardPage = {
   render: function() {
-    // One-time fix: mark Jobber-migrated completed jobs as already invoiced
+    // One-time fix: mark legacy system-migrated completed jobs as already invoiced
     if (!localStorage.getItem('bm-legacy-jobs-fixed')) {
       DB.jobs.getAll().forEach(function(j) {
         if (j.status === 'completed' && !j.invoiceId) DB.jobs.update(j.id, { invoiceId: 'legacy' });
@@ -191,7 +191,7 @@ var DashboardPage = {
     // Expose insights to TaskReminders.getDashboardWidget (reads window.__bmBriefingInsights)
     window.__bmBriefingInsights = briefingInsights;
 
-    // Jobber-style Workflow cards (2x2 grid)
+    // legacy system-style Workflow cards (2x2 grid)
     var overdueInvoices = unpaidInvoices.filter(function(i) { return i.dueDate && new Date(i.dueDate) < now; });
     var unapprovedQuotes = allQuotes.filter(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
     var draftQuotes = allQuotes.filter(function(q) { return q.status === 'draft'; });

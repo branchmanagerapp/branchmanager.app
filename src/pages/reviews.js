@@ -1,6 +1,6 @@
 /**
  * Branch Manager — Reviews Page v3
- * Jobber-style review management with rating hero, review cards, request tracking
+ * legacy system-style review management with rating hero, review cards, request tracking
  */
 var ReviewsPage = {
   GOOGLE_REVIEW_URL: 'https://g.page/r/CcVkZHV_EKlEEBM/review',
@@ -29,7 +29,7 @@ var ReviewsPage = {
 
     // Stats
     var totalRating = loggedReviews.length ? (loggedReviews.reduce(function(s,r){return s+(r.stars||5);},0) / loggedReviews.length).toFixed(1) : '5.0';
-    var totalCount = 100 + loggedReviews.length; // base 100 from Jobber + new ones
+    var totalCount = 100 + loggedReviews.length; // base 100 imported + new ones
     var pendingRequests = requests.filter(function(r) { return !r.reviewed; });
 
     var html = '<div style="max-width:900px;margin:0 auto;">';

@@ -309,7 +309,7 @@ var InsightsPage = {
     }
     html += '</div></div>';
 
-    // Revenue by Service Type (beyond Jobber)
+    // Revenue by Service Type (beyond legacy system)
     var serviceRevenue = {};
     allJobs.forEach(function(j) {
       var desc = j.description || j.property || 'Other';

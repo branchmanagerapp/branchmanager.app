@@ -1,7 +1,7 @@
 /**
  * Branch Manager — Dialpad Integration
  * Click-to-call, SMS sending, call logging
- * Matches Jobber's built-in call/text functionality
+ * Matches legacy system's built-in call/text functionality
  *
  * Dialpad API docs: https://developers.dialpad.com/reference
  * Free tier: SMS via API, click-to-call via tel: or Dialpad app
@@ -106,7 +106,7 @@ var Dialpad = {
     // events and will appear in the Call Center / client comms automatically.
   },
 
-  // ── Call Timer Modal (like Jobber) ───────────────────
+  // ── Call Timer Modal (like legacy system) ───────────────────
 
   _callStart: null,
   _callInterval: null,
@@ -175,7 +175,7 @@ var Dialpad = {
     UI.toast('Call ended (' + durationStr + ')');
   },
 
-  // ── Quick Text Modal (like Jobber) ──────────────────
+  // ── Quick Text Modal (like legacy system) ──────────────────
 
   showTextModal: function(clientId, clientName, phone) {
     var client = clientId ? DB.clients.getById(clientId) : null;

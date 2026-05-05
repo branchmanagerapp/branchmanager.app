@@ -411,7 +411,7 @@ function onbDlPreview(input, previewId) {
 }
 
 // AI Vision DL field extraction (s13). Sends the front-of-license photo
-// to the ai-chat edge fn → Claude Vision → returns structured JSON.
+// to the ai-chat edge fn → AI Vision → returns structured JSON.
 // User confirms the extracted fields (or overrides on misread) before signing.
 function onbDlExtract() {
   var resultBox = document.getElementById('s13-extract-result');
@@ -420,7 +420,7 @@ function onbDlExtract() {
     resultBox.innerHTML = '<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#7f1d1d;">Upload the FRONT of the license first.</div>';
     return;
   }
-  // Strip "data:image/jpeg;base64," prefix — Anthropic API expects raw base64
+  // Strip "data:image/jpeg;base64," prefix — AI provider API expects raw base64
   var match = frontDataUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
   if (!match) {
     resultBox.innerHTML = '<div style="color:#7f1d1d;font-size:13px;">Could not read the uploaded image. Try a different photo.</div>';
@@ -429,7 +429,7 @@ function onbDlExtract() {
   var mediaType = match[1];
   var base64Data = match[2];
   resultBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:#0369a1;font-size:13px;padding:10px;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #0ea5e9;border-top-color:transparent;border-radius:50%;animation:onbspin 0.8s linear infinite;"></span> Reading license...</div><style>@keyframes onbspin { to { transform: rotate(360deg); } }</style>';
-  var apiKey = (window.bmClaudeKey ? window.bmClaudeKey() : null) || localStorage.getItem('bm-claude-key') || '';
+  var apiKey = (window.bmAIKey ? window.bmAIKey() : null) || localStorage.getItem('bm-claude-key') || '';
   fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -521,7 +521,7 @@ function onbI9SetMode(mode) {
 
 // I-9 AI Vision extract — runs on whichever photos are uploaded for the
 // selected mode. Pulls all available image dataURLs from localStorage,
-// sends them as a multi-image content array to Claude with a structured
+// sends them as a multi-image content array to AI with a structured
 // prompt requesting per-doc fields.
 function onbI9Extract() {
   var resultBox = document.getElementById('s1-extract-result');
@@ -547,7 +547,7 @@ function onbI9Extract() {
     return;
   }
   resultBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:#0369a1;font-size:13px;padding:10px;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #0ea5e9;border-top-color:transparent;border-radius:50%;animation:onbspin 0.8s linear infinite;"></span> Reading ' + images.length + ' document' + (images.length === 1 ? '' : 's') + '...</div>';
-  var apiKey = (window.bmClaudeKey ? window.bmClaudeKey() : null) || localStorage.getItem('bm-claude-key') || '';
+  var apiKey = (window.bmAIKey ? window.bmAIKey() : null) || localStorage.getItem('bm-claude-key') || '';
   // Build content: one image block per upload, then a text instruction
   var content = images.map(function(img) {
     return { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } };

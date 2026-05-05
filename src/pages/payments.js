@@ -176,7 +176,7 @@ var Payments = {
     var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var monthLabel = monthNames[now.getMonth()] + ' ' + now.getFullYear();
 
-    // === Stats row (3 cards, Jobber-style) ===
+    // === Stats row (3 cards, legacy system-style) ===
     var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">';
 
     // Collected

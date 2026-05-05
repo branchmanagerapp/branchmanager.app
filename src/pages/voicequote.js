@@ -3,7 +3,7 @@
  *
  * Tap Record, walk the property, describe what you see ("big oak out back needs
  * full removal, DBH about 30 inches, power lines nearby, crane access from
- * driveway"). When you stop, Claude converts the transcript into a structured
+ * driveway"). When you stop, the AI converts the transcript into a structured
  * draft — line items priced against your services catalog + T&M rates — and
  * opens the quote form pre-filled.
  *
@@ -32,7 +32,7 @@ var VoiceQuote = {
       + '<div style="text-align:center;padding:8px 0 20px;">'
       +   '<div style="font-size:40px;margin-bottom:6px;">🎙️</div>'
       +   '<h2 style="font-size:22px;margin:0 0 4px;">Voice-to-Quote</h2>'
-      +   '<p style="color:var(--text-light);font-size:13px;margin:0;">Walk the job, describe what you see — Claude builds the quote.</p>'
+      +   '<p style="color:var(--text-light);font-size:13px;margin:0;">Walk the job, describe what you see — AI builds the quote.</p>'
       + '</div>';
 
     if (!supported) {
@@ -42,7 +42,7 @@ var VoiceQuote = {
     }
     if (!apiKeyOk) {
       html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;">'
-        + '⚠️ No Claude API key set. Go to <a onclick="loadPage(\'settings\')" style="color:var(--accent);cursor:pointer;font-weight:600;">Settings → AI Assistant</a> to add one.'
+        + '⚠️ No AI API key set. Go to <a onclick="loadPage(\'settings\')" style="color:var(--accent);cursor:pointer;font-weight:600;">Settings → AI Assistant</a> to add one.'
         + '</div>';
     }
 
@@ -230,13 +230,13 @@ var VoiceQuote = {
     if (!transcript) { UI.toast('Record or type a description first', 'error'); return; }
 
     var apiKey = localStorage.getItem('bm-claude-key') || '';
-    if (!apiKey) { UI.toast('Add Claude API key in Settings first', 'error'); return; }
+    if (!apiKey) { UI.toast('Add AI API key in Settings first', 'error'); return; }
 
     var genBtn = document.getElementById('vq-gen-btn');
     var statusEl = document.getElementById('vq-gen-status');
     genBtn.disabled = true;
     genBtn.style.opacity = '0.6';
-    genBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;"></span> Claude is thinking…';
+    genBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;"></span> AI is thinking…';
     statusEl.textContent = '';
 
     // Build catalog + rate context
@@ -271,7 +271,7 @@ var VoiceQuote = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apiKey: (window.bmClaudeKey ? window.bmClaudeKey() : apiKey) || apiKey,
+        apiKey: (window.bmAIKey ? window.bmAIKey() : apiKey) || apiKey,
         model: 'claude-sonnet-4-5',
         max_tokens: 1500,
         system: system,
@@ -291,13 +291,13 @@ var VoiceQuote = {
       }
 
       var text = r.body.content[0].text || '';
-      // Strip markdown fences if Claude wrapped the JSON
+      // Strip markdown fences if the AI wrapped the JSON
       text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
 
       var draft;
       try { draft = JSON.parse(text); }
       catch(e) {
-        statusEl.innerHTML = '<span style="color:#dc3545;">❌ Could not parse Claude\'s response as JSON. Raw:<br><pre style="white-space:pre-wrap;font-size:11px;">' + UI.esc(text.slice(0, 400)) + '</pre></span>';
+        statusEl.innerHTML = '<span style="color:#dc3545;">❌ Could not parse AI\'s response as JSON. Raw:<br><pre style="white-space:pre-wrap;font-size:11px;">' + UI.esc(text.slice(0, 400)) + '</pre></span>';
         return;
       }
 

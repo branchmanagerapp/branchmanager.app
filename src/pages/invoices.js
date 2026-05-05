@@ -53,7 +53,7 @@ var InvoicesPage = {
     var draft = all.filter(function(i) { return i.status === 'draft'; }).length;
     var paid = all.filter(function(i) { return i.status === 'paid'; }).length;
 
-    // Jobber-style stat cards row
+    // legacy system-style stat cards row
     var now = new Date();
     var pastDue = all.filter(function(i) { return i.status !== 'paid' && i.dueDate && new Date(i.dueDate) < now; });
     var sentNotDue = all.filter(function(i) { return i.status === 'sent' && (!i.dueDate || new Date(i.dueDate) >= now); });
@@ -99,7 +99,7 @@ var InvoicesPage = {
     var filtered = self._getFiltered();
     var page = self._showAll ? filtered : filtered.slice(self._page * self._perPage, (self._page + 1) * self._perPage);
 
-    // Jobber-style header + filter chips + search
+    // legacy system-style header + filter chips + search
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
       + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
       + '<h3 style="font-size:16px;font-weight:700;margin:0;">All invoices</h3>'
@@ -868,7 +868,7 @@ var InvoicesPage = {
     var clientEmail = inv.clientEmail || (client ? client.email : '');
     var clientAddr = inv.property || (client ? client.address : '');
 
-    // v433: Jobber-style invoice detail — single clean card, status pill, big title,
+    // v433: legacy system-style invoice detail — single clean card, status pill, big title,
     // one primary "Collect Payment" CTA, all secondary actions tucked under "More".
     var statusLabel = (inv.status || 'sent').replace(/_/g,' ');
     var isPastDue = inv.status !== 'paid' && inv.status !== 'cancelled' && inv.dueDate && new Date(inv.dueDate) < new Date();
@@ -906,7 +906,7 @@ var InvoicesPage = {
 
       // Single big white card — title + body
       + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:28px 32px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04);">'
-      // Title (subject), like Jobber's "For Services Rendered"
+      // Title (subject), like legacy system's "For Services Rendered"
       + '<h1 style="font-size:28px;font-weight:800;margin:0 0 24px;letter-spacing:-0.4px;">' + UI.esc(inv.subject || 'Invoice') + '</h1>'
 
       // Two-column body: client (left) | metadata (right)
@@ -967,7 +967,7 @@ var InvoicesPage = {
     // Main content area
     html += '<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;margin-top:20px;" class="detail-grid"><div>';
 
-    // Line items — Jobber-style: clean rows with subtle dividers, right-aligned totals stack
+    // Line items — legacy system-style: clean rows with subtle dividers, right-aligned totals stack
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:16px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
       + '<h4 style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:0;font-weight:700;">Products / Services</h4>'
@@ -1010,7 +1010,7 @@ var InvoicesPage = {
     else { html += '<div style="color:var(--text-light);font-size:13px;">No payments recorded</div>'; }
     html += '</div></div>';
 
-    // Right sidebar — Jobber-style: Online payments + Notes + Status.
+    // Right sidebar — legacy system-style: Online payments + Notes + Status.
     // Payment recording is handled by the green "Collect Payment" button at the top.
     // Stripe link is configured once in Settings (base link), no per-invoice override needed.
     html += '<div>';
@@ -1149,7 +1149,7 @@ var InvoicesPage = {
     html += '</div>'
       + '<button type="button" class="btn btn-outline" style="margin-top:8px;" onclick="InvoicesPage.addItem()">+ Add Line Item</button>';
 
-    // Total display with tax breakdown (Jobber style)
+    // Total display with tax breakdown (legacy system style)
     var _invSubtotal = 0;
     (inv.lineItems || []).forEach(function(it) { _invSubtotal += (it.qty || 1) * (it.rate || 0); });
     var _invTaxRate = (inv.taxRate !== undefined ? inv.taxRate : (parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375));

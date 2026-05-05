@@ -1842,7 +1842,7 @@ var SocialBranch = {
   },
 
   // ─────────────────────────────────────────────────────────
-  // AI CAPTION WRITER — uses existing Claude integration
+  // AI CAPTION WRITER — uses existing AI integration
   // ─────────────────────────────────────────────────────────
   _aiCaption: function() {
     var ta = document.getElementById('sb-caption'); if (!ta) return;
@@ -1851,7 +1851,7 @@ var SocialBranch = {
     var btn = document.getElementById('sb-ai-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Writing…'; }
     var prompt_ = 'Write a social-media caption for Second Nature Tree Service in Peekskill NY. The subject is: "' + seed + '". Tone: friendly, direct, local-pride. Under 200 words. End with: "Call for a free estimate: (914) 391-5233 · peekskilltree.com". No emojis. Two or three short paragraphs.';
-    // Use bmClaudeKey helper (server-managed or local). Call Anthropic via Supabase edge function if available, else direct.
+    // Use bmAIKey helper (server-managed or local). Call AI provider via Supabase edge function if available, else direct.
     var edgeUrl = (localStorage.getItem('bm-supabase-url') || '') + '/functions/v1/ai-chat';
     var key = localStorage.getItem('bm-supabase-key') || '';
     fetch(edgeUrl, {

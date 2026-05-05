@@ -80,7 +80,7 @@ var CloudKeys = {
     setTimeout(CloudKeys._pushUnsynced, 1500);
 
     // Live-sync: listen for other-device writes to tenant_settings and merge
-    // into localStorage on the fly so (e.g.) a new Claude key shows up on all
+    // into localStorage on the fly so (e.g.) a new AI key shows up on all
     // open tabs without a reload.
     CloudKeys._subscribeRealtime(tid);
   },

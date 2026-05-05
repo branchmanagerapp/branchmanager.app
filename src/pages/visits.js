@@ -1,6 +1,6 @@
 /**
  * Branch Manager — Multi-Visit Jobs
- * Track multiple visits/appointments per job (like Jobber)
+ * Track multiple visits/appointments per job (like legacy system)
  */
 var Visits = {
   render: function() {

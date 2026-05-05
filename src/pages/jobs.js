@@ -140,7 +140,7 @@ var JobsPage = {
       + '<input type="text" placeholder="Search jobs..." value="' + UI.esc(self._search) + '" oninput="JobsPage._search=this.value;JobsPage._page=0;loadPage(\'jobs\')">'
       + '</div></div>';
 
-    // Bulk close-out banner for "unscheduled" filter — Jobber-imported jobs
+    // Bulk close-out banner for "unscheduled" filter — legacy system-imported jobs
     // often have status='scheduled' but no scheduledDate (effectively orphaned)
     if (self._filter === 'unscheduled' && filtered.length > 0) {
       html += '<div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'

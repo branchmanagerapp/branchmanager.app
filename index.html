@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 601; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 602; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -401,7 +401,7 @@
   .data-table tr:last-child td { border:none; }
   .data-table td:first-child { font-weight:500; }
 
-  /* Card-style list (Airbnb/Jobber look) */
+  /* Card-style list (Airbnb/legacy system look) */
   /* Only mouse-hover devices get the lift. Touch devices previously jumped on every scroll
      because :active fires during scroll-touch. Now we use shadow-only feedback on tap. */
   @media (hover: hover) {
@@ -449,7 +449,7 @@
 
   html.bm-bottom-nav #bottom-nav { display: grid !important; }
 
-  /* Floating "+" FAB — Jobber-style, only in bottom-nav mode */
+  /* Floating "+" FAB — legacy system-style, only in bottom-nav mode */
   #bm-fab {
     display: none;
     position: fixed;
@@ -1001,7 +1001,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v601.min.js"></script>
+<script defer src="dist/bm.bundle.v602.min.js"></script>
 
 
 
@@ -2685,6 +2685,6 @@ if (window.location.hash && window.location.hash.length > 1) {
   <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
 </nav>
 
-<!-- bm-ai-fab removed v498 (user preference: no floating Ask Claude button) -->
+<!-- bm-ai-fab removed v498 (user preference: no floating Ask AI button) -->
 </body>
 </html>

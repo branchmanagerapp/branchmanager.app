@@ -15,11 +15,11 @@
  * WITHOUT RLS: The anon key grants FULL read/write access to ALL tables.
  * Run migrate-rls.sql in Supabase SQL Editor to enable proper RLS policies.
  */
-// Claude key resolver — returns the device's stored key, OR an empty string if
+// AI key resolver — returns the device's stored key, OR an empty string if
 // the user has chosen "Server-managed" mode (in which case the ai-chat edge
 // function picks up ANTHROPIC_API_KEY from Supabase function secrets and the
 // key never needs to leave the server).
-window.bmClaudeKey = function() {
+window.bmAIKey = function() {
   return AIConfig.deviceKey();
 };
 

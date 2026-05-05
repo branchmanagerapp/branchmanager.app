@@ -572,7 +572,7 @@ var QuotesPage = {
       + '</div>'
       + '</div>';
 
-    // Total display with tax breakdown (Jobber style)
+    // Total display with tax breakdown (legacy system style)
     var _qSubtotal = 0;
     (q.lineItems || []).forEach(function(it) { _qSubtotal += (it.qty || 1) * (it.rate || 0); });
     var _qTaxRate = (q.taxRate !== undefined ? q.taxRate : (parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375));
@@ -1003,7 +1003,7 @@ var QuotesPage = {
       + '</div>'
       + '<div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-start;flex-wrap:wrap;">'
       +   '<button type="button" onclick="QuotesPage._addMorePhotos(this)" style="padding:8px 12px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📷 Add Photos</button>'
-      +   '<button type="button" onclick="QuotesPage._runAIOnRow(this)" style="padding:8px 12px;background:#fff;color:var(--accent);border:1px solid var(--green-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Let Claude fill species, DBH, condition, rate">🤖 Run AI</button>'
+      +   '<button type="button" onclick="QuotesPage._runAIOnRow(this)" style="padding:8px 12px;background:#fff;color:var(--accent);border:1px solid var(--green-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Let AI fill species, DBH, condition, rate">🤖 Run AI</button>'
       +   '<button type="button" onclick="QuotesPage._plantNetSecondOpinion(this)" style="padding:8px 12px;background:#fff;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Verify species with PlantNet (second opinion)">🌿 2nd</button>'
       +   '<button type="button" onclick="QuotesPage._collapseRow(this)" style="padding:8px 14px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">✓ Done</button>'
       + '</div>'
@@ -1431,7 +1431,7 @@ var QuotesPage = {
 
   // PlantNet second-opinion — sends the line item's photos to PlantNet API
   // for a pure species ID. Overwrites/suggests species if different from what
-  // Claude picked. Key from Settings: bm-plantnet-key. Sign up: my.plantnet.org
+  // AI picked. Key from Settings: bm-plantnet-key. Sign up: my.plantnet.org
   _plantNetSecondOpinion: function(btn) {
     var wrap = btn.closest('.q-item-wrap');
     if (!wrap) return;
@@ -1827,7 +1827,7 @@ var QuotesPage = {
     if (!q) return;
     if (window.bmRememberDetail) window.bmRememberDetail('quotes', id);
 
-    // Jobber-style quote detail
+    // legacy system-style quote detail
     var statusColors = {draft:'#6c757d',sent:'#e07c24',awaiting:'#e07c24',approved:'#2e7d32',converted:'#2e7d32',declined:'#dc3545'};
     var statusColor = statusColors[q.status] || '#8b2252';
     var client = q.clientId ? DB.clients.getById(q.clientId) : null;
@@ -2400,7 +2400,7 @@ var QuotesPage = {
   setStatus: function(id, status) {
     DB.quotes.update(id, { status: status });
 
-    // Auto-convert approved quotes to jobs (Jobber-style pipeline)
+    // Auto-convert approved quotes to jobs (legacy system-style pipeline)
     if (status === 'approved') {
       var q = DB.quotes.getById(id);
       if (q && !q.convertedJobId) {
@@ -2591,7 +2591,7 @@ var QuotesPage = {
   },
 
   _identifyTree: function(images, rowIndex) {
-    // Claude is primary (rich DBH+price+condition). PlantNet lives on as an
+    // the AI is primary (rich DBH+price+condition). PlantNet lives on as an
     // optional 2nd Opinion button on the row.
     var imgArr = Array.isArray(images) ? images : [images];
 
@@ -2602,11 +2602,11 @@ var QuotesPage = {
 
     var claudeKey = localStorage.getItem('bm-claude-key') || '';
     if (!claudeKey) {
-      UI.toast('Photo saved. Add Claude API key in Settings for auto tree ID.');
+      UI.toast('Photo saved. Add AI API key in Settings for auto tree ID.');
       return;
     }
 
-    QuotesPage._identifyTreeClaude(imgArr, rowIndex);
+    QuotesPage._identifyTreeAI(imgArr, rowIndex);
     return;
 
     // --- PlantNet path kept below for reference; never reached ---
@@ -2632,12 +2632,12 @@ var QuotesPage = {
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      // PlantNet failed → try Claude if we have a key
+      // PlantNet failed → try AI if we have a key
       if (data.statusCode === 404 || data.error) {
         QuotesPage._identifying = false;
         if (claudeKey) {
-          UI.toast('PlantNet miss — trying Claude…');
-          QuotesPage._identifyTreeClaude(imgArr, rowIndex);
+          UI.toast('PlantNet miss — trying AI…');
+          QuotesPage._identifyTreeAI(imgArr, rowIndex);
         } else {
           UI.toast('PlantNet: ' + (data.message || data.error || 'no match'), 'error');
         }
@@ -2647,8 +2647,8 @@ var QuotesPage = {
       if (!results.length) {
         QuotesPage._identifying = false;
         if (claudeKey) {
-          UI.toast('No species match — trying Claude…');
-          QuotesPage._identifyTreeClaude(imgArr, rowIndex);
+          UI.toast('No species match — trying AI…');
+          QuotesPage._identifyTreeAI(imgArr, rowIndex);
         } else {
           UI.toast('PlantNet: no species matched — fill in manually');
         }
@@ -2702,22 +2702,22 @@ var QuotesPage = {
       console.warn('PlantNet error:', e);
       QuotesPage._identifying = false;
       if (claudeKey) {
-        UI.toast('PlantNet unreachable — trying Claude…');
-        QuotesPage._identifyTreeClaude(imgArr, rowIndex);
+        UI.toast('PlantNet unreachable — trying AI…');
+        QuotesPage._identifyTreeAI(imgArr, rowIndex);
       } else {
         UI.toast('PlantNet unavailable — fill in manually', 'error');
       }
     });
   },
 
-  // Claude-based tree ID (richer than PlantNet — gets DBH + condition + price suggestion)
-  _identifyTreeClaude: function(imgArr, rowIndex) {
+  // AI-based tree ID (richer than PlantNet — gets DBH + condition + price suggestion)
+  _identifyTreeAI: function(imgArr, rowIndex) {
     if (QuotesPage._identifying) return;
     var aiKey = localStorage.getItem('bm-claude-key');
     if (!aiKey) { UI.toast('No AI key configured', 'error'); return; }
 
     QuotesPage._identifying = true;
-    UI.toast(imgArr.length > 1 ? '🤖 Claude analyzing ' + imgArr.length + ' photos…' : '🤖 Claude identifying tree…');
+    UI.toast(imgArr.length > 1 ? '🤖 AI analyzing ' + imgArr.length + ' photos…' : '🤖 AI identifying tree…');
 
     var content = imgArr.map(function(dataUrl) {
       return { type: 'image', source: { type: 'base64', media_type: dataUrl.split(';')[0].split(':')[1], data: dataUrl.split(',')[1] } };
@@ -2733,13 +2733,13 @@ var QuotesPage = {
     fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: (window.bmClaudeKey ? window.bmClaudeKey() : aiKey) || aiKey, model: 'claude-haiku-4-5', max_tokens: 400, messages: [{ role: 'user', content: content }] })
+      body: JSON.stringify({ apiKey: (window.bmAIKey ? window.bmAIKey() : aiKey) || aiKey, model: 'claude-haiku-4-5', max_tokens: 400, messages: [{ role: 'user', content: content }] })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data.error) { UI.toast('Claude error: ' + (data.error.message || data.error.type || 'unknown'), 'error'); QuotesPage._identifying = false; return; }
+      if (data.error) { UI.toast('AI error: ' + (data.error.message || data.error.type || 'unknown'), 'error'); QuotesPage._identifying = false; return; }
       var text = data.content && data.content[0] ? data.content[0].text : '';
-      if (!text) { UI.toast('Claude empty — check key', 'error'); QuotesPage._identifying = false; return; }
+      if (!text) { UI.toast('AI empty — check key', 'error'); QuotesPage._identifying = false; return; }
       try {
         var match = text.match(/\{[\s\S]*\}/);
         var tree = JSON.parse(match[0]);
@@ -2770,10 +2770,10 @@ var QuotesPage = {
             wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
         }
-      } catch(e) { UI.toast('Could not parse Claude response — fill in manually'); }
+      } catch(e) { UI.toast('Could not parse AI response — fill in manually'); }
       QuotesPage._identifying = false;
     })
-    .catch(function() { UI.toast('Claude unavailable — fill in manually'); QuotesPage._identifying = false; });
+    .catch(function() { UI.toast('AI unavailable — fill in manually'); QuotesPage._identifying = false; });
   },
 
   // ── Dual Pricing (removed tabs — now sequential) ──

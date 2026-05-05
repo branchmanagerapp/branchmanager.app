@@ -50,7 +50,7 @@ var BM_CONFIG = {
  *   CompanyInfo.all()                → entire object
  */
 /**
- * AIConfig — single source of truth for "is Claude server-managed?".
+ * AIConfig — single source of truth for "is AI server-managed?".
  *
  * v406: Six callsites used to ask this question with three different defaults
  * (`!== 'false'` default-on, `=== 'true'` default-off). Server-managed has

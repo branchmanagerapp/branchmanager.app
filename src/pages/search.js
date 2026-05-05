@@ -112,7 +112,7 @@ var SearchPage = {
       });
     }, 0);
 
-    // Gather results — if no query, show ALL by most recent (Jobber-style)
+    // Gather results — if no query, show ALL by most recent (legacy system-style)
     var isSearch = query && query.trim().length >= 2;
     var q = isSearch ? query.trim().toLowerCase() : '';
 

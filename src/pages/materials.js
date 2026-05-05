@@ -1,7 +1,7 @@
 /**
  * Branch Manager — Materials & Supplies Tracker
  * Track materials inventory, per-job usage, and costs
- * Something Jobber does NOT have — exact cost tracking for profitability
+ * Something legacy system does NOT have — exact cost tracking for profitability
  */
 var Materials = {
 
