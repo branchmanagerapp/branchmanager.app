@@ -428,6 +428,120 @@ async function runApptReminders(): Promise<{ sent: number; skipped: number }> {
   return { sent, skipped };
 }
 
+// ─── Trigger 5: Compliance renewal reminders (90/60/30 days before expiry) ───
+// For each row in compliance_documents_with_status with status='expiring_soon',
+// fire owner-facing emails at three notice points (90/60/30 days). Idempotent
+// per-doc per-notice so cron can run hourly without duplicate emails. Once a
+// doc actually expires (status='expired'), one final escalation email goes out.
+
+async function runRenewalReminders(): Promise<{ sent: number; skipped: number }> {
+  // Owner gets these — find their email. Fall back to FROM_EMAIL (info@…)
+  // since Doug reads that inbox today.
+  const ownerEmail = REPLY_TO; // already resolved per-tenant from cfg.from_email
+
+  // Pull every active compliance doc with an expiry date for this tenant.
+  const { data: rows, error } = await sb
+    .from("compliance_documents_with_status")
+    .select("id, kind, number, issuer, expires_date, renewal_url, status, days_until_expiry")
+    .eq("tenant_id", TENANT_ID)
+    .eq("active", true)
+    .not("expires_date", "is", null);
+
+  if (error) { console.error("renewal_reminder query error:", error.message); return { sent: 0, skipped: 0 }; }
+  if (!rows || rows.length === 0) return { sent: 0, skipped: 0 };
+
+  // Friendly labels (mirror the BM Insurance UI _kindLabel map)
+  const kindLabel: Record<string, string> = {
+    wc_policy: "Workers Comp Policy",
+    db_policy: "Disability Benefits",
+    pfl_policy: "Paid Family Leave",
+    general_liability: "General Liability",
+    auto_liability: "Commercial Auto",
+    umbrella: "Umbrella / Excess",
+    pesticide_cert: "Pesticide Cert",
+    tcia_member: "TCIA Membership",
+    isa_member: "ISA Membership",
+    usdot_registration: "US DOT Registration",
+    mcs150_biennial: "MCS-150 Biennial",
+    dos_biennial: "NY DOS Biennial",
+    sales_tax_cert: "Sales Tax Cert",
+    vehicle_registration: "Vehicle Registration",
+    vehicle_inspection: "NY Inspection",
+    driver_license: "Driver License",
+    cdl: "CDL",
+    dot_medical_card: "DOT Medical Card",
+    osha_z133_training: "ANSI Z133 Training",
+    first_aid_cpr_cert: "First Aid / CPR",
+    business_license_local: "Local Business License",
+    home_improvement_contractor: "HIC License",
+  };
+
+  let sent = 0, skipped = 0;
+
+  for (const r of rows) {
+    try {
+      const days = (r as { days_until_expiry: number | null }).days_until_expiry;
+      const status = (r as { status: string }).status;
+
+      // Pick which notice bucket this doc is in (or skip).
+      // Status from view: active | expiring_soon | expired | no_expiry | archived
+      let bucket: "90d" | "60d" | "30d" | "expired" | null = null;
+      if (status === "expired") {
+        bucket = "expired";
+      } else if (days != null) {
+        if (days >  60 && days <= 90) bucket = "90d";
+        else if (days >  30 && days <= 60) bucket = "60d";
+        else if (days >=  0 && days <= 30) bucket = "30d";
+      }
+      if (!bucket) { skipped++; continue; }
+
+      const triggerKey = `renewal_reminder_${bucket}`;
+      if (await alreadySent(triggerKey, (r as { id: string }).id)) { skipped++; continue; }
+
+      const label = kindLabel[(r as { kind: string }).kind] || (r as { kind: string }).kind;
+      const num    = (r as { number: string | null }).number || "";
+      const issuer = (r as { issuer: string | null }).issuer || "";
+      const expDate = (r as { expires_date: string | null }).expires_date || "";
+      const renewalUrl = (r as { renewal_url: string | null }).renewal_url || "";
+
+      const subject = bucket === "expired"
+        ? `🔴 EXPIRED: ${label}${num ? " #" + num : ""}`
+        : `⏳ ${label}${num ? " #" + num : ""} expires in ${days}d`;
+
+      const urgency = bucket === "expired"
+        ? "is EXPIRED. This is a compliance hold — renew immediately."
+        : bucket === "30d"
+          ? `expires in ${days} days. Last reminder.`
+          : bucket === "60d"
+            ? `expires in ${days} days. Plan the renewal — most state/insurance portals take 1–3 weeks.`
+            : `expires in ${days} days. Heads-up so you can budget time + filing fees.`;
+
+      const body =
+        `${label}${num ? " #" + num : ""}${issuer ? " (" + issuer + ")" : ""} ${urgency}\n\n` +
+        `Expiration date: ${expDate}\n\n` +
+        (renewalUrl ? `Renew here: ${renewalUrl}\n\n` : "") +
+        `View in BM:\n` +
+        `https://branchmanager.app/#insurance\n\n` +
+        `— Branch Manager (auto-reminder, ${bucket})`;
+
+      const ok = await sendEmail(ownerEmail, subject, emailHtml(body, ownerEmail));
+      if (ok) {
+        await logSend(null, triggerKey, (r as { id: string }).id, ownerEmail, subject);
+        sent++;
+      } else {
+        skipped++;
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("renewal_reminder iteration failed for doc", (r as { id: string }).id, msg);
+      try { await logSend(null, "renewal_reminder", (r as { id: string }).id, "", "renewal reminder failed", "failed", msg); } catch (_) {}
+      skipped++;
+    }
+  }
+
+  return { sent, skipped };
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -465,13 +579,14 @@ Deno.serve(async (req) => {
     OWNER_NAME        = String(cfg.owner_name     ?? FALLBACK_OWNER_NAME);
     COMPANY_ADDRESS   = String(cfg.company_address ?? FALLBACK_ADDRESS);
 
-    const [review, followup, upsell, apptReminder] = await Promise.all([
+    const [review, followup, upsell, apptReminder, renewalReminder] = await Promise.all([
       runReviewRequests(),
       runQuoteFollowups(),
       runUpsells(),
       runApptReminders(),
+      runRenewalReminders(),
     ]);
-    const tenant_total = review.sent + followup.sent + upsell.sent + apptReminder.sent;
+    const tenant_total = review.sent + followup.sent + upsell.sent + apptReminder.sent + renewalReminder.sent;
     total_sent += tenant_total;
     perTenant.push({
       tenant_id: t.id,
@@ -480,6 +595,7 @@ Deno.serve(async (req) => {
       quote_followups: followup,
       upsells: upsell,
       appt_reminders: apptReminder,
+      renewal_reminders: renewalReminder,
       total_sent: tenant_total,
     });
   }
