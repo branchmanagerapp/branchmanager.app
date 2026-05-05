@@ -156,27 +156,45 @@ Deno.serve(async (req) => {
   // tenant_id MUST be set or RLS will hide every row from BM's anon-key reads
   // (the May 2 audit found 56 of 60 communications were orphaned this way and
   // invisible in the call center UI).
+  // Dialpad's SMS events DON'T set `event_type` — they're "distinguished by
+  // subscription type" per their docs. Detect SMS by payload shape: presence
+  // of `text` field + `to_number` being an array. Also normalize the array
+  // to_number into a single string for our text column.
+  const looksLikeSms = (typeof data.text !== "undefined" || data.mms === true || Array.isArray(data.to_number));
+  const looksLikeVoicemail = (typeof data.transcription !== "undefined" || typeof data.transcript !== "undefined" || event.startsWith("voicemail"));
+
+  // Normalize to_number — Dialpad sends array on SMS, string on calls.
+  const rawTo = data.to_number || data.internal_number || data.to || null;
+  const normalizedTo = Array.isArray(rawTo) ? (rawTo[0] || null) : rawTo;
+
   let row: any = {
     tenant_id: TENANT_ID,
     type: "call",
     channel: "call",
     direction: "inbound",
     from_number: data.from_number || data.external_number || data.from || null,
-    to_number: data.to_number || data.internal_number || data.to || null,
+    to_number: normalizedTo,
     duration_seconds: data.duration || null,
     body: null,
     recording_url: data.recording_url || null,
-    status: data.state || event,
+    status: data.state || event || (looksLikeSms ? "sms.received" : "unknown"),
     dialpad_id: String(data.call_id || data.id || data.uuid || `${event}-${Date.now()}`),
     metadata: payload,
   };
 
-  if (event.startsWith("sms")) {
+  if (event.startsWith("sms") || looksLikeSms) {
     row.type = "sms";
     row.channel = "sms";
+    // Dialpad SMS payloads always include `direction`. Our DID is the
+    // "internal" side, so direction is inbound when external party → us,
+    // outbound when we → external party.
     row.direction = data.direction === "outbound" ? "outbound" : "inbound";
     row.body = data.text || data.message || data.body || null;
-  } else if (event.startsWith("voicemail")) {
+    if (data.mms === true) row.metadata = Object.assign({}, payload, { mms: true });
+    // Override status with Dialpad's message_status if present
+    if (data.message_status) row.status = data.message_status;
+    else if (!data.state) row.status = row.direction === "inbound" ? "sms.received" : "sms.sent";
+  } else if (event.startsWith("voicemail") || looksLikeVoicemail) {
     row.type = "voicemail";
     row.channel = "voicemail";
     row.body = data.transcription || data.transcript || null;
