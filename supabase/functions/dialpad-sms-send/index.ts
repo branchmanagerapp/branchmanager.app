@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
   const commRow = {
     tenant_id: tenantId,
     client_id: clientId || null,
+    type: "sms",
     channel: "sms",
     direction: "outbound",
     to_number: toFormatted,

@@ -116,7 +116,6 @@ var InvoicesPage = {
       })()
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
-      +   '<button onclick="InvoicesPage._generateFromJobs()" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid #e07c24;background:#fff3e0;color:#e07c24;cursor:pointer;font-weight:600;">⚡ Generate from Jobs</button>'
       +   '<div class="search-box" style="min-width:200px;max-width:280px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
       +     '<input type="text" placeholder="Search invoices..." value="' + UI.esc(self._search) + '" oninput="InvoicesPage._search=this.value;InvoicesPage._page=0;loadPage(\'invoices\')">'
