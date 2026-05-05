@@ -940,7 +940,6 @@ var TaskReminders = {
       + (todayCount ? ' · ' + todayCount + ' today' : '');
     html += '<div style="display:flex;justify-content:space-between;align-items:center;' + (collapsed ? '' : 'margin-bottom:12px;') + '">'
       + '<div onclick="TaskReminders._toggleCollapse()" style="cursor:pointer;flex:1;display:flex;align-items:center;gap:8px;">'
-      +   '<span style="display:inline-block;transition:transform .15s;transform:rotate(' + (collapsed ? '-90' : '0') + 'deg);font-size:12px;color:var(--text-light);">▼</span>'
       +   '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Tasks</h3>'
       +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + subtitle + '</div>'
       +   '</div>'
@@ -948,6 +947,9 @@ var TaskReminders = {
       + '<div style="display:flex;gap:6px;align-items:center;">'
       + '<button onclick="event.stopPropagation();TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">+ New</button>'
       + '<button onclick="event.stopPropagation();loadPage(\'taskreminders\')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);">View All →</button>'
+      + '<button onclick="event.stopPropagation();TaskReminders._toggleCollapse()" title="' + (collapsed ? 'Expand' : 'Collapse') + '" style="background:none;border:1px solid var(--border);padding:5px 9px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);line-height:1;">'
+      +   '<span style="display:inline-block;transition:transform .15s;transform:rotate(' + (collapsed ? '-90' : '0') + 'deg);">▼</span>'
+      + '</button>'
       + '</div>'
       + '</div>';
 
