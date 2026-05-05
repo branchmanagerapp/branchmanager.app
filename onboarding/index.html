@@ -311,23 +311,95 @@ function clearSigCanvas(canvasId) {
 }
 
 // License-photo upload (s13). Captures camera or library image,
-// shows thumb preview, saves base64 to localStorage so the signed
-// step record + downstream forms can pull it. Cloud archive lands
-// in onboarding_uploads table on completeStep() — TODO migration.
+// shows thumb preview, saves base64 to localStorage AND pushes the
+// raw file to private Supabase Storage bucket onboarding-uploads
+// (v580+). Path: {tenant_id}/{session}/{kind}-{ts}.{ext}.
+// Records metadata into onboarding_uploads table for queryability.
 function onbDlPreview(input, previewId) {
   var file = input.files && input.files[0];
   if (!file) return;
+
+  // 1. Local preview + localStorage (instant, offline-friendly)
   var reader = new FileReader();
   reader.onload = function(ev) {
     var dataUrl = ev.target.result;
     var prev = document.getElementById(previewId);
     if (prev) {
-      prev.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:120px;border-radius:6px;">';
+      prev.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:120px;border-radius:6px;">'
+        + '<div style="font-size:10px;color:#64748b;text-align:center;margin-top:2px;" id="' + previewId + '-status">⏳ Uploading...</div>';
       prev.style.border = '2px solid #1b5e20';
     }
     try { localStorage.setItem('bm-onboarding-' + previewId, dataUrl); } catch(e) {}
   };
   reader.readAsDataURL(file);
+
+  // 2. Cloud upload (async, doesn't block UI)
+  // Tenant resolution mirrors window.resolveTenantId() pattern from supabase.js
+  var SUPA_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  var SUPA_KEY = (window.parent && window.parent.localStorage && window.parent.localStorage.getItem('bm-supabase-key')) || localStorage.getItem('bm-supabase-key') || '';
+  var TENANT = (window.parent && window.parent.localStorage && window.parent.localStorage.getItem('bm-tenant-id'))
+    || localStorage.getItem('bm-tenant-id')
+    || '93af4348-8bba-4045-ac3e-5e71ec1cc8c5'; // SNT fallback
+  if (!SUPA_KEY) {
+    var statusEl = document.getElementById(previewId + '-status');
+    if (statusEl) { statusEl.textContent = '⚠ offline — saved locally only'; statusEl.style.color = '#92400e'; }
+    return;
+  }
+
+  // Path: tenant/onboarding-session/kind-timestamp.ext
+  var sessionId = (function() {
+    try {
+      var emp = JSON.parse((window.parent && window.parent.localStorage ? window.parent.localStorage : localStorage).getItem('new-hire-data') || '{}');
+      return (emp.fullName || 'pre-employee').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+    } catch(e) { return 'pre-employee'; }
+  })();
+  var kind = previewId.replace(/-prev$/, '').replace(/^s\d+/, 'dl');  // s13front-prev → dl-front
+  var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  var ts = Date.now();
+  var path = TENANT + '/' + sessionId + '/' + kind + '-' + ts + '.' + ext;
+
+  fetch(SUPA_URL + '/storage/v1/object/onboarding-uploads/' + encodeURIComponent(path), {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'X-Tenant-ID': TENANT,
+      'Content-Type': file.type || 'application/octet-stream'
+    },
+    body: file
+  })
+  .then(function(r) {
+    var statusEl = document.getElementById(previewId + '-status');
+    if (r.ok) {
+      // Record metadata
+      fetch(SUPA_URL + '/rest/v1/onboarding_uploads', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'X-Tenant-ID': TENANT,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          tenant_id: TENANT,
+          session_id: sessionId,
+          kind: kind,
+          storage_path: path,
+          mime_type: file.type || null,
+          size_bytes: file.size
+        })
+      }).catch(function(){});
+      if (statusEl) { statusEl.textContent = '✓ uploaded'; statusEl.style.color = '#15803d'; }
+    } else {
+      if (statusEl) { statusEl.textContent = '⚠ cloud upload failed (saved locally)'; statusEl.style.color = '#92400e'; }
+      console.warn('[onboarding] storage upload failed', r.status);
+    }
+  })
+  .catch(function(err) {
+    var statusEl = document.getElementById(previewId + '-status');
+    if (statusEl) { statusEl.textContent = '⚠ offline (saved locally)'; statusEl.style.color = '#92400e'; }
+  });
 }
 
 // AI Vision DL field extraction (s13). Sends the front-of-license photo
