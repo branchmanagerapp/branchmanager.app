@@ -7,7 +7,7 @@
  * Reads come from cache (fast, synchronous). Writes go to both cache + cloud.
  */
 var CloudSync = {
-  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'services', 'expenses', 'time_entries'],
+  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments', 'services', 'expenses', 'time_entries'],
   syncing: false,
   lastSync: 0,
 

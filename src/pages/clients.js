@@ -750,6 +750,9 @@ var ClientsPage = {
     var clientJobs = DB.jobs.getAll().filter(function(j) { return j.clientId === id || (j.clientName || '').trim().toLowerCase() === cName; });
     var clientInvoices = DB.invoices.getAll().filter(function(i) { return i.clientId === id || (i.clientName || '').trim().toLowerCase() === cName; });
     var clientQuotes = DB.quotes.getAll().filter(function(q) { return q.clientId === id || (q.clientName || '').trim().toLowerCase() === cName; });
+    var clientPayments = (DB.payments && DB.payments.getByClient) ? DB.payments.getByClient(id, c.name) : [];
+    clientPayments.sort(function(a, b){ return (b.date || b.createdAt || '').localeCompare(a.date || a.createdAt || ''); });
+    var lifetimePaid = clientPayments.reduce(function(s, p){ return s + (Number(p.amount) || 0); }, 0);
     var totalRevenue = clientInvoices.filter(function(i) { return i.status === 'paid'; }).reduce(function(s, i) { return s + (i.total || 0); }, 0);
     var totalOutstanding = clientInvoices.filter(function(i) { return i.status !== 'paid'; }).reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
     var totalInvoiced = clientInvoices.reduce(function(s, i) { return s + (i.total || 0); }, 0);
@@ -1019,7 +1022,36 @@ var ClientsPage = {
     } else {
       html += '<div style="font-size:13px;color:var(--text-light);">No invoices yet.</div>';
     }
-    html += '</div></div>' // close cd-billing
+    html += '</div>'; // close invoices card
+
+    // ── Payment History card ──
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;margin-top:14px;">'
+      +     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +       '<h3 style="font-size:16px;font-weight:700;margin:0;">💰 Payment History (' + clientPayments.length + ')</h3>'
+      +       (clientPayments.length ? '<div style="font-size:13px;color:var(--text-light);">Lifetime paid: <strong style="color:var(--green-dark);">' + UI.money(lifetimePaid) + '</strong></div>' : '')
+      +     '</div>';
+    if (clientPayments.length) {
+      html += '<table class="data-table"><thead><tr><th>Date</th><th>Method</th><th>Invoice</th><th>Source</th><th style="text-align:right;">Amount</th></tr></thead><tbody>';
+      clientPayments.forEach(function(p) {
+        var methodIcon = p.method === 'card' ? '💳' : (p.method === 'check' ? '📝' : (p.method === 'cash' ? '💵' : (p.method === 'ach' ? '🏦' : '💰')));
+        var methodLabel = (p.method || 'other').toUpperCase();
+        var invLabel = p.invoiceNumber ? '#' + p.invoiceNumber : (p.invoiceId ? '—' : '—');
+        var sourceLabel = p.source === 'jobber' ? '<span style="font-size:10px;background:#fff3e0;color:#e07c24;padding:2px 6px;border-radius:10px;">JOBBER</span>' :
+                          p.source === 'stripe' ? '<span style="font-size:10px;background:#e3f2fd;color:#1976d2;padding:2px 6px;border-radius:10px;">STRIPE</span>' :
+                          '<span style="font-size:10px;background:#f5f5f5;color:#666;padding:2px 6px;border-radius:10px;">' + (p.source || 'manual').toUpperCase() + '</span>';
+        html += '<tr>'
+          + '<td style="white-space:nowrap;color:var(--text-light);font-size:12px;">' + UI.dateShort(p.date || p.createdAt) + '</td>'
+          + '<td>' + methodIcon + ' ' + methodLabel + '</td>'
+          + '<td>' + (p.invoiceNumber ? '<strong>#' + p.invoiceNumber + '</strong>' : '<span style="color:var(--text-light);">—</span>') + '</td>'
+          + '<td>' + sourceLabel + '</td>'
+          + '<td style="text-align:right;font-weight:700;color:var(--green-dark);">' + UI.money(p.amount || 0) + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--text-light);">No payments recorded yet.</div>';
+    }
+    html += '</div></div>' // close payment-history card AND cd-billing
 
       // ══════════════════════════════════════════════════════════
       // COMMS TAB — activity timeline + CommsLog

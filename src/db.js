@@ -617,6 +617,27 @@ var DB = (function() {
     getById: function(id) { return expenses.getAll().find(function(r) { return r.id === id; }) || null; }
   };
 
+  // ── Payments (read-only — Stripe webhook + manual entry are sources of truth) ──
+  var payments = {
+    getAll: function() { try { return JSON.parse(localStorage.getItem('bm-payments')) || []; } catch(e) { return []; } },
+    getById: function(id) { return payments.getAll().find(function(p) { return p.id === id; }) || null; },
+    getByClient: function(clientId, clientName) {
+      var nameKey = (clientName || '').trim().toLowerCase();
+      return payments.getAll().filter(function(p) {
+        if (clientId && p.clientId === clientId) return true;
+        if (nameKey && (p.clientName || '').trim().toLowerCase() === nameKey) return true;
+        return false;
+      });
+    },
+    getByInvoice: function(invoiceId, invoiceNumber) {
+      return payments.getAll().filter(function(p) {
+        if (invoiceId && p.invoiceId === invoiceId) return true;
+        if (invoiceNumber && p.invoiceNumber === invoiceNumber) return true;
+        return false;
+      });
+    }
+  };
+
   // ── Time Entries ──
   var timeEntries = {
     getAll: function() { return getAll(KEYS.timeEntries); },
@@ -778,6 +799,7 @@ var DB = (function() {
     quotes: quotes,
     jobs: jobs,
     invoices: invoices,
+    payments: payments,
     services: services,
     expenses: expenses,
     timeEntries: timeEntries,
