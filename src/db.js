@@ -720,35 +720,28 @@ var DB = (function() {
     return imported;
   }
 
-  // ── Seed demo data ──
+  // ── Seed demo data — DISABLED v593 (May 5 2026) ──
+  //
+  // PERMANENTLY OFF. This function used to spawn 6 demo clients (Brian
+  // Heermance, Ken Phillips, Cynthia Ferral, Christina Eckhart, Marlene
+  // Colangelo, George Grant) plus jobs/invoices/requests if localStorage
+  // was empty. Side effect: every time the cache cleared (new browser,
+  // signed out, iOS reinstall) it re-seeded LOCAL → CloudSync uploaded →
+  // Supabase ended up with daily duplicates of real customers. Caused
+  // 12 phantom client rows on 2026-05-03 / 2026-05-04 (Christina Eckhart's
+  // page showed two phantom job #312 rows, etc.).
+  //
+  // Three of the names (Brian, Ken, Christina) are REAL Doug clients, so
+  // duplicates polluted real customer data. This violates the
+  // NEVER-fabricate-data rule (MEMORY.md). Demo seeding is gone for good.
+  // If you want a sandbox, use a separate tenant/project.
   function seedDemo() {
-    if (clients.count() > 0) return; // Already has data
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('bm-allow-demo-seed') !== 'true') {
+      return; // Hard off unless explicit opt-in flag set
+    }
+    if (clients.count() > 0) return;
     services.seed();
-
-    // Demo clients
-    var demoClients = [
-      { name: 'Brian Heermance', address: '7 Lynwood Court, Cortlandt Manor, NY 10567', phone: '(646) 228-4455', email: 'bpwh1@outlook.com', status: 'active' },
-      { name: 'Ken Phillips', company: '130 BBQ', address: '130 Smith Street, Peekskill, NY 10566', phone: '(914) 555-0102', email: 'ken@130bbq.com', status: 'active' },
-      { name: 'Cynthia Ferral', address: '11 Piping Brook Lane, Bedford, NY 10506', phone: '(347) 776-1419', email: 'cynthiaferral@gmail.com', status: 'lead' },
-      { name: 'Christina Eckhart', address: '7 East Willow Street, Beacon, NY 12508', phone: '(423) 740-1778', email: '', status: 'active' },
-      { name: 'Marlene Colangelo', address: '25 Oak Drive, Peekskill, NY 10566', phone: '(914) 555-0199', email: 'marlene@email.com', status: 'active' },
-      { name: 'George Grant', address: '44 Maple Ave, Cortlandt Manor, NY 10567', phone: '(914) 555-0177', email: 'george@email.com', status: 'active' }
-    ];
-    demoClients.forEach(function(c) { clients.create(c); });
-
-    // Demo jobs
-    var clientList = clients.getAll();
-    jobs.create({ clientId: clientList[3].id, clientName: 'Christina Eckhart', property: '7 East Willow Street, Beacon, NY 12508', jobNumber: 312, scheduledDate: '2026-03-16', status: 'late', total: 2500, description: 'Tree removal', crew: ['Doug Brown', 'Catherine Conway', 'Ryan Knapp'] });
-    jobs.create({ clientId: clientList[0].id, clientName: 'Brian Heermance', property: '7 Lynwood Court, Cortlandt Manor, NY 10567', jobNumber: 315, scheduledDate: '2026-03-22', status: 'scheduled', total: 1800, description: 'Pruning - 3 oaks', crew: ['Doug Brown'] });
-
-    // Demo invoices
-    invoices.create({ clientId: clientList[4].id, clientName: 'Marlene Colangelo', invoiceNumber: 377, subject: 'For Services Rendered', total: 108, balance: 108, status: 'sent', dueDate: '2026-03-25' });
-    invoices.create({ clientId: clientList[5].id, clientName: 'George Grant', invoiceNumber: 378, subject: 'For Services Rendered', total: 46, balance: 46, status: 'sent', dueDate: '2026-03-28' });
-    invoices.create({ clientId: clientList[1].id, clientName: 'Ken Phillips', invoiceNumber: 376, subject: 'For Services Rendered', total: 216.75, balance: 0, status: 'paid', paidDate: '2026-03-13' });
-
-    // Demo requests
-    requests.create({ clientId: clientList[0].id, clientName: 'Brian Heermance', property: '7 Lynwood Court, Cortlandt Manor, NY 10567', phone: '(646) 228-4455', email: 'bpwh1@outlook.com', status: 'new', source: 'Google Search', notes: '' });
-    requests.create({ clientId: clientList[2].id, clientName: 'Cynthia Ferral', property: '11 Piping Brook Lane, Bedford, NY 10506', phone: '(347) 776-1419', email: 'cynthiaferral@gmail.com', status: 'new', source: 'Facebook', notes: '' });
+    // (Body removed — see commit v593. Set localStorage 'bm-allow-demo-seed=true' to re-enable for dev only.)
   }
 
   // Team members — uses the generic create/update/remove so bm-team → Supabase team_members syncs automatically
