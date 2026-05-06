@@ -224,7 +224,7 @@ var UI = (function() {
     input.addEventListener('input', function() {
       clearTimeout(debounce);
       var q = input.value.trim();
-      if (q.length < 3) { close(); return; }
+      if (q.length < 2) { close(); return; }
       debounce = setTimeout(function() {
         // Bias to US; client-side fetch — no key needed
         var url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&limit=5&lang=en';
