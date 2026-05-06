@@ -88,38 +88,82 @@ async function checkDailyQuota(): Promise<{ ok: boolean; sent: number }> {
   return { ok: sent < DAILY_AUTOMATION_CAP, sent };
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  if (!RESEND_API_KEY) { console.warn("No RESEND_API_KEY — skipping email to", to); return false; }
-  // Per-send quota check — protects against burst within a single cron run
-  const q = await checkDailyQuota();
-  if (!q.ok) {
-    console.warn(`[quota] daily cap ${DAILY_AUTOMATION_CAP} reached (sent=${q.sent}) — skipping email to ${to}`);
-    return false;
-  }
-  const r = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html, reply_to: REPLY_TO }),
-  });
-  if (!r.ok) {
-    const body = await r.text().catch(() => "");
-    console.error("Resend error", r.status, body);
-    // Soft-bounce 429 = daily quota at Resend's side. Log and bail to avoid
-    // spamming retries (cron will pick up tomorrow).
-    return false;
-  }
+// v603 (2026-05-05): sendEmail() removed. Triggers now stage drafts in
+// marketing_drafts for Doug to review + approve in BM Marketing → Drafts to
+// Review. Per the never-autonomous-send rule (Basquali incident, MEMORY.md).
+// Replaces 5 sendEmail() callsites.
+//
+// To re-enable autonomous sending, build a separate cron that picks up
+// marketing_drafts WHERE status='approved' and posts to send-email.
+async function enqueueDraft(params: {
+  triggerType: string;
+  sourceRecordType: string;       // 'job' | 'quote' | 'invoice' | 'request'
+  sourceRecordId: string;
+  clientId: string | null;
+  clientName: string;
+  toEmail: string;
+  subject: string;
+  bodyText: string;
+  bodyHtml: string;
+  metadata?: Record<string, unknown>;
+}): Promise<boolean> {
+  const dedupKey = `${params.triggerType}:${params.sourceRecordId}`;
+  // Idempotent insert — UNIQUE (tenant_id, trigger, dedup_key) makes a
+  // re-run a no-op rather than a duplicate.
+  const { error } = await sb.from("marketing_drafts").upsert({
+    tenant_id:          TENANT_ID,
+    trigger:            params.triggerType,
+    source_record_type: params.sourceRecordType,
+    source_record_id:   params.sourceRecordId,
+    client_id:          params.clientId,
+    client_name:        params.clientName,
+    to_email:           params.toEmail,
+    channel:            "email",
+    subject:            params.subject,
+    body_text:          params.bodyText,
+    body_html:          params.bodyHtml,
+    status:             "pending",
+    dedup_key:          dedupKey,
+    metadata:           params.metadata ?? {},
+  }, { onConflict: "tenant_id,trigger,dedup_key", ignoreDuplicates: true });
+  if (error) { console.error("[enqueueDraft]", error.message, dedupKey); return false; }
   return true;
 }
 
+// Backwards-compat shim — keeps the old signature so call-sites don't all
+// need rewriting in one pass. Triggers below now pass the full draft
+// metadata; this shim is for any caller that still uses the (to, subject,
+// html) signature. Will warn and skip — drafts can't be enqueued without
+// a tenant + record reference.
+async function sendEmail(_to: string, _subject: string, _html: string): Promise<boolean> {
+  console.warn("[sendEmail] DEPRECATED — caller should switch to enqueueDraft()");
+  return false;
+}
+
+// Quota check still useful for visibility but no longer gates anything
+// (drafts don't consume Resend quota until approved + sent via send-email).
+// Kept for the dashboard's "today's automation activity" indicator.
+async function _checkDailyQuotaUnused() { return checkDailyQuota(); }
+
 async function alreadySent(triggerType: string, recordId: string): Promise<boolean> {
-  const { data } = await sb
-    .from("communications")
-    .select("id")
-    .eq("channel", "email")
-    .eq("direction", "outbound")
-    .contains("metadata", { trigger: triggerType, record_id: recordId })
-    .limit(1);
-  return !!(data && data.length > 0);
+  // Check BOTH historical communications (already-sent) AND the new
+  // marketing_drafts queue (pending/approved) so cron skips records that
+  // already have a draft staged or a real send recorded.
+  const [{ data: comms }, { data: drafts }] = await Promise.all([
+    sb.from("communications")
+      .select("id")
+      .eq("channel", "email")
+      .eq("direction", "outbound")
+      .contains("metadata", { trigger: triggerType, record_id: recordId })
+      .limit(1),
+    sb.from("marketing_drafts")
+      .select("id")
+      .eq("tenant_id", TENANT_ID)
+      .eq("trigger", triggerType)
+      .eq("dedup_key", `${triggerType}:${recordId}`)
+      .limit(1),
+  ]);
+  return !!(comms?.length) || !!(drafts?.length);
 }
 
 async function logSend(clientId: string | null, triggerType: string, recordId: string, toEmail: string, subject: string, status: string = "sent", errorMsg: string = "") {
@@ -209,9 +253,16 @@ async function runReviewRequests(): Promise<{ sent: number; skipped: number }> {
         `${OWNER_NAME}\n` +
         `${COMPANY_PHONE}`;
 
-      const ok = await sendEmail(email, subject, emailHtml(body, email));
+      const ok = await enqueueDraft({
+        triggerType: "review_request",
+        sourceRecordType: "job", sourceRecordId: job.id,
+        clientId: job.client_id, clientName: job.client_name || email,
+        toEmail: email, subject,
+        bodyText: body, bodyHtml: emailHtml(body, email),
+        metadata: { sent_after_completion: true },
+      });
       if (ok) {
-        await logSend(job.client_id, "review_request", job.id, email, subject);
+        await logSend(job.client_id, "review_request", job.id, email, subject, "draft");
         sent++;
       }
     } catch (e) {
@@ -273,9 +324,15 @@ async function runQuoteFollowups(): Promise<{ sent: number; skipped: number }> {
         `We have availability coming up and would love to get you on the schedule. Just reply to this email or give us a call at ${COMPANY_PHONE}.\n\n` +
         `Thanks,\n${OWNER_NAME}\n${COMPANY_NAME}\n${COMPANY_PHONE}`;
 
-      const ok = await sendEmail(email, subject, emailHtml(body, email));
+      const ok = await enqueueDraft({
+        triggerType: "quote_followup_7d",
+        sourceRecordType: "quote", sourceRecordId: q.id,
+        clientId: q.client_id, clientName: q.client_name || email,
+        toEmail: email, subject,
+        bodyText: body, bodyHtml: emailHtml(body, email),
+      });
       if (ok) {
-        await logSend(q.client_id, "quote_followup_7d", q.id, email, subject);
+        await logSend(q.client_id, "quote_followup_7d", q.id, email, subject, "draft");
         sent++;
       }
     } catch (e) {
@@ -372,9 +429,15 @@ async function runUpsells(): Promise<{ sent: number; skipped: number }> {
         `And if you know anyone who needs tree work, we really appreciate the referral — word of mouth is how we built this business.\n\n` +
         `Thanks again,\n${OWNER_NAME}\n${COMPANY_NAME}\n${COMPANY_PHONE}`;
 
-      const ok = await sendEmail(email, subject, emailHtml(body, email));
+      const ok = await enqueueDraft({
+        triggerType: "upsell_30d",
+        sourceRecordType: "invoice", sourceRecordId: inv.id,
+        clientId: inv.client_id, clientName: inv.client_name || email,
+        toEmail: email, subject,
+        bodyText: body, bodyHtml: emailHtml(body, email),
+      });
       if (ok) {
-        await logSend(inv.client_id, "upsell_30d", inv.id, email, subject);
+        await logSend(inv.client_id, "upsell_30d", inv.id, email, subject, "draft");
         sent++;
       }
     } catch (e) {
@@ -445,9 +508,15 @@ async function runApptReminders(): Promise<{ sent: number; skipped: number }> {
         `• If anything has changed or you need to reschedule, just reply to this email or call ${COMPANY_PHONE}.\n\n` +
         `See you soon!\n${OWNER_NAME}\n${COMPANY_NAME}\n${COMPANY_PHONE}`;
 
-      const ok = await sendEmail(email, subject, emailHtml(body, email));
+      const ok = await enqueueDraft({
+        triggerType: "appt_reminder",
+        sourceRecordType: "job", sourceRecordId: job.id,
+        clientId: job.client_id, clientName: job.client_name || email,
+        toEmail: email, subject,
+        bodyText: body, bodyHtml: emailHtml(body, email),
+      });
       if (ok) {
-        await logSend(job.client_id, "appt_reminder", job.id, email, subject);
+        await logSend(job.client_id, "appt_reminder", job.id, email, subject, "draft");
         sent++;
       }
     } catch (e) {
@@ -557,9 +626,16 @@ async function runRenewalReminders(): Promise<{ sent: number; skipped: number }>
         `https://branchmanager.app/#insurance\n\n` +
         `— Branch Manager (auto-reminder, ${bucket})`;
 
-      const ok = await sendEmail(ownerEmail, subject, emailHtml(body, ownerEmail));
+      const ok = await enqueueDraft({
+        triggerType: triggerKey as string,
+        sourceRecordType: "request", sourceRecordId: (r as { id: string }).id,
+        clientId: null, clientName: (r as { client_name?: string }).client_name || "Renewal alert",
+        toEmail: ownerEmail, subject,
+        bodyText: body, bodyHtml: emailHtml(body, ownerEmail),
+        metadata: { renewal_bucket: bucket },
+      });
       if (ok) {
-        await logSend(null, triggerKey, (r as { id: string }).id, ownerEmail, subject);
+        await logSend(null, triggerKey, (r as { id: string }).id, ownerEmail, subject, "draft");
         sent++;
       } else {
         skipped++;

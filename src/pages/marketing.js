@@ -440,6 +440,7 @@ var MarketingPage = (function() {
       + '<h2 style="margin:0 0 4px;font-size:22px;">📣 Marketing Dashboard</h2>'
       + '<div style="font-size:13px;color:#64748b;">Your marketing funnel at a glance — lead sources, conversion, revenue attribution, response time.</div>'
       + '</div>'
+      + renderDraftsToReview()
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;">'
       + renderLeadSources()
       + renderTagSources()
@@ -515,6 +516,148 @@ var MarketingPage = (function() {
     loadPage('marketing');
   }
 
+  // ── Drafts to Review (v603) ─────────────────────────────────────────────────
+  // marketing-automation cron stages outbound emails as drafts in
+  // marketing_drafts. Doug reviews + approves here. Nothing is autonomous.
+  // Per the never-autonomous-send rule (Basquali incident, MEMORY.md).
+  var _draftsCache = null;
+  function renderDraftsToReview() {
+    var html = '<div id="mkt-drafts-section" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +   '<div>'
+      +     '<h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px;">📋 Drafts to Review <span id="mkt-drafts-count" style="font-size:11px;font-weight:700;background:#fff3e0;color:#7e2d10;padding:2px 8px;border-radius:10px;">…</span></h3>'
+      +     '<div style="font-size:12px;color:var(--text-light);margin-top:3px;">Customer emails the automation has staged. Approve = sends now. Reject = won\'t send. Nothing fires without your click.</div>'
+      +   '</div>'
+      +   '<div style="display:flex;gap:8px;">'
+      +     '<button id="mkt-drafts-refresh" onclick="MarketingPage.loadDrafts()" style="background:none;border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">↻ Refresh</button>'
+      +     '<button id="mkt-drafts-approve-all" onclick="MarketingPage.approveAllDrafts()" style="background:var(--green-dark);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;display:none;">Send All</button>'
+      +   '</div>'
+      + '</div>'
+      + '<div id="mkt-drafts-list">'
+      +   '<div style="text-align:center;padding:30px;color:var(--text-light);font-size:13px;">⏳ Loading drafts…</div>'
+      + '</div>'
+      + '</div>';
+    setTimeout(function(){ if (typeof MarketingPage.loadDrafts === 'function') MarketingPage.loadDrafts(); }, 80);
+    return html;
+  }
+
+  function loadDrafts() {
+    var box = document.getElementById('mkt-drafts-list');
+    var counter = document.getElementById('mkt-drafts-count');
+    var sendAll = document.getElementById('mkt-drafts-approve-all');
+    if (!box) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = (DB && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!sb || !tid) {
+      box.innerHTML = '<div style="background:#fff3cd;border:1px solid #ffe082;border-radius:8px;padding:12px;color:#7e2d10;font-size:13px;">⚠ Cloud sync required to load drafts.</div>';
+      return;
+    }
+    sb.from('marketing_drafts').select('*').eq('tenant_id', tid).eq('status', 'pending').order('created_at', { ascending: false }).then(function(r) {
+      _draftsCache = (r && r.data) || [];
+      if (counter) counter.textContent = _draftsCache.length;
+      if (sendAll) sendAll.style.display = _draftsCache.length > 0 ? 'inline-block' : 'none';
+      if (_draftsCache.length === 0) {
+        box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light);font-size:13px;">✅ No drafts pending review. The automation is on standby.</div>';
+        return;
+      }
+      var TRIGGER_LABELS = {
+        review_request:    { icon: '⭐', label: 'Review request', color: '#fbbf24' },
+        quote_followup_7d: { icon: '💬', label: 'Quote follow-up (7d)', color: '#3b82f6' },
+        upsell_30d:        { icon: '🌳', label: 'Upsell (30d after paid)', color: '#10b981' },
+        appt_reminder:     { icon: '⏰', label: 'Appointment reminder', color: '#f59e0b' }
+      };
+      var html = '';
+      _draftsCache.forEach(function(d) {
+        var meta = TRIGGER_LABELS[d.trigger] || { icon: '✉', label: d.trigger, color: '#6b7280' };
+        var ageDays = Math.floor((Date.now() - new Date(d.created_at)) / 86400000);
+        var ageStr = ageDays === 0 ? 'today' : ageDays === 1 ? '1d ago' : ageDays + 'd ago';
+        html += '<div data-draft-id="' + d.id + '" style="border:1px solid var(--border);border-left:4px solid ' + meta.color + ';border-radius:8px;padding:12px 14px;margin-bottom:8px;background:#fafafa;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">'
+          +   '<div style="flex:1;min-width:0;">'
+          +     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">'
+          +       '<span style="font-weight:700;font-size:13px;">' + meta.icon + ' ' + meta.label + '</span>'
+          +       '<span style="font-size:11px;color:var(--text-light);">' + ageStr + '</span>'
+          +     '</div>'
+          +     '<div style="font-size:14px;font-weight:600;margin-bottom:2px;">' + UI.esc(d.client_name) + ' <span style="color:var(--text-light);font-weight:400;">→ ' + UI.esc(d.to_email || '') + '</span></div>'
+          +     '<div style="font-size:13px;color:var(--text);margin-bottom:6px;"><strong>Subject:</strong> ' + UI.esc(d.subject || '(no subject)') + '</div>'
+          +     '<details style="font-size:12px;">'
+          +       '<summary style="cursor:pointer;color:var(--accent);font-weight:600;">Preview body</summary>'
+          +       '<pre style="white-space:pre-wrap;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px;max-height:240px;overflow:auto;">' + UI.esc(d.body_text || '') + '</pre>'
+          +     '</details>'
+          +   '</div>'
+          +   '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">'
+          +     '<button onclick="MarketingPage.approveDraft(\'' + d.id + '\')" style="background:var(--green-dark);color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">✅ Send</button>'
+          +     '<button onclick="MarketingPage.rejectDraft(\'' + d.id + '\')" style="background:#fff;color:#c62828;border:1px solid #ef9a9a;padding:6px 12px;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap;">✕ Reject</button>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      });
+      box.innerHTML = html;
+    });
+  }
+
+  function approveDraft(id) {
+    var d = (_draftsCache || []).find(function(x){ return x.id === id; });
+    if (!d) { UI.toast('Draft not found', 'error'); return; }
+    var sb = SupabaseDB.client;
+    var tid = DB.getTenantId();
+    var now = new Date().toISOString();
+    var approver = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) ? Auth.user.email : 'unknown';
+    UI.toast('Sending…');
+    // Mark approved → call send-email → update with sent_at
+    sb.from('marketing_drafts').update({ status: 'approved', approved_at: now, approved_by: approver }).eq('id', id).then(function() {
+      var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+      fetch(SUPABASE_URL + '/functions/v1/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Tenant-ID': tid },
+        body: JSON.stringify({
+          to: d.to_email,
+          subject: d.subject,
+          html: d.body_html,
+          text: d.body_text
+        })
+      }).then(function(r){
+        if (r.ok) {
+          sb.from('marketing_drafts').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', id).then(function(){
+            UI.toast('Sent ✅');
+            loadDrafts();
+          });
+        } else {
+          r.text().then(function(t){
+            sb.from('marketing_drafts').update({ status: 'send_failed', metadata: Object.assign({}, d.metadata || {}, { send_error: t.slice(0, 200) }) }).eq('id', id);
+            UI.toast('Send failed: ' + t.slice(0, 80), 'error');
+            loadDrafts();
+          });
+        }
+      }).catch(function(e){
+        sb.from('marketing_drafts').update({ status: 'send_failed', metadata: Object.assign({}, d.metadata || {}, { send_error: String(e) }) }).eq('id', id);
+        UI.toast('Send error: ' + e, 'error');
+        loadDrafts();
+      });
+    });
+  }
+
+  function rejectDraft(id) {
+    UI.confirm('Reject this draft? It won\'t send and the trigger won\'t re-stage it.', function() {
+      var sb = SupabaseDB.client;
+      sb.from('marketing_drafts').update({ status: 'rejected', rejected_at: new Date().toISOString() }).eq('id', id).then(function() {
+        UI.toast('Draft rejected');
+        loadDrafts();
+      });
+    });
+  }
+
+  function approveAllDrafts() {
+    if (!_draftsCache || _draftsCache.length === 0) return;
+    UI.confirm('Send all ' + _draftsCache.length + ' pending drafts? Each goes through send-email individually.', function() {
+      var ids = _draftsCache.map(function(d){ return d.id; });
+      ids.forEach(function(id, i) {
+        // Stagger by 250ms so we don't burst Resend
+        setTimeout(function(){ approveDraft(id); }, i * 250);
+      });
+    });
+  }
+
   return {
     render: render,
     setRange: setRange,
@@ -523,6 +666,10 @@ var MarketingPage = (function() {
     disconnectSocial: disconnectSocial,
     updateGBP: updateGBP,
     tagSource: tagSource,
-    toggleTagShowMore: toggleTagShowMore
+    toggleTagShowMore: toggleTagShowMore,
+    loadDrafts: loadDrafts,
+    approveDraft: approveDraft,
+    rejectDraft: rejectDraft,
+    approveAllDrafts: approveAllDrafts
   };
 })();
