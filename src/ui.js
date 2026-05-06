@@ -277,20 +277,41 @@ var UI = (function() {
 
   function formField(label, type, id, value, options) {
     options = options || {};
-    var html = '<div class="form-group">';
-    html += '<label for="' + id + '">' + label + '</label>';
+    // v626: when icon is provided, render a left-icon row (Jobber pattern).
+    //       when noLabel: true, skip the label entirely (placeholder doubles as label).
+    //       Use a sensible default placeholder = the label minus trailing " *" if not given.
+    var placeholder = options.placeholder;
+    if (placeholder == null && options.noLabel) {
+      placeholder = String(label || '').replace(/\s*\*\s*$/, '');
+    }
+
+    var inputHtml;
     if (type === 'textarea') {
-      html += '<textarea id="' + id + '" rows="' + (options.rows || 3) + '" placeholder="' + esc(options.placeholder || '') + '">' + esc(value || '') + '</textarea>';
+      inputHtml = '<textarea id="' + id + '" rows="' + (options.rows || 3) + '" placeholder="' + esc(placeholder || '') + '">' + esc(value || '') + '</textarea>';
     } else if (type === 'select') {
-      html += '<select id="' + id + '"' + (options.onchange ? ' onchange="' + esc(options.onchange) + '"' : '') + '>';
+      inputHtml = '<select id="' + id + '"' + (options.onchange ? ' onchange="' + esc(options.onchange) + '"' : '') + '>';
       (options.options || []).forEach(function(o) {
         var val = typeof o === 'object' ? o.value : o;
-        var label = typeof o === 'object' ? o.label : o;
-        html += '<option value="' + val + '"' + (val === value ? ' selected' : '') + '>' + label + '</option>';
+        var lab = typeof o === 'object' ? o.label : o;
+        inputHtml += '<option value="' + val + '"' + (val === value ? ' selected' : '') + '>' + lab + '</option>';
       });
-      html += '</select>';
+      inputHtml += '</select>';
     } else {
-      html += '<input type="' + type + '" id="' + id + '" value="' + esc(value || '') + '" placeholder="' + esc(options.placeholder || '') + '"' + (options.required ? ' required' : '') + (options.onchange ? ' onchange="' + esc(options.onchange) + '"' : '') + '>';
+      inputHtml = '<input type="' + type + '" id="' + id + '" value="' + esc(value || '') + '" placeholder="' + esc(placeholder || '') + '"' + (options.required ? ' required' : '') + (options.onchange ? ' onchange="' + esc(options.onchange) + '"' : '') + '>';
+    }
+
+    var html = '<div class="form-group">';
+    if (!options.noLabel) {
+      html += '<label for="' + id + '">' + label + '</label>';
+    }
+    if (options.icon) {
+      // Icon to the LEFT of the input — flex row with 24px icon column + flex:1 input column.
+      html += '<div style="display:flex;align-items:center;gap:12px;">'
+        +   '<i data-lucide="' + esc(options.icon) + '" style="width:22px;height:22px;color:var(--text-light);flex-shrink:0;"></i>'
+        +   '<div style="flex:1;min-width:0;">' + inputHtml + '</div>'
+        + '</div>';
+    } else {
+      html += inputHtml;
     }
     html += '</div>';
     return html;

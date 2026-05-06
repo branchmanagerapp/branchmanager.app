@@ -620,18 +620,18 @@ var ClientsPage = {
         + '</div>')
 
       + UI.formSection('Identity', { tight: true })
-      + UI.formField('First Name *', 'text', 'c-first', _fn, { required: true, placeholder: 'First name' })
-      + UI.formField('Last Name', 'text', 'c-last', _ln, { placeholder: 'Last name' })
-      + UI.formField('Company', 'text', 'c-company', c.company, { placeholder: 'Company name (optional)' })
+      + UI.formField('First name', 'text', 'c-first', _fn, { required: true, noLabel: true, icon: 'user' })
+      + UI.formField('Last name', 'text', 'c-last', _ln, { noLabel: true, icon: 'user' })
+      + UI.formField('Company name (optional)', 'text', 'c-company', c.company, { noLabel: true, icon: 'building-2' })
 
       + UI.formSection('Contact')
-      + UI.formField('Phone *', 'tel', 'c-phone', c.phone, { required: true, placeholder: '(914) 555-0000' })
-      + UI.formField('Email', 'email', 'c-email', c.email, { placeholder: 'email@example.com' })
-      + UI.formField('Address', 'text', 'c-address', c.address, { placeholder: 'Street, City, State ZIP' })
+      + UI.formField('Phone (914) 555-0000', 'tel', 'c-phone', c.phone, { required: true, noLabel: true, icon: 'phone' })
+      + UI.formField('Email', 'email', 'c-email', c.email, { noLabel: true, icon: 'mail' })
+      + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin' })
 
       + UI.formSection('Source & status')
-      + UI.formField('Status', 'select', 'c-status', c.status || 'lead', { options: [{value:'lead',label:'Lead'},{value:'active',label:'Active'}] })
-      + UI.formField('Lead Source', 'select', 'c-source', c.source || '', { options: [
+      + UI.formField('Status', 'select', 'c-status', c.status || 'lead', { noLabel: true, icon: 'circle-dot', options: [{value:'lead',label:'Lead'},{value:'active',label:'Active'}] })
+      + UI.formField('Lead Source', 'select', 'c-source', c.source || '', { noLabel: true, icon: 'search', options: [
             { value: '',             label: '— Select where they came from —' },
             { value: 'Google',       label: 'Google (search / GBP)' },
             { value: 'Referral',     label: 'Word of mouth / Referral' },
@@ -654,8 +654,8 @@ var ClientsPage = {
       +   '<summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);padding:8px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;">'
       +     'Tags &amp; Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);">— optional</span>'
       +   '</summary>'
-      +   UI.formField('Tags', 'text', 'c-tags', (c.tags || []).join(', '), { placeholder: 'residential, commercial (comma separated)' })
-      +   UI.formField('Notes', 'textarea', 'c-notes', c.notes, { placeholder: 'Internal notes...' })
+      +   UI.formField('Tags (comma separated)', 'text', 'c-tags', (c.tags || []).join(', '), { noLabel: true, icon: 'tag' })
+      +   UI.formField('Internal notes', 'textarea', 'c-notes', c.notes, { noLabel: true, icon: 'sticky-note' })
       + '</details>'
       + '</form>';
 
@@ -665,8 +665,10 @@ var ClientsPage = {
         + ' <button class="btn btn-primary" onclick="document.getElementById(\'client-form\').requestSubmit()">Save Client</button>'
     });
     // v623: Photon address autocomplete on the Address field
+    // v626: render the new field icons (lucide doesn't auto-scan modal contents)
     setTimeout(function() {
       if (UI.bindAddressAutocomplete) UI.bindAddressAutocomplete('c-address');
+      if (typeof lucide !== 'undefined') { try { lucide.createIcons(); } catch(e){} }
     }, 50);
   },
 
