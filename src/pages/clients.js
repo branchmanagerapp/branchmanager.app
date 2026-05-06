@@ -629,8 +629,12 @@ var ClientsPage = {
       + UI.formField('Email', 'email', 'c-email', c.email, { noLabel: true, icon: 'mail' })
       + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin' })
 
-      + UI.formSection('Source & status')
-      + UI.formField('Status', 'select', 'c-status', c.status || 'lead', { noLabel: true, icon: 'circle-dot', options: [{value:'lead',label:'Lead'},{value:'active',label:'Active'}] })
+      + UI.formSection('How they found you')
+      // v630: Status field removed from intake — every new client starts as
+      // "lead" and the system promotes to "active" automatically when the
+      // first quote is approved / first job created. (Hidden input keeps
+      // ClientsPage.save happy without changing its read path.)
+      + '<input type="hidden" id="c-status" value="' + UI.esc(c.status || 'lead') + '">'
       + UI.formField('Lead Source', 'select', 'c-source', c.source || '', { noLabel: true, icon: 'search', options: [
             { value: '',             label: '— Select where they came from —' },
             { value: 'Google',       label: 'Google (search / GBP)' },

@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 629; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 630; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -1005,7 +1005,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v629.min.js"></script>
+<script defer src="dist/bm.bundle.v630.min.js"></script>
 
 
 
@@ -2673,13 +2673,29 @@ window.addEventListener('popstate', function(e) {
   var page = (e.state && e.state.page) || (window.location.hash ? window.location.hash.slice(1) : 'dashboard');
   if (page && typeof loadPage === 'function') loadPage(page);
 });
-// Load page from URL hash on initial load
-if (window.location.hash && window.location.hash.length > 1) {
-  var hashPage = window.location.hash.slice(1);
-  if (typeof loadPage === 'function' && typeof pageRenderers !== 'undefined' && pageRenderers[hashPage]) {
-    setTimeout(function() { loadPage(hashPage); }, 100);
+// v630: on full reload (F5 / Cmd+R / Cmd+Shift+R) always land on dashboard,
+// even if the URL still carries a deep hash. Pull-to-refresh on PWA does the
+// same. Direct navigation (clicking a link, opening a bookmark with a hash,
+// or browser back) still honors the hash.
+(function() {
+  var nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+  var isReload = nav && nav.type === 'reload';
+  if (isReload) {
+    // Strip the hash so subsequent navigation doesn't bounce back via popstate
+    if (window.location.hash) {
+      try { history.replaceState({ page: 'dashboard' }, '', window.location.pathname + window.location.search); } catch(e){}
+    }
+    if (typeof loadPage === 'function') setTimeout(function() { loadPage('dashboard'); }, 100);
+    return;
   }
-}
+  // Fresh nav — honor the URL hash (deep link / bookmark / external open).
+  if (window.location.hash && window.location.hash.length > 1) {
+    var hashPage = window.location.hash.slice(1);
+    if (typeof loadPage === 'function' && typeof pageRenderers !== 'undefined' && pageRenderers[hashPage]) {
+      setTimeout(function() { loadPage(hashPage); }, 100);
+    }
+  }
+})();
 </script>
 <button id="bm-fab" onclick="BM_contextCreate()" title="New…" aria-label="Create new">+</button>
 <nav id="bottom-nav">
