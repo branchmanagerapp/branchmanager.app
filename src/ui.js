@@ -104,10 +104,12 @@ var UI = (function() {
       return;
     }
     var prev = stack.pop();
-    // Prefer reloading the underlying page to get fresh data
-    if (prev.page && typeof loadPage === 'function') {
-      try { loadPage(prev.page, { force: true }); return; } catch(e){}
-    }
+    // v632: restore the snapshot UNCONDITIONALLY first — wipes the dialog
+    // out of pageContent immediately. Then attempt loadPage as a refresh
+    // for fresh data. If loadPage fails (auth, render error, etc.) the
+    // user STILL sees the underlying page from the snapshot, never a
+    // stuck dialog. v631 fix had a bug: it relied on loadPage succeeding
+    // to clear the dialog, so any loadPage failure left the form visible.
     var pageTitleEl = document.getElementById('pageTitle');
     var pageContentEl = document.getElementById('pageContent');
     var pageActionEl = document.getElementById('pageAction');
@@ -117,6 +119,10 @@ var UI = (function() {
       pageActionEl.style.display = prev.actionDisplay;
       if (prev.actionText) pageActionEl.textContent = prev.actionText;
       pageActionEl.onclick = prev.actionOnclick;
+    }
+    // Now refresh with fresh data — but don't depend on it
+    if (prev.page && typeof loadPage === 'function') {
+      try { loadPage(prev.page, { force: true }); } catch(e){}
     }
   }
 
