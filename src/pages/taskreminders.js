@@ -173,7 +173,7 @@ var TaskReminders = {
         + '</div>';
     } else {
       // Desktop table
-      html += '<div class="desktop-only">';
+      html += '<div class="q-desktop-only">';
       html += '<table class="data-table"><thead><tr>'
         + '<th style="width:32px;"><input type="checkbox" onchange="TaskReminders._selectAll(this)"></th>'
         + '<th>Task</th><th>Category</th><th>Priority</th><th>Due</th><th>Assigned</th>'
@@ -198,7 +198,7 @@ var TaskReminders = {
       html += '</tbody></table></div>';
 
       // Mobile cards
-      html += '<div class="mobile-only">';
+      html += '<div class="q-mobile-only">';
       filtered.forEach(function(task, idx) {
         html += TaskReminders._renderRow(task, now, idx === filtered.length - 1);
       });
