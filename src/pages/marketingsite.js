@@ -393,6 +393,10 @@ var MarketingSite = (function() {
             +   v('branch', 'Branch (default: main)')
             + '</div>'
             + v('token', 'GitHub PAT (ghp_...) — Contents: Read+Write scope', 'password')
+            + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text-light);cursor:pointer;">'
+            +   '<input type="checkbox" id="ms-gh-autopush"' + (g.auto_push ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer;">'
+            +   'Auto-push every Save (only when owner+repo+token are set)'
+            + '</label>'
             + '<div style="display:flex;gap:8px;margin-top:8px;">'
             +   '<button onclick="MarketingSite._saveGh()" style="background:#fff;border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Save settings</button>'
             +   '<button onclick="MarketingSite._clearGh()" style="background:#fff;border:1px solid #fca5a5;color:#b91c1c;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Forget token</button>'
@@ -623,8 +627,24 @@ var MarketingSite = (function() {
       _saveConfig(function(err) {
         _saving = false;
         if (err) { alert('Save failed: ' + err); return; }
-        if (typeof UI !== 'undefined' && UI.toast) UI.toast('Saved'); else console.log('Saved');
         MarketingSite._refreshPreview();
+
+        // Auto-push to GitHub if enabled and creds are set
+        var g = _ghLoad();
+        if (g.auto_push && g.owner && g.repo && g.token) {
+          if (typeof UI !== 'undefined' && UI.toast) UI.toast('Saved — pushing to GitHub…');
+          var html = _generateHtml();
+          _ghPut(g, html, function(perr, ok) {
+            if (perr) { alert('Save OK, GitHub push failed: ' + perr); return; }
+            var saved = _ghLoad();
+            saved.last_pushed_at  = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+            saved.last_pushed_url = ok && ok.url || '';
+            _ghSave(saved);
+            if (typeof UI !== 'undefined' && UI.toast) UI.toast('Saved + pushed to GitHub');
+          });
+        } else {
+          if (typeof UI !== 'undefined' && UI.toast) UI.toast('Saved'); else console.log('Saved');
+        }
       });
     },
     _download: function() {
@@ -654,12 +674,14 @@ var MarketingSite = (function() {
     },
     _readGhForm: function() {
       var v = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      var cb = document.getElementById('ms-gh-autopush');
       return {
         owner: v('ms-gh-owner'),
         repo:  v('ms-gh-repo'),
         path:  v('ms-gh-path') || 'llm-info/index.html',
         branch: v('ms-gh-branch') || 'main',
-        token: v('ms-gh-token')
+        token: v('ms-gh-token'),
+        auto_push: cb ? !!cb.checked : false
       };
     },
     _saveGh: function() {
