@@ -133,18 +133,91 @@
       </div>
     </div>
 
-    <!-- DIRECT DEPOSIT -->
+    <!-- PAYROLL DETAILS -->
     <div class="card">
-      <h2><span class="num">4</span> Direct Deposit</h2>
+      <h2><span class="num">4</span> Payroll Details</h2>
+      <div class="row">
+        <div class="field"><label>Pay Frequency *</label>
+          <select id="payFrequency" required>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly" selected>Bi-weekly (every 2 weeks)</option>
+            <option value="semimonthly">Semi-monthly (1st &amp; 15th)</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="field"><label>Payday *</label>
+          <select id="payday" required>
+            <option value="friday" selected>Friday</option>
+            <option value="thursday">Thursday</option>
+            <option value="wednesday">Wednesday</option>
+            <option value="tuesday">Tuesday</option>
+            <option value="monday">Monday</option>
+            <option value="last_day_of_month">Last day of month</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Pay Method *</label>
+        <select id="payMethod" required>
+          <option value="direct_deposit" selected>Direct Deposit</option>
+          <option value="paper_check">Paper Check</option>
+          <option value="payroll_card">Payroll Card</option>
+        </select>
+        <div class="help">NY Labor Law §192 requires employee written consent before withholding any portion of wages. Direct deposit consent captured at signature step.</div>
+      </div>
+    </div>
+
+    <!-- DIRECT DEPOSIT -->
+    <div class="card" id="dd-card">
+      <h2><span class="num">5</span> Direct Deposit</h2>
       <div class="field"><label>Bank Name</label><input type="text" id="bankName" placeholder="Chase, Wells Fargo, etc."></div>
       <div class="row">
         <div class="field"><label>Routing Number</label><input type="text" id="routing" maxlength="9" placeholder="9 digits"></div>
         <div class="field"><label>Account Number</label><input type="text" id="account" placeholder="Account #"></div>
       </div>
-      <div class="help">This info goes directly to Gusto for payroll. Not stored in Branch Manager.</div>
+      <div class="row">
+        <div class="field"><label>Account Type</label>
+          <select id="accountType">
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+          </select>
+        </div>
+        <div class="field"><label>Voided Check</label><div class="help" style="margin-top:10px;">Upload at signature step</div></div>
+      </div>
+      <div class="help">This info goes directly to payroll. Not stored in Branch Manager.</div>
     </div>
 
-    <button type="submit" class="btn">Save & Generate Documents →</button>
+    <!-- DRIVER'S LICENSE -->
+    <div class="card">
+      <h2><span class="num">6</span> Driver's License</h2>
+      <div class="row">
+        <div class="field"><label>DL Number *</label><input type="text" id="dlNumber" placeholder="000-000-000" required></div>
+        <div class="field"><label>Issue State *</label>
+          <select id="dlState" required>
+            <option value="NY" selected>NY</option>
+            <option value="CT">CT</option>
+            <option value="NJ">NJ</option>
+            <option value="PA">PA</option>
+            <option value="MA">MA</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Class *</label>
+          <select id="dlClass" required>
+            <option value="D" selected>D (Standard)</option>
+            <option value="DJ">DJ (Junior)</option>
+            <option value="CDL-A">CDL-A</option>
+            <option value="CDL-B">CDL-B</option>
+            <option value="CDL-C">CDL-C</option>
+          </select>
+        </div>
+        <div class="field"><label>Expiration *</label><input type="date" id="dlExpires" required></div>
+      </div>
+      <div class="help">DL photo upload + AI extraction at signature step (helps populate I-9 and MVR auth).</div>
+    </div>
+
+    <button type="submit" class="btn">Save &amp; Generate Documents →</button>
   </form>
 
 </div>
@@ -170,6 +243,14 @@ document.getElementById('intake-form').addEventListener('submit', function(e) {
     bankName: document.getElementById('bankName').value.trim(),
     routing: document.getElementById('routing').value.trim(),
     account: document.getElementById('account').value.trim(),
+    accountType: document.getElementById('accountType') ? document.getElementById('accountType').value : 'checking',
+    payFrequency: document.getElementById('payFrequency') ? document.getElementById('payFrequency').value : 'biweekly',
+    payday: document.getElementById('payday') ? document.getElementById('payday').value : 'friday',
+    payMethod: document.getElementById('payMethod') ? document.getElementById('payMethod').value : 'direct_deposit',
+    dlNumber: document.getElementById('dlNumber') ? document.getElementById('dlNumber').value.trim() : '',
+    dlState: document.getElementById('dlState') ? document.getElementById('dlState').value : 'NY',
+    dlClass: document.getElementById('dlClass') ? document.getElementById('dlClass').value : 'D',
+    dlExpires: document.getElementById('dlExpires') ? document.getElementById('dlExpires').value : '',
   };
 
   emp.fullName = emp.firstName + ' ' + emp.lastName;

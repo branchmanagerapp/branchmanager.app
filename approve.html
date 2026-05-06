@@ -557,6 +557,9 @@
       var quoteHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 
       try {
+        // If multiple line items shown with checkboxes, send the customer's
+        // selection so the server can recompute accepted_total. v604.
+        var picked = (typeof gatherSelected === 'function') ? gatherSelected() : null;
         // Token-gated update via quote-update edge fn (replaces direct PATCH).
         var ur = await fetch(FN_BASE + '/quote-update', {
           method: 'POST',
@@ -568,7 +571,8 @@
             signed_ip: signedIP,
             signed_user_agent: signedUA,
             signed_quote_hash: quoteHash,
-            signed_quote_snapshot: quoteSnapshot
+            signed_quote_snapshot: quoteSnapshot,
+            selected_items_payload: picked
           })
         });
         var ud = await ur.json();

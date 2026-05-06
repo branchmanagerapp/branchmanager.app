@@ -93,6 +93,49 @@ serve(async (req: Request) => {
     patch.signed_quote_hash = trunc(body.signed_quote_hash, 128);
     patch.signed_quote_snapshot = body.signed_quote_snapshot ? trunc(body.signed_quote_snapshot, 50000) : null;
     if (body.client_signature) patch.client_signature = trunc(body.client_signature, 500000); // 500KB cap on dataURL
+
+    // Partial approval — customer picked a subset of line items to accept.
+    // Server-side recomputes the binding total from the original quote's
+    // line_items + the picked subset (we don't trust client math). Saves
+    // accepted_items + accepted_total which become the source of truth for
+    // invoicing. If selected_items_payload is missing, full approval is
+    // implied (status=approved, no accepted_* fields written).
+    if (body.selected_items_payload && typeof body.selected_items_payload === 'object') {
+      // Look up the quote's full line_items so we can independently sum.
+      const qr = await fetch(
+        `${SUPABASE_URL}/rest/v1/quotes?id=eq.${encodeURIComponent(id)}&select=line_items,tax_rate,total&limit=1`,
+        { headers }
+      );
+      if (qr.ok) {
+        const qData = await qr.json();
+        const quote = (qData && qData[0]) || {};
+        const allItems = Array.isArray(quote.line_items) ? quote.line_items : [];
+        const taxRate = Number(quote.tax_rate || 0);
+        const picked = Array.isArray(body.selected_items_payload.line_items)
+          ? body.selected_items_payload.line_items.slice(0, 100)
+          : [];
+        // Server-side sum (defensive — never trust client total)
+        let subtotal = 0;
+        for (const it of picked) {
+          const amt = Number((it as { total?: number; amount?: number; price?: number }).total
+                         ?? (it as { amount?: number }).amount
+                         ?? (it as { price?: number }).price ?? 0);
+          if (Number.isFinite(amt)) subtotal += amt;
+        }
+        const tax = Math.round(subtotal * (taxRate / 100) * 100) / 100;
+        const acceptedTotal = Math.round((subtotal + tax) * 100) / 100;
+        const originalCount = allItems.length;
+        const isPartial = picked.length > 0 && picked.length < originalCount;
+
+        patch.accepted_items     = picked;
+        patch.accepted_subtotal  = subtotal;
+        patch.accepted_tax       = tax;
+        patch.accepted_total     = acceptedTotal;
+        patch.acceptance_kind    = isPartial ? 'partial' : 'full';
+        patch.accepted_at        = now;
+        patch.original_total     = Number(quote.total || 0);
+      }
+    }
   } else if (action === 'request_changes') {
     patch.status = 'awaiting';
     patch.client_changes = trunc(body.changes, 4000);
