@@ -2602,6 +2602,19 @@ var SettingsPage = {
           + '</div>';
       };
       var html = ''
+        // ── AI Vision auto-fill — drop a card/letterhead, AI fills empty fields
+        + '<div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
+        +   '<div style="flex:1;min-width:240px;">'
+        +     '<div style="font-size:13px;font-weight:700;color:#166534;">✨ Auto-fill from a photo</div>'
+        +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Business card, letterhead, invoice, or website screenshot. AI populates empty fields below — never overwrites what you typed.</div>'
+        +   '</div>'
+        +   '<div style="display:flex;align-items:center;gap:8px;">'
+        +     '<button type="button" onclick="document.getElementById(\'wl-extract-file\').click()" style="background:#16a34a;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">📷 Upload image</button>'
+        +     '<input type="file" id="wl-extract-file" accept="image/*" style="display:none;" onchange="SettingsPage._extractFromPhoto(this)">'
+        +   '</div>'
+        +   '<div id="wl-extract-status" style="flex:1 0 100%;font-size:12px;color:var(--text-light);"></div>'
+        + '</div>'
+
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">'
         + '<div>'
         +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">Names</div>'
@@ -2719,6 +2732,71 @@ var SettingsPage = {
       b.classList.toggle('active', b.getAttribute('data-tab') === slug);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  // AI Vision auto-fill the wl-* branding inputs from an uploaded photo
+  // (business card, letterhead, invoice, screenshot). Never overwrites a
+  // field that already has a value — fills only blanks. Reuses ai-chat edge fn.
+  _extractFromPhoto: function(input) {
+    var file = input && input.files && input.files[0]; if (!file) return;
+    var status = document.getElementById('wl-extract-status');
+    var setStatus = function(t, color) { if (status) { status.innerHTML = t; status.style.color = color || 'var(--text-light)'; } };
+    if (file.size > 6 * 1024 * 1024) { setStatus('Image too large (max 6 MB).', '#b91c1c'); return; }
+    setStatus('📤 Reading image…', '#1e40af');
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var dataUrl = ev.target.result;
+      var match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) { setStatus('Could not read file.', '#b91c1c'); return; }
+      var mediaType = match[1], b64 = match[2];
+      setStatus('🤖 AI extracting business info… (10–20 sec)', '#1e40af');
+
+      var sbUrl = (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_URL) ? SupabaseDB.DEFAULT_URL : 'https://ltpivkqahvplapyagljt.supabase.co';
+      var sbKey = (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_KEY) ? SupabaseDB.DEFAULT_KEY : '';
+      var prompt = 'Extract these fields if visible. Omit any not clearly present. Return ONLY a single JSON object, no prose, no markdown fences.\n\n'
+        + 'Fields: company_name, legal_name, owner_name, company_phone, company_email, company_website, address_line1, city, state (2-letter), zip, vertical (one of: tree_service, lawn_care, snow_removal, plumbing, hvac, electrical, cleaning, handyman, other), tagline.';
+
+      fetch(sbUrl + '/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sbKey, 'apikey': sbKey },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1500,
+          system: 'You extract structured business contact info from images. Always return ONLY a single JSON object, never prose, never markdown code fences.',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(j) {
+        if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+        var text = (j.content && j.content[0] && j.content[0].text) || '';
+        text = text.replace(/^\s*```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        var data; try { data = JSON.parse(text); } catch(e) { throw new Error('AI returned non-JSON: ' + text.slice(0,120)); }
+
+        var fillIfEmpty = function(id, val) {
+          var el = document.getElementById('wl-' + id); if (!el || val == null || val === '') return false;
+          if (el.value && el.value.trim() !== '') return false;
+          el.value = String(val);
+          el.style.background = '#fef9c3'; setTimeout(function(){ el.style.background = ''; }, 2500);
+          return true;
+        };
+        var filled = 0;
+        ['company_name','legal_name','owner_name','company_phone','company_email','company_website',
+         'address_line1','city','state','zip','vertical','tagline'].forEach(function(k){
+          if (fillIfEmpty(k, data[k])) filled++;
+        });
+        setStatus('✅ Filled ' + filled + ' empty field' + (filled===1?'':'s') + '. Click Save to apply.', '#166534');
+      })
+      .catch(function(err) { setStatus('Extraction failed: ' + err.message, '#b91c1c'); });
+    };
+    reader.readAsDataURL(file);
   },
 
   // Upload logo file to tenant-logos Storage bucket and patch wl-logo_url + preview.
