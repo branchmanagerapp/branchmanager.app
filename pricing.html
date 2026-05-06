@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branch Manager — Everything included. Less than their starter.</title>
+<meta name="description" content="Branch Manager bundles every add-on every other CRM charges extra for — marketing automation, customer portal, GPS, online booking, AI quoting, reviews, referrals — into one app for less than the cheapest 'do-nothing' base plan in the industry.">
+<meta property="og:title" content="Branch Manager — Everything included. Less than their starter.">
+<meta property="og:description" content="Bundles 30+ features competitors charge for separately. $49.99/mo or $2,999 lifetime.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://branchmanager.app/pricing.html">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1d1d1f;
+    background: #fafafa;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.94); backdrop-filter: saturate(180%) blur(14px); border-bottom: 1px solid #e8e8e8; }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; color: #1a3c12; }
+  .nav-brand-icon { width: 30px; height: 30px; background: #1a3c12; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+  .nav-links { display: flex; gap: 24px; align-items: center; font-size: 14px; font-weight: 500; color: #525252; }
+  .nav-cta { background: #1a3c12; color: #fff !important; padding: 9px 18px; border-radius: 8px; font-weight: 600; }
+  @media (max-width: 720px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+  /* hero */
+  .hero { padding: 80px 0 48px; background: radial-gradient(circle at 20% 0%, #e8f5e9 0%, transparent 60%), radial-gradient(circle at 100% 0%, #fff8e1 0%, transparent 60%), #fff; }
+  .eyebrow { display: inline-block; background: #1a3c12; color: #fff; padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 18px; }
+  h1 { font-size: clamp(34px, 5.5vw, 60px); line-height: 1.05; font-weight: 800; letter-spacing: -1.2px; color: #0f172a; margin-bottom: 18px; }
+  h1 .accent { color: #1a3c12; }
+  .lede { font-size: clamp(17px, 2vw, 22px); color: #475569; max-width: 680px; line-height: 1.5; margin-bottom: 28px; }
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn { display: inline-block; padding: 14px 26px; border-radius: 10px; font-weight: 700; font-size: 16px; transition: transform .12s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: #1a3c12; color: #fff; }
+  .btn-outline { background: #fff; color: #1a3c12; border: 2px solid #1a3c12; }
+  .promo-chip { background: #fff8e1; color: #7e2d10; padding: 8px 14px; border-radius: 100px; font-size: 13px; font-weight: 600; border: 1px dashed #e0a020; }
+
+  /* big-comparison */
+  .compare { padding: 64px 0; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-card { background: #fff; border-radius: 14px; padding: 28px 28px 32px; border: 1px solid #e8e8e8; }
+  .compare-card.them { background: #fafafa; border: 1px solid #e8e8e8; }
+  .compare-card.us   { background: #f1f8e9; border: 2px solid #1a3c12; box-shadow: 0 8px 30px rgba(26,60,18,.08); position: relative; }
+  .compare-tag      { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; margin-bottom: 10px; }
+  .compare-tag.them { background: #ffebee; color: #c62828; }
+  .compare-tag.us   { background: #1a3c12; color: #fff; }
+  .compare-card h3  { font-size: 22px; margin-bottom: 4px; }
+  .compare-card .price { font-size: 38px; font-weight: 800; color: #0f172a; margin: 6px 0 4px; }
+  .compare-card .price-note { font-size: 13px; color: #666; margin-bottom: 18px; }
+  .compare-list { list-style: none; padding: 0; margin: 14px 0 0; }
+  .compare-list li { padding: 7px 0; font-size: 14px; display: flex; align-items: flex-start; gap: 10px; border-bottom: 1px solid rgba(0,0,0,.05); }
+  .compare-list li:last-child { border-bottom: none; }
+  .compare-list .x { color: #c62828; font-weight: 800; flex-shrink: 0; }
+  .compare-list .check { color: #2e7d32; font-weight: 800; flex-shrink: 0; }
+  .compare-list .add-on { background: #fff8e1; color: #7e2d10; padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-left: 6px; }
+
+  /* what's included */
+  .included { padding: 64px 0; background: #fff; }
+  .section-head { text-align: center; margin-bottom: 40px; }
+  .section-head h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; letter-spacing: -.6px; }
+  .section-head p { color: #666; font-size: 16px; margin-top: 8px; max-width: 640px; margin-left: auto; margin-right: auto; }
+  .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+  .feature { background: #f8faf8; border-radius: 10px; padding: 16px 18px; border: 1px solid #e8e8e8; }
+  .feature .ico { font-size: 24px; margin-bottom: 6px; display: block; }
+  .feature .ttl { font-size: 14px; font-weight: 700; }
+  .feature .desc { font-size: 12px; color: #666; margin-top: 3px; line-height: 1.4; }
+  .feature.gold { background: #fff8e1; border-color: #ffe082; }
+  .feature.gold .ttl { color: #7e2d10; }
+
+  /* pricing */
+  .pricing { padding: 80px 0; background: linear-gradient(180deg, #f1f8e9 0%, #fff 100%); }
+  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 880px; margin: 0 auto; }
+  @media (max-width: 720px) { .price-grid { grid-template-columns: 1fr; } }
+  .price-card { background: #fff; border-radius: 16px; padding: 32px 28px 36px; border: 1px solid #e8e8e8; box-shadow: 0 4px 20px rgba(0,0,0,.04); position: relative; }
+  .price-card.featured { border: 2px solid #1a3c12; box-shadow: 0 12px 40px rgba(26,60,18,.12); }
+  .price-card.featured::before { content: "Most popular"; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: #1a3c12; color: #fff; padding: 5px 14px; border-radius: 100px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .price-card h3 { font-size: 22px; font-weight: 800; }
+  .price-amount { font-size: 56px; font-weight: 800; color: #1a3c12; margin: 12px 0 4px; letter-spacing: -1px; }
+  .price-amount .cents { font-size: 24px; font-weight: 700; vertical-align: top; opacity: .8; }
+  .price-period { font-size: 14px; color: #666; margin-bottom: 20px; }
+  .price-card .btn { width: 100%; text-align: center; }
+  .price-perks { list-style: none; padding: 0; margin: 24px 0 0; }
+  .price-perks li { padding: 6px 0; font-size: 13px; color: #525252; }
+  .price-perks li::before { content: "✓ "; color: #2e7d32; font-weight: 800; }
+  .vs-band { text-align: center; padding: 16px 0; color: #666; font-size: 13px; }
+  .vs-band strong { color: #c62828; }
+
+  /* footer cta */
+  .footcta { background: #0f172a; color: #fff; padding: 60px 0; text-align: center; }
+  .footcta h2 { font-size: clamp(26px, 4vw, 38px); margin-bottom: 12px; }
+  .footcta p { color: #cbd5e1; max-width: 580px; margin: 0 auto 24px; }
+  .footcta .btn-primary { background: #2e7d32; }
+  footer { padding: 40px 0 60px; text-align: center; font-size: 13px; color: #94a3b8; background: #0f172a; border-top: 1px solid #1e293b; }
+  footer a { color: #cbd5e1; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="/" class="nav-brand"><span class="nav-brand-icon">🌳</span> Branch Manager</a>
+    <div class="nav-links">
+      <a href="#bundle">What's included</a>
+      <a href="#pricing">Pricing</a>
+      <a href="mailto:info@branchmanager.app?subject=Branch%20Manager%20demo">Talk to us</a>
+      <a href="#pricing" class="nav-cta">Buy now</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">For service businesses</span>
+    <h1>Everything included.<br><span class="accent">Less than their starter.</span></h1>
+    <p class="lede">Tree service, lawn care, plumbing, HVAC, snow removal — pick your trade. Branch Manager bundles every "premium" add-on the other guys charge separately for, into one app, for less than their cheapest do-nothing base plan.</p>
+    <div class="hero-cta">
+      <a href="#pricing" class="btn btn-primary">See pricing</a>
+      <a href="#bundle" class="btn btn-outline">What's included</a>
+      <span class="promo-chip">🎁 Use code <strong>FRIENDLAUNCH</strong> — 3 months free</span>
+    </div>
+  </div>
+</section>
+
+<!-- Side-by-side comparison -->
+<section class="compare">
+  <div class="container">
+    <div class="section-head">
+      <h2>The math the rest of the industry doesn't want you to do</h2>
+      <p>Every "low" base plan you've seen is a base plan. To actually run your business you need the add-ons. Here's what that really looks like.</p>
+    </div>
+    <div class="compare-grid">
+      <!-- THEM -->
+      <div class="compare-card them">
+        <span class="compare-tag them">Industry-standard CRM</span>
+        <h3>The "starter" plan</h3>
+        <div class="price">$69<span style="font-size:18px;color:#666;font-weight:600;">/mo</span></div>
+        <div class="price-note">…before any add-ons. Most owners end up at $200–$400+/mo.</div>
+        <ul class="compare-list">
+          <li><span class="x">✕</span><span>Online booking <span class="add-on">+$49/mo add-on</span></span></li>
+          <li><span class="x">✕</span><span>Marketing automation <span class="add-on">+$99/mo add-on</span></span></li>
+          <li><span class="x">✕</span><span>GPS / fleet tracking <span class="add-on">+$15/truck/mo</span></span></li>
+          <li><span class="x">✕</span><span>Customer portal <span class="add-on">higher tier</span></span></li>
+          <li><span class="x">✕</span><span>Reviews + referrals automation <span class="add-on">add-on</span></span></li>
+          <li><span class="x">✕</span><span>Crew chat <span class="add-on">add-on</span></span></li>
+          <li><span class="x">✕</span><span>AI quote-builder <span class="add-on">not available</span></span></li>
+          <li><span class="x">✕</span><span>AI vision (tree/property ID) <span class="add-on">not available</span></span></li>
+          <li><span class="x">✕</span><span>Pre-trip inspections <span class="add-on">not available</span></span></li>
+          <li><span class="x">✕</span><span>Equipment + maintenance log <span class="add-on">not available</span></span></li>
+          <li><span class="x">✕</span><span>Compliance docs tracker <span class="add-on">not available</span></span></li>
+          <li><span class="x">✕</span><span>Onboarding + e-signature flow <span class="add-on">add-on</span></span></li>
+        </ul>
+      </div>
+      <!-- US -->
+      <div class="compare-card us">
+        <span class="compare-tag us">Branch Manager</span>
+        <h3>Everything plan (only plan)</h3>
+        <div class="price">$49<span style="font-size:24px;font-weight:800;">.99</span><span style="font-size:18px;color:#666;font-weight:600;">/mo</span></div>
+        <div class="price-note">or pay <strong>$2,999 once</strong> and never see a bill again.</div>
+        <ul class="compare-list">
+          <li><span class="check">✓</span>Online booking, AI-routed leads</li>
+          <li><span class="check">✓</span>Marketing automation, draft-to-send queue</li>
+          <li><span class="check">✓</span>GPS / fleet tracking (Bouncie or BYO hardware)</li>
+          <li><span class="check">✓</span>Branded customer portal — clients see quotes, pay invoices, view photos</li>
+          <li><span class="check">✓</span>Reviews + referrals + Google Business sync</li>
+          <li><span class="check">✓</span>Crew chat + tasks + dispatch</li>
+          <li><span class="check">✓</span>AI quote-builder (voice + photo)</li>
+          <li><span class="check">✓</span>AI vision — tree / property identification, before/after</li>
+          <li><span class="check">✓</span>Pre-trip + daily inspections, photo-logged</li>
+          <li><span class="check">✓</span>Equipment + maintenance log</li>
+          <li><span class="check">✓</span>Compliance: insurance, license, cert expiration tracker</li>
+          <li><span class="check">✓</span>Digital onboarding — DL + I-9 with AI extraction, e-signed legal docs</li>
+        </ul>
+      </div>
+    </div>
+    <div class="vs-band">Most owners save <strong>$1,800–$3,600 per year</strong> just by switching to one bill instead of seven.</div>
+  </div>
+</section>
+
+<!-- All the included features -->
+<section class="included" id="bundle">
+  <div class="container">
+    <div class="section-head">
+      <h2>30+ tools. One login. One bill.</h2>
+      <p>Built by an owner-operator who runs the trucks. No upsells. No "premium tier" gating. The lowest plan is the only plan.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature"><span class="ico">📥</span><div class="ttl">Online request form</div><div class="desc">Custom fields, photo uploads, auto-routes to dispatch.</div></div>
+      <div class="feature"><span class="ico">💬</span><div class="ttl">Two-way SMS + voice</div><div class="desc">Inbound texts and calls land in BM. Reply from the same screen.</div></div>
+      <div class="feature"><span class="ico">📋</span><div class="ttl">Quotes with photos</div><div class="desc">Drag-and-drop builder, line items with images, send by email or SMS.</div></div>
+      <div class="feature"><span class="ico">🤖</span><div class="ttl">AI quote-builder</div><div class="desc">Walk the property, dictate, AI assembles line items + species + pricing.</div></div>
+      <div class="feature"><span class="ico">📸</span><div class="ttl">AI vision</div><div class="desc">Snap a tree or property — AI ID's species, DBH, condition, hazards.</div></div>
+      <div class="feature"><span class="ico">✅</span><div class="ttl">E-signed approval</div><div class="desc">Legally binding ESIGN signatures, audit-trailed, no DocuSign sub.</div></div>
+      <div class="feature"><span class="ico">📅</span><div class="ttl">Schedule + dispatch</div><div class="desc">Drag-and-drop calendar, multi-crew, geofence-aware.</div></div>
+      <div class="feature"><span class="ico">🚚</span><div class="ttl">GPS fleet tracking</div><div class="desc">Real-time truck locations + dwell detection. Bouncie or any OBD-II.</div></div>
+      <div class="feature"><span class="ico">🛡️</span><div class="ttl">Pre-trip inspections</div><div class="desc">DOT-compliant daily inspection logs, photo-evidence, e-signed.</div></div>
+      <div class="feature"><span class="ico">🧰</span><div class="ttl">Equipment log</div><div class="desc">Per-machine maintenance, hours, parts orders, OEM doc storage.</div></div>
+      <div class="feature"><span class="ico">⏱️</span><div class="ttl">Time tracking</div><div class="desc">Geofenced clock-in, OT calculation, payroll-ready CSV exports.</div></div>
+      <div class="feature"><span class="ico">📑</span><div class="ttl">Invoicing + payments</div><div class="desc">Stripe + ACH built-in. Auto-late-fee, auto-receipt.</div></div>
+      <div class="feature"><span class="ico">🌐</span><div class="ttl">Customer portal</div><div class="desc">Magic-link login, view quotes, pay invoices, photos.</div></div>
+      <div class="feature"><span class="ico">📣</span><div class="ttl">Marketing automation</div><div class="desc">Review requests, follow-ups, upsells — all in a draft-then-send queue.</div></div>
+      <div class="feature"><span class="ico">⭐</span><div class="ttl">Review + referral</div><div class="desc">Auto-ask after job complete, track Google review velocity.</div></div>
+      <div class="feature"><span class="ico">📊</span><div class="ttl">Lead-source tracking</div><div class="desc">Know which Google ad / referral / yard sign actually pays.</div></div>
+      <div class="feature"><span class="ico">📷</span><div class="ttl">Before / after photos</div><div class="desc">Auto-organize per job, share to social with one tap.</div></div>
+      <div class="feature"><span class="ico">📱</span><div class="ttl">Social posting</div><div class="desc">Schedule to FB, IG, Google Business from one composer.</div></div>
+      <div class="feature"><span class="ico">📜</span><div class="ttl">Compliance docs tracker</div><div class="desc">WC, GL, DOT, certs — auto-alert before expiration.</div></div>
+      <div class="feature"><span class="ico">🪪</span><div class="ttl">Digital onboarding</div><div class="desc">New hire intake, AI-extracted DL/I-9, e-signed handbooks.</div></div>
+      <div class="feature"><span class="ico">📍</span><div class="ttl">Property map</div><div class="desc">Pin every job site, see crew dwell time, route efficiency.</div></div>
+      <div class="feature"><span class="ico">🌳</span><div class="ttl">Tree inventory</div><div class="desc">Per-property species log, DBH history, recurring-pruning planner.</div></div>
+      <div class="feature"><span class="ico">📥</span><div class="ttl">CSV import</div><div class="desc">Bring all your old data in. Migration help included.</div></div>
+      <div class="feature"><span class="ico">📝</span><div class="ttl">Email + SMS templates</div><div class="desc">Tokenized — pull client name, job, address automatically.</div></div>
+      <div class="feature"><span class="ico">🧮</span><div class="ttl">Calculators</div><div class="desc">Job-cost, ad-spend ROAS, profit margin — built in, no spreadsheet.</div></div>
+      <div class="feature"><span class="ico">📞</span><div class="ttl">Call center</div><div class="desc">Inbound call + missed-call workflow, auto-link to client record.</div></div>
+      <div class="feature"><span class="ico">🎙️</span><div class="ttl">Voice quoting</div><div class="desc">Dictate the walkthrough; AI builds the line items.</div></div>
+      <div class="feature"><span class="ico">📈</span><div class="ttl">Reports + dashboards</div><div class="desc">Revenue, conversion, response time, lead source. Real numbers, not vanity.</div></div>
+      <div class="feature gold"><span class="ico">🎨</span><div class="ttl">Fully white-labeled</div><div class="desc">Your name, your colors, your domain. Customers never see ours.</div></div>
+      <div class="feature gold"><span class="ico">🚀</span><div class="ttl">Free updates forever</div><div class="desc">Every new feature ships to every plan. No "premium tier" upgrade ladder.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-head">
+      <h2>Pick once. Or pick monthly.</h2>
+      <p>No quote forms. No "contact sales." Click, pay, log in.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card featured">
+        <h3>Monthly</h3>
+        <div class="price-amount">$49<span class="cents">.99</span></div>
+        <div class="price-period">per month · cancel anytime</div>
+        <a href="https://branchmanager.app/" class="btn btn-primary" id="btn-monthly">Start monthly →</a>
+        <ul class="price-perks">
+          <li>Everything listed above</li>
+          <li>Unlimited users on your team</li>
+          <li>Free data migration help</li>
+          <li>Promo <strong>FRIENDLAUNCH</strong> = 3 months free</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <h3>Lifetime purchase</h3>
+        <div class="price-amount">$2,999</div>
+        <div class="price-period">one-time · own it forever</div>
+        <a href="https://branchmanager.app/" class="btn btn-outline" id="btn-lifetime">Buy lifetime →</a>
+        <ul class="price-perks">
+          <li>Everything in Monthly</li>
+          <li>Forever, no recurring bill</li>
+          <li>Pays for itself in ~5 yrs vs monthly</li>
+          <li>Bundled with one-time data migration</li>
+        </ul>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:32px;font-size:13px;color:#666;">Hosting, security, backups, updates included. No setup fee. No per-user fee.</div>
+  </div>
+</section>
+
+<!-- Bottom CTA -->
+<section class="footcta">
+  <div class="container">
+    <h2>Stop paying seven bills for one job.</h2>
+    <p>Branch Manager replaces your CRM, scheduling app, marketing tool, GPS tracker, customer portal, review platform, and compliance binder — for less than any one of them.</p>
+    <a href="#pricing" class="btn btn-primary">See pricing →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    Branch Manager · Built by people who run the trucks.
+    &nbsp;·&nbsp; <a href="mailto:info@branchmanager.app">info@branchmanager.app</a>
+    &nbsp;·&nbsp; <a href="terms.html">Terms</a>
+    &nbsp;·&nbsp; <a href="privacy.html">Privacy</a>
+    &nbsp;·&nbsp; <a href="data-deletion.html">Data deletion</a>
+  </div>
+</footer>
+
+<script>
+  // The href on the two pricing buttons gets swapped to the live Stripe
+  // payment links once those are created (when STRIPE_SECRET_KEY is set).
+  // Until then they point at the marketing site root so users see something
+  // sensible if they click.
+  // To wire: replace the strings below with the URLs returned by the Stripe
+  // API call (see /tmp/bm-pricing-links.txt for the structure).
+  // var STRIPE_MONTHLY_LINK  = 'https://buy.stripe.com/PASTE_MONTHLY_LINK_HERE';
+  // var STRIPE_LIFETIME_LINK = 'https://buy.stripe.com/PASTE_LIFETIME_LINK_HERE';
+  // document.getElementById('btn-monthly').href  = STRIPE_MONTHLY_LINK;
+  // document.getElementById('btn-lifetime').href = STRIPE_LIFETIME_LINK;
+</script>
+
+</body>
+</html>
