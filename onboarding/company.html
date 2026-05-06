@@ -73,6 +73,19 @@
 
   <form id="intake-form">
 
+    <div class="card" style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-color:#86efac;">
+      <h2><span class="num" style="background:#16a34a;">✨</span> Auto-fill from a photo</h2>
+      <div class="sub">Drop a business card, letterhead, invoice, or website screenshot. AI reads it and fills in the form for you. Skip if you'd rather type.</div>
+      <div class="logo-drop" id="extract-drop" onclick="document.getElementById('extract-file').click()" style="border-color:#86efac;background:#fff;">
+        <div id="extract-status">
+          <div style="font-size:36px;">📸</div>
+          <div style="font-size:14px;font-weight:600;color:#16a34a;margin-top:6px;">Click to upload an image</div>
+          <div class="help">Business card, letterhead, invoice, screenshot — anything with your business info.</div>
+        </div>
+        <input type="file" id="extract-file" accept="image/*">
+      </div>
+    </div>
+
     <div class="card">
       <h2><span class="num">1</span> Business basics</h2>
       <div class="sub">Used in headers, emails, legal docs, and the marketing site title.</div>
@@ -262,6 +275,100 @@
   });
   document.getElementById('brand_color_hex').addEventListener('input', function(e) {
     if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) document.getElementById('brand_color').value = e.target.value;
+  });
+
+  // ── AI Vision auto-extract ────────────────────────────────────────────
+  // Sends the uploaded image to Anthropic via the ai-chat edge fn,
+  // asks for a structured JSON of business info, populates form fields
+  // that are still empty (never overwrites what user already typed).
+  document.getElementById('extract-file').addEventListener('change', function(e) {
+    var file = e.target.files[0]; if (!file) return;
+    var status = document.getElementById('extract-status');
+    if (file.size > 6 * 1024 * 1024) {
+      status.innerHTML = '<div style="font-size:13px;color:#b91c1c;">Image too large (max 6 MB).</div>';
+      return;
+    }
+    status.innerHTML = '<div style="font-size:13px;color:#1e40af;">📤 Reading image…</div>';
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var dataUrl = ev.target.result;
+      var match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) { status.innerHTML = '<div style="font-size:13px;color:#b91c1c;">Could not read file.</div>'; return; }
+      var mediaType = match[1], b64 = match[2];
+      status.innerHTML = '<div style="font-size:13px;color:#1e40af;">🤖 AI extracting business info… (10–20 sec)</div>';
+
+      var prompt = 'Extract the following fields from this image if visible. Omit any field not clearly present. Return ONLY a single JSON object, no prose, no markdown fences.\n\n'
+        + 'Fields:\n'
+        + '- company_name (display name)\n'
+        + '- legal_name (with LLC/Inc if shown)\n'
+        + '- owner_name (if shown on card/letterhead)\n'
+        + '- company_phone\n'
+        + '- company_email\n'
+        + '- company_website (URL)\n'
+        + '- address_line1 (street)\n'
+        + '- city\n'
+        + '- state (2-letter)\n'
+        + '- zip\n'
+        + '- vertical (one of: tree_service, lawn_care, snow_removal, plumbing, hvac, electrical, cleaning, handyman, other)\n'
+        + '- services (array of service names if listed)\n'
+        + '- licenses (array of license/insurance/affiliation strings if shown)\n'
+        + '- tagline (1-line slogan if shown)';
+
+      fetch(SB_URL + '/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1500,
+          system: 'You extract structured business contact info from images. Always return ONLY a single JSON object, never prose, never markdown code fences.',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(j) {
+        if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+        var text = (j.content && j.content[0] && j.content[0].text) || '';
+        text = text.replace(/^\s*```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        var data;
+        try { data = JSON.parse(text); }
+        catch(e) { throw new Error('AI returned non-JSON: ' + text.slice(0, 120)); }
+
+        var setIf = function(id, val) {
+          var el = document.getElementById(id); if (!el || val == null || val === '') return;
+          if (Array.isArray(val)) val = val.join('\n');
+          if (typeof val !== 'string') val = String(val);
+          if (!el.value || el.value.trim() === '') el.value = val;
+        };
+        setIf('company_name',   data.company_name);
+        setIf('legal_name',     data.legal_name);
+        setIf('owner_name',     data.owner_name);
+        setIf('company_phone',  data.company_phone);
+        setIf('company_email',  data.company_email);
+        setIf('company_website',data.company_website);
+        setIf('address_line1',  data.address_line1);
+        setIf('city',           data.city);
+        setIf('state',          data.state);
+        setIf('zip',            data.zip);
+        setIf('vertical',       data.vertical);
+        setIf('services',       data.services);
+        setIf('licenses',       data.licenses);
+        setIf('tagline',        data.tagline);
+
+        var filledKeys = Object.keys(data).filter(function(k) { return data[k] != null && data[k] !== ''; });
+        status.innerHTML = '<div style="font-size:13px;color:#16a34a;font-weight:600;">✅ Filled ' + filledKeys.length + ' fields. Review the form below and edit anything.</div>';
+      })
+      .catch(function(err) {
+        status.innerHTML = '<div style="font-size:13px;color:#b91c1c;">Extraction failed: ' + err.message + '</div>';
+      });
+    };
+    reader.readAsDataURL(file);
   });
 
   // ── Logo upload ───────────────────────────────────────────────────────
