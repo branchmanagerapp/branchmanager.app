@@ -159,6 +159,22 @@ serve(async (req: Request) => {
     const firstName = nameClean.split(' ')[0] || 'Someone';
     const phoneTel = telHref(b.phone);
 
+    // SMOKE-TEST GUARD — when the magic marker `_BM_SMOKE_TEST_` appears in
+    // any free-text field, return { ok:true, skipped:true } WITHOUT inserting
+    // a row, sending SMS, or sending emails. Lets developers (and Claude)
+    // exercise the live edge fn end-to-end without spamming the owner's phone
+    // or polluting the requests table. Marker matched anywhere in name,
+    // details, address, or service; case-insensitive.
+    const SMOKE_MARKER = /_BM_SMOKE_TEST_/i;
+    if (SMOKE_MARKER.test(nameClean) || SMOKE_MARKER.test(details) ||
+        SMOKE_MARKER.test(address)   || SMOKE_MARKER.test(service)) {
+      return new Response(JSON.stringify({
+        ok: true,
+        skipped: 'smoke-test marker detected',
+        tenant: tenantId
+      }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
     // 0. Persist to `requests` table FIRST.
     const nowIso = new Date().toISOString();
     const insertResult = await insertRequest({
