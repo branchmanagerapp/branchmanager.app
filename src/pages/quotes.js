@@ -492,27 +492,30 @@ var QuotesPage = {
     // Dotted "Pick or create a client" box removed per user request —
     // the empty state is implied (tree list hidden until client picked).
 
-    // v628: Jobber-style "Line items" header — title left, single + on the
-    // right. Clicking + triggers the photo-first AI path (most-used).
-    // Manual entry hangs off a quieter text link below the items list.
-    html += '<div id="q-items-section" style="margin:20px 0;display:' + gateDisplay + ';">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:8px;">'
-      +   '<span style="font-size:17px;font-weight:700;">Line items</span>'
-      +   '<button type="button" onclick="QuotesPage.addItem()" title="Add line item" style="width:36px;height:36px;border-radius:50%;background:var(--green-dark);color:#fff;border:none;font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>'
+    // v633: Line items section — service picker + photo button at top.
+    // Pick a service from the dropdown → adds line item pre-filled with that
+    // service and auto-expands the details. Photo button triggers photo-first
+    // AI path. Both produce a new line item; existing items stack below.
+    var svcOptionsHtml = '<option value="">+ Add line item — pick service…</option>'
+      + (services || []).map(function(s){ var n = (typeof s === 'string' ? s : s.name); return '<option value="' + UI.esc(n) + '">' + UI.esc(n) + '</option>'; }).join('')
+      + '<option value="__custom__">… or custom (manual entry)</option>';
+
+    html += '<div id="q-items-section" style="margin:24px 0;display:' + gateDisplay + ';">'
+      + '<div style="font-size:17px;font-weight:700;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px;">Line items</div>'
+      + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;">'
+      +   '<select id="q-service-picker" onchange="QuotesPage._addItemFromPicker(this)" style="flex:1;padding:14px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--white);">'
+      +     svcOptionsHtml
+      +   '</select>'
+      +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" title="Add tree (photo + AI)" style="width:54px;height:54px;border-radius:10px;background:var(--green-dark);color:#fff;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📷</button>'
       + '</div>';
 
-    // Line items (with photo thumbnails)
+    // Line items list — newly-added items render expanded so user can fill in immediately.
     html += '<div id="q-items">';
-    // Render all items COLLAPSED by default (user opens one as needed)
     items.forEach(function(item, i) {
       html += QuotesPage._itemRow(i, item, services, /*expanded=*/ false);
     });
     html += '</div>'
-      // v629: + above adds a blank line; secondary link starts with photo + AI
-      + '<div style="display:flex;justify-content:flex-end;margin-top:8px;">'
-      +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:none;">📷 Add with photo + AI →</button>'
-      + '</div>'
-      + '<div id="q-pertree-total" style="margin-top:12px;text-align:right;font-size:15px;font-weight:700;color:var(--green-dark);"></div>'
+      + '<div id="q-pertree-total" style="margin-top:14px;text-align:right;font-size:15px;font-weight:700;color:var(--green-dark);"></div>'
       + '</div>';
 
     // Equipment block rendered below (after Internal Notes) — build string now, inject later
@@ -612,8 +615,14 @@ var QuotesPage = {
       + '</div>';
 
     // ═══ Labor Estimate (renamed from Production Estimate / T&M) ═══
-    html += '<div id="q-mode-tm" style="display:block;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin:20px 0 12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-      + '<div style="font-size:15px;font-weight:800;margin-bottom:4px;">Labor Estimate</div>'
+    // v633: collapsed by default — secondary section, not needed for every quote.
+    // Click the summary to expand crew + equipment + hours pricing check.
+    html += '<details id="q-mode-tm" style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin:24px 0 12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">'
+      + '<summary style="padding:16px 18px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">'
+      +   '<span style="font-size:15px;font-weight:800;">Labor estimate <span style="font-weight:400;color:var(--text-light);font-size:12px;margin-left:6px;">— optional sanity check</span></span>'
+      +   '<span style="font-size:12px;color:var(--text-light);font-weight:500;">▾</span>'
+      + '</summary>'
+      + '<div style="padding:0 18px 18px;">'
       + '<p style="font-size:12px;color:var(--text-light);margin-bottom:16px;">Check crew members going + enter total hours. Compare against line-item total as a sanity check.</p>'
 
       // ═══ STEP 1 — Crew (one line per role, full-width checkboxes) ═══
@@ -663,6 +672,8 @@ var QuotesPage = {
       // Compare button + panel
       + '<button type="button" id="q-compare-btn" onclick="QuotesPage._showPriceComparison()" style="display:none;margin-top:12px;width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">📊 Compare Pricing Methods</button>'
       + '<div id="q-comparison" style="display:none;margin-top:12px;background:var(--green-bg);border:2px solid var(--green-light);border-radius:10px;padding:16px;"></div>'
+      + '</div>' // close <details> body wrapper (v633)
+      + '</details>' // close Labor Estimate <details> (v633)
 
       + '</form>';
 
@@ -1593,25 +1604,45 @@ var QuotesPage = {
     QuotesPage.calcTotal();
   },
 
-  addItem: function() {
+  addItem: function(prefillService) {
     var container = document.getElementById('q-items');
     var index = container.children.length;
     var services = DB.services.getAll();
     // Auto-collapse any previously-added trees so user can focus on the new one
     container.querySelectorAll('.q-item-wrap .q-item-body').forEach(function(b) { b.style.display = 'none'; });
     container.querySelectorAll('.q-item-wrap .q-item-chevron').forEach(function(c) { c.style.transform = 'rotate(-90deg)'; });
+    var seed = prefillService ? { service: prefillService } : {};
     var div = document.createElement('div');
-    div.innerHTML = QuotesPage._itemRow(index, {}, services);
+    div.innerHTML = QuotesPage._itemRow(index, seed, services);
     container.appendChild(div.firstChild);
-    // Focus the service input on the new (expanded) item
+    // Focus the service input (or description if service was pre-filled)
     var newWrap = container.lastElementChild;
     if (newWrap) {
-      var sel = newWrap.querySelector('.q-item-service');
-      if (sel) setTimeout(function(){ sel.focus(); }, 50);
+      var focusSel = prefillService
+        ? newWrap.querySelector('.q-item-desc')
+        : newWrap.querySelector('.q-item-service');
+      if (focusSel) setTimeout(function(){ focusSel.focus(); }, 50);
       newWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Trigger service-change formula calculation if pre-filled
+      if (prefillService) {
+        var svcInput = newWrap.querySelector('.q-item-service');
+        if (svcInput && QuotesPage._onServiceChange) QuotesPage._onServiceChange(svcInput);
+      }
     }
     // Immediately persist — button-driven row adds don't fire form input events
     QuotesPage._autoSave();
+  },
+
+  // v633: handler for the service picker dropdown above the line items
+  _addItemFromPicker: function(selectEl) {
+    if (!selectEl || !selectEl.value) return;
+    var v = selectEl.value;
+    selectEl.value = ''; // reset picker for next pick
+    if (v === '__custom__') {
+      QuotesPage.addItem(); // blank line item, user types service manually
+    } else {
+      QuotesPage.addItem(v); // pre-fill chosen service, focus moves to description
+    }
   },
 
   _toggleDeposit: function(checked) {
