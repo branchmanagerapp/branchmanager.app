@@ -306,6 +306,41 @@ var SettingsPage = {
     // Kick off async load of the tenant config + render the form
     setTimeout(function(){ if (typeof SettingsPage._loadBrandingForm === 'function') SettingsPage._loadBrandingForm(); }, 80);
 
+    // ─── 🎟️ BM Invites (owner-only — Doug uses this to issue grandfathered offers) ───
+    // Renders an empty placeholder; gets wired up only when Auth.user.role === 'owner'.
+    // The render logic itself does the auth check so non-owners never see the panel.
+    var isOwner = (typeof Auth !== 'undefined' && Auth.user && Auth.user.role === 'owner');
+    if (isOwner) {
+      html += cardOpen('🎟️ BM Invites <span style="font-weight:400;color:var(--text-light);font-size:12px;margin-left:6px;">grandfathered pricing offers · owner-only</span>')
+        + '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;line-height:1.5;">Generate a personal invite link to share with someone you meet. Each invite locks in their pricing forever, even if standard pricing rises later. <a href="invite.html" style="color:var(--accent);">Preview the invite landing page</a>.</div>'
+        + '<div id="inv-create-form" style="background:#f8faf8;border:1px solid #c8e6c9;border-radius:10px;padding:14px 16px;margin-bottom:16px;">'
+        +   '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+        +     '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Recipient name <span style="font-weight:400;color:var(--text-light);font-size:11px;">· optional</span></label><input id="inv-name" placeholder="e.g. John Smith" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+        +     '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Plan</label>'
+        +       '<select id="inv-plan" onchange="SettingsPage._invPlanChange()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;">'
+        +         '<option value="grandfathered_monthly" selected>Grandfathered monthly · locked</option>'
+        +         '<option value="standard_monthly">Standard $49.99/mo</option>'
+        +         '<option value="lifetime">Lifetime $2,999</option>'
+        +         '<option value="custom_monthly">Custom monthly rate</option>'
+        +         '<option value="custom_lifetime">Custom one-time</option>'
+        +       '</select>'
+        +     '</div>'
+        +     '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Price <span style="font-weight:400;color:var(--text-light);font-size:11px;">· dollars</span></label><input id="inv-price" type="number" step="0.01" min="0" value="29.99" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+        +   '</div>'
+        +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">'
+        +     '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Promo label <span style="font-weight:400;color:var(--text-light);font-size:11px;">· shown on invite</span></label><input id="inv-label" placeholder="e.g. First 100 customers" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+        +     '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Notes <span style="font-weight:400;color:var(--text-light);font-size:11px;">· internal only</span></label><input id="inv-notes" placeholder="how/where met, context" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+        +   '</div>'
+        +   '<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+        +     '<div id="inv-result" style="flex:1;font-size:13px;color:var(--text-light);"></div>'
+        +     '<button onclick="SettingsPage.createInvite()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">Generate Invite →</button>'
+        +   '</div>'
+        + '</div>'
+        + '<div id="inv-list-wrap"><div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;">⏳ Loading invites…</div></div>'
+        + '</div></details>';
+      setTimeout(function(){ if (typeof SettingsPage._loadInvitesList === 'function') SettingsPage._loadInvitesList(); }, 80);
+    }
+
     // ─── 🔗 Vendor & Utility Logins ───
     // Stores URL + username + account # for each site Doug uses. Passwords are
     // EXPLICITLY NOT STORED — guidance points to Apple Keychain / 1Password.
@@ -2382,6 +2417,125 @@ var SettingsPage = {
     if (!el) return;
     if (!url) { el.outerHTML = '<div id="co-logo-preview" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:#f9fafb;display:flex;align-items:center;justify-content:center;font-size:20px;">🌳</div>'; return; }
     el.outerHTML = '<img id="co-logo-preview" src="' + url.replace(/"/g,'&quot;') + '" style="width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#f9fafb;" onerror="this.style.display=\'none\'">';
+  },
+
+  // ── BM Invites (owner-only) ────────────────────────────────────────────────
+  // Doug fills 3 fields → click Generate → row inserted in bm_invites →
+  // share-able URL returned as branchmanager.app/invite.html?code=XYZ.
+  // Currently no Stripe linkage; once STRIPE_SECRET_KEY is in Supabase secrets
+  // a future upgrade will call bm-invite-create edge fn to also generate
+  // per-invite Stripe Price + Payment Link, populate stripe_payment_link_url.
+  // Until then, recipients click the invite link → see the offer → email Doug
+  // to claim (still better than DM-ing pricing).
+  _invPlanChange: function() {
+    var plan = document.getElementById('inv-plan').value;
+    var pri = document.getElementById('inv-price');
+    if (!pri) return;
+    if (plan === 'standard_monthly') pri.value = '49.99';
+    else if (plan === 'lifetime') pri.value = '2999';
+    else if (plan === 'grandfathered_monthly') pri.value = '29.99';
+  },
+  createInvite: function() {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Cloud sync required', 'error'); return; }
+    var name  = (document.getElementById('inv-name').value || '').trim();
+    var plan  = document.getElementById('inv-plan').value;
+    var price = parseFloat(document.getElementById('inv-price').value || '0');
+    var label = (document.getElementById('inv-label').value || '').trim();
+    var notes = (document.getElementById('inv-notes').value || '').trim();
+    if (!isFinite(price) || price < 0) { UI.toast('Bad price', 'error'); return; }
+    var cents = Math.round(price * 100);
+
+    // Generate a friendly code: INV-{6 random base32 chars}
+    var alpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // unambiguous
+    var code = 'INV-';
+    for (var i = 0; i < 6; i++) code += alpha.charAt(Math.floor(Math.random() * alpha.length));
+
+    var ownerEmail = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) || 'owner';
+    var resultEl = document.getElementById('inv-result');
+    if (resultEl) resultEl.innerHTML = '<span style="color:var(--text-light);">Generating…</span>';
+
+    sb.from('bm_invites').insert({
+      code: code,
+      recipient_name: name || null,
+      plan_type: plan,
+      price_cents: cents,
+      promo_label: label || null,
+      notes: notes || null,
+      created_by: ownerEmail,
+      status: 'active',
+    }).select('code').then(function(r) {
+      if (r.error || !r.data || !r.data.length) {
+        if (resultEl) resultEl.innerHTML = '<span style="color:var(--red);">Failed: ' + UI.esc(String(r.error && r.error.message || 'unknown')) + '</span>';
+        return;
+      }
+      var url = 'https://branchmanager.app/invite.html?code=' + code;
+      if (resultEl) {
+        resultEl.innerHTML = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+          + '<strong style="color:var(--green-dark);">✓ ' + code + '</strong>'
+          + '<input id="inv-share-url" value="' + UI.esc(url) + '" readonly onclick="this.select()" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:ui-monospace,monospace;background:#fff;">'
+          + '<button onclick="SettingsPage._copyInviteLink(\'' + url + '\')" style="background:var(--green-dark);color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">📋 Copy</button>'
+          + '</div>';
+      }
+      // Clear fields for next invite, refresh list
+      document.getElementById('inv-name').value = '';
+      document.getElementById('inv-label').value = '';
+      document.getElementById('inv-notes').value = '';
+      SettingsPage._loadInvitesList();
+    });
+  },
+  _copyInviteLink: function(url) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(function() { UI.toast('Link copied — share away'); });
+    } else {
+      var inp = document.getElementById('inv-share-url');
+      if (inp) { inp.select(); document.execCommand('copy'); UI.toast('Link copied'); }
+    }
+  },
+  _loadInvitesList: function() {
+    var box = document.getElementById('inv-list-wrap');
+    if (!box) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { box.innerHTML = '<div style="color:var(--text-light);font-size:13px;">Cloud sync required</div>'; return; }
+    sb.from('bm_invites').select('*').order('created_at', { ascending: false }).limit(100).then(function(r) {
+      if (r.error || !r.data) { box.innerHTML = '<div style="color:var(--red);font-size:13px;">Load failed</div>'; return; }
+      if (!r.data.length) {
+        box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light);font-size:13px;">No invites yet. Use the form above to create your first one.</div>';
+        return;
+      }
+      var rowHtml = '<table class="data-table" style="width:100%;font-size:13px;"><thead><tr>'
+        + '<th>Code</th><th>Recipient</th><th>Plan</th><th>Rate</th><th>Status</th><th>Created</th><th></th>'
+        + '</tr></thead><tbody>';
+      r.data.forEach(function(inv) {
+        var statusColor = ({active:'#2e7d32', used:'#1565c0', expired:'#666', revoked:'#c62828'})[inv.status] || '#666';
+        var rate = '$' + (inv.price_cents/100).toFixed(2);
+        var planShort = ({grandfathered_monthly:'GF /mo', standard_monthly:'Std /mo', lifetime:'Lifetime', custom_monthly:'Custom /mo', custom_lifetime:'Custom $1'})[inv.plan_type] || inv.plan_type;
+        var url = 'https://branchmanager.app/invite.html?code=' + inv.code;
+        rowHtml += '<tr>'
+          + '<td><strong style="font-family:ui-monospace,monospace;">' + UI.esc(inv.code) + '</strong></td>'
+          + '<td>' + UI.esc(inv.recipient_name || '—') + (inv.promo_label ? '<div style="font-size:11px;color:var(--text-light);">' + UI.esc(inv.promo_label) + '</div>' : '') + '</td>'
+          + '<td><span style="font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:8px;">' + planShort + '</span></td>'
+          + '<td><strong>' + rate + '</strong></td>'
+          + '<td><span style="color:' + statusColor + ';font-weight:700;font-size:11px;text-transform:uppercase;">' + inv.status + '</span></td>'
+          + '<td style="font-size:11px;color:var(--text-light);">' + UI.dateShort(inv.created_at) + '</td>'
+          + '<td style="white-space:nowrap;">'
+          +   '<button onclick="SettingsPage._copyInviteLink(\'' + url + '\')" style="background:none;border:1px solid var(--border);padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;margin-right:4px;">📋</button>'
+          +   (inv.status === 'active' ? '<button onclick="SettingsPage._revokeInvite(\'' + inv.code + '\')" style="background:none;color:#c62828;border:1px solid #ef9a9a;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Revoke</button>' : '')
+          + '</td>'
+          + '</tr>';
+      });
+      rowHtml += '</tbody></table>';
+      box.innerHTML = rowHtml;
+    });
+  },
+  _revokeInvite: function(code) {
+    UI.confirm('Revoke invite ' + code + '? The link stops working immediately and the recipient will see "revoked".', function() {
+      var sb = SupabaseDB.client;
+      sb.from('bm_invites').update({ status: 'revoked' }).eq('code', code).then(function() {
+        UI.toast('Revoked');
+        SettingsPage._loadInvitesList();
+      });
+    });
   },
 
   // ── White-label Branding (tenants.config) ─────────────────────────────────

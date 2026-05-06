@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Branch Manager invite</title>
+<meta name="description" content="A personal Branch Manager invite — locked-in pricing for life.">
+<meta property="og:title" content="Your Branch Manager invite">
+<meta property="og:description" content="Personal grandfathered pricing.">
+<link rel="icon" href="favicon.png">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f0f7f0 0%, #fff 50%, #fff8e1 100%);
+    min-height: 100vh;
+    color: #1d1d1f;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 40px 36px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 18px 60px rgba(0,0,0,.08);
+    border: 1px solid #e8e8e8;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; color: #1a3c12; font-weight: 800; font-size: 17px; }
+  .brand-icon { width: 36px; height: 36px; background: #1a3c12; color: #fff; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .ribbon { display: inline-block; background: #1a3c12; color: #fff; padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; margin-bottom: 14px; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -.6px; margin-bottom: 6px; }
+  .greet { color: #475569; font-size: 16px; margin-bottom: 24px; }
+  .offer-box {
+    background: linear-gradient(135deg, #f1f8e9 0%, #fff 100%);
+    border: 2px dashed #1a3c12;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 18px 0 24px;
+    text-align: center;
+  }
+  .offer-box .label { font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+  .offer-box .price { font-size: 56px; font-weight: 800; color: #1a3c12; letter-spacing: -1.5px; margin: 6px 0; }
+  .offer-box .price small { font-size: 22px; font-weight: 700; opacity: .7; }
+  .offer-box .period { font-size: 14px; color: #475569; }
+  .offer-box .gf { display: inline-block; background: #fff8e1; color: #7e2d10; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700; margin-top: 10px; }
+  .btn { display: block; width: 100%; padding: 16px 24px; border-radius: 10px; background: #1a3c12; color: #fff; font-weight: 700; font-size: 16px; text-align: center; text-decoration: none; transition: transform .12s; }
+  .btn:hover { transform: translateY(-1px); background: #245219; }
+  .btn[disabled] { background: #cbd5e1; cursor: not-allowed; pointer-events: none; }
+  .features { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e8e8e8; }
+  .features h3 { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+  .features ul { list-style: none; padding: 0; }
+  .features li { padding: 4px 0; font-size: 13px; color: #475569; }
+  .features li::before { content: "✓ "; color: #2e7d32; font-weight: 800; }
+  .err { background: #ffebee; border: 1px solid #ef9a9a; color: #b71c1c; padding: 16px 18px; border-radius: 10px; font-size: 14px; }
+  .meta { font-size: 11px; color: #94a3b8; margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">🌳</div>
+    <span>Branch Manager</span>
+  </div>
+
+  <div id="content">
+    <div style="text-align:center;padding:40px 0;color:#94a3b8;font-size:14px;">Loading your invite…</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  var ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtPrice(cents) { return '$' + (Math.floor(cents/100)) + '<small>.' + String(cents%100).padStart(2,'0') + '</small>'; }
+  function planLabel(t) { return ({grandfathered_monthly:'/mo · locked for life',standard_monthly:'/mo',lifetime:' once · own it forever',custom_monthly:'/mo · personal rate',custom_lifetime:' once · personal rate'})[t] || ''; }
+
+  function showError(msg) {
+    document.getElementById('content').innerHTML = '<div class="err"><strong>Hmm.</strong> ' + esc(msg) + '<br><br>Need help? <a href="mailto:info@branchmanager.app" style="color:#1a3c12;font-weight:700;">Email us</a> with the link you were given.</div>';
+  }
+
+  function showOffer(invite) {
+    var greet = invite.recipient_name ? 'Hey ' + esc(invite.recipient_name) + ',' : 'Hey there,';
+    var promo = invite.promo_label ? '<div class="ribbon">' + esc(invite.promo_label) + '</div>' : '<div class="ribbon">Personal invite</div>';
+    var notes = invite.notes ? '<p class="greet" style="font-size:14px;margin-top:-12px;font-style:italic;">"' + esc(invite.notes) + '"</p>' : '';
+    var checkout = invite.stripe_payment_link_url || '';
+    var btnLabel = invite.plan_type === 'lifetime' || invite.plan_type === 'custom_lifetime' ? 'Buy lifetime' : 'Start subscription';
+    var gfBadge = invite.plan_type.indexOf('grandfathered') === 0 || invite.plan_type.indexOf('custom_') === 0
+      ? '<div class="gf">🔒 Locked at this rate forever</div>' : '';
+
+    var html = ''
+      + promo
+      + '<h1>You\'re invited.</h1>'
+      + '<p class="greet">' + greet + ' Here\'s your personal Branch Manager invite. Locked-in pricing — never goes up, even when our standard pricing does.</p>'
+      + notes
+      + '<div class="offer-box">'
+      +   '<div class="label">Your rate</div>'
+      +   '<div class="price">' + fmtPrice(invite.price_cents || 0) + '</div>'
+      +   '<div class="period">' + planLabel(invite.plan_type) + '</div>'
+      +   gfBadge
+      + '</div>';
+
+    if (checkout) {
+      html += '<a class="btn" href="' + esc(checkout) + '">' + btnLabel + ' →</a>';
+    } else {
+      html += '<a class="btn" href="mailto:info@branchmanager.app?subject=Branch%20Manager%20invite%20' + encodeURIComponent(invite.code) + '">' + btnLabel + ' (email us to activate) →</a>';
+      html += '<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:8px;">Live checkout coming online — for now reply to claim this rate.</p>';
+    }
+
+    html += '<div class="features"><h3>What\'s included</h3><ul>'
+      + '<li>Everything in Branch Manager — no upsell tiers</li>'
+      + '<li>Free data migration help</li>'
+      + '<li>Free updates forever</li>'
+      + '<li>Cancel anytime · no contract</li>'
+      + (invite.expires_at ? '<li>Invite expires ' + new Date(invite.expires_at).toLocaleDateString() + '</li>' : '<li>Invite never expires</li>')
+      + '</ul></div>'
+      + '<div class="meta">Invite code: ' + esc(invite.code) + ' · See <a href="pricing.html" style="color:#94a3b8;">standard pricing</a></div>';
+
+    document.getElementById('content').innerHTML = html;
+  }
+
+  // Resolve ?code= from URL
+  var urlParams = new URLSearchParams(window.location.search);
+  var code = (urlParams.get('code') || '').trim().toUpperCase();
+  if (!code) {
+    showError('No invite code in this link. The URL should look like /invite.html?code=...');
+    return;
+  }
+
+  // Fetch the invite by code (RLS allows anon SELECT)
+  fetch(SUPABASE_URL + '/rest/v1/bm_invites?code=eq.' + encodeURIComponent(code) + '&select=code,recipient_name,plan_type,price_cents,promo_label,notes,status,expires_at,stripe_payment_link_url&limit=1', {
+    headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+  }).then(function(r) {
+    return r.json();
+  }).then(function(rows) {
+    if (!rows || !rows.length) { showError('That invite code wasn\'t found. Double-check the link.'); return; }
+    var inv = rows[0];
+    if (inv.status === 'used') { showError('This invite has already been claimed. If you think that\'s wrong, email us.'); return; }
+    if (inv.status === 'revoked') { showError('This invite has been revoked.'); return; }
+    if (inv.status === 'expired' || (inv.expires_at && new Date(inv.expires_at) < new Date())) {
+      showError('This invite has expired. Email us and we can issue a new one.');
+      return;
+    }
+    showOffer(inv);
+  }).catch(function(e) {
+    showError('Could not load the invite. Network error?');
+    console.error(e);
+  });
+})();
+</script>
+
+</body>
+</html>
