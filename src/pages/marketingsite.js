@@ -77,6 +77,59 @@ var MarketingSite = (function() {
     return 'https://clients.branchmanager.app/' + encodeURIComponent(slug) + '/' + (page === 'home' ? '' : page + '/');
   }
 
+  // ── GitHub publish ─────────────────────────────────────────────────────
+  // PAT + repo target stored in localStorage (NOT tenants.config — secrets
+  // shouldn't be cloud-shared across tenants/devices). Per-tenant key.
+  function _ghKey() { return 'bm-ms-gh-' + (_tid() || 'unknown'); }
+  function _ghLoad() {
+    try { return JSON.parse(localStorage.getItem(_ghKey()) || '{}'); } catch(e) { return {}; }
+  }
+  function _ghSave(g) {
+    try { localStorage.setItem(_ghKey(), JSON.stringify(g)); } catch(e) {}
+  }
+  // PUT a file to a GitHub repo via Contents API. If file exists, fetches
+  // its sha first so the PUT updates rather than 422-failing.
+  function _ghPut(opts, content, cb) {
+    var owner = opts.owner, repo = opts.repo, branch = opts.branch || 'main';
+    var path  = String(opts.path || '').replace(/^\/+/, '');
+    var token = opts.token, message = opts.message || ('Update ' + path + ' from BM');
+    if (!owner || !repo || !path || !token) { cb('owner/repo/path/token all required'); return; }
+
+    var apiBase = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + path;
+    var headers = {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json'
+    };
+
+    // 1. Try to fetch existing file to get its sha (so we update vs. create)
+    fetch(apiBase + '?ref=' + encodeURIComponent(branch), { headers: headers })
+      .then(function(r) { return r.status === 200 ? r.json() : null; })
+      .then(function(existing) {
+        // 2. Encode content as base64 (handle UTF-8)
+        var b64;
+        try {
+          b64 = btoa(unescape(encodeURIComponent(content)));
+        } catch(e) { cb('encode failed: ' + e.message); return; }
+
+        var body = { message: message, content: b64, branch: branch };
+        if (existing && existing.sha) body.sha = existing.sha;
+
+        fetch(apiBase, { method: 'PUT', headers: headers, body: JSON.stringify(body) })
+          .then(function(r) { return r.json().then(function(j){ return { status: r.status, json: j }; }); })
+          .then(function(res) {
+            if (res.status === 200 || res.status === 201) {
+              cb(null, { url: res.json && res.json.content && res.json.content.html_url, sha: res.json && res.json.content && res.json.content.sha });
+            } else {
+              cb('GitHub ' + res.status + ': ' + (res.json && res.json.message || 'unknown'));
+            }
+          })
+          .catch(function(e) { cb('network: ' + e.message); });
+      })
+      .catch(function(e) { cb('lookup failed: ' + e.message); });
+  }
+
   // ── HTML escapes ───────────────────────────────────────────────────────
   function _esc(s) {
     if (typeof UI !== 'undefined' && UI.esc) return UI.esc(s);
@@ -289,6 +342,38 @@ var MarketingSite = (function() {
       +   '<p style="font-size:12px;color:var(--text-light);margin:0 0 8px;">Always available. Works without the vanity URL. Use this as a fallback or to test the edge function.</p>'
       +   '<a href="' + _esc(edge) + '" target="_blank" rel="noopener" style="font-size:11px;font-family:ui-monospace,monospace;color:var(--accent);word-break:break-all;">' + _esc(edge) + '</a>'
       + '</div>'
+
+      // Option D — push to GitHub (auto-update tenant's existing static site)
+      + (function(){
+          var g = _ghLoad();
+          var v = function(k, ph, type) { type = type || 'text';
+            return '<input id="ms-gh-' + k + '" type="' + type + '" value="' + _esc(g[k] || '') + '" placeholder="' + _esc(ph) + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:ui-monospace,monospace;box-sizing:border-box;">';
+          };
+          var lastNote = g.last_pushed_at
+            ? '<div style="font-size:11px;color:#065f46;margin-top:8px;">✅ Last push: ' + _esc(g.last_pushed_at) + (g.last_pushed_url ? ' &middot; <a href="' + _esc(g.last_pushed_url) + '" target="_blank" rel="noopener">view on GitHub</a>' : '') + '</div>'
+            : '';
+          return '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+            +   '<strong style="font-size:14px;">🐙 Push to GitHub repo</strong>'
+            +   '<button onclick="MarketingSite._pushGh()" style="background:#24292f;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Push llm-info now</button>'
+            + '</div>'
+            + '<p style="font-size:12px;color:var(--text-light);margin:0 0 10px;">Auto-publishes the LLM Info HTML to a path in your existing static-site repo (works with GitHub Pages, Cloudflare Pages, Netlify Git deploy, etc.). PAT stored in your browser only — never sent to BM.</p>'
+            + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+            +   v('owner', 'GitHub user/org (e.g. smartlawnny-cloud)')
+            +   v('repo', 'Repo name (e.g. peekskilltree.com)')
+            + '</div>'
+            + '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:8px;">'
+            +   v('path', 'File path (default: llm-info/index.html)')
+            +   v('branch', 'Branch (default: main)')
+            + '</div>'
+            + v('token', 'GitHub PAT (ghp_...) — Contents: Read+Write scope', 'password')
+            + '<div style="display:flex;gap:8px;margin-top:8px;">'
+            +   '<button onclick="MarketingSite._saveGh()" style="background:#fff;border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Save settings</button>'
+            +   '<button onclick="MarketingSite._clearGh()" style="background:#fff;border:1px solid #fca5a5;color:#b91c1c;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Forget token</button>'
+            + '</div>'
+            + lastNote
+            + '</div>';
+        })()
 
       + (_site.published_url
           ? '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-top:14px;font-size:13px;">'
@@ -525,6 +610,44 @@ var MarketingSite = (function() {
         try { document.execCommand('copy'); alert('HTML copied'); } catch(e) {}
         document.body.removeChild(ta);
       }
+    },
+    _readGhForm: function() {
+      var v = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      return {
+        owner: v('ms-gh-owner'),
+        repo:  v('ms-gh-repo'),
+        path:  v('ms-gh-path') || 'llm-info/index.html',
+        branch: v('ms-gh-branch') || 'main',
+        token: v('ms-gh-token')
+      };
+    },
+    _saveGh: function() {
+      var g = MarketingSite._readGhForm();
+      _ghSave(g);
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('GitHub settings saved (this device only)'); else alert('Saved (this device only)');
+    },
+    _clearGh: function() {
+      try { localStorage.removeItem(_ghKey()); } catch(e) {}
+      MarketingSite._refresh();
+    },
+    _pushGh: function() {
+      var g = MarketingSite._readGhForm();
+      if (!g.owner || !g.repo || !g.token) { alert('Owner, repo, and PAT are required.'); return; }
+      _ghSave(g); // persist on push too
+      _readFormIntoSite(); // make sure latest content is in site
+      var html = _generateHtml();
+      var btn = event && event.target;
+      if (btn) { btn.disabled = true; btn.textContent = 'Pushing…'; }
+      _ghPut(g, html, function(err, ok) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Push llm-info now'; }
+        if (err) { alert('Push failed: ' + err); return; }
+        var saved = _ghLoad();
+        saved.last_pushed_at = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+        saved.last_pushed_url = ok && ok.url || '';
+        _ghSave(saved);
+        if (typeof UI !== 'undefined' && UI.toast) UI.toast('Pushed to GitHub — Pages will redeploy in ~1 min'); else alert('Pushed!');
+        MarketingSite._refresh();
+      });
     },
     _setPublished: function(url) {
       _site.published_url = url || '';
