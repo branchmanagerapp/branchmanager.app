@@ -492,18 +492,13 @@ var QuotesPage = {
     // Dotted "Pick or create a client" box removed per user request —
     // the empty state is implied (tree list hidden until client picked).
 
-    html += '<div id="q-items-section" style="margin:16px 0;display:' + gateDisplay + ';">'
-      + '<div style="font-size:15px;font-weight:800;margin-bottom:4px;">Line Items</div>'
-      + '<p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Take or upload a photo — AI identifies species, DBH, condition, and suggests service + price.</p>';
-
-    // Two-button action row: Add Tree (photo+AI) | Manual — Measure lives in Tools
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
-      + '<button type="button" onclick="QuotesPage._addPhotoFirst()" style="padding:14px 8px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">'
-      +   '📷 Add Tree Photo'
-      + '</button>'
-      + '<button type="button" onclick="QuotesPage.addItem()" style="padding:14px 8px;background:#fff;color:var(--text);border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;" title="Enter manually without photo">'
-      +   '✍️ Manual'
-      + '</button>'
+    // v628: Jobber-style "Line items" header — title left, single + on the
+    // right. Clicking + triggers the photo-first AI path (most-used).
+    // Manual entry hangs off a quieter text link below the items list.
+    html += '<div id="q-items-section" style="margin:20px 0;display:' + gateDisplay + ';">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:8px;">'
+      +   '<span style="font-size:17px;font-weight:700;">Line items</span>'
+      +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" title="Add tree (photo + AI)" style="width:36px;height:36px;border-radius:50%;background:var(--green-dark);color:#fff;border:none;font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>'
       + '</div>';
 
     // Line items (with photo thumbnails)
@@ -513,7 +508,10 @@ var QuotesPage = {
       html += QuotesPage._itemRow(i, item, services, /*expanded=*/ false);
     });
     html += '</div>'
-      // Duplicate 'Add Another Tree' + 'Manual' row removed — top 3 buttons cover it
+      // v628: quieter manual-entry hangoff — primary action is the + above
+      + '<div style="display:flex;justify-content:flex-end;margin-top:8px;">'
+      +   '<button type="button" onclick="QuotesPage.addItem()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:none;">✍️ Add manual line item →</button>'
+      + '</div>'
       + '<div id="q-pertree-total" style="margin-top:12px;text-align:right;font-size:15px;font-weight:700;color:var(--green-dark);"></div>'
       + '</div>';
 
