@@ -339,27 +339,51 @@ var DashboardPage = {
     // the right rail (Receivables first, then Inbox, then action alerts).
     html += '</div><div class="dash-rail">';
 
-    // Receivables panel — top of rail (most-glanced cash status)
+    // v620: rail cards — collapsible <details> with colored top bar matching
+    // the workflow card colors (Requests=orange, Quotes=purple, Jobs=green,
+    // Invoices=blue). Receivables open by default; rest collapsed since their
+    // counts already appear in the Workflow grid above.
+    var railCard = function(opts) {
+      // opts: { color, title, count, total, totalColor, body, open }
+      return '<details ' + (opts.open ? 'open' : '') + ' style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+        +   '<div style="height:3px;background:' + opts.color + ';"></div>'
+        +   '<summary style="padding:12px 18px;list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">'
+        +     '<span style="font-size:14px;font-weight:700;">' + opts.title + '</span>'
+        +     '<span style="display:flex;align-items:center;gap:10px;">'
+        +       (opts.count != null ? '<span style="font-size:11px;color:var(--text-light);">' + opts.count + '</span>' : '')
+        +       '<span style="font-size:15px;font-weight:800;color:' + (opts.totalColor || opts.color) + ';">' + opts.total + '</span>'
+        +       '<span style="font-size:11px;color:var(--text-light);">▾</span>'
+        +     '</span>'
+        +   '</summary>'
+        +   '<div style="padding:4px 18px 14px;">' + opts.body + '</div>'
+        + '</details>';
+    };
+
+    // Receivables panel — top of rail, OPEN by default
     var rcvUnpaid = DB.invoices.getAll().filter(function(i) { return (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial') && (i.balance || i.total || 0) > 0; });
     var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
     if (rcvUnpaid.length > 0) {
       rcvUnpaid.sort(function(a, b) { return (b.balance || b.total || 0) - (a.balance || a.total || 0); });
-      html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-        + '<h3 style="font-size:16px;margin:0;">Receivables</h3>'
-        + '<span style="font-size:12px;color:var(--text-light);">' + rcvUnpaid.length + ' client' + (rcvUnpaid.length !== 1 ? 's' : '') + ' owe you</span></div>'
-        + '<div style="font-size:28px;font-weight:800;color:var(--green-dark);margin-bottom:16px;">' + UI.moneyInt(rcvTotalOwed) + '</div>';
+      var rcvBody = '';
       rcvUnpaid.slice(0, 6).forEach(function(inv) {
         var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
         var lateColor = daysLate > 30 ? '#dc3545' : daysLate > 0 ? '#e65100' : 'var(--text-light)';
-        html += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+        rcvBody += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
           + '<span style="font-size:14px;font-weight:600;">' + UI.esc(inv.clientName || '') + '</span>'
           + '<div style="text-align:right;">'
           + '<span style="font-weight:700;">' + UI.money(inv.balance || inv.total) + '</span>'
           + (daysLate > 0 ? '<span style="font-size:11px;color:' + lateColor + ';margin-left:8px;">' + daysLate + 'd late</span>' : '')
           + '</div></div>';
       });
-      html += '</div>';
+      html += railCard({
+        color: '#1565c0',
+        title: 'Receivables',
+        count: rcvUnpaid.length + ' client' + (rcvUnpaid.length !== 1 ? 's' : ''),
+        total: UI.moneyInt(rcvTotalOwed),
+        totalColor: 'var(--green-dark)',
+        body: rcvBody,
+        open: true
+      });
     }
 
     // ── Inbox — unified "what needs your attention" surface ────────────────
@@ -536,48 +560,60 @@ var DashboardPage = {
       return !q.createdAt || new Date(q.createdAt) > sixMonthsAgo;
     });
 
-    // Action Items — detailed lists (like Receivables)
+    // Action Items — collapsed by default (counts already visible in workflow grid)
     if (overdueInvCount > 0) {
-      html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid #ffcdd2;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-        + '<h3 style="font-size:16px;margin:0;color:#c62828;">Overdue Invoices</h3>'
-        + '<span style="font-size:20px;font-weight:800;color:#c62828;">' + UI.moneyInt(overdueInvTotal) + '</span></div>';
+      var ovBody = '';
       overdueInvoices.slice(0, 5).forEach(function(inv) {
         var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
-        html += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+        ovBody += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
           + '<span style="font-size:14px;font-weight:600;">' + UI.esc(inv.clientName || '') + '</span>'
           + '<div><span style="font-weight:700;">' + UI.money(inv.balance || inv.total) + '</span>'
           + '<span style="font-size:11px;color:#c62828;margin-left:8px;">' + daysLate + 'd late</span></div></div>';
       });
-      html += '</div>';
+      html += railCard({
+        color: '#c62828',
+        title: 'Overdue Invoices',
+        count: overdueInvCount + ' invoice' + (overdueInvCount !== 1 ? 's' : ''),
+        total: UI.moneyInt(overdueInvTotal),
+        totalColor: '#c62828',
+        body: ovBody
+      });
     }
 
     if (expiringQuotes.length > 0) {
-      html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid #ffe082;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-        + '<h3 style="font-size:16px;margin:0;color:#e65100;">Quotes Need Follow-up</h3>'
-        + '<span style="font-size:13px;color:#e65100;">' + expiringQuotes.length + ' sent 7+ days ago</span></div>';
+      var expBody = '';
+      var expTotal = expiringQuotes.reduce(function(s,q){ return s + (q.total||0); }, 0);
       expiringQuotes.slice(0, 5).forEach(function(q) {
         var daysSent = q.createdAt ? Math.floor((Date.now() - new Date(q.createdAt).getTime()) / 86400000) : 0;
-        html += '<div onclick="QuotesPage.showDetail(\'' + q.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+        expBody += '<div onclick="QuotesPage.showDetail(\'' + q.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
           + '<span style="font-size:14px;font-weight:600;">' + UI.esc(q.clientName || '') + '</span>'
           + '<div><span style="font-weight:700;">' + UI.money(q.total) + '</span>'
           + '<span style="font-size:11px;color:#e65100;margin-left:8px;">' + daysSent + 'd ago</span></div></div>';
       });
-      html += '</div>';
+      html += railCard({
+        color: '#8b2252', // matches Quotes workflow card
+        title: 'Quotes Need Follow-up',
+        count: expiringQuotes.length + ' sent 7+ days ago',
+        total: UI.moneyInt(expTotal),
+        body: expBody
+      });
     }
 
     if (unscheduledJobs.length > 0) {
-      html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid #90caf9;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-        + '<h3 style="font-size:16px;margin:0;color:#1565c0;">Needs Scheduling</h3>'
-        + '<span style="font-size:13px;color:#1565c0;">' + unscheduledJobs.length + ' jobs</span></div>';
+      var schBody = '';
+      var schTotal = unscheduledJobs.reduce(function(s,j){ return s + (j.total||0); }, 0);
       unscheduledJobs.slice(0, 5).forEach(function(j) {
-        html += '<div onclick="JobsPage.showDetail(\'' + j.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+        schBody += '<div onclick="JobsPage.showDetail(\'' + j.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
           + '<span style="font-size:14px;font-weight:600;">' + UI.esc(j.clientName || '') + '</span>'
           + '<span style="font-weight:700;">' + UI.money(j.total) + '</span></div>';
       });
-      html += '</div>';
+      html += railCard({
+        color: '#2e7d32', // matches Jobs workflow card
+        title: 'Needs Scheduling',
+        count: unscheduledJobs.length + ' job' + (unscheduledJobs.length !== 1 ? 's' : ''),
+        total: UI.moneyInt(schTotal),
+        body: schBody
+      });
     }
 
     // v619: Receivables moved up to top of rail; close rail + grid before
