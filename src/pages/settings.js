@@ -11,11 +11,45 @@ var SettingsPage = {
 
     var html = '<div style="max-width:700px;">';
 
+    // v617: TAB STRIP — one tab per top-level meta-group. Persists active tab
+    // in bm-settings-tab. Inactive panes are display:none via the inline CSS below.
+    var tabs = [
+      { slug: 'user',     label: 'User',     emoji: '👤' },
+      { slug: 'business', label: 'Business', emoji: '🏢' },
+      { slug: 'advanced', label: 'Advanced', emoji: '⚙️' }
+    ];
+    var activeTab = (function() {
+      try { var t = localStorage.getItem('bm-settings-tab'); if (t && tabs.some(function(x){return x.slug===t;})) return t; } catch(e){}
+      return 'user';
+    })();
+    html += '<style>'
+      + '.settings-tab-pane{display:none;}'
+      + '.settings-tab-pane.active{display:block;}'
+      + '.settings-tab-strip{display:flex;gap:4px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:14px;position:sticky;top:0;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,.04);}'
+      + '.settings-tab-btn{flex:1;padding:9px 14px;border:none;background:transparent;color:var(--text-light);font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}'
+      + '.settings-tab-btn:hover{background:rgba(0,131,108,.06);color:var(--text);}'
+      + '.settings-tab-btn.active{background:var(--green-dark);color:#fff;}'
+      + '</style>';
+    html += '<div class="settings-tab-strip">'
+      + tabs.map(function(t){
+          return '<button class="settings-tab-btn' + (t.slug===activeTab?' active':'') + '" data-tab="' + t.slug + '" onclick="SettingsPage._switchTab(\'' + t.slug + '\')">'
+            + '<span>' + t.emoji + '</span> ' + t.label
+            + '</button>';
+        }).join('')
+      + '</div>';
+
     // Expand-all / Collapse-all toolbar
     html += '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">'
-      +   '<button onclick="SettingsPage._collapseAll(true)" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);">Collapse all</button>'
-      +   '<button onclick="SettingsPage._collapseAll(false)" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);">Expand all</button>'
+      +   '<button onclick="SettingsPage._collapseAll(true)" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);">Collapse all (this tab)</button>'
+      +   '<button onclick="SettingsPage._collapseAll(false)" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);">Expand all (this tab)</button>'
       + '</div>';
+
+    // Apply active tab class after render — done in setTimeout so DOM is built
+    setTimeout(function() {
+      document.querySelectorAll('.settings-tab-pane').forEach(function(el) {
+        el.classList.toggle('active', el.getAttribute('data-settings-tab') === activeTab);
+      });
+    }, 0);
 
     // === ONE-TIME SETUP CHECKLIST ===
     var sgOk2 = true; // v372: Resend lives server-side; treat email as always configured
@@ -52,13 +86,15 @@ var SettingsPage = {
     // META-GROUP HELPERS (v393) — wrap the existing inner-GROUP collapsibles
     // into 4 top-level banners: USER / BUSINESS / INTEGRATIONS / ADVANCED.
     // ════════════════════════════════════════════════════════════════════════
-    function groupOpen(label, defaultOpen) {
-      return '<details ' + (defaultOpen ? 'open' : '') + ' class="setting-group" style="margin:18px 0 14px;border:none;background:none;">'
-        +   '<summary style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-light);padding:6px 0;cursor:pointer;list-style:none;border-bottom:1px solid var(--border);margin-bottom:14px;">'
-        +     label + ' <span style="float:right;font-weight:500;">▾</span>'
-        +   '</summary>';
+    // v617: meta-groups now render as TAB PANES instead of nested <details>.
+    // The tab strip rendered above hides all panes except the active one
+    // (controlled by SettingsPage._switchTab + bm-settings-tab localStorage).
+    // This makes the Settings page browseable in chunks instead of one long scroll.
+    function groupOpen(label, _defaultOpen) {
+      var slug = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return '<section class="settings-tab-pane" data-settings-tab="' + slug + '">';
     }
-    function groupClose() { return '</details>'; }
+    function groupClose() { return '</section>'; }
 
     // v413: cardOpen/cardClose — collapsible white card inside a meta-group.
     // Replaces ~7 hand-rolled <details> blocks with the same shell + chevron.
@@ -2671,6 +2707,18 @@ var SettingsPage = {
       + '<div>' + UI.esc(phone) + ' · <a href="mailto:' + UI.esc(email) + '" style="color:' + UI.esc(color) + ';">' + UI.esc(email) + '</a></div>'
       + '<div><a href="' + UI.esc(website) + '" style="color:' + UI.esc(color) + ';">' + UI.esc(websiteDisplay) + '</a></div>'
       + '<div style="font-size:11px;color:#888;margin-top:12px;border-top:1px solid #eee;padding-top:8px;">' + UI.esc(name) + ' · ' + UI.esc(addr) + ' · ' + UI.esc(license) + '</div>';
+  },
+
+  // v617: Switch the visible Settings meta-group tab. Persists in localStorage.
+  _switchTab: function(slug) {
+    try { localStorage.setItem('bm-settings-tab', slug); } catch(e) {}
+    document.querySelectorAll('.settings-tab-pane').forEach(function(el) {
+      el.classList.toggle('active', el.getAttribute('data-settings-tab') === slug);
+    });
+    document.querySelectorAll('.settings-tab-btn').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-tab') === slug);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   },
 
   // Upload logo file to tenant-logos Storage bucket and patch wl-logo_url + preview.
