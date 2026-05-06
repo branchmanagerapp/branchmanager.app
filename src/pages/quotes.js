@@ -498,7 +498,7 @@ var QuotesPage = {
     html += '<div id="q-items-section" style="margin:20px 0;display:' + gateDisplay + ';">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:8px;">'
       +   '<span style="font-size:17px;font-weight:700;">Line items</span>'
-      +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" title="Add tree (photo + AI)" style="width:36px;height:36px;border-radius:50%;background:var(--green-dark);color:#fff;border:none;font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>'
+      +   '<button type="button" onclick="QuotesPage.addItem()" title="Add line item" style="width:36px;height:36px;border-radius:50%;background:var(--green-dark);color:#fff;border:none;font-size:20px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>'
       + '</div>';
 
     // Line items (with photo thumbnails)
@@ -508,9 +508,9 @@ var QuotesPage = {
       html += QuotesPage._itemRow(i, item, services, /*expanded=*/ false);
     });
     html += '</div>'
-      // v628: quieter manual-entry hangoff — primary action is the + above
+      // v629: + above adds a blank line; secondary link starts with photo + AI
       + '<div style="display:flex;justify-content:flex-end;margin-top:8px;">'
-      +   '<button type="button" onclick="QuotesPage.addItem()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:none;">✍️ Add manual line item →</button>'
+      +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:none;">📷 Add with photo + AI →</button>'
       + '</div>'
       + '<div id="q-pertree-total" style="margin-top:12px;text-align:right;font-size:15px;font-weight:700;color:var(--green-dark);"></div>'
       + '</div>';
@@ -979,9 +979,10 @@ var QuotesPage = {
     var formulaHint = '<div class="q-item-formula" style="font-size:11px;color:var(--text-light);margin-top:4px;"></div>';
 
     // Expanded form body (hidden when collapsed)
-    // Order per user request: Service → Species → Location → Description → Qty → Rate
+    // v629 order: Service → Species → Location → Description → Qty → Rate →
+    // photo grid + AI buttons LAST (Jobber pattern: enter the line first,
+    // then optionally enrich with photo/AI).
     var body = '<div class="q-item-body" style="margin-top:12px;' + (expanded ? '' : 'display:none;') + '">'
-      + photoHtml
       // Row 1: Service (full width, dropdown)
       + '<div class="form-group" style="margin:0 0 8px;"><label style="font-size:11px;font-weight:600;">Service</label>'
       +   '<input class="q-item-service" list="q-svc-datalist" value="' + UI.esc(item.service || '') + '" placeholder="Type or pick…" onchange="QuotesPage._onServiceChange(this)" oninput="QuotesPage._syncSummary(this)" style="font-size:13px;width:100%;box-sizing:border-box;">'
@@ -1001,13 +1002,19 @@ var QuotesPage = {
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Amount</label><div class="q-item-amount" style="font-size:14px;font-weight:700;color:var(--green-dark);padding:8px 0;">' + UI.money(lineTotal) + '</div></div>'
       +   '<button type="button" style="background:none;border:none;font-size:20px;color:var(--red);cursor:pointer;padding-bottom:8px;opacity:.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6" onclick="this.closest(\'.q-item-wrap\').remove();QuotesPage.calcTotal();">✕</button>'
       + '</div>'
-      + '<div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-start;flex-wrap:wrap;">'
-      +   '<button type="button" onclick="QuotesPage._addMorePhotos(this)" style="padding:8px 12px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📷 Add Photos</button>'
-      +   '<button type="button" onclick="QuotesPage._runAIOnRow(this)" style="padding:8px 12px;background:#fff;color:var(--accent);border:1px solid var(--green-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Let AI fill species, DBH, condition, rate">🤖 Run AI</button>'
-      +   '<button type="button" onclick="QuotesPage._plantNetSecondOpinion(this)" style="padding:8px 12px;background:#fff;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Verify species with PlantNet (second opinion)">🌿 2nd</button>'
-      +   '<button type="button" onclick="QuotesPage._collapseRow(this)" style="padding:8px 14px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">✓ Done</button>'
-      + '</div>'
-      + '</div>';
+      // v629: photo grid lives below the form fields now (above the photo/AI
+      // action buttons) — line entry first, then optional enrichment.
+      + (photoHtml ? '<div style="margin-top:14px;">' + photoHtml + '</div>' : '')
+      + '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);">'
+      +   '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;">Photo &amp; AI</div>'
+      +   '<div style="display:flex;gap:6px;justify-content:flex-start;flex-wrap:wrap;">'
+      +     '<button type="button" onclick="QuotesPage._addMorePhotos(this)" style="padding:8px 12px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📷 Add Photos</button>'
+      +     '<button type="button" onclick="QuotesPage._runAIOnRow(this)" style="padding:8px 12px;background:#fff;color:var(--accent);border:1px solid var(--green-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Let AI fill species, DBH, condition, rate">🤖 Run AI</button>'
+      +     '<button type="button" onclick="QuotesPage._plantNetSecondOpinion(this)" style="padding:8px 12px;background:#fff;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Verify species with PlantNet (second opinion)">🌿 2nd</button>'
+      +     '<button type="button" onclick="QuotesPage._collapseRow(this)" style="padding:8px 14px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">✓ Done</button>'
+      +   '</div>'
+      + '</div>'  // close Photo & AI wrapper
+      + '</div>'; // close .q-item-body
 
     return '<div class="q-item-wrap" data-index="' + index + '" style="margin-bottom:10px;padding:12px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
       + summary
