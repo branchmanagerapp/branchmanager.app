@@ -625,16 +625,13 @@ var ClientsPage = {
       + UI.formField('Company', 'text', 'c-company', c.company, { placeholder: 'Company name (optional)' })
 
       + UI.formSection('Contact')
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-      +   UI.formField('Phone *', 'tel', 'c-phone', c.phone, { required: true, placeholder: '(914) 555-0000' })
-      +   UI.formField('Email', 'email', 'c-email', c.email, { placeholder: 'email@example.com' })
-      + '</div>'
+      + UI.formField('Phone *', 'tel', 'c-phone', c.phone, { required: true, placeholder: '(914) 555-0000' })
+      + UI.formField('Email', 'email', 'c-email', c.email, { placeholder: 'email@example.com' })
       + UI.formField('Address', 'text', 'c-address', c.address, { placeholder: 'Street, City, State ZIP' })
 
       + UI.formSection('Source & status')
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-      +   UI.formField('Status', 'select', 'c-status', c.status || 'lead', { options: [{value:'lead',label:'Lead'},{value:'active',label:'Active'}] })
-      +   UI.formField('Lead Source', 'select', 'c-source', c.source || '', { options: [
+      + UI.formField('Status', 'select', 'c-status', c.status || 'lead', { options: [{value:'lead',label:'Lead'},{value:'active',label:'Active'}] })
+      + UI.formField('Lead Source', 'select', 'c-source', c.source || '', { options: [
             { value: '',             label: '— Select where they came from —' },
             { value: 'Google',       label: 'Google (search / GBP)' },
             { value: 'Referral',     label: 'Word of mouth / Referral' },
@@ -651,7 +648,6 @@ var ClientsPage = {
             { value: 'Phone',        label: 'Direct call' },
             { value: 'Other',        label: 'Other' }
           ] })
-      + '</div>'
 
       // Less-used fields tucked behind a disclosure so the form looks shorter on mobile
       + '<details style="margin-top:18px;">'
