@@ -58,6 +58,25 @@ var MarketingSite = (function() {
     return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
 
+  function _supabaseUrl() {
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_URL) return SupabaseDB.DEFAULT_URL;
+    return 'https://ltpivkqahvplapyagljt.supabase.co';
+  }
+  // Edge function URL for a given tenant page. Slug-based when set, else
+  // falls back to tenant_id-based URL.
+  function _edgeUrl(page) {
+    var slug = (_site && _site.slug) ? _site.slug : '';
+    var path = slug ? encodeURIComponent(slug) + '/' + page : encodeURIComponent(_tid()) + '/' + page;
+    return _supabaseUrl() + '/functions/v1/render-marketing-site/' + path;
+  }
+  // Vanity URL via Cloudflare Worker (clients.branchmanager.app/{slug}/...).
+  // Returns '' if no slug — caller should display the edge URL instead.
+  function _vanityUrl(page) {
+    var slug = (_site && _site.slug) ? _site.slug : '';
+    if (!slug) return '';
+    return 'https://clients.branchmanager.app/' + encodeURIComponent(slug) + '/' + (page === 'home' ? '' : page + '/');
+  }
+
   // ── HTML escapes ───────────────────────────────────────────────────────
   function _esc(s) {
     if (typeof UI !== 'undefined' && UI.esc) return UI.esc(s);
@@ -115,11 +134,12 @@ var MarketingSite = (function() {
 
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;">'
       +   '<h3 style="margin:0 0 12px;font-size:15px;">Pages</h3>'
-      +   _pageRow('llm-info', 'LLM Info', 'Canonical reference for AI assistants', llmReady.ok, llmReady.note)
-      +   _pageRow('home',     'Home (coming soon)', 'Hero, services overview, testimonials', false, 'Phase 2')
-      +   _pageRow('services', 'Services (coming soon)', 'Service catalog with detail pages', false, 'Phase 2')
-      +   _pageRow('areas',    'Service Areas (coming soon)', 'Per-city landing pages', false, 'Phase 2')
-      +   _pageRow('contact',  'Contact (coming soon)', 'Form + map + hours', false, 'Phase 2')
+      +   _pageRow('llm-info', 'LLM Info',     'Canonical reference for AI assistants',     llmReady.ok, llmReady.note)
+      +   _pageRow('home',     'Home',         'Hero, services overview, CTA',              llmReady.ok, llmReady.ok ? '' : llmReady.note)
+      +   _pageRow('services', 'Services',     'Service catalog with detail per service',   llmReady.ok, llmReady.ok ? '' : llmReady.note)
+      +   _pageRow('areas',    'Service Areas','Per-city pillrow + anchor links',           llmReady.ok, llmReady.ok ? '' : llmReady.note)
+      +   _pageRow('contact',  'Contact',      'Phone/email/address + estimate form',       llmReady.ok, llmReady.ok ? '' : llmReady.note)
+      +   '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #f3f4f6;font-size:12px;color:var(--text-light);">All five pages render server-side from <code>tenants.config.marketing_site</code> via the <code>render-marketing-site</code> edge function. Edit content under the <strong>LLM Info Page</strong> tab — all five pages share the same data.</div>'
       + '</div>';
   }
 
@@ -161,6 +181,9 @@ var MarketingSite = (function() {
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;">'
       +   '<h3 style="margin:0 0 4px;font-size:15px;">Site content</h3>'
       +   '<p style="font-size:12px;color:var(--text-light);margin:0 0 14px;">Pulls from <em>Settings → White-label Branding</em> for name/phone/address. The fields below are unique to the public site.</p>'
+
+      +   _section('URL slug <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; lowercase, no spaces &mdash; controls clients.branchmanager.app/{slug}/</span>')
+      +   '<input id="ms-slug" type="text" value="' + _esc(s.slug || '') + '" placeholder="' + _esc(_slugify(_cfg.company_name || _cfg._tenantName || '')) + '" pattern="[a-z0-9-]+" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:ui-monospace,monospace;box-sizing:border-box;">'
 
       +   _section('Services')
       +   '<textarea id="ms-services" placeholder="One per line, e.g.&#10;Tree Removal&#10;Tree Pruning &amp; Trimming&#10;Stump Grinding" style="width:100%;height:110px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
@@ -222,14 +245,16 @@ var MarketingSite = (function() {
 
   // ── Render: Publish tab ────────────────────────────────────────────────
   function _renderPublish() {
-    var slug = _cfg._tenantSlug || 'unknown';
-    var bmUrl = 'https://clients.branchmanager.app/' + slug + '/llm-info/';
-    var ownUrl = (_cfg.company_website ? _cfg.company_website.replace(/\/+$/, '') + '/llm-info/' : '');
+    var ownUrl  = (_cfg.company_website ? _cfg.company_website.replace(/\/+$/, '') + '/llm-info/' : '');
+    var edge    = _edgeUrl('llm-info');
+    var vanity  = _vanityUrl('llm-info');
+    var slug    = (_site && _site.slug) ? _site.slug : '';
 
-    return '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;max-width:760px;">'
+    return '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;max-width:820px;">'
       + '<h3 style="margin:0 0 4px;font-size:15px;">Publish &amp; Hosting</h3>'
-      + '<p style="font-size:13px;color:var(--text-light);margin:0 0 18px;">Choose where the LLM Info page lives.</p>'
+      + '<p style="font-size:13px;color:var(--text-light);margin:0 0 18px;">Choose where these pages live. You can pick more than one.</p>'
 
+      // Option A — your own website
       + '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;">'
       +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
       +     '<strong style="font-size:14px;">📂 Your own website</strong>'
@@ -237,20 +262,37 @@ var MarketingSite = (function() {
               ? '<button onclick="MarketingSite._setPublished(\'' + _esc(ownUrl) + '\')" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Mark as published here</button>'
               : '<span style="font-size:12px;color:var(--text-light);">(set Website in Branding first)</span>')
       +   '</div>'
-      +   '<p style="font-size:12px;color:var(--text-light);margin:0;">Recommended. Download the HTML, drop it at <code>' + _esc(ownUrl || 'yoursite.com/llm-info/') + '</code>. Search engines and AI crawlers see it on your real domain — best for credibility.</p>'
+      +   '<p style="font-size:12px;color:var(--text-light);margin:0;">Recommended. <button onclick="MarketingSite._download()" style="background:none;border:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0;font-size:12px;">Download the HTML</button>, drop it at <code>' + _esc(ownUrl || 'yoursite.com/llm-info/') + '</code>. Best credibility &mdash; AI crawlers see it on your real domain.</p>'
       + '</div>'
 
-      + '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;opacity:.7;">'
+      // Option B — BM-hosted (vanity)
+      + '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;' + (slug ? '' : 'opacity:.7;') + '">'
       +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
-      +     '<strong style="font-size:14px;">🏠 BM-hosted (free, included)</strong>'
-      +     '<span style="font-size:12px;color:var(--text-light);">Phase 2</span>'
+      +     '<strong style="font-size:14px;">🏠 BM-hosted vanity URL</strong>'
+      +     (vanity
+              ? '<button onclick="MarketingSite._setPublished(\'' + _esc(vanity) + '\')" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Mark live</button>'
+              : '<span style="font-size:12px;color:var(--text-light);">Set a slug first</span>')
       +   '</div>'
-      +   '<p style="font-size:12px;color:var(--text-light);margin:0;">Auto-publish to <code>' + _esc(bmUrl) + '</code>. Good for tenants without a website. Coming soon &mdash; needs the <code>render-marketing-site</code> edge function and Cloudflare Worker dispatcher.</p>'
+      +   '<p style="font-size:12px;color:var(--text-light);margin:0;">'
+      +     (vanity
+              ? 'Live at <a href="' + _esc(vanity) + '" target="_blank" rel="noopener"><code>' + _esc(vanity) + '</code></a> once the Cloudflare Worker route is added (<code>clients.branchmanager.app/{slug}/*</code> &rarr; render-marketing-site edge function). Currently the function is reachable directly &mdash; see below.'
+              : 'Set a URL slug under the <strong>LLM Info Page</strong> tab to enable. Will publish to <code>clients.branchmanager.app/{slug}/llm-info/</code>.')
+      +   '</p>'
+      + '</div>'
+
+      // Option C — direct edge function URL (always available)
+      + '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;">'
+      +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+      +     '<strong style="font-size:14px;">🔗 Direct edge function URL</strong>'
+      +     '<button onclick="MarketingSite._setPublished(\'' + _esc(edge) + '\')" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Mark live</button>'
+      +   '</div>'
+      +   '<p style="font-size:12px;color:var(--text-light);margin:0 0 8px;">Always available. Works without the vanity URL. Use this as a fallback or to test the edge function.</p>'
+      +   '<a href="' + _esc(edge) + '" target="_blank" rel="noopener" style="font-size:11px;font-family:ui-monospace,monospace;color:var(--accent);word-break:break-all;">' + _esc(edge) + '</a>'
       + '</div>'
 
       + (_site.published_url
           ? '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-top:14px;font-size:13px;">'
-            + 'Currently published at: <a href="' + _esc(_site.published_url) + '" target="_blank" rel="noopener" style="color:#065f46;font-weight:600;">' + _esc(_site.published_url) + '</a>'
+            + '✅ Currently advertising: <a href="' + _esc(_site.published_url) + '" target="_blank" rel="noopener" style="color:#065f46;font-weight:600;">' + _esc(_site.published_url) + '</a>'
             + ' <button onclick="MarketingSite._setPublished(\'\')" style="margin-left:10px;background:none;border:1px solid #fca5a5;color:#b91c1c;padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Unpublish</button>'
             + '</div>'
           : '')
@@ -412,6 +454,8 @@ var MarketingSite = (function() {
   function _readFormIntoSite() {
     var v = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
     var lines = function(id) { return v(id).split('\n').map(function(s) { return s.trim(); }).filter(Boolean); };
+    var slug = _slugify(v('ms-slug'));
+    if (slug) _site.slug = slug;
     _site.services = lines('ms-services').map(function(n) { return { name: n }; });
     _site.service_areas = lines('ms-areas');
     _site.licenses = lines('ms-licenses');

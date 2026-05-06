@@ -56,6 +56,13 @@ verify_jwt = false
 [functions.portal-update]
 verify_jwt = false
 
+# Public marketing-site renderer — anyone hitting clients.branchmanager.app
+# /{slug}/llm-info/ (or any other generated page) should reach this without
+# a JWT. The function only reads tenants.config (no writes), so opening it
+# to anon traffic is safe.
+[functions.render-marketing-site]
+verify_jwt = false
+
 # Internal functions that BM (with anon key) calls from authenticated
 # context — these CAN keep verify_jwt = true (default) since the BM
 # bundle stamps the anon key. Listed here for clarity:
