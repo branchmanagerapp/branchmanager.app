@@ -161,6 +161,104 @@ var UI = (function() {
   }
 
   // ── Form Builder ──
+  // v623: address autocomplete via Photon (https://photon.komoot.io/) — free
+  // OSM-based geocoder, no API key required, CORS-enabled. Mirrors the Google
+  // Places dropdown that Jobber uses on its property-address field.
+  //
+  // Bind with: UI.bindAddressAutocomplete('input-id', { onPick: function(addr,feat){...} })
+  // Behavior: 250ms debounce, 5 results, biased to the US, dropdown anchored
+  // below the input, keyboard ↑↓⏎ navigable, click outside to close.
+  function bindAddressAutocomplete(inputId, opts) {
+    opts = opts || {};
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    if (input._addrAutocompleteBound) return; // idempotent
+    input._addrAutocompleteBound = true;
+
+    // Position dropdown anchored to input's parent
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,.08);z-index:20;max-height:280px;overflow-y:auto;display:none;';
+    var parent = input.parentNode;
+    // Make parent the positioning context
+    if (parent && getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+    parent.appendChild(wrap);
+
+    var sel = -1;
+    var feats = [];
+
+    function close() { wrap.style.display = 'none'; sel = -1; }
+
+    function fmt(props) {
+      var hn = (props.housenumber || '').trim();
+      var st = (props.street || props.name || '').trim();
+      var line1 = (hn + ' ' + st).trim();
+      var city = props.city || props.county || '';
+      var state = props.state || '';
+      var zip = props.postcode || '';
+      var line2 = [city, state, zip].filter(Boolean).join(', ');
+      return { line1: line1, line2: line2, full: [line1, city, state, zip].filter(Boolean).join(', ') };
+    }
+
+    function render() {
+      if (!feats.length) { close(); return; }
+      wrap.innerHTML = feats.map(function(f, i) {
+        var p = fmt(f.properties);
+        var bg = i === sel ? 'var(--green-bg)' : '#fff';
+        return '<div data-idx="' + i + '" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);background:' + bg + ';">'
+          + '<div style="font-size:14px;font-weight:600;">' + esc(p.line1 || (f.properties.name || '')) + '</div>'
+          + (p.line2 ? '<div style="font-size:12px;color:var(--text-light);">' + esc(p.line2) + '</div>' : '')
+          + '</div>';
+      }).join('');
+      wrap.style.display = 'block';
+    }
+
+    function pick(i) {
+      var f = feats[i]; if (!f) return;
+      var p = fmt(f.properties);
+      input.value = p.full;
+      close();
+      if (typeof opts.onPick === 'function') opts.onPick(p.full, f);
+    }
+
+    var debounce;
+    input.addEventListener('input', function() {
+      clearTimeout(debounce);
+      var q = input.value.trim();
+      if (q.length < 3) { close(); return; }
+      debounce = setTimeout(function() {
+        // Bias to US; client-side fetch — no key needed
+        var url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&limit=5&lang=en';
+        fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+          // Filter to US results when possible
+          var all = (d && d.features) || [];
+          var us = all.filter(function(f) { return (f.properties && f.properties.country === 'United States'); });
+          feats = us.length ? us : all;
+          sel = -1;
+          render();
+        }).catch(function() { /* network error — silently no-op */ });
+      }, 250);
+    });
+
+    input.addEventListener('keydown', function(e) {
+      if (wrap.style.display === 'none') return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(feats.length - 1, sel + 1); render(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); render(); }
+      else if (e.key === 'Enter') { if (sel >= 0) { e.preventDefault(); pick(sel); } }
+      else if (e.key === 'Escape') { close(); }
+    });
+
+    wrap.addEventListener('mousedown', function(e) {
+      var target = e.target.closest('[data-idx]');
+      if (!target) return;
+      e.preventDefault(); // keep input focus
+      pick(parseInt(target.getAttribute('data-idx'), 10));
+    });
+
+    document.addEventListener('mousedown', function(e) {
+      if (e.target !== input && !wrap.contains(e.target)) close();
+    });
+  }
+
   // v621: Jobber-style muted section label for grouping form fields.
   // Use to break a long form (quote, client intake) into scannable chunks
   // separated by a thin top border + small caps muted heading.
@@ -319,6 +417,7 @@ var UI = (function() {
     phone: phone,
     formField: formField,
     formSection: formSection,
+    bindAddressAutocomplete: bindAddressAutocomplete,
     statCard: statCard,
     emptyState: emptyState,
     confirm: confirm,

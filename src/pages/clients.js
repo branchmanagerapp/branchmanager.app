@@ -620,10 +620,8 @@ var ClientsPage = {
         + '</div>')
 
       + UI.formSection('Identity', { tight: true })
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-      +   UI.formField('First Name *', 'text', 'c-first', _fn, { required: true, placeholder: 'First' })
-      +   UI.formField('Last Name', 'text', 'c-last', _ln, { placeholder: 'Last' })
-      + '</div>'
+      + UI.formField('First Name *', 'text', 'c-first', _fn, { required: true, placeholder: 'First name' })
+      + UI.formField('Last Name', 'text', 'c-last', _ln, { placeholder: 'Last name' })
       + UI.formField('Company', 'text', 'c-company', c.company, { placeholder: 'Company name (optional)' })
 
       + UI.formSection('Contact')
@@ -670,6 +668,10 @@ var ClientsPage = {
         + '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
         + ' <button class="btn btn-primary" onclick="document.getElementById(\'client-form\').requestSubmit()">Save Client</button>'
     });
+    // v623: Photon address autocomplete on the Address field
+    setTimeout(function() {
+      if (UI.bindAddressAutocomplete) UI.bindAddressAutocomplete('c-address');
+    }, 50);
   },
 
   save: function(e, id) {
