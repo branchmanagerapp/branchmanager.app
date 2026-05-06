@@ -668,22 +668,24 @@ var QuotesPage = {
 
       + '</form>';
 
-    // Render as full page (not modal)
-    var pageHtml = '<div style="max-width:680px;margin:0 auto;padding-bottom:80px;">'
+    // v622: render as full page with a STICKY bottom action bar so the
+    // primary CTA (Save & Send) is always visible while scrolling — Jobber-
+    // mobile parity. Bottom bar is also where the cancel + draft live.
+    var pageHtml = '<div style="max-width:680px;margin:0 auto;padding:0 0 96px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
       + '<button class="btn btn-outline" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="font-size:13px;">← Back to Quotes</button>'
-      + '<div style="display:flex;gap:8px;">'
-      + '<button class="btn btn-outline" onclick="QuotesPage.saveAs(\'draft\')">Save Draft</button>'
-      + '<button class="btn btn-primary" onclick="QuotesPage.saveAs(\'sent\')">Save & Send</button>'
-      + '</div></div>'
+      + '<button type="button" onclick="QuotesPage._showAIDraftPicker && QuotesPage._showAIDraftPicker()" title="AI assist" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✨</button>'
+      + '</div>'
       + '<h2 style="font-size:20px;margin-bottom:4px;">' + (quoteId ? 'Edit ' + QuotesPage._term(true) + ' #' + q.quoteNumber : 'New ' + QuotesPage._term(true)) + '</h2>'
       + '<div id="q-save-status" style="font-size:11px;color:var(--text-light);margin-bottom:12px;font-style:italic;">Not saved yet — start typing to auto-save.</div>'
       + html
-      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">'
-      + '<button class="btn btn-outline" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')">Cancel</button>'
-      + '<button class="btn btn-outline" onclick="QuotesPage.saveAs(\'draft\')">Save Draft</button>'
-      + '<button class="btn btn-primary" onclick="QuotesPage.saveAs(\'sent\')">Save & Send</button>'
-      + '</div></div>';
+      // STICKY BOTTOM ACTION BAR — fixed at viewport bottom, full-width, white bg
+      + '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,.06);padding:10px 14px;display:flex;gap:8px;justify-content:flex-end;align-items:center;z-index:50;">'
+      +   '<button class="btn btn-outline" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="font-size:13px;">Cancel</button>'
+      +   '<button class="btn btn-outline" onclick="QuotesPage.saveAs(\'draft\')" style="font-size:13px;">Save Draft</button>'
+      +   '<button class="btn btn-primary" onclick="QuotesPage.saveAs(\'sent\')" style="flex:0 1 auto;min-width:140px;">Save &amp; Send</button>'
+      + '</div>'
+      + '</div>';
 
     var content = document.getElementById('pageContent');
     if (content) content.innerHTML = pageHtml;
