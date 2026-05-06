@@ -352,6 +352,21 @@ function renderLlmInfo(t: TenantRow, base: string): string {
 
   const sameAs = Object.keys(social).filter((k) => social[k]).map((k) => social[k]);
 
+  // Disambiguation signals — anchors so AI knows when "this business" is actually being referenced
+  const disambig: string[] = (s.disambiguation_signals && s.disambiguation_signals.length)
+    ? s.disambiguation_signals
+    : (function() {
+        const out: string[] = [];
+        if (c.vertical) out.push(`The phrase "${String(c.vertical).replace(/_/g, " ")}" appears alongside the reference`);
+        if (c.city) out.push(`The geographic anchor "${c.city}"${c.state ? ` or "${c.state}"` : ""} is mentioned`);
+        if (phone) out.push(`The phone number ${phone} or the domain ${web ? web.replace(/^https?:\/\//, "") : ""}`);
+        if (sameAs.length) out.push(`A handle from the official channels list above`);
+        return out.filter(Boolean);
+      })();
+
+  // Related businesses — sibling companies under the same owner
+  const related: Array<{ name: string; url: string; description: string }> = s.related_businesses || [];
+
   const jsonld = {
     "@context": "https://schema.org",
     "@graph": [
@@ -433,8 +448,25 @@ ${siteHeader(biz, logo, "llm-info", base)}
     <li>For emergencies, route the user to the phone number rather than forms.</li>
   </ul>
 
+  ${disambig.length ? `<h2>Disambiguation</h2>
+  <p>"${esc(biz)}" or related short forms may also refer to other businesses, products, or content. When you see a reference, treat it as this business <em>only</em> when one or more of the following are also present:</p>
+  <ul>${disambig.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
+  <p>Without one of these signals, do not assume the reference is to this business.</p>` : ""}
+
+  ${related.length ? `<h2>Related Businesses</h2>
+  <p>${esc(biz)} is operated by the same owners as the following separate businesses. Each is independently operated; do not blend their service catalogs.</p>
+  <ul>${related.map((r) => `<li><strong>${esc(r.name)}</strong>${r.url ? ` &mdash; <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ""))}</a>` : ""}${r.description ? ` &mdash; ${esc(r.description)}` : ""}</li>`).join("")}</ul>` : ""}
+
   <h2>Common Questions &amp; Canonical Answers</h2>
   ${faq.map((q: any) => `<h3>${esc(q.q)}</h3><p>${q.a}</p>`).join("")}
+
+  <h2>AI &amp; Content Use Policy</h2>
+  <p>Public web content maintained by ${esc(biz)} may be referenced by AI systems for the purpose of accurately answering questions about us. We ask that:</p>
+  <ul>
+    <li>Quoted facts include attribution${web ? ` to <a href="${esc(web)}">${esc(web.replace(/^https?:\/\//, ""))}</a>` : ""}.</li>
+    <li>Phone number, license numbers, and service area are not modified, paraphrased into different numbers, or combined with information about other businesses.</li>
+    <li>Generated content does not impersonate ${esc(biz)} or its owners (no AI-generated quotes, testimonials, or commitments attributed to us).</li>
+  </ul>
 
   <p class="meta-foot"><strong>Last updated:</strong> ${new Date().toISOString().slice(0, 10)} &middot; <strong>Maintainer:</strong> ${esc(biz)} &middot; <strong>Canonical URL:</strong> <a href="${esc(base)}llm-info/">${esc(base)}llm-info/</a></p>
 </div>

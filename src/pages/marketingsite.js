@@ -271,6 +271,16 @@ var MarketingSite = (function() {
       +     _esc(faq.map(function(q) { return q.q + ' | ' + q.a; }).join('\n'))
       +   '</textarea>'
 
+      +   _section('Related businesses <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; name | url | description per line</span>')
+      +   '<textarea id="ms-related" placeholder="Smart Lawn NY | https://smartlawnny.com | robotic mower sales" style="width:100%;height:80px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+      +     _esc((s.related_businesses || []).map(function(r) { return [r.name, r.url, r.description].filter(Boolean).join(' | '); }).join('\n'))
+      +   '</textarea>'
+
+      +   _section('Disambiguation signals <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; one signal per line that tells AI "this is us"</span>')
+      +   '<textarea id="ms-disambig" placeholder="The phrase &quot;tree service&quot; appears alongside the reference&#10;The geographic anchor &quot;Peekskill&quot; is mentioned" style="width:100%;height:90px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+      +     _esc((s.disambiguation_signals || []).join('\n'))
+      +   '</textarea>'
+
       +   (function() {
             var pages = (s.pages || {});
             var p = function(name) { return pages[name] || {}; };
@@ -587,6 +597,12 @@ var MarketingSite = (function() {
       var i = line.indexOf('|'); if (i < 0) return null;
       return { q: line.slice(0, i).trim(), a: line.slice(i + 1).trim() };
     }).filter(Boolean);
+    _site.related_businesses = lines('ms-related').map(function(line) {
+      var parts = line.split('|').map(function(p) { return p.trim(); });
+      if (!parts[0]) return null;
+      return { name: parts[0], url: parts[1] || '', description: parts[2] || '' };
+    }).filter(Boolean);
+    _site.disambiguation_signals = lines('ms-disambig');
     // Per-page copy overrides (optional — only persist non-empty values)
     var pages = _site.pages || {};
     var setPage = function(name, field, val) {
