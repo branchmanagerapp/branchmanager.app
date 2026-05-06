@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company Intake — Branch Manager</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,system-ui,sans-serif; background:#f8fafc; color:#0f172a; }
+  .topbar { background:#fff; border-bottom:1px solid #e2e8f0; padding:12px 20px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:10; }
+  .topbar-logo { width:36px; height:36px; background:#1b5e20; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; }
+  .topbar h1 { font-size:16px; font-weight:700; }
+  .topbar p { font-size:12px; color:#64748b; }
+  .wrap { max-width:680px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid #e2e8f0; }
+  .card h2 { font-size:15px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .card h2 .num { background:#1b5e20; color:#fff; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .card .sub { font-size:12px; color:#64748b; margin-bottom:14px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:4px; }
+  .field input, .field select, .field textarea { width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:15px; font-family:inherit; }
+  .field textarea { min-height:90px; resize:vertical; font-size:13px; }
+  .field input[type="color"] { padding:4px; height:42px; cursor:pointer; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline:none; border-color:#1b5e20; box-shadow:0 0 0 2px rgba(27,94,32,.1); }
+  .row { display:flex; gap:12px; }
+  .row .field { flex:1; }
+  .help { font-size:11px; color:#94a3b8; margin-top:3px; }
+  .btn { width:100%; padding:14px; background:#1b5e20; color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; }
+  .btn:hover { background:#166534; }
+  .btn:disabled { background:#94a3b8; cursor:not-allowed; }
+  .success { display:none; background:#f0fdf4; border:2px solid #22c55e; border-radius:12px; padding:24px; text-align:center; margin-bottom:16px; }
+  .success h2 { color:#166534; margin-top:8px; }
+  .err { display:none; background:#fef2f2; border:1px solid #fca5a5; color:#b91c1c; padding:12px; border-radius:8px; margin-bottom:14px; font-size:13px; }
+  .logo-drop {
+    border:2px dashed #cbd5e1; border-radius:10px; padding:20px; text-align:center;
+    cursor:pointer; background:#f8fafc; transition:all .15s;
+  }
+  .logo-drop:hover { border-color:#1b5e20; background:#f0fdf4; }
+  .logo-drop.has-logo { border-style:solid; padding:14px; }
+  .logo-drop img { max-height:80px; max-width:200px; margin:0 auto 8px; display:block; }
+  .logo-drop input[type="file"] { display:none; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; }
+  .pill-pending { background:#fef3c7; color:#92400e; }
+  .pill-uploading { background:#dbeafe; color:#1e40af; }
+  .pill-done { background:#d1fae5; color:#065f46; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">🏢</div>
+  <div>
+    <h1>Company Intake</h1>
+    <p>Fill once — pre-populates your white-label branding, marketing site, emails, and customer portal</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="success" id="success">
+    <div style="font-size:40px;">✅</div>
+    <h2>Company set up</h2>
+    <p style="color:#15803d;margin-top:6px;" id="success-name"></p>
+    <p style="color:#64748b;font-size:13px;margin-top:8px;">Your marketing site, email branding, and customer portal are now populated. Edit anytime under <strong>Settings → White-label Branding</strong> and <strong>Website → LLM Info Page</strong>.</p>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <a id="success-marketing-link" target="_blank" rel="noopener" style="display:inline-block;padding:10px 18px;background:#1b5e20;color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">View marketing site</a>
+      <a href="../" style="display:inline-block;padding:10px 18px;background:#fff;color:#1b5e20;border:2px solid #1b5e20;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">Back to BM</a>
+    </div>
+  </div>
+
+  <div id="err" class="err"></div>
+
+  <form id="intake-form">
+
+    <div class="card">
+      <h2><span class="num">1</span> Business basics</h2>
+      <div class="sub">Used in headers, emails, legal docs, and the marketing site title.</div>
+      <div class="field"><label>Display name *</label><input type="text" id="company_name" required placeholder="e.g. Second Nature Tree Service"></div>
+      <div class="row">
+        <div class="field"><label>Legal name (with LLC/Inc)</label><input type="text" id="legal_name" placeholder="Second Nature Tree Service LLC"></div>
+        <div class="field"><label>Short name</label><input type="text" id="business_short_name" placeholder="SNT"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Owner name</label><input type="text" id="owner_name" placeholder="Doug Brown"></div>
+        <div class="field">
+          <label>Vertical *</label>
+          <select id="vertical" required>
+            <option value="">Pick one…</option>
+            <option value="tree_service">Tree service</option>
+            <option value="lawn_care">Lawn care</option>
+            <option value="snow_removal">Snow removal</option>
+            <option value="plumbing">Plumbing</option>
+            <option value="hvac">HVAC</option>
+            <option value="electrical">Electrical</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="handyman">Handyman</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Tagline (1 line)</label><input type="text" id="tagline" placeholder="Locally owned, fully insured, free estimates."></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">2</span> Contact</h2>
+      <div class="row">
+        <div class="field"><label>Phone *</label><input type="tel" id="company_phone" required placeholder="(914) 555-0123"></div>
+        <div class="field"><label>Email *</label><input type="email" id="company_email" required placeholder="info@yourdomain.com"></div>
+      </div>
+      <div class="field"><label>Website</label><input type="url" id="company_website" placeholder="https://yourdomain.com"><div class="help">Without one, the marketing site we generate becomes your public site.</div></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">3</span> Address</h2>
+      <div class="field"><label>Street</label><input type="text" id="address_line1" placeholder="123 Main St"></div>
+      <div class="row">
+        <div class="field"><label>City *</label><input type="text" id="city" required placeholder="Peekskill"></div>
+        <div class="field"><label>State *</label><input type="text" id="state" required maxlength="2" placeholder="NY"></div>
+        <div class="field"><label>ZIP</label><input type="text" id="zip" placeholder="10566"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">4</span> Brand</h2>
+      <div class="row">
+        <div class="field" style="flex:0 0 100px;"><label>Brand color</label><input type="color" id="brand_color" value="#1b5e20"></div>
+        <div class="field"><label>Hex</label><input type="text" id="brand_color_hex" value="#1b5e20" placeholder="#1b5e20"></div>
+      </div>
+      <div class="field">
+        <label>Logo upload</label>
+        <div class="logo-drop" id="logo-drop" onclick="document.getElementById('logo-file').click()">
+          <img id="logo-preview" style="display:none;">
+          <div id="logo-placeholder">
+            <div style="font-size:36px;">📷</div>
+            <div style="font-size:13px;font-weight:600;color:#64748b;margin-top:6px;">Click to upload logo</div>
+            <div class="help">PNG / SVG / JPG. Square or wordmark both work.</div>
+          </div>
+          <input type="file" id="logo-file" accept="image/*">
+          <div id="logo-status" style="margin-top:6px;"></div>
+        </div>
+        <input type="hidden" id="logo_url">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">5</span> Services</h2>
+      <div class="sub">One per line. Used in your marketing site Services page and as the canonical list AI assistants reference.</div>
+      <div class="field"><textarea id="services" placeholder="Tree Removal&#10;Tree Pruning &amp; Trimming&#10;Stump Grinding"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">6</span> Service area</h2>
+      <div class="sub">Towns/cities you cover. One per line. Used in your Service Areas page.</div>
+      <div class="field"><textarea id="service_areas" placeholder="Peekskill&#10;Yorktown&#10;Mount Kisco"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">7</span> Social &amp; review links</h2>
+      <div class="sub">Optional. Each one displayed on your marketing site.</div>
+      <div class="row">
+        <div class="field"><label>Google</label><input type="url" id="social_google" placeholder="https://share.google/..."></div>
+        <div class="field"><label>Facebook</label><input type="url" id="social_facebook" placeholder="https://facebook.com/yourpage"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Instagram</label><input type="url" id="social_instagram" placeholder="https://instagram.com/handle"></div>
+        <div class="field"><label>Yelp</label><input type="url" id="social_yelp" placeholder="https://yelp.com/biz/..."></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>X (Twitter)</label><input type="url" id="social_x" placeholder="https://x.com/handle"></div>
+        <div class="field"><label>YouTube</label><input type="url" id="social_youtube" placeholder="https://youtube.com/..."></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">8</span> Licenses &amp; credentials</h2>
+      <div class="sub">One per line. e.g. license numbers, insurance, industry affiliations.</div>
+      <div class="field"><textarea id="licenses" placeholder="Westchester license: WC-32079&#10;Insured (general liability + workers comp)&#10;TCIA member"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">9</span> FAQ <span style="font-weight:400;color:#64748b;font-size:12px;">— optional</span></h2>
+      <div class="sub">Format: <code>Question | Answer</code> per line. Leave empty to use sensible defaults.</div>
+      <div class="field"><textarea id="faq" placeholder="Do you give free estimates? | Yes &mdash; estimates are free with no obligation."></textarea></div>
+    </div>
+
+    <button type="submit" class="btn" id="submit-btn">Save &amp; generate marketing site →</button>
+    <p class="help" style="text-align:center;margin-top:12px;">Saves to your tenant config. You can edit any of these later under <strong>Settings → White-label Branding</strong> and <strong>Website → LLM Info Page</strong>.</p>
+
+  </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function() {
+  // Default Supabase project — overridable via ?sb_url=&sb_key= for self-hosted tenants
+  var qp = new URLSearchParams(location.search);
+  var SB_URL = qp.get('sb_url') || 'https://ltpivkqahvplapyagljt.supabase.co';
+  var SB_KEY = qp.get('sb_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  var TID = qp.get('tenant') || qp.get('tenant_id') || localStorage.getItem('bm-tenant-id') || '';
+
+  if (!TID) {
+    document.getElementById('err').style.display = 'block';
+    document.getElementById('err').textContent = 'Missing ?tenant=<uuid> in URL. Open this page from the BM Marketing Site → Overview tab.';
+    document.getElementById('intake-form').style.display = 'none';
+  }
+
+  var sb = supabase.createClient(SB_URL, SB_KEY, {
+    global: { headers: { 'X-Tenant-ID': TID } }
+  });
+
+  // ── Pre-fill form from existing tenant config ──────────────────────────
+  function load() {
+    if (!TID) return;
+    sb.from('tenants').select('id, name, config').eq('id', TID).single().then(function(res) {
+      if (res.error || !res.data) return;
+      var c = res.data.config || {};
+      var s = c.marketing_site || {};
+      var setVal = function(id, v) { var el = document.getElementById(id); if (el && v != null) el.value = v; };
+      setVal('company_name',         c.company_name || res.data.name);
+      setVal('legal_name',           c.legal_name);
+      setVal('business_short_name',  c.business_short_name);
+      setVal('owner_name',           c.owner_name);
+      setVal('vertical',             c.vertical);
+      setVal('tagline',              s.tagline);
+      setVal('company_phone',        c.company_phone);
+      setVal('company_email',        c.company_email);
+      setVal('company_website',      c.company_website);
+      setVal('address_line1',        c.address_line1);
+      setVal('city',                 c.city);
+      setVal('state',                c.state);
+      setVal('zip',                  c.zip);
+      setVal('brand_color',          c.brand_color || '#1b5e20');
+      setVal('brand_color_hex',      c.brand_color || '#1b5e20');
+      setVal('logo_url',             c.logo_url);
+      if (c.logo_url) {
+        document.getElementById('logo-preview').src = c.logo_url;
+        document.getElementById('logo-preview').style.display = 'block';
+        document.getElementById('logo-placeholder').style.display = 'none';
+        document.getElementById('logo-drop').classList.add('has-logo');
+        document.getElementById('logo-status').innerHTML = '<span class="pill pill-done">Saved</span>';
+      }
+      setVal('services',     (s.services || []).map(function(x){ return typeof x === 'string' ? x : x.name; }).join('\n'));
+      setVal('service_areas',(s.service_areas || []).join('\n'));
+      var soc = s.social_links || {};
+      setVal('social_google',    soc.google);
+      setVal('social_facebook',  soc.facebook);
+      setVal('social_instagram', soc.instagram);
+      setVal('social_yelp',      soc.yelp);
+      setVal('social_x',         soc.x);
+      setVal('social_youtube',   soc.youtube);
+      setVal('licenses', (s.licenses || []).join('\n'));
+      setVal('faq', (s.faq || []).map(function(q){ return q.q + ' | ' + q.a; }).join('\n'));
+    });
+  }
+  load();
+
+  // ── Brand color sync ──────────────────────────────────────────────────
+  document.getElementById('brand_color').addEventListener('input', function(e) {
+    document.getElementById('brand_color_hex').value = e.target.value;
+  });
+  document.getElementById('brand_color_hex').addEventListener('input', function(e) {
+    if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) document.getElementById('brand_color').value = e.target.value;
+  });
+
+  // ── Logo upload ───────────────────────────────────────────────────────
+  document.getElementById('logo-file').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var status = document.getElementById('logo-status');
+    status.innerHTML = '<span class="pill pill-uploading">Uploading…</span>';
+    // Local preview
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      document.getElementById('logo-preview').src = ev.target.result;
+      document.getElementById('logo-preview').style.display = 'block';
+      document.getElementById('logo-placeholder').style.display = 'none';
+      document.getElementById('logo-drop').classList.add('has-logo');
+    };
+    reader.readAsDataURL(file);
+    // Upload to Supabase Storage
+    var ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    var path = TID + '/logo-' + Date.now() + '.' + ext;
+    sb.storage.from('tenant-logos').upload(path, file, { contentType: file.type, upsert: false }).then(function(res) {
+      if (res.error) {
+        status.innerHTML = '<span class="pill" style="background:#fef2f2;color:#b91c1c;">Upload failed: ' + res.error.message + '</span>';
+        return;
+      }
+      var pub = sb.storage.from('tenant-logos').getPublicUrl(res.data.path);
+      var url = pub.data.publicUrl;
+      document.getElementById('logo_url').value = url;
+      status.innerHTML = '<span class="pill pill-done">Uploaded</span>';
+    });
+  });
+
+  // ── Submit ────────────────────────────────────────────────────────────
+  document.getElementById('intake-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    var v = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var lines = function(id) { return v(id).split('\n').map(function(s){return s.trim();}).filter(Boolean); };
+
+    // Build white-label fields
+    var c = {
+      company_name:        v('company_name'),
+      legal_name:          v('legal_name'),
+      business_short_name: v('business_short_name'),
+      owner_name:          v('owner_name'),
+      vertical:            v('vertical'),
+      company_phone:       v('company_phone'),
+      company_email:       v('company_email'),
+      company_website:     v('company_website'),
+      address_line1:       v('address_line1'),
+      city:                v('city'),
+      state:               v('state'),
+      zip:                 v('zip'),
+      brand_color:         v('brand_color') || '#1b5e20',
+      logo_url:            v('logo_url') || ''
+    };
+
+    // Build marketing_site sub-object
+    var social = {};
+    ['google','facebook','instagram','yelp','x','youtube'].forEach(function(k) {
+      var u = v('social_' + k); if (u) social[k] = u;
+    });
+    var faqLines = lines('faq').map(function(line) {
+      var i = line.indexOf('|'); if (i < 0) return null;
+      return { q: line.slice(0,i).trim(), a: line.slice(i+1).trim() };
+    }).filter(Boolean);
+
+    var slugFromName = (c.company_name || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+    var ms = {
+      slug: slugFromName,
+      tagline: v('tagline'),
+      services: lines('services').map(function(n){ return { name: n }; }),
+      service_areas: lines('service_areas'),
+      social_links: social,
+      licenses: lines('licenses'),
+      faq: faqLines
+    };
+
+    // Merge into existing config (don't blow away other keys)
+    sb.from('tenants').select('config').eq('id', TID).single().then(function(res) {
+      if (res.error) { fail(res.error.message); return; }
+      var existing = res.data && res.data.config || {};
+      var merged = Object.assign({}, existing, c);
+      merged.marketing_site = Object.assign({}, existing.marketing_site || {}, ms);
+
+      sb.from('tenants').update({ config: merged }).eq('id', TID).then(function(r2) {
+        if (r2.error) { fail(r2.error.message); return; }
+        // Success
+        document.getElementById('intake-form').style.display = 'none';
+        var s = document.getElementById('success');
+        s.style.display = 'block';
+        document.getElementById('success-name').textContent = c.company_name;
+        document.getElementById('success-marketing-link').href = 'https://clients.branchmanager.app/' + ms.slug + '/';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    function fail(msg) {
+      btn.disabled = false; btn.textContent = 'Save & generate marketing site →';
+      var e = document.getElementById('err');
+      e.style.display = 'block';
+      e.textContent = 'Save failed: ' + msg;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

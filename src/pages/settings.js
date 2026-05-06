@@ -2600,7 +2600,22 @@ var SettingsPage = {
         +     '<input id="wl-brand_color" type="color" value="' + UI.esc(c.brand_color || '#1a3c12') + '" style="width:40px;height:36px;border:1px solid var(--border);border-radius:6px;padding:0;cursor:pointer;">'
         +     '<input id="wl-brand_color_text" value="' + UI.esc(c.brand_color || '#1a3c12') + '" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:ui-monospace,monospace;box-sizing:border-box;">'
         +     '</div></div>'
-        +   f('logo_url', 'Logo URL', c.logo_url, 'public image URL', 'url')
+        +   '<div style="margin-bottom:10px;">'
+        +     '<label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Logo <span style="font-weight:400;color:var(--text-light);font-size:11px;">· upload or paste a public URL</span></label>'
+        +     '<div style="display:flex;gap:10px;align-items:center;">'
+        +       '<div style="width:60px;height:60px;border:1px solid var(--border);border-radius:6px;background:#fafafa;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">'
+        +         (c.logo_url ? '<img id="wl-logo-preview" src="' + UI.esc(c.logo_url) + '" style="max-width:58px;max-height:58px;">' : '<span id="wl-logo-preview" style="font-size:22px;color:var(--text-light);">📷</span>')
+        +       '</div>'
+        +       '<div style="flex:1;display:flex;flex-direction:column;gap:6px;">'
+        +         '<input id="wl-logo_url" type="url" value="' + UI.esc(c.logo_url || '') + '" placeholder="https://…/logo.png" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;">'
+        +         '<div style="display:flex;gap:8px;align-items:center;">'
+        +           '<button type="button" onclick="document.getElementById(\'wl-logo-file\').click()" style="background:#fff;border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">📁 Upload…</button>'
+        +           '<input type="file" id="wl-logo-file" accept="image/*" style="display:none;" onchange="SettingsPage._uploadLogo(this)">'
+        +           '<span id="wl-logo-status" style="font-size:11px;color:var(--text-light);"></span>'
+        +         '</div>'
+        +       '</div>'
+        +     '</div>'
+        +   '</div>'
         +   '<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Vertical</label>'
         +     '<select id="wl-vertical" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;">'
         +     ['tree_service','lawn_care','snow_removal','plumbing','hvac','electrical','cleaning','handyman','other'].map(function(v){
@@ -2656,6 +2671,40 @@ var SettingsPage = {
       + '<div>' + UI.esc(phone) + ' · <a href="mailto:' + UI.esc(email) + '" style="color:' + UI.esc(color) + ';">' + UI.esc(email) + '</a></div>'
       + '<div><a href="' + UI.esc(website) + '" style="color:' + UI.esc(color) + ';">' + UI.esc(websiteDisplay) + '</a></div>'
       + '<div style="font-size:11px;color:#888;margin-top:12px;border-top:1px solid #eee;padding-top:8px;">' + UI.esc(name) + ' · ' + UI.esc(addr) + ' · ' + UI.esc(license) + '</div>';
+  },
+
+  // Upload logo file to tenant-logos Storage bucket and patch wl-logo_url + preview.
+  // Path is {tenant_id}/logo-{timestamp}.{ext} so RLS policy passes.
+  _uploadLogo: function(input) {
+    var file = input && input.files && input.files[0]; if (!file) return;
+    var sb  = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = (DB && DB.getTenantId) ? DB.getTenantId() : null;
+    var statusEl = document.getElementById('wl-logo-status');
+    var setStatus = function(t, color) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = color || 'var(--text-light)'; } };
+    if (!sb || !tid) { setStatus('Cloud sync required', '#b91c1c'); return; }
+    if (file.size > 5 * 1024 * 1024) { setStatus('Max 5 MB', '#b91c1c'); return; }
+    setStatus('Uploading…', '#1e40af');
+
+    // Local preview while uploading
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var prev = document.getElementById('wl-logo-preview');
+      if (prev) {
+        if (prev.tagName === 'IMG') prev.src = ev.target.result;
+        else { var img = document.createElement('img'); img.id = 'wl-logo-preview'; img.src = ev.target.result; img.style.cssText = 'max-width:58px;max-height:58px;'; prev.replaceWith(img); }
+      }
+    };
+    reader.readAsDataURL(file);
+
+    var ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    var path = tid + '/logo-' + Date.now() + '.' + ext;
+    sb.storage.from('tenant-logos').upload(path, file, { contentType: file.type, upsert: false }).then(function(res) {
+      if (res.error) { setStatus('Upload failed: ' + res.error.message, '#b91c1c'); return; }
+      var pub = sb.storage.from('tenant-logos').getPublicUrl(res.data.path);
+      var url = pub.data.publicUrl;
+      var urlInput = document.getElementById('wl-logo_url'); if (urlInput) urlInput.value = url;
+      setStatus('Uploaded — click Save to apply', '#065f46');
+    });
   },
 
   saveBranding: function() {

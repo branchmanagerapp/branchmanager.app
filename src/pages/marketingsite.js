@@ -169,7 +169,16 @@ var MarketingSite = (function() {
       ? '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;">PUBLISHED</span>'
       : '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;">NOT PUBLISHED</span>';
 
+    var intakeUrl = 'onboarding/company.html?tenant=' + encodeURIComponent(_tid() || '');
     return ''
+      + '<div style="background:linear-gradient(135deg,#1a3c12 0%,#2d5a1f 100%);color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">'
+      +   '<div>'
+      +     '<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:4px;">🚀 Quick start</div>'
+      +     '<div style="font-size:15px;">Fill the company intake once &mdash; pre-fills your branding, marketing site, emails, and customer portal in one shot.</div>'
+      +   '</div>'
+      +   '<a href="' + _esc(intakeUrl) + '" target="_blank" rel="noopener" style="background:#fff;color:#1a3c12;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Open intake →</a>'
+      + '</div>'
+
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;">'
       +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
       +     '<h2 style="margin:0;font-size:18px;">🌐 Free Marketing Website</h2>'
