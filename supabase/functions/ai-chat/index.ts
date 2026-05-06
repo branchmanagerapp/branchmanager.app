@@ -14,6 +14,12 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
   }
+  // Health probe — UptimeRobot, audit scripts, and Doug's smoke checks all
+  // hit GET /functions/v1/ai-chat. Without this they get 500 on the JSON
+  // parse below. Return 200 so monitors see green.
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return new Response('ai-chat ok', { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain' } })
+  }
 
   try {
     const { messages, system, model, max_tokens, apiKey } = await req.json()

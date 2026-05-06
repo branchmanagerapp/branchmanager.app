@@ -194,6 +194,37 @@ Deno.serve(async (req) => {
     // Override status with Dialpad's message_status if present
     if (data.message_status) row.status = data.message_status;
     else if (!data.state) row.status = row.direction === "inbound" ? "sms.received" : "sms.sent";
+
+    // Dialpad's initial webhook payload often arrives with status=pending and
+    // NO text body — the message hasn't fully landed in their system yet.
+    // We need to fetch /api/v2/sms/{id} with our API key to get the body.
+    // Requires the new API key with `message_content_export` scope.
+    // Logged 13 empty-body inbound SMS over the past 5 days (2026-04-30 →
+    // 2026-05-03) before this fix — captured-2026-05-05.
+    const dialpadApiKey = Deno.env.get("DIALPAD_API_KEY") || "";
+    const dialpadMsgId = data.id || data.message_id || null;
+    if (!row.body && dialpadMsgId && dialpadApiKey && row.direction === "inbound") {
+      try {
+        const fetchUrl = `https://dialpad.com/api/v2/sms/${dialpadMsgId}`;
+        const fr = await fetch(fetchUrl, {
+          headers: { "Authorization": `Bearer ${dialpadApiKey}`, "Accept": "application/json" },
+        });
+        if (fr.ok) {
+          const fd = await fr.json().catch(() => null);
+          if (fd && (fd.text || fd.message || fd.body)) {
+            row.body = fd.text || fd.message || fd.body;
+            row.metadata = Object.assign({}, row.metadata, { body_fetched: true });
+          }
+        } else {
+          row.metadata = Object.assign({}, row.metadata, {
+            body_fetch_status: fr.status,
+            body_fetch_error: (await fr.text().catch(() => "")).slice(0, 200),
+          });
+        }
+      } catch (e) {
+        row.metadata = Object.assign({}, row.metadata, { body_fetch_error: String(e).slice(0, 200) });
+      }
+    }
   } else if (event.startsWith("voicemail") || looksLikeVoicemail) {
     row.type = "voicemail";
     row.channel = "voicemail";
