@@ -90,11 +90,23 @@ var UI = (function() {
     }
     // Otherwise pop the page stack (full-page dialog -> previous page)
     var stack = window._bmPageStack || [];
-    if (stack.length === 0) return;
+    // v631: if stack is empty BUT there's a dialog still rendered in
+    // #pageContent (the bm-dialog-page wrapper), Cancel/Back was clicked
+    // after page-stack state was lost (reload, edge case). Fall back to
+    // loading the previous page from localStorage, or dashboard.
+    if (stack.length === 0) {
+      var dialogStillThere = document.querySelector('.bm-dialog-page');
+      if (dialogStillThere && typeof loadPage === 'function') {
+        var fallback = 'dashboard';
+        try { var last = localStorage.getItem('bm-last-page'); if (last && last !== window._currentPage) fallback = last; } catch(e){}
+        loadPage(fallback, { force: true });
+      }
+      return;
+    }
     var prev = stack.pop();
     // Prefer reloading the underlying page to get fresh data
     if (prev.page && typeof loadPage === 'function') {
-      try { loadPage(prev.page); return; } catch(e){}
+      try { loadPage(prev.page, { force: true }); return; } catch(e){}
     }
     var pageTitleEl = document.getElementById('pageTitle');
     var pageContentEl = document.getElementById('pageContent');

@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 630; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 631; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -1005,7 +1005,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v630.min.js"></script>
+<script defer src="dist/bm.bundle.v631.min.js"></script>
 
 
 
@@ -1561,13 +1561,20 @@ function BM_contextCreate() {
   QuickCreate.show();
 }
 
-function loadPage(page) {
+function loadPage(page, opts) {
   if (!checkAuth()) return;
+  opts = opts || {};
   // Bulletproof: never wipe an open form when re-loading the SAME page (a sync tick).
   // Different page = user intentionally navigating away → allow.
-  var hasOpenForm = document.getElementById('inv-form') || document.getElementById('quote-form')
-    || document.getElementById('client-form') || document.getElementById('job-form') || document.getElementById('req-form');
-  if (hasOpenForm && page === window._currentPage) return;
+  // v631: opts.force=true bypasses this — used by UI.closeModal() when the
+  // user explicitly clicks Cancel/Back. Without the bypass, closing a form
+  // and re-loading the same underlying page (e.g. ClientsPage) was blocked
+  // because the form was still in the DOM, leaving the form stuck on screen.
+  if (!opts.force) {
+    var hasOpenForm = document.getElementById('inv-form') || document.getElementById('quote-form')
+      || document.getElementById('client-form') || document.getElementById('job-form') || document.getElementById('req-form');
+    if (hasOpenForm && page === window._currentPage) return;
+  }
   // Update URL hash for browser back button
   if (window.location.hash !== '#' + page) {
     history.pushState({ page: page }, '', '#' + page);
