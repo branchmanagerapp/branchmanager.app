@@ -614,20 +614,26 @@ var ClientsPage = {
     }
 
     var html = '<form id="client-form" onsubmit="ClientsPage.save(event, \'' + (id || '') + '\')">'
-      + (id ? '' : '<div style="background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'
-        + '<div style="font-size:13px;color:var(--text-light);">📇 Import from iPhone Contacts (vCard)</div>'
-        + '<button type="button" class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="ClientsPage._importVCard()">Import .vcf</button>'
+      // Light-touch vCard import (only on new clients, no longer a heavy box)
+      + (id ? '' : '<div style="margin-bottom:6px;display:flex;align-items:center;justify-content:flex-end;">'
+        + '<button type="button" onclick="ClientsPage._importVCard()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;">📇 Import from iPhone Contacts</button>'
         + '</div>')
+
+      + UI.formSection('Identity', { tight: true })
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-      + UI.formField('First Name *', 'text', 'c-first', _fn, { required: true, placeholder: 'First' })
-      + UI.formField('Last Name', 'text', 'c-last', _ln, { placeholder: 'Last' })
+      +   UI.formField('First Name *', 'text', 'c-first', _fn, { required: true, placeholder: 'First' })
+      +   UI.formField('Last Name', 'text', 'c-last', _ln, { placeholder: 'Last' })
       + '</div>'
       + UI.formField('Company', 'text', 'c-company', c.company, { placeholder: 'Company name (optional)' })
+
+      + UI.formSection('Contact')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-      + UI.formField('Phone *', 'tel', 'c-phone', c.phone, { required: true, placeholder: '(914) 555-0000' })
-      + UI.formField('Email', 'email', 'c-email', c.email, { placeholder: 'email@example.com' })
+      +   UI.formField('Phone *', 'tel', 'c-phone', c.phone, { required: true, placeholder: '(914) 555-0000' })
+      +   UI.formField('Email', 'email', 'c-email', c.email, { placeholder: 'email@example.com' })
       + '</div>'
       + UI.formField('Address', 'text', 'c-address', c.address, { placeholder: 'Street, City, State ZIP' })
+
+      + UI.formSection('Source & status')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
       +   UI.formField('Status', 'select', 'c-status', c.status || 'lead', { options: [{value:'lead',label:'Lead'},{value:'active',label:'Active'}] })
       +   UI.formField('Lead Source', 'select', 'c-source', c.source || '', { options: [
@@ -648,8 +654,15 @@ var ClientsPage = {
             { value: 'Other',        label: 'Other' }
           ] })
       + '</div>'
-      + UI.formField('Tags', 'text', 'c-tags', (c.tags || []).join(', '), { placeholder: 'residential, commercial (comma separated)' })
-      + UI.formField('Notes', 'textarea', 'c-notes', c.notes, { placeholder: 'Internal notes...' })
+
+      // Less-used fields tucked behind a disclosure so the form looks shorter on mobile
+      + '<details style="margin-top:18px;">'
+      +   '<summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);padding:8px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;">'
+      +     'Tags &amp; Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);">— optional</span>'
+      +   '</summary>'
+      +   UI.formField('Tags', 'text', 'c-tags', (c.tags || []).join(', '), { placeholder: 'residential, commercial (comma separated)' })
+      +   UI.formField('Notes', 'textarea', 'c-notes', c.notes, { placeholder: 'Internal notes...' })
+      + '</details>'
       + '</form>';
 
     UI.showModal(title, html, {

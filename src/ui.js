@@ -161,6 +161,22 @@ var UI = (function() {
   }
 
   // ── Form Builder ──
+  // v621: Jobber-style muted section label for grouping form fields.
+  // Use to break a long form (quote, client intake) into scannable chunks
+  // separated by a thin top border + small caps muted heading.
+  // Pass `hint` for an optional sub-label, `tight` to skip the top margin
+  // (use on the first section after a card opens).
+  function formSection(label, opts) {
+    opts = opts || {};
+    var marginTop = opts.tight ? '0' : '20px';
+    return '<div style="margin:' + marginTop + ' 0 10px;padding-top:' + (opts.tight ? '0' : '14px') + ';'
+      + (opts.tight ? '' : 'border-top:1px solid var(--border);')
+      + 'display:flex;align-items:baseline;justify-content:space-between;gap:8px;">'
+      +   '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);">' + esc(label) + '</div>'
+      +   (opts.hint ? '<div style="font-size:11px;color:var(--text-light);">' + esc(opts.hint) + '</div>' : '')
+      + '</div>';
+  }
+
   function formField(label, type, id, value, options) {
     options = options || {};
     var html = '<div class="form-group">';
@@ -302,6 +318,7 @@ var UI = (function() {
     timeAgo: timeAgo,
     phone: phone,
     formField: formField,
+    formSection: formSection,
     statCard: statCard,
     emptyState: emptyState,
     confirm: confirm,
