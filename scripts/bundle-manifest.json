@@ -79,6 +79,7 @@
     "src/pages/workflow.js",
     "src/pages/reviews.js",
     "src/pages/socialbranch.js",
+    "src/pages/marketingsite.js",
     "src/pages/timetrack.js",
     "src/pages/checklists.js",
     "src/pages/visits.js",

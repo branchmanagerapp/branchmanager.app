@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 609; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 610; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -915,6 +915,7 @@
       <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
       <!-- v384: marketing / campaigns / referrals / reviews / reviewtools merged into SocialBranch (renamed "Marketing" in the sidebar). Deep links #marketing #campaigns #referrals #reviews #reviewtools still resolve to their standalone page modules. -->
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
+      <button class="nav-item" data-page="marketingsite"><span class="icon"><i data-lucide="globe" class="li"></i></span> Website</button>
       <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="wallet" class="li"></i></span> Payroll</button>
       <!-- v383: My Pay (employeecenter) merged under Payroll — link at bottom of payroll page. Deep link via #employeecenter still works. -->
       <!-- v419: Operations moved up next to Invoices. -->
@@ -1001,7 +1002,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v609.min.js"></script>
+<script defer src="dist/bm.bundle.v610.min.js"></script>
 
 
 
@@ -1422,6 +1423,7 @@ var pageRenderers = {
   insights: function() { return InsightsPage.render(); },
   reviews: function() { return ReviewsPage.render(); },
   socialbranch: function() { return SocialBranch.render(); },
+  marketingsite: function() { return MarketingSite.render(); },
   team: function() { return TeamHub.render(); },
   operations: function() { return OperationsHub.render(); },
   timesheet: function() { return TimeTrackPage.render(); },
