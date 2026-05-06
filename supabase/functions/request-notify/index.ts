@@ -120,8 +120,29 @@ serve(async (req: Request) => {
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const b = await loadTenantBranding(sb, tenantId);
 
-    const data = await req.json();
-    const { name, phone, email, address, service, details, source } = data;
+    // Parse body — support BOTH application/json (BM app, internal callers)
+    // AND application/x-www-form-urlencoded / multipart/form-data so the
+    // BM-rendered marketing-site contact form (a plain <form method="POST">)
+    // works without JS. Browsers default to urlencoded for HTML form submits.
+    let data: Record<string, any> = {};
+    const ct = (req.headers.get('content-type') || '').toLowerCase();
+    if (ct.includes('application/json')) {
+      data = await req.json();
+    } else if (ct.includes('application/x-www-form-urlencoded') || ct.includes('multipart/form-data')) {
+      const fd = await req.formData();
+      fd.forEach((v, k) => { data[k] = typeof v === 'string' ? v : (v as File).name; });
+    } else {
+      // Best-effort: try JSON, then urlencoded text
+      const raw = await req.text();
+      try { data = JSON.parse(raw); }
+      catch { try { data = Object.fromEntries(new URLSearchParams(raw)); } catch { data = {}; } }
+    }
+    // Marketing-site form uses 'description' + 'property'; keep legacy
+    // 'service' / 'details' / 'address' working for older callers.
+    const { name, phone, email, source } = data;
+    const address = data.address || data.property || '';
+    const service = data.service || '';
+    const details = data.details || data.description || '';
 
     const nameClean = (name || '').toString().trim();
     const phoneDigits = (phone || '').toString().replace(/\D/g, '');
