@@ -271,6 +271,15 @@ var DashboardPage = {
       html += TaskReminders.getDashboardWidget();
     }
 
+    // v619: 2-column dashboard layout — main (workflow + lead sources) /
+    // rail (receivables, inbox, action alerts). Single column on mobile.
+    html += '<style>'
+      + '.dash-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;align-items:start;}'
+      + '.dash-main,.dash-rail{min-width:0;}'
+      + '@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}'
+      + '</style>';
+    html += '<div class="dash-grid"><div class="dash-main">';
+
     html += '<h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Workflow</h3>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
 
@@ -325,6 +334,33 @@ var DashboardPage = {
       + '</div>';
 
     html += '</div>';
+
+    // v619: workflow grid lives in main column; everything below moves to
+    // the right rail (Receivables first, then Inbox, then action alerts).
+    html += '</div><div class="dash-rail">';
+
+    // Receivables panel — top of rail (most-glanced cash status)
+    var rcvUnpaid = DB.invoices.getAll().filter(function(i) { return (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial') && (i.balance || i.total || 0) > 0; });
+    var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
+    if (rcvUnpaid.length > 0) {
+      rcvUnpaid.sort(function(a, b) { return (b.balance || b.total || 0) - (a.balance || a.total || 0); });
+      html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+        + '<h3 style="font-size:16px;margin:0;">Receivables</h3>'
+        + '<span style="font-size:12px;color:var(--text-light);">' + rcvUnpaid.length + ' client' + (rcvUnpaid.length !== 1 ? 's' : '') + ' owe you</span></div>'
+        + '<div style="font-size:28px;font-weight:800;color:var(--green-dark);margin-bottom:16px;">' + UI.moneyInt(rcvTotalOwed) + '</div>';
+      rcvUnpaid.slice(0, 6).forEach(function(inv) {
+        var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
+        var lateColor = daysLate > 30 ? '#dc3545' : daysLate > 0 ? '#e65100' : 'var(--text-light)';
+        html += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+          + '<span style="font-size:14px;font-weight:600;">' + UI.esc(inv.clientName || '') + '</span>'
+          + '<div style="text-align:right;">'
+          + '<span style="font-weight:700;">' + UI.money(inv.balance || inv.total) + '</span>'
+          + (daysLate > 0 ? '<span style="font-size:11px;color:' + lateColor + ';margin-left:8px;">' + daysLate + 'd late</span>' : '')
+          + '</div></div>';
+      });
+      html += '</div>';
+    }
 
     // ── Inbox — unified "what needs your attention" surface ────────────────
     // Replaces the old two-card Ready-to-Convert / Ready-to-Invoice strip
@@ -544,28 +580,9 @@ var DashboardPage = {
       html += '</div>';
     }
 
-    // Receivables panel
-    var rcvUnpaid = DB.invoices.getAll().filter(function(i) { return (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial') && (i.balance || i.total || 0) > 0; });
-    var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
-    if (rcvUnpaid.length > 0) {
-      rcvUnpaid.sort(function(a, b) { return (b.balance || b.total || 0) - (a.balance || a.total || 0); });
-      html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-        + '<h3 style="font-size:16px;margin:0;">Receivables</h3>'
-        + '<span style="font-size:12px;color:var(--text-light);">' + rcvUnpaid.length + ' client' + (rcvUnpaid.length !== 1 ? 's' : '') + ' owe you</span></div>'
-        + '<div style="font-size:28px;font-weight:800;color:var(--green-dark);margin-bottom:16px;">' + UI.moneyInt(rcvTotalOwed) + '</div>';
-      rcvUnpaid.slice(0, 6).forEach(function(inv) {
-        var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
-        var lateColor = daysLate > 30 ? '#dc3545' : daysLate > 0 ? '#e65100' : 'var(--text-light)';
-        html += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
-          + '<span style="font-size:14px;font-weight:600;">' + UI.esc(inv.clientName || '') + '</span>'
-          + '<div style="text-align:right;">'
-          + '<span style="font-weight:700;">' + UI.money(inv.balance || inv.total) + '</span>'
-          + (daysLate > 0 ? '<span style="font-size:11px;color:' + lateColor + ';margin-left:8px;">' + daysLate + 'd late</span>' : '')
-          + '</div></div>';
-      });
-      html += '</div>';
-    }
+    // v619: Receivables moved up to top of rail; close rail + grid before
+    // the Lead Sources chart (which renders full-width below).
+    html += '</div></div>'; // close .dash-rail + .dash-grid
 
     // Lead Sources — small widget showing where new clients have been coming from (last 90 days)
     try {
