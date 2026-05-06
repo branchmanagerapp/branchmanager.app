@@ -144,6 +144,14 @@ function siteFooter(biz: string, phone: string, email: string, base: string): st
 </footer>`;
 }
 
+// Per-page copy override helper
+function pageCopy(s: SiteCfg, page: string, field: string, fallback: string): string {
+  const pages = s.pages || {};
+  const p = pages[page] || {};
+  const v = p[field];
+  return (v != null && String(v).length) ? String(v) : fallback;
+}
+
 // ── Render: HOME ───────────────────────────────────────────────────────
 function renderHome(t: TenantRow, base: string): string {
   const c: Cfg = t.config || {};
@@ -158,18 +166,21 @@ function renderHome(t: TenantRow, base: string): string {
   const services: any[] = (s.services || []).filter(Boolean);
   const areas: string[] = s.service_areas || [];
 
+  const heroTitle = pageCopy(s, "home", "hero_title", biz);
+  const heroSub   = pageCopy(s, "home", "hero_sub", tagline);
+  const ctaText   = pageCopy(s, "home", "cta_text", phone || "Get a Free Estimate");
   const heroCta = phone
-    ? `<a class="cta" href="tel:${esc(phone.replace(/[^0-9]/g, ""))}">${esc(phone)}</a>`
-    : `<a class="cta" href="${esc(base)}contact/">Get a Free Estimate</a>`;
+    ? `<a class="cta" href="tel:${esc(phone.replace(/[^0-9]/g, ""))}">${esc(ctaText)}</a>`
+    : `<a class="cta" href="${esc(base)}contact/">${esc(ctaText)}</a>`;
 
   return `<!DOCTYPE html><html lang="en"><head>
-${pageMeta("home", biz, web, tagline)}
+${pageMeta("home", biz, web, heroSub)}
 ${commonStyles(brand)}
 </head><body>
 ${siteHeader(biz, logo, "home", base)}
 <div class="wrap">
-  <h1>${esc(biz)}</h1>
-  <p class="lead">${esc(tagline)}</p>
+  <h1>${esc(heroTitle)}</h1>
+  <p class="lead">${esc(heroSub)}</p>
   ${heroCta}
 
   ${services.length ? `<h2>What we do</h2>
@@ -207,6 +218,7 @@ function renderServices(t: TenantRow, base: string): string {
   const logo = c.logo_url || "";
   const services: any[] = (s.services || []).filter(Boolean);
 
+  const intro = pageCopy(s, "services", "intro", `Everything ${biz} offers. Call for anything you don’t see listed — we may still handle it.`);
   return `<!DOCTYPE html><html lang="en"><head>
 ${pageMeta("services", biz, web, `Services offered by ${biz}.`)}
 ${commonStyles(brand)}
@@ -214,7 +226,7 @@ ${commonStyles(brand)}
 ${siteHeader(biz, logo, "services", base)}
 <div class="wrap">
   <h1>Services</h1>
-  <p class="lead">Everything ${esc(biz)} offers. Call for anything you don&rsquo;t see listed &mdash; we may still handle it.</p>
+  <p class="lead">${esc(intro)}</p>
   ${services.length ? `<div class="cards">
     ${services.map((x) => {
       const n = typeof x === "string" ? x : x.name;
@@ -239,7 +251,10 @@ function renderAreas(t: TenantRow, base: string): string {
   const logo = c.logo_url || "";
   const areas: string[] = s.service_areas || [];
   const baseArea = c.city ? `${c.city}${c.state ? ", " + c.state : ""}` : "";
-
+  const introDefault = baseArea
+    ? `Based in ${baseArea}. We service ${areas.length} towns across the surrounding region.`
+    : `We service ${areas.length} towns.`;
+  const intro = pageCopy(s, "areas", "intro", introDefault);
   return `<!DOCTYPE html><html lang="en"><head>
 ${pageMeta("areas", biz, web, `Service areas covered by ${biz}.`)}
 ${commonStyles(brand)}
@@ -247,7 +262,7 @@ ${commonStyles(brand)}
 ${siteHeader(biz, logo, "areas", base)}
 <div class="wrap">
   <h1>Service Areas</h1>
-  ${baseArea ? `<p class="lead">Based in ${esc(baseArea)}. We service ${areas.length} towns across the surrounding region.</p>` : `<p class="lead">We service ${areas.length} towns.</p>`}
+  <p class="lead">${esc(intro)}</p>
   ${areas.length ? `<div class="pillrow">
     ${areas.map((a) => `<span id="${esc(a.toLowerCase().replace(/\s+/g, "-"))}">${esc(a)}</span>`).join("")}
   </div>
@@ -273,6 +288,7 @@ function renderContact(t: TenantRow, base: string): string {
   // Public form posts to BM's request-notify edge function (existing public endpoint)
   const reqUrl = `${SUPABASE_URL}/functions/v1/request-notify`;
 
+  const intro = pageCopy(s, "contact", "intro", "Free estimates, no obligation. Most inquiries answered within 2 hours during business hours.");
   return `<!DOCTYPE html><html lang="en"><head>
 ${pageMeta("contact", biz, web, `Contact ${biz} for a free estimate.`)}
 ${commonStyles(brand)}
@@ -280,7 +296,7 @@ ${commonStyles(brand)}
 ${siteHeader(biz, logo, "contact", base)}
 <div class="wrap">
   <h1>Contact ${esc(biz)}</h1>
-  <p class="lead">Free estimates, no obligation. Most inquiries answered within 2 hours during business hours.</p>
+  <p class="lead">${esc(intro)}</p>
 
   <div class="cards">
     <div class="card">

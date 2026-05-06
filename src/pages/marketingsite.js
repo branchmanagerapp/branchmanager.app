@@ -271,6 +271,32 @@ var MarketingSite = (function() {
       +     _esc(faq.map(function(q) { return q.q + ' | ' + q.a; }).join('\n'))
       +   '</textarea>'
 
+      +   (function() {
+            var pages = (s.pages || {});
+            var p = function(name) { return pages[name] || {}; };
+            var ta = function(id, ph, val) {
+              return '<textarea id="ms-page-' + id + '" placeholder="' + _esc(ph) + '" style="width:100%;height:62px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;">' + _esc(val || '') + '</textarea>';
+            };
+            return ''
+              + '<details style="margin-top:18px;border:1px solid var(--border);border-radius:8px;background:#fafafa;">'
+              + '<summary style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);">Per-page copy overrides <span style="font-weight:400;text-transform:none;">&mdash; optional, falls back to defaults</span></summary>'
+              + '<div style="padding:14px;">'
+              +   _section('Home &mdash; hero title (default: business name)')
+              +   '<input id="ms-page-home_hero_title" type="text" value="' + _esc(p('home').hero_title || '') + '" placeholder="' + _esc(_cfg.company_name || _cfg._tenantName || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;">'
+              +   _section('Home &mdash; hero sub (default: tagline)')
+              +   ta('home_hero_sub', 'Trusted by homeowners across…', p('home').hero_sub)
+              +   _section('Home &mdash; CTA button text')
+              +   '<input id="ms-page-home_cta_text" type="text" value="' + _esc(p('home').cta_text || '') + '" placeholder="Get a Free Estimate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;">'
+              +   _section('Services &mdash; intro')
+              +   ta('services_intro', 'Everything we offer…', p('services').intro)
+              +   _section('Service Areas &mdash; intro')
+              +   ta('areas_intro', 'Based in {city}, we service {n} towns…', p('areas').intro)
+              +   _section('Contact &mdash; intro')
+              +   ta('contact_intro', 'Free estimates, no obligation…', p('contact').intro)
+              + '</div>'
+              + '</details>';
+          })()
+
       +   '<div style="margin-top:18px;display:flex;gap:8px;">'
       +     '<button onclick="MarketingSite._save()" style="background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Save &amp; refresh preview</button>'
       +     '<button onclick="MarketingSite._download()" style="background:#fff;border:1px solid var(--border);padding:10px 16px;border-radius:6px;font-size:13px;cursor:pointer;">Download HTML</button>'
@@ -557,6 +583,21 @@ var MarketingSite = (function() {
       var i = line.indexOf('|'); if (i < 0) return null;
       return { q: line.slice(0, i).trim(), a: line.slice(i + 1).trim() };
     }).filter(Boolean);
+    // Per-page copy overrides (optional — only persist non-empty values)
+    var pages = _site.pages || {};
+    var setPage = function(name, field, val) {
+      val = (val || '').trim();
+      if (!pages[name]) pages[name] = {};
+      if (val) pages[name][field] = val;
+      else delete pages[name][field];
+    };
+    setPage('home',     'hero_title', v('ms-page-home_hero_title'));
+    setPage('home',     'hero_sub',   v('ms-page-home_hero_sub'));
+    setPage('home',     'cta_text',   v('ms-page-home_cta_text'));
+    setPage('services', 'intro',      v('ms-page-services_intro'));
+    setPage('areas',    'intro',      v('ms-page-areas_intro'));
+    setPage('contact',  'intro',      v('ms-page-contact_intro'));
+    _site.pages = pages;
   }
 
   // ── Public API ────────────────────────────────────────────────────────
