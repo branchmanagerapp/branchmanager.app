@@ -164,10 +164,15 @@
 
   // ── Price Comparison Page ──
   QuotesPage._showPriceComparison = function() {
+    // v642: was iterating .quote-item-row which is the Species/Location row,
+    // not the wrapper — it has no .q-item-qty or .q-item-rate inside, so
+    // querySelector('.q-item-qty').value crashed. Use .q-item-wrap.
     var perTreeTotal = 0;
-    document.querySelectorAll('.quote-item-row').forEach(function(row) {
-      var qty = parseFloat(row.querySelector('.q-item-qty').value) || 0;
-      var rate = parseFloat(row.querySelector('.q-item-rate').value) || 0;
+    document.querySelectorAll('.q-item-wrap').forEach(function(wrap) {
+      var qtyEl = wrap.querySelector('.q-item-qty');
+      var rateEl = wrap.querySelector('.q-item-rate');
+      var qty = qtyEl ? (parseFloat(qtyEl.value) || 0) : 0;
+      var rate = rateEl ? (parseFloat(rateEl.value) || 0) : 0;
       perTreeTotal += qty * rate;
     });
 
@@ -206,9 +211,14 @@
   };
 
   QuotesPage._usePrice = function(price) {
+    // v642: same .quote-item-row → .q-item-wrap fix as above.
     var currentTotal = 0;
-    document.querySelectorAll('.quote-item-row').forEach(function(row) {
-      currentTotal += (parseFloat(row.querySelector('.q-item-qty').value) || 0) * (parseFloat(row.querySelector('.q-item-rate').value) || 0);
+    document.querySelectorAll('.q-item-wrap').forEach(function(wrap) {
+      var qtyEl = wrap.querySelector('.q-item-qty');
+      var rateEl = wrap.querySelector('.q-item-rate');
+      var qty = qtyEl ? (parseFloat(qtyEl.value) || 0) : 0;
+      var rate = rateEl ? (parseFloat(rateEl.value) || 0) : 0;
+      currentTotal += qty * rate;
     });
 
     if (Math.abs(currentTotal - price) < 1) { UI.toast('Price already matches'); return; }
@@ -217,13 +227,17 @@
     if (diff > 0) {
       QuotesPage.addItem();
       setTimeout(function() {
-        var rows = document.querySelectorAll('.quote-item-row');
-        var last = rows[rows.length - 1];
+        var wraps = document.querySelectorAll('.q-item-wrap');
+        var last = wraps[wraps.length - 1];
         if (last) {
-          last.querySelector('.q-item-service').value = 'Price adjustment';
-          last.querySelector('.q-item-desc').value = 'Adjusted to match production estimate';
-          last.querySelector('.q-item-qty').value = '1';
-          last.querySelector('.q-item-rate').value = diff.toFixed(2);
+          var svc = last.querySelector('.q-item-service');
+          var desc = last.querySelector('.q-item-desc');
+          var qty = last.querySelector('.q-item-qty');
+          var rate = last.querySelector('.q-item-rate');
+          if (svc) svc.value = 'Price adjustment';
+          if (desc) desc.value = 'Adjusted to match production estimate';
+          if (qty) qty.value = '1';
+          if (rate) rate.value = diff.toFixed(2);
         }
         QuotesPage.calcTotal();
         UI.toast('Price adjusted to ' + UI.money(price));

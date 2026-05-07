@@ -8,9 +8,29 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 641; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 642; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
+
+  // v642: ?welcome=<tenant_id> — friend opens a share link from
+  // SettingsPage._provisionTenant. Pin them to the new tenant_id, stash
+  // welcome name for a one-time splash, then strip params and continue.
+  // Runs BEFORE the version-check fetch so a fresh visitor gets pinned
+  // even if the SW redirects.
+  try {
+    var _qs = new URLSearchParams(location.search);
+    var _welcomeTid = _qs.get('welcome');
+    if (_welcomeTid && /^[0-9a-f-]{36}$/i.test(_welcomeTid)) {
+      localStorage.setItem('bm-tenant-id', _welcomeTid);
+      var _wname = _qs.get('name') || '';
+      if (_wname) localStorage.setItem('bm-welcome-name', _wname);
+      localStorage.setItem('bm-welcome-show', '1');
+      _qs.delete('welcome'); _qs.delete('name');
+      var _newSearch = _qs.toString();
+      history.replaceState({}, '', location.pathname + (_newSearch ? '?' + _newSearch : ''));
+    }
+  } catch(e) {}
+
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
   if (/[?&]reset=/.test(location.search)) return;
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
@@ -1005,7 +1025,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v641.min.js"></script>
+<script defer src="dist/bm.bundle.v642.min.js"></script>
 
 
 
@@ -2676,6 +2696,26 @@ document.addEventListener('DOMContentLoaded', function() {
 if (typeof lucide !== 'undefined') lucide.createIcons();
 // Re-init after page loads (for dynamically added icons)
 document.addEventListener('DOMContentLoaded', function() { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+
+// v642: one-time welcome splash for friends who arrived via a ?welcome= share link
+document.addEventListener('DOMContentLoaded', function() {
+  if (localStorage.getItem('bm-welcome-show') !== '1') return;
+  var name = localStorage.getItem('bm-welcome-name') || '';
+  localStorage.removeItem('bm-welcome-show');
+  setTimeout(function() {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:420px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.2);">'
+      + '<div style="font-size:42px;margin-bottom:8px;">🌳</div>'
+      + '<div style="font-size:20px;font-weight:800;margin-bottom:6px;">Welcome to Branch Manager' + (name ? ', ' + name.replace(/[<>"]/g, '') : '') + '!</div>'
+      + '<div style="font-size:14px;color:#666;line-height:1.5;margin-bottom:16px;">This is your own private workspace. Add a few clients, send a test quote, see how the workflow feels — none of it is visible to anyone else.</div>'
+      + '<button id="welcome-close" style="background:#1a3c12;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:700;cursor:pointer;">Start exploring →</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+    document.getElementById('welcome-close').onclick = function() { ov.remove(); };
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+  }, 600);
+});
 // Restore sidebar state
 if (localStorage.getItem('bm-sidebar-collapsed') === 'true') {
   document.getElementById('sidebar').classList.add('collapsed');

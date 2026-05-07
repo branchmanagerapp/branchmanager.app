@@ -1578,30 +1578,30 @@ var QuotesPage = {
   },
 
   _onServiceChange: function(sel) {
-    var row = sel.closest('.quote-item-row');
+    // v642: was closest('.quote-item-row') — but the service input lives in its
+    // own .form-group OUTSIDE that row (the row only holds Species + Location).
+    // Sentry caught the resulting null deref. Use .q-item-wrap which contains
+    // the whole line item.
+    var wrap = sel && sel.closest && sel.closest('.q-item-wrap');
+    if (!wrap) return;
     var svc = sel.value;
-    var rateInput = row.querySelector('.q-item-rate');
-    var descInput = row.querySelector('.q-item-desc');
+    var rateInput = wrap.querySelector('.q-item-rate');
+    var descInput = wrap.querySelector('.q-item-desc');
+    if (!rateInput || !descInput) return;
 
-    // Check for measurement-based pricing
     var pricing = QuotesPage._servicePricing[svc];
     if (pricing) {
       var measurement = prompt(pricing.prompt);
       if (measurement && !isNaN(parseFloat(measurement))) {
         var m = parseFloat(measurement);
-        var price = Math.round(m * pricing.rate);
-        rateInput.value = price;
+        rateInput.value = Math.round(m * pricing.rate);
         if (!descInput.value) descInput.value = pricing.desc(m);
       }
     } else {
-      // Use default flat rate if set
       var rate = QuotesPage._defaultRates[svc];
-      if (rate && rate > 0) {
-        rateInput.value = rate;
-      }
+      if (rate && rate > 0) rateInput.value = rate;
     }
 
-    // Auto-fill description from service catalog if still empty
     if (!descInput.value) {
       var services = DB.services.getAll();
       var match = services.find(function(s) { return s.name === svc; });

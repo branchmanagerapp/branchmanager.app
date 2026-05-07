@@ -1575,6 +1575,28 @@ var SettingsPage = {
 
     // Templates & Automation moved up into the BUSINESS meta-group.
 
+    // ─── White-label: Spin up demo tenant (v642) ─────────────────────────
+    // Provisions a fresh, isolated tenant via the provision-tenant edge fn
+    // and produces a share URL the friend opens to start using BM as if it
+    // were their own business. Token stored in localStorage so Doug only
+    // pastes once.
+    html += cardOpen('🎁 Spin up demo tenant for a friend', { icon: 'gift' })
+      +     '<p style="font-size:13px;color:var(--text-light);margin:0 0 14px;">Generates a brand-new isolated tenant with its own data — your friend signs in to a clean, white-labelled BM that won\'t see SNT data and SNT won\'t see theirs.</p>'
+      +     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+      +       '<input id="prov-business-name" placeholder="Business name *" style="padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;">'
+      +       '<input id="prov-owner-name" placeholder="Owner name (optional)" style="padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;">'
+      +     '</div>'
+      +     '<div style="display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:12px;">'
+      +       '<input id="prov-owner-email" type="email" placeholder="Owner email (optional)" style="padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;">'
+      +       '<input id="prov-brand-color" type="color" value="#1a3c12" title="Brand color" style="padding:4px;border:1px solid var(--border);border-radius:6px;height:42px;">'
+      +     '</div>'
+      +     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
+      +       '<button onclick="SettingsPage._provisionTenant()" class="btn btn-primary" style="font-size:13px;">Generate share link</button>'
+      +       '<button onclick="SettingsPage._setProvisionToken()" class="btn btn-outline" style="font-size:12px;">' + (localStorage.getItem('bm-provision-token') ? 'Change' : 'Set') + ' provision token</button>'
+      +     '</div>'
+      +     '<div id="prov-result" style="margin-top:14px;display:none;"></div>'
+      + cardClose();
+
     // ─── Cloud Health (v550, Apr 30) ─────────────────────────────────────
     // Built after the "fleet stuck" + quote #496 silent-cloud-failure
     // incidents. One-click diagnostic for: Supabase auth state, per-table
@@ -1609,6 +1631,61 @@ var SettingsPage = {
 
     html += '</div>';
     return html;
+  },
+
+  // Provision-tenant token — stored locally only. Doug pastes once.
+  _setProvisionToken: function() {
+    var cur = localStorage.getItem('bm-provision-token') || '';
+    var v = prompt('Paste your PROVISION_TENANT_TOKEN (held in Supabase secrets — Doug only):', cur);
+    if (v === null) return;
+    v = v.trim();
+    if (!v) { localStorage.removeItem('bm-provision-token'); UI.toast('Token cleared'); }
+    else { localStorage.setItem('bm-provision-token', v); UI.toast('Token saved'); }
+    loadPage('settings');
+  },
+
+  _provisionTenant: function() {
+    var name = (document.getElementById('prov-business-name') || {}).value || '';
+    var owner = (document.getElementById('prov-owner-name') || {}).value || '';
+    var email = (document.getElementById('prov-owner-email') || {}).value || '';
+    var color = (document.getElementById('prov-brand-color') || {}).value || '#1a3c12';
+    name = name.trim();
+    if (name.length < 2) { UI.toast('Business name required', 'error'); return; }
+
+    var token = localStorage.getItem('bm-provision-token') || '';
+    if (!token) { UI.toast('Set provision token first', 'error'); return; }
+
+    var out = document.getElementById('prov-result');
+    if (out) { out.style.display = 'block'; out.innerHTML = '<div style="color:var(--text-light);font-size:13px;">⏳ Spinning up tenant…</div>'; }
+
+    var url = (typeof SupabaseDB !== 'undefined' && SupabaseDB.URL ? SupabaseDB.URL : 'https://ltpivkqahvplapyagljt.supabase.co') + '/functions/v1/provision-tenant';
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Provision-Token': token },
+      body: JSON.stringify({ businessName: name, ownerName: owner, ownerEmail: email, brandColor: color })
+    })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+    .then(function(res) {
+      if (!res.ok || !res.body || !res.body.ok) {
+        var msg = (res.body && (res.body.error || res.body.detail)) || 'Failed';
+        if (out) out.innerHTML = '<div style="color:#c62828;font-size:13px;">❌ ' + UI.esc(msg) + '</div>';
+        return;
+      }
+      var share = res.body.share_url;
+      if (out) {
+        out.innerHTML = '<div style="background:var(--green-bg);border:1px solid var(--green-light);border-radius:8px;padding:14px;">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--green-dark);margin-bottom:8px;">✅ Tenant provisioned: ' + UI.esc(res.body.name) + '</div>'
+          + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">'
+          +   '<input id="prov-share-url" value="' + UI.esc(share) + '" readonly style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff;">'
+          +   '<button onclick="navigator.clipboard.writeText(document.getElementById(\'prov-share-url\').value).then(function(){UI.toast(\'Copied\');})" class="btn btn-primary" style="font-size:12px;">Copy</button>'
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--text-light);">Tenant ID: <code>' + UI.esc(res.body.tenant_id) + '</code></div>'
+          + '</div>';
+      }
+    })
+    .catch(function(e) {
+      if (out) out.innerHTML = '<div style="color:#c62828;font-size:13px;">❌ ' + UI.esc(e.message || String(e)) + '</div>';
+    });
   },
 
   // Cloud Health diagnostic — renders SettingsPage's #cloud-health-out box
