@@ -277,6 +277,79 @@ var UI = (function() {
     });
   }
 
+  // v634: searchable client picker — replaces the no-search native <select>
+  // that became unusable as the client list grew.
+  //
+  // Bind: UI.bindClientPicker(inputId, { clients: [...], onPick: function(client){...} })
+  // The input doubles as filter (debounced) + display ("Picked: Doug Brown").
+  // Clear via the X button — restores empty state and calls onPick(null).
+  function bindClientPicker(inputId, opts) {
+    opts = opts || {};
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    if (input._clientPickerBound) return;
+    input._clientPickerBound = true;
+    var clients = (opts.clients || []).slice();
+
+    // Build dropdown wrapper
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;box-shadow:0 4px 12px rgba(0,0,0,.08);z-index:30;max-height:280px;overflow-y:auto;display:none;';
+    var parent = input.parentNode;
+    if (parent && getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+    parent.appendChild(wrap);
+
+    function close() { wrap.style.display = 'none'; }
+
+    function render(matches) {
+      if (!matches.length) { close(); return; }
+      wrap.innerHTML = matches.slice(0, 8).map(function(c, i) {
+        var line2 = [c.phone, (c.address || '').split(',')[0]].filter(Boolean).join(' · ');
+        return '<div data-cid="' + esc(c.id) + '" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);">'
+          + '<div style="font-size:14px;font-weight:600;">' + esc(c.name || '(no name)') + '</div>'
+          + (line2 ? '<div style="font-size:12px;color:var(--text-light);">' + esc(line2) + '</div>' : '')
+          + '</div>';
+      }).join('');
+      wrap.style.display = 'block';
+    }
+
+    function filter(q) {
+      q = (q || '').toLowerCase().trim();
+      if (!q) { close(); return; }
+      var matches = clients.filter(function(c) {
+        if (!c) return false;
+        return ((c.name || '').toLowerCase().indexOf(q) >= 0)
+          || ((c.phone || '').toLowerCase().indexOf(q) >= 0)
+          || ((c.email || '').toLowerCase().indexOf(q) >= 0)
+          || ((c.address || '').toLowerCase().indexOf(q) >= 0);
+      });
+      render(matches);
+    }
+
+    var debounce;
+    input.addEventListener('input', function() {
+      clearTimeout(debounce);
+      debounce = setTimeout(function() { filter(input.value); }, 100);
+    });
+    input.addEventListener('focus', function() { if (input.value) filter(input.value); });
+
+    wrap.addEventListener('mousedown', function(e) {
+      var target = e.target.closest('[data-cid]');
+      if (!target) return;
+      e.preventDefault(); // keep input focus so blur doesn't close
+      var cid = target.getAttribute('data-cid');
+      var c = clients.find(function(x) { return x.id === cid; });
+      if (c) {
+        input.value = c.name;
+        close();
+        if (typeof opts.onPick === 'function') opts.onPick(c);
+      }
+    });
+
+    document.addEventListener('mousedown', function(e) {
+      if (e.target !== input && !wrap.contains(e.target)) close();
+    });
+  }
+
   // v621: Jobber-style muted section label for grouping form fields.
   // Use to break a long form (quote, client intake) into scannable chunks
   // separated by a thin top border + small caps muted heading.
@@ -457,6 +530,7 @@ var UI = (function() {
     formField: formField,
     formSection: formSection,
     bindAddressAutocomplete: bindAddressAutocomplete,
+    bindClientPicker: bindClientPicker,
     statCard: statCard,
     emptyState: emptyState,
     confirm: confirm,

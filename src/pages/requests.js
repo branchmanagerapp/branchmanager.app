@@ -490,40 +490,84 @@ var RequestsPage = {
     var r = editId ? DB.requests.getById(editId) : null;
     var allClients = [];
     try { allClients = JSON.parse(localStorage.getItem('bm-clients') || '[]'); } catch(e) {}
-    var clientOptions = [{ value: '', label: '— New client (fill in below) —' }]
-      .concat(allClients.map(function(c) { return { value: c.id, label: c.name + (c.address ? ' · ' + c.address.split(',')[0] : '') }; }));
 
     var services = ['','Tree Removal','Tree Pruning','Stump Grinding','Emergency Tree Work','Tree Assessment','Cabling & Bracing',
       'Chipping / Brush Removal','Lot Clearing','Firewood','Gutter Cleaning','Spring Clean Up','Snow Removal','Other'];
 
+    // v634: searchable client picker — replaces the unscrollable native <select>.
+    // Once a client is picked, the manual name/phone/email block hides
+    // (those fields auto-populate from the selected client).
+    var pickerHtml = r ? '' : (
+      UI.formSection('Client', { tight: true })
+      + '<input type="hidden" id="r-clientId" value="">'
+      + '<div class="form-group">'
+      +   '<input type="text" id="r-client-search" placeholder="🔍 Search existing client by name, phone, or address — or type new name below" autocomplete="off">'
+      + '</div>'
+      + '<div id="r-picked-banner" style="display:none;background:#f0f9ff;border:1px solid #93c5fd;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:none;">'
+      +   '<span id="r-picked-name" style="font-weight:600;"></span>'
+      +   ' <button type="button" onclick="RequestsPage._clearPickedClient()" style="float:right;background:none;border:none;color:#1e40af;font-size:12px;cursor:pointer;">Change</button>'
+      + '</div>'
+    );
+
     var html = '<form id="req-form" onsubmit="RequestsPage.save(event,\'' + (editId||'') + '\')">'
-      + (r ? '' : UI.formField('Existing Client', 'select', 'r-clientId', '', { options: clientOptions }))
-      + '<div id="r-newclient-fields"' + (r ? '' : '') + '>'
+      + pickerHtml
+      + '<div id="r-newclient-fields">'
       + UI.formField('Client Name', 'text', 'r-name', r ? r.clientName : '', { placeholder: 'Full name' })
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
       + UI.formField('Phone', 'tel', 'r-phone', r ? r.phone : '', { placeholder: '(914) 555-0000' })
       + UI.formField('Email', 'email', 'r-email', r ? r.email : '', { placeholder: 'email@example.com' })
-      + '</div></div>'
+      + '</div>'
+      + UI.formSection('Job')
       + UI.formField('Property Address', 'text', 'r-property', r ? r.property : '', { placeholder: 'Street, City, State ZIP' })
       + UI.formField('Service Requested', 'select', 'r-service', r ? r.service : '', { options: services })
       + UI.formField('How did they hear about us?', 'select', 'r-source', r ? r.source : '', { options: ['','Google Search','Facebook','Instagram','Nextdoor','Friend / Referral','Yelp','Angi','Thumbtack','Drive-by','Repeat Client','Other'] })
       + UI.formField('Details / Notes', 'textarea', 'r-notes', r ? r.notes : '', { placeholder: 'What do they need? Any specifics about the property or job.' })
-      + '</form>'
-      + '<script>var _rci=document.getElementById("r-clientId");if(_rci)_rci.addEventListener("change",function(){'
-      + 'var nf=document.getElementById("r-newclient-fields");nf.style.display=this.value?"none":"block";'
-      + 'if(this.value){var cl=JSON.parse(localStorage.getItem("bm-clients")||"[]");'
-      + 'var c=cl.find(function(x){return x.id===_rci.value;});'
-      + 'if(c){if(document.getElementById("r-name"))document.getElementById("r-name").value=c.name||"";'
-      + 'if(document.getElementById("r-phone"))document.getElementById("r-phone").value=c.phone||"";'
-      + 'if(document.getElementById("r-email"))document.getElementById("r-email").value=c.email||"";'
-      + 'if(!document.getElementById("r-property").value)document.getElementById("r-property").value=c.address||"";}}'
-      + '});<\/script>';
+      + '</form>';
 
     UI.showModal(r ? 'Edit Request' : 'New Request', html, {
       footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
         + ' <button class="btn btn-primary" onclick="document.getElementById(\'req-form\').requestSubmit()">'
         + (r ? 'Save Changes' : 'Save Request') + '</button>'
     });
+
+    // v634: bind the searchable client picker (after modal renders)
+    if (!r) setTimeout(function() {
+      if (UI.bindClientPicker) UI.bindClientPicker('r-client-search', {
+        clients: allClients,
+        onPick: function(c) {
+          // Stash id, populate fields, hide manual section, show "picked" banner
+          var setVal = function(id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; };
+          setVal('r-clientId', c.id);
+          setVal('r-name',  c.name);
+          setVal('r-phone', c.phone);
+          setVal('r-email', c.email);
+          var pa = document.getElementById('r-property');
+          if (pa && !pa.value) pa.value = c.address || '';
+          var manual = document.getElementById('r-newclient-fields');
+          if (manual) manual.style.display = 'none';
+          var banner = document.getElementById('r-picked-banner');
+          var bannerName = document.getElementById('r-picked-name');
+          if (banner) banner.style.display = 'block';
+          if (bannerName) bannerName.textContent = '✓ ' + c.name + (c.phone ? ' · ' + c.phone : '');
+          var search = document.getElementById('r-client-search');
+          if (search) search.style.display = 'none';
+        }
+      });
+    }, 50);
+  },
+
+  // v634: clears a previously-picked existing client so user can pick a different one
+  _clearPickedClient: function() {
+    var setVal = function(id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; };
+    setVal('r-clientId', '');
+    setVal('r-name', '');
+    setVal('r-phone', '');
+    setVal('r-email', '');
+    var manual = document.getElementById('r-newclient-fields');
+    if (manual) manual.style.display = 'block';
+    var banner = document.getElementById('r-picked-banner');
+    if (banner) banner.style.display = 'none';
+    var search = document.getElementById('r-client-search');
+    if (search) { search.style.display = ''; search.value = ''; search.focus(); }
   },
 
   save: function(e, editId) {
