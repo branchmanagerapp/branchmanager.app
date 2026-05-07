@@ -544,14 +544,22 @@ var QuotesPage = {
         + '</label>';
     }).join('');
 
-    var _equipHtml = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;">'
-      +   '<div>'
-      +     '<div style="font-size:14px;font-weight:800;">🛠 Equipment on this job</div>'
-      +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Plan your job site on the satellite map — placed equipment auto-counts into the T&M total.</div>'
-      +   '</div>'
-      +   '<button type="button" onclick="QuotesPage._openEquipmentMap()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">🗺 Open Equipment Map →</button>'
-      + '</div>'
+    // v641: Equipment box now a collapsible <details> (Doug ask). Summary
+    // shows count + running $/hr total even when collapsed.
+    var _equipSummaryText = _pickedKeys.length
+      ? _pickedKeys.length + ' piece(s) · $' + _totalRate + '/hr'
+      : 'None selected';
+    var _equipHtml = '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-top:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">'
+      + '<summary style="padding:14px 16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;">'
+      +   '<span style="font-size:14px;font-weight:800;">🛠 Equipment on this job</span>'
+      +   '<span style="display:flex;align-items:center;gap:10px;">'
+      +     '<span style="font-size:12px;color:var(--text-light);" id="q-equip-summary-collapsed">' + _equipSummaryText + '</span>'
+      +     '<span style="font-size:12px;color:var(--text-light);">▾</span>'
+      +   '</span>'
+      + '</summary>'
+      + '<div style="padding:0 16px 16px;">'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Plan your job site on the satellite map — placed equipment auto-counts into the T&M total.</div>'
+      + '<button type="button" onclick="QuotesPage._openEquipmentMap()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;margin-bottom:12px;">🗺 Open Equipment Map →</button>'
       // Select-all shortcut
       + '<div style="display:flex;justify-content:flex-end;margin-bottom:6px;">'
       +   '<button type="button" onclick="QuotesPage._selectAllEquip(this)" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:4px 8px;">Select all</button>'
@@ -563,7 +571,7 @@ var QuotesPage = {
       +   '<span id="q-equip-count-text">' + (_pickedKeys.length ? '✓ ' + _pickedKeys.length + ' piece(s) planned' : 'No equipment yet — check any above.') + '</span>'
       +   '<span id="q-equip-total-text" style="font-weight:700;color:var(--green-dark);">' + (_totalRate > 0 ? '$' + _totalRate + '/hr' : '') + '</span>'
       + '</div>'
-      // Hidden T&M checkboxes — source of truth for _calcTM (kept for all possible keys)
+      // Hidden T&M checkboxes — source of truth for _calcTM
       + '<div style="display:none;">'
       +   QuotesPage._tmEquipPill('bucket', 'Bucket truck', 75, tmData)
       +   QuotesPage._tmEquipPill('chipper', 'Chipper', 44, tmData)
@@ -571,7 +579,8 @@ var QuotesPage = {
       +   QuotesPage._tmEquipPill('miniSkid', 'Mini-skid', 60, tmData)
       +   QuotesPage._tmEquipPill('trailer', 'Trailer', 25, tmData)
       + '</div>'
-      + '</div>';
+      + '</div>'
+      + '</details>';
 
     // Total display with tax breakdown (legacy system style)
     var _qSubtotal = 0;
@@ -631,20 +640,17 @@ var QuotesPage = {
       +   '<div style="display:flex;flex-direction:column;gap:6px;">'
       +     '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--white);border:2px solid ' + (((tmData.climberCount|0) > 0) ? 'var(--green-dark)' : 'var(--border)') + ';border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">'
       +       '<input type="checkbox" id="q-tm-climber-chk"' + (((tmData.climberCount|0) > 0) ? ' checked' : '') + ' onchange="document.getElementById(\'q-tm-climber-count\').value=this.checked?1:0;this.parentElement.style.borderColor=this.checked?\'var(--green-dark)\':\'var(--border)\';QuotesPage._calcTM();" style="width:18px;height:18px;">'
-      +       '<span style="flex:1;">Climber</span><span style="color:var(--text-light);font-size:11px;font-weight:500;">$50/hr</span>'
+      +       '<span style="flex:1;">Climber</span><span style="color:var(--text-light);font-size:11px;font-weight:500;">$175/hr</span>'
       +     '</label>'
       +     '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--white);border:2px solid ' + (((tmData.groundCount|0) > 0) ? 'var(--green-dark)' : 'var(--border)') + ';border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">'
       +       '<input type="checkbox" id="q-tm-ground-chk"' + (((tmData.groundCount|0) > 0) ? ' checked' : '') + ' onchange="document.getElementById(\'q-tm-ground-count\').value=this.checked?1:0;this.parentElement.style.borderColor=this.checked?\'var(--green-dark)\':\'var(--border)\';QuotesPage._calcTM();" style="width:18px;height:18px;">'
-      +       '<span style="flex:1;">Groundsman</span><span style="color:var(--text-light);font-size:11px;font-weight:500;">$30/hr</span>'
+      +       '<span style="flex:1;">Groundsman</span><span style="color:var(--text-light);font-size:11px;font-weight:500;">$125/hr</span>'
       +     '</label>'
-      +     '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--white);border:2px solid ' + (((tmData.foremanCount|0) > 0) ? 'var(--green-dark)' : 'var(--border)') + ';border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">'
-      +       '<input type="checkbox" id="q-tm-foreman-chk"' + (((tmData.foremanCount|0) > 0) ? ' checked' : '') + ' onchange="document.getElementById(\'q-tm-foreman-count\').value=this.checked?1:0;this.parentElement.style.borderColor=this.checked?\'var(--green-dark)\':\'var(--border)\';QuotesPage._calcTM();" style="width:18px;height:18px;">'
-      +       '<span style="flex:1;">Foreman</span><span style="color:var(--text-light);font-size:11px;font-weight:500;">$60/hr</span>'
-      +     '</label>'
+      // v641: Foreman role removed per Doug
       +   '</div>'
       +   '<input type="hidden" id="q-tm-climber-count" value="' + (tmData.climberCount || '') + '">'
       +   '<input type="hidden" id="q-tm-ground-count" value="' + (tmData.groundCount || '') + '">'
-      +   '<input type="hidden" id="q-tm-foreman-count" value="' + (tmData.foremanCount || '') + '">'
+      +   '<input type="hidden" id="q-tm-foreman-count" value="0">'
       + '</div>'
 
       // ═══ STEP 2 — Hours (label left, input right — on same row) ═══

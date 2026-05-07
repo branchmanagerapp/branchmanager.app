@@ -254,7 +254,7 @@ var VoiceQuote = {
       + '- Pruning: $300-$800 per tree depending on size\n'
       + '- Stump grinding: ~$10/inch diameter, $100 minimum per stump\n'
       + '- Cabling: $10/ft of cable\n'
-      + '- T&M rates: climber $' + (tmRates.climber || 50) + '/hr, ground $' + (tmRates.ground || 30) + '/hr, bucket $' + (tmRates.bucket || 75) + '/hr, crane $' + (tmRates.crane || 200) + '/hr\n\n'
+      + '- T&M rates: climber $' + (tmRates.climber || 175) + '/hr, ground $' + (tmRates.ground || 125) + '/hr, bucket $' + (tmRates.bucket || 75) + '/hr, crane $' + (tmRates.crane || 200) + '/hr\n\n'
       + 'Return ONLY valid JSON matching this schema (no markdown, no prose):\n'
       + '{\n'
       + '  "description": "short 1-line summary of the job",\n'

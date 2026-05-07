@@ -13,7 +13,7 @@
 
   // Default rates — user can override in Settings → T&M Pricing Rates
   QuotesPage._TM_DEFAULTS = {
-    climber: 50, ground: 30, foreman: 60,
+    climber: 175, ground: 125, foreman: 0,
     bucket: 75, chipper: 44, crane: 200, stumpGrinder: 50,
     miniSkid: 60, dumpTruck: 40, liftLadder: 60, trailer: 25,
     insurance: 0.31,  // WC 9% + GL 9% + disability 2% + payroll 8% + auto 3%
