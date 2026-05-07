@@ -25,6 +25,7 @@
 // Schedule should ONLY be enabled with explicit Doug consent.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mintApproveToken } from "../_shared/approve-token.ts";
 
 const SUPABASE_URL          = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -58,28 +59,31 @@ async function summaryForTenant(t: any, dryRun: boolean) {
     return { tenant: tid, skipped: "no-owner-email-on-file" };
   }
 
-  // Hard guard #2 — per-day dedup
-  const { data: alreadyToday } = await sb
-    .from("communications")
-    .select("id")
-    .eq("tenant_id", tid)
-    .filter("metadata->>kind", "eq", "daily_marketing_summary")
-    .gte("created_at", new Date(Date.now() - 20 * 3600 * 1000).toISOString())
-    .limit(1);
-  if (alreadyToday && alreadyToday.length) {
-    return { tenant: tid, skipped: "already-sent-today" };
+  // Hard guard #2 — per-day dedup (skipped under dry_run so testing always works)
+  if (!dryRun) {
+    const { data: alreadyToday } = await sb
+      .from("communications")
+      .select("id")
+      .eq("tenant_id", tid)
+      .filter("metadata->>kind", "eq", "daily_marketing_summary")
+      .gte("created_at", new Date(Date.now() - 20 * 3600 * 1000).toISOString())
+      .limit(1);
+    if (alreadyToday && alreadyToday.length) {
+      return { tenant: tid, skipped: "already-sent-today" };
+    }
   }
 
   // Pull stats
   const oneDayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
 
-  // Pending drafts grouped by trigger
+  // Pending drafts (full row — we want subject/recipient/id for inline links)
   const { data: pending } = await sb
     .from("marketing_drafts")
-    .select("trigger")
+    .select("id, trigger, client_name, to_email, subject, created_at")
     .eq("tenant_id", tid)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
 
   const triggerCounts: Record<string, number> = {};
   (pending || []).forEach((d: any) => { triggerCounts[d.trigger] = (triggerCounts[d.trigger] || 0) + 1; });
@@ -109,18 +113,86 @@ async function summaryForTenant(t: any, dryRun: boolean) {
     .map((k) => `  • ${k.padEnd(20, " ")} ${triggerCounts[k]}`)
     .join("\n") || "  (none)";
 
+  // Mint a 24h HMAC token for the inline approve links + "review all" CTA.
+  // Token binds to this tenant_id only.
+  let approvalToken = "";
+  try { approvalToken = await mintApproveToken(tid, 24 * 3600); } catch (e) {
+    console.warn("[daily-summary] mintApproveToken failed:", (e as Error).message);
+  }
+  const APPROVE_BASE = `${SUPABASE_URL}/functions/v1/marketing-approve`;
+  const APPROVALS_PAGE = `https://branchmanager.app/approvals.html?t=${encodeURIComponent(approvalToken)}`;
+
   const subject = `BM daily — ${totalPending} draft${totalPending === 1 ? "" : "s"} pending review`;
+
+  // Plain-text body — links rendered inline, no buttons but still clickable
+  const draftLines = (pending || []).slice(0, 20).map((d: any) => {
+    const who = d.client_name || d.to_email || "(unknown)";
+    const subj = d.subject || "(no subject)";
+    const apprUrl = `${APPROVE_BASE}?t=${encodeURIComponent(approvalToken)}&id=${d.id}&action=approve`;
+    const rejUrl  = `${APPROVE_BASE}?t=${encodeURIComponent(approvalToken)}&id=${d.id}&action=reject`;
+    return `• [${d.trigger}] ${who}\n    "${subj}"\n    Approve & send: ${apprUrl}\n    Reject:         ${rejUrl}`;
+  }).join("\n\n");
+
   const body =
     `Branch Manager — Daily marketing summary for ${companyName}\n\n` +
-    `📋 Drafts pending review: ${totalPending}\n` +
-    triggerLines + "\n\n" +
-    `📤 Sent in the last 24h:  ${sentToday}\n` +
-    `📤 Sent in the last 7d:   ${sentThisWeek}\n\n` +
     (totalPending > 0
-      ? `Open BM Marketing to review and approve:\n  https://branchmanager.app/#marketing\n\n`
-      : `Nothing waiting on you. Cron is paused — drafts only stage when the cron runs (currently disabled).\n\n`) +
+      ? `${totalPending} customer email${totalPending === 1 ? "" : "s"} are waiting for your approval.\n` +
+        `No customer email goes out until you say so.\n\n` +
+        `► Review and approve in one place:\n  ${APPROVALS_PAGE}\n\n` +
+        `(Or click the per-draft links below.)\n\n` +
+        `── PENDING DRAFTS ──\n${draftLines}\n\n` +
+        (totalPending > 20 ? `... and ${totalPending - 20} more — see the page above.\n\n` : "")
+      : `Nothing waiting on you — the queue is empty.\n\n`) +
+    `── ACTIVITY ──\n` +
+    `Sent in the last 24h: ${sentToday}\n` +
+    `Sent in the last 7d:  ${sentThisWeek}\n\n` +
     `— Branch Manager\n` +
-    `(This summary was generated automatically. To stop it: set DAILY_SUMMARY_DISABLED=true in Supabase secrets.)`;
+    `(Approval links expire in 24h. Mute this email: set DAILY_SUMMARY_DISABLED=true.)`;
+
+  // HTML body — same content with clickable buttons per draft
+  const escapeHtml = (s: string) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const draftRowsHtml = (pending || []).slice(0, 20).map((d: any) => {
+    const who = escapeHtml(d.client_name || d.to_email || "(unknown)");
+    const subj = escapeHtml(d.subject || "(no subject)");
+    const trig = escapeHtml(d.trigger || "");
+    const apprUrl = `${APPROVE_BASE}?t=${encodeURIComponent(approvalToken)}&id=${d.id}&action=approve`;
+    const rejUrl  = `${APPROVE_BASE}?t=${encodeURIComponent(approvalToken)}&id=${d.id}&action=reject`;
+    return `<tr><td style="padding:14px 12px;border-bottom:1px solid #e5e7eb;">
+      <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;font-weight:700;">${trig}</div>
+      <div style="font-size:14px;font-weight:600;color:#111827;margin:4px 0 2px;">${subj}</div>
+      <div style="font-size:13px;color:#374151;">To: ${who}</div>
+      <div style="margin-top:10px;">
+        <a href="${apprUrl}" style="display:inline-block;background:#1a3c12;color:#fff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;margin-right:6px;">Approve &amp; send</a>
+        <a href="${rejUrl}" style="display:inline-block;background:#fff;color:#b91c1c;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;border:1px solid #fecaca;">Reject</a>
+      </div>
+    </td></tr>`;
+  }).join("");
+
+  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f7f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;">
+    <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+      <div style="padding:22px 24px;border-bottom:1px solid #e5e7eb;">
+        <div style="font-size:12px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">Branch Manager — daily review</div>
+        <h1 style="margin:6px 0 2px;font-size:22px;color:#111827;">${escapeHtml(companyName)}</h1>
+        <div style="font-size:14px;color:#374151;">${totalPending > 0 ? `${totalPending} customer email${totalPending === 1 ? "" : "s"} waiting for your approval.` : "Nothing waiting — the queue is empty."}</div>
+      </div>
+      ${totalPending > 0 ? `
+      <div style="padding:18px 24px;background:#e8f4ea;border-bottom:1px solid #a3d9ad;">
+        <div style="font-size:13px;color:#15803d;font-weight:700;margin-bottom:8px;">► One-click bulk review</div>
+        <a href="${APPROVALS_PAGE}" style="display:inline-block;background:#15803d;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:700;">Review all ${totalPending} draft${totalPending === 1 ? "" : "s"} →</a>
+        <div style="font-size:12px;color:#374151;margin-top:8px;">No customer email goes out until you click approve. Link expires in 24h.</div>
+      </div>
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
+        ${draftRowsHtml}
+        ${totalPending > 20 ? `<tr><td style="padding:14px 12px;color:#6b7280;font-size:13px;text-align:center;">...and ${totalPending - 20} more — open the bulk page above.</td></tr>` : ""}
+      </table>
+      ` : ""}
+      <div style="padding:18px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
+        Sent in the last 24h: ${sentToday}<br>
+        Sent in the last 7d: ${sentThisWeek}<br><br>
+        Approval links expire in 24h. Mute these summaries by setting <code>DAILY_SUMMARY_DISABLED=true</code>.
+      </div>
+    </div>
+  </body></html>`;
 
   // Hard guard #3 — recipient match check (paranoid double-check)
   const recipientToSend = ownerEmail;
@@ -130,7 +202,7 @@ async function summaryForTenant(t: any, dryRun: boolean) {
 
   // DRY RUN — return what would be sent, don't touch Resend, don't log
   if (dryRun) {
-    return { tenant: tid, dry_run: true, would_send_to: recipientToSend, subject, preview_body: body, pending: totalPending, sent_today: sentToday, sent_week: sentThisWeek };
+    return { tenant: tid, dry_run: true, would_send_to: recipientToSend, subject, preview_body: body, preview_html: html, approvals_url: APPROVALS_PAGE, pending: totalPending, sent_today: sentToday, sent_week: sentThisWeek };
   }
 
   // Send via Resend
@@ -147,6 +219,7 @@ async function summaryForTenant(t: any, dryRun: boolean) {
       to:      [recipientToSend],
       subject: subject,
       text:    body,
+      html:    html,
     }),
   });
   const respText = await resp.text();

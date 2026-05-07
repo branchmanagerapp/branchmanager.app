@@ -888,10 +888,14 @@ var EquipmentPage = {
     // R&L still uses search since their slugs aren't predictable.
     if (id === 'eq4b') {
       var parts = [
-        { name: 'Water Pump',        pn: '1E051-73036' },
-        { name: 'W/P Gasket',        pn: '16871-73430' },
-        { name: 'Thermostat',        pn: '19434-73015' },
-        { name: 'T-stat Gasket',     pn: '16221-73270' }
+        { name: 'Water Pump',          pn: '1E051-73036' },
+        { name: 'W/P Gasket',          pn: '16871-73430' },
+        { name: 'Thermostat',          pn: '19434-73015' },
+        { name: 'T-stat Gasket',       pn: '16221-73270' },
+        // v644: added after May 6 2026 conversation — repeated overheats may
+        // have fried the coolant temp sender; gauge reads low → easy to
+        // re-cook the engine. ~$25-40, 5-min swap.
+        { name: 'Coolant Temp Sender', pn: '16222-83040' }
       ];
       html += '<div style="margin-top:12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;">'
         + '<div style="font-size:12px;font-weight:700;color:#8a6d00;margin-bottom:8px;">🔩 Giant 254T · Kubota D902-E4B Cooling Kit · OEM Part Numbers</div>';
@@ -914,11 +918,36 @@ var EquipmentPage = {
       var msUrls = parts.map(function(p) { return 'https://www.messicks.com/parts/kubota/' + encodeURIComponent(p.pn); });
       var rlUrls = parts.map(function(p) { return 'https://rlpartssupply.com/?s=' + encodeURIComponent(p.pn) + '&post_type=product'; });
       html += '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">'
-        +   '<button onclick="EquipmentPage._openAll(' + JSON.stringify(msUrls).replace(/"/g, '&quot;') + ')" style="background:#1565c0;color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;">🛒 Order All 4 · Messick\'s</button>'
-        +   '<button onclick="EquipmentPage._openAll(' + JSON.stringify(rlUrls).replace(/"/g, '&quot;') + ')" style="background:#e65100;color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;">🛒 Order All 4 · R&amp;L</button>'
+        +   '<button onclick="EquipmentPage._openAll(' + JSON.stringify(msUrls).replace(/"/g, '&quot;') + ')" style="background:#1565c0;color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;">🛒 Order All 5 · Messick\'s</button>'
+        +   '<button onclick="EquipmentPage._openAll(' + JSON.stringify(rlUrls).replace(/"/g, '&quot;') + ')" style="background:#e65100;color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;">🛒 Order All 5 · R&amp;L</button>'
         +   '<button onclick="EquipmentPage._logCoolingKit(\'eq4b\',\'R&amp;L Parts Supply\')" style="background:var(--green-dark);color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;">📝 Log This Order (R&amp;L)</button>'
         + '</div>'
         + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;">Both sell Kubota OEM by part # · Dan Wojick @ Belfast Inc. (844) 344-3478</div>'
+        + '</div>';
+
+      // v644: Cooling system field-notes card — gathered May 6 2026 from the
+      // overheating troubleshoot conversation. Lives next to the parts card
+      // so anyone wrenching on the loader gets the reminders without
+      // re-Googling.
+      html += '<div style="margin-top:12px;background:#eef5ff;border:1px solid #b6d4fe;border-radius:8px;padding:12px;">'
+        +   '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px;">🩺 Cooling system · field notes</div>'
+        +   '<div style="font-size:12px;color:#1f2937;line-height:1.55;">'
+        +     '<div style="font-weight:700;margin-bottom:4px;">Thermostat install (PN 19434-73015)</div>'
+        +     '<ul style="margin:0 0 10px;padding-left:20px;">'
+        +       '<li>Spring side faces <em>down</em> (toward the cylinder head / coolant)</li>'
+        +       '<li>Sensing pellet + valve face the union outlet (axis in line with outlet)</li>'
+        +       '<li>Jiggle valve / vent hole at <strong>12 o\'clock</strong> so air bleeds out as it fills</li>'
+        +       '<li>New gasket every install (PN 16221-73270) — never re-use</li>'
+        +       '<li>Bolts in cross/star pattern: snug, then torque to WSM spec (see Service Manual ▸ Cooling)</li>'
+        +     '</ul>'
+        +     '<div style="font-weight:700;margin-bottom:4px;">Suspect a fried coolant temp sender (PN 16222-83040)</div>'
+        +     '<div style="margin:0 0 6px;">Repeated overheats can drift the thermistor permanently. Symptom: gauge reads low/cold even when engine is hot — easy way to re-cook it.</div>'
+        +     '<ul style="margin:0;padding-left:20px;">'
+        +       '<li><strong>Quick test (multimeter):</strong> cold engine ≈ kΩ range · at op-temp ≈ few hundred Ω</li>'
+        +       '<li>Stays high or bounces wildly → fried, swap it</li>'
+        +       '<li>~$25–40, 5-min job · ordered with the cooling kit above</li>'
+        +     '</ul>'
+        +   '</div>'
         + '</div>';
     }
 
