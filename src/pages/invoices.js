@@ -57,11 +57,15 @@ var InvoicesPage = {
     var now = new Date();
     var pastDue = all.filter(function(i) { return i.status !== 'paid' && i.dueDate && new Date(i.dueDate) < now; });
     var sentNotDue = all.filter(function(i) { return i.status === 'sent' && (!i.dueDate || new Date(i.dueDate) >= now); });
-    var pastDueTotal = pastDue.reduce(function(s,i){return s+(i.balance||0);},0);
-    var sentNotDueTotal = sentNotDue.reduce(function(s,i){return s+(i.balance||0);},0);
-    var draftTotal = all.filter(function(i){return i.status==='draft';}).reduce(function(s,i){return s+(i.total||0);},0);
+    // v638: coerce to Number on every reduce — some i.total / i.balance
+    // values are stored as strings (cloud round-trip), causing JS string
+    // concat in the sum. Doug saw "$740,034348" because three string totals
+    // got concatenated into one giant number. Force numeric.
+    var pastDueTotal = pastDue.reduce(function(s,i){return s+Number(i.balance||0);},0);
+    var sentNotDueTotal = sentNotDue.reduce(function(s,i){return s+Number(i.balance||0);},0);
+    var draftTotal = all.filter(function(i){return i.status==='draft';}).reduce(function(s,i){return s+Number(i.total||0);},0);
     var recentIssued = all.filter(function(i) { var d=new Date(i.createdAt); var ago=new Date(); ago.setDate(ago.getDate()-30); return d>=ago; });
-    var recentIssuedTotal = recentIssued.reduce(function(s,i){return s+(i.total||0);},0);
+    var recentIssuedTotal = recentIssued.reduce(function(s,i){return s+Number(i.total||0);},0);
     var avgInvoice = recentIssued.length > 0 ? Math.round(recentIssuedTotal / recentIssued.length) : 0;
 
     html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
@@ -87,7 +91,7 @@ var InvoicesPage = {
       + '</div>'
       // Total collected
       + (function() {
-        var totalCollected = all.filter(function(i){return i.status==='paid';}).reduce(function(s,i){return s+(i.total||0);},0);
+        var totalCollected = all.filter(function(i){return i.status==='paid';}).reduce(function(s,i){return s+Number(i.total||0);},0);
         return '<div style="padding:14px 16px;">'
           + '<div style="font-size:14px;font-weight:700;">Total Collected</div>'
           + '<div style="font-size:22px;font-weight:800;margin-top:12px;color:var(--green-dark);">' + UI.moneyInt(totalCollected) + '</div>'

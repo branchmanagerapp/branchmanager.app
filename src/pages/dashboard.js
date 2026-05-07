@@ -53,7 +53,7 @@ var DashboardPage = {
     var _monthRevenue = allInvoicesEarly.filter(function(i) {
       var d = new Date(i.createdAt || i.issuedDate);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && (i.status === 'paid' || i.status === 'collected');
-    }).reduce(function(s, i) { return s + (i.total || 0); }, 0);
+    }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
     var _monthPct = _goalData.monthly > 0 ? Math.min(Math.round((_monthRevenue / _goalData.monthly) * 100), 100) : 0;
 
     html += '<div style="margin-bottom:16px;">'
@@ -93,7 +93,7 @@ var DashboardPage = {
     var briefingInsights = [];
     {
       var bOverdue = allInvoices.filter(function(i) { return i.status !== 'paid' && i.balance > 0 && i.dueDate && new Date(i.dueDate) < now; });
-      var bOverdueTotal = bOverdue.reduce(function(s, i) { return s + (i.balance || 0); }, 0);
+      var bOverdueTotal = bOverdue.reduce(function(s, i) { return s + Number(i.balance || 0);}, 0);
       if (bOverdue.length > 0) {
         briefingInsights.push({
           icon: '🔴',
@@ -156,13 +156,13 @@ var DashboardPage = {
       var bThisMonth = allInvoices.filter(function(i) {
         var d = new Date(i.createdAt);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && (i.status === 'paid' || i.status === 'collected');
-      }).reduce(function(s, i) { return s + (i.total || 0); }, 0);
+      }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
       var bLastMonth = allInvoices.filter(function(i) {
         var lm = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
         var ly = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
         var d = new Date(i.createdAt);
         return d.getMonth() === lm && d.getFullYear() === ly && (i.status === 'paid' || i.status === 'collected');
-      }).reduce(function(s, i) { return s + (i.total || 0); }, 0);
+      }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
       if (bThisMonth > 0 || bLastMonth > 0) {
         var bAhead = bThisMonth >= bLastMonth;
         briefingInsights.push({
@@ -210,8 +210,8 @@ var DashboardPage = {
 
     var reqTotal = allQuotes.filter(function(q){return q.status==='approved'||q.status==='converted';}).reduce(function(s,q){return s+(q.total||0);},0);
     var activeJobTotal = activeJobs.reduce(function(s,j){return s+(j.total||0);},0);
-    var draftInvTotal = draftInvoices.reduce(function(s,i){return s+(i.total||0);},0);
-    var overdueTotal = overdueInvoices.reduce(function(s,i){return s+(i.balance||0);},0);
+    var draftInvTotal = draftInvoices.reduce(function(s,i){return s+Number(i.total||0);},0);
+    var overdueTotal = overdueInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0);
 
     // ── Call Center snapshot (async-filled after render) ──
     var _ccCollapsed = localStorage.getItem('bm-dash-cc-collapsed') === '1';
@@ -327,7 +327,7 @@ var DashboardPage = {
       + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;"></div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="receipt" style="width:14px;height:14px;vertical-align:middle;"></i> Invoices</div>'
       + '<div style="font-size:32px;font-weight:700;display:inline;">' + unpaidInvoices.length + '</div>'
-      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(unpaidInvoices.reduce(function(s,i){return s+(i.balance||0);},0)) + '</span>'
+      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(unpaidInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0)) + '</span>'
       + '<div style="font-size:14px;font-weight:600;">Awaiting payment</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftInvoices.length + ')</span><span>' + UI.moneyInt(draftInvTotal) + '</span></div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:' + (overdueInvoices.length ? 'var(--red)' : 'var(--text-light)') + ';"><span>Past due (' + overdueInvoices.length + ')</span><span>' + UI.moneyInt(overdueTotal) + '</span></div>'
@@ -361,12 +361,12 @@ var DashboardPage = {
 
     // Receivables panel — top of rail, OPEN by default
     var rcvUnpaid = DB.invoices.getAll().filter(function(i) { return (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial') && (i.balance || i.total || 0) > 0; });
-    var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
+    var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (Number(i.balance) || Number(i.total) || 0);}, 0);
     if (rcvUnpaid.length > 0) {
       rcvUnpaid.sort(function(a, b) { return (b.balance || b.total || 0) - (a.balance || a.total || 0); });
       // v636: roll the Overdue Invoices count into the Receivables card so
       // the dropped collapsed card's info isn't lost.
-      var rcvOverdueTotal = overdueInvoices.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
+      var rcvOverdueTotal = overdueInvoices.reduce(function(s, i) { return s + (Number(i.balance) || Number(i.total) || 0);}, 0);
       var rcvBody = '';
       rcvUnpaid.slice(0, 6).forEach(function(inv) {
         var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
