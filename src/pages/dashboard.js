@@ -364,6 +364,9 @@ var DashboardPage = {
     var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
     if (rcvUnpaid.length > 0) {
       rcvUnpaid.sort(function(a, b) { return (b.balance || b.total || 0) - (a.balance || a.total || 0); });
+      // v636: roll the Overdue Invoices count into the Receivables card so
+      // the dropped collapsed card's info isn't lost.
+      var rcvOverdueTotal = overdueInvoices.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
       var rcvBody = '';
       rcvUnpaid.slice(0, 6).forEach(function(inv) {
         var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
@@ -375,6 +378,14 @@ var DashboardPage = {
           + (daysLate > 0 ? '<span style="font-size:11px;color:' + lateColor + ';margin-left:8px;">' + daysLate + 'd late</span>' : '')
           + '</div></div>';
       });
+      // Prepend an overdue-summary line to the body when applicable
+      if (overdueInvoices.length > 0) {
+        rcvBody = '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-bottom:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;">'
+          + '<span style="font-size:12px;font-weight:600;color:#991b1b;">⚠ ' + overdueInvoices.length + ' invoice' + (overdueInvoices.length !== 1 ? 's' : '') + ' overdue</span>'
+          + '<span style="font-size:13px;font-weight:800;color:#991b1b;">' + UI.moneyInt(rcvOverdueTotal) + '</span>'
+          + '</div>'
+          + rcvBody;
+      }
       html += railCard({
         color: '#1565c0',
         title: 'Receivables',
@@ -560,61 +571,12 @@ var DashboardPage = {
       return !q.createdAt || new Date(q.createdAt) > sixMonthsAgo;
     });
 
-    // Action Items — collapsed by default (counts already visible in workflow grid)
-    if (overdueInvCount > 0) {
-      var ovBody = '';
-      overdueInvoices.slice(0, 5).forEach(function(inv) {
-        var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
-        ovBody += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
-          + '<span style="font-size:14px;font-weight:600;">' + UI.esc(inv.clientName || '') + '</span>'
-          + '<div><span style="font-weight:700;">' + UI.money(inv.balance || inv.total) + '</span>'
-          + '<span style="font-size:11px;color:#c62828;margin-left:8px;">' + daysLate + 'd late</span></div></div>';
-      });
-      html += railCard({
-        color: '#c62828',
-        title: 'Overdue Invoices',
-        count: overdueInvCount + ' invoice' + (overdueInvCount !== 1 ? 's' : ''),
-        total: UI.moneyInt(overdueInvTotal),
-        totalColor: '#c62828',
-        body: ovBody
-      });
-    }
-
-    if (expiringQuotes.length > 0) {
-      var expBody = '';
-      var expTotal = expiringQuotes.reduce(function(s,q){ return s + (q.total||0); }, 0);
-      expiringQuotes.slice(0, 5).forEach(function(q) {
-        var daysSent = q.createdAt ? Math.floor((Date.now() - new Date(q.createdAt).getTime()) / 86400000) : 0;
-        expBody += '<div onclick="QuotesPage.showDetail(\'' + q.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
-          + '<span style="font-size:14px;font-weight:600;">' + UI.esc(q.clientName || '') + '</span>'
-          + '<div><span style="font-weight:700;">' + UI.money(q.total) + '</span>'
-          + '<span style="font-size:11px;color:#e65100;margin-left:8px;">' + daysSent + 'd ago</span></div></div>';
-      });
-      html += railCard({
-        color: '#8b2252', // matches Quotes workflow card
-        title: 'Quotes Need Follow-up',
-        count: expiringQuotes.length + ' sent 7+ days ago',
-        total: UI.moneyInt(expTotal),
-        body: expBody
-      });
-    }
-
-    if (unscheduledJobs.length > 0) {
-      var schBody = '';
-      var schTotal = unscheduledJobs.reduce(function(s,j){ return s + (j.total||0); }, 0);
-      unscheduledJobs.slice(0, 5).forEach(function(j) {
-        schBody += '<div onclick="JobsPage.showDetail(\'' + j.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
-          + '<span style="font-size:14px;font-weight:600;">' + UI.esc(j.clientName || '') + '</span>'
-          + '<span style="font-weight:700;">' + UI.money(j.total) + '</span></div>';
-      });
-      html += railCard({
-        color: '#2e7d32', // matches Jobs workflow card
-        title: 'Needs Scheduling',
-        count: unscheduledJobs.length + ' job' + (unscheduledJobs.length !== 1 ? 's' : ''),
-        total: UI.moneyInt(schTotal),
-        body: schBody
-      });
-    }
+    // v636: Removed the 3 collapsed rail cards (Overdue Invoices, Quotes
+    // Need Follow-up, Needs Scheduling) — every item they listed already
+    // surfaces in the "Needs your attention" feed above. Doug confirmed
+    // they were redundant noise. The data prep blocks above
+    // (overdueInvCount, expiringQuotes, unscheduledJobs) stay in case
+    // future logic needs them.
 
     // v619: Receivables moved up to top of rail; close rail + grid before
     // the Lead Sources chart (which renders full-width below).
