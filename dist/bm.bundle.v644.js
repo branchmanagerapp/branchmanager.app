@@ -19028,6 +19028,12 @@ var EquipmentPage = {
         dirty = true;
       }
 
+      // Add Cub Cadet 54" deck mower (May 6 2026) — spindle PN 618-04608A
+      if (!list.find(function(e) { return e.id === 'eq12'; })) {
+        list.push({ id: 'eq12', name: 'Cub Cadet 54" Mower', category: 'Equipment', make: 'Cub Cadet', model: '54" deck (RZT/GT/ZT)', status: 'active', value: 3500, hours: 0, notes: '54" deck spindle PN 618-04608A · 3 spindles per deck', nextService: 'Inspect spindles + belt' });
+        dirty = true;
+      }
+
       if (dirty) localStorage.setItem('bm-equipment', JSON.stringify(list));
       return list;
     }
@@ -19043,7 +19049,8 @@ var EquipmentPage = {
       { id: 'eq7', name: 'Climbing Gear Set', category: 'Safety', make: '', model: '', status: 'active', value: 3000, nextService: 'Annual inspection' },
       { id: 'eq8', name: 'Stihl MS 462', category: 'Saws', make: 'Stihl', model: 'MS 462', status: 'active', value: 1100, hours: 0 },
       { id: 'eq9', name: 'Stihl MS 261', category: 'Saws', make: 'Stihl', model: 'MS 261', status: 'active', value: 700, hours: 0 },
-      { id: 'eq10', name: 'Trailer', category: 'Trucks', make: '', model: '', status: 'active', value: 5000 }
+      { id: 'eq10', name: 'Trailer', category: 'Trucks', make: '', model: '', status: 'active', value: 5000 },
+      { id: 'eq12', name: 'Cub Cadet 54" Mower', category: 'Equipment', make: 'Cub Cadet', model: '54" deck (RZT/GT/ZT)', status: 'active', value: 3500, hours: 0, notes: '54" deck spindle PN 618-04608A · 3 spindles per deck', nextService: 'Inspect spindles + belt' }
     ];
     localStorage.setItem('bm-equipment', JSON.stringify(defaults));
     return defaults;
@@ -19835,6 +19842,61 @@ var EquipmentPage = {
         +   '<a href="https://eastonmadewoodsplitters.com/dealer-locator/" target="_blank" rel="noopener" style="background:#0d47a1;color:#fff;text-decoration:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;">Find Dealer</a>'
         + '</div>'
         + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;">Eastonmade · (931) 670-5557 · TN-based · ships nationwide via dealer network</div>'
+        + '</div>';
+    }
+
+    // ── Cub Cadet 54" deck spindle parts card (eq12, May 6 2026) ──
+    // Spindle PN 618-04608A pulled off the deck label. Cross-references:
+    //   918-04608A · 618-0671 · 618-0671B · 618-0671D · 918-0671 · 918-0671B
+    // Fits 54" decks: RZT-54, GT1054, GT1554, ZT54, ZTL8000, Troy-Bilt Big Red.
+    // The internal cartridge bearing (if you swap just the bearing) is
+    // a standard sealed 6203-2RS. Whole spindle is the smart move — housing
+    // wears, threads strip, second bearing is on borrowed time anyway.
+    if (id === 'eq12') {
+      html += '<div style="margin-top:12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;">'
+        + '<div style="font-size:12px;font-weight:700;color:#8a6d00;margin-bottom:8px;">🔩 Cub Cadet 54" Deck · Spindle &amp; Bearing Parts</div>';
+
+      var cubParts = [
+        { name: 'Spindle Assembly (whole)', pn: '618-04608A',
+          desc: 'OEM Cub Cadet/MTD · cross: 918-04608A · 618-0671B · fits all 54" decks',
+          aUrl: 'https://www.amazon.com/Henkeyi-Assembly-618-04608A-918-04608A-918-0671B/dp/B09N8R6R8F',
+          mUrl: 'https://www.mowmore.com/products/spindle-assembly-for-mtd-and-cub-cadet-618-04608a-918-0671-91804608a-so12612' },
+        { name: 'Bearing only (sealed)', pn: '6203-2RS',
+          desc: '17 × 40 × 12mm · standard cartridge · 2 per spindle (top + bottom)',
+          aUrl: 'https://www.amazon.com/s?k=6203-2RS+bearing',
+          mUrl: 'https://www.grainger.com/search?searchQuery=6203-2RS' }
+      ];
+
+      cubParts.forEach(function(p) {
+        html += '<div style="padding:8px 0;border-bottom:1px solid #ffe082;font-size:12px;">'
+          +   '<div style="display:flex;align-items:center;gap:8px;">'
+          +     '<div style="flex:1;min-width:0;"><strong>' + p.name + '</strong>'
+          +       '<div style="font-family:ui-monospace,monospace;font-size:11px;color:#8a6d00;">' + p.pn + '</div></div>'
+          +     '<a href="' + p.aUrl + '" target="_blank" rel="noopener" style="background:#232f3e;color:#fff;text-decoration:none;font-size:10px;font-weight:700;padding:4px 8px;border-radius:5px;flex-shrink:0;">Amazon</a>'
+          +     '<a href="' + p.mUrl + '" target="_blank" rel="noopener" style="background:#1565c0;color:#fff;text-decoration:none;font-size:10px;font-weight:700;padding:4px 8px;border-radius:5px;flex-shrink:0;">Alt</a>'
+          +   '</div>'
+          +   '<div style="font-size:11px;color:#8a6d00;margin-top:4px;">' + p.desc + '</div>'
+          + '</div>';
+      });
+
+      html += '<div style="font-size:11px;color:var(--text-light);margin-top:6px;line-height:1.5;">'
+        +   '💡 <strong>3 spindles per deck</strong> — while the deck is off, eyeball the other two. '
+        +   'Combo 3-pack on Amazon ~$110 saves a second teardown in 6 months.'
+        + '</div>'
+        + '</div>';
+
+      // Field-notes card — quick reminders for the next time the deck is open
+      html += '<div style="margin-top:12px;background:#eef5ff;border:1px solid #b6d4fe;border-radius:8px;padding:12px;">'
+        +   '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px;">🩺 54" Deck · field notes</div>'
+        +   '<div style="font-size:12px;color:#1f2937;line-height:1.55;">'
+        +     '<ul style="margin:0;padding-left:20px;">'
+        +       '<li>3 spindles total · all use PN 618-04608A · all interchangeable</li>'
+        +       '<li>Spindle nut torque per MTD spec (typically 60-80 ft-lb) — check with manual</li>'
+        +       '<li>Replace deck belt at the same time if it\'s glazed or cracked</li>'
+        +       '<li>Symptom of bad spindle: deck vibration, rumble at idle, side play in pulley by hand</li>'
+        +       '<li>Pull blade first → impact wrench on the spindle nut → remove pulley → 3 housing bolts under deck</li>'
+        +     '</ul>'
+        +   '</div>'
         + '</div>';
     }
 
