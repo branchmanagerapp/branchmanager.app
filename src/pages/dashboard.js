@@ -64,6 +64,30 @@ var DashboardPage = {
       + '<h2 style="font-size:28px;font-weight:700;margin-top:2px;">' + greeting + ', ' + userName.split(' ')[0] + '</h2>'
       + '</div>';
 
+    // v645: Mobile-focused Home — Jobber-style "Let's get started / Clock In"
+    // + First-visit hero card. Mobile only via .dash-mobile-focus class.
+    // The heavy desktop widgets below (Leads Center / Workflow grid / Rail)
+    // are wrapped in .dash-desktop-only and hidden on mobile so the morning
+    // home screen has ONE clear next action.
+    html += '<style>'
+      + '@media (max-width: 768px) {'
+      + '  .dash-desktop-only { display: none !important; }'
+      + '  .dash-grid { grid-template-columns: 1fr !important; }'
+      + '}'
+      + '@media (min-width: 769px) {'
+      + '  .dash-mobile-focus { display: none !important; }'
+      + '}'
+      + '.dash-clock-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); display:flex; align-items:center; justify-content:space-between; gap:12px; }'
+      + '.dash-clock-card.live { background:var(--green-bg); border-color:var(--green-light); }'
+      + '.dash-clock-btn { background:var(--green-dark); color:#fff; border:none; padding:12px 22px; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }'
+      + '.dash-clock-btn.out { background:#c62828; }'
+      + '.dash-visit-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04); cursor:pointer; }'
+      + '.dash-visit-card .accent { width:4px; background:var(--accent); border-radius:2px; align-self:stretch; flex-shrink:0; }'
+      + '</style>';
+
+    var __dashTodayStr = now.getFullYear() + '-' + (now.getMonth()+1<10?'0':'') + (now.getMonth()+1) + '-' + (now.getDate()<10?'0':'') + now.getDate();
+    html += DashboardPage._renderMobileFocusBlock(now, __dashTodayStr);
+
     // Branch Cam widget removed from dashboard per user request — still accessible via Tools → Branch Cam.
 
     // Money-on-the-Table widget was permanently removed Apr 19, 2026 — same signals
@@ -213,7 +237,8 @@ var DashboardPage = {
     var draftInvTotal = draftInvoices.reduce(function(s,i){return s+Number(i.total||0);},0);
     var overdueTotal = overdueInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0);
 
-    // ── Call Center snapshot (async-filled after render) ──
+    // ── Call Center snapshot (async-filled after render) — DESKTOP ONLY ──
+    html += '<div class="dash-desktop-only">';
     var _ccCollapsed = localStorage.getItem('bm-dash-cc-collapsed') === '1';
     html += '<div id="dash-callcenter-widget" style="background:var(--white);border-radius:12px;padding:12px 16px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (_ccCollapsed ? '0' : '12px') + ';">'
@@ -581,6 +606,7 @@ var DashboardPage = {
     // v619: Receivables moved up to top of rail; close rail + grid before
     // the Lead Sources chart (which renders full-width below).
     html += '</div></div>'; // close .dash-rail + .dash-grid
+    html += '</div>'; // v645: close .dash-desktop-only wrapping all heavy widgets
 
     // Lead Sources — small widget showing where new clients have been coming from (last 90 days)
     try {
@@ -618,6 +644,102 @@ var DashboardPage = {
       }
     } catch(e) { /* optional widget */ }
 
+    return html;
+  },
+
+  // v645: Mobile-focused Home block — Jobber-style "Clock In + first visit" view.
+  // Hidden on desktop via .dash-mobile-focus { display:none } media query.
+  // Two states:
+  //   1. Currently clocked in → live timer + Clock Out button (red)
+  //   2. Not clocked in → big green Clock In button + first job hero card
+  _renderMobileFocusBlock: function(now, todayStr) {
+    var html = '<div class="dash-mobile-focus">';
+
+    // Resolve current user for time clock
+    var userName = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) || 'You';
+
+    // Find the active time entry (today, no clockOut)
+    var activeEntry = null;
+    try {
+      var todayEntries = (DB.timeEntries && DB.timeEntries.getAll ? DB.timeEntries.getAll() : []).filter(function(t) {
+        return t.clockIn && t.clockIn.split('T')[0] === todayStr;
+      });
+      activeEntry = todayEntries.find(function(t) { return !t.clockOut; });
+    } catch (e) { /* timeEntries optional */ }
+
+    // Today's jobs in scheduled order
+    var todayJobs = DB.jobs.getAll().filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0, 10) === todayStr;
+    }).sort(function(a, b) { return (a.startTime || '99:99').localeCompare(b.startTime || '99:99'); });
+    var firstUpcoming = todayJobs.find(function(j) { return j.status !== 'completed'; }) || todayJobs[0] || null;
+
+    // ── State 1: clocked in — show live timer ──
+    if (activeEntry) {
+      var job = activeEntry.jobId ? DB.jobs.getById(activeEntry.jobId) : null;
+      var elapsedH = ((Date.now() - new Date(activeEntry.clockIn).getTime()) / 3600000);
+      var hh = Math.floor(elapsedH);
+      var mm = Math.floor((elapsedH - hh) * 60);
+      var elapsedStr = hh + 'h ' + (mm < 10 ? '0' : '') + mm + 'm';
+
+      html += '<div class="dash-clock-card live">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-size:11px;font-weight:700;color:var(--green-dark);letter-spacing:.05em;text-transform:uppercase;">⏱ Clocked in</div>'
+        +     '<div style="font-size:24px;font-weight:800;color:var(--green-dark);">' + elapsedStr + '</div>'
+        +     (job ? '<div style="font-size:13px;color:var(--text);margin-top:2px;">' + UI.esc(job.clientName || '') + ' · #' + (job.jobNumber || '') + '</div>' : '<div style="font-size:13px;color:var(--text-light);">No job</div>')
+        +   '</div>'
+        +   '<button class="dash-clock-btn out" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockOut(\'' + activeEntry.id + '\');setTimeout(function(){loadPage(\'dashboard\');},150);}">Clock Out</button>'
+        + '</div>';
+    } else {
+      // ── State 2: not clocked in — Clock In CTA ──
+      var firstJobId = firstUpcoming ? firstUpcoming.id : null;
+      var ctaLabel = firstUpcoming ? "Clock In" : "Clock In";
+      var subLabel = firstUpcoming
+        ? ('Start the day on ' + (firstUpcoming.clientName || 'this job'))
+        : "Let's get started";
+      html += '<div class="dash-clock-card">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-size:14px;font-weight:700;">' + UI.esc(subLabel) + '</div>'
+        +     (firstUpcoming && firstUpcoming.startTime
+                ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">First visit @ ' + UI.esc(firstUpcoming.startTime) + '</div>'
+                : '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">No visits scheduled today</div>')
+        +   '</div>'
+        +   '<button class="dash-clock-btn" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockIn(' + (firstJobId ? '\'' + firstJobId + '\'' : 'null') + ');setTimeout(function(){loadPage(\'dashboard\');},150);}else{loadPage(\'timetrack\');}">▶ Clock In</button>'
+        + '</div>';
+    }
+
+    // ── First visit hero card ──
+    if (firstUpcoming) {
+      var visitTime = firstUpcoming.startTime || 'Anytime';
+      var statusLabel = (firstUpcoming.status || 'scheduled').replace('_', ' ');
+      var statusColor = firstUpcoming.status === 'in_progress' ? '#e07c24' : firstUpcoming.status === 'completed' ? '#2e7d32' : '#1565c0';
+      html += '<div class="dash-visit-card" onclick="loadPage(\'jobs\');setTimeout(function(){if(typeof JobsPage!==\'undefined\'&&JobsPage.showDetail)JobsPage.showDetail(\'' + firstUpcoming.id + '\');},120);">'
+        +   '<div style="display:flex;gap:14px;align-items:flex-start;">'
+        +     '<div class="accent" style="background:' + statusColor + ';"></div>'
+        +     '<div style="flex:1;min-width:0;">'
+        +       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">'
+        +         '<div style="font-size:11px;color:var(--text-light);font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Today · ' + UI.esc(visitTime) + '</div>'
+        +         '<div style="font-size:13px;font-weight:700;color:var(--text);">' + UI.money(firstUpcoming.total || 0) + '</div>'
+        +       '</div>'
+        +       '<div style="font-size:18px;font-weight:700;line-height:1.25;margin-bottom:2px;">' + UI.esc(firstUpcoming.clientName || '—') + '</div>'
+        +       (firstUpcoming.property ? '<div style="font-size:13px;color:var(--text-light);">' + UI.esc(firstUpcoming.property) + '</div>' : '')
+        +       (firstUpcoming.description ? '<div style="font-size:13px;color:var(--text);margin-top:6px;line-height:1.4;">' + UI.esc(firstUpcoming.description) + '</div>' : '')
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+
+      if (todayJobs.length > 1) {
+        html += '<div onclick="loadPage(\'schedule\')" style="text-align:center;font-size:13px;font-weight:600;color:var(--accent);padding:6px 0 14px;cursor:pointer;">View all ' + todayJobs.length + ' visits today →</div>';
+      }
+    } else {
+      // No jobs today — gentle nudge
+      html += '<div onclick="loadPage(\'schedule\')" style="background:var(--white);border:1px dashed var(--border);border-radius:14px;padding:24px 16px;margin-bottom:14px;text-align:center;cursor:pointer;">'
+        +   '<div style="font-size:32px;margin-bottom:6px;">📅</div>'
+        +   '<div style="font-size:14px;font-weight:600;">No jobs scheduled today</div>'
+        +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Tap to open Schedule</div>'
+        + '</div>';
+    }
+
+    html += '</div>'; // close .dash-mobile-focus
     return html;
   },
 
