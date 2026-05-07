@@ -488,9 +488,10 @@ var SupabaseDB = {
       var preview = (c.body || '').slice(0, 120);
 
       // 1. Browser Notification API (works even when tab is in background)
+      // v637: requestPermission may not exist on every browser/context
       if ('Notification' in window) {
-        if (Notification.permission === 'default') {
-          Notification.requestPermission().catch(function() {});
+        if (Notification.permission === 'default' && typeof Notification.requestPermission === 'function') {
+          try { var rp = Notification.requestPermission(); if (rp && typeof rp.catch === 'function') rp.catch(function() {}); } catch(e){}
         }
         if (Notification.permission === 'granted') {
           try {

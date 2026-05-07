@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 636; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 637; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
@@ -1005,7 +1005,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v636.min.js"></script>
+<script defer src="dist/bm.bundle.v637.min.js"></script>
 
 
 
@@ -2247,14 +2247,21 @@ var NotifCenter = (function() {
   var _browserAsked = false;
 
   function _requestBrowserPerms() {
-    if (!_browserAsked && 'Notification' in window && Notification.permission === 'default') {
-      _browserAsked = true;
-      Notification.requestPermission();
-    }
+    // v637: defensively check requestPermission EXISTS as a function before
+    // calling. Some browsers/contexts (iOS Safari, certain mobile WebViews,
+    // Android with notifications disabled) expose `Notification` but not
+    // `Notification.requestPermission`. Sentry caught a TypeError on Chrome
+    // 142 / Windows from the bare call.
+    if (_browserAsked || !('Notification' in window)) return;
+    if (typeof Notification.requestPermission !== 'function') { _browserAsked = true; return; }
+    if (Notification.permission !== 'default') return;
+    _browserAsked = true;
+    try { var p = Notification.requestPermission(); if (p && typeof p.catch === 'function') p.catch(function(){}); } catch(e) {}
   }
 
   function _fireBrowserNotif(title, body) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!('Notification' in window) || typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
     try { new Notification(title, { body: body, icon: '/favicon-32x32.png', tag: 'bm-comms' }); } catch(e) {}
   }
 

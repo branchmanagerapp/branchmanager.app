@@ -11,9 +11,11 @@ var FleetPage = {
 
   render: function() {
     var self = FleetPage;
-    // Reset fetch flag on every explicit navigation so data is fresh
-    self._fetched = false;
-    self._renderedOnce = false;
+    // v637: do NOT reset _fetched / _renderedOnce here. The previous code
+    // reset both on every render, but _refresh() calls loadPage('operations')
+    // on success — which re-renders this page — which re-reset the flags —
+    // which fired _refresh again — infinite loop. Now the first render
+    // fetches once; user refresh + 30s interval still update.
     self._kickFetch();
     // Auto-refresh every 30s while page is visible
     if (self._refreshTimer) clearInterval(self._refreshTimer);

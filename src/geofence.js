@@ -17,9 +17,11 @@ var Geofence = {
   _checkInterval: null,
 
   init: function() {
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    // Request notification permission — v637 defensive (requestPermission
+    // missing on some browsers/contexts)
+    if ('Notification' in window && Notification.permission === 'default'
+        && typeof Notification.requestPermission === 'function') {
+      try { var p = Notification.requestPermission(); if (p && typeof p.catch === 'function') p.catch(function(){}); } catch(e){}
     }
 
     // Start watching position

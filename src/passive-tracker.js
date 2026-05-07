@@ -235,9 +235,11 @@ var PassiveTracker = (function() {
   function start() {
     if (state.running) return;
 
-    // Ask notification permission once
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission();
+    // Ask notification permission once — v637 defensive: requestPermission
+    // may not exist on all browsers (Sentry caught TypeError on Chrome 142/Win)
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default'
+        && typeof Notification.requestPermission === 'function') {
+      try { var p = Notification.requestPermission(); if (p && typeof p.catch === 'function') p.catch(function(){}); } catch(e){}
     }
 
     state.sessionId = uuid4();
