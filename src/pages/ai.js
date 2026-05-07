@@ -252,7 +252,10 @@ var AI = {
     html += '</div>';
 
     // Input area (text + voice + send)
-    var speakOut = localStorage.getItem('bm-ai-speak-replies') === 'true';
+    // v639: removed the "🔊 Speak replies" toggle per Doug — TTS was noisy
+    // and not wanted. Also force-disable so any leftover stored preference
+    // doesn't keep speaking.
+    try { localStorage.setItem('bm-ai-speak-replies', 'false'); } catch(e) {}
     html += '<div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;">'
       + '<div style="display:flex;gap:8px;align-items:flex-end;">'
       +   '<button id="ai-mic-btn" onclick="AI.toggleMic()" title="Dictate with voice" style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;" aria-label="Voice input">🎙️</button>'
@@ -262,10 +265,7 @@ var AI = {
       +     'oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'
       +   '<button onclick="AI.send()" style="background:linear-gradient(135deg,#D4A574 0%,#C4956A 100%);color:#fff;border:none;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">↑</button>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-light);margin-top:6px;">'
-      +   '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;">'
-      +     '<input type="checkbox" id="ai-speak-out" onchange="localStorage.setItem(\'bm-ai-speak-replies\', this.checked ? \'true\' : \'false\')"' + (speakOut ? ' checked' : '') + ' style="cursor:pointer;"> 🔊 Speak replies'
-      +   '</label>'
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;font-size:11px;color:var(--text-light);margin-top:6px;">'
       +   '<span>Powered by AI</span>'
       + '</div>'
       + '</div>';
@@ -354,8 +354,7 @@ var AI = {
       AI._saveHistory();
       AI._refreshMessages();
       AI._scrollToBottom();
-      // Speak the reply if the user toggled it on
-      if (localStorage.getItem('bm-ai-speak-replies') === 'true') AI.speak(response);
+      // v639: TTS speak removed entirely — was unwanted noise.
     }).catch(function(err) {
       restoreBtn();
       AI._removeTyping();

@@ -1,5 +1,5 @@
 {
-  "version": 638,
+  "version": 639,
   "released": "2026-05-06",
   "notes": "loud cloud-auth badge — silent RLS rejections won't recur"
 }
