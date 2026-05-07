@@ -133,7 +133,10 @@ var ChipDrops = {
         ChipDrops._loading = false;
         if (res.error) { ChipDrops._err = res.error.message; }
         else { ChipDrops._spots = res.data || []; }
-        if (window._currentPage === 'chipdrops') {
+        // v640: was `_currentPage === 'chipdrops'` only — but Chip Drops
+        // lives inside Operations hub now, so currentPage is 'operations'.
+        // Check for the actual map container in the DOM instead.
+        if (document.getElementById('chipdrops-map')) {
           var listEl = document.getElementById('chipdrops-list');
           if (listEl) listEl.innerHTML = ChipDrops._renderList();
           ChipDrops._renderMap();
@@ -158,6 +161,15 @@ var ChipDrops = {
     var el = document.getElementById('chipdrops-map');
     if (!el || typeof maplibregl === 'undefined') return;
     var spots = ChipDrops._filteredSpots().filter(function(s) { return s.lat && s.lng; });
+
+    // v640: detect stale map (container was replaced on re-render). If the
+    // existing map's container is no longer the live DOM element, destroy
+    // and recreate. Was rendering pins into a detached/orphan node.
+    if (ChipDrops._map && ChipDrops._map.getContainer() !== el) {
+      try { ChipDrops._map.remove(); } catch(e) {}
+      ChipDrops._map = null;
+      ChipDrops._pins = [];
+    }
 
     if (!ChipDrops._map) {
       var center = spots.length ? [parseFloat(spots[0].lng), parseFloat(spots[0].lat)] : [-73.91556, 41.27306];
