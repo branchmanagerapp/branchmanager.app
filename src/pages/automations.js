@@ -439,11 +439,27 @@ var AutomationsPage = {
     UI.toast(msg);
   },
 
-  // App startup — delegates daily run to _autoRun, sets up hourly re-check
+  // App startup — DISABLED v643 (May 6 2026)
+  // The pre-v643 init() called _autoRun on every app boot + every hour, which
+  // silently fired runQuoteFollowups + runInvoiceFollowups + runVisitReminders
+  // + runReviewRequests, sending automated customer emails. This is the same
+  // pattern that caused the May 6 marketing-automation incident where 317
+  // emails went to 179 customers (Frances 21 copies, Basquali 23, Fred 5).
+  //
+  // Doug's standing rule: NEVER auto-schedule customer emails without an
+  // explicit OK. The manual buttons in the Automations page (📋 Quote
+  // Follow-ups, 💰 Invoice Reminders) still work — they require an
+  // intentional click. Hourly auto-fire is permanently off.
+  //
+  // To re-enable for testing only (Doug only):
+  //   localStorage.setItem('bm-allow-auto-followups', 'true')
   init: function() {
-    // Run daily automations after a short delay to let the app fully initialize
+    if (localStorage.getItem('bm-allow-auto-followups') !== 'true') {
+      console.log('[automations] Auto-run disabled (v643). Use the manual buttons in Settings → Automations to send follow-ups.');
+      return;
+    }
+    console.warn('[automations] Auto-run ENABLED via bm-allow-auto-followups flag — customer emails will fire silently.');
     setTimeout(function() { AutomationsPage._autoRun(); }, 5000);
-    // Re-check every hour (catches the midnight rollover)
     setInterval(function() {
       var nowDay = new Date().toISOString().split('T')[0];
       if (localStorage.getItem('bm-automations-last-run') !== nowDay) {
