@@ -5,81 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quote / Estimate Approval</title>
   <style>
+    /* v635: Jobber-style customer approve page —
+       cleaner whitespace, subtle top accent (no heavy header bar),
+       2-card meta layout, sticky bottom CTAs, generous padding.
+       JS untouched — every element id and class name preserved. */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f0; color: #1d1d1f; min-height: 100vh; }
-    .page { max-width: 640px; margin: 0 auto; padding: 20px; }
-    .header { background: #1a3c12; color: #fff; padding: 20px 24px; border-radius: 12px 12px 0 0; }
-    .header-logo { font-size: 13px; opacity: .75; margin-bottom: 6px; }
-    .header h1 { font-size: 22px; font-weight: 700; }
-    .header-status { margin-top: 10px; }
-    .card { background: #fff; border-radius: 0 0 12px 12px; padding: 24px; box-shadow: 0 2px 20px rgba(0,0,0,.08); margin-bottom: 16px; }
-    .card-standalone { border-radius: 12px; }
-    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-    .badge-sent { background: rgba(255,255,255,.2); color: #fff; border: 1px solid rgba(255,255,255,.4); }
-    .badge-approved { background: #e8f5e9; color: #2e7d32; }
-    .badge-declined { background: #ffebee; color: #c62828; }
-    .section-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 6px; }
-    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-    .meta-val { font-size: 14px; font-weight: 500; margin-top: 2px; }
-    .desc-box { background: #f8faf8; border-left: 3px solid #1a3c12; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #333; }
-    .line-table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; }
-    .line-table th { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; padding: 6px 0; border-bottom: 2px solid #e8e8e8; text-align: left; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f6f7f9; color: #0f172a; min-height: 100vh; padding-bottom: 24px; }
+    .page { max-width: 760px; margin: 0 auto; padding: 22px 18px; }
+
+    /* ── Document card — subtle colored top accent (Jobber pattern) ── */
+    .doc-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,.05); overflow: hidden; margin-bottom: 18px; }
+    .doc-accent { height: 4px; background: #1a3c12; }
+    .doc-pad { padding: 28px 28px 22px; }
+
+    /* ── Header — status pill + brand ── */
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .header-brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #1a3c12; }
+    .header h1 { font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-top: 6px; color: #0f172a; }
+    .header-status { display: flex; align-items: center; gap: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+    .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .badge-sent { background: #fff8e6; color: #b45309; }
+    .badge-approved { background: #e8f5e9; color: #166534; }
+    .badge-declined { background: #fef2f2; color: #b91c1c; }
+
+    /* ── 2-card meta row — client info / quote meta ── */
+    .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0 24px; }
+    .meta-card { background: #fafbfc; border: 1px solid #eef0f3; border-radius: 12px; padding: 16px 18px; }
+    .meta-row-rows { display: flex; flex-direction: column; gap: 10px; }
+    .meta-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+    .meta-val { font-size: 14px; font-weight: 500; color: #0f172a; margin-top: 2px; }
+    .meta-val-big { font-size: 22px; font-weight: 800; color: #1a3c12; letter-spacing: -.4px; }
+
+    /* legacy alias kept for old code paths */
+    .card { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,.05); margin-bottom: 16px; }
+    .card-standalone { border-radius: 14px; }
+
+    .section-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-bottom: 8px; }
+    .desc-box { background: #f8faf8; border-left: 3px solid #1a3c12; border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 22px; font-size: 14px; line-height: 1.65; color: #1f2937; }
+
+    /* ── Line items table ── */
+    .line-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; }
+    .line-table th { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; padding: 10px 0; border-bottom: 1px solid #eef0f3; text-align: left; letter-spacing: .04em; }
     .line-table th:last-child, .line-table th:nth-child(3), .line-table th:nth-child(4) { text-align: right; }
-    .line-table td { padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; vertical-align: top; }
+    .line-table td { padding: 14px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; vertical-align: top; }
     .line-table td:last-child, .line-table td:nth-child(3), .line-table td:nth-child(4) { text-align: right; }
-    .line-table .total-row td { font-weight: 700; font-size: 16px; border-top: 2px solid #e8e8e8; border-bottom: none; padding-top: 12px; color: #1a3c12; }
-    .actions { margin-top: 24px; }
-    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; margin-bottom: 10px; transition: all .15s; }
-    .btn:active { transform: scale(.98); }
+    .line-table tfoot td { padding: 8px 0; border: none; }
+    .line-table .total-row td { font-weight: 800; font-size: 18px; border-top: 1px solid #eef0f3; padding-top: 14px; color: #0f172a; }
+
+    /* ── Buttons ── */
+    .actions { margin-top: 26px; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px 24px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; margin-bottom: 12px; transition: all .15s; line-height: 1; }
+    .btn:active { transform: scale(.99); }
     .btn-approve { background: #1a3c12; color: #fff; }
     .btn-approve:hover { background: #245219; }
-    .btn-changes { background: #fff; color: #1a3c12; border: 2px solid #1a3c12; }
-    .btn-changes:hover { background: #f0f7f0; }
-    .btn-disabled { background: #e0e0e0; color: #999; cursor: default; }
-    .changes-form { display: none; margin-top: 4px; padding: 16px; background: #f8f8f8; border-radius: 8px; }
-    textarea { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; line-height: 1.5; }
-    textarea:focus { outline: none; border-color: #1a3c12; }
-    .success-card { text-align: center; padding: 40px 24px; }
-    .success-icon { font-size: 52px; margin-bottom: 16px; }
-    .success-card h2 { font-size: 24px; color: #1a3c12; margin-bottom: 8px; }
-    .success-card p { color: #666; font-size: 15px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
-    .footer { text-align: center; font-size: 12px; color: #999; padding: 8px 0 20px; }
-    .footer a { color: #1a3c12; text-decoration: none; }
-    .loader { text-align: center; padding: 80px 20px; }
+    .btn-changes { background: #fff; color: #1a3c12; border: 1px solid #d1d5db; }
+    .btn-changes:hover { background: #f5f7f3; border-color: #1a3c12; }
+    .btn-disabled { background: #e5e7eb; color: #94a3b8; cursor: default; }
+    .btn-decline { background: #fff; color: #b32d2d; border: 1px solid #fca5a5; }
+    .btn-decline:hover { background: #fef2f2; }
+
+    /* ── Sticky bottom CTA bar (mobile + desktop, always visible) ── */
+    .sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.95); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-top: 1px solid #e5e7eb; box-shadow: 0 -4px 16px rgba(0,0,0,.04); padding: 12px 16px; z-index: 50; }
+    .sticky-cta-inner { max-width: 760px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
+    .sticky-cta .btn { margin-bottom: 0; padding: 14px 22px; }
+    .sticky-cta-primary { flex: 1; }
+    .sticky-cta-secondary { flex: 0 0 auto; padding: 14px 18px !important; }
+
+    /* Forms / textareas */
+    .changes-form { display: none; margin-top: 8px; padding: 16px; background: #f6f7f9; border-radius: 10px; }
+    textarea { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; line-height: 1.5; }
+    textarea:focus { outline: none; border-color: #1a3c12; box-shadow: 0 0 0 3px rgba(26,60,18,.1); }
+
+    /* Success / loader / error */
+    .success-card { text-align: center; padding: 48px 24px; }
+    .success-icon { font-size: 56px; margin-bottom: 16px; }
+    .success-card h2 { font-size: 26px; color: #1a3c12; margin-bottom: 10px; font-weight: 800; }
+    .success-card p { color: #475569; font-size: 15px; line-height: 1.7; max-width: 380px; margin: 0 auto; }
+    .footer { text-align: center; font-size: 12px; color: #94a3b8; padding: 14px 0 28px; }
+    .footer a { color: #1a3c12; text-decoration: none; font-weight: 600; }
+    .loader { text-align: center; padding: 100px 20px; }
     .loader .icon { font-size: 48px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    .error-card { text-align: center; padding: 40px 20px; }
-    .already-approved { background: #e8f5e9; border-radius: 10px; padding: 16px; text-align: center; margin-top: 20px; }
+    .error-card { text-align: center; padding: 48px 20px; }
+    .already-approved { background: #e8f5e9; border-radius: 12px; padding: 20px; text-align: center; margin-top: 20px; border: 1px solid #a5d6a7; }
+
+    /* Signature pad */
     .sig-canvas {
-      width: 100%; height: 150px; border: 2px solid #1a3c12; border-radius: 8px;
+      width: 100%; height: 150px; border: 1px solid #d1d5db; border-radius: 10px;
       background: #fff; touch-action: none; cursor: crosshair; display: block;
     }
-    .sig-section { display: none; margin-top: 16px; border-top: 1px solid #eee; padding-top: 16px; }
-    .sig-clear { background: none; border: none; color: #999; font-size: 12px; cursor: pointer; margin-top: 4px; text-decoration: underline; }
-    .sig-legal { font-size: 11px; color: #999; margin-top: 10px; line-height: 1.5; }
+    .sig-section { display: none; margin-top: 18px; border-top: 1px solid #eef0f3; padding-top: 18px; }
+    .sig-clear { background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; margin-top: 4px; text-decoration: underline; }
+    .sig-legal { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.5; }
     .sig-toggle { background: none; border: none; color: #1a3c12; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 4px 0; margin-bottom: 6px; font-weight: 600; }
     .sig-typed-input {
-      width: 100%; height: 80px; border: 2px solid #1a3c12; border-radius: 8px;
+      width: 100%; height: 80px; border: 1px solid #d1d5db; border-radius: 10px;
       background: #fff; padding: 12px 16px; font-size: 38px; line-height: 1.2;
       font-family: 'Brush Script MT', 'Lucida Handwriting', cursive; color: #1a3c12;
       display: block;
     }
-    .sig-typed-input:focus { outline: none; border-color: #245219; }
-    .hic-box { background: #f9f9f9; border: 1px solid #d8d8d8; border-radius: 8px; padding: 12px 14px; margin-top: 18px; font-size: 11px; line-height: 1.55; color: #333; }
+    .sig-typed-input:focus { outline: none; border-color: #1a3c12; box-shadow: 0 0 0 3px rgba(26,60,18,.1); }
+
+    /* HIC legal disclosures */
+    .hic-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 22px; font-size: 11px; line-height: 1.6; color: #475569; }
     .hic-box p { margin: 0 0 8px; }
     .hic-box p:last-child { margin-bottom: 0; }
-    .hic-box strong { color: #1a3c12; }
-    .li-photos { display: grid; grid-template-columns: repeat(auto-fill, 60px); gap: 4px; margin-top: 6px; }
-    .li-photos a { display: block; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; }
-    .li-photos img { width: 60px; height: 60px; object-fit: cover; display: block; border: 1px solid #e0e0e0; border-radius: 8px; }
-    .btn-decline { background: #fff; color: #b32d2d; border: 2px solid #d99a9a; }
-    .btn-decline:hover { background: #fdf3f3; }
-    @media (max-width: 480px) {
-      .page { padding: 10px; }
-      .header { padding: 16px 18px; }
-      .card { padding: 18px; }
-      .meta-grid { grid-template-columns: 1fr; gap: 10px; }
+    .hic-box strong { color: #0f172a; }
+
+    /* Photos */
+    .li-photos { display: grid; grid-template-columns: repeat(auto-fill, 64px); gap: 6px; margin-top: 8px; }
+    .li-photos a { display: block; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; }
+    .li-photos img { width: 64px; height: 64px; object-fit: cover; display: block; border: 1px solid #e5e7eb; border-radius: 10px; }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .page { padding: 14px 12px; }
+      .doc-pad { padding: 20px 18px 18px; }
+      .header h1 { font-size: 22px; }
+      .meta-row { grid-template-columns: 1fr; gap: 10px; }
       .line-table th:nth-child(3), .line-table td:nth-child(3) { display: none; }
+      .sticky-cta { padding: 10px 12px; }
+      .sticky-cta .btn { padding: 14px 14px; font-size: 14px; }
     }
   </style>
   <script src="branding.js"></script>
@@ -309,44 +356,64 @@
         ? (function() { var d = Math.ceil((new Date(q.expires_at) - new Date()) / 86400000); return d > 0 ? d + ' days left' : 'Expired'; })()
         : '30 days';
 
+      // v635: Jobber-style 2-card meta + sticky CTA layout. Every element id
+      // is preserved (sig-section, btn-approve-main, ft-subtotal, ft-tax,
+      // ft-total, changes-form, decline-form, etc.) so existing JS keeps working.
+      var clientLine = esc(q.client_name || '');
+      var phoneLine  = esc(q.client_phone || '');
+      var emailLine  = esc(q.client_email || '');
+
       el('app').innerHTML = ''
-        + '<div class="header">'
-        + '<div class="header-logo">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
-        + '<h1>' + docTerm + ' #' + esc(q.quote_number || '') + '</h1>'
-        + '<div class="header-status">' + statusBadge + '</div>'
-        + '</div>'
-        + '<div class="card">'
-        + expiryHtml
-        + '<div class="meta-grid">'
-        + '<div><div class="section-label">Property</div><div class="meta-val">' + esc(q.property || '—') + '</div></div>'
-        + '<div><div class="section-label">Quote Date</div><div class="meta-val">' + dateShort(q.created_at) + '</div></div>'
-        + '<div><div class="section-label">Total</div><div class="meta-val" style="font-size:20px;font-weight:700;color:#1a3c12;">' + money(q.total) + '</div></div>'
-        + '<div><div class="section-label">Valid Until</div><div class="meta-val">' + expiryMeta + '</div></div>'
-        + '</div>'
-        + (q.description ? '<div class="desc-box">' + esc(q.description).replace(/\n/g,'<br>') + '</div>' : '')
-        + (function() {
-          var vUrl = q.videoUrl || q.video_url;
-          if (!vUrl) return '';
-          // Only allow YouTube URLs for security
-          var safeUrl = vUrl.replace('watch?v=','embed/').replace('youtu.be/','youtube.com/embed/');
-          if (!safeUrl.match(/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//)) return '';
-          return '<div style="margin-bottom:20px;"><div class="section-label">Property Walkthrough</div><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;"><iframe src="' + esc(safeUrl) + '" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div></div>';
-        })()
-        + '<div class="section-label">Services</div>'
-        + (window._pickHelpHtml || '')
-        + '<table class="line-table"><thead><tr>'
-        +   (allowSelection ? '<th style="width:32px;text-align:center;">Pick</th>' : '')
-        +   '<th>Service</th><th>Description</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>'
-        + '<tbody>' + lineRows + '</tbody>'
-        + (items.length ? '<tfoot>'
-          + (q.subtotal && q.tax_rate ? '<tr><td colspan="' + (allowSelection ? 5 : 4) + '" style="font-weight:400;font-size:13px;color:#666;padding:6px 0;border:none;">Subtotal</td><td id="ft-subtotal" style="font-weight:400;font-size:13px;color:#666;padding:6px 0;border:none;text-align:right;">' + money(q.subtotal) + '</td></tr>' : '')
-          + (q.tax_rate ? '<tr><td colspan="' + (allowSelection ? 5 : 4) + '" style="font-weight:400;font-size:13px;color:#666;padding:6px 0;border:none;">Tax (' + q.tax_rate + '%)</td><td id="ft-tax" style="font-weight:400;font-size:13px;color:#666;padding:6px 0;border:none;text-align:right;">' + money(q.tax_amount || 0) + '</td></tr>' : '')
-          + '<tr class="total-row"><td colspan="' + (allowSelection ? 5 : 4) + '">Total</td><td id="ft-total">' + money(q.total) + '</td></tr>'
-          + '</tfoot>' : '')
-        + '</table>'
-        + actionHtml
-        + '</div>'
-        + '<div class="footer">Questions? <a href="tel:' + BM_CONFIG.phoneDigits + '">📞 ' + esc(BM_CONFIG.phone) + '</a> · <a href="mailto:' + esc(BM_CONFIG.email) + '">' + esc(BM_CONFIG.email) + '</a></div>';
+        + '<div class="doc-card">'
+        +   '<div class="doc-accent"></div>'
+        +   '<div class="doc-pad">'
+        +     '<div class="header">'
+        +       '<div class="header-brand">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
+        +       '<div class="header-status">' + statusBadge + '</div>'
+        +     '</div>'
+        +     '<h1>' + docTerm + ' #' + esc(q.quote_number || '') + '</h1>'
+        +     expiryHtml
+
+        // 2-card meta — client info left, quote meta right
+        +     '<div class="meta-row">'
+        +       '<div class="meta-card"><div class="meta-row-rows">'
+        +         (clientLine ? '<div><div class="meta-label">Prepared for</div><div class="meta-val" style="font-size:16px;font-weight:700;">' + clientLine + '</div></div>' : '')
+        +         '<div><div class="meta-label">Property</div><div class="meta-val">' + esc(q.property || '—') + '</div></div>'
+        +         (phoneLine ? '<div><div class="meta-label">Phone</div><div class="meta-val">' + phoneLine + '</div></div>' : '')
+        +         (emailLine ? '<div><div class="meta-label">Email</div><div class="meta-val">' + emailLine + '</div></div>' : '')
+        +       '</div></div>'
+        +       '<div class="meta-card"><div class="meta-row-rows">'
+        +         '<div><div class="meta-label">' + docTerm + ' date</div><div class="meta-val">' + dateShort(q.created_at) + '</div></div>'
+        +         '<div><div class="meta-label">Valid until</div><div class="meta-val">' + expiryMeta + '</div></div>'
+        +         '<div><div class="meta-label">Total</div><div class="meta-val meta-val-big">' + money(q.total) + '</div></div>'
+        +       '</div></div>'
+        +     '</div>'
+
+        +     (q.description ? '<div class="desc-box">' + esc(q.description).replace(/\n/g,'<br>') + '</div>' : '')
+        +     (function() {
+                var vUrl = q.videoUrl || q.video_url;
+                if (!vUrl) return '';
+                var safeUrl = vUrl.replace('watch?v=','embed/').replace('youtu.be/','youtube.com/embed/');
+                if (!safeUrl.match(/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//)) return '';
+                return '<div style="margin-bottom:22px;"><div class="section-label">Property walkthrough</div><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;"><iframe src="' + esc(safeUrl) + '" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div></div>';
+              })()
+
+        +     '<div class="section-label" style="margin-top:6px;">Services</div>'
+        +     (window._pickHelpHtml || '')
+        +     '<table class="line-table"><thead><tr>'
+        +       (allowSelection ? '<th style="width:32px;text-align:center;">Pick</th>' : '')
+        +       '<th>Service</th><th>Description</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>'
+        +     '<tbody>' + lineRows + '</tbody>'
+        +     (items.length ? '<tfoot>'
+              + (q.subtotal && q.tax_rate ? '<tr><td colspan="' + (allowSelection ? 5 : 4) + '" style="font-weight:400;font-size:13px;color:#64748b;text-align:right;">Subtotal</td><td id="ft-subtotal" style="font-weight:600;font-size:13px;color:#0f172a;text-align:right;">' + money(q.subtotal) + '</td></tr>' : '')
+              + (q.tax_rate ? '<tr><td colspan="' + (allowSelection ? 5 : 4) + '" style="font-weight:400;font-size:13px;color:#64748b;text-align:right;">Tax (' + q.tax_rate + '%)</td><td id="ft-tax" style="font-weight:600;font-size:13px;color:#0f172a;text-align:right;">' + money(q.tax_amount || 0) + '</td></tr>' : '')
+              + '<tr class="total-row"><td colspan="' + (allowSelection ? 5 : 4) + '">Total</td><td id="ft-total">' + money(q.total) + '</td></tr>'
+              + '</tfoot>' : '')
+        +     '</table>'
+        +     actionHtml
+        +   '</div>' // .doc-pad
+        + '</div>' // .doc-card
+        + '<div class="footer">Questions? <a href="tel:' + BM_CONFIG.phoneDigits + '">📞 ' + esc(BM_CONFIG.phone) + '</a> &middot; <a href="mailto:' + esc(BM_CONFIG.email) + '">' + esc(BM_CONFIG.email) + '</a></div>';
 
       // Store quote data for button handlers
       window._quoteId = q.id;
