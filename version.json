@@ -1,5 +1,5 @@
 {
-  "version": 658,
+  "version": 659,
   "released": "2026-05-08",
-  "notes": "Visitor analytics toggle on Marketing Site Overview tab"
+  "notes": "MarketingSite editor: stats/team/testimonials/hours/emergency editable from BM (no longer SQL-only)"
 }

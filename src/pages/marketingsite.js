@@ -367,6 +367,8 @@ var MarketingSite = (function() {
               + '</details>';
           })()
 
+      +   _renderVisualsSection(s)
+
       +   '<div style="margin-top:18px;display:flex;gap:8px;">'
       +     '<button onclick="MarketingSite._save()" style="background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Save &amp; refresh preview</button>'
       +     '<button onclick="MarketingSite._download()" style="background:#fff;border:1px solid var(--border);padding:10px 16px;border-radius:6px;font-size:13px;cursor:pointer;">Download HTML</button>'
@@ -390,6 +392,58 @@ var MarketingSite = (function() {
   }
   function _socialField(id, label, val) {
     return '<input id="ms-social-' + id + '" type="url" value="' + _esc(val || '') + '" placeholder="' + _esc(label) + ' URL" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;">';
+  }
+
+  // Visuals (Home/Contact richness): stats, why-us, team, testimonials,
+  // hero-features chips, hours, emergency 24/7, rating summary. All render
+  // conditionally on data presence in render-marketing-site, so empty fields
+  // simply omit the section.
+  function _renderVisualsSection(s) {
+    var stats = s.stats || [];
+    var whyUs = s.why_us || [];
+    var team = s.team || [];
+    var testimonials = s.testimonials || [];
+    var heroFeatures = s.hero_features || [];
+    var hours = s.hours || '';
+    var emerg = !!s.emergency_24_7;
+    var rating = s.rating_summary || {};
+    var ta = function(id, ph, val, h) {
+      return '<textarea id="' + id + '" placeholder="' + _esc(ph) + '" style="width:100%;height:' + (h || 90) + 'px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;">' + _esc(val || '') + '</textarea>';
+    };
+    return ''
+      + '<details style="margin-top:14px;border:1px solid var(--border);border-radius:8px;background:#fafafa;">'
+      + '<summary style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);">Home &amp; Contact visuals <span style="font-weight:400;text-transform:none;">&mdash; stats, team, testimonials, hours, emergency band</span></summary>'
+      + '<div style="padding:14px;">'
+      +   _section('Hero feature chips <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; one per line, e.g. "Licensed &amp; Insured"</span>')
+      +   ta('ms-hero-features', 'Licensed & Insured\n10+ Years Experience\nFree Estimates\n5-Star Rated', heroFeatures.join('\n'), 80)
+
+      +   _section('Stats bar <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; "value | label" per line, e.g. "500+ | Trees Removed"</span>')
+      +   ta('ms-stats', '500+ | Trees Removed\n70+ | 5-Star Reviews\n10+ | Years Experience', stats.map(function(x){ return (x.value||'') + ' | ' + (x.label||''); }).join('\n'), 100)
+
+      +   _section('Why hire us <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; one bullet per line</span>')
+      +   ta('ms-why-us', 'Direct communication with the owners\nHonest pricing — no hidden fees\nComplete job site cleanup', whyUs.join('\n'), 100)
+
+      +   _section('Team <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; "name | role | bio" per line</span>')
+      +   ta('ms-team', 'Catherine Conway | Branch Manager & Sales | Your first point of contact…\nDoug Brown | Operations | Ensures the crew runs safely…', team.map(function(m){ return [m.name, m.role || '', m.bio || ''].join(' | '); }).join('\n'), 110)
+
+      +   _section('Testimonials <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; "stars | quote | name | location" per line (stars defaults to 5)</span>')
+      +   ta('ms-testimonials', '5 | The crew was careful, professional, and cleaned up everything. | Mark R. | Yorktown, NY\n5 | Prompt, fair pricing, owners on site. | Jennifer L. | Briarcliff Manor, NY', testimonials.map(function(t){ return [t.stars||5, t.quote||'', t.name||'', t.location||''].join(' | '); }).join('\n'), 140)
+
+      +   '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">'
+      +     '<div>' + _section('Rating &mdash; stars') + '<input id="ms-rating-stars" type="number" min="0" max="5" step="0.1" value="' + _esc(rating.stars || '') + '" placeholder="5.0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></div>'
+      +     '<div>' + _section('Rating &mdash; count') + '<input id="ms-rating-count" type="number" min="0" value="' + _esc(rating.count || '') + '" placeholder="70" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></div>'
+      +     '<div>' + _section('Rating &mdash; source') + '<input id="ms-rating-source" type="text" value="' + _esc(rating.source || '') + '" placeholder="Google" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></div>'
+      +   '</div>'
+
+      +   _section('Hours <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; free-form one line</span>')
+      +   '<input id="ms-hours" type="text" value="' + _esc(hours) + '" placeholder="Mon–Fri 7am–6pm | Sat 8am–2pm | Emergency: 24/7" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;">'
+
+      +   '<label style="display:flex;align-items:center;gap:8px;margin-top:14px;cursor:pointer;font-size:13px;">'
+      +     '<input id="ms-emerg247" type="checkbox" ' + (emerg ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;">'
+      +     '<span><strong>Emergency 24/7</strong> &mdash; show the red emergency band on Home + Contact</span>'
+      +   '</label>'
+      + '</div>'
+      + '</details>';
   }
 
   // ── Render: Publish tab ────────────────────────────────────────────────
@@ -678,6 +732,47 @@ var MarketingSite = (function() {
     setPage('areas',    'intro',      v('ms-page-areas_intro'));
     setPage('contact',  'intro',      v('ms-page-contact_intro'));
     _site.pages = pages;
+
+    // ── Visuals (Home/Contact richness) ────────────────────────────────
+    _site.hero_features = lines('ms-hero-features');
+    _site.why_us = lines('ms-why-us');
+    _site.stats = lines('ms-stats').map(function(line) {
+      var parts = line.split('|').map(function(p) { return p.trim(); });
+      if (!parts[0]) return null;
+      return { value: parts[0], label: parts[1] || '' };
+    }).filter(Boolean);
+    _site.team = lines('ms-team').map(function(line) {
+      var parts = line.split('|').map(function(p) { return p.trim(); });
+      if (!parts[0]) return null;
+      return { name: parts[0], role: parts[1] || '', bio: parts[2] || '' };
+    }).filter(Boolean);
+    _site.testimonials = lines('ms-testimonials').map(function(line) {
+      var parts = line.split('|').map(function(p) { return p.trim(); });
+      // Allow either "stars | quote | name | location" or "quote | name | location"
+      var stars, quote, name, loc;
+      if (parts.length >= 1 && /^[0-9]+(\.[0-9]+)?$/.test(parts[0])) {
+        stars = +parts[0]; quote = parts[1] || ''; name = parts[2] || ''; loc = parts[3] || '';
+      } else {
+        stars = 5;          quote = parts[0] || ''; name = parts[1] || ''; loc = parts[2] || '';
+      }
+      if (!quote) return null;
+      return { stars: stars, quote: quote, name: name, location: loc };
+    }).filter(Boolean);
+    var ratingStars = parseFloat(v('ms-rating-stars'));
+    var ratingCount = parseInt(v('ms-rating-count'), 10);
+    var ratingSrc   = v('ms-rating-source').trim();
+    if (!isNaN(ratingStars) || !isNaN(ratingCount) || ratingSrc) {
+      _site.rating_summary = {
+        stars:  isNaN(ratingStars) ? undefined : ratingStars,
+        count:  isNaN(ratingCount) ? undefined : ratingCount,
+        source: ratingSrc || undefined,
+      };
+    } else {
+      delete _site.rating_summary;
+    }
+    var hoursVal = v('ms-hours').trim();
+    if (hoursVal) _site.hours = hoursVal; else delete _site.hours;
+    _site.emergency_24_7 = !!(document.getElementById('ms-emerg247') && document.getElementById('ms-emerg247').checked);
   }
 
   // ── Public API ────────────────────────────────────────────────────────
