@@ -853,12 +853,17 @@ var DashboardPage = {
           + '</div>';
       };
 
-      el.innerHTML = _renderSection('texts', 'Texts', '💬', texts)
-        + _renderSection('calls', 'Calls', '📞', calls)
-        + _renderSection('emails', 'Email', '✉️', emails);
+      // v672: only render the lead-list sections in legacy (non-compact) layout.
+      // The compact stat-card has already been filled by countEl + badge above.
+      if (el) {
+        el.innerHTML = _renderSection('texts', 'Texts', '💬', texts)
+          + _renderSection('calls', 'Calls', '📞', calls)
+          + _renderSection('emails', 'Email', '✉️', emails);
+      }
 
     } catch(e) {
-      el.innerHTML = '<div style="font-size:13px;color:var(--text-light);">Could not load activity.</div>';
+      if (el) el.innerHTML = '<div style="font-size:13px;color:var(--text-light);">Could not load activity.</div>';
+      else if (badge) badge.textContent = 'Could not load';
     }
   },
 

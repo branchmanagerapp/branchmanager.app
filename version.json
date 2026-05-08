@@ -1,5 +1,5 @@
 {
-  "version": 672,
+  "version": 673,
   "released": "2026-05-08",
-  "notes": "Phase 2: Per-tenant email FROM — Crew+ tier sends as tenant's own brand via Subscription.canUseFeature('email_per_tenant')"
+  "notes": "Fix: _fillCallCenterWidget setting innerHTML on null in compact-mode dashboard"
 }
