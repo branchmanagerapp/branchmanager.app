@@ -69,9 +69,11 @@ var DashboardPage = {
     // The heavy desktop widgets below (Leads Center / Workflow grid / Rail)
     // are wrapped in .dash-desktop-only and hidden on mobile so the morning
     // home screen has ONE clear next action.
+    // v646: don't hide the heavy widgets on mobile (Doug wants them too).
+    // Mobile shows BOTH the new focus block (Clock In + first-visit hero)
+    // AND the existing widgets stacked below.
     html += '<style>'
       + '@media (max-width: 768px) {'
-      + '  .dash-desktop-only { display: none !important; }'
       + '  .dash-grid { grid-template-columns: 1fr !important; }'
       + '}'
       + '@media (min-width: 769px) {'

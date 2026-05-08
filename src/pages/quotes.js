@@ -683,16 +683,20 @@ var QuotesPage = {
 
       + '</form>';
 
-    // v622: render as full page with a STICKY bottom action bar so the
-    // primary CTA (Save & Send) is always visible while scrolling — Jobber-
-    // mobile parity. Bottom bar is also where the cancel + draft live.
+    // v646: Jobber-style top bar — round X (left), centered title (no h2),
+    // round ✨ AI (right). Tighter, more focused first impression on mobile.
+    // Sticky bottom action bar (v622) preserved.
+    var quoteTitle = quoteId
+      ? 'Edit ' + QuotesPage._term(true) + ' #' + q.quoteNumber
+      : 'New ' + QuotesPage._term(true).toLowerCase();
     var pageHtml = '<div style="max-width:680px;margin:0 auto;padding:0 0 96px;">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
-      + '<button class="btn btn-outline" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="font-size:13px;">← Back to Quotes</button>'
-      + '<button type="button" onclick="QuotesPage._showAIDraftPicker && QuotesPage._showAIDraftPicker()" title="AI assist" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✨</button>'
+      // Top bar: X / centered title / ✨
+      + '<div style="display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:8px;margin-bottom:6px;padding-top:4px;">'
+      +   '<button type="button" title="Close" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;color:var(--text-light);display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>'
+      +   '<div style="text-align:center;font-size:18px;font-weight:800;color:var(--text);">' + quoteTitle + '</div>'
+      +   '<button type="button" title="AI assist" onclick="QuotesPage._showAIDraftPicker && QuotesPage._showAIDraftPicker()" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0;">✨</button>'
       + '</div>'
-      + '<h2 style="font-size:20px;margin-bottom:4px;">' + (quoteId ? 'Edit ' + QuotesPage._term(true) + ' #' + q.quoteNumber : 'New ' + QuotesPage._term(true)) + '</h2>'
-      + '<div id="q-save-status" style="font-size:11px;color:var(--text-light);margin-bottom:12px;font-style:italic;">Not saved yet — start typing to auto-save.</div>'
+      + '<div id="q-save-status" style="font-size:11px;color:var(--text-light);margin-bottom:14px;font-style:italic;text-align:center;">Not saved yet — start typing to auto-save.</div>'
       + html
       // STICKY BOTTOM ACTION BAR — fixed at viewport bottom, full-width, white bg
       + '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,.06);padding:10px 14px;display:flex;gap:8px;justify-content:flex-end;align-items:center;z-index:50;">'
