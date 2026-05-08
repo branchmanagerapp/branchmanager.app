@@ -301,14 +301,14 @@ var DashboardPage = {
     // v619: 2-column dashboard layout — main (workflow + lead sources) /
     // rail (receivables, inbox, action alerts). Single column on mobile.
     html += '<style>'
-      + '.dash-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;align-items:start;}'
+      + '.dash-grid{display:grid;grid-template-columns:1fr;gap:18px;align-items:start;}' /* v651: single column always per Doug — no side-by-side */
       + '.dash-main,.dash-rail{min-width:0;}'
       + '@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}'
       + '</style>';
     html += '<div class="dash-grid"><div class="dash-main">';
 
     html += '<h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Workflow</h3>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    html += '<div style="display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'; /* v651: single col */
 
     // Requests card
     var allRequests = DB.requests.getAll();
