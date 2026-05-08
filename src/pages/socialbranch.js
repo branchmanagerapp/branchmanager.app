@@ -140,19 +140,20 @@ var SocialBranch = {
     var recent = posts.filter(function(p){ return p.status === 'posted' || p.status === 'failed'; }).sort(function(a,b){ return new Date(b.postedAt || b.createdAt) - new Date(a.postedAt || a.createdAt); }).slice(0, 8);
     var connected = SocialBranch._getConnectedNetworks();
 
-    // v654: Website Visitors widget at top of Marketing dashboard.
-    // Sidebar 'Marketing' button routes here (per v384 sidebar rename),
-    // not to MarketingPage — so the visitor analytics live here too.
-    var html = '<div onclick="loadPage(\'marketing\')" style="background:var(--white);border-radius:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);cursor:pointer;">'
-      +   '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
-      +     '<div><h3 style="font-size:16px;font-weight:700;margin:0;">🌐 Website Visitors</h3>'
-      +       '<div id="sb-analytics-sub" style="font-size:12px;color:var(--text-light);margin-top:2px;">Loading…</div>'
-      +     '</div>'
-      +     '<div id="sb-analytics-mini" style="display:flex;align-items:center;gap:14px;"></div>'
-      +     '<span style="font-size:12px;color:var(--accent);font-weight:600;">Full chart →</span>'
-      +   '</div>'
-      + '</div>';
-    setTimeout(function() { SocialBranch._fillAnalyticsWidget(); }, 80);
+    // v655: Website Visitors widget at top of Marketing dashboard.
+    // Uses shared AnalyticsWidget module — single source of truth.
+    // Click-through expands the full chart in-page (set the tab to
+    // 'analytics' if it exists, otherwise stay here — the full widget
+    // renders below the dashboard tabs separately).
+    var html = '';
+    if (typeof AnalyticsWidget !== 'undefined') {
+      html += AnalyticsWidget.renderCompact({
+        subId: 'sb-aw-sub',
+        miniId: 'sb-aw-mini',
+        ctaText: 'Full chart →',
+        onClickFull: "SocialBranch._goTab('analytics')"
+      });
+    }
 
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:20px;">';
     html += SocialBranch._statCard('Scheduled',  scheduled.length,                'calendar', 'var(--accent)');
@@ -187,36 +188,8 @@ var SocialBranch = {
     return html;
   },
 
-  // v654: same compact analytics widget logic as DashboardPage._fillAnalyticsWidget.
-  // Calls analytics-summary edge fn, renders sessions count + tiny sparkline.
-  _fillAnalyticsWidget: function() {
-    var sub = document.getElementById('sb-analytics-sub');
-    var mini = document.getElementById('sb-analytics-mini');
-    if (!sub || !mini) return;
-    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : '';
-    if (!tid) { sub.textContent = 'No tenant resolved.'; return; }
-    var url = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/analytics-summary?tenant_id=' + encodeURIComponent(tid) + '&days=30';
-    fetch(url).then(function(r){ return r.json(); }).then(function(data) {
-      if (!data || !data.ok) { sub.textContent = 'Analytics not available'; return; }
-      var sessions = data.totals.sessions;
-      var pageviews = data.totals.pageviews;
-      sub.textContent = sessions + ' visitor' + (sessions === 1 ? '' : 's') + ' · ' + pageviews + ' pageview' + (pageviews === 1 ? '' : 's') + ' · last 30 days';
-      var daily = data.daily || [];
-      if (daily.length) {
-        var maxV = Math.max.apply(null, daily.map(function(d){ return d.sessions; }).concat([1]));
-        var W = 120, H = 32, pad = 2;
-        var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
-        var pts = daily.map(function(d, i) {
-          var x = pad + i * stepX;
-          var y = H - pad - ((d.sessions / maxV) * (H - pad * 2));
-          return x.toFixed(1) + ',' + y.toFixed(1);
-        }).join(' ');
-        mini.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:120px;height:32px;display:block;">'
-          + '<polyline fill="none" stroke="#2563eb" stroke-width="1.5" points="' + pts + '"></polyline>'
-          + '</svg>';
-      }
-    }).catch(function(){ sub.textContent = 'Analytics unavailable'; });
-  },
+  // v655: _fillAnalyticsWidget removed — moved to shared AnalyticsWidget
+  // module (src/pages/analytics-widget.js).
 
   _statCard: function(label, value, icon, color) {
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;">'
@@ -939,7 +912,15 @@ var SocialBranch = {
     var maxBucket = Math.max.apply(null, buckets.concat([1]));
 
     var html = '';
-    // Top KPI row
+    // v655: Website visitors full widget at the top of the Analytics tab
+    // (separate from social-post analytics below). One Marketing page,
+    // one Analytics tab — both website + social on one screen.
+    if (typeof AnalyticsWidget !== 'undefined') {
+      html += AnalyticsWidget.renderFull({ bodyId: 'sb-aw-full-body' });
+      html += '<div style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin:18px 0 8px;">Social posts</div>';
+    }
+
+    // Top KPI row (social posts)
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;">'
       + SocialBranch._statCard('Posted', posted.length, 'check-circle', 'var(--green-dark)')
       + SocialBranch._statCard('Scheduled', scheduled.length, 'calendar', 'var(--accent)')
