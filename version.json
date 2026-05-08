@@ -1,5 +1,5 @@
 {
-  "version": 673,
+  "version": 674,
   "released": "2026-05-08",
-  "notes": "Fix: _fillCallCenterWidget setting innerHTML on null in compact-mode dashboard"
+  "notes": "Settings: remove stale Quick Setup checklist (referenced SENDGRID_API_KEY from pre-Resend era)"
 }

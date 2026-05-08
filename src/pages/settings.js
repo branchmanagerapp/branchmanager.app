@@ -51,36 +51,10 @@ var SettingsPage = {
       });
     }, 0);
 
-    // === ONE-TIME SETUP CHECKLIST ===
-    var sgOk2 = true; // v372: Resend lives server-side; treat email as always configured
-    var stripeOk = !!(localStorage.getItem('bm-stripe-base-link'));
-    var supabaseOk = (typeof SupabaseDB !== 'undefined' && SupabaseDB.ready) || stats.totalClients > 100;
-    var allDone = sgOk2 && stripeOk && supabaseOk;
-    if (!allDone) {
-      html += '<div style="background:linear-gradient(135deg,#1a3c12 0%,#00836c 100%);border-radius:12px;padding:20px;margin-bottom:16px;color:#fff;">'
-        + '<div style="font-size:16px;font-weight:800;margin-bottom:12px;">🚀 Quick Setup</div>'
-        + '<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">'
-        + '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">' + (supabaseOk ? '✅' : '⬜') + '</span><span' + (supabaseOk ? ' style="text-decoration:line-through;opacity:.7;"' : '') + '>Supabase connected — your data is live</span></div>'
-        + '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">' + (sgOk2 ? '✅' : '⬜') + '</span><span' + (sgOk2 ? ' style="text-decoration:line-through;opacity:.7;"' : '') + '>Resend email (server-keyed) — automated emails active</span></div>'
-        + '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">' + (stripeOk ? '✅' : '⬜') + '</span><span' + (stripeOk ? ' style="text-decoration:line-through;opacity:.7;"' : '') + '>Stripe payment link — accept online payments</span></div>'
-        + '</div>'
-        + '<details style="margin-top:10px;">'
-        +   '<summary style="cursor:pointer;font-size:12px;color:#a5f3e8;font-weight:600;list-style:none;opacity:.8;">Advanced: Edge Function deploy + Stripe webhook setup ▾</summary>'
-        +   '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;font-size:13px;">'
-        +     '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">⬜</span><span>Deploy Edge Functions (one-time terminal commands):</span></div>'
-        +     '<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:11px;line-height:1.8;margin-left:26px;">'
-        +       'supabase functions deploy stripe-webhook --no-verify-jwt<br>'
-        +       'supabase functions deploy request-notify --no-verify-jwt<br>'
-        +       'supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...<br>'
-        +       'supabase secrets set SENDGRID_API_KEY=SG...<br>'
-        +       'supabase secrets set SUPABASE_SERVICE_ROLE_KEY=ey...'
-        +     '</div>'
-        +     '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">⬜</span><span><a href="https://dashboard.stripe.com/webhooks/create" target="_blank" rel="noopener noreferrer" style="color:#a5f3e8;">Stripe → Webhooks → Add endpoint</a> → <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;">https://ltpivkqahvplapyagljt.supabase.co/functions/v1/stripe-webhook</code></span></div>'
-        +     '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">⬜</span><span>Stripe → Payment Link → After payment → Redirect to <code style="background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;">https://branchmanager.app/paid.html</code></span></div>'
-        +   '</div>'
-        + '</details>'
-        + '</div>';
-    }
+    // v674: Quick Setup checklist removed — was stale (referenced
+    // SENDGRID_API_KEY from before the v372 Resend migration) and the
+    // signals it surfaced (Supabase ready, Stripe link present) now live
+    // in the Cloud Health diagnostic + the Stripe integrations card.
 
     // ════════════════════════════════════════════════════════════════════════
     // META-GROUP HELPERS (v393) — wrap the existing inner-GROUP collapsibles
