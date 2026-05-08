@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 659; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 660; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -929,6 +929,7 @@
       <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
       <!-- v388: Pre-Trip folded into Operations as a tab. Deep link via #pretrip still works. -->
       <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
+      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
       <!-- v419: Team folded into Payroll (tabs: Payroll / Team / Timesheets / My Pay). Operations moved up to where Team was. -->
       <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
@@ -1025,7 +1026,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v659.min.js"></script>
+<script defer src="dist/bm.bundle.v660.min.js"></script>
 
 
 
@@ -1381,35 +1382,38 @@ var TeamHub = {
 
 var OperationsHub = {
   render: function() {
+    // v660: Operations slimmed to 4 tabs (was 7).
+    // - Chip Drops + Weather collapsed into Dispatch map as toggle layers
+    //   (🪵 Chip Drops + 🌧 Radar checkboxes on the map header). Standalone
+    //   #chipdrops / #weather deep links still resolve.
+    // - Fleet + Pre-Trip + Equipment collapsed into one "Fleet & Equipment"
+    //   tab — same mental model: today's fleet health (Fleet inventory at
+    //   top, Pre-Trip inspections in middle, Equipment assets at bottom).
     var tabs = [
-      ['dispatch', 'Dispatch'],
-      ['fleet', 'Fleet'],
-      ['gear', '🛻 Pre-Trip & Equipment'],
+      ['dispatch',   'Dispatch'],
+      ['gear',       '🚛 Fleet & Equipment'],
       ['hiringpool', '🤝 Hiring Pool'],
-      ['chipdrops', 'Chip Drops'],
-      ['chat', 'Chat & Tasks'],
-      ['weather', '🌤 Weather']
+      ['chat',       'Chat & Tasks']
     ];
-    // v577 — collapsed Equipment + Pre-Trip into single "Pre-Trip & Equipment" tab
-    // (vehicles you inspect daily AND the gear you check / sign out are the same
-    // mental model: today's fleet health). Old deep links #pretrip and #equipment
-    // still resolve to their standalone page modules below.
     var r = _renderHubTabs('_opsTab', tabs, 'dispatch');
     var body = '';
+    var sectionDivider = function(title) {
+      return '<div style="height:1px;background:var(--border);margin:28px 0 18px;"></div>'
+        + '<h3 style="margin:0 0 12px;font-size:16px;font-weight:700;">' + title + '</h3>';
+    };
     try {
       if (r.tab === 'dispatch') body = DispatchPage.render();
-      else if (r.tab === 'fleet') body = (typeof FleetPage !== 'undefined' ? FleetPage.render() : '<div style="padding:16px;color:var(--text-light);">Fleet module not loaded.</div>');
       else if (r.tab === 'gear') {
-        // Pre-Trip first (today's must-do), then Equipment (assets) below
-        body = (typeof DailyInspection !== 'undefined' ? DailyInspection.render() : '<div style="padding:16px;color:var(--text-light);">Pre-Trip module not loaded.</div>')
-          + '<div style="height:1px;background:var(--border);margin:24px 0;"></div>'
-          + '<h3 style="margin:0 0 12px;font-size:16px;font-weight:700;">🧰 Equipment</h3>'
+        // Stacked: Fleet (vehicles), Pre-Trip (today's inspections), Equipment (assets)
+        body = '<h3 style="margin:0 0 12px;font-size:16px;font-weight:700;">🚛 Fleet</h3>'
+          + (typeof FleetPage !== 'undefined' ? FleetPage.render() : '<div style="padding:16px;color:var(--text-light);">Fleet module not loaded.</div>')
+          + sectionDivider('🛻 Pre-Trip Inspections')
+          + (typeof DailyInspection !== 'undefined' ? DailyInspection.render() : '<div style="padding:16px;color:var(--text-light);">Pre-Trip module not loaded.</div>')
+          + sectionDivider('🧰 Equipment')
           + (typeof EquipmentPage !== 'undefined' ? EquipmentPage.render() : '<div style="padding:16px;color:var(--text-light);">Equipment module not loaded.</div>');
       }
       else if (r.tab === 'hiringpool') body = (typeof HiringPool !== 'undefined' ? HiringPool.render() : '<div style="padding:16px;color:var(--text-light);">Hiring Pool module not loaded.</div>');
-      else if (r.tab === 'chipdrops') body = (typeof ChipDrops !== 'undefined' ? ChipDrops.render() : '<div style="padding:16px;color:var(--text-light);">Chip Drops module not loaded.</div>');
       else if (r.tab === 'chat') body = (typeof TaskReminders !== 'undefined' ? TaskReminders.render() : '<div style="padding:16px;color:var(--text-light);">Chat & Tasks module not loaded.</div>');
-      else if (r.tab === 'weather') body = (typeof Weather !== 'undefined' ? Weather.renderPage() : '<div style="padding:16px;color:var(--text-light);">Weather module not loaded.</div>');
     } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
     return r.html + body;
   }
@@ -1580,6 +1584,14 @@ function loadPage(page, opts) {
   if (page === 'marketing') {
     if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
     page = 'socialbranch';
+  }
+  // v660: legacy #weather → operations Dispatch tab with radar layer on.
+  // Weather is no longer its own Operations tab — the radar is a map layer
+  // and the forecast widget renders on the Dispatch tab.
+  if (page === 'weather') {
+    window._opsTab = 'dispatch';
+    window._dispatchWeatherLayer = true;
+    page = 'operations';
   }
   // Bulletproof: never wipe an open form when re-loading the SAME page (a sync tick).
   // Different page = user intentionally navigating away → allow.
@@ -2018,6 +2030,12 @@ if (checkAuth()) {
   if (hashPage === 'marketing') {
     hashPage = 'socialbranch';
     if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
+  }
+  // v660: legacy #weather folds into Operations Dispatch tab w/ radar layer.
+  if (hashPage === 'weather') {
+    hashPage = 'operations';
+    window._opsTab = 'dispatch';
+    window._dispatchWeatherLayer = true;
   }
 
   // Priority: URL hash > saved page > default
@@ -2763,6 +2781,12 @@ window.addEventListener('popstate', function(e) {
     if (hashPage === 'marketing') {
       hashPage = 'socialbranch';
       if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
+    }
+    // v660: legacy #weather folds into Operations Dispatch tab w/ radar.
+    if (hashPage === 'weather') {
+      hashPage = 'operations';
+      window._opsTab = 'dispatch';
+      window._dispatchWeatherLayer = true;
     }
     if (typeof loadPage === 'function' && typeof pageRenderers !== 'undefined' && pageRenderers[hashPage]) {
       setTimeout(function() { loadPage(hashPage); }, 100);

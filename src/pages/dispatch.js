@@ -221,21 +221,32 @@ var DispatchPage = {
         + '</div></div>';
     }
 
-    // ═══ LIVE MAP — Jobs + Crew + Fleet vehicles (Bouncie/Trak-4) ═══
-    var fleetOn = window._dispatchFleetLayer !== false; // default ON
+    // ═══ LIVE MAP — Jobs + Crew + Fleet vehicles + opt-in layers ═══
+    var fleetOn     = window._dispatchFleetLayer !== false;   // default ON
+    var chipDropsOn = window._dispatchChipDropsLayer === true; // default OFF
+    var weatherOn   = window._dispatchWeatherLayer === true;   // default OFF
     html += '<div id="dispatch-map-wrap" style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;position:relative;">'
       + '<div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;">'
       + '<span style="font-weight:700;font-size:14px;">📍 Live Map</span>'
-      + '<div style="display:flex;gap:10px;align-items:center;">'
+      + '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">'
       +   '<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;color:var(--text-light);">'
       +     '<input type="checkbox" ' + (fleetOn ? 'checked' : '') + ' onchange="window._dispatchFleetLayer=this.checked;DispatchPage._refreshFleetMarkers();" style="cursor:pointer;">'
-      +     '🚛 Show Fleet'
+      +     '🚛 Fleet'
+      +   '</label>'
+      +   '<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;color:var(--text-light);">'
+      +     '<input type="checkbox" ' + (chipDropsOn ? 'checked' : '') + ' onchange="window._dispatchChipDropsLayer=this.checked;DispatchPage._loadChipDrops();" style="cursor:pointer;">'
+      +     '🪵 Chip Drops'
+      +   '</label>'
+      +   '<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;color:var(--text-light);">'
+      +     '<input type="checkbox" ' + (weatherOn ? 'checked' : '') + ' onchange="window._dispatchWeatherLayer=this.checked;DispatchPage._toggleWeatherLayer();" style="cursor:pointer;">'
+      +     '🌧 Radar'
       +   '</label>'
       +   '<span id="dispatch-map-status" style="font-size:11px;color:var(--text-light);">Loading...</span>'
       + '</div></div>'
-      + '<div id="dispatch-map" style="height:300px;width:100%;"></div></div>';
+      + '<div id="dispatch-map" style="height:340px;width:100%;"></div></div>';
 
-    // Weather at top
+    // v660: Weather widget (forecast/alerts) stays at top — radar overlay
+    // is now a map layer toggle above. Both surfaces complement each other.
     if (typeof Weather !== 'undefined') {
       html += Weather.renderWidget();
     }
@@ -471,6 +482,12 @@ var DispatchPage = {
       // Load fleet vehicles (Bouncie/Trak-4) if toggle enabled
       DispatchPage._loadFleetLocations();
 
+      // Load chip drop spots if toggle was sticky-on from a prior render
+      DispatchPage._loadChipDrops();
+
+      // Apply weather radar layer if toggle was sticky-on
+      DispatchPage._toggleWeatherLayer();
+
       // Refresh crew + fleet every 30 seconds
       DispatchPage._refreshTimer = setInterval(function() {
         DispatchPage._loadCrewLocations();
@@ -531,6 +548,83 @@ var DispatchPage = {
         DispatchPage._fleetMarkers[v.id] = m;
       }
     });
+  },
+
+  // ── Chip-drop spot layer (v660: was its own Operations tab; now an opt-in
+  // map layer here). Reads chip_drop_spots table; respects status colors.
+  _chipDropMarkers: {},
+  _loadChipDrops: function() {
+    if (!DispatchPage._map) return;
+    if (window._dispatchChipDropsLayer !== true) {
+      DispatchPage._refreshChipDropMarkers([]);
+      return;
+    }
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tid) return;
+    sb.from('chip_drop_spots').select('id, name, address, lat, lng, status, last_drop_at').eq('tenant_id', tid).then(function(r) {
+      if (r.error) { console.warn('chipdrops fetch:', r.error.message); return; }
+      DispatchPage._refreshChipDropMarkers(r.data || []);
+    });
+  },
+  _refreshChipDropMarkers: function(spots) {
+    if (!DispatchPage._map) return;
+    var show = window._dispatchChipDropsLayer === true;
+    Object.keys(DispatchPage._chipDropMarkers).forEach(function(id) {
+      var keep = show && spots.some(function(s) { return s.id === id && s.lat && s.lng; });
+      if (!keep) {
+        try { DispatchPage._chipDropMarkers[id].remove(); } catch(e) {}
+        delete DispatchPage._chipDropMarkers[id];
+      }
+    });
+    if (!show) return;
+    spots.forEach(function(s) {
+      if (!s.lat || !s.lng) return;
+      if (DispatchPage._chipDropMarkers[s.id]) return;
+      var color = s.status === 'full' ? '#c62828' : (s.status === 'paused' ? '#9e9e9e' : '#2e7d32');
+      var el = document.createElement('div');
+      el.style.cssText = 'width:26px;height:26px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;';
+      el.textContent = '🪵';
+      var popupHtml = '<strong>' + UI.esc(s.name || 'Chip drop') + '</strong>'
+        + (s.address ? '<br><span style="font-size:12px;">' + UI.esc(s.address) + '</span>' : '')
+        + '<br><span style="font-size:12px;color:' + color + ';text-transform:capitalize;">' + UI.esc(s.status || 'active') + '</span>'
+        + (s.last_drop_at ? '<br><span style="font-size:11px;color:#64748b;">last drop: ' + UI.dateRelative(s.last_drop_at) + '</span>' : '')
+        + '<br><a href="#chipdrops" style="font-size:11px;">Manage →</a>';
+      var m = new maplibregl.Marker({ element: el })
+        .setLngLat([parseFloat(s.lng), parseFloat(s.lat)])
+        .setPopup(new maplibregl.Popup().setHTML(popupHtml))
+        .addTo(DispatchPage._map);
+      DispatchPage._chipDropMarkers[s.id] = m;
+    });
+  },
+
+  // ── Weather radar layer (v660: was its own Operations tab; now an opt-in
+  // map layer here). Uses RainViewer's tile API — free, no key needed.
+  _weatherLayerId: 'weather-radar',
+  _toggleWeatherLayer: function() {
+    if (!DispatchPage._map) return;
+    var on = window._dispatchWeatherLayer === true;
+    var map = DispatchPage._map;
+    var layerId = DispatchPage._weatherLayerId;
+    var sourceId = layerId + '-src';
+    var present = !!map.getLayer(layerId);
+    if (on && !present) {
+      // RainViewer's nowcast endpoint returns the most recent radar frame URL
+      fetch('https://api.rainviewer.com/public/weather-maps.json').then(function(r) {
+        return r.json();
+      }).then(function(data) {
+        var frames = data && data.radar && data.radar.past;
+        if (!frames || !frames.length) return;
+        var latest = frames[frames.length - 1];
+        var tileUrl = data.host + latest.path + '/256/{z}/{x}/{y}/2/1_1.png';
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        map.addSource(sourceId, { type: 'raster', tiles: [tileUrl], tileSize: 256 });
+        map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': 0.6 } });
+      }).catch(function(e) { console.warn('weather radar:', e); });
+    } else if (!on && present) {
+      try { map.removeLayer(layerId); } catch(e) {}
+      try { map.removeSource(sourceId); } catch(e) {}
+    }
   },
 
   _addJobPins: function() {
