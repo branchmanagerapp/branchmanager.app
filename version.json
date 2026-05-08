@@ -1,5 +1,5 @@
 {
-  "version": 665,
+  "version": 666,
   "released": "2026-05-08",
-  "notes": "Weather: expand-toggle inline under dispatch map + clickable days drive that day's hourly view"
+  "notes": "Dashboard workflow back to 2x2 grid (4 boxes / 2 rows) — was single-column from v651"
 }

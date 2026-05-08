@@ -319,7 +319,7 @@ var DashboardPage = {
     html += '<div class="dash-grid"><div class="dash-main">';
 
     html += '<h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Workflow</h3>';
-    html += '<div style="display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'; /* v651: single col */
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'; /* v666: back to 2x2 (was single-col v651) — cards already have 2x2 border pattern */
 
     // Requests card
     var allRequests = DB.requests.getAll();
