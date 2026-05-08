@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 656; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 657; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1025,7 +1025,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v656.min.js"></script>
+<script defer src="dist/bm.bundle.v657.min.js"></script>
 
 
 
@@ -1090,11 +1090,16 @@
 
 
 <script>
-// Auto-configure Supabase connection
-if (!localStorage.getItem('bm-supabase-url')) {
-  localStorage.setItem('bm-supabase-url', 'https://ltpivkqahvplapyagljt.supabase.co');
-  localStorage.setItem('bm-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI');
-}
+// Auto-configure Supabase connection.
+// v657: try/catch — localStorage throws SecurityError inside data: URLs
+// (Electron tooling occasionally loads the app that way) and the
+// unhandled throw was eating Sentry quota.
+try {
+  if (!localStorage.getItem('bm-supabase-url')) {
+    localStorage.setItem('bm-supabase-url', 'https://ltpivkqahvplapyagljt.supabase.co');
+    localStorage.setItem('bm-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI');
+  }
+} catch(e) {}
 </script>
 
 
@@ -2128,8 +2133,10 @@ if ('serviceWorker' in navigator) {
   // Don't show if already installed as PWA
   if (window.matchMedia('(display-mode: standalone)').matches) return;
   if (window.navigator.standalone) return;
-  // Don't show if dismissed recently
-  var dismissed = localStorage.getItem('bm-install-dismissed');
+  // Don't show if dismissed recently. v657: storage may be unavailable
+  // (data: URL / sandboxed iframe) — fall through to "not dismissed".
+  var dismissed = null;
+  try { dismissed = localStorage.getItem('bm-install-dismissed'); } catch(e){}
   if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
 
   // Android/Chrome install prompt
@@ -2202,14 +2209,17 @@ function toggleDarkMode() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 // Restore on load — EXCEPT in PWA standalone mode where dark is disabled.
+// v657: try/catch — data: URLs / sandboxed contexts have no localStorage.
 var _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-if (_isStandalone) {
-  document.documentElement.removeAttribute('data-theme');
-  localStorage.removeItem('bm-dark-mode');
-} else if (localStorage.getItem('bm-dark-mode') === 'dark') {
-  document.documentElement.setAttribute('data-theme', 'dark');
-  setTimeout(function() { var icon = document.getElementById('dark-mode-icon'); if (icon) icon.setAttribute('data-lucide', 'sun'); if (typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
-}
+try {
+  if (_isStandalone) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('bm-dark-mode');
+  } else if (localStorage.getItem('bm-dark-mode') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    setTimeout(function() { var icon = document.getElementById('dark-mode-icon'); if (icon) icon.setAttribute('data-lucide', 'sun'); if (typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
+  }
+} catch(e){}
 
 // ── Keyboard Shortcuts ──
 document.addEventListener('keydown', function(e) {
@@ -2696,10 +2706,14 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 document.addEventListener('DOMContentLoaded', function() { if (typeof lucide !== 'undefined') lucide.createIcons(); });
 
 // v642: one-time welcome splash for friends who arrived via a ?welcome= share link
+// v657: storage-guarded — no welcome splash if localStorage is inaccessible.
 document.addEventListener('DOMContentLoaded', function() {
-  if (localStorage.getItem('bm-welcome-show') !== '1') return;
-  var name = localStorage.getItem('bm-welcome-name') || '';
-  localStorage.removeItem('bm-welcome-show');
+  var name = '';
+  try {
+    if (localStorage.getItem('bm-welcome-show') !== '1') return;
+    name = localStorage.getItem('bm-welcome-name') || '';
+    localStorage.removeItem('bm-welcome-show');
+  } catch(e) { return; }
   setTimeout(function() {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -2714,12 +2728,14 @@ document.addEventListener('DOMContentLoaded', function() {
     ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
   }, 600);
 });
-// Restore sidebar state
-if (localStorage.getItem('bm-sidebar-collapsed') === 'true') {
-  document.getElementById('sidebar').classList.add('collapsed');
-  var tb = document.getElementById('sidebar-toggle-btn');
-  if (tb) tb.textContent = '▶';
-}
+// Restore sidebar state. v657: storage-guarded for data:-URL contexts.
+try {
+  if (localStorage.getItem('bm-sidebar-collapsed') === 'true') {
+    document.getElementById('sidebar').classList.add('collapsed');
+    var tb = document.getElementById('sidebar-toggle-btn');
+    if (tb) tb.textContent = '▶';
+  }
+} catch(e){}
 // Browser back/forward button support
 window.addEventListener('popstate', function(e) {
   var page = (e.state && e.state.page) || (window.location.hash ? window.location.hash.slice(1) : 'dashboard');

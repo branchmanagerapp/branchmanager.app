@@ -1,5 +1,5 @@
 {
-  "version": 656,
+  "version": 657,
   "released": "2026-05-08",
-  "notes": "Marketing consolidation: #marketing redirects to SocialBranch leads tab; MarketingHub deleted; sidebar+page-title now consistent"
+  "notes": "Wrap boot-time localStorage in try/catch — silences SecurityError noise from data:-URL Sentry events"
 }
