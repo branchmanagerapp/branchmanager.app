@@ -18,6 +18,10 @@ var MarketingPage = (function() {
   function getQuotes()   { try { return DB.quotes   ? DB.quotes.getAll()   : DB.getAll('bm-quotes');   } catch (e) { return []; } }
   function getJobs()     { try { return DB.jobs     ? DB.jobs.getAll()     : DB.getAll('bm-jobs');     } catch (e) { return []; } }
   function getInvoices() { try { return DB.invoices ? DB.invoices.getAll() : DB.getAll('bm-invoices'); } catch (e) { return []; } }
+  // v650: pre-existing bug — renderTagSources called getClients() but only
+  // get{Requests,Quotes,Jobs,Invoices} were defined. Add getClients to
+  // prevent the "Error loading tab" surface.
+  function getClients()  { try { return DB.clients  ? DB.clients.getAll()  : DB.getAll('bm-clients');  } catch (e) { return []; } }
 
   function parseTs(d) {
     if (!d) return 0;
@@ -440,6 +444,7 @@ var MarketingPage = (function() {
       + '<h2 style="margin:0 0 4px;font-size:22px;">📣 Marketing Dashboard</h2>'
       + '<div style="font-size:13px;color:#64748b;">Your marketing funnel at a glance — lead sources, conversion, revenue attribution, response time.</div>'
       + '</div>'
+      + renderWebsiteAnalytics()
       + renderDraftsToReview()
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;">'
       + renderLeadSources()
@@ -463,6 +468,156 @@ var MarketingPage = (function() {
       + '</div>'
       + '</div>';
     return html;
+  }
+
+  // ---------- Website Analytics (white-label, BM beacon) ----------
+  // Reads `analytics-summary` edge function. Beacon must be enabled in
+  // Settings (tenants.config.analytics_enabled = true) and the
+  // marketing-site rendering must be live for any traffic to be counted.
+  var _analyticsCache = null;
+  var _analyticsRange = parseInt(localStorage.getItem('bm-analytics-days') || '30', 10);
+
+  function renderWebsiteAnalytics() {
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : '';
+    if (!tid) return '';
+
+    var inner = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">'
+      + '<div>'
+      +   '<h3 style="margin:0;font-size:16px;">🌐 Website Visitors</h3>'
+      +   '<div style="font-size:12px;color:#64748b;">Tracked via the BM beacon — white-label, no Google Analytics setup needed.</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:4px;">'
+      + [7, 30, 90].map(function(d) {
+          var active = _analyticsRange === d;
+          return '<button onclick="MarketingPage.setAnalyticsRange(' + d + ')" style="padding:6px 10px;border:1px solid ' + (active ? '#2563eb' : 'var(--border)') + ';background:' + (active ? '#2563eb' : '#fff') + ';color:' + (active ? '#fff' : '#0f172a') + ';border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">' + d + 'd</button>';
+        }).join('')
+      + '</div>'
+      + '</div>';
+
+    inner += '<div id="ma-body" style="min-height:120px;color:var(--text-light);font-size:13px;text-align:center;padding:24px;">⏳ Loading visitor data…</div>';
+
+    setTimeout(loadAnalytics, 50);
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">' + inner + '</div>';
+  }
+
+  function loadAnalytics() {
+    var tid = DB.getTenantId();
+    if (!tid) return;
+    var url = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/analytics-summary?tenant_id=' + encodeURIComponent(tid) + '&days=' + _analyticsRange;
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        _analyticsCache = data;
+        var body = document.getElementById('ma-body');
+        if (!body) return;
+        if (!data || !data.ok) {
+          body.innerHTML = '<div style="color:#c62828;">Failed to load analytics: ' + ((data && data.error) || 'unknown') + '</div>';
+          return;
+        }
+        body.innerHTML = renderAnalyticsBody(data);
+      })
+      .catch(function(e) {
+        var body = document.getElementById('ma-body');
+        if (body) body.innerHTML = '<div style="color:#c62828;">Network error: ' + (e.message || e) + '</div>';
+      });
+  }
+
+  function renderAnalyticsBody(data) {
+    if (data.totals.pageviews === 0) {
+      return '<div style="text-align:center;padding:24px;color:var(--text-light);">'
+        +   '<div style="font-size:32px;margin-bottom:6px;">📊</div>'
+        +   '<div style="font-size:14px;font-weight:600;color:var(--text);">No visitors tracked yet</div>'
+        +   '<div style="font-size:12px;margin-top:6px;">Enable the BM analytics beacon in <a onclick="loadPage(\'settings\')" style="color:var(--accent);cursor:pointer;text-decoration:underline;">Settings → Marketing</a> and re-publish your marketing site. Traffic data will appear here within minutes.</div>'
+        + '</div>';
+    }
+
+    var html = '';
+
+    // Totals row
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">'
+      + statTile('Visitors', data.totals.sessions, 'unique sessions')
+      + statTile('Pageviews', data.totals.pageviews, 'total page loads')
+      + statTile('Pages / visitor', data.totals.sessions > 0 ? (data.totals.pageviews / data.totals.sessions).toFixed(1) : '0', 'engagement')
+      + '</div>';
+
+    // Daily chart (SVG line)
+    html += '<div style="margin-bottom:14px;">'
+      +   '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:6px;">Daily visitors — last ' + data.days + ' days</div>'
+      +   sparklineSvg(data.daily)
+      + '</div>';
+
+    // Top pages + top referrers (side-by-side)
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">'
+      + topListCard('Top pages', data.top_pages, function(k){ return k; })
+      + topListCard('Top referrers', data.top_referrers, function(k){ return k; })
+      + topListCard('Top countries', data.top_countries, function(k){ return k; })
+      + '</div>';
+
+    return html;
+  }
+
+  function statTile(label, value, sub) {
+    return '<div style="background:var(--bg);border-radius:8px;padding:12px 14px;">'
+      +   '<div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">' + label + '</div>'
+      +   '<div style="font-size:24px;font-weight:800;color:var(--text);line-height:1.1;margin-top:2px;">' + value + '</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);">' + sub + '</div>'
+      + '</div>';
+  }
+
+  function sparklineSvg(daily) {
+    if (!daily || !daily.length) return '<div style="color:var(--text-light);font-size:13px;">No data.</div>';
+    var maxV = Math.max.apply(null, daily.map(function(d){ return d.sessions; }).concat([1]));
+    var W = 560, H = 80, pad = 4;
+    var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
+    var pts = daily.map(function(d, i) {
+      var x = pad + i * stepX;
+      var y = H - pad - ((d.sessions / maxV) * (H - pad * 2));
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    var bars = daily.map(function(d, i) {
+      var x = pad + i * stepX;
+      var bh = (d.sessions / maxV) * (H - pad * 2);
+      return '<rect x="' + (x - 2) + '" y="' + (H - pad - bh) + '" width="3" height="' + Math.max(1, bh) + '" fill="#2563eb" opacity="0.6"></rect>';
+    }).join('');
+    return '<div style="overflow-x:auto;"><svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:80px;display:block;">'
+      + bars
+      + '<polyline fill="none" stroke="#2563eb" stroke-width="1.5" points="' + pts + '"></polyline>'
+      + '</svg></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-top:4px;">'
+      +   '<span>' + (daily[0] && daily[0].date ? daily[0].date.substring(5) : '') + '</span>'
+      +   '<span>peak: ' + maxV + '/day</span>'
+      +   '<span>' + (daily[daily.length-1] && daily[daily.length-1].date ? daily[daily.length-1].date.substring(5) : '') + '</span>'
+      + '</div>';
+  }
+
+  function topListCard(title, list, formatter) {
+    var max = (list && list.length) ? Math.max.apply(null, list.map(function(x){ return x.count; })) : 1;
+    var rows = (list || []).slice(0, 6).map(function(item) {
+      var pct = Math.max(3, Math.round((item.count / max) * 100));
+      return '<div style="margin-bottom:6px;">'
+        +   '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;">'
+        +     '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;">' + UI.esc(formatter(item.key)) + '</span>'
+        +     '<span style="color:var(--text-light);font-weight:600;">' + item.count + '</span>'
+        +   '</div>'
+        +   '<div style="background:#f1f5f9;border-radius:4px;height:6px;overflow:hidden;">'
+        +     '<div style="width:' + pct + '%;background:#2563eb;height:100%;border-radius:4px;"></div>'
+        +   '</div>'
+        + '</div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text-light);">No data.</div>';
+    return '<div style="background:var(--bg);border-radius:8px;padding:12px;">'
+      +   '<div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:8px;">' + title + '</div>'
+      +   rows
+      + '</div>';
+  }
+
+  function setAnalyticsRange(d) {
+    _analyticsRange = d;
+    try { localStorage.setItem('bm-analytics-days', String(d)); } catch (e) {}
+    var body = document.getElementById('ma-body');
+    if (body) body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light);">⏳ Reloading…</div>';
+    loadAnalytics();
+    // Update active pill state
+    loadPage('marketing');
   }
 
   // ---------- Actions ----------
@@ -670,6 +825,7 @@ var MarketingPage = (function() {
     loadDrafts: loadDrafts,
     approveDraft: approveDraft,
     rejectDraft: rejectDraft,
-    approveAllDrafts: approveAllDrafts
+    approveAllDrafts: approveAllDrafts,
+    setAnalyticsRange: setAnalyticsRange
   };
 })();

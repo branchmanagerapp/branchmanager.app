@@ -79,6 +79,14 @@ function pageTitle(p: string): string {
   return ({ "llm-info":"LLM Info", home:"Home", services:"Services", areas:"Service Areas", contact:"Contact" } as any)[p] || p;
 }
 
+// Per-tenant analytics beacon. Renders a tiny <script> that posts a
+// page-view to bm-analytics-beacon. No cookies; session_id is a random
+// per-tab id stored in sessionStorage. Gated by tenants.config.analytics_enabled.
+function analyticsBeacon(tenantId: string, enabled: boolean): string {
+  if (!enabled || !tenantId) return "";
+  return `<script>(function(){try{var t='${tenantId}';var s=sessionStorage.getItem('_bm_sid');if(!s){s=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('_bm_sid',s);}fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/bm-analytics-beacon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tenant_id:t,session_id:s,path:location.pathname,referrer:document.referrer||null})}).catch(function(){});}catch(e){}})();</script>`;
+}
+
 function commonStyles(brand: string): string {
   return `<style>
 :root{--brand:${brand};--text:#222;--muted:#6b7280;--border:#e5e7eb;}
@@ -203,6 +211,7 @@ ${siteHeader(biz, logo, "home", base)}
   </div>
 </div>
 ${siteFooter(biz, phone, email, base)}
+${analyticsBeacon(t.id, !!(c as any).analytics_enabled)}
 </body></html>`;
 }
 
@@ -236,6 +245,7 @@ ${siteHeader(biz, logo, "services", base)}
   </div>` : "<p>(No services configured yet.)</p>"}
 </div>
 ${siteFooter(biz, phone, email, base)}
+${analyticsBeacon(t.id, !!(c as any).analytics_enabled)}
 </body></html>`;
 }
 
@@ -269,6 +279,7 @@ ${siteHeader(biz, logo, "areas", base)}
   <p style="margin-top:24px;color:var(--muted);font-size:14px;">Outside this list? <a href="${esc(base)}contact/">Get in touch</a> &mdash; we may still cover your area.</p>` : "<p>(No service areas configured yet.)</p>"}
 </div>
 ${siteFooter(biz, phone, email, base)}
+${analyticsBeacon(t.id, !!(c as any).analytics_enabled)}
 </body></html>`;
 }
 
@@ -324,6 +335,7 @@ ${siteHeader(biz, logo, "contact", base)}
   </div>
 </div>
 ${siteFooter(biz, phone, email, base)}
+${analyticsBeacon(t.id, !!(c as any).analytics_enabled)}
 </body></html>`;
 }
 
@@ -472,6 +484,7 @@ ${siteHeader(biz, logo, "llm-info", base)}
 </div>
 ${siteFooter(biz, phone, email, base)}
 <script type="application/ld+json">${JSON.stringify(jsonld, (_k, v) => v === undefined ? undefined : v)}<\/script>
+${analyticsBeacon(t.id, !!(c as any).analytics_enabled)}
 </body></html>`;
 }
 
