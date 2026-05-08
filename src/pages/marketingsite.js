@@ -237,7 +237,30 @@ var MarketingSite = (function() {
     var social = s.social_links || {};
     var faq = s.faq || _defaultFaq();
 
+    // v651: live "Open published LLM page" link bar at the top of the
+    // editor — Doug asked. Prefer published_url + /llm-info/, fall back
+    // to the BM-hosted clients.branchmanager.app vanity URL.
+    var liveLlmUrl = '';
+    var pub = s.published_url || '';
+    if (pub) {
+      liveLlmUrl = pub.replace(/\/+$/, '') + '/llm-info/';
+    } else if (s.slug) {
+      liveLlmUrl = 'https://clients.branchmanager.app/' + encodeURIComponent(s.slug) + '/llm-info/';
+    }
+    var liveBar = liveLlmUrl
+      ? '<div style="background:#ecfdf5;border:1px solid #86efac;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;">'
+        +   '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🟢 <strong>Live at:</strong> <code style="font-size:12px;background:#fff;padding:2px 6px;border-radius:4px;">' + _esc(liveLlmUrl) + '</code></div>'
+        +   '<div style="display:flex;gap:6px;flex-shrink:0;">'
+        +     '<a href="' + _esc(liveLlmUrl) + '" target="_blank" rel="noopener" style="background:#16a34a;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-weight:700;font-size:12px;">Open published →</a>'
+        +     '<button type="button" onclick="navigator.clipboard.writeText(\'' + liveLlmUrl.replace(/\'/g, "\\'") + '\').then(function(){UI.toast(\'Copied\');})" style="background:#fff;color:#16a34a;border:1px solid #86efac;padding:6px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">Copy</button>'
+        +   '</div>'
+        + '</div>'
+      : '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#78350f;">'
+        +   '⚠️ Not published yet. Set a URL slug below, then publish under the <strong>Publish &amp; Hosting</strong> tab.'
+        + '</div>';
+
     return ''
+      + liveBar
       + '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;">'
 
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;">'
