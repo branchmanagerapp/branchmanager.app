@@ -1,5 +1,5 @@
 {
-  "version": 662,
+  "version": 663,
   "released": "2026-05-08",
-  "notes": "Dispatch simplify: lighter route summary (one-line strip) + action buttons below map (map first)"
+  "notes": "Dispatch map: faster init (rAF instead of 200ms setTimeout) + parallel data loads + 30s→ 60s refresh interval"
 }

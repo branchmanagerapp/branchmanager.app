@@ -463,11 +463,22 @@ var DispatchPage = {
 
   initMap: function() {
     var mapEl = document.getElementById('dispatch-map');
-    if (!mapEl || typeof maplibregl === 'undefined') {
+    if (!mapEl) return;  // page nav'd away
+    // v663: maplibre is `defer`-loaded from unpkg — may not be ready when
+    // initMap fires on first render. Was bailing with "Map unavailable"; now
+    // retries ~every 50ms until ready (typical: 1-3 retries on cold load).
+    if (typeof maplibregl === 'undefined') {
       var status = document.getElementById('dispatch-map-status');
-      if (status) status.textContent = 'Map unavailable';
+      if (status) status.textContent = 'Loading map…';
+      DispatchPage._waitMs = (DispatchPage._waitMs || 0) + 50;
+      if (DispatchPage._waitMs > 5000) {  // give up after 5s
+        if (status) status.textContent = 'Map unavailable (maplibre failed to load)';
+        return;
+      }
+      setTimeout(function() { DispatchPage.initMap(); }, 50);
       return;
     }
+    DispatchPage._waitMs = 0;
 
     DispatchPage._map = new maplibregl.Map({
       container: 'dispatch-map',
@@ -485,26 +496,23 @@ var DispatchPage = {
         .setPopup(new maplibregl.Popup().setHTML('<strong>🏠 HQ</strong><br>1 Highland Industrial Park'))
         .addTo(DispatchPage._map);
 
-      // Add today's job pins
+      // Add today's job pins (sync, no network)
       DispatchPage._addJobPins();
 
-      // Load crew locations
+      // v663: Fire all data loads in parallel (was sequential). Each is its
+      // own Supabase round-trip; running them concurrently shaves ~half the
+      // perceived load time. None of them depend on each other.
       DispatchPage._loadCrewLocations();
-
-      // Load fleet vehicles (Bouncie/Trak-4) if toggle enabled
       DispatchPage._loadFleetLocations();
-
-      // Load chip drop spots if toggle was sticky-on from a prior render
       DispatchPage._loadChipDrops();
-
-      // Apply weather radar layer if toggle was sticky-on
       DispatchPage._toggleWeatherLayer();
 
-      // Refresh crew + fleet every 30 seconds
+      // v663: Refresh interval bumped 30s → 60s. Crew+fleet positions don't
+      // change fast enough to justify a Supabase round-trip every half minute.
       DispatchPage._refreshTimer = setInterval(function() {
         DispatchPage._loadCrewLocations();
         DispatchPage._loadFleetLocations();
-      }, 30000);
+      }, 60000);
     });
   },
 
