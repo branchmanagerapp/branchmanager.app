@@ -98,8 +98,8 @@ var Weather = {
     var firstFetch = !Weather.cache;
 
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + Weather.LAT + '&longitude=' + Weather.LON
-      + '&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m'
-      + '&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m'
+      + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m'
+      + '&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m'
       + '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode,wind_speed_10m_max'
       + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/New_York&forecast_days=7';
 
@@ -255,11 +255,12 @@ var Weather = {
       var curTemp = Math.round(cur.temperature_2m);
       var windSpd = Math.round(cur.wind_speed_10m);
       var gustSpd = Math.round(cur.wind_gusts_10m);
+      var feelsTemp = cur.apparent_temperature != null ? Math.round(cur.apparent_temperature) : null;
       html += '<div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">'
         + '<div style="font-size:56px;line-height:1;">' + curIcon + '</div>'
         + '<div>'
         + '<div style="font-size:40px;font-weight:800;line-height:1;">' + curTemp + '°F</div>'
-        + '<div style="font-size:13px;color:var(--text-light);margin-top:6px;">Wind ' + windSpd + ' mph' + (gustSpd > windSpd ? ' · Gusts ' + gustSpd + ' mph' : '') + '</div>'
+        + '<div style="font-size:13px;color:var(--text-light);margin-top:6px;">Wind ' + windSpd + ' mph' + (gustSpd > windSpd ? ' · Gusts ' + gustSpd + ' mph' : '') + (feelsTemp !== null ? ' · Feels ' + feelsTemp + '°F' : '') + '</div>'
         + (gustSpd > 25 ? '<div style="font-size:12px;color:#c62828;font-weight:600;margin-top:4px;">⚠ High gusts — caution with aerial work</div>' : '')
         + '</div>'
         + '</div>';
@@ -350,6 +351,7 @@ var Weather = {
         + '<th style="' + hdrStyle + '">Temp</th>'
         + '<th style="' + hdrStyle + '">Rain</th>'
         + '<th style="' + hdrStyle + '">Wind</th>'
+        + '<th style="' + hdrStyle + '">Feels</th>'
         + '</tr></thead>';
       html += '<tbody>';
       var rowCount = 0;
@@ -363,6 +365,7 @@ var Weather = {
         var temp = Math.round(h.temperature_2m[k]);
         var precip = h.precipitation_probability ? h.precipitation_probability[k] : 0;
         var wind = h.wind_speed_10m ? Math.round(h.wind_speed_10m[k]) : null;
+        var feels = h.apparent_temperature ? Math.round(h.apparent_temperature[k]) : null;
         var hIcon = Weather._icon(h.weather_code[k]);
         var ampm = hour < 12 ? hour + 'am' : hour === 12 ? '12pm' : (hour - 12) + 'pm';
         var rowBg = isNow ? '#f0faf0' : (rowCount % 2 === 0 ? '#fff' : '#fafafa');
@@ -374,6 +377,7 @@ var Weather = {
           + '<td style="' + colStyle + 'font-weight:600;">' + temp + '°</td>'
           + '<td style="' + colStyle + 'color:' + (precip > 60 ? '#e65100' : precip > 10 ? '#1976d2' : 'var(--text-light)') + ';">' + (precip > 0 ? precip + '%' : '—') + '</td>'
           + '<td style="' + colStyle + 'color:' + (wind !== null && wind > 20 ? '#c62828' : 'var(--text)') + ';">' + (wind !== null ? wind + ' mph' : '—') + '</td>'
+          + '<td style="' + colStyle + 'color:var(--text-light);">' + (feels !== null ? feels + '°' : '—') + '</td>'
           + '</tr>';
         rowCount++;
       }

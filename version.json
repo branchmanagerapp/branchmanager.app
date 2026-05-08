@@ -1,5 +1,5 @@
 {
-  "version": 666,
+  "version": 667,
   "released": "2026-05-08",
-  "notes": "Dashboard workflow back to 2x2 grid (4 boxes / 2 rows) — was single-column from v651"
+  "notes": "Weather: add apparent (feels-like) temp — after wind in current conditions + new column in hourly table"
 }
