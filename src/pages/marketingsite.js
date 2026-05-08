@@ -202,6 +202,34 @@ var MarketingSite = (function() {
       +   _pageRow('areas',    'Service Areas','Per-city pillrow + anchor links',           llmReady.ok, llmReady.ok ? '' : llmReady.note)
       +   _pageRow('contact',  'Contact',      'Phone/email/address + estimate form',       llmReady.ok, llmReady.ok ? '' : llmReady.note)
       +   '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #f3f4f6;font-size:12px;color:var(--text-light);">All five pages render server-side from <code>tenants.config.marketing_site</code> via the <code>render-marketing-site</code> edge function. Edit content under the <strong>LLM Info Page</strong> tab — all five pages share the same data.</div>'
+      + '</div>'
+
+      // v658: Visitor analytics toggle. Controls tenants.config.analytics_enabled,
+      // which gates whether render-marketing-site injects the bm-analytics-beacon
+      // script tag. Aggregated counts surface in Marketing → Analytics tab.
+      + _renderAnalyticsToggle();
+  }
+
+  function _renderAnalyticsToggle() {
+    var on = !!_cfg.analytics_enabled;
+    var live = !!(_site && _site.published_url);
+    var analyticsHref = '#socialbranch'; // SocialBranch's Analytics tab is reachable from there
+    return '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;">'
+      +   '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">'
+      +     '<div style="flex:1;min-width:240px;">'
+      +       '<h3 style="margin:0 0 4px;font-size:15px;">📊 Visitor Analytics</h3>'
+      +       '<div style="font-size:13px;color:var(--text-light);line-height:1.5;">'
+      +       (on
+            ? 'Tracking is <strong style="color:#065f46;">on</strong>. Visitors hitting your marketing site are counted (anonymized — page, referrer, session). View totals in <a href="' + analyticsHref + '" style="color:var(--accent);">Marketing → Analytics</a>.'
+            : 'Tracking is <strong>off</strong>. No visitor data is recorded. Turn this on to see traffic, top pages, and referrers in <a href="' + analyticsHref + '" style="color:var(--accent);">Marketing → Analytics</a>.')
+      +       '</div>'
+      +       (!live ? '<div style="font-size:12px;color:var(--text-light);margin-top:8px;">Note: counts only start once the marketing site is published.</div>' : '')
+      +     '</div>'
+      +     '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;">'
+      +       '<span style="font-size:13px;font-weight:600;color:' + (on ? '#065f46' : 'var(--text-light)') + ';">' + (on ? 'ON' : 'OFF') + '</span>'
+      +       '<input type="checkbox" id="ms-analytics-toggle" ' + (on ? 'checked' : '') + ' onchange="MarketingSite._toggleAnalytics(this.checked)" style="width:42px;height:24px;cursor:pointer;">'
+      +     '</label>'
+      +   '</div>'
       + '</div>';
   }
 
@@ -765,6 +793,19 @@ var MarketingSite = (function() {
       _saveConfig(function(err) {
         if (err) { alert('Save failed: ' + err); return; }
         _tab = 'overview'; MarketingSite._refresh();
+      });
+    },
+    _toggleAnalytics: function(checked) {
+      _cfg.analytics_enabled = !!checked;
+      _saveConfig(function(err) {
+        if (err) {
+          if (typeof UI !== 'undefined' && UI.toast) UI.toast('Save failed: ' + err, 'error');
+          else alert('Save failed: ' + err);
+          _cfg.analytics_enabled = !checked;
+        } else {
+          if (typeof UI !== 'undefined' && UI.toast) UI.toast(checked ? 'Visitor analytics ON' : 'Visitor analytics OFF');
+        }
+        MarketingSite._refresh();
       });
     },
     render: function() {

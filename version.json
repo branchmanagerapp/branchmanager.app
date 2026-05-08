@@ -1,5 +1,5 @@
 {
-  "version": 657,
+  "version": 658,
   "released": "2026-05-08",
-  "notes": "Wrap boot-time localStorage in try/catch — silences SecurityError noise from data:-URL Sentry events"
+  "notes": "Visitor analytics toggle on Marketing Site Overview tab"
 }
