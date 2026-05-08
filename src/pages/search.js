@@ -158,18 +158,23 @@ var SearchPage = {
         + '</div>';
     }
 
-    // Summary line
-    var parts = [];
-    if (totalClients)  parts.push(totalClients + ' client' + (totalClients !== 1 ? 's' : ''));
-    if (totalJobs)     parts.push(totalJobs + ' job' + (totalJobs !== 1 ? 's' : ''));
-    if (totalInvoices) parts.push(totalInvoices + ' invoice' + (totalInvoices !== 1 ? 's' : ''));
-    if (totalQuotes)   parts.push(totalQuotes + ' quote' + (totalQuotes !== 1 ? 's' : ''));
-    if (totalRequests) parts.push(totalRequests + ' request' + (totalRequests !== 1 ? 's' : ''));
-
-    var html = '<div style="font-size:13px;color:var(--text-light);margin-bottom:16px;">'
-      + parts.join(' &bull; ')
-      + (isSearch ? ' for &ldquo;' + UI.esc(query) + '&rdquo;' : ' — most recent first')
-      + '</div>';
+    // v648: Jobber-style "Recently active" section header when no query.
+    // For active searches, keep the count summary line.
+    var html = '';
+    if (isSearch) {
+      var parts = [];
+      if (totalClients)  parts.push(totalClients + ' client' + (totalClients !== 1 ? 's' : ''));
+      if (totalJobs)     parts.push(totalJobs + ' job' + (totalJobs !== 1 ? 's' : ''));
+      if (totalInvoices) parts.push(totalInvoices + ' invoice' + (totalInvoices !== 1 ? 's' : ''));
+      if (totalQuotes)   parts.push(totalQuotes + ' quote' + (totalQuotes !== 1 ? 's' : ''));
+      if (totalRequests) parts.push(totalRequests + ' request' + (totalRequests !== 1 ? 's' : ''));
+      html += '<div style="font-size:13px;color:var(--text-light);margin-bottom:16px;">'
+        + parts.join(' &bull; ')
+        + ' for &ldquo;' + UI.esc(query) + '&rdquo;'
+        + '</div>';
+    } else {
+      html += '<h3 style="font-size:18px;font-weight:700;margin:4px 0 12px;color:var(--text);">Recently active</h3>';
+    }
 
     // Helper: render a section
     var PAGE_SIZE = cat === 'all' ? 15 : 100;
