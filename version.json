@@ -1,5 +1,5 @@
 {
-  "version": 667,
+  "version": 668,
   "released": "2026-05-08",
-  "notes": "Weather: add apparent (feels-like) temp — after wind in current conditions + new column in hourly table"
+  "notes": "SW registration: wrap reg.update() promise rejections — was leaking to onunhandledrejection during transient sw.js 404s mid-deploy"
 }

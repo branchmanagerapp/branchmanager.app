@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 667; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 668; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1026,7 +1026,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v667.min.js"></script>
+<script defer src="dist/bm.bundle.v668.min.js"></script>
 
 
 
@@ -2081,14 +2081,22 @@ if ('serviceWorker' in navigator) {
     // (iOS PWA bug: without this, iOS holds the old sw.js for up to 24h and
     // updates never land even when reg.update() fires).
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function(reg) {
+      // v667: reg.update() is async and rejects on transient sw.js fetch
+      // failures (mid-deploy, CF cache miss). The try/catch wrappers only
+      // caught sync throws, so rejections bubbled to onunhandledrejection
+      // → Sentry. Wrap each .update() with a noop .catch — these are all
+      // best-effort "update if you can" calls; silent failure is correct.
+      var safeUpdate = function() {
+        try { var p = reg.update(); if (p && p.catch) p.catch(function(){}); } catch(e) {}
+      };
       // Check for SW update every time page loads
-      reg.update();
+      safeUpdate();
       // Also re-check when the PWA comes back to foreground (iOS re-focus)
       document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') { try { reg.update(); } catch(e){} }
+        if (document.visibilityState === 'visible') safeUpdate();
       });
       // And every 15 minutes if the app stays open
-      setInterval(function() { try { reg.update(); } catch(e){} }, 15 * 60 * 1000);
+      setInterval(safeUpdate, 15 * 60 * 1000);
       // If new SW waiting, activate it immediately
       if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
       reg.addEventListener('updatefound', function() {
