@@ -1,5 +1,5 @@
 {
-  "version": 660,
+  "version": 661,
   "released": "2026-05-08",
-  "notes": "OPS hub: Pipeline in sidebar; Chip Drops + Weather radar as Dispatch map toggle layers; Fleet+Pre-Trip+Equipment merged into one 'Fleet & Equipment' tab"
+  "notes": "Dispatch map: 3 layer toggles collapsed into single 🎛 Layers dropdown"
 }

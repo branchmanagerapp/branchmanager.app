@@ -225,22 +225,25 @@ var DispatchPage = {
     var fleetOn     = window._dispatchFleetLayer !== false;   // default ON
     var chipDropsOn = window._dispatchChipDropsLayer === true; // default OFF
     var weatherOn   = window._dispatchWeatherLayer === true;   // default OFF
+    var activeCount = (fleetOn ? 1 : 0) + (chipDropsOn ? 1 : 0) + (weatherOn ? 1 : 0);
+    var layerOpt = function(stateKey, action, checked, label) {
+      return '<label style="display:flex;gap:8px;align-items:center;padding:8px 12px;cursor:pointer;font-size:13px;border-radius:6px;">'
+        +   '<input type="checkbox" ' + (checked ? 'checked' : '') + ' onchange="window.' + stateKey + '=this.checked;DispatchPage.' + action + '();" style="cursor:pointer;">'
+        +   label
+        + '</label>';
+    };
     html += '<div id="dispatch-map-wrap" style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;position:relative;">'
       + '<div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;">'
       + '<span style="font-weight:700;font-size:14px;">📍 Live Map</span>'
-      + '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">'
-      +   '<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;color:var(--text-light);">'
-      +     '<input type="checkbox" ' + (fleetOn ? 'checked' : '') + ' onchange="window._dispatchFleetLayer=this.checked;DispatchPage._refreshFleetMarkers();" style="cursor:pointer;">'
-      +     '🚛 Fleet'
-      +   '</label>'
-      +   '<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;color:var(--text-light);">'
-      +     '<input type="checkbox" ' + (chipDropsOn ? 'checked' : '') + ' onchange="window._dispatchChipDropsLayer=this.checked;DispatchPage._loadChipDrops();" style="cursor:pointer;">'
-      +     '🪵 Chip Drops'
-      +   '</label>'
-      +   '<label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;color:var(--text-light);">'
-      +     '<input type="checkbox" ' + (weatherOn ? 'checked' : '') + ' onchange="window._dispatchWeatherLayer=this.checked;DispatchPage._toggleWeatherLayer();" style="cursor:pointer;">'
-      +     '🌧 Radar'
-      +   '</label>'
+      + '<div style="display:flex;gap:10px;align-items:center;">'
+      +   '<details id="dispatch-layers-dd" style="position:relative;">'
+      +     '<summary style="list-style:none;cursor:pointer;background:#f1f5f9;border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text);user-select:none;">🎛 Layers' + (activeCount ? ' <span style="background:var(--green-dark);color:#fff;border-radius:10px;padding:1px 7px;margin-left:4px;font-size:11px;">' + activeCount + '</span>' : '') + ' ▾</summary>'
+      +     '<div style="position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.08);min-width:180px;padding:4px;z-index:50;">'
+      +       layerOpt('_dispatchFleetLayer',     '_refreshFleetMarkers', fleetOn,     '🚛 Fleet')
+      +       layerOpt('_dispatchChipDropsLayer', '_loadChipDrops',       chipDropsOn, '🪵 Chip Drops')
+      +       layerOpt('_dispatchWeatherLayer',   '_toggleWeatherLayer',  weatherOn,   '🌧 Radar')
+      +     '</div>'
+      +   '</details>'
       +   '<span id="dispatch-map-status" style="font-size:11px;color:var(--text-light);">Loading...</span>'
       + '</div></div>'
       + '<div id="dispatch-map" style="height:340px;width:100%;"></div></div>';
