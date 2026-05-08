@@ -7,6 +7,10 @@ var Weather = {
   LON: -73.9204,
   cache: null,
   cacheTime: 0,
+  // v664: which day's hourly to show (0 = today, 1 = tomorrow, …). Used by
+  // _renderPageContent and the inline expand under the dispatch map.
+  _selectedDay: 0,
+  _expanded: false,
 
   isEnabled: function() {
     return localStorage.getItem('bm-weather-enabled') === 'true';
@@ -18,14 +22,42 @@ var Weather = {
     loadPage(currentPage);
   },
 
+  // v664: expand the dispatch weather widget into the full forecast inline.
+  toggleExpand: function() {
+    Weather._expanded = !Weather._expanded;
+    var inner = document.getElementById('weather-data');
+    var btn = document.getElementById('weather-expand-btn');
+    if (btn) btn.textContent = Weather._expanded ? 'Hide hourly ▴' : 'Show hourly ▾';
+    if (Weather._expanded) {
+      // Render full page content into the widget body.
+      Weather._renderInto(inner, true);
+    } else {
+      // Back to compact 5-day grid.
+      Weather._render(Weather.cache);
+    }
+  },
+
+  // v664: pick a different day for the hourly breakdown on the full page.
+  selectDay: function(idx) {
+    Weather._selectedDay = +idx || 0;
+    // Re-render whichever surface is open
+    if (document.getElementById('weather-page-content')) {
+      Weather._renderPageContent();
+    } else if (Weather._expanded) {
+      var inner = document.getElementById('weather-data');
+      if (inner) Weather._renderInto(inner, true);
+    }
+  },
+
   renderWidget: function() {
     var enabled = Weather.isEnabled();
+    var expanded = Weather._expanded;
     var html = '<div id="weather-widget" style="background:var(--white);border-radius:12px;padding:' + (enabled ? '16px' : '12px 16px') + ';border:1px solid var(--border);margin-bottom:16px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;' + (enabled ? 'margin-bottom:8px;' : '') + '">'
       + '<h4 style="font-size:14px;margin:0;">🌤 Weather — Peekskill, NY</h4>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
-      + (enabled ? '<span style="font-size:11px;color:var(--text-light);">5-day forecast</span>' : '')
-      + '<button onclick="Weather.toggle()" style="position:relative;width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;background:' + (enabled ? 'var(--accent)' : '#ccc') + ';transition:background .2s;">'
+      + (enabled ? '<button id="weather-expand-btn" onclick="Weather.toggleExpand()" style="background:none;border:1px solid var(--border);padding:4px 10px;font-size:11px;font-weight:600;color:var(--text-light);border-radius:6px;cursor:pointer;">' + (expanded ? 'Hide hourly ▴' : 'Show hourly ▾') + '</button>' : '')
+      + '<button onclick="Weather.toggle()" title="Enable weather widget" style="position:relative;width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;background:' + (enabled ? 'var(--accent)' : '#ccc') + ';transition:background .2s;">'
       + '<span style="position:absolute;top:2px;' + (enabled ? 'left:18px' : 'left:2px') + ';width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span></button>'
       + '</div></div>';
 
@@ -37,8 +69,15 @@ var Weather = {
     html += '<div id="weather-data" style="font-size:13px;color:var(--text-light);">Loading...</div>'
       + '</div>';
 
-    // Fetch weather after render
-    setTimeout(function() { Weather.fetch(); }, 100);
+    // Fetch weather after render. If expanded, kick the full render once data lands.
+    setTimeout(function() {
+      if (Weather.cache) {
+        if (Weather._expanded) Weather._renderInto(document.getElementById('weather-data'), true);
+        else Weather._render(Weather.cache);
+      } else {
+        Weather.fetch();
+      }
+    }, 100);
     return html;
   },
 
@@ -190,20 +229,27 @@ var Weather = {
   },
 
   _renderPageContent: function() {
-    var el = document.getElementById('weather-page-content');
+    Weather._renderInto(document.getElementById('weather-page-content'), false);
+  },
+
+  // v664: shared full-forecast renderer. `compact` = true when rendering inline
+  // inside the dispatch widget (hides current-conditions card + warnings, keeps
+  // the 5-day picker + selected-day hourly table).
+  _renderInto: function(el, compact) {
     if (!el) return;
     if (!Weather.cache) {
       Weather.fetch();
-      setTimeout(function() { Weather._renderPageContent(); }, 2500);
+      setTimeout(function() { Weather._renderInto(el, compact); }, 2500);
       return;
     }
     var data = Weather.cache;
     var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var html = '';
+    var sel = Math.max(0, Math.min(4, Weather._selectedDay || 0));
 
-    // Current conditions
-    if (data.current) {
+    // Current conditions (full page only — already shown in dashboard chip in compact)
+    if (!compact && data.current) {
       var cur = data.current;
       var curIcon = Weather._icon(cur.weather_code);
       var curTemp = Math.round(cur.temperature_2m);
@@ -219,12 +265,16 @@ var Weather = {
         + '</div>';
     }
 
-    // 5-day forecast
+    // 5-day forecast — clickable cards drive the hourly view below
     if (data.daily) {
       var days = data.daily;
-      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">';
-      html += '<div style="font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">5-Day Forecast</div>';
-      html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center;">';
+      var wrapPad = compact ? '12px' : '16px';
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:' + wrapPad + ';margin-bottom:12px;' + (compact ? '' : 'box-shadow:0 1px 3px rgba(0,0,0,.04);') + '">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+        + '<div style="font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">5-Day Forecast</div>'
+        + '<div style="font-size:11px;color:var(--text-light);">Tap a day for hourly</div>'
+        + '</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center;">';
       for (var i = 0; i < 5; i++) {
         var d = new Date(days.time[i] + 'T12:00:00');
         var dName = i === 0 ? 'Today' : dayNames[d.getDay()];
@@ -233,54 +283,66 @@ var Weather = {
         var lo = Math.round(days.temperature_2m_min[i]);
         var rain = days.precipitation_probability_max[i];
         var ic = Weather._icon(days.weathercode[i]);
-        var bg = rain > 60 ? '#fff3e0' : (i === 0 ? '#f0faf0' : 'transparent');
-        html += '<div style="padding:10px 4px;border-radius:8px;background:' + bg + ';border:1px solid var(--border);">'
+        var isSel = i === sel;
+        var bg = isSel ? '#dcedc8' : (rain > 60 ? '#fff3e0' : (i === 0 ? '#f0faf0' : 'transparent'));
+        var border = isSel ? '2px solid var(--green-dark)' : '1px solid var(--border)';
+        html += '<div onclick="Weather.selectDay(' + i + ')" style="padding:10px 4px;border-radius:8px;background:' + bg + ';border:' + border + ';cursor:pointer;transition:background .15s;">'
           + '<div style="font-size:11px;font-weight:700;">' + dName + '</div>'
           + '<div style="font-size:10px;color:var(--text-light);margin-bottom:4px;">' + dDate + '</div>'
-          + '<div style="font-size:26px;margin:4px 0;">' + ic + '</div>'
-          + '<div style="font-size:15px;font-weight:700;">' + hi + '°</div>'
+          + '<div style="font-size:' + (compact ? '22px' : '26px') + ';margin:4px 0;">' + ic + '</div>'
+          + '<div style="font-size:14px;font-weight:700;">' + hi + '°</div>'
           + '<div style="font-size:11px;color:var(--text-light);">' + lo + '°</div>'
           + (rain > 0 ? '<div style="font-size:10px;color:' + (rain > 60 ? '#e65100' : '#1976d2') + ';margin-top:4px;">💧 ' + rain + '%</div>' : '')
           + '</div>';
       }
       html += '</div>';
 
-      // Warnings
-      var rainyDays = [];
-      for (var j = 0; j < 5; j++) {
-        if (days.precipitation_probability_max[j] > 60) {
-          var rd = new Date(days.time[j] + 'T12:00:00');
-          rainyDays.push(j === 0 ? 'Today' : dayNames[rd.getDay()]);
-        }
-      }
-      if (rainyDays.length) {
-        html += '<div style="margin-top:12px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100;">'
-          + '⚠️ Rain likely: <strong>' + rainyDays.join(', ') + '</strong> — consider rescheduling outdoor work</div>';
-      }
-      if (data.daily.wind_speed_10m_max) {
-        var windyDays = [];
-        for (var w = 1; w < 5; w++) {
-          if (days.wind_speed_10m_max[w] > 25) {
-            var wd = new Date(days.time[w] + 'T12:00:00');
-            windyDays.push(dayNames[wd.getDay()] + ' (' + Math.round(days.wind_speed_10m_max[w]) + ' mph)');
+      // Warnings (full page only — keeps the inline expand compact)
+      if (!compact) {
+        var rainyDays = [];
+        for (var j = 0; j < 5; j++) {
+          if (days.precipitation_probability_max[j] > 60) {
+            var rd = new Date(days.time[j] + 'T12:00:00');
+            rainyDays.push(j === 0 ? 'Today' : dayNames[rd.getDay()]);
           }
         }
-        if (windyDays.length) {
-          html += '<div style="margin-top:8px;padding:10px;background:#e3f2fd;border-radius:8px;font-size:12px;color:#1565c0;">'
-            + '💨 Windy days ahead: <strong>' + windyDays.join(', ') + '</strong></div>';
+        if (rainyDays.length) {
+          html += '<div style="margin-top:12px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100;">'
+            + '⚠️ Rain likely: <strong>' + rainyDays.join(', ') + '</strong> — consider rescheduling outdoor work</div>';
+        }
+        if (data.daily.wind_speed_10m_max) {
+          var windyDays = [];
+          for (var w = 1; w < 5; w++) {
+            if (days.wind_speed_10m_max[w] > 25) {
+              var wd = new Date(days.time[w] + 'T12:00:00');
+              windyDays.push(dayNames[wd.getDay()] + ' (' + Math.round(days.wind_speed_10m_max[w]) + ' mph)');
+            }
+          }
+          if (windyDays.length) {
+            html += '<div style="margin-top:8px;padding:10px;background:#e3f2fd;border-radius:8px;font-size:12px;color:#1565c0;">'
+              + '💨 Windy days ahead: <strong>' + windyDays.join(', ') + '</strong></div>';
+          }
         }
       }
       html += '</div>';
     }
 
-    // Today's hourly — table: time rows × metric columns
-    if (data.hourly) {
+    // Selected day's hourly table
+    if (data.hourly && data.daily && data.daily.time[sel]) {
       var h = data.hourly;
+      var dayStr = data.daily.time[sel];
       var todayStr = new Date().toISOString().split('T')[0];
       var nowHour = new Date().getHours();
+      var isToday = dayStr === todayStr;
+      var dayLabel = isToday ? 'Today' : (function() {
+        var dd = new Date(dayStr + 'T12:00:00');
+        return dayNames[dd.getDay()] + ', ' + monthNames[dd.getMonth()] + ' ' + dd.getDate();
+      })();
+
       var colStyle = 'padding:8px 10px;text-align:center;font-size:13px;';
       var hdrStyle = 'padding:6px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border);';
-      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">';
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;' + (compact ? '' : 'box-shadow:0 1px 3px rgba(0,0,0,.04);') + '">';
+      html += '<div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;background:#f8f9fa;">' + dayLabel + ' — Hourly</div>';
       html += '<table style="width:100%;border-collapse:collapse;">';
       html += '<thead><tr style="background:#f8f9fa;">'
         + '<th style="' + hdrStyle + 'text-align:left;padding-left:16px;">Time</th>'
@@ -293,11 +355,11 @@ var Weather = {
       var rowCount = 0;
       for (var k = 0; k < h.time.length; k++) {
         var tStr = h.time[k];
-        if (tStr.indexOf(todayStr) !== 0) continue;
+        if (tStr.indexOf(dayStr) !== 0) continue;
         var hour = parseInt(tStr.split('T')[1].split(':')[0], 10);
         if (hour < 6 || hour > 20) continue;
-        var isPast = hour < nowHour;
-        var isNow = hour === nowHour;
+        var isPast = isToday && hour < nowHour;
+        var isNow = isToday && hour === nowHour;
         var temp = Math.round(h.temperature_2m[k]);
         var precip = h.precipitation_probability ? h.precipitation_probability[k] : 0;
         var wind = h.wind_speed_10m ? Math.round(h.wind_speed_10m[k]) : null;

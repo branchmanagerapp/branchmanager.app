@@ -1,5 +1,5 @@
 {
-  "version": 664,
+  "version": 665,
   "released": "2026-05-08",
-  "notes": "Restore standalone #weather page — chip on dashboard now opens hourly forecast (was silently routing to Dispatch since v660)"
+  "notes": "Weather: expand-toggle inline under dispatch map + clickable days drive that day's hourly view"
 }
