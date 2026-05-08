@@ -7,9 +7,24 @@
 //
 // Pages: llm-info | home | services | areas | contact | sitemap.xml | robots.txt
 //
-// Reads tenants.config (white-label branding) + tenants.config.marketing_site
-// (services, service_areas, social, faq, slug). Renders the page on each
-// request — no caching layer needed; output is small and cheap.
+// Reads tenants.config (white-label branding) + tenants.config.marketing_site.
+// Schema for marketing_site (all optional unless noted):
+//   slug:               URL slug used at clients.branchmanager.app/{slug}/
+//   tagline:            short pitch, used as hero sub when home.hero_sub absent
+//   services:           [{ name, description }] or [string]
+//   service_areas:      [string] (city/town names)
+//   social_links:       { facebook, instagram, ... }
+//   licenses:           [string] — credentials (LLM-info page)
+//   faq:                [{ q, a }]
+//   pages:              { home: { hero_title, hero_sub, cta_text }, services: { intro }, areas: { intro }, contact: { intro } }
+//   stats:              [{ value, label }] — e.g. {value:"10+", label:"Years Experience"}
+//   why_us:             [string] — bullet points under "Why us"
+//   team:               [{ name, role, bio, photo_url? }]
+//   testimonials:       [{ quote, name, location, stars? }]
+//   rating_summary:     { stars: 5.0, count: 70, source: "Google" }
+//   hero_features:      [string] — chip row under hero (e.g. "Licensed & Insured")
+//   hours:              string (e.g. "Mon–Fri 7am–6pm | Sat 8am–2pm")
+//   emergency_24_7:     boolean — adds emergency CTA strip on home + contact
 //
 // Deploy: supabase functions deploy render-marketing-site --no-verify-jwt
 //   (config.toml pins verify_jwt = false so the flag is automatic.)
@@ -118,6 +133,31 @@ table.facts th{background:#f7f8f6;width:240px;font-weight:600;}
 .cta-band{background:var(--brand);color:#fff;text-align:center;padding:30px 20px;border-radius:10px;margin:32px 0;}
 .cta-band h2{color:#fff;border:none;margin-top:0;}
 .cta-band a.btn{background:#fff;color:var(--brand);padding:10px 20px;border-radius:6px;font-weight:700;text-decoration:none;display:inline-block;margin-top:8px;}
+.hero-features{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 24px;}
+.hero-features span{background:#eef2ec;color:var(--brand);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;}
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin:24px 0;padding:22px 18px;background:#f7f8f6;border-radius:10px;}
+.stats-bar .stat{text-align:center;}
+.stats-bar .stat .v{font-size:28px;font-weight:800;color:var(--brand);line-height:1.1;}
+.stats-bar .stat .l{font-size:12px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.04em;}
+.why-us{list-style:none;padding:0;margin:14px 0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;}
+.why-us li{padding-left:28px;position:relative;font-size:14px;line-height:1.5;}
+.why-us li::before{content:"✓";position:absolute;left:0;top:0;color:var(--brand);font-weight:700;font-size:18px;}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0;}
+.team-grid .member{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
+.team-grid .member .name{font-weight:700;font-size:15px;color:var(--brand);}
+.team-grid .member .role{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:2px 0 8px;}
+.team-grid .member .bio{font-size:13px;color:var(--text);line-height:1.5;}
+.testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:18px 0;}
+.testimonial{background:#fff;border:1px solid var(--border);border-left:4px solid var(--brand);border-radius:8px;padding:16px;}
+.testimonial .stars{color:#fbbf24;font-size:14px;letter-spacing:1px;margin-bottom:8px;}
+.testimonial .q{font-size:14px;color:var(--text);line-height:1.55;margin-bottom:10px;font-style:italic;}
+.testimonial .who{font-size:12px;color:var(--muted);font-weight:600;}
+.testimonial .where{font-size:12px;color:var(--muted);margin-left:6px;}
+.rating-line{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:18px;}
+.rating-line .stars{color:#fbbf24;letter-spacing:1px;}
+.emergency-band{background:#7f1d1d;color:#fff;text-align:center;padding:18px 20px;border-radius:10px;margin:24px 0;}
+.emergency-band a{color:#fff;font-weight:700;}
+.hours-line{font-size:13px;color:var(--muted);margin-top:6px;}
 footer.site{margin-top:40px;padding:22px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;}
 footer.site a{color:var(--muted);}
 .meta-foot{color:var(--muted);font-size:.9rem;margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);}
@@ -160,6 +200,69 @@ function pageCopy(s: SiteCfg, page: string, field: string, fallback: string): st
   return (v != null && String(v).length) ? String(v) : fallback;
 }
 
+// ── Section helpers (all opt-in based on data presence) ────────────────
+function renderHeroFeatures(features: string[]): string {
+  if (!features || !features.length) return "";
+  return `<div class="hero-features">${features.map((f) => `<span>${esc(f)}</span>`).join("")}</div>`;
+}
+
+function renderStatsBar(stats: Array<{ value: string; label: string }>): string {
+  if (!stats || !stats.length) return "";
+  return `<div class="stats-bar">
+    ${stats.map((s) => `<div class="stat"><div class="v">${esc(s.value)}</div><div class="l">${esc(s.label)}</div></div>`).join("")}
+  </div>`;
+}
+
+function renderWhyUs(items: string[]): string {
+  if (!items || !items.length) return "";
+  return `<h2>Why hire us</h2>
+  <ul class="why-us">${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
+}
+
+function renderTeam(team: Array<{ name: string; role?: string; bio?: string }>): string {
+  if (!team || !team.length) return "";
+  return `<h2>Meet the team</h2>
+  <div class="team-grid">${team.map((m) => `
+    <div class="member">
+      <div class="name">${esc(m.name)}</div>
+      ${m.role ? `<div class="role">${esc(m.role)}</div>` : ""}
+      ${m.bio ? `<div class="bio">${esc(m.bio)}</div>` : ""}
+    </div>`).join("")}
+  </div>`;
+}
+
+function renderRatingLine(rating: { stars?: number; count?: number; source?: string } | undefined): string {
+  if (!rating || (!rating.count && !rating.stars)) return "";
+  const stars = rating.stars ? "★".repeat(Math.round(rating.stars)) : "★★★★★";
+  const count = rating.count ? `${rating.count}+ reviews` : "";
+  const src = rating.source ? `on ${rating.source}` : "";
+  return `<div class="rating-line"><span class="stars">${stars}</span><span>${esc([rating.stars ? rating.stars.toFixed(1) : "", count, src].filter(Boolean).join(" · "))}</span></div>`;
+}
+
+function renderTestimonials(testimonials: Array<{ quote: string; name?: string; location?: string; stars?: number }>, rating: any): string {
+  if (!testimonials || !testimonials.length) return "";
+  return `<h2>What customers are saying</h2>
+  ${renderRatingLine(rating)}
+  <div class="testimonials">${testimonials.map((tm) => {
+    const stars = "★".repeat(tm.stars || 5);
+    return `<div class="testimonial">
+      <div class="stars">${stars}</div>
+      <div class="q">"${esc(tm.quote)}"</div>
+      <div>${tm.name ? `<span class="who">${esc(tm.name)}</span>` : ""}${tm.location ? `<span class="where">${esc(tm.location)}</span>` : ""}</div>
+    </div>`;
+  }).join("")}
+  </div>`;
+}
+
+function renderEmergencyBand(phone: string, enabled: boolean): string {
+  if (!enabled || !phone) return "";
+  const tel = phone.replace(/[^0-9]/g, "");
+  return `<div class="emergency-band">
+    <strong>Tree emergency?</strong> Storm damage and fallen trees demand a fast response.
+    <div style="margin-top:8px;"><a href="tel:${esc(tel)}">Call ${esc(phone)} — 24/7</a></div>
+  </div>`;
+}
+
 // ── Render: HOME ───────────────────────────────────────────────────────
 function renderHome(t: TenantRow, base: string): string {
   const c: Cfg = t.config || {};
@@ -181,6 +284,15 @@ function renderHome(t: TenantRow, base: string): string {
     ? `<a class="cta" href="tel:${esc(phone.replace(/[^0-9]/g, ""))}">${esc(ctaText)}</a>`
     : `<a class="cta" href="${esc(base)}contact/">${esc(ctaText)}</a>`;
 
+  const heroFeatures: string[] = s.hero_features || [];
+  const stats: any[] = s.stats || [];
+  const whyUs: string[] = s.why_us || [];
+  const team: any[] = s.team || [];
+  const testimonials: any[] = s.testimonials || [];
+  const ratingSummary = s.rating_summary || null;
+  const hours: string = s.hours || "";
+  const emergency247: boolean = !!s.emergency_24_7;
+
   return `<!DOCTYPE html><html lang="en"><head>
 ${pageMeta("home", biz, web, heroSub)}
 ${commonStyles(brand)}
@@ -190,11 +302,18 @@ ${siteHeader(biz, logo, "home", base)}
   <h1>${esc(heroTitle)}</h1>
   <p class="lead">${esc(heroSub)}</p>
   ${heroCta}
+  ${hours ? `<div class="hours-line">${esc(hours)}</div>` : ""}
+  ${renderHeroFeatures(heroFeatures)}
+  ${renderStatsBar(stats)}
+  ${renderWhyUs(whyUs)}
 
   ${services.length ? `<h2>What we do</h2>
   <div class="cards">
     ${services.slice(0, 6).map((x) => `<div class="card"><h3>${esc(typeof x === "string" ? x : x.name)}</h3>${x.description ? `<p>${esc(x.description)}</p>` : ""}</div>`).join("")}
   </div>` : ""}
+
+  ${renderTeam(team)}
+  ${renderTestimonials(testimonials, ratingSummary)}
 
   ${areas.length ? `<h2>Where we work</h2>
   <p>Serving ${areas.length} towns across the area.</p>
@@ -202,6 +321,8 @@ ${siteHeader(biz, logo, "home", base)}
     ${areas.slice(0, 18).map((a) => `<a href="${esc(base)}areas/#${esc(a.toLowerCase().replace(/\s+/g, "-"))}">${esc(a)}</a>`).join("")}
     ${areas.length > 18 ? `<a href="${esc(base)}areas/">+${areas.length - 18} more</a>` : ""}
   </div>` : ""}
+
+  ${renderEmergencyBand(phone, emergency247)}
 
   <div class="cta-band">
     <h2>Free estimates &mdash; no obligation</h2>
@@ -309,6 +430,8 @@ ${siteHeader(biz, logo, "contact", base)}
   <h1>Contact ${esc(biz)}</h1>
   <p class="lead">${esc(intro)}</p>
 
+  ${renderEmergencyBand(phone, !!s.emergency_24_7)}
+
   <div class="cards">
     <div class="card">
       <h3>Reach us</h3>
@@ -316,6 +439,7 @@ ${siteHeader(biz, logo, "contact", base)}
       ${email ? `<p><strong>Email:</strong> <a href="mailto:${esc(email)}">${esc(email)}</a></p>` : ""}
       ${addr ? `<p><strong>Based in:</strong> ${esc(addr)}</p>` : ""}
       ${web ? `<p><strong>Web:</strong> <a href="${esc(web)}">${esc(web.replace(/^https?:\/\//, ""))}</a></p>` : ""}
+      ${s.hours ? `<p><strong>Hours:</strong> ${esc(s.hours)}</p>` : ""}
     </div>
 
     <div class="card">
