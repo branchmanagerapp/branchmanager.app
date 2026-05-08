@@ -1,5 +1,5 @@
 {
-  "version": 670,
+  "version": 671,
   "released": "2026-05-08",
-  "notes": "Dashboard: 4 boxes above Workflow now styled + behaving like the 2x2 Workflow grid (Leads / Visitors / Today's Jobs / Tasks)"
+  "notes": "Phase 1.A: Subscription module + tier/feature API + Settings UI + topbar trial chip + provision-tenant trial seed"
 }

@@ -94,6 +94,12 @@ serve(async (req: Request) => {
     slug = baseSlug + '-' + Math.random().toString(36).substring(2, 6);
   }
 
+  // v670: every new tenant starts on a 14-day Solo trial. Stripe checkout
+  // moves them to status:'active' on first paid period; trial_ends_at is
+  // when soft-block kicks in if they haven't subscribed.
+  const trialStart = new Date();
+  const trialEnd = new Date(trialStart.getTime() + 14 * 24 * 3600 * 1000);
+
   const config: Record<string, any> = {
     slug,
     company_name: businessName,
@@ -114,7 +120,13 @@ serve(async (req: Request) => {
     address_line2: '',
     license_text: 'Demo tenant — fill in via Settings',
     is_demo: true,
-    provisioned_at: new Date().toISOString()
+    provisioned_at: trialStart.toISOString(),
+    subscription: {
+      tier: 'solo',
+      status: 'trial',
+      trial_started_at: trialStart.toISOString(),
+      trial_ends_at: trialEnd.toISOString()
+    }
   };
 
   const { data: tenant, error } = await sb

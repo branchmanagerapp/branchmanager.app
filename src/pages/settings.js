@@ -232,6 +232,65 @@ var SettingsPage = {
     // ════════════════════════════════════════════════════════════════════════
     html += groupOpen('Business', false);
 
+    // ─── 💳 Subscription (v670) ───
+    // Reads from Subscription.getState() (localStorage cache, refreshed from
+    // tenants.config.subscription at boot). Stripe checkout/portal wiring is
+    // Phase 1.B — buttons are placeholders for now.
+    if (typeof Subscription !== 'undefined') {
+      var _s = Subscription.getState() || { tier: 'solo', status: 'trial' };
+      var _plan = Subscription.getPlan();
+      var _status = Subscription.getStatus();
+      var _isTrial = Subscription.isTrial();
+      var _daysLeft = Subscription.daysLeftInTrial();
+      var _statusLabel = (_status === 'active') ? '<span style="background:#dcedc8;color:#2e7d32;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">ACTIVE</span>'
+        : (_status === 'trial') ? '<span style="background:#fff3e0;color:#e65100;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">TRIAL · ' + (_daysLeft != null ? _daysLeft + 'd left' : 'unknown') + '</span>'
+        : (_status === 'past_due') ? '<span style="background:#ffebee;color:#c62828;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">PAST DUE</span>'
+        : '<span style="background:#fafafa;color:var(--text-light);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">' + (_status || 'unknown').toUpperCase() + '</span>';
+      html += cardOpen('💳 Subscription <span style="font-weight:400;color:var(--text-light);font-size:12px;margin-left:6px;">' + _plan.name + ' · $' + _plan.price_monthly + '/mo</span>', { open: true });
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">'
+        + '<div>'
+        +   '<div style="font-size:18px;font-weight:700;">' + _plan.name + ' &mdash; $' + _plan.price_monthly + '<span style="font-size:13px;font-weight:500;color:var(--text-light);">/mo</span></div>'
+        +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + _plan.tagline + ' &middot; up to ' + _plan.users + ' user' + (_plan.users === 1 ? '' : 's') + '</div>'
+        + '</div>'
+        + '<div>' + _statusLabel + '</div>'
+        + '</div>';
+
+      // Trial expiring soon banner
+      if (_isTrial && _daysLeft != null && _daysLeft <= 5) {
+        html += '<div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7c4a00;">'
+          + (_daysLeft === 0 ? '⚠️ <strong>Trial expires today.</strong>' : '⏳ <strong>Trial expires in ' + _daysLeft + ' day' + (_daysLeft === 1 ? '' : 's') + '.</strong>')
+          + ' Upgrade below to keep using BM after the trial ends.'
+          + '</div>';
+      }
+
+      // Tier comparison cards
+      var tiers = Subscription.getAllTiers();
+      var tierOrder = ['solo', 'crew', 'pro'];
+      var currentTier = Subscription.getTier();
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;">';
+      tierOrder.forEach(function(tk) {
+        var t = tiers[tk];
+        var isCurrent = tk === currentTier;
+        var border = isCurrent ? '2px solid var(--green-dark)' : '1px solid var(--border)';
+        var bg = isCurrent ? '#f0faf0' : '#fff';
+        html += '<div style="border:' + border + ';background:' + bg + ';border-radius:10px;padding:14px;">'
+          + '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;">' + t.name + '</div>'
+          + '<div style="font-size:22px;font-weight:800;margin:4px 0;">$' + t.price_monthly + '<span style="font-size:12px;font-weight:500;color:var(--text-light);">/mo</span></div>'
+          + '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px;">up to ' + t.users + ' user' + (t.users === 1 ? '' : 's') + '</div>'
+          + '<div style="font-size:12px;color:var(--text);line-height:1.5;">' + t.tagline + '</div>'
+          + (isCurrent
+              ? '<div style="margin-top:10px;font-size:11px;font-weight:700;color:var(--green-dark);">✓ Current plan</div>'
+              : '<button disabled title="Stripe Checkout coming in v671" style="margin-top:10px;background:#e2e8f0;color:var(--text-light);border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:not-allowed;width:100%;">' + (tierOrder.indexOf(tk) > tierOrder.indexOf(currentTier) ? 'Upgrade' : 'Downgrade') + ' →</button>')
+          + '</div>';
+      });
+      html += '</div>';
+
+      html += '<div style="font-size:11px;color:var(--text-light);">'
+        + 'Stripe Checkout + self-service Customer Portal ship in v671. Trial state is read from <code>tenants.config.subscription</code>.'
+        + '</div>';
+      html += '</div></details>';
+    }
+
     // Company Info — editable, saved to localStorage
     var co = {
       name: CompanyInfo.get('name'),

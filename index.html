@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 670; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 671; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -980,6 +980,8 @@
           <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.15);max-height:70vh;overflow-y:auto;z-index:999;min-width:320px;"></div>
         </div>
         <div class="topbar-icons">
+          <!-- v670: trial-status chip — populated by Subscription module post-boot. Hidden by default. -->
+          <button id="bm-trial-chip" onclick="loadPage('settings')" title="Subscription · open Settings" style="display:none;background:#fff3e0;color:#7c4a00;border:1px solid #ffcc80;height:32px;padding:0 12px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;align-items:center;gap:6px;white-space:nowrap;"></button>
           <button class="topbar-icon topbar-icon-create" onclick="BM_contextCreate()" title="New…" style="background:var(--accent);border-radius:8px;width:32px;height:32px;">
             <i data-lucide="plus" style="width:18px;height:18px;stroke:#fff;stroke-width:2.5;"></i>
           </button>
@@ -1026,7 +1028,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v670.min.js"></script>
+<script defer src="dist/bm.bundle.v671.min.js"></script>
 
 
 
@@ -2035,6 +2037,26 @@ if (checkAuth()) {
     ? hashPage
     : ((savedPage && pageRenderers[savedPage]) ? savedPage : defaultPage);
   loadPage(targetPage);
+
+  // v670: refresh subscription state from cloud at boot — non-blocking,
+  // no-op if SupabaseDB not ready yet. After load, also paint the trial
+  // chip in the topbar so it's visible globally without forcing a tour
+  // through Settings.
+  setTimeout(function() {
+    if (typeof Subscription === 'undefined' || !Subscription.refreshFromCloud) return;
+    Subscription.refreshFromCloud().then(function() {
+      var chip = document.getElementById('bm-trial-chip');
+      if (!chip || !Subscription.isTrial) return;
+      var d = Subscription.daysLeftInTrial();
+      if (Subscription.isTrial() && d != null && d <= 7) {
+        chip.style.display = 'inline-flex';
+        chip.textContent = d === 0 ? '⚠ Trial expired' : '⏳ Trial · ' + d + 'd left';
+        if (d === 0) { chip.style.background = '#ffebee'; chip.style.color = '#c62828'; chip.style.borderColor = '#ef9a9a'; }
+      } else {
+        chip.style.display = 'none';
+      }
+    }).catch(function(){});
+  }, 600);
 
   // Restore detail if we have one that matches the loaded page
   if (savedDetail && savedDetail.page === targetPage && savedDetail.id) {

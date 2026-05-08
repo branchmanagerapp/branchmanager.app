@@ -7,6 +7,7 @@
     "src/biometric.js",
     "src/db.js",
     "src/ui.js",
+    "src/subscription.js",
     "src/pages/analytics-widget.js",
     "src/pages/dashboard.js",
     "src/pages/clients.js",
