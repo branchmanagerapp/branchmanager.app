@@ -1,5 +1,5 @@
 {
-  "version": 661,
+  "version": 662,
   "released": "2026-05-08",
-  "notes": "Dispatch map: 3 layer toggles collapsed into single 🎛 Layers dropdown"
+  "notes": "Dispatch simplify: lighter route summary (one-line strip) + action buttons below map (map first)"
 }

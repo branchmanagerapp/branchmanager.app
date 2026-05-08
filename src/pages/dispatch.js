@@ -198,27 +198,27 @@ var DispatchPage = {
     // Calculate route stats
     var routeStats = this._calcRouteStats(jobs);
 
-    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-      + '<div class="section-header" style="margin:0;"><h2>\uD83D\uDE9B Today\'s Dispatch</h2>'
-      + '<p style="color:var(--text-light);font-size:13px;margin-top:2px;">' + UI.dateShort(today.toISOString()) + ' \u2014 ' + jobs.length + ' jobs</p></div>'
-      + '<div style="display:flex;gap:8px;">'
-      + '<button onclick="DispatchPage.optimizeRoute()" style="background:#1565c0;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">\uD83D\uDD04 Optimize Route</button>'
-      + '<button onclick="DispatchPage.openRoute()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">\uD83D\uDDFA Open in Maps</button>'
-      + '<button onclick="DispatchPage.shareRoute()" style="background:#fff;color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;margin-left:6px;">\uD83D\uDE9B Share Truck Route</button>'
-      + '</div></div>';
+    // v662: Header is just title + date. Action buttons moved below the
+    // map per "map first" \u2014 the map is what dispatchers want to see
+    // immediately on landing.
+    var html = '<div style="margin-bottom:14px;">'
+      + '<h2 style="margin:0;">\uD83D\uDE9B Today\'s Dispatch</h2>'
+      + '<p style="color:var(--text-light);font-size:13px;margin:2px 0 0;">' + UI.dateShort(today.toISOString()) + ' \u2014 ' + jobs.length + ' job' + (jobs.length === 1 ? '' : 's') + '</p>'
+      + '</div>';
 
-    // Route Summary Card
+    // v662: Route summary collapsed from a 4-up gradient card to a single
+    // line \u2014 same data, ~80px less vertical space, no heavy visual.
     if (jobs.length) {
       var dayTotal = jobs.reduce(function(s, j) { return s + (j.total || 0); }, 0);
-
-      html += '<div style="background:linear-gradient(135deg, #2e7d32 0%, #43a047 50%, #66bb6a 100%);border-radius:12px;padding:18px;color:#fff;margin-bottom:16px;box-shadow:0 4px 12px rgba(46,125,50,0.3);">'
-        + '<div style="font-size:14px;font-weight:700;margin-bottom:12px;opacity:0.9;">\uD83D\uDCCA Route Summary</div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">'
-        + '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;">' + jobs.length + '</div><div style="font-size:11px;opacity:0.8;">Jobs Today</div></div>'
-        + '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;">' + UI.money(dayTotal) + '</div><div style="font-size:11px;opacity:0.8;">Est. Revenue</div></div>'
-        + '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;">' + routeStats.totalMiles + ' mi</div><div style="font-size:11px;opacity:0.8;">Total Miles</div></div>'
-        + '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;">' + routeStats.finishTime + '</div><div style="font-size:11px;opacity:0.8;">Est. Finish</div></div>'
-        + '</div></div>';
+      html += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:13px;color:var(--green-dark);">'
+        + '<span><strong>' + jobs.length + '</strong> job' + (jobs.length === 1 ? '' : 's') + '</span>'
+        + '<span style="color:#cbd5e1;">\u00B7</span>'
+        + '<span><strong>' + UI.money(dayTotal) + '</strong></span>'
+        + '<span style="color:#cbd5e1;">\u00B7</span>'
+        + '<span><strong>' + routeStats.totalMiles + '</strong> mi</span>'
+        + '<span style="color:#cbd5e1;">\u00B7</span>'
+        + '<span>finish <strong>' + routeStats.finishTime + '</strong></span>'
+        + '</div>';
     }
 
     // ═══ LIVE MAP — Jobs + Crew + Fleet vehicles + opt-in layers ═══
@@ -247,6 +247,15 @@ var DispatchPage = {
       +   '<span id="dispatch-map-status" style="font-size:11px;color:var(--text-light);">Loading...</span>'
       + '</div></div>'
       + '<div id="dispatch-map" style="height:340px;width:100%;"></div></div>';
+
+    // v662: Route action buttons moved below the map. Map first, act second.
+    if (jobs.length) {
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">'
+        + '<button onclick="DispatchPage.optimizeRoute()" style="background:#1565c0;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">🔄 Optimize Route</button>'
+        + '<button onclick="DispatchPage.openRoute()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">🗺 Open in Maps</button>'
+        + '<button onclick="DispatchPage.shareRoute()" style="background:#fff;color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">🚛 Share Truck Route</button>'
+        + '</div>';
+    }
 
     // v660: Weather widget (forecast/alerts) stays at top — radar overlay
     // is now a map layer toggle above. Both surfaces complement each other.
