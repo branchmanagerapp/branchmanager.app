@@ -235,9 +235,35 @@ var AnalyticsWidget = (function() {
       + '</div>';
   }
 
+  // v670: tiny summary helper for stat-card style usage. Fills countEl with
+  // the session count and subEl with a one-line caption. Used by the
+  // dashboard 2x2 stat grid.
+  function fillSummary(countId, subId, days) {
+    days = days || 30;
+    var countEl = document.getElementById(countId);
+    var subEl = document.getElementById(subId);
+    if (!countEl && !subEl) return;
+    var tid = _tenantId();
+    if (!tid) { if (subEl) subEl.textContent = 'No tenant resolved.'; return; }
+    _fetch(tid, days).then(function(data) {
+      if (!data || !data.ok) {
+        if (countEl) countEl.textContent = '—';
+        if (subEl) subEl.textContent = 'Analytics not available';
+        return;
+      }
+      var sessions = data.totals.sessions;
+      if (countEl) countEl.textContent = sessions;
+      if (subEl) subEl.textContent = sessions + ' visitor' + (sessions === 1 ? '' : 's') + ' · last ' + days + ' days';
+    }).catch(function() {
+      if (countEl) countEl.textContent = '—';
+      if (subEl) subEl.textContent = 'Analytics unavailable';
+    });
+  }
+
   return {
     renderCompact: renderCompact,
     renderFull: renderFull,
-    setRange: setRange
+    setRange: setRange,
+    fillSummary: fillSummary
   };
 })();

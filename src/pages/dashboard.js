@@ -239,74 +239,67 @@ var DashboardPage = {
     var draftInvTotal = draftInvoices.reduce(function(s,i){return s+Number(i.total||0);},0);
     var overdueTotal = overdueInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0);
 
-    // ── Call Center snapshot (async-filled after render) — DESKTOP ONLY ──
+    // ── DESKTOP ONLY: 2x2 summary grid (matches the Workflow grid below) ──
+    // v670 — was 4 separate stacked widgets (Leads Center / Website Visitors /
+    // Today's Jobs / Tasks). Per Doug, condensed into a uniform 2x2 grid that
+    // mirrors the Workflow grid: bordered container, internal dividers, full-
+    // cell click → page nav. Detail still reachable by clicking through.
     html += '<div class="dash-desktop-only">';
-    var _ccCollapsed = localStorage.getItem('bm-dash-cc-collapsed') === '1';
-    html += '<div id="dash-callcenter-widget" style="background:var(--white);border-radius:12px;padding:12px 16px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (_ccCollapsed ? '0' : '12px') + ';">'
-      + '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Leads Center</h3>'
-      + '<div id="dash-cc-badge" style="font-size:12px;color:var(--text-light);margin-top:2px;">Loading…</div>'
-      + '</div>'
-      + '<div style="display:flex;gap:6px;align-items:center;">'
-      + '<button onclick="loadPage(\'callcenter\')" style="background:none;border:1px solid var(--border);height:32px;padding:0 14px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--accent);">Open →</button>'
-      + '<button id="dash-cc-collapse-btn" onclick="DashboardPage._toggleCCCollapse()" title="Collapse" style="background:none;border:1px solid var(--border);height:32px;width:32px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">' + (_ccCollapsed ? '▾' : '▴') + '</button>'
-      + '</div>'
-      + '</div>'
-      + '<div id="dash-cc-items" style="' + (_ccCollapsed ? 'display:none;' : '') + '"></div>'
-      + '</div>';
-    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillCallCenterWidget(); }, 80);
-    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillDateWeather(); }, 120);
 
-    // v655: shared AnalyticsWidget — single source of truth for all
-    // visitor-stats UI. Compact tile here, full chart on Marketing page.
-    if (typeof AnalyticsWidget !== 'undefined') {
-      html += AnalyticsWidget.renderCompact({
-        subId: 'dash-aw-sub',
-        miniId: 'dash-aw-mini',
-        ctaText: 'Open Marketing →',
-        onClickFull: "loadPage('socialbranch')"
-      });
-    }
-
-    // ── Today's Jobs (v419: hoisted to top; collapses to compact pill when empty) ──
+    // Today's jobs counts (sync, used in the Jobs cell)
     var __td = now.getFullYear() + '-' + (now.getMonth()+1<10?'0':'') + (now.getMonth()+1) + '-' + (now.getDate()<10?'0':'') + now.getDate();
     var __todayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === __td; });
     var __todayDone = __todayJobs.filter(function(j) { return j.status === 'completed'; }).length;
-    if (__todayJobs.length === 0) {
-      html += '<div onclick="loadPage(\'schedule\')" style="background:var(--white);border-radius:10px;padding:10px 16px;border:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--text-light);">'
-        + '<span><strong style="color:var(--text);">Jobs</strong> · No jobs scheduled today</span>'
-        + '<span style="color:var(--accent);font-size:12px;">Open Schedule →</span>'
-        + '</div>';
-    } else {
-      html += '<div style="background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-        + '<div><h3 style="font-size:16px;font-weight:700;margin:0;">Jobs</h3>'
-        + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + __todayDone + ' of ' + __todayJobs.length + ' complete</div>'
-        + '</div>'
-        + '<button onclick="event.stopPropagation();loadPage(\'schedule\')" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);">View Schedule →</button>'
-        + '</div>';
-      __todayJobs.forEach(function(j) {
-        var sc = j.status === 'completed' ? '#2e7d32' : j.status === 'in_progress' ? '#e07c24' : '#1565c0';
-        var sb = j.status === 'completed' ? '#e8f5e9' : j.status === 'in_progress' ? '#fff3e0' : '#e3f2fd';
-        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="loadPage(\'jobs\');setTimeout(function(){JobsPage.showDetail(\'' + j.id + '\');},100);">'
-          + '<div style="width:8px;height:8px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div style="font-size:14px;font-weight:600;">' + UI.esc(j.clientName || '—') + '</div>'
-          + '<div style="font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || j.property || '') + '</div>'
-          + '</div>'
-          + (j.startTime ? '<div style="font-size:12px;color:var(--text-light);flex-shrink:0;">' + j.startTime + '</div>' : '')
-          + '<span style="background:' + sb + ';color:' + sc + ';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;flex-shrink:0;">' + (j.status||'').replace('_',' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) + '</span>'
-          + '<div style="font-size:13px;font-weight:700;flex-shrink:0;">' + UI.money(j.total||0) + '</div>'
-          + '</div>';
-      });
-      html += '</div>';
-    }
 
-    // ── Tasks for Today widget (replaces old briefing card) ──
-    // Shows manual tasks from TaskReminders + AI suggestions in one card.
-    // Always visible; AI suggestions shown at the bottom so real tasks stay primary.
-    if (typeof TaskReminders !== 'undefined') {
-      html += TaskReminders.getDashboardWidget();
+    // Active task count (sync, used in the Tasks cell)
+    var __activeTasks = 0;
+    try {
+      if (typeof TaskReminders !== 'undefined' && TaskReminders._getAll) {
+        __activeTasks = TaskReminders._getAll().filter(function(t) { return !t.completed && !t.archived; }).length;
+      }
+    } catch(e) {}
+
+    var jobsLabel = __todayJobs.length === 0
+      ? 'No jobs scheduled today'
+      : __todayDone + ' of ' + __todayJobs.length + ' complete';
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+
+    // Top-left: Leads Center (count async-filled by _fillCallCenterWidget into #dash-cc-badge)
+    html += '<div onclick="loadPage(\'callcenter\')" style="padding:16px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">📞 Leads Center</h4>'
+      +   '<div id="dash-cc-count" style="font-size:24px;font-weight:800;line-height:1.1;">—</div>'
+      +   '<div id="dash-cc-badge" style="font-size:11px;color:#666;margin-top:2px;">Loading…</div>'
+      + '</div>';
+
+    // Top-right: Website Visitors (count async-filled by AnalyticsWidget into #dash-aw-mini)
+    html += '<div onclick="loadPage(\'socialbranch\')" style="padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">🌐 Website Visitors</h4>'
+      +   '<div id="dash-aw-mini" style="font-size:24px;font-weight:800;line-height:1.1;">—</div>'
+      +   '<div id="dash-aw-sub" style="font-size:11px;color:#666;margin-top:2px;">Loading…</div>'
+      + '</div>';
+
+    // Bottom-left: Today's Jobs
+    html += '<div onclick="loadPage(\'schedule\')" style="padding:16px 20px;border-right:1px solid var(--border);cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">📅 Today\'s Jobs</h4>'
+      +   '<div style="font-size:24px;font-weight:800;line-height:1.1;">' + __todayJobs.length + '</div>'
+      +   '<div style="font-size:11px;color:#666;margin-top:2px;">' + jobsLabel + '</div>'
+      + '</div>';
+
+    // Bottom-right: Tasks
+    html += '<div onclick="loadPage(\'taskreminders\')" style="padding:16px 20px;cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">✅ Tasks</h4>'
+      +   '<div style="font-size:24px;font-weight:800;line-height:1.1;">' + __activeTasks + '</div>'
+      +   '<div style="font-size:11px;color:#666;margin-top:2px;">' + (__activeTasks === 0 ? 'All clear' : 'Open' + (__activeTasks === 1 ? '' : ' tasks')) + '</div>'
+      + '</div>';
+
+    html += '</div>';
+
+    // Async fills: leads count + analytics widget hookup (kept from legacy widgets)
+    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillCallCenterWidget(); }, 80);
+    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillDateWeather(); }, 120);
+    if (typeof AnalyticsWidget !== 'undefined' && AnalyticsWidget.fillSummary) {
+      setTimeout(function() { try { AnalyticsWidget.fillSummary('dash-aw-mini', 'dash-aw-sub', 30); } catch(e) {} }, 100);
     }
 
     // v619: 2-column dashboard layout — main (workflow + lead sources) /
@@ -616,46 +609,12 @@ var DashboardPage = {
     // (overdueInvCount, expiringQuotes, unscheduledJobs) stay in case
     // future logic needs them.
 
-    // v619: Receivables moved up to top of rail; close rail + grid before
-    // the Lead Sources chart (which renders full-width below).
     html += '</div></div>'; // close .dash-rail + .dash-grid
     html += '</div>'; // v645: close .dash-desktop-only wrapping all heavy widgets
 
-    // Lead Sources — small widget showing where new clients have been coming from (last 90 days)
-    try {
-      var _90ago = Date.now() - 90 * 86400000;
-      var _recentClients = DB.clients.getAll().filter(function(c) {
-        return c.createdAt && new Date(c.createdAt).getTime() >= _90ago;
-      });
-      if (_recentClients.length > 0) {
-        var _srcMap = {};
-        _recentClients.forEach(function(c) {
-          var s = (c.source && c.source.trim()) || '(unknown)';
-          _srcMap[s] = (_srcMap[s] || 0) + 1;
-        });
-        var _sorted = Object.keys(_srcMap).sort(function(a, b) { return _srcMap[b] - _srcMap[a]; });
-        var _max = _srcMap[_sorted[0]] || 1;
-        html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">'
-          +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-          +     '<h3 style="margin:0;font-size:16px;">📍 Lead Sources — last 90 days</h3>'
-          +     '<span style="font-size:12px;color:var(--text-light);">' + _recentClients.length + ' new client' + (_recentClients.length !== 1 ? 's' : '') + '</span>'
-          +   '</div>';
-        _sorted.slice(0, 8).forEach(function(src) {
-          var cnt = _srcMap[src];
-          var pct = Math.round((cnt / _max) * 100);
-          var isUnknown = src === '(unknown)';
-          html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px;">'
-            + '<div style="flex:0 0 140px;' + (isUnknown ? 'color:var(--text-light);font-style:italic;' : '') + '">' + UI.esc(src) + '</div>'
-            + '<div style="flex:1;background:var(--bg);height:8px;border-radius:4px;overflow:hidden;"><div style="height:100%;background:' + (isUnknown ? '#cbd5e1' : 'var(--green-dark)') + ';width:' + pct + '%;"></div></div>'
-            + '<div style="flex:0 0 32px;text-align:right;font-weight:700;">' + cnt + '</div>'
-            + '</div>';
-        });
-        if (_srcMap['(unknown)']) {
-          html += '<div style="font-size:11px;color:var(--text-light);margin-top:8px;font-style:italic;">💡 ' + _srcMap['(unknown)'] + ' new client' + (_srcMap['(unknown)'] !== 1 ? 's are' : ' is') + ' missing a Lead Source. Open the client and tag them to improve this chart.</div>';
-        }
-        html += '</div>';
-      }
-    } catch(e) { /* optional widget */ }
+    // v669: Lead Sources widget removed from dashboard — duplicated by the
+    // Marketing › Lead Sources tab, which has the full analytics suite
+    // (sources + funnel + tag-untagged + revenue attribution + response time).
 
     return html;
   },
@@ -803,11 +762,22 @@ var DashboardPage = {
   },
 
   _fillCallCenterWidget: async function() {
+    // v670: dual layout — supports the new compact stat-card (countEl +
+    // badge only) AND the legacy expanded widget (dash-cc-items list). The
+    // count + sub-text are filled regardless of which layout is mounted.
     var el = document.getElementById('dash-cc-items');
-    if (!el) return;
+    var countEl = document.getElementById('dash-cc-count');
+    var badge = document.getElementById('dash-cc-badge');
+    var compactMode = !el && (countEl || badge);
+    if (!el && !compactMode) return;
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!sb) {
-      el.innerHTML = '<div style="font-size:13px;color:var(--text-light);padding:4px 0;">Supabase not connected.</div>';
+      if (compactMode) {
+        if (countEl) countEl.textContent = '—';
+        if (badge) badge.textContent = 'Supabase not connected';
+      } else if (el) {
+        el.innerHTML = '<div style="font-size:13px;color:var(--text-light);padding:4px 0;">Supabase not connected.</div>';
+      }
       return;
     }
     try {
@@ -819,10 +789,14 @@ var DashboardPage = {
         .limit(30);
       if (error) throw error;
 
-      var badge = document.getElementById('dash-cc-badge');
       var widget = document.getElementById('dash-callcenter-widget');
 
       if (!data || data.length === 0) {
+        if (compactMode) {
+          if (countEl) countEl.textContent = '0';
+          if (badge) badge.textContent = 'No recent activity';
+          return;
+        }
         if (widget) {
           widget.style.cssText = 'background:var(--white);border-radius:10px;padding:10px 16px;border:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--text-light);';
           widget.onclick = function() { loadPage('callcenter'); };
@@ -847,7 +821,9 @@ var DashboardPage = {
       var emails = data.filter(function(c) { return c.channel === 'email'; }).slice(0, 4);
 
       var totalCount = texts.length + calls.length + emails.length;
-      if (badge) badge.textContent = totalCount + ' recent';
+      if (countEl) countEl.textContent = data.length;
+      if (badge) badge.textContent = totalCount + ' recent · last 72h';
+      if (compactMode) return;  // v670 — compact stat-card stops here
 
       var _renderSection = function(key, label, icon, items, dot) {
         if (items.length === 0) return '';

@@ -1,5 +1,5 @@
 {
-  "version": 668,
+  "version": 670,
   "released": "2026-05-08",
-  "notes": "SW registration: wrap reg.update() promise rejections — was leaking to onunhandledrejection during transient sw.js 404s mid-deploy"
+  "notes": "Dashboard: 4 boxes above Workflow now styled + behaving like the 2x2 Workflow grid (Leads / Visitors / Today's Jobs / Tasks)"
 }
