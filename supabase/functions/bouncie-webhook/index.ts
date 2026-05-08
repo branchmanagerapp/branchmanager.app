@@ -93,41 +93,75 @@ Deno.serve(async (req) => {
   try { payload = JSON.parse(rawBody); } catch { return new Response("Bad JSON", { status: 400 }); }
 
   const event: string = payload.eventType || payload.event || "unknown";
-  const d = payload.data || payload;
-  const deviceId: string = d.imei || d.device_id || d.deviceId || d.vin || "";
-  const vin: string | undefined = d.vin;
-  if (!deviceId) return new Response(JSON.stringify({ ok: false, reason: "no device id" }), { status: 200 });
+  // v662 — Bouncie's actual payload shape (verified from production logs
+  // 2026-05-08): IMEI/VIN are at the TOP LEVEL on every event type.
+  // The payload sub-object key varies: `data` is an ARRAY of GPS pings on
+  // tripData; `end` on tripEnd (odometer, no GPS); `metrics` on tripMetrics
+  // (trip stats, no GPS); `start` on tripStart (single GPS).
+  const deviceId: string = payload.imei || payload.device_id || payload.deviceId || payload.vin || "";
+  const vin: string | undefined = payload.vin;
+  if (!deviceId) return new Response(JSON.stringify({ ok: false, reason: "no device id", event }), { status: 200 });
 
   // Phase 2 — resolve tenant by Bouncie account hash from payload
   const TENANT_ID = await tenantForBouncie(payload);
 
-  const vehicleId = await ensureVehicle(deviceId, vin, d.nickName || d.nickname, TENANT_ID);
-  if (!vehicleId) return new Response(JSON.stringify({ ok: false, reason: "no vehicle" }), { status: 200 });
+  const vehicleId = await ensureVehicle(deviceId, vin, payload.nickName || payload.nickname, TENANT_ID);
+  if (!vehicleId) return new Response(JSON.stringify({ ok: false, reason: "no vehicle", event }), { status: 200 });
 
-  // Position — present on tripStart/tripData/tripEnd
-  const loc = d.location || d.stats?.location || {};
-  const lat = loc.lat ?? loc.latitude ?? d.latitude;
-  const lon = loc.lon ?? loc.longitude ?? d.longitude;
-  if (lat != null && lon != null) {
-    const ts = new Date(d.timestamp || d.lastUpdated || Date.now()).toISOString();
-    const speed = d.speed ?? d.stats?.speed ?? null;
-    const heading = d.heading ?? d.bearing ?? null;
-    const fuel = d.fuelLevel ?? d.stats?.fuelLevel ?? null;
-    const odometer = d.odometer ?? d.stats?.odometer ?? null;
-    const battery = d.battery ?? d.stats?.battery ?? null;
-    const ignition = d.ignition ?? null;
-    await sb.from("vehicle_positions").insert({
-      vehicle_id: vehicleId, ts, lat, lon,
-      speed_mph: speed, heading, fuel_level: fuel,
-      odometer, battery, ignition, raw: d,
+  // Build the list of position pings to insert from this event.
+  // tripData = array under .data; tripStart = single ping under .start;
+  // tripEnd has no GPS (just odometer); tripMetrics = aggregate, no GPS.
+  type Ping = { ts: string; lat: number; lon: number; speed?: number | null; heading?: number | null; ignition?: boolean | null; raw: any };
+  const pings: Ping[] = [];
+  const pushPing = (src: any) => {
+    if (!src) return;
+    const gps = src.gps || src.location || src;
+    const lat = gps.lat ?? gps.latitude ?? src.lat ?? src.latitude;
+    const lon = gps.lon ?? gps.lng ?? gps.longitude ?? src.lon ?? src.longitude;
+    if (lat == null || lon == null) return;
+    pings.push({
+      ts: new Date(src.timestamp || src.ts || gps.timestamp || Date.now()).toISOString(),
+      lat, lon,
+      speed: src.speed ?? gps.speed ?? null,
+      heading: src.heading ?? gps.heading ?? src.bearing ?? null,
+      ignition: src.ignition ?? null,
+      raw: src,
     });
-    // Update last-known cache on vehicles row for fast list rendering
+  };
+  if (Array.isArray(payload.data)) payload.data.forEach(pushPing);
+  if (payload.start) pushPing(payload.start);
+  if (payload.end) pushPing(payload.end);
+
+  if (pings.length) {
+    // Insert all pings into vehicle_positions
+    const rows = pings.map((p) => ({
+      vehicle_id: vehicleId, ts: p.ts, lat: p.lat, lon: p.lon,
+      speed_mph: p.speed, heading: p.heading, ignition: p.ignition, raw: p.raw,
+    }));
+    await sb.from("vehicle_positions").insert(rows);
+    // Update last-known cache from the most recent ping
+    const last = pings.reduce((a, b) => (a.ts > b.ts ? a : b));
     await sb.from("vehicles").update({
-      last_lat: lat, last_lon: lon, last_seen_at: ts,
-      last_speed_mph: speed, last_ignition: ignition,
+      last_lat: last.lat, last_lon: last.lon, last_seen_at: last.ts,
+      last_speed_mph: last.speed ?? null, last_ignition: last.ignition ?? null,
       updated_at: new Date().toISOString(),
     }).eq("id", vehicleId);
   }
+
+  // Even with no GPS pings (tripEnd / tripMetrics), record the timestamp so
+  // the vehicle shows as "recently seen" on dashboards.
+  if (!pings.length) {
+    const ts = new Date(
+      payload.end?.timestamp || payload.metrics?.timestamp || payload.timestamp || Date.now(),
+    ).toISOString();
+    await sb.from("vehicles").update({
+      last_seen_at: ts, updated_at: new Date().toISOString(),
+    }).eq("id", vehicleId);
+  }
+
+  // Convenience aliases — the maintenance branches below still expect a `d`
+  // pointer with the per-event payload subtree.
+  const d: any = payload.start || payload.end || payload.metrics || payload;
 
   // ── Auto-create maintenance tasks based on Bouncie event types ──
   // Idempotent via source_event_id (partial unique index).
