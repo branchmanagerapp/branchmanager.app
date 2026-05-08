@@ -48,10 +48,15 @@ var SchedulePage = {
         + '</label>';
     }
 
-    // Calendar controls — single line on desktop, wraps on narrow.
-    // Title shrinks to natural width (was min-width:200px which forced a
-    // wrap even when there was room). Tighter button padding too.
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">'
+    // v647: Jobber-pattern mobile schedule — Day / List / Map pills
+    // primary, Week / Month under "More". Week scroller strip below the
+    // controls (S/M/T/W/T/F/S with date numbers, today highlighted) so
+    // jumping days is one tap.
+    function _viewPill(viewKey, label) {
+      var active = self.view === viewKey;
+      return '<button class="btn ' + (active ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'' + viewKey + '\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (!active ? 'background:none;border:none;color:var(--text-light);' : '') + '">' + label + '</button>';
+    }
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">'
       + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
       +   '<button class="btn btn-outline" onclick="SchedulePage.prev()" style="padding:4px 10px;">&larr;</button>'
       +   '<h3 id="cal-title" style="font-size:16px;font-weight:700;white-space:nowrap;margin:0 4px;">' + self._getTitle() + '</h3>'
@@ -60,9 +65,11 @@ var SchedulePage = {
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
       +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;">'
-      +     '<button class="btn ' + (self.view === 'day' ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'day\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (self.view !== 'day' ? 'background:none;border:none;color:var(--text-light);' : '') + '">Day</button>'
-      +     '<button class="btn ' + (self.view === 'week' ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'week\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (self.view !== 'week' ? 'background:none;border:none;color:var(--text-light);' : '') + '">Week</button>'
-      +     '<button class="btn ' + (self.view === 'month' ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'month\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (self.view !== 'month' ? 'background:none;border:none;color:var(--text-light);' : '') + '">Month</button>'
+      +     _viewPill('day', 'Day')
+      +     _viewPill('list', 'List')
+      +     _viewPill('map', 'Map')
+      +     _viewPill('week', 'Week')
+      +     _viewPill('month', 'Month')
       +   '</div>'
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
@@ -70,8 +77,19 @@ var SchedulePage = {
       + '</div>'
       + '</div>';
 
+    // v647: Week scroller strip (S/M/T/W/T/F/S) — visible in Day/List/Map
+    // views since those are single-day-focused. Hidden in Week/Month
+    // (those views already show week context).
+    if (self.view === 'day' || self.view === 'list' || self.view === 'map') {
+      html += self._renderWeekScroller(self.currentDate);
+    }
+
     if (self.view === 'day') {
       html += self._renderDay();
+    } else if (self.view === 'list') {
+      html += self._renderList();
+    } else if (self.view === 'map') {
+      html += self._renderMap();
     } else if (self.view === 'week') {
       html += self._renderWeek();
     } else {
@@ -140,7 +158,8 @@ var SchedulePage = {
     var d = SchedulePage.currentDate;
     var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    if (SchedulePage.view === 'day') {
+    // v647: list + map are day-focused too — single-day title.
+    if (SchedulePage.view === 'day' || SchedulePage.view === 'list' || SchedulePage.view === 'map') {
       return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
     }
     if (SchedulePage.view === 'month') {
@@ -537,16 +556,18 @@ var SchedulePage = {
 
   prev: function() {
     var d = SchedulePage.currentDate;
-    if (SchedulePage.view === 'day') { d.setDate(d.getDate() - 1); }
-    else if (SchedulePage.view === 'week') { d.setDate(d.getDate() - 7); }
+    var v = SchedulePage.view;
+    if (v === 'day' || v === 'list' || v === 'map') { d.setDate(d.getDate() - 1); }
+    else if (v === 'week') { d.setDate(d.getDate() - 7); }
     else { d.setMonth(d.getMonth() - 1); }
     loadPage('schedule');
   },
 
   next: function() {
     var d = SchedulePage.currentDate;
-    if (SchedulePage.view === 'day') { d.setDate(d.getDate() + 1); }
-    else if (SchedulePage.view === 'week') { d.setDate(d.getDate() + 7); }
+    var v = SchedulePage.view;
+    if (v === 'day' || v === 'list' || v === 'map') { d.setDate(d.getDate() + 1); }
+    else if (v === 'week') { d.setDate(d.getDate() + 7); }
     else { d.setMonth(d.getMonth() + 1); }
     loadPage('schedule');
   },
@@ -554,6 +575,178 @@ var SchedulePage = {
   goToday: function() {
     SchedulePage.currentDate = new Date();
     loadPage('schedule');
+  },
+
+  // v647: Jobber-style week scroller strip — S M T W T F S with date numbers,
+  // today highlighted in green circle. Tap any day → jump Day view to that date.
+  _renderWeekScroller: function(currentDate) {
+    var today = SchedulePage._localDateStr(new Date());
+    var selected = SchedulePage._localDateStr(currentDate);
+    // Compute Sunday of the current week
+    var d = new Date(currentDate);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay());
+    var dayLetters = ['S','M','T','W','T','F','S'];
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:8px 6px;margin-bottom:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+    for (var i = 0; i < 7; i++) {
+      var dt = new Date(d);
+      dt.setDate(d.getDate() + i);
+      var dStr = SchedulePage._localDateStr(dt);
+      var isToday = dStr === today;
+      var isSelected = dStr === selected;
+      var dayJobCount = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dStr; }).length;
+
+      var bg = isToday ? 'var(--green-dark)' : isSelected ? 'var(--green-bg)' : 'transparent';
+      var fg = isToday ? '#fff' : 'var(--text)';
+      var letterColor = isToday ? 'rgba(255,255,255,.85)' : 'var(--text-light)';
+
+      html += '<button onclick="SchedulePage.currentDate=new Date(\'' + dStr + 'T12:00:00\');if(SchedulePage.view===\'week\'||SchedulePage.view===\'month\')SchedulePage.view=\'day\';loadPage(\'schedule\')" '
+        + 'style="border:none;cursor:pointer;background:' + bg + ';color:' + fg + ';border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .15s;">'
+        +   '<span style="font-size:10px;font-weight:600;letter-spacing:.04em;color:' + letterColor + ';text-transform:uppercase;">' + dayLetters[i] + '</span>'
+        +   '<span style="font-size:16px;font-weight:700;line-height:1;">' + dt.getDate() + '</span>'
+        +   (dayJobCount > 0
+              ? '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:' + (isToday ? '#fff' : 'var(--accent)') + ';margin-top:2px;"></span>'
+              : '<span style="display:inline-block;width:5px;height:5px;margin-top:2px;"></span>')
+        + '</button>';
+    }
+    html += '</div>';
+    return html;
+  },
+
+  // v647: List view — clean vertical timeline of today's jobs in time order.
+  // No hour grid; just job cards top-to-bottom with start time chip.
+  _renderList: function() {
+    var self = SchedulePage;
+    var dateStr = self._localDateStr(self.currentDate);
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
+    dayJobs.sort(function(a, b) { return (a.startTime || '99:99').localeCompare(b.startTime || '99:99'); });
+
+    if (!dayJobs.length) {
+      return '<div style="background:var(--white);border:1px dashed var(--border);border-radius:12px;padding:32px 16px;text-align:center;color:var(--text-light);">'
+        + '<div style="font-size:32px;margin-bottom:6px;">📅</div>'
+        + '<div style="font-size:14px;font-weight:600;color:var(--text);">No jobs scheduled</div>'
+        + '<div style="font-size:12px;margin-top:4px;">Drag an unscheduled job from Day view, or add one with +.</div>'
+        + '</div>';
+    }
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
+    dayJobs.forEach(function(j, i) {
+      var statusColor = j.status === 'completed' ? '#2e7d32' : j.status === 'in_progress' ? '#e07c24' : j.status === 'late' ? '#c62828' : '#1565c0';
+      var statusBg = j.status === 'completed' ? '#e8f5e9' : j.status === 'in_progress' ? '#fff3e0' : j.status === 'late' ? '#fde8e8' : '#e3f2fd';
+      var border = i > 0 ? 'border-top:1px solid var(--border);' : '';
+      html += '<div onclick="JobsPage.showDetail(\'' + j.id + '\')" style="cursor:pointer;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;' + border + '">'
+        +   '<div style="flex-shrink:0;width:62px;text-align:center;">'
+        +     '<div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;">' + UI.esc(j.startTime || 'Any')+ '</div>'
+        +     (j.endTime ? '<div style="font-size:11px;color:var(--text-light);">' + UI.esc(j.endTime) + '</div>' : '')
+        +   '</div>'
+        +   '<div style="width:3px;background:' + statusColor + ';border-radius:2px;align-self:stretch;flex-shrink:0;"></div>'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px;">'
+        +       '<div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(j.clientName || '—') + '</div>'
+        +       '<div style="font-size:13px;font-weight:700;color:var(--text);flex-shrink:0;">' + UI.moneyInt(j.total || 0) + '</div>'
+        +     '</div>'
+        +     (j.property ? '<div style="font-size:12px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(j.property) + '</div>' : '')
+        +     (j.description ? '<div style="font-size:12px;color:var(--text);margin-top:4px;line-height:1.4;">' + UI.esc(j.description) + '</div>' : '')
+        +     '<div style="margin-top:6px;display:flex;gap:6px;align-items:center;">'
+        +       '<span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 9px;border-radius:11px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">' + (j.status || 'scheduled').replace('_', ' ') + '</span>'
+        +       (j.crew && j.crew.length ? '<span style="font-size:11px;color:var(--text-light);">👷 ' + UI.esc(j.crew.join(', ')) + '</span>' : '')
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+
+    var totalRevenue = dayJobs.reduce(function(s, j) { return s + (j.total || 0); }, 0);
+    html += '<div style="margin-top:8px;text-align:right;font-size:13px;color:var(--text-light);">'
+      + dayJobs.length + ' job' + (dayJobs.length === 1 ? '' : 's') + ' · ' + UI.money(totalRevenue) + ' total'
+      + '</div>';
+    return html;
+  },
+
+  // v647: Map view — embed MapLibre showing today's jobs as pins. Re-uses
+  // the same MapLibre infra Dispatch already loads. Pins colored by status.
+  _renderMap: function() {
+    var self = SchedulePage;
+    var dateStr = self._localDateStr(self.currentDate);
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var dayJobs = allJobs.filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr
+        && (j.lat || j.latitude) && (j.lng || j.longitude || j.lon);
+    });
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
+    html += '<div id="schedule-map" style="height:480px;width:100%;background:#e8eef2;"></div>';
+
+    if (dayJobs.length === 0) {
+      html += '<div style="padding:14px 16px;font-size:13px;color:var(--text-light);text-align:center;background:var(--bg);border-top:1px solid var(--border);">'
+        + 'No jobs with location for this day. Add property addresses to see pins.'
+        + '</div>';
+    } else {
+      html += '<div style="padding:10px 14px;font-size:12px;color:var(--text-light);background:var(--bg);border-top:1px solid var(--border);">'
+        + dayJobs.length + ' job' + (dayJobs.length === 1 ? '' : 's') + ' shown · tap a pin for details'
+        + '</div>';
+    }
+    html += '</div>';
+
+    // Init MapLibre after DOM mount (deferred so the container exists)
+    setTimeout(function() {
+      var el = document.getElementById('schedule-map');
+      if (!el || typeof maplibregl === 'undefined') return;
+      try {
+        // Center: if we have jobs, use first; else fall back to Peekskill area.
+        var firstJob = dayJobs[0];
+        var centerLng = firstJob ? Number(firstJob.lng || firstJob.longitude || firstJob.lon) : -73.9211;
+        var centerLat = firstJob ? Number(firstJob.lat || firstJob.latitude) : 41.2901;
+        var map = new maplibregl.Map({
+          container: el,
+          style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+          center: [centerLng, centerLat],
+          zoom: dayJobs.length ? 11 : 9
+        });
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        SchedulePage._mapInstance = map;
+
+        map.on('load', function() {
+          var bounds = new maplibregl.LngLatBounds();
+          dayJobs.forEach(function(j) {
+            var lng = Number(j.lng || j.longitude || j.lon);
+            var lat = Number(j.lat || j.latitude);
+            if (!lng || !lat) return;
+            var statusColor = j.status === 'completed' ? '#2e7d32' : j.status === 'in_progress' ? '#e07c24' : j.status === 'late' ? '#c62828' : '#1565c0';
+            var pin = document.createElement('div');
+            pin.style.cssText = 'width:28px;height:28px;border-radius:50%;background:' + statusColor + ';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;';
+            pin.textContent = (j.startTime || '·').substring(0, 2);
+            pin.onclick = function() { JobsPage.showDetail(j.id); };
+            new maplibregl.Marker({ element: pin })
+              .setLngLat([lng, lat])
+              .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(
+                '<div style="font-size:13px;font-weight:700;">' + UI.esc(j.clientName || '') + '</div>'
+                + (j.startTime ? '<div style="font-size:12px;color:#666;">' + UI.esc(j.startTime) + '</div>' : '')
+                + (j.property ? '<div style="font-size:12px;margin-top:4px;">' + UI.esc(j.property) + '</div>' : '')
+              ))
+              .addTo(map);
+            bounds.extend([lng, lat]);
+          });
+          if (dayJobs.length > 1) map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        });
+      } catch (e) {
+        el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-light);font-size:13px;">Map failed to load: ' + e.message + '</div>';
+      }
+    }, 60);
+
+    return html;
   }
 };
 
