@@ -1,5 +1,5 @@
 {
-  "version": 655,
+  "version": 656,
   "released": "2026-05-08",
-  "notes": "loud cloud-auth badge — silent RLS rejections won't recur"
+  "notes": "Marketing consolidation: #marketing redirects to SocialBranch leads tab; MarketingHub deleted; sidebar+page-title now consistent"
 }

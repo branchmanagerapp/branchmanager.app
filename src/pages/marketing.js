@@ -438,13 +438,11 @@ var MarketingPage = (function() {
   }
 
   // ---------- Render ----------
+  // v656: This module now only renders embedded inside the SocialBranch
+  // "Lead Sources" tab. SocialBranch supplies the page-level header + the
+  // Website-Analytics tab, so we no longer duplicate either of those here.
   function render() {
     var html = '<div style="max-width:1200px;margin:0 auto;padding:8px;">'
-      + '<div style="margin-bottom:14px;">'
-      + '<h2 style="margin:0 0 4px;font-size:22px;">📣 Marketing Dashboard</h2>'
-      + '<div style="font-size:13px;color:#64748b;">Your marketing funnel at a glance — lead sources, conversion, revenue attribution, response time.</div>'
-      + '</div>'
-      + renderWebsiteAnalytics()
       + renderDraftsToReview()
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;">'
       + renderLeadSources()
@@ -468,13 +466,6 @@ var MarketingPage = (function() {
       + '</div>'
       + '</div>';
     return html;
-  }
-
-  // ---------- Website Analytics ----------
-  // v655: moved to shared AnalyticsWidget module (src/pages/analytics-widget.js).
-  // Single source of truth for all visitor-stats UI across BM.
-  function renderWebsiteAnalytics() {
-    return (typeof AnalyticsWidget !== 'undefined') ? AnalyticsWidget.renderFull() : '';
   }
 
   // ---------- Actions ----------

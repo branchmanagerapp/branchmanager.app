@@ -63,8 +63,8 @@ var SocialBranch = {
 
     // Header
     html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">'
-      +   '<div><h2 style="margin:0;font-size:24px;font-weight:800;">SocialBranch</h2>'
-      +   '<div style="font-size:13px;color:var(--text-light);margin-top:2px;">Post to every network from Branch Manager</div></div>'
+      +   '<div><h2 style="margin:0;font-size:24px;font-weight:800;">Marketing</h2>'
+      +   '<div style="font-size:13px;color:var(--text-light);margin-top:2px;">Lead sources, social, reviews, campaigns — all in one place</div></div>'
       +   '<button onclick="SocialBranch._goTab(\'compose\')" class="btn btn-primary" style="font-size:14px;">New Post</button>'
       + '</div>';
 

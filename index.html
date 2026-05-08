@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 655; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 656; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1025,7 +1025,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v655.min.js"></script>
+<script defer src="dist/bm.bundle.v656.min.js"></script>
 
 
 
@@ -1196,7 +1196,7 @@ var pageConfigs = {
   invoices: { title: 'Invoices', action: '+ New Invoice', actionFn: 'InvoicesPage.showForm()' },
   insights: { title: 'Insights', action: null },
   reviews: { title: 'Reviews', action: null },
-  socialbranch: { title: 'SocialBranch', action: null },
+  socialbranch: { title: 'Marketing', action: null },
   team: { title: 'Team', action: '+ Add Member', actionFn: 'TeamPage.showForm()' },
   operations: { title: 'Operations', action: null },
   timesheet: { title: 'Timesheet', action: null },
@@ -1233,7 +1233,6 @@ var pageConfigs = {
   formbuilder: { title: 'Form Builder', action: null },
   receptionist: { title: 'Receptionist', action: null },
   campaigns: { title: 'Campaigns', action: '+ New Campaign', actionFn: 'loadPage("campaigns")' },
-  marketing: { title: 'Marketing Dashboard', action: null },
   referrals: { title: 'Referrals', action: null },
   import: { title: 'Import Data', action: null },
   backup: { title: 'Backup & Restore', action: null },
@@ -1312,23 +1311,9 @@ var ReportsHub = {
 };
 
 // ── Marketing Hub ──
-var MarketingHub = {
-  render: function() {
-    var tabs = [
-      ['dashboard', 'Dashboard'],
-      ['reviews', 'Reviews'],
-      ['campaigns', 'Campaigns']
-    ];
-    var r = _renderHubTabs('_marketingTab', tabs, 'dashboard');
-    var body = '';
-    try {
-      if (r.tab === 'dashboard') body = MarketingPage.render();
-      else if (r.tab === 'reviews') body = ReviewsPage.render();
-      else if (r.tab === 'campaigns') body = Campaigns.render();
-    } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
-    return r.html + body;
-  }
-};
+// v656: MarketingHub removed — sidebar "Marketing" → SocialBranch, and
+// loadPage('marketing') redirects there too. Reviews + Campaigns live as
+// their own SocialBranch tabs (no need for a parallel hub here).
 
 // ── Tools Hub ──
 var ToolsHub = {
@@ -1474,7 +1459,6 @@ var pageRenderers = {
   formbuilder: function() { return FormBuilderPage.render(); },
   receptionist: function() { return Receptionist.render(); },
   campaigns: function() { return Campaigns.render(); },
-  marketing: function() { return MarketingHub.render(); },
   referrals: function() { return Referrals.render(); },
   import: function() { return ImportPage.render(); },
   backup: function() { return BackupPage.render(); },
@@ -1584,6 +1568,14 @@ function BM_contextCreate() {
 function loadPage(page, opts) {
   if (!checkAuth()) return;
   opts = opts || {};
+  // v656: legacy #marketing → SocialBranch with the lead-source tab active.
+  // MarketingHub was a parallel tabs wrapper that confused Doug ("did you
+  // create another separate marketing page WTF!"). Sidebar "Marketing" already
+  // routes to socialbranch; this folds the legacy hash in too.
+  if (page === 'marketing') {
+    if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
+    page = 'socialbranch';
+  }
   // Bulletproof: never wipe an open form when re-loading the SAME page (a sync tick).
   // Different page = user intentionally navigating away → allow.
   // v631: opts.force=true bypasses this — used by UI.closeModal() when the
@@ -2016,6 +2008,12 @@ if (checkAuth()) {
   // Purge any stored mode so nothing downstream re-applies.
   try { localStorage.removeItem('bm-app-mode'); } catch(e){}
   var defaultPage = 'dashboard';
+
+  // v656: legacy #marketing folds into SocialBranch's leads tab.
+  if (hashPage === 'marketing') {
+    hashPage = 'socialbranch';
+    if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
+  }
 
   // Priority: URL hash > saved page > default
   var targetPage = (hashPage && pageRenderers[hashPage])
@@ -2745,6 +2743,11 @@ window.addEventListener('popstate', function(e) {
   // Fresh nav — honor the URL hash (deep link / bookmark / external open).
   if (window.location.hash && window.location.hash.length > 1) {
     var hashPage = window.location.hash.slice(1);
+    // v656: legacy #marketing folds into SocialBranch's leads tab.
+    if (hashPage === 'marketing') {
+      hashPage = 'socialbranch';
+      if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
+    }
     if (typeof loadPage === 'function' && typeof pageRenderers !== 'undefined' && pageRenderers[hashPage]) {
       setTimeout(function() { loadPage(hashPage); }, 100);
     }
