@@ -63,6 +63,13 @@ verify_jwt = false
 [functions.render-marketing-site]
 verify_jwt = false
 
+# v671: send-email pinned verify_jwt = false. The BM browser bundle calls
+# send-email without an Authorization header (relies on the public
+# RESEND_API_KEY secret server-side + tenant-id resolution). Was working
+# fine until a deploy re-enabled JWT — pinning here so it stays correct.
+[functions.send-email]
+verify_jwt = false
+
 # Internal functions that BM (with anon key) calls from authenticated
 # context — these CAN keep verify_jwt = true (default) since the BM
 # bundle stamps the anon key. Listed here for clarity:

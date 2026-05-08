@@ -1,5 +1,5 @@
 {
-  "version": 671,
+  "version": 672,
   "released": "2026-05-08",
-  "notes": "Phase 1.A: Subscription module + tier/feature API + Settings UI + topbar trial chip + provision-tenant trial seed"
+  "notes": "Phase 2: Per-tenant email FROM — Crew+ tier sends as tenant's own brand via Subscription.canUseFeature('email_per_tenant')"
 }

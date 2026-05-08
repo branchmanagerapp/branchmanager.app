@@ -77,6 +77,22 @@ var Email = {
     if (options.replyTo) payload.replyTo = options.replyTo;
     if (options.from) payload.from = options.from;
 
+    // v671: white-label per-tenant FROM. If the tenant's subscription tier
+    // unlocks `email_per_tenant` (Crew+) AND the caller didn't pass an
+    // explicit `from`, derive FROM/replyTo from CompanyInfo so emails go out
+    // as the tenant's own brand. Solo tier and missing-config tenants fall
+    // through to the server-side RESEND_PLATFORM_FROM default.
+    if (!payload.from && typeof Subscription !== 'undefined' && Subscription.canUseFeature && Subscription.canUseFeature('email_per_tenant')) {
+      try {
+        var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || '';
+        var coEmail = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('email')) || '';
+        if (coName && coEmail && coEmail.indexOf('@') >= 0) {
+          payload.from = coName + ' <' + coEmail + '>';
+          if (!payload.replyTo) payload.replyTo = coEmail;
+        }
+      } catch(e) {}
+    }
+
     var attempt = async function() {
       return fetch(SUPA_URL + '/functions/v1/send-email', {
         method: 'POST',
