@@ -140,7 +140,21 @@ var SocialBranch = {
     var recent = posts.filter(function(p){ return p.status === 'posted' || p.status === 'failed'; }).sort(function(a,b){ return new Date(b.postedAt || b.createdAt) - new Date(a.postedAt || a.createdAt); }).slice(0, 8);
     var connected = SocialBranch._getConnectedNetworks();
 
-    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:20px;">';
+    // v654: Website Visitors widget at top of Marketing dashboard.
+    // Sidebar 'Marketing' button routes here (per v384 sidebar rename),
+    // not to MarketingPage — so the visitor analytics live here too.
+    var html = '<div onclick="loadPage(\'marketing\')" style="background:var(--white);border-radius:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);cursor:pointer;">'
+      +   '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+      +     '<div><h3 style="font-size:16px;font-weight:700;margin:0;">🌐 Website Visitors</h3>'
+      +       '<div id="sb-analytics-sub" style="font-size:12px;color:var(--text-light);margin-top:2px;">Loading…</div>'
+      +     '</div>'
+      +     '<div id="sb-analytics-mini" style="display:flex;align-items:center;gap:14px;"></div>'
+      +     '<span style="font-size:12px;color:var(--accent);font-weight:600;">Full chart →</span>'
+      +   '</div>'
+      + '</div>';
+    setTimeout(function() { SocialBranch._fillAnalyticsWidget(); }, 80);
+
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:20px;">';
     html += SocialBranch._statCard('Scheduled',  scheduled.length,                'calendar', 'var(--accent)');
     html += SocialBranch._statCard('Posted (all-time)', posts.filter(function(p){return p.status==='posted';}).length, 'check-circle', 'var(--green-dark)');
     html += SocialBranch._statCard('Drafts',     posts.filter(function(p){return p.status==='draft';}).length,   'file-text', 'var(--text-light)');
@@ -171,6 +185,37 @@ var SocialBranch = {
     html += '</div>';
 
     return html;
+  },
+
+  // v654: same compact analytics widget logic as DashboardPage._fillAnalyticsWidget.
+  // Calls analytics-summary edge fn, renders sessions count + tiny sparkline.
+  _fillAnalyticsWidget: function() {
+    var sub = document.getElementById('sb-analytics-sub');
+    var mini = document.getElementById('sb-analytics-mini');
+    if (!sub || !mini) return;
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : '';
+    if (!tid) { sub.textContent = 'No tenant resolved.'; return; }
+    var url = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/analytics-summary?tenant_id=' + encodeURIComponent(tid) + '&days=30';
+    fetch(url).then(function(r){ return r.json(); }).then(function(data) {
+      if (!data || !data.ok) { sub.textContent = 'Analytics not available'; return; }
+      var sessions = data.totals.sessions;
+      var pageviews = data.totals.pageviews;
+      sub.textContent = sessions + ' visitor' + (sessions === 1 ? '' : 's') + ' · ' + pageviews + ' pageview' + (pageviews === 1 ? '' : 's') + ' · last 30 days';
+      var daily = data.daily || [];
+      if (daily.length) {
+        var maxV = Math.max.apply(null, daily.map(function(d){ return d.sessions; }).concat([1]));
+        var W = 120, H = 32, pad = 2;
+        var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
+        var pts = daily.map(function(d, i) {
+          var x = pad + i * stepX;
+          var y = H - pad - ((d.sessions / maxV) * (H - pad * 2));
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        }).join(' ');
+        mini.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:120px;height:32px;display:block;">'
+          + '<polyline fill="none" stroke="#2563eb" stroke-width="1.5" points="' + pts + '"></polyline>'
+          + '</svg>';
+      }
+    }).catch(function(){ sub.textContent = 'Analytics unavailable'; });
   },
 
   _statCard: function(label, value, icon, color) {
