@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 663; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 664; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1026,7 +1026,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v663.min.js"></script>
+<script defer src="dist/bm.bundle.v664.min.js"></script>
 
 
 
@@ -1205,6 +1205,7 @@ var pageConfigs = {
   socialbranch: { title: 'Marketing', action: null },
   team: { title: 'Team', action: '+ Add Member', actionFn: 'TeamPage.showForm()' },
   operations: { title: 'Operations', action: null },
+  weather: { title: 'Weather', action: null },
   timesheet: { title: 'Timesheet', action: null },
   automations: { title: 'Automations', action: null },
   calculators: { title: 'Calculators', action: null },
@@ -1443,6 +1444,7 @@ var pageRenderers = {
   marketingsite: function() { return MarketingSite.render(); },
   team: function() { return TeamHub.render(); },
   operations: function() { return OperationsHub.render(); },
+  weather: function() { return (typeof Weather !== 'undefined' && Weather.renderPage) ? Weather.renderPage() : '<div style="padding:24px;color:var(--text-light);">Weather module not loaded.</div>'; },
   timesheet: function() { return TimeTrackPage.render(); },
   timetrack: function() { return TimeTrackPage.render(); },
   automations: function() { return AutomationsPage.render(); },
@@ -1585,14 +1587,9 @@ function loadPage(page, opts) {
     if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
     page = 'socialbranch';
   }
-  // v660: legacy #weather → operations Dispatch tab with radar layer on.
-  // Weather is no longer its own Operations tab — the radar is a map layer
-  // and the forecast widget renders on the Dispatch tab.
-  if (page === 'weather') {
-    window._opsTab = 'dispatch';
-    window._dispatchWeatherLayer = true;
-    page = 'operations';
-  }
+  // v663: #weather is its own standalone page (Weather.renderPage — the
+  // full hourly forecast). Restored after the v660 OPS redesign accidentally
+  // dropped it. The Dispatch map's "🌧 Radar" toggle is a separate layer.
   // Bulletproof: never wipe an open form when re-loading the SAME page (a sync tick).
   // Different page = user intentionally navigating away → allow.
   // v631: opts.force=true bypasses this — used by UI.closeModal() when the
@@ -2033,13 +2030,6 @@ if (checkAuth()) {
     hashPage = 'socialbranch';
     if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
   }
-  // v660: legacy #weather folds into Operations Dispatch tab w/ radar layer.
-  if (hashPage === 'weather') {
-    hashPage = 'operations';
-    window._opsTab = 'dispatch';
-    window._dispatchWeatherLayer = true;
-  }
-
   // Priority: URL hash > saved page > default
   var targetPage = (hashPage && pageRenderers[hashPage])
     ? hashPage
@@ -2783,12 +2773,6 @@ window.addEventListener('popstate', function(e) {
     if (hashPage === 'marketing') {
       hashPage = 'socialbranch';
       if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
-    }
-    // v660: legacy #weather folds into Operations Dispatch tab w/ radar.
-    if (hashPage === 'weather') {
-      hashPage = 'operations';
-      window._opsTab = 'dispatch';
-      window._dispatchWeatherLayer = true;
     }
     if (typeof loadPage === 'function' && typeof pageRenderers !== 'undefined' && pageRenderers[hashPage]) {
       setTimeout(function() { loadPage(hashPage); }, 100);

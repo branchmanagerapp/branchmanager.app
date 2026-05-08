@@ -1,5 +1,5 @@
 {
-  "version": 663,
+  "version": 664,
   "released": "2026-05-08",
-  "notes": "Dispatch map: faster init (rAF instead of 200ms setTimeout) + parallel data loads + 30s→ 60s refresh interval"
+  "notes": "Restore standalone #weather page — chip on dashboard now opens hourly forecast (was silently routing to Dispatch since v660)"
 }

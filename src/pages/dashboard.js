@@ -786,9 +786,10 @@ var DashboardPage = {
           var icon = Weather._icon(days.weathercode[i]);
           var rain = days.precipitation_probability_max ? days.precipitation_probability_max[i] : 0;
           var rainStr = rain > 20 ? ' <span style="color:' + (rain > 60 ? '#e65100' : '#1976d2') + ';">· ' + rain + '% rain</span>' : '';
-          // v649: weather chip now opens Operations › Weather tab (full
-          // forecast page) instead of the small modal — per Doug.
-          el2.innerHTML = '<span onclick="window._opsTab=\'weather\';loadPage(\'operations\')" style="font-size:13px;cursor:pointer;text-decoration:none;border-bottom:1px dotted var(--text-light);">' + icon + ' ' + hi + '°/' + lo + '°' + rainStr + '</span>';
+          // v663: chip goes to standalone Weather.renderPage() (the hourly
+          // forecast view). Was routing through Operations›Weather tab,
+          // but that tab was removed in v660 and the chip silently broke.
+          el2.innerHTML = '<span onclick="loadPage(\'weather\')" style="font-size:13px;cursor:pointer;text-decoration:none;border-bottom:1px dotted var(--text-light);">' + icon + ' ' + hi + '°/' + lo + '°' + rainStr + '</span>';
           return;
         }
       }
