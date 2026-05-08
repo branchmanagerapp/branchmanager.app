@@ -257,6 +257,19 @@ var DashboardPage = {
     setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillCallCenterWidget(); }, 80);
     setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillDateWeather(); }, 120);
 
+    // ── v652: Website Visitors compact widget (BM beacon analytics) ──
+    // Click-through opens Marketing page for the full chart + top lists.
+    html += '<div onclick="loadPage(\'marketing\')" style="background:var(--white);border-radius:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);cursor:pointer;">'
+      +   '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+      +     '<div><h3 style="font-size:16px;font-weight:700;margin:0;">🌐 Website Visitors</h3>'
+      +       '<div id="dash-analytics-sub" style="font-size:12px;color:var(--text-light);margin-top:2px;">Loading…</div>'
+      +     '</div>'
+      +     '<div id="dash-analytics-mini" style="display:flex;align-items:center;gap:14px;"></div>'
+      +     '<span style="font-size:12px;color:var(--accent);font-weight:600;">Open Marketing →</span>'
+      +   '</div>'
+      + '</div>';
+    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillAnalyticsWidget(); }, 160);
+
     // ── Today's Jobs (v419: hoisted to top; collapses to compact pill when empty) ──
     var __td = now.getFullYear() + '-' + (now.getMonth()+1<10?'0':'') + (now.getMonth()+1) + '-' + (now.getDate()<10?'0':'') + now.getDate();
     var __todayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === __td; });
@@ -743,6 +756,39 @@ var DashboardPage = {
 
     html += '</div>'; // close .dash-mobile-focus
     return html;
+  },
+
+  // v652: compact website visitors widget on Dashboard. Calls
+  // analytics-summary edge fn for last 30 days; renders sessions
+  // count + tiny sparkline. Click-through opens full Marketing page.
+  _fillAnalyticsWidget: function() {
+    var sub = document.getElementById('dash-analytics-sub');
+    var mini = document.getElementById('dash-analytics-mini');
+    if (!sub || !mini) return;
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : '';
+    if (!tid) { sub.textContent = 'No tenant resolved.'; return; }
+    var url = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/analytics-summary?tenant_id=' + encodeURIComponent(tid) + '&days=30';
+    fetch(url).then(function(r){ return r.json(); }).then(function(data) {
+      if (!data || !data.ok) { sub.textContent = 'Analytics not available'; return; }
+      var sessions = data.totals.sessions;
+      var pageviews = data.totals.pageviews;
+      sub.textContent = sessions + ' visitor' + (sessions === 1 ? '' : 's') + ' · ' + pageviews + ' pageview' + (pageviews === 1 ? '' : 's') + ' · last 30 days';
+      // Mini sparkline
+      var daily = data.daily || [];
+      if (daily.length) {
+        var maxV = Math.max.apply(null, daily.map(function(d){ return d.sessions; }).concat([1]));
+        var W = 120, H = 32, pad = 2;
+        var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
+        var pts = daily.map(function(d, i) {
+          var x = pad + i * stepX;
+          var y = H - pad - ((d.sessions / maxV) * (H - pad * 2));
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        }).join(' ');
+        mini.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:120px;height:32px;display:block;">'
+          + '<polyline fill="none" stroke="#2563eb" stroke-width="1.5" points="' + pts + '"></polyline>'
+          + '</svg>';
+      }
+    }).catch(function(){ sub.textContent = 'Analytics unavailable'; });
   },
 
   _toggleCCCollapse: function() {
