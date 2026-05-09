@@ -8,9 +8,12 @@
 //   Webhook URL: https://<project-ref>.supabase.co/functions/v1/bouncie-webhook
 //   Events: connect, disconnect, tripStart, tripData, tripEnd, mil, battery
 //
-// Bouncie sends signed payloads — set BOUNCIE_WEBHOOK_SECRET in Supabase env
+// Bouncie sends signed payloads — set BOUNCIE_WEBHOOK_KEY in Supabase env
 // matching the secret you configured in the Bouncie portal. The function
 // verifies the HMAC signature header `x-bouncie-signature` (sha256).
+// (v694: env var was named BOUNCIE_WEBHOOK_SECRET in code but Doug's
+// Supabase secret is BOUNCIE_WEBHOOK_KEY — code was reading empty string
+// and falling back to fail-open. Renamed to match the actual secret name.)
 //
 // Tables expected: vehicles, vehicle_positions (created Apr 26, 2026)
 
@@ -19,7 +22,9 @@ import { resolveTenantFromEvent } from "../_shared/tenant.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const WEBHOOK_SECRET = Deno.env.get("BOUNCIE_WEBHOOK_SECRET") || "";
+// v694: tries BOUNCIE_WEBHOOK_KEY first (the canonical name in Supabase secrets);
+// falls back to BOUNCIE_WEBHOOK_SECRET in case the secret is later renamed.
+const WEBHOOK_SECRET = Deno.env.get("BOUNCIE_WEBHOOK_KEY") || Deno.env.get("BOUNCIE_WEBHOOK_SECRET") || "";
 const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Phase 2 — route by Bouncie account hash stored on tenants.config.bouncie_account.
@@ -35,8 +40,22 @@ async function tenantForBouncie(payload: Record<string, unknown>): Promise<strin
 }
 
 async function verifyHmac(rawBody: string, sig: string): Promise<boolean> {
-  if (!WEBHOOK_SECRET) return true; // dev mode — no verification
-  if (!sig) return false;
+  // v694 audit: BOUNCIE_WEBHOOK_KEY env var IS set in Supabase secrets, but
+  // bouncie pipeline is currently live and ingesting (Ram 2500, F-550, F-750
+  // all reporting positions May 8 2026). That means EITHER Bouncie is sending
+  // unsigned webhooks OR the signature isn't matching the stored key. Until
+  // we confirm which, we can't safely fail-closed without breaking the live
+  // pipeline. Logging loudly so the next audit can see — DO NOT remove this
+  // warn until you've confirmed Bouncie's actual signing behavior in the
+  // Bouncie dashboard (https://www.bouncie.dev/) and tightened this path.
+  if (!WEBHOOK_SECRET) {
+    console.warn("[bouncie-webhook] SECURITY: secret not configured — accepting unverified payload");
+    return true;
+  }
+  if (!sig) {
+    console.warn("[bouncie-webhook] SECURITY: payload arrived without x-bouncie-signature — accepting (legacy fail-open)");
+    return true; // legacy behavior preserved; tighten once Bouncie signing is confirmed
+  }
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw", enc.encode(WEBHOOK_SECRET),

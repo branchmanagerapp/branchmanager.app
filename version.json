@@ -1,5 +1,5 @@
 {
-  "version": 693,
+  "version": 694,
   "released": "2026-05-09",
-  "notes": "v693: bulk photo upload + drag-drop assignment to line items in quote form"
+  "notes": "v694: bouncie env-var name fix + index-bundled.html cache reference + audit findings"
 }
