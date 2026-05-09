@@ -83,7 +83,10 @@ var SocialBranch = {
       { id:'campaigns', label:'Campaigns',    icon:'megaphone' },
       { id:'reviews',   label:'Reviews',      icon:'star' },
       { id:'referrals', label:'Referrals',    icon:'users-round' },
-      { id:'leads',     label:'Lead Sources', icon:'pie-chart' }
+      { id:'leads',     label:'Lead Sources', icon:'pie-chart' },
+      // v690: Direct mail (SendJim) + employee training (Trainual) surfaced as Marketing tabs.
+      { id:'sendjim',   label:'Direct Mail',  icon:'send' },
+      { id:'trainual',  label:'Trainual',     icon:'graduation-cap' }
     ];
     html += '<div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:18px;overflow-x:auto;white-space:nowrap;">';
     tabs.forEach(function(t) {
@@ -108,6 +111,8 @@ var SocialBranch = {
                               + (typeof ReviewTools     !== 'undefined' ? ReviewTools.render()     : ''); break;
       case 'referrals': html += (typeof Referrals       !== 'undefined' ? Referrals.render()       : '<div style="padding:40px;text-align:center;color:var(--text-light);">Referrals module unavailable.</div>'); break;
       case 'leads':     html += (typeof MarketingPage   !== 'undefined' ? MarketingPage.render()   : '<div style="padding:40px;text-align:center;color:var(--text-light);">Lead-source analytics unavailable.</div>'); break;
+      case 'sendjim':   html += SocialBranch._renderSendJim(); break;
+      case 'trainual':  html += SocialBranch._renderTrainual(); break;
       default:          html += self._renderDashboard();
     }
 
@@ -1185,6 +1190,96 @@ var SocialBranch = {
   // ─────────────────────────────────────────────────────────
   // INBOX (placeholder)
   // ─────────────────────────────────────────────────────────
+  // v690: Direct-mail / SendJim section. Surfaces existing SendJim module
+  // (stub until Doug pastes API keys). Lets him see what's been sent + queue
+  // a manual send to a specific client.
+  _renderSendJim: function() {
+    var cfg = (typeof SendJim !== 'undefined' && SendJim.config) ? SendJim.config() : {};
+    var hasKeys = !!(cfg.clientKey || localStorage.getItem('bm-sendjim-client-key'));
+    var sentLog = JSON.parse(localStorage.getItem('bm-sendjim-log') || '[]');
+    var html = '<div style="max-width:900px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
+      +   '<div>'
+      +     '<h2 style="margin:0;font-size:22px;font-weight:800;">Direct Mail (SendJim)</h2>'
+      +     '<div style="font-size:13px;color:var(--text-light);margin-top:2px;">Trigger printed postcards / handwritten cards after job completion.</div>'
+      +   '</div>'
+      +   '<a href="https://sendjim.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;">Open SendJim →</a>'
+      + '</div>';
+
+    if (!hasKeys) {
+      html += '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:20px;margin-bottom:14px;">'
+        + '<div style="font-weight:700;font-size:14px;color:#9a3412;margin-bottom:6px;">Connect SendJim to enable sends</div>'
+        + '<div style="font-size:13px;color:#7c2d12;line-height:1.55;margin-bottom:12px;">Sign up at sendjim.com, grab your API client key + secret from Account → API Keys, then set them as Supabase secrets so the BM-side trigger fires after each completed job.</div>'
+        + '<div style="font-family:monospace;font-size:12px;background:#fff;padding:10px 12px;border-radius:6px;border:1px solid #fed7aa;color:#1f2937;line-height:1.7;">SUPABASE_ACCESS_TOKEN=… supabase secrets set SENDJIM_CLIENT_KEY=xxx SENDJIM_CLIENT_SECRET=yyy --project-ref ltpivkqahvplapyagljt</div>'
+        + '</div>';
+    }
+
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;">'
+      +   '<h3 style="font-size:15px;font-weight:700;margin-bottom:10px;">How it works</h3>'
+      +   '<ol style="font-size:13px;color:var(--text);line-height:1.7;padding-left:20px;">'
+      +     '<li>Build templates inside SendJim (QuickSend cards, postcards). Note the QuickSend IDs.</li>'
+      +     '<li>In Settings → Integrations → SendJim, paste each QuickSend ID with its trigger (e.g. "After job complete: Thank-you card").</li>'
+      +     '<li>BM auto-fires the matching template when the trigger event happens. Sends are logged below.</li>'
+      +   '</ol>'
+      + '</div>';
+
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+      +   '<div style="padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px;">Send Log</div>';
+    if (!sentLog.length) {
+      html += '<div style="padding:32px;text-align:center;color:var(--text-light);font-size:13px;">No SendJim sends yet. Once API keys are set + a QuickSend template is mapped, completed jobs will trigger automatic sends and appear here.</div>';
+    } else {
+      sentLog.slice(0, 50).forEach(function(s) {
+        html += '<div style="padding:12px 18px;border-top:1px solid var(--border);font-size:13px;display:grid;grid-template-columns:120px 1fr 1fr 90px;gap:12px;">'
+          + '<div style="color:var(--text-light);">' + UI.dateShort(s.sentAt) + '</div>'
+          + '<div><strong>' + UI.esc(s.clientName || '—') + '</strong></div>'
+          + '<div style="color:var(--text-light);">' + UI.esc(s.template || '—') + '</div>'
+          + '<div style="text-align:right;font-weight:600;color:' + (s.status === 'success' ? 'var(--green-dark)' : '#c62828') + ';">' + UI.esc(s.status || 'pending') + '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  },
+
+  // v690: Trainual section. Embedded knowledge base / SOP manual.
+  // Trainual supports SSO + iframe embedding once a workspace is set up.
+  _renderTrainual: function() {
+    var url = localStorage.getItem('bm-trainual-url') || '';
+    var html = '<div style="max-width:900px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
+      +   '<div>'
+      +     '<h2 style="margin:0;font-size:22px;font-weight:800;">Trainual — Team Training</h2>'
+      +     '<div style="font-size:13px;color:var(--text-light);margin-top:2px;">SOPs, onboarding checklists, and role-based training for crew.</div>'
+      +   '</div>'
+      +   '<a href="https://www.trainual.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;">Open Trainual →</a>'
+      + '</div>';
+
+    if (!url) {
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:14px;">'
+        + '<div style="font-weight:700;font-size:15px;margin-bottom:8px;">Connect your Trainual workspace</div>'
+        + '<div style="font-size:13px;color:var(--text-light);line-height:1.55;margin-bottom:14px;">Trainual handles team SOPs, onboarding flows, and role-based training. Plug your workspace URL in below to embed it directly inside BM. Existing Trainual logins still work — SSO carries over.</div>'
+        + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+        +   '<input type="url" id="trainual-url-input" placeholder="https://yourcompany.trainual.com" style="flex:1;min-width:280px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">'
+        +   '<button onclick="var v=document.getElementById(\'trainual-url-input\').value.trim();if(v){localStorage.setItem(\'bm-trainual-url\',v);loadPage(\'socialbranch\');}else{UI.toast(\'Paste a URL first\',\'error\');}" class="btn btn-primary" style="font-size:13px;">Save</button>'
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-top:14px;line-height:1.55;">Don\'t have Trainual yet? <a href="https://trainual.com/pricing" target="_blank" rel="noopener" style="color:var(--green-dark);">See plans →</a> Tree-service-relevant subjects to build first: ANSI Z133 climbing safety, chainsaw maintenance, daily Pre-Trip checklist, customer service scripts, quote-presentation walkthrough.</div>'
+        + '</div>';
+    } else {
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">'
+        +   '<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">'
+        +     '<span style="font-size:12px;color:var(--text-light);">Embedded: <strong>' + UI.esc(url) + '</strong></span>'
+        +     '<button onclick="if(confirm(\'Disconnect Trainual?\')){localStorage.removeItem(\'bm-trainual-url\');loadPage(\'socialbranch\');}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">Disconnect</button>'
+        +   '</div>'
+        +   '<iframe src="' + UI.esc(url) + '" style="width:100%;height:720px;border:none;" allow="fullscreen"></iframe>'
+        + '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  },
+
   _renderInbox: function() {
     // Pulls GMB reviews from the OAuth token we already have. FB/IG DMs + comments
     // require separate Meta Graph webhook infrastructure — deferred until Meta app

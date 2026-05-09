@@ -36,6 +36,14 @@ var ExpensesPage = {
       + UI.statCard('All Time', UI.moneyInt(totalAllTime), expenses.length + ' expenses logged', '', '', '')
       + '</div>';
 
+    // v690: Header row with Jobber import button next to title.
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
+      + '<h2 style="margin:0;font-size:22px;font-weight:800;">Expenses</h2>'
+      + '<div style="display:flex;gap:8px;">'
+      +   '<button onclick="ExpensesPage.showJobberImport()" class="btn btn-outline" style="font-size:12px;">Import from Jobber CSV</button>'
+      + '</div>'
+      + '</div>';
+
     // Add expense form — 7 columns: date, amount, category, description, vendor, job, button
     var todayStr = new Date().toISOString().split('T')[0];
     html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:16px;">'
@@ -304,5 +312,96 @@ var ExpensesPage = {
       var num = parseFloat(val !== null ? val : defaults[key]);
       return total + (isNaN(num) ? defaults[key] : num);
     }, 0);
+  },
+
+  // v690: Jobber CSV importer. Pastes/uploads Jobber Expenses CSV and
+  // creates BM expenses in localStorage (DB.expenses). Auto-maps common
+  // Jobber column names (Description, Date, Amount, Category, Vendor, Notes).
+  showJobberImport: function() {
+    var body = '<div style="font-size:13px;color:var(--text-light);line-height:1.6;">'
+      + '<p style="margin:0 0 12px;">Paste a Jobber Expenses CSV export below, or drop a .csv file. Each row becomes one BM expense. Column names are matched case-insensitively (Description / Title, Date, Amount / Total, Category / Accounting code, Vendor, Notes).</p>'
+      + '<textarea id="exp-jobber-csv" rows="10" placeholder="Description,Category,Date,Amount,Vendor,Notes&#10;HD Run,Materials,2025-12-02,0,Home Depot,&#10;Saw Parts,Equipment,2025-11-20,184.24,…" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;resize:vertical;"></textarea>'
+      + '<div style="margin-top:8px;font-size:12px;color:var(--text-light);">Or drop a .csv file: <input type="file" id="exp-jobber-file" accept=".csv,text/csv" onchange="ExpensesPage._loadJobberFile(event)" style="font-size:12px;"></div>'
+      + '</div>';
+    UI.modal('Import expenses from Jobber CSV', body, [
+      { label: 'Cancel', fn: 'UI.closeModal()' },
+      { label: 'Import', fn: 'ExpensesPage._runJobberImport()', primary: true }
+    ]);
+  },
+
+  _loadJobberFile: function(ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function() { document.getElementById('exp-jobber-csv').value = reader.result; };
+    reader.readAsText(f);
+  },
+
+  _runJobberImport: function() {
+    var csv = (document.getElementById('exp-jobber-csv').value || '').trim();
+    if (!csv) { UI.toast('Paste CSV first', 'error'); return; }
+
+    var lines = csv.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) { UI.toast('CSV needs header + at least 1 row', 'error'); return; }
+
+    var parseLine = function(s) {
+      var out = [], cur = '', q = false;
+      for (var i = 0; i < s.length; i++) {
+        var ch = s[i];
+        if (ch === '"') { if (q && s[i+1] === '"') { cur += '"'; i++; } else q = !q; }
+        else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur);
+      return out;
+    };
+    var header = parseLine(lines[0]).map(function(h) { return h.trim().toLowerCase(); });
+    var col = function(row, names) {
+      for (var i = 0; i < names.length; i++) {
+        var idx = header.indexOf(names[i].toLowerCase());
+        if (idx >= 0) return (row[idx] || '').trim();
+      }
+      return '';
+    };
+    var parseDate = function(s) {
+      if (!s) return null;
+      var d = new Date(s);
+      if (!isNaN(d)) return d.toISOString().split('T')[0];
+      return null;
+    };
+    var parseAmt = function(s) { return parseFloat(String(s||'').replace(/[$,]/g, '')) || 0; };
+
+    var inserted = 0;
+    for (var i = 1; i < lines.length; i++) {
+      var r = parseLine(lines[i]);
+      var amt = parseAmt(col(r, ['amount','total','total ($)','price']));
+      var desc = col(r, ['description','title','name','expense']);
+      if (!desc && !amt) continue;
+      var rec = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        date: parseDate(col(r, ['date','expense date','created date'])) || new Date().toISOString().split('T')[0],
+        amount: amt,
+        description: desc,
+        category: (col(r, ['category','accounting code','type']) || 'other').toLowerCase().replace(/\s+/g,'_'),
+        vendor: col(r, ['vendor','merchant','payee','to']),
+        job: col(r, ['job','job#','job number']),
+        notes: col(r, ['notes','memo','details']),
+        importSource: 'jobber-csv-' + new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (typeof DB !== 'undefined' && DB.expenses && DB.expenses.add) DB.expenses.add(rec);
+      else {
+        // Fallback: manual localStorage write
+        var arr = JSON.parse(localStorage.getItem('bm-expenses') || '[]');
+        arr.push(rec);
+        localStorage.setItem('bm-expenses', JSON.stringify(arr));
+      }
+      inserted++;
+    }
+
+    UI.toast('Imported ' + inserted + ' expense' + (inserted === 1 ? '' : 's'), 'success');
+    UI.closeModal();
+    loadPage('expenses');
   }
 };
