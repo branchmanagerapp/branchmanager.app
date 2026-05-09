@@ -734,7 +734,10 @@ var TaskReminders = {
       notified: !!t.notified,
       archived: !!t.archived,
       created_at: t.createdAt || new Date().toISOString(),
-      updated_at: t.updatedAt || new Date().toISOString()
+      updated_at: t.updatedAt || new Date().toISOString(),
+      // v695: multiple-choice question + recorded answer
+      response_options: t.responseOptions || null,
+      response: t.response || null
     };
   },
 
@@ -754,7 +757,10 @@ var TaskReminders = {
       notified: !!r.notified,
       archived: !!r.archived,
       createdAt: r.created_at || new Date().toISOString(),
-      updatedAt: r.updated_at || new Date().toISOString()
+      updatedAt: r.updated_at || new Date().toISOString(),
+      // v695: multiple-choice
+      responseOptions: r.response_options || null,
+      response: r.response || null
     };
   },
 
@@ -1020,13 +1026,41 @@ var TaskReminders = {
     if (task.dueDate) meta.push('<span style="display:inline-flex;align-items:center;gap:3px;"><i data-lucide="calendar" style="width:12px;height:12px;"></i>' + UI.dateShort(task.dueDate) + '</span>');
     if (task.notes)   meta.push('<span style="color:var(--text-light);">' + UI.esc(task.notes.slice(0,80)) + '</span>');
 
-    var html = '<div style="text-align:center;padding:8px 0 16px;">'
-      + '<div style="width:10px;height:10px;border-radius:50%;background:' + dot + ';display:inline-block;margin-bottom:12px;"></div>'
-      + '<div style="font-size:17px;font-weight:700;margin-bottom:8px;line-height:1.3;">' + UI.esc(task.title) + '</div>'
-      + (meta.length ? '<div style="font-size:12px;color:var(--text-light);margin-bottom:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' + meta.join('') + '</div>' : '<div style="margin-bottom:16px;"></div>')
-      + '<button onclick="TaskReminders._toggleComplete(\'' + id + '\');UI.closeModal();" style="width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check-circle" style="width:18px;height:18px;"></i>Mark Complete</button>'
-      + (task.actionLink ? '<button onclick="' + task.actionLink + ';UI.closeModal();" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;color:var(--text);">→ Open Linked Record</button>' : '')
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
+    // v695: multiple-choice path. When responseOptions is set, render radios +
+    // a Save button that applies the chosen option's update + marks complete.
+    var hasOptions = task.responseOptions && Array.isArray(task.responseOptions) && task.responseOptions.length > 0;
+
+    var html = '<div style="padding:8px 0 16px;">'
+      + '<div style="text-align:center;">'
+      +   '<div style="width:10px;height:10px;border-radius:50%;background:' + dot + ';display:inline-block;margin-bottom:12px;"></div>'
+      +   '<div style="font-size:17px;font-weight:700;margin-bottom:8px;line-height:1.3;">' + UI.esc(task.title) + '</div>'
+      +   (meta.length ? '<div style="font-size:12px;color:var(--text-light);margin-bottom:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' + meta.join('') + '</div>' : '<div style="margin-bottom:16px;"></div>')
+      + '</div>';
+
+    if (hasOptions) {
+      // Description block (the question / context)
+      if (task.description) {
+        html += '<div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap;">' + UI.esc(task.description) + '</div>';
+      }
+      // Radio group
+      html += '<div id="bm-task-choices" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">';
+      task.responseOptions.forEach(function(opt, i) {
+        var checked = (task.response === opt.id) ? 'checked' : '';
+        html += '<label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;background:var(--white);transition:border-color .15s;" onmouseover="this.style.borderColor=\'var(--green-dark)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+          + '<input type="radio" name="bm-task-choice" value="' + UI.esc(opt.id) + '" ' + checked + ' style="margin-top:2px;flex-shrink:0;accent-color:var(--green-dark);">'
+          + '<span style="font-size:14px;line-height:1.4;">' + UI.esc(opt.label) + '</span>'
+          + '</label>';
+      });
+      html += '</div>';
+      // Save + cancel
+      html += '<button onclick="TaskReminders._submitResponse(\'' + id + '\')" style="width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check-circle" style="width:18px;height:18px;"></i>Save Answer</button>';
+    } else {
+      // Legacy path: simple Mark Complete + optional Open Linked Record
+      html += '<button onclick="TaskReminders._toggleComplete(\'' + id + '\');UI.closeModal();" style="width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check-circle" style="width:18px;height:18px;"></i>Mark Complete</button>'
+        + (task.actionLink ? '<button onclick="' + task.actionLink + ';UI.closeModal();" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;color:var(--text);">→ Open Linked Record</button>' : '');
+    }
+
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
       + '<button onclick="UI.closeModal();TaskReminders._openOverlay(\'' + id + '\')" style="background:none;border:none;color:var(--text-light);font-size:13px;cursor:pointer;padding:4px 0;">Edit</button>'
       + '<div style="display:flex;gap:12px;">'
       + '<button onclick="TaskReminders._archiveTask(\'' + id + '\')" style="background:none;border:none;color:var(--text-light);font-size:13px;cursor:pointer;padding:4px 0;">Archive</button>'
@@ -1037,6 +1071,63 @@ var TaskReminders = {
 
     UI.showModal(task.title, html);
     setTimeout(function() { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 0);
+  },
+
+  // v695: dispatch the chosen multiple-choice option:
+  //   1. record the response id on the task
+  //   2. apply the option's `fields` update to (option.table, option.row_id)
+  //      via Supabase (RLS-safe — uses Catherine's session, not service role)
+  //   3. mark task complete + close modal + refresh
+  // Action shape comes from response_options JSONB (set by Doug at task creation).
+  // Whitelist of allowed tables prevents arbitrary writes if the JSON is ever malformed.
+  _submitResponse: function(id) {
+    var radios = document.querySelectorAll('input[name="bm-task-choice"]');
+    var chosen = null;
+    for (var i = 0; i < radios.length; i++) { if (radios[i].checked) { chosen = radios[i].value; break; } }
+    if (!chosen) { UI.toast('Pick an answer first', 'warn'); return; }
+
+    var task = TaskReminders._getAll().find(function(t) { return t.id === id; });
+    if (!task || !task.responseOptions) return;
+    var opt = task.responseOptions.find(function(o) { return o.id === chosen; });
+    if (!opt) { UI.toast('Bad option', 'error'); return; }
+
+    var ALLOWED_TABLES = ['invoices', 'quotes', 'jobs', 'clients'];
+    if (opt.table && ALLOWED_TABLES.indexOf(opt.table) === -1) {
+      UI.toast('Action target not allowed: ' + opt.table, 'error');
+      return;
+    }
+
+    var doFinalize = function() {
+      // Record the response + complete the task (writes locally + cloud-syncs via _save → _pushCloud)
+      var all = TaskReminders._getAll();
+      var idx = all.findIndex(function(t) { return t.id === id; });
+      if (idx >= 0) {
+        all[idx].response = chosen;
+        all[idx].completed = true;
+        all[idx].completedAt = new Date().toISOString();
+        all[idx].updatedAt = new Date().toISOString();
+        TaskReminders._save(all);
+      }
+      UI.toast('✓ Saved — ' + opt.label.slice(0, 60));
+      UI.closeModal();
+      // If we're on a page that lists tasks, re-render
+      if (typeof loadPage === 'function' && window._currentPage === 'taskreminders') loadPage('taskreminders');
+    };
+
+    // Apply the field update to the target row via the user's Supabase session
+    if (opt.table && opt.row_id && opt.fields && typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
+      SupabaseDB.client.from(opt.table).update(opt.fields).eq('id', opt.row_id).then(function(res) {
+        if (res.error) {
+          UI.toast('Update failed: ' + res.error.message, 'error');
+          console.warn('[TaskReminders] response update failed:', res.error);
+          return;
+        }
+        doFinalize();
+      });
+    } else {
+      // No field update — just record the answer + complete
+      doFinalize();
+    }
   },
 
   // ── AI quick-add methods ──

@@ -1,5 +1,5 @@
 {
-  "version": 694,
+  "version": 695,
   "released": "2026-05-09",
-  "notes": "v694: bouncie env-var name fix + index-bundled.html cache reference + audit findings"
+  "notes": "v695: multiple-choice tasks — Catherine taps an answer, system auto-applies the field update"
 }
