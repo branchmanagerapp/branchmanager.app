@@ -193,21 +193,11 @@ var CloudSync = {
     if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: write methods wrapped');
   },
 
-  // Show unsynced indicator in topbar
-  _markUnsynced: function() {
-    var el = document.getElementById('sync-indicator');
-    if (!el) {
-      var topbar = document.querySelector('.topbar-actions');
-      if (topbar) {
-        var indicator = document.createElement('span');
-        indicator.id = 'sync-indicator';
-        indicator.title = 'Some changes not synced to cloud';
-        indicator.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;margin-right:4px;animation:pulse 2s infinite;';
-        topbar.insertBefore(indicator, topbar.firstChild);
-      }
-    }
-  },
-
+  // v692: orange "unsynced" pulsing dot removed — it was constantly visible
+  // (lit on any transient cloud error, never cleared) and added noise without
+  // signal. Real cloud-signed-out failures still surface via _markCloudSignedOut
+  // (loud red badge below). Functions kept as no-ops so existing callers don't break.
+  _markUnsynced: function() {},
   _clearUnsynced: function() {
     var el = document.getElementById('sync-indicator');
     if (el) el.remove();

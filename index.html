@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 691; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 692; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -987,9 +987,9 @@
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="hamburger" onclick="toggleSidebar()" aria-label="Open navigation menu" role="button"><i data-lucide="menu" style="width:22px;height:22px;stroke:var(--text);stroke-width:1.75;"></i></button>
         <h2 id="pageTitle">Dashboard</h2>
-        <span id="topbar-weather" style="display:inline-flex;"></span>
       </div>
       <div class="topbar-actions">
+        <span id="topbar-weather" style="display:inline-flex;"></span>
         <button class="topbar-icon mobile-search-icon" onclick="loadPage('search')" title="Search" style="display:none;">
           <i data-lucide="search" style="width:18px;height:18px;stroke:var(--text-light);stroke-width:1.75;"></i>
         </button>
@@ -1047,7 +1047,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v691.min.js"></script>
+<script defer src="dist/bm.bundle.v692.min.js"></script>
 
 
 
@@ -1302,7 +1302,10 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
   // v686: sub-nav tabs stay visible as the page scrolls (Doug ask).
   // Negative horizontal margin + inset padding extends the bg across the
   // .content padding box; top:0 sticks to top of scroll viewport.
-  var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:-24px -24px 16px;padding:14px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+  // v692: trimmed top padding (14→4) so the strip sits flush with the topbar
+  // instead of floating below a wide gap. Bottom margin kept at 16px so the
+  // page body has breathing room below the strip.
+  var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:-24px -24px 16px;padding:4px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">';
   for (var j = 0; j < tabs.length; j++) {
     var t = tabs[j];
     var active = tab === t[0];
@@ -2013,7 +2016,7 @@ var BugReport = {
     fetch(FUNC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ANON_KEY },
-      body: JSON.stringify({ to: 'branchmanagerapp@gmail.com', subject: '[BM Bug] ' + type + ' on ' + page + ' (v' + (window.BUNDLED_VERSION||'?') + ')', html: body })
+      body: JSON.stringify({ to: 'info@branchmanager.app', subject: '[BM Bug] ' + type + ' on ' + page + ' (v' + (window.BUNDLED_VERSION||'?') + ')', html: body })
     }).then(function(r) {
       if (r.ok) UI.toast('Bug report sent!');
       else UI.toast('Could not send — saved locally', 'error');

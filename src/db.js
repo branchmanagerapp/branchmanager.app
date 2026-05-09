@@ -199,28 +199,12 @@ var DB = (function() {
     _updateSyncBadge();
   }
   function _updateSyncBadge() {
+    // v692: orange "pending sync" dot removed alongside supacloud.js sync-indicator.
+    // Queue still drains in the background; user no longer sees the perpetual pulse.
+    // Stale element from a prior load is cleaned up here so old PWA sessions clear too.
     try {
-      var q = _queueLoad();
-      // Reuse the existing sync-indicator element managed by supacloud.js
-      // (added/removed in topbar-actions). When queue is non-empty, ensure
-      // it exists; when empty, remove it. Title shows pending count.
       var existing = document.getElementById('sync-indicator');
-      if (q.length) {
-        if (!existing) {
-          var topbar = document.querySelector('.topbar-actions');
-          if (topbar) {
-            existing = document.createElement('span');
-            existing.id = 'sync-indicator';
-            existing.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#e07c24;display:inline-block;margin-right:4px;animation:pulse 2s infinite;';
-            topbar.insertBefore(existing, topbar.firstChild);
-          }
-        } else {
-          existing.style.background = '#e07c24';
-        }
-        if (existing) existing.title = q.length + ' save' + (q.length !== 1 ? 's' : '') + ' pending — will retry on reconnect';
-      } else if (existing) {
-        existing.remove();
-      }
+      if (existing) existing.remove();
     } catch(e) {}
   }
 

@@ -30768,7 +30768,7 @@ var SettingsPage = {
       +     '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">'
       +       '<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">Support</div>'
       +       '<div><a href="tel:9146477276" style="color:var(--accent);text-decoration:none;">(914) 647-7276</a></div>'
-      +       '<div><a href="mailto:branchmanagerapp@gmail.com" style="color:var(--accent);text-decoration:none;">branchmanagerapp@gmail.com</a></div>'
+      +       '<div><a href="mailto:info@branchmanager.app" style="color:var(--accent);text-decoration:none;">info@branchmanager.app</a></div>'
       +     '</div>'
       +     '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;">Built for ' + BM_CONFIG.companyName + '. Replaces previous system ($50-130/mo) with a $0/mo custom solution.</div>'
       +   '</div>'

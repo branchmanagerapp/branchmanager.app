@@ -1,5 +1,5 @@
 {
-  "version": 691,
+  "version": 692,
   "released": "2026-05-09",
-  "notes": "Settings: remove stale Quick Setup checklist (referenced SENDGRID_API_KEY from pre-Resend era)"
+  "notes": "v692: removed perpetual orange sync-indicator dot (caused user confusion); moved weather chip from left of pageTitle to right next to search; sub-nav rides flush against topbar (top padding 14→4); contact email swapped from branchmanagerapp@gmail.com to info@branchmanager.app across landing pages, settings, and bug-report destination"
 }
