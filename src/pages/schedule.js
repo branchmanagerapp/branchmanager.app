@@ -14,6 +14,66 @@ var SchedulePage = {
     return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
   },
 
+  // v677: Reminders inline on the calendar (matches Jobber pattern)
+  // - Quote follow-ups: 5d + 10d after sentAt for status=sent (skip if already sent)
+  // - Invoice follow-ups: 1d + 4d after dueDate for status=sent/overdue (skip if paid/draft)
+  // Cached per-render via window._bmRemindersCache.
+  _getReminderIndex: function() {
+    if (window._bmRemindersCacheKey === SchedulePage._cacheKey()) return window._bmRemindersCache;
+    var idx = {}; // dateStr → [{kind, label, id}]
+    function push(dateStr, item) { (idx[dateStr] = idx[dateStr] || []).push(item); }
+    function add5d(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return SchedulePage._localDateStr(x); }
+    var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
+    qs.forEach(function(q) {
+      if (!q.sentAt) return;
+      var s = (q.status || '').toLowerCase();
+      if (s === 'converted' || s === 'approved' || s === 'archived' || s === 'draft' || s === 'changes_requested') return;
+      var sent = new Date(q.sentAt);
+      if (isNaN(sent)) return;
+      var label = 'Reminder about quote #' + (q.quoteNumber || q.id) + ' for ' + (q.clientName || 'client');
+      if (!q.followupSentAt) push(add5d(sent, 5), { kind:'quote', stage:1, id:q.id, label:label });
+      if (!q.followup2SentAt) push(add5d(sent, 10), { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)' });
+    });
+    var ivs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
+    ivs.forEach(function(inv) {
+      if (!inv.dueDate) return;
+      var s = (inv.status || '').toLowerCase();
+      if (s === 'paid' || s === 'archived' || s === 'draft') return;
+      var due = new Date(inv.dueDate);
+      if (isNaN(due)) return;
+      var label = 'Reminder about invoice #' + (inv.invoiceNumber || inv.id) + ' for ' + (inv.clientName || 'client');
+      if (!inv.followupSentAt) push(add5d(due, 1), { kind:'invoice', stage:1, id:inv.id, label:label });
+      push(add5d(due, 4), { kind:'invoice', stage:2, id:inv.id, label:label + ' (4d overdue)' });
+    });
+    window._bmRemindersCache = idx;
+    window._bmRemindersCacheKey = SchedulePage._cacheKey();
+    return idx;
+  },
+  _cacheKey: function() {
+    // Cache invalidates when quotes/invoices counts change. Cheap key.
+    var qn = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll().length : 0;
+    var iv = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll().length : 0;
+    return qn + ':' + iv + ':' + (Date.now() / 60000 | 0); // refresh every minute
+  },
+  _getRemindersForDate: function(dateStr) {
+    return SchedulePage._getReminderIndex()[dateStr] || [];
+  },
+  _renderReminderPill: function(r, compact) {
+    var bg = r.kind === 'quote' ? '#fef3c7' : '#fee2e2';
+    var bd = r.kind === 'quote' ? '#f59e0b' : '#dc2626';
+    var fg = r.kind === 'quote' ? '#92400e' : '#991b1b';
+    var fn = r.kind === 'quote' ? 'QuotesPage.showDetail' : 'InvoicesPage.showDetail';
+    if (compact) {
+      return '<div onclick="event.stopPropagation();' + fn + '(\'' + r.id + '\')" '
+        + 'title="' + UI.esc(r.label) + '" '
+        + 'style="background:' + bg + ';color:' + fg + ';border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+        + '⏰ ' + UI.esc(r.label) + '</div>';
+    }
+    return '<div onclick="event.stopPropagation();' + fn + '(\'' + r.id + '\')" '
+      + 'style="background:' + bg + ';border-left:3px solid ' + bd + ';color:' + fg + ';border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;cursor:pointer;">'
+      + '⏰ ' + UI.esc(r.label) + '</div>';
+  },
+
   render: function() {
     var self = SchedulePage;
     var html = '';
@@ -446,6 +506,9 @@ var SchedulePage = {
       weekAdminTasks.forEach(function(t) {
         html += '<div style="background:#f3e5f5;border-left:3px solid #7b1fa2;border-radius:4px;padding:3px 6px;font-size:11px;color:#6a1b9a;cursor:pointer;margin-top:2px;" onclick="event.stopPropagation();AdminTasks.toggleComplete(\'' + t.id + '\')">&#x1F4CB; ' + UI.esc(t.title) + '</div>';
       });
+      // v677: Quote/invoice reminder pills (Jobber-style)
+      var weekReminders = SchedulePage._getRemindersForDate(dateStr);
+      weekReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, false); });
       // "+ job" quick-create removed from week view per user — create jobs via the universal '+' in topbar instead
       html += '</div>';
     }
@@ -536,6 +599,9 @@ var SchedulePage = {
       monthAdminTasks.forEach(function(t) {
         html += '<div style="font-size:9px;color:#7b1fa2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="event.stopPropagation();AdminTasks.toggleComplete(\'' + t.id + '\')">&#x25CF; ' + UI.esc(t.title) + '</div>';
       });
+      // v677: Quote/invoice reminder pills (Jobber-style, click → detail)
+      var monthReminders = SchedulePage._getRemindersForDate(dateStr);
+      monthReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, true); });
       html += '</div>';
     }
 
