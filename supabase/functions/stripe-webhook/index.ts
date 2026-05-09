@@ -272,6 +272,71 @@ serve(async (req: Request) => {
     console.warn('Could not fetch tenant config:', e);
   }
 
+  // ── BM SaaS subscription events (Phase 1.B) ────────────────────────────
+  // These events update tenants.config.subscription instead of writing to
+  // the invoices table. Distinguished by metadata.product='bm_saas_subscription'
+  // (set by subscription-create-checkout edge fn).
+  const bmSubMetadata = (event.data.object?.metadata?.product === 'bm_saas_subscription')
+    || (event.data.object?.subscription_data?.metadata?.product === 'bm_saas_subscription');
+  const isSubLifecycleEvent = event.type === 'customer.subscription.created'
+    || event.type === 'customer.subscription.updated'
+    || event.type === 'customer.subscription.deleted';
+  const isSubCheckoutComplete = event.type === 'checkout.session.completed'
+    && event.data.object?.mode === 'subscription'
+    && bmSubMetadata;
+
+  if (isSubLifecycleEvent || isSubCheckoutComplete) {
+    const obj = event.data.object;
+    const subTenantId = String(
+      obj?.metadata?.tenant_id
+      || obj?.subscription_data?.metadata?.tenant_id
+      || obj?.client_reference_id
+      || '',
+    );
+    const tier = String(obj?.metadata?.tier || obj?.subscription_data?.metadata?.tier || 'crew');
+    const stripeCustomerId = String(obj?.customer || '');
+    const stripeSubscriptionId = String(obj?.subscription || obj?.id || '');
+    const subStatus = obj?.status || (event.type === 'customer.subscription.deleted' ? 'canceled' : 'active');
+    // Translate Stripe statuses to our schema
+    const status = subStatus === 'canceled' ? 'canceled'
+      : subStatus === 'past_due' || subStatus === 'unpaid' ? 'past_due'
+      : 'active';
+    const periodEnd = obj?.current_period_end ? new Date(obj.current_period_end * 1000).toISOString() : undefined;
+
+    if (!subTenantId || !/^[0-9a-f-]{36}$/i.test(subTenantId)) {
+      console.warn('BM-SaaS event missing tenant_id metadata:', event.type, event.id);
+      return new Response(JSON.stringify({ received: true, skipped: 'no tenant_id in metadata' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Read current config so we don't clobber other subscription fields
+    const { data: tRow } = await supabase.from('tenants').select('config').eq('id', subTenantId).maybeSingle();
+    const cfg = (tRow?.config as Record<string, unknown>) || {};
+    const existingSub = (cfg.subscription as Record<string, unknown>) || {};
+    const newSub: Record<string, unknown> = {
+      ...existingSub,
+      tier,
+      status,
+      stripe_customer_id: stripeCustomerId || existingSub.stripe_customer_id,
+      stripe_subscription_id: stripeSubscriptionId || existingSub.stripe_subscription_id,
+      current_period_end: periodEnd || existingSub.current_period_end,
+      updated_at: new Date().toISOString(),
+    };
+    cfg.subscription = newSub;
+
+    const { error: updErr } = await supabase.from('tenants').update({ config: cfg }).eq('id', subTenantId);
+    if (updErr) {
+      console.error('Failed to update tenants.config.subscription:', updErr);
+    } else {
+      console.log(`BM-SaaS sub updated: tenant=${subTenantId} tier=${tier} status=${status}`);
+    }
+
+    return new Response(JSON.stringify({ received: true, bm_saas: true, tenant: subTenantId, tier, status }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // Handle relevant events
   if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
     const session = event.data.object;

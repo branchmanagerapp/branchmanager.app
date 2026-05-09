@@ -70,6 +70,12 @@ verify_jwt = false
 [functions.send-email]
 verify_jwt = false
 
+# v675: BM SaaS subscription checkout — called from the browser when a
+# tenant clicks Upgrade in Settings. Same browser-bundle pattern as
+# send-email; security is enforced by Stripe (signed session URL).
+[functions.subscription-create-checkout]
+verify_jwt = false
+
 # Internal functions that BM (with anon key) calls from authenticated
 # context — these CAN keep verify_jwt = true (default) since the BM
 # bundle stamps the anon key. Listed here for clarity:

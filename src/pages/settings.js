@@ -254,13 +254,13 @@ var SettingsPage = {
           + '<div style="font-size:12px;color:var(--text);line-height:1.5;">' + t.tagline + '</div>'
           + (isCurrent
               ? '<div style="margin-top:10px;font-size:11px;font-weight:700;color:var(--green-dark);">✓ Current plan</div>'
-              : '<button disabled title="Stripe Checkout coming in v671" style="margin-top:10px;background:#e2e8f0;color:var(--text-light);border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:not-allowed;width:100%;">' + (tierOrder.indexOf(tk) > tierOrder.indexOf(currentTier) ? 'Upgrade' : 'Downgrade') + ' →</button>')
+              : '<button onclick="SettingsPage._subscribeTo(\'' + tk + '\')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;width:100%;">' + (tierOrder.indexOf(tk) > tierOrder.indexOf(currentTier) ? 'Upgrade' : 'Switch to') + ' ' + t.name + ' →</button>')
           + '</div>';
       });
       html += '</div>';
 
       html += '<div style="font-size:11px;color:var(--text-light);">'
-        + 'Stripe Checkout + self-service Customer Portal ship in v671. Trial state is read from <code>tenants.config.subscription</code>.'
+        + 'Subscription state is stored at <code>tenants.config.subscription</code>. Upgrades open Stripe Checkout; payment status syncs back via the stripe-webhook edge fn.'
         + '</div>';
       html += '</div></details>';
     }
@@ -1664,6 +1664,33 @@ var SettingsPage = {
 
     html += '</div>';
     return html;
+  },
+
+  // v675: Subscribe / upgrade to a tier — opens Stripe Checkout in the
+  // current tab. On success Stripe redirects back to BM with
+  // ?subscription=success and the stripe-webhook updates tenants.config
+  // before the redirect lands.
+  _subscribeTo: function(tier) {
+    if (!['solo', 'crew', 'pro'].includes(tier)) { UI.toast('Unknown tier', 'error'); return; }
+    var tenantId = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : '';
+    if (!tenantId) { UI.toast('No tenant resolved — cannot start checkout', 'error'); return; }
+    var email = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) || (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('email')) || '';
+    UI.toast('Opening Stripe…');
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/subscription-create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenant_id: tenantId, tier: tier, email: email })
+    }).then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+      .then(function(res) {
+        if (!res.ok || !res.body || !res.body.url) {
+          var msg = (res.body && res.body.error) || 'Checkout failed';
+          UI.toast(msg, 'error');
+          return;
+        }
+        // Redirect into Stripe-hosted Checkout
+        window.location.href = res.body.url;
+      })
+      .catch(function(e) { UI.toast('Network error: ' + e.message, 'error'); });
   },
 
   // Provision-tenant token — stored locally only. Doug pastes once.

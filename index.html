@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 674; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 675; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1028,7 +1028,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v674.min.js"></script>
+<script defer src="dist/bm.bundle.v675.min.js"></script>
 
 
 
@@ -2037,6 +2037,30 @@ if (checkAuth()) {
     ? hashPage
     : ((savedPage && pageRenderers[savedPage]) ? savedPage : defaultPage);
   loadPage(targetPage);
+
+  // v675: handle Stripe Checkout redirect back to BM. subscription-create-
+  // checkout sets success_url with ?subscription=success. Toast the user,
+  // strip the param from the URL, force-refresh subscription state once
+  // the stripe-webhook has had a moment to land (~2-5s typical).
+  try {
+    var _qsSub = new URLSearchParams(location.search);
+    var _subResult = _qsSub.get('subscription');
+    if (_subResult === 'success' || _subResult === 'cancel') {
+      _qsSub.delete('subscription');
+      _qsSub.delete('session_id');
+      var _newQs = _qsSub.toString();
+      history.replaceState({}, '', location.pathname + (_newQs ? '?' + _newQs : '') + location.hash);
+      setTimeout(function() {
+        if (typeof UI !== 'undefined' && UI.toast) {
+          UI.toast(_subResult === 'success' ? '🎉 Subscription active — welcome!' : 'Checkout canceled');
+        }
+        if (typeof Subscription !== 'undefined' && Subscription.refreshFromCloud) {
+          Subscription.refreshFromCloud().catch(function(){});
+          setTimeout(function() { Subscription.refreshFromCloud().catch(function(){}); }, 4000);
+        }
+      }, 600);
+    }
+  } catch(e) {}
 
   // v670: refresh subscription state from cloud at boot — non-blocking,
   // no-op if SupabaseDB not ready yet. After load, also paint the trial
