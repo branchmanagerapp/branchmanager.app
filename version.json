@@ -1,5 +1,5 @@
 {
-  "version": 687,
+  "version": 688,
   "released": "2026-05-09",
   "notes": "Settings: remove stale Quick Setup checklist (referenced SENDGRID_API_KEY from pre-Resend era)"
 }

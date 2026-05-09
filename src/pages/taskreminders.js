@@ -176,7 +176,7 @@ var TaskReminders = {
       html += '<div class="q-desktop-only">';
       html += '<table class="data-table"><thead><tr>'
         + '<th style="width:32px;"><input type="checkbox" onchange="TaskReminders._selectAll(this)"></th>'
-        + '<th>Task</th><th>Category</th><th>Priority</th><th>Due</th><th>Assigned</th>'
+        + '<th>Task</th><th>Category</th><th>Priority</th><th>Due</th><th>Assigned</th><th style="width:36px;"></th>'
         + '</tr></thead><tbody>';
       filtered.forEach(function(task) {
         var now2 = new Date();
@@ -193,6 +193,9 @@ var TaskReminders = {
           + '<td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:' + pri.bg + ';color:' + pri.color + ';">' + pri.label + '</span></td>'
           + '<td style="color:' + (isOverdue?'#c62828':'var(--text)') + ';font-weight:' + (isOverdue?'600':'400') + ';">' + (isOverdue ? '<i data-lucide="alert-triangle" style="width:12px;height:12px;vertical-align:middle;margin-right:2px;"></i>' : '') + dueLabel + '</td>'
           + '<td style="color:var(--text-light);">' + UI.esc(task.assignedTo||'—') + '</td>'
+          + '<td onclick="event.stopPropagation()" style="text-align:right;white-space:nowrap;">'
+          +   '<button onclick="TaskReminders._archiveTask(\'' + task.id + '\')" title="Archive" style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--text-light);display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="archive" style="width:14px;height:14px;"></i></button>'
+          + '</td>'
           + '</tr>';
       });
       html += '</tbody></table></div>';
@@ -251,6 +254,18 @@ var TaskReminders = {
     tasks.forEach(function(t) { if (ids.indexOf(t.id) !== -1) { t.archived = true; t.updatedAt = new Date().toISOString(); } });
     TaskReminders._saveAll(tasks);
     TaskReminders._clearBulk();
+    loadPage('taskreminders');
+  },
+
+  // v688: per-row archive (Doug ask). Single-task archive, no checkbox needed.
+  _archiveTask: function(id) {
+    var tasks = TaskReminders._getAll();
+    var t = tasks.find(function(x) { return x.id === id; });
+    if (!t) return;
+    t.archived = true;
+    t.updatedAt = new Date().toISOString();
+    TaskReminders._saveAll(tasks);
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('Task archived', 'success');
     loadPage('taskreminders');
   },
 
