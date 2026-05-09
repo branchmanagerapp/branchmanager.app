@@ -1927,39 +1927,61 @@ var QuotesPage = {
       + '</div></div>'
       + '</div></div>'
 
-      // Single header card — no duplication
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">'
-      + '<div style="height:4px;background:' + statusColor + ';"></div>'
-      + '<div style="padding:20px 24px;">'
-      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">'
-      + '<div>'
-      + '<h2 style="font-size:22px;font-weight:700;margin:0 0 4px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' — '
-      + (q.clientId
-          ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName || '—') + '</a>'
-          : UI.esc(q.clientName || '—'))
-      + (q.clientId ? ' <button onclick="event.stopPropagation();ClientsPage.showForm(\'' + q.clientId + '\')" title="Edit client details" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px;color:var(--text-light);vertical-align:middle;">✏️</button>' : '')
-      + '</h2>'
-      + '<div style="font-size:13px;color:var(--text-light);">' + UI.dateShort(q.createdAt) + (q.sentAt ? ' · Sent ' + UI.dateShort(q.sentAt) : '') + '</div>'
-      + (q.property ? '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(q.property) + '" target="_blank" rel="noopener noreferrer" style="display:block;font-size:13px;color:var(--accent);margin-top:2px;text-decoration:none;">📍 ' + UI.esc(q.property) + ' →</a>' : '')
+      // v683: Jobber-style 2-column header. Status pill top-left + big H1
+      // "Quote for [Client]". Below, side-by-side: Client card / Meta card.
+      + '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">'
+      +   UI.statusBadge(q.status)
+      +   (q.expiresAt ? (function() {
+            var exp = new Date(q.expiresAt); var now = new Date();
+            var days = Math.ceil((exp - now) / 86400000);
+            var color = days < 0 ? '#dc3545' : days <= 5 ? '#e6a817' : 'var(--text-light)';
+            var label = days < 0 ? 'Expired ' + Math.abs(days) + 'd ago' : days === 0 ? 'Expires today' : 'Valid ' + days + 'd';
+            return '<span style="font-size:12px;color:' + color + ';">⏱ ' + label + '</span>';
+          })() : '')
+      +   (q.depositRequired ? '<span style="font-size:12px;color:var(--text-light);">' + (q.depositPaid ? '✅ Deposit paid' : '⚠️ Deposit due: ' + UI.money(q.depositDue)) + '</span>' : '')
       + '</div>'
-      + '<div style="text-align:right;">' + UI.statusBadge(q.status) + '<div style="font-size:24px;font-weight:800;color:var(--accent);margin-top:6px;">' + UI.money(q.total) + '</div></div>'
+      + '<div style="height:4px;background:' + statusColor + ';border-radius:2px;margin-bottom:14px;"></div>'
+      + '<h1 style="font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;">' + QuotesPage._term(true) + ' for '
+      +   (q.clientId
+            ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName || '—') + '</a>'
+            : UI.esc(q.clientName || '—'))
+      + '</h1>'
+      + '<div style="font-size:13px;color:var(--text-light);margin-bottom:16px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' · ' + UI.money(q.total) + (q.requestId ? ' · <a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;text-decoration:none;">📥 From Request</a>' : '') + '</div>'
+      // Two side-by-side cards: Client (left) / Meta (right)
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">'
+      // ── Client card ──
+      +   '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">'
+      +     '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">'
+      +       '<div style="display:flex;align-items:center;gap:8px;">'
+      +         '<span style="font-weight:700;font-size:15px;">' + UI.esc(q.clientName || '—') + '</span>'
+      +         (client ? '<span style="width:8px;height:8px;border-radius:50%;background:#2e7d32;" title="Active client"></span>' : '')
+      +       '</div>'
+      +       (q.clientId
+              ? '<div style="position:relative;">'
+                + '<button type="button" onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.q-client-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';event.stopPropagation();" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:28px;cursor:pointer;font-size:13px;color:var(--text);display:inline-flex;align-items:center;justify-content:center;">•••</button>'
+                + '<div class="q-client-dd" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;padding:4px 0;z-index:200;min-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.12);">'
+                +   '<button type="button" onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">👁  View client profile</button>'
+                +   '<button type="button" onclick="ClientsPage.showForm(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✏️  Edit client details</button>'
+                + '</div>'
+                + '</div>'
+              : '')
+      +     '</div>'
+      +     (q.property ? '<div style="font-size:13px;color:var(--text-light);margin-bottom:6px;"><a href="https://maps.apple.com/?daddr=' + encodeURIComponent(q.property) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">📍 ' + UI.esc(q.property) + '</a></div>' : '')
+      +     (q.clientPhone || (client && client.phone) ? '<div style="font-size:13px;margin-bottom:4px;"><a href="tel:' + (q.clientPhone || client.phone).replace(/\D/g,'') + '" style="color:var(--accent);text-decoration:none;">📞 ' + (q.clientPhone || client.phone) + '</a></div>' : '')
+      +     (q.clientEmail || (client && client.email) ? '<div style="font-size:13px;"><a href="mailto:' + (q.clientEmail || client.email) + '" style="color:var(--accent);text-decoration:none;">✉️ ' + (q.clientEmail || client.email) + '</a></div>' : '')
+      +   '</div>'
+      // ── Meta card ──
+      +   '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">'
+      +     '<div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13px;align-items:baseline;">'
+      +       '<span style="color:var(--text-light);">' + QuotesPage._term(true) + ' #</span><span style="font-weight:600;">' + (q.quoteNumber || '—') + '</span>'
+      +       '<span style="color:var(--text-light);">Total</span><span style="font-weight:700;color:var(--accent);">' + UI.money(q.total) + '</span>'
+      +       '<span style="color:var(--text-light);">Created</span><span>' + UI.dateShort(q.createdAt) + '</span>'
+      +       (q.sentAt ? '<span style="color:var(--text-light);">Sent</span><span>' + UI.dateShort(q.sentAt) + '</span>' : '')
+      +       (q.approvedAt ? '<span style="color:var(--text-light);">Approved</span><span style="color:var(--green-dark);font-weight:600;">' + UI.dateShort(q.approvedAt) + '</span>' : '')
+      +       (q.source ? '<span style="color:var(--text-light);">Lead source</span><span>📣 ' + UI.esc(q.source) + '</span>' : '')
+      +     '</div>'
+      +   '</div>'
       + '</div>'
-      // Contact + details in one row
-      + '<div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--text-light);border-top:1px solid var(--border);padding-top:12px;">'
-      + (q.clientPhone || (client && client.phone) ? '<a href="tel:' + (q.clientPhone || client.phone).replace(/\D/g,'') + '" style="color:var(--accent);">📞 ' + (q.clientPhone || client.phone) + '</a>' : '')
-      + (q.clientEmail || (client && client.email) ? '<a href="mailto:' + (q.clientEmail || client.email) + '" style="color:var(--accent);">✉️ ' + (q.clientEmail || client.email) + '</a>' : '')
-      + (q.expiresAt ? (function() {
-          var exp = new Date(q.expiresAt); var now = new Date();
-          var days = Math.ceil((exp - now) / 86400000);
-          var color = days < 0 ? '#dc3545' : days <= 5 ? '#e6a817' : 'var(--text-light)';
-          var label = days < 0 ? 'Expired ' + Math.abs(days) + 'd ago' : days === 0 ? 'Expires today' : 'Valid ' + days + 'd';
-          return '<span style="color:' + color + ';">⏱ ' + label + '</span>';
-        })() : '')
-      + (q.depositRequired ? '<span>' + (q.depositPaid ? '✅ Deposit paid' : '⚠️ Deposit due: ' + UI.money(q.depositDue)) + '</span>' : '')
-      + (q.source ? '<span>📣 ' + UI.esc(q.source) + '</span>' : '')
-      + (q.requestId ? '<a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;">📥 From Request</a>' : '')
-      + '</div>'
-      + '</div></div>'
 
       // Description
       + (q.description ? '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">'
