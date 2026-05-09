@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 684; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 685; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1042,7 +1042,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v684.min.js"></script>
+<script defer src="dist/bm.bundle.v685.min.js"></script>
 
 
 
@@ -1421,15 +1421,14 @@ var OperationsHub = {
     try {
       if (r.tab === 'dispatch') body = DispatchPage.render();
       else if (r.tab === 'gear') {
-        // v678: Pre-Trip moved to top (daily-action). Fleet + Equipment
-        // combined into one "Fleet & Equipment" section below — vehicles
-        // and gear share the same maintenance/asset mental model.
+        // v685: Pre-Trip up top (daily action). Fleet + Equipment
+        // continuous, no inner divider, no redundant header (Doug ask:
+        // "the sections are redundant").
         body = '<h3 style="margin:0 0 12px;font-size:16px;font-weight:700;">🛻 Pre-Trip Inspections</h3>'
           + (typeof DailyInspection !== 'undefined' ? DailyInspection.render() : '<div style="padding:16px;color:var(--text-light);">Pre-Trip module not loaded.</div>')
-          + sectionDivider('🚛 Fleet &amp; Equipment')
-          + '<div style="font-size:12px;color:var(--text-light);margin:0 0 14px;">Vehicles up top, equipment below — same view.</div>'
+          + '<div style="height:1px;background:var(--border);margin:24px 0 18px;"></div>'
+          + '<h3 style="margin:0 0 14px;font-size:16px;font-weight:700;">🚛 Assets — Fleet &amp; Equipment</h3>'
           + (typeof FleetPage !== 'undefined' ? FleetPage.render() : '<div style="padding:16px;color:var(--text-light);">Fleet module not loaded.</div>')
-          + '<div style="height:1px;background:var(--border);margin:20px 0;"></div>'
           + (typeof EquipmentPage !== 'undefined' ? EquipmentPage.render() : '<div style="padding:16px;color:var(--text-light);">Equipment module not loaded.</div>');
       }
       else if (r.tab === 'hiringpool') body = (typeof HiringPool !== 'undefined' ? HiringPool.render() : '<div style="padding:16px;color:var(--text-light);">Hiring Pool module not loaded.</div>');

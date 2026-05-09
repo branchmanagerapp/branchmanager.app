@@ -246,7 +246,7 @@ var DispatchPage = {
       +   '</details>'
       +   '<span id="dispatch-map-status" style="font-size:11px;color:var(--text-light);">Loading...</span>'
       + '</div></div>'
-      + '<div id="dispatch-map" style="height:340px;width:100%;"></div></div>';
+      + '<div id="dispatch-map" style="height:520px;width:100%;"></div></div>';
 
     // v662: Route action buttons moved below the map. Map first, act second.
     if (jobs.length) {
@@ -257,83 +257,75 @@ var DispatchPage = {
         + '</div>';
     }
 
-    // v660: Weather widget (forecast/alerts) stays at top — radar overlay
-    // is now a map layer toggle above. Both surfaces complement each other.
-    if (typeof Weather !== 'undefined') {
-      html += Weather.renderWidget();
-    }
+    // v685: Weather widget removed from Dispatch — there's a topbar weather
+    // chip now. Radar map layer toggle (above) still available. Doug ask.
 
-    // v428: Time clock removed from Dispatch — accessible at Payroll > Timesheets
-    // and Crew View. Dispatch is for routing today's jobs, not punch-clock.
-
-    // Job route list
+    // Job route list \u2014 v685: compact rows; click to pan map (not nav-away).
     html += '<div style="position:relative;">';
     if (jobs.length) {
-      // Start: your location
-      html += '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:0;">'
-        + '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:40px;">'
-        + '<div style="width:32px;height:32px;background:var(--green-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">\uD83C\uDFE0</div>'
-        + '<div style="width:2px;height:20px;background:var(--border);"></div></div>'
-        + '<div style="padding:8px 0;"><strong style="font-size:14px;">Start \u2014 1 Highland Industrial Park, Peekskill</strong>'
-        + '<div style="font-size:12px;color:var(--text-light);">Base of operations \u2022 Depart 7:00 AM</div></div></div>';
-
+      html += '<div style="font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin:4px 0 8px;">Today\'s route \u2014 click a stop to pan map</div>';
       jobs.forEach(function(j, idx) {
         var statusColors = { scheduled: '#2196f3', in_progress: '#ff9800', completed: '#4caf50' };
         var color = statusColors[j.status] || '#999';
-
-        // Distance badge
         var distMiles = routeStats.distances[idx] || 0;
-        var distLabel = distMiles < 1 ? '< 1 mi' : (Math.round(distMiles * 10) / 10) + ' mi';
-
-        // ETA
+        var distLabel = distMiles < 1 ? '<1mi' : (Math.round(distMiles * 10) / 10) + 'mi';
         var eta = routeStats.etas[idx] || '';
-
-        // Job duration estimate
-        var durHours = routeStats.durations[idx] || 1;
-        var durLabel = durHours === 1 ? '~1 hr' : '~' + durHours + ' hrs';
-
-        html += '<div style="display:flex;gap:12px;align-items:flex-start;">'
-          + '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:40px;">'
-          + '<div style="width:32px;height:32px;background:' + color + ';border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">' + (idx + 1) + '</div>'
-          + (idx < jobs.length - 1 ? '<div style="width:2px;height:100%;min-height:60px;background:var(--border);"></div>' : '')
-          + '</div>'
-          + '<div style="flex:1;background:var(--white);border-radius:10px;padding:14px;border:1px solid var(--border);margin-bottom:8px;cursor:pointer;" onclick="JobsPage.showDetail(\'' + j.id + '\')">'
-          + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
-          + '<div style="flex:1;"><strong style="font-size:15px;">' + j.clientName + '</strong>'
-
-          // ETA + Distance + Duration badges row
-          + '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">'
-          + '<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">ETA ' + eta + '</span>'
-          + '<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">\uD83D\uDCCD ' + distLabel + (idx === 0 ? ' from HQ' : ' from prev') + '</span>'
-          + '<span style="background:#f3e5f5;color:#7b1fa2;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">\u23F1 ' + durLabel + '</span>'
-          + '</div>'
-
-          + '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">' + (j.description || j.property || 'Job #' + (j.jobNumber || '')) + '</div>'
-          + '<div style="font-size:12px;color:var(--text-light);margin-top:4px;">\uD83D\uDCCD ' + (j.property || j.address || 'No address') + '</div></div>'
-          + '<div style="text-align:right;">'
-          + '<div style="font-weight:700;color:var(--green-dark);">' + UI.money(j.total || 0) + '</div>'
-          + '<div style="margin-top:4px;">' + UI.statusBadge(j.status) + '</div></div></div>'
-          + '<div style="display:flex;gap:6px;margin-top:8px;">'
-          + '<button onclick="event.stopPropagation();DispatchPage.navigate(\'' + (j.property || j.address || '').replace(/'/g, "\\'") + '\')" style="background:var(--green-bg);border:1px solid #c8e6c9;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;color:var(--green-dark);">\uD83D\uDDFA Navigate</button>'
-          + '<button onclick="event.stopPropagation();DispatchPage.callClient(\'' + j.id + '\')" style="background:#e3f2fd;border:1px solid #bbdefb;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;color:#1565c0;">\uD83D\uDCDE Call</button>'
-          + (j.status === 'scheduled' ? '<button onclick="event.stopPropagation();DispatchPage.startJob(\'' + j.id + '\')" style="background:#fff3e0;border:1px solid #ffe0b2;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;color:#e65100;">\u25B6 Start</button>' : '')
-          + (j.status === 'in_progress' ? '<button onclick="event.stopPropagation();DispatchPage.completeJob(\'' + j.id + '\')" style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;color:#2e7d32;">\u2705 Complete</button>' : '')
-          + '</div></div></div>';
+        html += '<div onclick="DispatchPage._panToJob(\'' + j.id + '\')" '
+          + 'style="display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;cursor:pointer;font-size:13px;">'
+          +   '<div style="width:24px;height:24px;background:' + color + ';border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0;">' + (idx + 1) + '</div>'
+          +   '<div style="flex:1;min-width:0;">'
+          +     '<div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || ('Job #' + j.jobNumber)) + '</div>'
+          +     '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.property || j.address || '\u2014') + '</div>'
+          +   '</div>'
+          +   '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'
+          +     (eta ? '<span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;">ETA ' + eta + '</span>' : '')
+          +     '<span style="background:#fff3e0;color:#e65100;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;">' + distLabel + '</span>'
+          +     '<span style="font-weight:700;color:var(--green-dark);font-size:12px;">' + UI.money(j.total || 0) + '</span>'
+          +     '<button onclick="event.stopPropagation();JobsPage.showDetail(\'' + j.id + '\')" title="Open job detail" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--text-light);">\u2197</button>'
+          +   '</div>'
+          + '</div>';
       });
-
-      // End: back to base
-      html += '<div style="display:flex;gap:12px;align-items:flex-start;">'
-        + '<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:40px;">'
-        + '<div style="width:32px;height:32px;background:var(--green-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">\uD83C\uDFE0</div></div>'
-        + '<div style="padding:8px 0;"><strong style="font-size:14px;">Return to Base</strong>'
-        + '<div style="font-size:12px;color:var(--text-light);">Est. arrival ' + routeStats.finishTime + '</div></div></div>';
-
     } else {
-      html += '<div style="text-align:center;padding:60px 20px;background:var(--white);border-radius:12px;border:1px solid var(--border);">'
-        + '<div style="font-size:48px;margin-bottom:12px;">\uD83C\uDF33</div>'
-        + '<h3 style="font-size:18px;margin-bottom:8px;">No jobs scheduled today</h3>'
-        + '<p style="color:var(--text-light);font-size:14px;">Check the <a href="#" onclick="loadPage(\'schedule\');return false;" style="color:var(--green-dark);">schedule</a> for upcoming work.</p>'
-        + '</div>';
+      // v685: when today is empty, show upcoming/approved jobs as fallback.
+      // Click \u2192 pan map. Same "click \u2192 flyTo" pattern.
+      var upcoming = DB.jobs.getAll().filter(function(j) {
+        var s = (j.status || '').toLowerCase();
+        if (s === 'completed' || s === 'cancelled' || s === 'archived') return false;
+        // Future-scheduled OR approved-not-yet-scheduled
+        if (j.scheduledDate) {
+          var d = j.scheduledDate.split('T')[0];
+          return d > todayStr;
+        }
+        return s === 'scheduled' || s === 'approved' || s === 'pending';
+      }).sort(function(a, b) {
+        var ad = a.scheduledDate || '9999';
+        var bd = b.scheduledDate || '9999';
+        return ad.localeCompare(bd);
+      }).slice(0, 12);
+
+      if (upcoming.length) {
+        html += '<div style="font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin:4px 0 8px;">No jobs today \u2014 upcoming &amp; approved (' + upcoming.length + ') \u2014 click to pan map</div>';
+        upcoming.forEach(function(j) {
+          var when = j.scheduledDate ? UI.dateShort(j.scheduledDate) : (j.status || 'unscheduled');
+          html += '<div onclick="DispatchPage._panToJob(\'' + j.id + '\')" '
+            + 'style="display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;cursor:pointer;font-size:13px;">'
+            +   '<div style="width:8px;height:8px;background:#2196f3;border-radius:50%;flex-shrink:0;"></div>'
+            +   '<div style="flex:1;min-width:0;">'
+            +     '<div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || ('Job #' + j.jobNumber)) + '</div>'
+            +     '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.property || j.address || '\u2014') + '</div>'
+            +   '</div>'
+            +   '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'
+            +     '<span style="font-size:11px;color:var(--text-light);">' + when + '</span>'
+            +     '<span style="font-weight:700;color:var(--green-dark);font-size:12px;">' + UI.money(j.total || 0) + '</span>'
+            +     '<button onclick="event.stopPropagation();JobsPage.showDetail(\'' + j.id + '\')" title="Open job detail" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--text-light);">\u2197</button>'
+            +   '</div>'
+            + '</div>';
+        });
+      } else {
+        html += '<div style="text-align:center;padding:30px 20px;background:var(--white);border-radius:10px;border:1px solid var(--border);font-size:13px;color:var(--text-light);">'
+          + '\uD83C\uDF33 No upcoming jobs. Open the <a onclick="loadPage(\'schedule\');return false;" style="color:var(--green-dark);cursor:pointer;">schedule</a> to plan work.'
+          + '</div>';
+      }
     }
     html += '</div>';
 
@@ -344,6 +336,30 @@ var DispatchPage = {
     if (!address) { UI.toast('No address on file', 'error'); return; }
     var url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(address);
     window.open(url, '_blank');
+  },
+
+  // v685: pan/zoom dispatch map to a specific job's location, open its
+  // popup if a marker exists. Used when user clicks a job card in the
+  // list below the map.
+  _panToJob: function(jobId) {
+    var j = DB.jobs.getById(jobId);
+    if (!j) return;
+    var coords = DispatchPage._getJobCoords(j);
+    if (!coords || !DispatchPage._map) return;
+    DispatchPage._map.flyTo({ center: [coords[1], coords[0]], zoom: 15, speed: 1.3 });
+    // Open the marker's popup if we have one cached for this job
+    var markers = DispatchPage._jobMarkers || [];
+    for (var i = 0; i < markers.length; i++) {
+      var m = markers[i];
+      var ll = m.getLngLat();
+      if (Math.abs(ll.lng - coords[1]) < 0.0001 && Math.abs(ll.lat - coords[0]) < 0.0001) {
+        try { m.togglePopup(); } catch(e) {}
+        break;
+      }
+    }
+    // Scroll the page up so the map is visible
+    var mapEl = document.getElementById('dispatch-map-wrap');
+    if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   callClient: function(jobId) {
