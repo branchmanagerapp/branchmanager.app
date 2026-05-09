@@ -507,6 +507,9 @@ var QuotesPage = {
       +     svcOptionsHtml
       +   '</select>'
       +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" title="Add tree (photo + AI)" style="width:54px;height:54px;border-radius:10px;background:var(--green-dark);color:#fff;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📷</button>'
+      // v693: bulk-upload button — picks many photos at once, queues them in a
+      // tray; user drags each onto the line item it belongs to (or taps on mobile).
+      +   '<button type="button" onclick="QuotesPage._bulkAddPhotos()" title="Bulk add photos — drag onto line items" style="width:54px;height:54px;border-radius:10px;background:var(--white);color:var(--green-dark);border:2px solid var(--green-dark);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;">📸+</button>'
       + '</div>';
 
     // Line items list — newly-added items render expanded so user can fill in immediately.
@@ -2577,6 +2580,237 @@ var QuotesPage = {
       });
     };
     input.click();
+  },
+
+  // ── v693: bulk photo upload + drag-drop assignment ────────────────────────
+  // Use case: user shows up at job site, snaps 12 photos for 5 trees. Instead
+  // of "tap row → upload → wait → tap next row → upload" 12 times, they tap
+  // 📸+ once, multi-select all 12, then drag each thumb onto the right line
+  // item. On touch devices (no native drag), tap a thumb → modal lists rows.
+  _photoTray: [],
+
+  _bulkAddPhotos: function() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = function(e) {
+      var files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      Promise.all(files.map(function(f) {
+        return new Promise(function(resolve) {
+          var r = new FileReader();
+          r.onload = function(ev) { resolve({ url: ev.target.result, name: f.name || 'photo' }); };
+          r.readAsDataURL(f);
+        });
+      })).then(function(items) {
+        QuotesPage._photoTray = QuotesPage._photoTray.concat(items);
+        QuotesPage._renderPhotoTray();
+        UI.toast(items.length + ' photo' + (items.length === 1 ? '' : 's') + ' in tray — drag onto a line item');
+      });
+    };
+    input.click();
+  },
+
+  _renderPhotoTray: function() {
+    var existing = document.getElementById('q-photo-tray');
+    if (existing) existing.remove();
+    QuotesPage._unbindRowDrops(); // always unbind first to avoid double-binding
+    if (!QuotesPage._photoTray.length) return;
+    var itemsList = document.getElementById('q-items');
+    if (!itemsList) return;
+    var tray = document.createElement('div');
+    tray.id = 'q-photo-tray';
+    tray.style.cssText = 'background:#fff8e6;border:1px dashed #d4a017;border-radius:10px;padding:10px 12px;margin-bottom:14px;';
+    var trayHtml = '<div style="font-size:12px;color:#7c5a00;margin-bottom:8px;font-weight:700;display:flex;justify-content:space-between;align-items:center;">'
+      +   '<span>📸 ' + QuotesPage._photoTray.length + ' photo' + (QuotesPage._photoTray.length === 1 ? '' : 's') + ' to place — drag onto a line item (or tap on mobile)</span>'
+      +   '<button type="button" onclick="QuotesPage._clearPhotoTray()" style="background:none;border:none;color:#7c5a00;font-size:11px;text-decoration:underline;cursor:pointer;padding:2px 6px;">clear all</button>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 2px;">';
+    QuotesPage._photoTray.forEach(function(p, i) {
+      trayHtml += '<div class="q-tray-photo" draggable="true" data-tray-idx="' + i + '" '
+        + 'ondragstart="QuotesPage._trayDragStart(event,' + i + ')" '
+        + 'ondragend="QuotesPage._trayDragEnd(event)" '
+        + 'onclick="QuotesPage._trayPhotoTap(' + i + ')" '
+        + 'title="Drag to a line item — or tap to pick" '
+        + 'style="position:relative;flex-shrink:0;cursor:grab;touch-action:none;">'
+        +   '<img src="' + p.url + '" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.15);pointer-events:none;">'
+        +   '<button type="button" onclick="event.stopPropagation();QuotesPage._removeTrayPhoto(' + i + ')" title="Remove from tray" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>'
+        + '</div>';
+    });
+    trayHtml += '</div>';
+    tray.innerHTML = trayHtml;
+    itemsList.parentNode.insertBefore(tray, itemsList);
+    QuotesPage._bindRowDrops();
+  },
+
+  _clearPhotoTray: function() {
+    if (!QuotesPage._photoTray.length) return;
+    if (!confirm('Discard all ' + QuotesPage._photoTray.length + ' unassigned photos?')) return;
+    QuotesPage._photoTray = [];
+    QuotesPage._renderPhotoTray();
+  },
+
+  _removeTrayPhoto: function(idx) {
+    QuotesPage._photoTray.splice(idx, 1);
+    QuotesPage._renderPhotoTray();
+  },
+
+  _trayDragStart: function(e, idx) {
+    if (!e.dataTransfer) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/x-bm-tray-idx', String(idx));
+    // Also set text/plain so cross-browser fallback works (some browsers reject custom MIME types)
+    e.dataTransfer.setData('text/plain', 'bm-tray-' + idx);
+    e.target.style.opacity = '0.5';
+  },
+
+  _trayDragEnd: function(e) {
+    if (e && e.target && e.target.style) e.target.style.opacity = '';
+    // Clean up any lingering hover outlines
+    document.querySelectorAll('.q-item-wrap').forEach(function(w) {
+      w.style.outline = '';
+      w.style.outlineOffset = '';
+    });
+  },
+
+  _bindRowDrops: function() {
+    document.querySelectorAll('.q-item-wrap').forEach(function(wrap) {
+      wrap.addEventListener('dragover', QuotesPage._rowDragOver);
+      wrap.addEventListener('dragleave', QuotesPage._rowDragLeave);
+      wrap.addEventListener('drop', QuotesPage._rowDrop);
+    });
+  },
+
+  _unbindRowDrops: function() {
+    document.querySelectorAll('.q-item-wrap').forEach(function(wrap) {
+      wrap.removeEventListener('dragover', QuotesPage._rowDragOver);
+      wrap.removeEventListener('dragleave', QuotesPage._rowDragLeave);
+      wrap.removeEventListener('drop', QuotesPage._rowDrop);
+    });
+  },
+
+  _rowDragOver: function(e) {
+    var types = e.dataTransfer && e.dataTransfer.types;
+    if (!types || (Array.prototype.indexOf.call(types, 'text/x-bm-tray-idx') === -1
+                && Array.prototype.indexOf.call(types, 'text/plain') === -1)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    this.style.outline = '2px dashed var(--green-dark)';
+    this.style.outlineOffset = '2px';
+  },
+
+  _rowDragLeave: function(e) {
+    // Only clear outline if leaving the wrap entirely (not entering a child)
+    if (this.contains(e.relatedTarget)) return;
+    this.style.outline = '';
+    this.style.outlineOffset = '';
+  },
+
+  _rowDrop: function(e) {
+    e.preventDefault();
+    this.style.outline = '';
+    this.style.outlineOffset = '';
+    var raw = e.dataTransfer.getData('text/x-bm-tray-idx') || e.dataTransfer.getData('text/plain');
+    var idx = parseInt((raw || '').replace('bm-tray-', ''), 10);
+    if (isNaN(idx)) return;
+    var wrapIdx = parseInt(this.dataset.index, 10);
+    QuotesPage._assignTrayPhotoToRow(idx, wrapIdx);
+  },
+
+  _assignTrayPhotoToRow: function(trayIdx, wrapIdx) {
+    var photo = QuotesPage._photoTray[trayIdx];
+    if (!photo) return;
+    var wrap = document.querySelectorAll('.q-item-wrap')[wrapIdx];
+    if (!wrap) return;
+    var row = wrap.querySelector('.quote-item-row');
+    if (!row) return;
+    var existing = [];
+    if (row.dataset.photos) { try { existing = JSON.parse(row.dataset.photos); } catch(e){} }
+    else if (row.dataset.photo) { existing = [row.dataset.photo]; }
+    if (existing.length >= 5) {
+      UI.toast('That line item already has 5 photos (max). Remove one first.', 'warn');
+      return;
+    }
+    var all = existing.concat([photo.url]);
+    row.dataset.photos = JSON.stringify(all);
+    row.dataset.photo = all[0];
+    QuotesPage._refreshRowPhotoUI(wrap, all);
+    QuotesPage._photoTray.splice(trayIdx, 1);
+    QuotesPage._renderPhotoTray();
+    QuotesPage._autoSave();
+    UI.toast('📷 Assigned (' + QuotesPage._photoTray.length + ' left in tray)');
+  },
+
+  // Re-render header thumb + body grid for a wrap after photos change.
+  // Mirrors the inline logic in _uploadPhotoToRow / _addPhotoFirst.
+  _refreshRowPhotoUI: function(wrap, urls) {
+    if (!wrap || !urls || !urls.length) return;
+    var allWraps = document.querySelectorAll('.q-item-wrap');
+    var wrapIdx = Array.prototype.indexOf.call(allWraps, wrap);
+    var headerThumb = wrap.querySelector('.q-item-header img, .q-item-header div[style*="dashed"]');
+    if (headerThumb) {
+      var newThumb = document.createElement('img');
+      newThumb.src = urls[0];
+      newThumb.style.cssText = 'width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;';
+      newThumb.onclick = function(ev) { ev.stopPropagation(); QuotesPage._uploadPhotoToRow(newThumb); };
+      headerThumb.replaceWith(newThumb);
+    }
+    var body = wrap.querySelector('.q-item-body');
+    if (!body) return;
+    var existingGrid = body.querySelector('.q-photo-grid');
+    if (existingGrid) existingGrid.remove();
+    var grid = document.createElement('div');
+    grid.className = 'q-photo-grid';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(' + Math.min(urls.length, 3) + ',1fr);gap:4px;margin-bottom:10px;';
+    grid.innerHTML = urls.map(function(u, pi) {
+      return '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(urls).replace(/"/g, '&quot;') + ',' + pi + ',' + wrapIdx + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
+    }).join('') + (urls.length > 1 ? '<div style="grid-column:1/-1;font-size:11px;color:var(--text-light);text-align:center;">' + urls.length + ' photos</div>' : '');
+    body.insertBefore(grid, body.firstChild);
+  },
+
+  // Touch fallback — tap a tray photo to pick a line item from a modal list.
+  // Native HTML5 drag-drop is unreliable on iOS Safari, so this is the path
+  // most BM users (on iPhone) will actually use.
+  _trayPhotoTap: function(trayIdx) {
+    var wraps = document.querySelectorAll('.q-item-wrap');
+    if (!wraps.length) {
+      UI.toast('Add a line item first (pick a service above)', 'warn');
+      return;
+    }
+    var photo = QuotesPage._photoTray[trayIdx];
+    if (!photo) return;
+    var html = '<div style="display:flex;gap:12px;margin-bottom:14px;align-items:center;">'
+      +   '<img src="' + photo.url + '" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">'
+      +   '<div style="font-size:13px;color:var(--text-light);">Assign this photo to which line item?</div>'
+      + '</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;">';
+    Array.prototype.forEach.call(wraps, function(w, i) {
+      var row = w.querySelector('.quote-item-row');
+      var svcInput = row && (row.querySelector('input[data-field="service"]') || row.querySelector('[data-field="service"]'));
+      var descInput = row && (row.querySelector('input[data-field="description"]') || row.querySelector('textarea[data-field="description"]'));
+      var svc = (svcInput && svcInput.value) || ('Item ' + (i + 1));
+      var desc = (descInput && descInput.value) || '';
+      var existingCount = 0;
+      try {
+        if (row.dataset.photos) existingCount = (JSON.parse(row.dataset.photos) || []).length;
+        else if (row.dataset.photo) existingCount = 1;
+      } catch(e) {}
+      var full = existingCount >= 5;
+      html += '<button type="button" ' + (full ? 'disabled' : '')
+        + ' onclick="UI.closeModal();QuotesPage._assignTrayPhotoToRow(' + trayIdx + ',' + i + ')" '
+        + 'style="text-align:left;padding:10px 14px;background:' + (full ? 'var(--bg)' : 'var(--white)')
+        + ';border:1px solid var(--border);border-radius:8px;cursor:' + (full ? 'not-allowed' : 'pointer')
+        + ';opacity:' + (full ? '.5' : '1') + ';display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-weight:600;">' + UI.esc(svc) + (full ? ' (full — 5/5)' : '') + '</div>'
+        + (desc ? '<div style="font-size:12px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(desc) + '</div>' : '')
+        +   '</div>'
+        +   '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;">' + existingCount + '/5 📷</div>'
+        + '</button>';
+    });
+    html += '</div>';
+    UI.showModal('Assign photo to line item', html);
   },
 
   _openTreeMeasure: function() {
