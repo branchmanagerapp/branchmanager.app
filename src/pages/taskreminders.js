@@ -1098,7 +1098,10 @@ var TaskReminders = {
     }
 
     var doFinalize = function() {
-      // Record the response + complete the task (writes locally + cloud-syncs via _save → _pushCloud)
+      // Record the response + complete the task (writes locally + cloud-syncs via _saveAll → _pushCloud)
+      // v697 bugfix: was calling TaskReminders._save which doesn't exist; the
+      // method is _saveAll. v695 multiple-choice tasks would have failed to
+      // persist Catherine's answers without this fix.
       var all = TaskReminders._getAll();
       var idx = all.findIndex(function(t) { return t.id === id; });
       if (idx >= 0) {
@@ -1106,7 +1109,7 @@ var TaskReminders = {
         all[idx].completed = true;
         all[idx].completedAt = new Date().toISOString();
         all[idx].updatedAt = new Date().toISOString();
-        TaskReminders._save(all);
+        TaskReminders._saveAll(all);
       }
       UI.toast('✓ Saved — ' + opt.label.slice(0, 60));
       UI.closeModal();

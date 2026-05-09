@@ -1,5 +1,5 @@
 {
-  "version": 696,
+  "version": 697,
   "released": "2026-05-09",
-  "notes": "v696: idempotent parity sync — UNIQUE (tenant_id, *_number) constraints + ON CONFLICT DO NOTHING in apply.py"
+  "notes": "v697: Tasks restored to sidebar + critical v695 _save → _saveAll bug fix"
 }

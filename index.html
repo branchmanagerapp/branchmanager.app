@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 696; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 697; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -946,6 +946,8 @@
       <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
       <!-- v388: Pre-Trip folded into Operations as a tab. Deep link via #pretrip still works. -->
       <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
+      <!-- v697: Tasks restored as a top-level sidebar entry (was folded under Operations in v388). No badge — sidebar count badges are intentionally hidden per "felt noisy" preference. -->
+      <button class="nav-item" data-page="taskreminders"><span class="icon"><i data-lucide="check-square" class="li"></i></span> Tasks</button>
       <!-- v419: Team folded into Payroll (tabs: Payroll / Team / Timesheets / My Pay). Operations moved up to where Team was. -->
       <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
@@ -1047,7 +1049,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v696.min.js"></script>
+<script defer src="dist/bm.bundle.v697.min.js"></script>
 
 
 
