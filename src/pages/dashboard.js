@@ -61,7 +61,7 @@ var DashboardPage = {
       + '<span>' + dayNames[now.getDay()] + ', ' + monthFull[now.getMonth()] + ' ' + now.getDate() + '</span>'
       + '<span id="dash-date-weather"></span>'
       + '</div>'
-      + '<h2 style="font-size:28px;font-weight:700;margin-top:2px;">' + greeting + ', ' + userName.split(' ')[0] + '</h2>'
+      + '<h2 style="font-size:28px;font-weight:700;margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
       + '</div>';
 
     // v645: Mobile-focused Home — Jobber-style "Let's get started / Clock In"
