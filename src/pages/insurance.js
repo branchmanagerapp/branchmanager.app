@@ -212,6 +212,7 @@ var InsurancePage = {
         + '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'
         +   '<button onclick="InsurancePage._editCompliance(\'' + c.id + '\')" style="flex:1;background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;">' + (c.expires_date ? 'Edit' : '+ Set expiry') + '</button>'
         +   (c.renewal_url ? '<a href="' + UI.esc(c.renewal_url) + '" target="_blank" rel="noopener" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;text-decoration:none;color:var(--text);">↗ Renew</a>' : '')
+        +   '<button onclick="InsurancePage._archiveCompliance(\'' + c.id + '\')" title="Archive — stop tracking renewal" style="background:none;border:1px solid #fecaca;color:#b91c1c;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;">📦</button>'
         + '</div>'
         + '</div>';
     });

@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 683; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 684; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -982,6 +982,7 @@
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="hamburger" onclick="toggleSidebar()" aria-label="Open navigation menu" role="button"><i data-lucide="menu" style="width:22px;height:22px;stroke:var(--text);stroke-width:1.75;"></i></button>
         <h2 id="pageTitle">Dashboard</h2>
+        <span id="topbar-weather" style="display:inline-flex;"></span>
       </div>
       <div class="topbar-actions">
         <button class="topbar-icon mobile-search-icon" onclick="loadPage('search')" title="Search" style="display:none;">
@@ -1041,7 +1042,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v683.min.js"></script>
+<script defer src="dist/bm.bundle.v684.min.js"></script>
 
 
 
@@ -2751,6 +2752,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof ReviewsPage !== 'undefined' && ReviewsPage.checkAutoReviews) ReviewsPage.checkAutoReviews();
     // Initialize TeamChat real-time subscription
     if (typeof TeamChat !== 'undefined' && TeamChat._init) TeamChat._init();
+    // v684: prefetch weather + paint topbar chip even if user hasn't enabled
+    // the bigger Weather widget. Free API, no key, no cost.
+    if (typeof Weather !== 'undefined' && Weather.fetch && !Weather.cache) {
+      try { Weather.fetch(); } catch(e) {}
+    }
     // Global inbound SMS notifier — fires a toast + badge regardless of current page
     (function() {
       var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;

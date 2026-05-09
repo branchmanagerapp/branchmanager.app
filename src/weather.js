@@ -107,6 +107,8 @@ var Weather = {
       Weather.cache = data;
       Weather.cacheTime = Date.now();
       Weather._render(data);
+      // v684: refresh topbar chip on every fetch
+      try { Weather._updateTopbar(); } catch(e) {}
       if (firstFetch && typeof window !== 'undefined' && window._currentPage === 'schedule' && typeof loadPage === 'function') {
         loadPage('schedule');
       }
@@ -496,5 +498,61 @@ var Weather = {
     if (code <= 86) return '❄️';
     if (code >= 95) return '⛈️';
     return '☁️';
+  },
+
+  // v684: Clean SVG-style weather icons for the topbar chip + anywhere else
+  // we want a non-emoji glyph. Open-Meteo weather code → 18x18 SVG.
+  // Returns an inline <svg> string with stroke=currentColor for theme-friendliness.
+  svgIcon: function(code, size) {
+    size = size || 18;
+    var s = 'width:' + size + 'px;height:' + size + 'px;flex-shrink:0;';
+    var attr = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="' + s + '"';
+    // Sun (clear)
+    if (code === 0) return '<svg ' + attr + '><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+    // Sun behind cloud (mostly clear / partly cloudy)
+    if (code <= 2) return '<svg ' + attr + '><circle cx="8" cy="9" r="3"/><path d="M8 4v1M3.5 9H4.5M5 5.5l.7.7"/><path d="M14 18a4 4 0 0 0 0-8 5 5 0 0 0-9.7-1A4 4 0 1 0 5 18h9z"/></svg>';
+    // Cloud (overcast)
+    if (code === 3) return '<svg ' + attr + '><path d="M18 17H7A4 4 0 1 1 8 9a6 6 0 0 1 11.5 2A4 4 0 0 1 18 17z"/></svg>';
+    // Fog
+    if (code <= 49) return '<svg ' + attr + '><path d="M5 5h14M3 9h18M3 13h12M5 17h14M3 21h18"/></svg>';
+    // Drizzle
+    if (code <= 57) return '<svg ' + attr + '><path d="M18 14H7A4 4 0 1 1 8 6a6 6 0 0 1 11.5 2A4 4 0 0 1 18 14z"/><path d="M9 18l-1 2M14 18l-1 2M19 18l-1 2"/></svg>';
+    // Rain (steady or freezing)
+    if (code <= 67) return '<svg ' + attr + '><path d="M18 13H7A4 4 0 1 1 8 5a6 6 0 0 1 11.5 2A4 4 0 0 1 18 13z"/><path d="M8 17v3M12 17v3M16 17v3"/></svg>';
+    // Snow
+    if (code <= 77) return '<svg ' + attr + '><path d="M18 13H7A4 4 0 1 1 8 5a6 6 0 0 1 11.5 2A4 4 0 0 1 18 13z"/><path d="M8 18l.5.5M11 18v1M14 18l-.5.5M17 18v1"/></svg>';
+    // Rain showers
+    if (code <= 82) return '<svg ' + attr + '><path d="M18 13H7A4 4 0 1 1 8 5a6 6 0 0 1 11.5 2A4 4 0 0 1 18 13z"/><path d="M8 17l-1 3M13 17l-1 3M18 17l-1 3"/></svg>';
+    // Snow showers
+    if (code <= 86) return '<svg ' + attr + '><path d="M18 13H7A4 4 0 1 1 8 5a6 6 0 0 1 11.5 2A4 4 0 0 1 18 13z"/><path d="M9 17l1 1M13 17v2M17 17l-1 1"/></svg>';
+    // Thunderstorm
+    if (code >= 95) return '<svg ' + attr + '><path d="M18 13H7A4 4 0 1 1 8 5a6 6 0 0 1 11.5 2A4 4 0 0 1 18 13z"/><polyline points="13,14 11,18 14,18 12,22"/></svg>';
+    // Default: cloud
+    return '<svg ' + attr + '><path d="M18 17H7A4 4 0 1 1 8 9a6 6 0 0 1 11.5 2A4 4 0 0 1 18 17z"/></svg>';
+  },
+
+  // v684: Topbar weather chip — small bubble next to page title.
+  // Auto-fetches if cache empty. Click → operations#weather page.
+  renderTopbarChip: function() {
+    var c = Weather.cache && Weather.cache.current;
+    if (!c) return ''; // No data yet — chip stays empty until fetch lands
+    var temp = Math.round(c.temperature_2m);
+    var feels = c.apparent_temperature != null ? Math.round(c.apparent_temperature) : null;
+    var code = c.weather_code;
+    var hot = temp >= 85, cold = temp <= 32, icy = temp <= 35 && code >= 51;
+    var bg = icy ? '#dbeafe' : hot ? '#fee2e2' : cold ? '#dbeafe' : '#f0f9ff';
+    var fg = icy ? '#1e3a8a' : hot ? '#991b1b' : cold ? '#1e40af' : '#075985';
+    var title = 'Weather: ' + temp + '°F' + (feels !== null && Math.abs(feels - temp) > 2 ? ' (feels ' + feels + '°)' : '') + ' · click for forecast';
+    return '<button id="topbar-weather-btn" onclick="window.location.hash=\'#weather\';loadPage(\'weather\')" '
+      + 'title="' + title + '" '
+      + 'style="display:inline-flex;align-items:center;gap:6px;background:' + bg + ';color:' + fg + ';border:none;padding:5px 12px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;height:28px;line-height:1;white-space:nowrap;">'
+      +   Weather.svgIcon(code, 16)
+      +   '<span>' + temp + '°</span>'
+      + '</button>';
+  },
+  // Update the topbar chip placeholder. Called after fetch lands.
+  _updateTopbar: function() {
+    var slot = document.getElementById('topbar-weather');
+    if (slot) slot.innerHTML = Weather.renderTopbarChip();
   }
 };

@@ -517,8 +517,43 @@ var UI = (function() {
     return dateShort(d.split('T')[0]);
   }
 
+  // v684: shim for legacy UI.modal() calls scattered across pages
+  // (insurance, teamchat, permits, clients, socialbranch, etc.).
+  // Two call patterns exist in the codebase:
+  //   UI.modal(html)  — single arg, html includes its own h3
+  //   UI.modal(title, body, [{label, fn}, ...])  — 3-arg with footer action buttons
+  function modal(a, b, c) {
+    if (typeof a === 'object' && a && !b && !c) {
+      // {title, body, actions} object form (used by socialbranch)
+      var o = a;
+      return _modalArgsToShowModal(o.title || '', o.body || '', o.actions || []);
+    }
+    if (b == null && c == null) {
+      // Single html arg — title is empty (the html provides its own header)
+      return showModal('', a, { keepModal: true });
+    }
+    return _modalArgsToShowModal(a, b, c);
+  }
+  function _modalArgsToShowModal(title, body, actions) {
+    var footerHtml = '';
+    if (Array.isArray(actions) && actions.length) {
+      footerHtml = '<div style="display:flex;justify-content:flex-end;gap:8px;">'
+        + actions.map(function(act) {
+          var primary = (act.primary !== false) && actions.indexOf(act) === actions.length - 1;
+          return '<button onclick="' + (act.fn || 'UI.closeModal()') + '" '
+            + 'style="padding:9px 16px;border-radius:6px;font-size:13px;cursor:pointer;'
+            + (primary ? 'background:var(--green-dark);color:#fff;border:none;font-weight:700;'
+                       : 'background:var(--bg);color:var(--text);border:1px solid var(--border);')
+            + '">' + (act.label || 'OK') + '</button>';
+          }).join('')
+        + '</div>';
+    }
+    return showModal(title, body, { keepModal: true, footer: footerHtml });
+  }
+
   return {
     showModal: showModal,
+    modal: modal,
     closeModal: closeModal,
     statusBadge: statusBadge,
     money: money,
