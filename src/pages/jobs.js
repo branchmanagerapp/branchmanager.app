@@ -861,7 +861,12 @@ var JobsPage = {
       + '<div style="height:4px;background:' + statusColor + ';"></div>'
       + '<div style="padding:20px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">'
       + '<div>'
-      + '<h2 style="font-size:22px;font-weight:700;margin:0 0 4px;">Job #' + (j.jobNumber||'') + ' — ' + UI.esc(j.clientName || '—') + '</h2>'
+      + '<h2 style="font-size:22px;font-weight:700;margin:0 0 4px;">Job #' + (j.jobNumber||'') + ' — '
+      + (j.clientId
+          ? '<a onclick="ClientsPage.showDetail(\'' + j.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(j.clientName || '—') + '</a>'
+          : UI.esc(j.clientName || '—'))
+      + (j.clientId ? ' <button onclick="event.stopPropagation();ClientsPage.showForm(\'' + j.clientId + '\')" title="Edit client details" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px;color:var(--text-light);vertical-align:middle;">✏️</button>' : '')
+      + '</h2>'
       + '<div style="font-size:13px;color:var(--text-light);">'
       + (j.scheduledDate ? UI.dateShort(j.scheduledDate) + (j.startTime ? ' at ' + j.startTime : '') : 'Not scheduled')
       + '</div>'

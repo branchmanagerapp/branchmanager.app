@@ -1933,7 +1933,12 @@ var QuotesPage = {
       + '<div style="padding:20px 24px;">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">'
       + '<div>'
-      + '<h2 style="font-size:22px;font-weight:700;margin:0 0 4px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' — ' + UI.esc(q.clientName || '—') + '</h2>'
+      + '<h2 style="font-size:22px;font-weight:700;margin:0 0 4px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' — '
+      + (q.clientId
+          ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName || '—') + '</a>'
+          : UI.esc(q.clientName || '—'))
+      + (q.clientId ? ' <button onclick="event.stopPropagation();ClientsPage.showForm(\'' + q.clientId + '\')" title="Edit client details" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px;color:var(--text-light);vertical-align:middle;">✏️</button>' : '')
+      + '</h2>'
       + '<div style="font-size:13px;color:var(--text-light);">' + UI.dateShort(q.createdAt) + (q.sentAt ? ' · Sent ' + UI.dateShort(q.sentAt) : '') + '</div>'
       + (q.property ? '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(q.property) + '" target="_blank" rel="noopener noreferrer" style="display:block;font-size:13px;color:var(--accent);margin-top:2px;text-decoration:none;">📍 ' + UI.esc(q.property) + ' →</a>' : '')
       + '</div>'
