@@ -27,6 +27,7 @@
   .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
   .section { padding: 80px 0; }
   .section-tight { padding: 56px 0; }
+  .section-alt { background: #f8faf6; border-top: 1px solid #e8eee2; border-bottom: 1px solid #e8eee2; }
 
   /* ── Top nav ────────────────────────────────────────────────────────────── */
   .nav {
@@ -36,15 +37,16 @@
   }
   .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
   .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; color: #1a3c12; }
-  .nav-brand-icon { width: 30px; height: 30px; background: #1a3c12; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
-  .nav-links { display: flex; gap: 28px; align-items: center; font-size: 14px; font-weight: 500; color: #525252; }
+  .nav-brand-icon { width: 30px; height: 30px; background: linear-gradient(135deg,#1a3c12,#2d6a1f); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; }
+  .nav-brand-icon svg { width: 18px; height: 18px; }
+  .nav-links { display: flex; gap: 24px; align-items: center; font-size: 14px; font-weight: 500; color: #525252; }
   .nav-links a:hover { color: #1a3c12; }
   .nav-cta {
     background: #1a3c12; color: #fff !important; padding: 9px 18px; border-radius: 8px;
     font-weight: 600; transition: background .15s;
   }
   .nav-cta:hover { background: #245219; }
-  @media (max-width: 720px) {
+  @media (max-width: 880px) {
     .nav-links a:not(.nav-cta) { display: none; }
   }
 
@@ -81,6 +83,7 @@
   .btn-primary:hover { background: #245219; transform: translateY(-1px); }
   .btn-ghost { background: #fff; color: #1a3c12; border-color: #d0d8cd; }
   .btn-ghost:hover { background: #f4f8f2; }
+  .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 8px; }
 
   .hero-meta { margin-top: 30px; display: flex; gap: 22px; font-size: 13px; color: #6b7e64; flex-wrap: wrap; }
   .hero-meta span::before { content: "✓ "; color: #1a3c12; font-weight: 700; }
@@ -92,7 +95,6 @@
   .section-head p { margin-top: 14px; font-size: 17px; color: #4a5d44; line-height: 1.55; }
 
   /* ── Feature grid ───────────────────────────────────────────────────────── */
-  .features { background: #f8faf6; border-top: 1px solid #e8eee2; border-bottom: 1px solid #e8eee2; }
   .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
   @media (max-width: 880px) { .feature-grid { grid-template-columns: 1fr; } }
   .feature-card {
@@ -109,12 +111,88 @@
   .feature-card h3 { font-size: 16px; font-weight: 700; color: #0f1f0c; margin-bottom: 6px; }
   .feature-card p { color: #4a5d44; font-size: 14px; line-height: 1.55; }
 
-  /* ── Why us ─────────────────────────────────────────────────────────────── */
+  /* ── Pricing ────────────────────────────────────────────────────────────── */
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+  @media (max-width: 880px) { .pricing-grid { grid-template-columns: 1fr; } }
+  .price-card { background: #fff; border: 1.5px solid #e8eee2; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; }
+  .price-card.featured { border-color: #1a3c12; box-shadow: 0 12px 32px rgba(26,60,18,.10); position: relative; }
+  .price-card.featured::before { content: "Most popular"; position: absolute; top: -12px; left: 24px; background: #1a3c12; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+  .price-tier { font-size: 14px; font-weight: 700; color: #1a3c12; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .price-amount { font-size: 36px; font-weight: 800; color: #0f1f0c; letter-spacing: -.02em; }
+  .price-amount small { font-size: 14px; font-weight: 500; color: #6b7e64; }
+  .price-pitch { font-size: 14px; color: #4a5d44; margin: 8px 0 16px; line-height: 1.5; }
+  .price-features { list-style: none; padding: 0; margin: 8px 0 22px; flex: 1; }
+  .price-features li { font-size: 14px; color: #2d3e2a; padding: 6px 0; padding-left: 22px; position: relative; line-height: 1.45; }
+  .price-features li::before { content: "✓"; position: absolute; left: 0; top: 6px; color: #1a3c12; font-weight: 800; }
+
+  /* ── Apps row ──────────────────────────────────────────────────────────── */
+  .apps-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .apps-row { grid-template-columns: 1fr; } }
+  .app-card { background: #fff; border: 1px solid #e8eee2; border-radius: 14px; padding: 22px; }
+  .app-card h4 { font-size: 16px; font-weight: 700; color: #0f1f0c; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+  .app-card .pill { display: inline-block; background: #e8f5e9; color: #1a3c12; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; }
+  .app-card .pill.soon { background: #fff3e0; color: #b45309; }
+  .app-card p { font-size: 13px; color: #4a5d44; margin-top: 8px; line-height: 1.55; }
+  .app-card .app-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Hardware (Bouncie) ────────────────────────────────────────────────── */
+  .hw-card { background: #fff; border: 1px solid #e8eee2; border-radius: 16px; padding: 30px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: center; }
+  @media (max-width: 760px) { .hw-card { grid-template-columns: 1fr; } }
+  .hw-card h3 { font-size: 22px; font-weight: 800; color: #0f1f0c; margin-bottom: 6px; }
+  .hw-card .hw-pitch { font-size: 14px; color: #4a5d44; line-height: 1.55; margin-bottom: 12px; }
+  .hw-card ul { list-style: none; padding: 0; margin: 8px 0 16px; }
+  .hw-card ul li { font-size: 13px; color: #2d3e2a; padding: 4px 0; padding-left: 22px; position: relative; }
+  .hw-card ul li::before { content: "›"; position: absolute; left: 0; top: 4px; color: #1a3c12; font-weight: 800; font-size: 16px; line-height: 1; }
+  .hw-config { background: #f8faf6; border: 1px solid #e8eee2; border-radius: 12px; padding: 20px; }
+  .hw-config label { display: block; font-size: 12px; font-weight: 700; color: #4a5d44; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .qty-stepper { display: inline-flex; align-items: center; background: #fff; border: 1px solid #d0d8cd; border-radius: 10px; overflow: hidden; }
+  .qty-btn { background: #fff; border: none; width: 36px; height: 38px; font-size: 18px; font-weight: 700; color: #1a3c12; cursor: pointer; }
+  .qty-btn:hover { background: #f4f8f2; }
+  .qty-input { width: 56px; height: 38px; border: none; text-align: center; font-size: 16px; font-weight: 700; color: #0f1f0c; outline: none; -moz-appearance: textfield; }
+  .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .hw-cost { margin: 16px 0 8px; }
+  .hw-cost-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #4a5d44; }
+  .hw-cost-row strong { color: #0f1f0c; font-weight: 700; }
+  .hw-cost-row.total { border-top: 1px solid #d0d8cd; margin-top: 8px; padding-top: 12px; font-size: 15px; font-weight: 700; color: #0f1f0c; }
+  .hw-buy-btn { width: 100%; margin-top: 14px; background: #1a3c12; color: #fff; padding: 13px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; text-align: center; transition: background .15s; }
+  .hw-buy-btn:hover { background: #245219; }
+  .hw-buy-note { margin-top: 8px; font-size: 11px; color: #6b7e64; text-align: center; line-height: 1.4; }
+
+  /* ── Steps ─────────────────────────────────────────────────────────────── */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; counter-reset: step; }
+  @media (max-width: 880px) { .steps { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+  .step { background: #fff; border: 1px solid #e8eee2; border-radius: 14px; padding: 22px; position: relative; }
+  .step::before { counter-increment: step; content: counter(step); position: absolute; top: -16px; left: 22px; width: 32px; height: 32px; background: #1a3c12; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+  .step h4 { font-size: 15px; font-weight: 700; color: #0f1f0c; margin: 12px 0 6px; }
+  .step p { font-size: 13px; color: #4a5d44; line-height: 1.5; }
+
+  /* ── Why ───────────────────────────────────────────────────────────────── */
   .reasons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
   @media (max-width: 760px) { .reasons { grid-template-columns: 1fr; } }
   .reason h4 { font-size: 17px; font-weight: 700; color: #0f1f0c; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
   .reason h4::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: #1a3c12; }
   .reason p { color: #4a5d44; font-size: 14px; line-height: 1.6; }
+
+  /* ── FAQ ───────────────────────────────────────────────────────────────── */
+  .faq { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 32px; }
+  @media (max-width: 760px) { .faq { grid-template-columns: 1fr; } }
+  .faq details { background: #fff; border: 1px solid #e8eee2; border-radius: 12px; padding: 16px 20px; }
+  .faq summary { cursor: pointer; font-weight: 700; font-size: 15px; color: #0f1f0c; list-style: none; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; float: right; color: #1a3c12; font-size: 22px; line-height: 1; }
+  .faq details[open] summary::after { content: "−"; }
+  .faq details[open] { border-color: #c2d8b8; }
+  .faq details p { margin-top: 10px; color: #4a5d44; font-size: 14px; line-height: 1.55; }
+
+  /* ── Support card ──────────────────────────────────────────────────────── */
+  .support { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .support { grid-template-columns: 1fr; } }
+  .support-card { background: #fff; border: 1px solid #e8eee2; border-radius: 14px; padding: 24px; text-align: center; }
+  .support-card .ic { font-size: 32px; margin-bottom: 12px; }
+  .support-card h4 { font-size: 15px; font-weight: 700; color: #0f1f0c; margin-bottom: 6px; }
+  .support-card p { font-size: 13px; color: #4a5d44; margin-bottom: 12px; line-height: 1.5; }
+  .support-card a { font-weight: 600; color: #1a3c12; }
 
   /* ── CTA strip ──────────────────────────────────────────────────────────── */
   .cta-strip {
@@ -139,9 +217,13 @@
   .footer-col a { display: block; color: #b8c8b3; padding: 4px 0; }
   .footer-col a:hover { color: #fff; }
   .footer-brand { color: #fff; font-weight: 800; font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-  .footer-brand-icon { width: 28px; height: 28px; background: #1a3c12; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .footer-brand-icon { width: 28px; height: 28px; background: #1a3c12; border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .footer-brand-icon svg { width: 16px; height: 16px; }
   .footer-byline { color: #6f8169; max-width: 320px; line-height: 1.55; font-size: 13px; }
   .footer-bottom { border-top: 1px solid #1d2e1a; padding-top: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: #6f8169; }
+
+  /* SVG branch logo (matches sidebar logo) */
+  .bm-mark { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 </style>
   <script src="branding.js"></script>
 </head>
@@ -151,14 +233,17 @@
 <nav class="nav">
   <div class="container nav-inner">
     <a class="nav-brand" href="/">
-      <div class="nav-brand-icon">B</div>
+      <div class="nav-brand-icon">
+        <svg viewBox="0 0 24 24" class="bm-mark"><path d="M12 22 V4"/><path d="M12 8 L7 4"/><path d="M12 8 L17 4"/><path d="M12 14 L8 11"/><path d="M12 14 L16 11"/></svg>
+      </div>
       Branch Manager
     </a>
     <div class="nav-links">
       <a href="#features">Features</a>
-      <a href="#why">Why Branch Manager</a>
-      <a href="/compare-legacy.html">vs. legacy system</a>
-      <a href="#contact">Contact</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#hardware">Hardware</a>
+      <a href="#start">Get started</a>
+      <a href="#support">Support</a>
       <a class="nav-cta" href="https://branchmanager.app/">Open the app</a>
     </div>
   </div>
@@ -173,19 +258,19 @@
       Branch Manager is the all-in-one operations platform built by tree service operators, for tree service operators. Quotes, jobs, invoicing, payments, fleet tracking, and a customer portal — without the chainsaw of switching between five tools.
     </p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="#contact">Request a demo</a>
+      <a class="btn btn-primary" href="#pricing">Start your 14-day trial</a>
       <a class="btn btn-ghost" href="https://branchmanager.app/">Open the app →</a>
     </div>
     <div class="hero-meta">
       <span>Built by an actual tree service company</span>
       <span>Mobile-first, works in the field</span>
-      <span>White-label ready</span>
+      <span>14-day free trial · no card required</span>
     </div>
   </div>
 </section>
 
 <!-- ── Features ────────────────────────────────────────────────────────────── -->
-<section class="section features" id="features">
+<section class="section section-alt" id="features">
   <div class="container">
     <div class="section-head">
       <div class="section-eyebrow">Built for the way you actually work</div>
@@ -228,6 +313,206 @@
   </div>
 </section>
 
+<!-- ── Pricing ──────────────────────────────────────────────────────────────── -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="section-head" style="text-align:center;margin-left:auto;margin-right:auto;">
+      <div class="section-eyebrow">Simple monthly pricing</div>
+      <h2>Pick a plan, start free for 14 days.</h2>
+      <p>No card required for the trial. Cancel anytime. Every plan includes the full app — tiers differ on team size and white-label features.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-tier">Solo</div>
+        <div class="price-amount">$39<small> / month</small></div>
+        <p class="price-pitch">Perfect for owner-operators with up to 2 crew members.</p>
+        <ul class="price-features">
+          <li>Unlimited clients, quotes, jobs, invoices</li>
+          <li>iOS app + web app + customer portal</li>
+          <li>Email + SMS reminders &amp; follow-ups</li>
+          <li>2 user seats</li>
+          <li>Standard support</li>
+        </ul>
+        <a class="btn btn-ghost" href="https://branchmanager.app/?signup=solo">Start Solo trial</a>
+      </div>
+
+      <div class="price-card featured">
+        <div class="price-tier">Crew</div>
+        <div class="price-amount">$89<small> / month</small></div>
+        <p class="price-pitch">For growing crews — adds branded customer emails &amp; full team features.</p>
+        <ul class="price-features">
+          <li>Everything in Solo</li>
+          <li>Up to 8 user seats (climbers + ground)</li>
+          <li>Branded "from" email (info@yourdomain.com)</li>
+          <li>Fleet tracking via Bouncie OBD-II</li>
+          <li>Daily Pre-Trip inspections + signed records</li>
+          <li>Priority support</li>
+        </ul>
+        <a class="btn btn-primary" href="https://branchmanager.app/?signup=crew">Start Crew trial</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-tier">Pro</div>
+        <div class="price-amount">$149<small> / month</small></div>
+        <p class="price-pitch">For multi-location operators or anyone who wants the full white-label.</p>
+        <ul class="price-features">
+          <li>Everything in Crew</li>
+          <li>Unlimited user seats</li>
+          <li>Full white-label (your domain, your logo)</li>
+          <li>Multi-tenant dashboard for multiple brands</li>
+          <li>API access &amp; custom integrations</li>
+          <li>Dedicated onboarding call</li>
+        </ul>
+        <a class="btn btn-ghost" href="https://branchmanager.app/?signup=pro">Start Pro trial</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Apps available ────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="apps">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Works where you do</div>
+      <h2>Web app today. iOS app coming soon.</h2>
+      <p>Open Branch Manager in any modern browser on your phone, tablet, or laptop today. The native iOS app is in TestFlight review with the App Store and will be available shortly. The web app already works offline once loaded.</p>
+    </div>
+
+    <div class="apps-row">
+      <div class="app-card">
+        <h4>🌐 Web app <span class="pill">Available now</span></h4>
+        <p>The full Branch Manager experience runs in any modern browser. Add to home screen on iOS or Android for an app-like icon and full-screen experience. Touch ID / Face ID supported.</p>
+        <div class="app-actions">
+          <a class="btn btn-primary btn-sm" href="https://branchmanager.app/">Open branchmanager.app →</a>
+        </div>
+      </div>
+      <div class="app-card">
+        <h4>📱 iOS app <span class="pill soon">Coming soon</span></h4>
+        <p>Native iOS build (Capacitor) with background GPS tracking, native share, push notifications, and biometric unlock. Currently in App Store review.</p>
+        <div class="app-actions">
+          <a class="btn btn-ghost btn-sm" href="mailto:branchmanagerapp@gmail.com?subject=TestFlight%20access">Request TestFlight access</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Hardware (Bouncie) ──────────────────────────────────────────────────── -->
+<section class="section" id="hardware">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Optional add-on</div>
+      <h2>Live fleet tracking with Bouncie OBD-II</h2>
+      <p>One $77 device per truck plugs into your OBD-II port. 15-second updates, idle alerts, check-engine light parsing, and trip history — all auto-synced into Branch Manager. You buy the hardware direct from Bouncie; we just plug into their webhook.</p>
+    </div>
+
+    <div class="hw-card">
+      <div>
+        <h3>Why Bouncie?</h3>
+        <p class="hw-pitch">After evaluating Samsara, Verizon Connect, Geotab, and a dozen others, Bouncie was the clear winner for tree services: free public REST + webhook API, no contract, 30-second self-install, and the price doesn't sting.</p>
+        <ul>
+          <li>$77 one-time per device · $96/yr per vehicle</li>
+          <li>15-second position updates while driving</li>
+          <li>OBD-II self-install — plug in, drive, done</li>
+          <li>Engine codes, mileage, idle alerts auto-synced</li>
+          <li>No contract · cancel anytime</li>
+        </ul>
+      </div>
+
+      <div class="hw-config">
+        <label for="bouncie-qty">Number of trucks</label>
+        <div class="qty-stepper">
+          <button class="qty-btn" type="button" onclick="bouncieQty(-1)" aria-label="Decrease">−</button>
+          <input id="bouncie-qty" class="qty-input" type="number" value="3" min="1" max="50" oninput="bouncieRecalc()">
+          <button class="qty-btn" type="button" onclick="bouncieQty(1)" aria-label="Increase">+</button>
+        </div>
+
+        <div class="hw-cost">
+          <div class="hw-cost-row"><span>Devices</span><strong><span id="b-qty-display">3</span> × $77</strong></div>
+          <div class="hw-cost-row"><span>Hardware (one-time)</span><strong>$<span id="b-hw">231</span></strong></div>
+          <div class="hw-cost-row"><span>Annual service</span><strong>$<span id="b-yr">288</span> / yr</strong></div>
+          <div class="hw-cost-row total"><span>First-year total</span><span>$<span id="b-total">519</span></span></div>
+        </div>
+
+        <a id="bouncie-buy" class="hw-buy-btn" href="https://www.bouncie.com/shop/" target="_blank" rel="noopener noreferrer">
+          Buy on Bouncie.com →
+        </a>
+        <div class="hw-buy-note">You order direct from Bouncie. Once devices arrive, plug them in and they auto-register in Branch Manager on first trip.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function bouncieQty(delta) {
+      var el = document.getElementById('bouncie-qty');
+      var n = Math.max(1, Math.min(50, (parseInt(el.value, 10) || 1) + delta));
+      el.value = n;
+      bouncieRecalc();
+    }
+    function bouncieRecalc() {
+      var el = document.getElementById('bouncie-qty');
+      var n = Math.max(1, Math.min(50, parseInt(el.value, 10) || 1));
+      el.value = n;
+      var hw = n * 77;
+      var yr = n * 96;
+      document.getElementById('b-qty-display').textContent = n;
+      document.getElementById('b-hw').textContent = hw;
+      document.getElementById('b-yr').textContent = yr;
+      document.getElementById('b-total').textContent = hw + yr;
+      // Bouncie's product URL doesn't accept ?qty, but linking to their shop with a UTM helps tracking.
+      var buy = document.getElementById('bouncie-buy');
+      buy.href = 'https://www.bouncie.com/shop/?utm_source=branchmanager&utm_medium=landing&utm_campaign=fleet-trucks-' + n;
+    }
+  </script>
+</section>
+
+<!-- ── Getting started ────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="start">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Setup is fast</div>
+      <h2>Up and running in under an hour.</h2>
+      <p>Most operators are sending their first quote within 30 minutes of signing in. Here's the path:</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <h4>Sign up &amp; pick a plan</h4>
+        <p>Click "Start your trial" above. Solo / Crew / Pro — all free for 14 days. We email you a magic link; no password to remember.</p>
+      </div>
+      <div class="step">
+        <h4>Set up your business</h4>
+        <p>Drop in your company name, logo, license numbers, and tax rate. We pre-fill 90% of it from your domain — takes about 5 minutes.</p>
+      </div>
+      <div class="step">
+        <h4>Add team &amp; clients</h4>
+        <p>Invite climbers and ground crew (their phones become the field app). Import existing clients from a CSV, Jobber export, or just start fresh.</p>
+      </div>
+      <div class="step">
+        <h4>Send your first quote</h4>
+        <p>From a fresh request or a phone call, build a quote with line items + property photos. Send to the customer; they sign and approve online. Convert to a job with one click.</p>
+      </div>
+      <div class="step">
+        <h4>Schedule &amp; dispatch</h4>
+        <p>Drag the job onto a day on the calendar. Day-before reminder texts go out automatically. Crew sees the route on the dispatch map.</p>
+      </div>
+      <div class="step">
+        <h4>Invoice &amp; collect</h4>
+        <p>Mark the job complete; the invoice auto-generates. Stripe checkout link goes to the customer. Most pay within 48 hours.</p>
+      </div>
+      <div class="step">
+        <h4>Plug in Bouncies <span style="font-weight:500;color:#6b7e64;">(optional)</span></h4>
+        <p>Order from Bouncie.com (above). Plug into OBD-II port under the dash. First trip auto-registers the truck in your fleet — live position on the dispatch map.</p>
+      </div>
+      <div class="step">
+        <h4>Marketing on autopilot</h4>
+        <p>Quote follow-ups, review requests after completed jobs, and 30-day upsell emails fire automatically. You only see them in the Marketing log.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Why ─────────────────────────────────────────────────────────────────── -->
 <section class="section" id="why">
   <div class="container">
@@ -240,11 +525,11 @@
     <div class="reasons">
       <div class="reason">
         <h4>Built in production at a real tree service</h4>
-        <p>Every feature you see is something an actual tree service company needed yesterday. No demo-ware. No "coming soon." If it's in the product, it's because we use it ourselves.</p>
+        <p>Every feature you see is something an actual tree service company needed yesterday. No demo-ware. No "coming soon" vapor. If it's in the product, it's because we use it ourselves every day.</p>
       </div>
       <div class="reason">
         <h4>One tool, not five</h4>
-        <p>Stop paying for legacy system + QuickBooks + Mailchimp + a separate scheduling tool + a separate invoicing tool. Branch Manager bundles all of it, with the integrations that actually matter.</p>
+        <p>Stop paying for legacy field-service software + QuickBooks + Mailchimp + a separate scheduling tool + a separate invoicing tool. Branch Manager bundles all of it, with the integrations that actually matter.</p>
       </div>
       <div class="reason">
         <h4>Field-first, not desk-first</h4>
@@ -258,13 +543,83 @@
   </div>
 </section>
 
+<!-- ── Support ──────────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="support">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">We answer the phone</div>
+      <h2>Support that actually shows up.</h2>
+      <p>Real humans who run tree services answer the phone, email, and texts. Most questions are answered within an hour during business hours.</p>
+    </div>
+
+    <div class="support">
+      <div class="support-card">
+        <div class="ic">📧</div>
+        <h4>Email</h4>
+        <p>Best for screenshots, account questions, billing.<br>Response within 1 business day.</p>
+        <a href="mailto:branchmanagerapp@gmail.com">branchmanagerapp@gmail.com</a>
+      </div>
+      <div class="support-card">
+        <div class="ic">📞</div>
+        <h4>Phone &amp; SMS</h4>
+        <p>For urgent in-the-field issues during business hours (7am–6pm ET).</p>
+        <a href="tel:+19146477276">(914) 647-7276</a>
+      </div>
+      <div class="support-card">
+        <div class="ic">📚</div>
+        <h4>Help Center</h4>
+        <p>Walkthrough videos, how-tos, and answers for common questions — built into the app.</p>
+        <a href="https://branchmanager.app/#help">In-app Help Center →</a>
+      </div>
+    </div>
+
+    <div style="margin-top: 56px;">
+      <h3 style="font-size: 22px; font-weight: 800; color: #0f1f0c; margin-bottom: 24px; text-align: center;">Frequently asked questions</h3>
+      <div class="faq">
+        <details>
+          <summary>Do I need to install anything?</summary>
+          <p>No. The web app runs in any modern browser — Chrome, Safari, Firefox, Edge. On iOS or Android you can "Add to Home Screen" for an app-like icon. The native iOS app is coming to the App Store shortly; current beta users access it via TestFlight.</p>
+        </details>
+        <details>
+          <summary>Can I import data from legacy field-service software?</summary>
+          <p>Yes. We have an importer for Jobber CSV exports (clients, jobs, invoices, quotes, payments). For other systems, send us a CSV of your data and we'll handle it. First import is included in onboarding.</p>
+        </details>
+        <details>
+          <summary>What does the 14-day trial include?</summary>
+          <p>Full access to every feature of the plan you pick. No credit card required. At day 14 you either pick a plan and add a card, or your account pauses (data preserved for 30 more days in case you change your mind).</p>
+        </details>
+        <details>
+          <summary>How does payment processing work?</summary>
+          <p>Branch Manager uses Stripe for checkout, deposits, and tipping. Stripe rates apply (currently 2.9% + 30¢ per online card). ACH is 0.8% capped at $5. We don't take a cut.</p>
+        </details>
+        <details>
+          <summary>What about my customers' data privacy?</summary>
+          <p>Each tenant's data is fully isolated by Postgres row-level security. We don't sell, share, or look at customer data. SOC 2 compliance roadmap is in progress.</p>
+        </details>
+        <details>
+          <summary>Can I cancel anytime?</summary>
+          <p>Yes — cancel from Settings → Subscription. Service runs through the end of the paid period. Export all your data as CSV before you go; you own your data.</p>
+        </details>
+        <details>
+          <summary>Do I have to use Bouncie?</summary>
+          <p>No. Bouncie is an optional fleet-tracking add-on. Branch Manager works fine without any GPS hardware — you just won't have live truck positions on the dispatch map.</p>
+        </details>
+        <details>
+          <summary>What if I'm not a tree service?</summary>
+          <p>Branch Manager is purpose-built for tree services and the language reflects that (limbs, removals, stump grinding, climber rates). Adjacent trades (landscaping, hardscaping) work but won't be a perfect fit. Talk to us if you're on the fence.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── CTA strip ──────────────────────────────────────────────────────────── -->
 <section class="section-tight" id="contact">
   <div class="container">
     <div class="cta-strip">
       <h2>Ready to see it on your business?</h2>
-      <p>Branch Manager is in active use at {{business_name}} in {{address_short}}. We're onboarding a small group of additional tree service companies. Reach out and we'll set up a 20-minute walkthrough on real data.</p>
-      <a class="btn btn-primary" href="mailto:{{email}}?subject=Branch%20Manager%20demo%20request">Request a demo</a>
+      <p>Branch Manager is in active use at <span data-bind="businessName">Second Nature Tree Service</span> in <span data-bind="addressShort">Peekskill, NY</span>. Pick a plan, get 14 days free, no card required.</p>
+      <a class="btn btn-primary" href="#pricing">Start your trial</a>
     </div>
   </div>
 </section>
@@ -275,24 +630,29 @@
     <div class="footer-grid">
       <div class="footer-col">
         <div class="footer-brand">
-          <div class="footer-brand-icon">B</div>
+          <div class="footer-brand-icon">
+            <svg viewBox="0 0 24 24" class="bm-mark"><path d="M12 22 V4"/><path d="M12 8 L7 4"/><path d="M12 8 L17 4"/><path d="M12 14 L8 11"/><path d="M12 14 L16 11"/></svg>
+          </div>
           Branch Manager
         </div>
         <div class="footer-byline">
-          The all-in-one operations platform for tree service companies. Built by {{legal_name}} in {{address_short}}.
+          The all-in-one operations platform for tree service companies. Built by <span data-bind="legalName">Second Nature Tree LLC</span> in <span data-bind="addressShort">Peekskill, NY</span>.
         </div>
       </div>
       <div class="footer-col">
         <h5>Product</h5>
         <a href="#features">Features</a>
-        <a href="#why">Why us</a>
-        <a href="/compare-legacy.html">vs. legacy system</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#hardware">Hardware</a>
+        <a href="#start">Get started</a>
         <a href="https://branchmanager.app/">Open the app</a>
       </div>
       <div class="footer-col">
-        <h5>Company</h5>
-        <a href="mailto:{{email}}">Contact</a>
-        <a href="{{website}}">Tree services</a>
+        <h5>Support</h5>
+        <a href="#support">Contact</a>
+        <a href="mailto:branchmanagerapp@gmail.com">Email us</a>
+        <a href="tel:+19146477276">(914) 647-7276</a>
+        <a href="https://branchmanager.app/#help">Help Center</a>
       </div>
       <div class="footer-col">
         <h5>Legal</h5>
@@ -301,7 +661,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <div>© 2026 {{legal_name}} · {{address_short}}</div>
+      <div>© 2026 <span data-bind="legalName">Second Nature Tree LLC</span> · <span data-bind="addressShort">Peekskill, NY</span></div>
       <div>Licensed &amp; insured · WC-32079 / PC-50644</div>
     </div>
   </div>
