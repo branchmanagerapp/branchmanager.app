@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 678; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 679; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -301,19 +301,21 @@
   .sidebar.collapsed .create-btn { font-size:0; padding:10px; }
   .sidebar.collapsed .create-btn::before { content:'+'; font-size:18px; font-weight:700; }
   .sidebar-header {
-    padding:14px 16px 12px; border-bottom:1px solid var(--sidebar-border);
+    /* v679: cleaner, no border-bottom (matches Jobber). Just logo + tight wordmark. */
+    padding:16px 14px 14px;
     display:flex; align-items:center; gap:10px; cursor:pointer;
   }
   .sidebar-logo {
-    width:32px; height:32px; flex-shrink:0; border-radius:8px; overflow:hidden;
-    background:linear-gradient(135deg, #00a88a 0%, #007a63 100%);
+    width:36px; height:36px; flex-shrink:0; border-radius:9px; overflow:hidden;
+    background:linear-gradient(135deg, #1a3c12 0%, #2d6a1f 100%);
     display:flex; align-items:center; justify-content:center;
+    box-shadow:0 1px 2px rgba(0,0,0,.08);
   }
-  .sidebar-logo svg { width:20px; height:20px; }
+  .sidebar-logo svg { width:22px; height:22px; }
   .sidebar-header h1 {
-    font-size:14px; font-weight:700; color:#1a1a2a; line-height:1.15; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:15px; font-weight:800; color:#1a1a2a; line-height:1.1; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .sidebar-header h1 span { display:block; font-size:10px; font-weight:400; color:#9ca3af; margin-top:1px; letter-spacing:.01em; text-transform:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sidebar-header h1 span { display:block; font-size:10px; font-weight:500; color:#6b7280; margin-top:2px; letter-spacing:.01em; text-transform:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .sidebar-user {
     padding:10px 16px; font-size:12px; color:#6b7280; border-bottom:1px solid var(--sidebar-border);
   }
@@ -917,7 +919,17 @@
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
     <div class="sidebar-header" onclick="loadPage('dashboard'); if (window.innerWidth <= 768) toggleSidebar();" title="Go to dashboard">
-      <h1>Branch Manager <span>Second Nature Tree Service</span></h1>
+      <div class="sidebar-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <!-- v679: stylized branch — vertical trunk with two pairs of forking limbs. Clean BM mark. -->
+          <path d="M12 22 V4"/>
+          <path d="M12 8 L7 4"/>
+          <path d="M12 8 L17 4"/>
+          <path d="M12 14 L8 11"/>
+          <path d="M12 14 L16 11"/>
+        </svg>
+      </div>
+      <h1>Branch Manager<span data-bind="companyName">Second Nature Tree Service</span></h1>
     </div>
     <div class="sidebar-nav">
       <button class="nav-item" data-page="dashboard"><span class="icon"><i data-lucide="home" class="li"></i></span> Home</button>
@@ -935,7 +947,7 @@
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
       <button class="nav-item" data-page="insurance"><span class="icon"><i data-lucide="shield" class="li"></i></span> Insurance</button>
 
-      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
+      <!-- v679: dropped horizontal divider — cleaner, single nav scroll like Jobber. -->
       <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
       <!-- v384: marketing / campaigns / referrals / reviews / reviewtools merged into SocialBranch (renamed "Marketing" in the sidebar). Deep links #marketing #campaigns #referrals #reviews #reviewtools still resolve to their standalone page modules. -->
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
@@ -1028,7 +1040,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v678.min.js"></script>
+<script defer src="dist/bm.bundle.v679.min.js"></script>
 
 
 
