@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 685; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 686; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1042,7 +1042,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v685.min.js"></script>
+<script defer src="dist/bm.bundle.v686.min.js"></script>
 
 
 
@@ -1294,7 +1294,10 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
   var valid = false;
   for (var i = 0; i < tabs.length; i++) { if (tabs[i][0] === tab) { valid = true; break; } }
   if (!valid) tab = activeFallback;
-  var html = '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+  // v686: sub-nav tabs stay visible as the page scrolls (Doug ask).
+  // Negative horizontal margin + inset padding extends the bg across the
+  // .content padding box; top:0 sticks to top of scroll viewport.
+  var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:-24px -24px 16px;padding:14px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">';
   for (var j = 0; j < tabs.length; j++) {
     var t = tabs[j];
     var active = tab === t[0];
