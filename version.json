@@ -1,5 +1,5 @@
 {
-  "version": 695,
+  "version": 696,
   "released": "2026-05-09",
-  "notes": "v695: multiple-choice tasks — Catherine taps an answer, system auto-applies the field update"
+  "notes": "v696: idempotent parity sync — UNIQUE (tenant_id, *_number) constraints + ON CONFLICT DO NOTHING in apply.py"
 }

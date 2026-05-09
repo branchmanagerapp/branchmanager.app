@@ -29,17 +29,50 @@ DRY = '--apply' not in sys.argv
 print(f"Mode: {'APPLY (writes will happen)' if not DRY else 'DRY-RUN (no writes)'}")
 print()
 
-def supa_request(method, path, data=None):
+def supa_request(method, path, data=None, extra_headers=None, raise_on=None):
+    """raise_on: set of HTTP codes to raise; everything else returns ('error', code, body).
+       Default raises on every non-2xx for backwards compat."""
     url = f"{SUPA_URL}/rest/v1/{path}"
     body = json.dumps(data).encode() if data else None
-    req = urllib.request.Request(url, data=body, headers=HEADERS, method=method)
+    headers = dict(HEADERS)
+    if extra_headers:
+        headers.update(extra_headers)
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req) as r:
             t = r.read()
             return json.loads(t) if t else None
     except urllib.error.HTTPError as e:
         body = e.read().decode()
+        if raise_on is not None and e.code not in raise_on:
+            return ('error', e.code, body)
         raise RuntimeError(f"HTTP {e.code}: {body}")
+
+# v696: idempotent insert. We try PostgREST's `resolution=ignore-duplicates`
+# preference (PostgREST 12+ feature). On older versions this header is ignored,
+# so we ALSO catch the resulting 409 (Postgres 23505 unique violation) and
+# return ('skipped',) silently — making the re-run a true no-op regardless of
+# PostgREST version.
+#
+# Why this matters: 2026-05-09 incident — apply.py re-run inserted 64 quote
+# dupes + 18 job dupes before being caught. UNIQUE constraints in
+# migrate-tenant-number-uniques.sql block the dupes at DB level; this function
+# stops the script from yelling about them when they're the expected outcome.
+#
+# Returns: list of inserted rows (length 1 = newly inserted; () = silently
+# skipped because the (tenant_id, *_number) row already existed).
+def supa_insert_ignore(table, payload):
+    res = supa_request(
+        'POST', table, payload,
+        extra_headers={'Prefer': 'resolution=ignore-duplicates,return=representation'},
+        raise_on={400, 401, 403, 422, 500, 502, 503},  # don't raise on 409
+    )
+    if isinstance(res, tuple) and res[0] == 'error':
+        code, body = res[1], res[2]
+        if code == 409 and '23505' in body:
+            return ()  # silently-skipped existing row
+        raise RuntimeError(f"HTTP {code}: {body}")
+    return res
 
 def parse_money(s):
     if not s or s == '-': return 0.0
@@ -183,6 +216,9 @@ for r in inserts_c:
     }
     if not DRY:
         try:
+            # v696: idempotent — clients table doesn't have a UNIQUE on a
+            # natural key, so duplicates are still possible here; keep manual
+            # de-dupe pass downstream for clients.
             res = supa_request('POST', 'clients', payload)
             if res:
                 inserted_c += 1
@@ -254,8 +290,15 @@ for r in JQ:
     }
     if not DRY:
         try:
-            res = supa_request('POST', 'quotes', payload)
-            if res: inserted_q += 1
+            # v696: ON CONFLICT DO NOTHING via Prefer: resolution=ignore-duplicates.
+            # Empty res = the (tenant_id, quote_number) already existed — re-runs
+            # are silent no-ops instead of dupe-inserts.
+            res = supa_insert_ignore('quotes', payload)
+            if res:
+                inserted_q += 1
+            else:
+                # Counted as skipped (already existed), not as an error
+                pass
         except Exception as e:
             errors_q += 1
             print(f"  ✗ Q#{n}: {str(e)[:140]}")
@@ -303,7 +346,8 @@ for r in JJ:
     }
     if not DRY:
         try:
-            res = supa_request('POST', 'jobs', payload)
+            # v696: idempotent insert (see quotes block above)
+            res = supa_insert_ignore('jobs', payload)
             if res: inserted_j += 1
         except Exception as e:
             errors_j += 1
