@@ -56,10 +56,10 @@ var DashboardPage = {
     }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
     var _monthPct = _goalData.monthly > 0 ? Math.min(Math.round((_monthRevenue / _goalData.monthly) * 100), 100) : 0;
 
+    // v689: weather moved to topbar chip (above the line). Doug ask.
     html += '<div style="margin-bottom:16px;">'
-      + '<div style="font-size:13px;color:var(--text-light);display:flex;align-items:center;gap:10px;">'
-      + '<span>' + dayNames[now.getDay()] + ', ' + monthFull[now.getMonth()] + ' ' + now.getDate() + '</span>'
-      + '<span id="dash-date-weather"></span>'
+      + '<div style="font-size:13px;color:var(--text-light);">'
+      + dayNames[now.getDay()] + ', ' + monthFull[now.getMonth()] + ' ' + now.getDate()
       + '</div>'
       + '<h2 style="font-size:28px;font-weight:700;margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
       + '</div>';
@@ -297,7 +297,7 @@ var DashboardPage = {
 
     // Async fills: leads count + analytics widget hookup (kept from legacy widgets)
     setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillCallCenterWidget(); }, 80);
-    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillDateWeather(); }, 120);
+    // v689: weather inline next to the date is gone; chip in topbar covers it.
     if (typeof AnalyticsWidget !== 'undefined' && AnalyticsWidget.fillSummary) {
       setTimeout(function() { try { AnalyticsWidget.fillSummary('dash-aw-mini', 'dash-aw-sub', 30); } catch(e) {} }, 100);
     }

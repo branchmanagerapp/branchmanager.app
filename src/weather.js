@@ -531,8 +531,10 @@ var Weather = {
     return '<svg ' + attr + '><path d="M18 17H7A4 4 0 1 1 8 9a6 6 0 0 1 11.5 2A4 4 0 0 1 18 17z"/></svg>';
   },
 
-  // v684: Topbar weather chip — small bubble next to page title.
-  // Auto-fetches if cache empty. Click → operations#weather page.
+  // v689: Topbar weather chip — now includes hi/lo + rain when daily
+  // forecast is loaded. Single-line, lives ABOVE the topbar/content
+  // divider so it's visible everywhere. Doug ask: keep all weather above
+  // the line, not duplicated next to the dashboard greeting.
   renderTopbarChip: function() {
     var c = Weather.cache && Weather.cache.current;
     if (!c) return ''; // No data yet — chip stays empty until fetch lands
@@ -542,12 +544,41 @@ var Weather = {
     var hot = temp >= 85, cold = temp <= 32, icy = temp <= 35 && code >= 51;
     var bg = icy ? '#dbeafe' : hot ? '#fee2e2' : cold ? '#dbeafe' : '#f0f9ff';
     var fg = icy ? '#1e3a8a' : hot ? '#991b1b' : cold ? '#1e40af' : '#075985';
-    var title = 'Weather: ' + temp + '°F' + (feels !== null && Math.abs(feels - temp) > 2 ? ' (feels ' + feels + '°)' : '') + ' · click for forecast';
+
+    // Pull today's hi/lo + rain probability from the daily forecast.
+    var hi = null, lo = null, rain = 0;
+    if (Weather.cache.daily && Weather.cache.daily.time && Weather.cache.daily.time.length) {
+      var todayStr = new Date().toISOString().split('T')[0];
+      for (var i = 0; i < Weather.cache.daily.time.length; i++) {
+        if (Weather.cache.daily.time[i] === todayStr) {
+          hi = Math.round(Weather.cache.daily.temperature_2m_max[i]);
+          lo = Math.round(Weather.cache.daily.temperature_2m_min[i]);
+          rain = Weather.cache.daily.precipitation_probability_max
+            ? Weather.cache.daily.precipitation_probability_max[i] || 0
+            : 0;
+          break;
+        }
+      }
+    }
+
+    var rainColor = rain >= 60 ? '#b45309' : '#1976d2';
+    var rainHtml = rain >= 20
+      ? '<span style="color:' + rainColor + ';font-weight:600;margin-left:6px;border-left:1px solid currentColor;padding-left:8px;opacity:.85;">' + rain + '% rain</span>'
+      : '';
+    var hiloHtml = (hi !== null) ? '<span style="opacity:.7;font-weight:500;margin-left:5px;">' + hi + '°/' + lo + '°</span>' : '';
+
+    var title = 'Weather: ' + temp + '°F' + (feels !== null && Math.abs(feels - temp) > 2 ? ' (feels ' + feels + '°)' : '')
+      + (hi !== null ? ' · today ' + hi + '°/' + lo + '°' : '')
+      + (rain ? ' · ' + rain + '% rain' : '')
+      + ' · click for forecast';
+
     return '<button id="topbar-weather-btn" onclick="window.location.hash=\'#weather\';loadPage(\'weather\')" '
       + 'title="' + title + '" '
       + 'style="display:inline-flex;align-items:center;gap:6px;background:' + bg + ';color:' + fg + ';border:none;padding:5px 12px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;height:28px;line-height:1;white-space:nowrap;">'
       +   Weather.svgIcon(code, 16)
       +   '<span>' + temp + '°</span>'
+      +   hiloHtml
+      +   rainHtml
       + '</button>';
   },
   // Update the topbar chip placeholder. Called after fetch lands.
