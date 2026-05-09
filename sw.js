@@ -1,6 +1,6 @@
 // Branch Manager — Service Worker
 // Full offline support + push notifications
-var CACHE_NAME = 'branch-manager-v690';
+var CACHE_NAME = 'branch-manager-v691';
 
 // Allow the page to trigger immediate activation
 self.addEventListener('message', function(e) {

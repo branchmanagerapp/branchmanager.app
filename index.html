@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 690; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 691; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -144,7 +144,7 @@
      'unsafe-eval' is needed by maplibre-gl WASM; removing would require CSP-safe build. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src  'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://*.supabase.co https://js.stripe.com https://js.sentry-cdn.com https://browser.sentry-cdn.com;
+  script-src  'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://*.supabase.co https://js.stripe.com https://js.sentry-cdn.com https://browser.sentry-cdn.com https://cdn.plaid.com;
   style-src   'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com;
   font-src    'self' https://fonts.gstatic.com data:;
   img-src     'self' data: blob: https: https://*.supabase.co;
@@ -156,11 +156,12 @@
               https://server.arcgisonline.com https://s3.amazonaws.com
               https://*.tile.openstreetmap.org
               https://basemaps.cartocdn.com https://*.cartocdn.com https://*.fastly.net
+              https://production.plaid.com https://development.plaid.com https://sandbox.plaid.com https://cdn.plaid.com
               https://hook.us1.make.com https://hook.us2.make.com
               https://hook.eu1.make.com https://hook.eu2.make.com
               https://hooks.zapier.com
               https://*.ingest.us.sentry.io https://*.sentry.io;
-  frame-src   https://js.stripe.com https://hooks.stripe.com;
+  frame-src   https://js.stripe.com https://hooks.stripe.com https://*.plaid.com;
   worker-src  'self' blob:;
   object-src  'none';
   base-uri    'self';
@@ -185,6 +186,8 @@
 <link rel="dns-prefetch" href="https://fonts.googleapis.com">
 <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js" integrity="sha384-tTkFttkBclaU1cloKwOi9xk3pbao3VZxTjLNBt8iFABWDBQibbAbWpVmO28zMuxq" crossorigin="anonymous" defer></script>
 <script src="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.js" integrity="sha384-mNw1qX1ZxMzcjBM0E2x7/n+28uQoaRYrFiIHEO3vdHl+1xsm4gP1IlDS9Vw1GnSe" crossorigin="anonymous" defer></script>
+<!-- v691: Plaid Link SDK — loaded for Reports → Books bank-connect flow. Plaid pins their own SRI. -->
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" defer></script>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.css" integrity="sha384-m6tadjb5ohv1Fw3GJynIWn5c1scKfW7kxSXuDrhlq1gdXPn7I7UL0sSKDfCUErOb" crossorigin="anonymous">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
@@ -1044,7 +1047,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v690.min.js"></script>
+<script defer src="dist/bm.bundle.v691.min.js"></script>
 
 
 
@@ -1314,6 +1317,7 @@ var ReportsHub = {
   render: function() {
     var tabs = [
       ['insights', 'Overview'],
+      ['books', 'Books'],
       ['payments', 'Payments'],
       ['profitloss', 'Profit & Loss'],
       ['expenses', 'Expenses'],
@@ -1326,6 +1330,7 @@ var ReportsHub = {
     var body = '';
     try {
       if (r.tab === 'insights') body = InsightsPage.render();
+      else if (r.tab === 'books') body = (typeof BooksPage !== 'undefined' ? BooksPage.render() : '<div style="padding:16px;color:var(--text-light);">Books module not loaded.</div>');
       else if (r.tab === 'payments') body = (typeof Payments !== 'undefined' ? Payments.render() : '<div style="padding:16px;color:var(--text-light);">Payments module not loaded.</div>');
       else if (r.tab === 'profitloss') body = ProfitLossPage.render();
       else if (r.tab === 'expenses') body = ExpensesPage.render();

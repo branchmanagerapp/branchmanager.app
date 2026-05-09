@@ -38,6 +38,7 @@
     "src/pages/recurring.js",
     "src/pages/notifications.js",
     "src/pages/expenses.js",
+    "src/pages/books.js",
     "src/pages/fleet.js",
     "src/dialpad.js",
     "src/email.js",

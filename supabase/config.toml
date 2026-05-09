@@ -76,6 +76,24 @@ verify_jwt = false
 [functions.subscription-create-checkout]
 verify_jwt = false
 
+# v691: Plaid bank-connection edge functions. Both the Link-token
+# create and the public_token exchange are called from the browser
+# (Plaid Link runs client-side, hands the public_token to BM, which
+# POSTs it through plaid-exchange-token). The webhook receives Plaid's
+# server-to-server POSTs. Sync function is called both by webhook and
+# by browser/cron. All four bypass JWT for these reasons.
+[functions.plaid-link-token]
+verify_jwt = false
+
+[functions.plaid-exchange-token]
+verify_jwt = false
+
+[functions.plaid-webhook]
+verify_jwt = false
+
+[functions.plaid-sync-transactions]
+verify_jwt = false
+
 # Internal functions that BM (with anon key) calls from authenticated
 # context — these CAN keep verify_jwt = true (default) since the BM
 # bundle stamps the anon key. Listed here for clarity:
