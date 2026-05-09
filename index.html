@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 679; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 680; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -155,6 +155,7 @@
               https://my-api.plantnet.org https://dialpad.com
               https://server.arcgisonline.com https://s3.amazonaws.com
               https://*.tile.openstreetmap.org
+              https://basemaps.cartocdn.com https://*.cartocdn.com https://*.fastly.net
               https://hook.us1.make.com https://hook.us2.make.com
               https://hook.eu1.make.com https://hook.eu2.make.com
               https://hooks.zapier.com
@@ -1040,7 +1041,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v679.min.js"></script>
+<script defer src="dist/bm.bundle.v680.min.js"></script>
 
 
 
