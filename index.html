@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 675; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 676; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -924,12 +924,12 @@
       <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
       <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>
       <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Leads Center<span class="cc-dot" id="cc-indicator-dot"></span></button>
+      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
       <button class="nav-item" data-page="requests"><span class="icon"><i data-lucide="inbox" class="li"></i></span> Requests <span class="badge" id="badge-requests"></span></button>
       <button class="nav-item" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
       <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
       <!-- v388: Pre-Trip folded into Operations as a tab. Deep link via #pretrip still works. -->
       <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
-      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
       <!-- v419: Team folded into Payroll (tabs: Payroll / Team / Timesheets / My Pay). Operations moved up to where Team was. -->
       <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
@@ -1028,7 +1028,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v675.min.js"></script>
+<script defer src="dist/bm.bundle.v676.min.js"></script>
 
 
 
