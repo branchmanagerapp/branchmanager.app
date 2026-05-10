@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 724; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 725; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1078,7 +1078,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v724.min.js"></script>
+<script defer src="dist/bm.bundle.v725.min.js"></script>
 
 
 
@@ -2554,37 +2554,46 @@ var NotifCenter = (function() {
       });
     });
 
-    // Quotes — sent / approved / changes-requested
+    // v725: Surface quote events on their ACTUAL event timestamp
+    // (sentAt for sent, approvedAt for approved, declinedAt for declined),
+    // NOT q.updatedAt — which gets bumped by CloudSync pulls / imports
+    // and was making old quotes look like recent sends. The Supabase
+    // communications table is the source of truth for what actually
+    // went out; this feed should match that timeline.
     DB.quotes.getAll().forEach(function(q) {
-      var ts = q.updatedAt || q.createdAt;
-      if (!ts || ts < sevenDaysAgo) return;
       var num = q.quoteNumber || q.id.substring(0, 6);
       var amt = q.total ? ' — ' + moneyFn(q.total) : '';
       var desc = q.description || '';
       var who = getClientName(q.clientId || q.client);
-      if (q.status === 'sent' && !clientHasJob[q.clientId]) {
+      // SENT — only when sentAt itself is recent
+      if (q.status === 'sent' && !clientHasJob[q.clientId] && q.sentAt && q.sentAt >= sevenDaysAgo) {
         items.push({ id: 'qsent-' + q.id, icon: '📤', iconBg: '#e3f2fd',
           title: 'Quote sent' + amt,
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
-          client: who, time: ts, page: 'quotes', recordId: q.id });
+          client: who, time: q.sentAt, page: 'quotes', recordId: q.id });
       }
-      if (q.status === 'approved' && !clientHasPaid[q.clientId]) {
+      // APPROVED — use approvedAt
+      if (q.status === 'approved' && !clientHasPaid[q.clientId] && q.approvedAt && q.approvedAt >= sevenDaysAgo) {
         items.push({ id: 'qappr-' + q.id, icon: '✅', iconBg: '#e8f5e9',
           title: 'Quote approved' + amt,
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
-          client: who, time: ts, page: 'quotes', recordId: q.id });
+          client: who, time: q.approvedAt, page: 'quotes', recordId: q.id });
       }
-      if (q.status === 'awaiting' || q.status === 'changes_requested') {
+      // CHANGES REQUESTED / AWAITING — these don't have a dedicated event
+      // timestamp; updatedAt is acceptable because the status itself
+      // implies the change.
+      if ((q.status === 'awaiting' || q.status === 'changes_requested') && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
         items.push({ id: 'qchg-' + q.id, icon: '💬', iconBg: '#fff3e0',
           title: 'Client requested changes',
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
-          client: who, time: ts, page: 'quotes', recordId: q.id });
+          client: who, time: q.updatedAt, page: 'quotes', recordId: q.id });
       }
-      if (q.status === 'declined') {
+      // DECLINED — use declinedAt
+      if (q.status === 'declined' && q.declinedAt && q.declinedAt >= sevenDaysAgo) {
         items.push({ id: 'qdec-' + q.id, icon: '✗', iconBg: '#fce4ec',
           title: 'Quote declined' + amt,
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
-          client: who, time: ts, page: 'quotes', recordId: q.id });
+          client: who, time: q.declinedAt, page: 'quotes', recordId: q.id });
       }
     });
 
