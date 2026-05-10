@@ -111,7 +111,8 @@ var PipelinePage = {
   },
 
   render: function() {
-    var allDeals = PipelinePage.getDeals();
+    var allDeals = PipelinePage._filterRawFromCached(PipelinePage.getDeals());
+    var untriagedCount = PipelinePage._untriagedLeadCount();
     var sixMonthsAgo = new Date(Date.now() - 180 * 86400000);
 
     // Filter: when recent mode, hide old assessment/quote_sent deals (import noise)
@@ -220,11 +221,14 @@ var PipelinePage = {
     html += '</div></div>';
     } // end stats collapsed-else
 
-    // Filter bar + Import from Quotes button
+    // Filter bar + Import from Quotes button + untriaged-leads pointer
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">'
       + '<button class="btn ' + (PipelinePage._filterRecent ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage._filterRecent=true;loadPage(\'pipeline\')">6 Months</button>'
       + '<button class="btn ' + (!PipelinePage._filterRecent ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage._filterRecent=false;loadPage(\'pipeline\')">All Time</button>'
       + (hiddenOld > 0 ? '<span style="font-size:12px;color:var(--text-light);">' + hiddenOld + ' older deals hidden</span>' : '')
+      + (untriagedCount > 0
+          ? '<button onclick="loadPage(\'callcenter\')" style="font-size:12px;padding:5px 12px;background:#fff3e0;color:#92400e;border:1px solid #f59e0b;border-radius:6px;cursor:pointer;font-weight:600;">📞 ' + untriagedCount + ' untriaged lead' + (untriagedCount !== 1 ? 's' : '') + ' → Leads Center</button>'
+          : '')
       + (openQuotes.length > 0 ? '<div style="margin-left:auto;"><button class="btn btn-outline" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage.importFromQuotes()">📋 Import ' + openQuotes.length + ' Quote' + (openQuotes.length !== 1 ? 's' : '') + '</button></div>' : '')
       + '</div>';
 
@@ -272,9 +276,11 @@ var PipelinePage = {
             + (deal.source ? '<div style="font-size:10px;color:var(--text-light);margin-top:4px;">via ' + deal.source + '</div>' : '')
             + (deal.notes ? '<div style="font-size:11px;color:var(--text-light);margin-top:5px;padding-top:5px;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📌 ' + deal.notes + '</div>' : '');
 
-          // v712: reminder-status footer — shows next upcoming follow-up date
-          // or "No upcoming reminders". Skipped on terminal stages.
-          if (stage.id !== 'won' && stage.id !== 'lost') {
+          // v712/v714: reminder-status footer — only meaningful on Quote Sent
+          // stage (that's where the follow-up timer actually exists). New Lead
+          // / Assessment / Follow Up cards don't have quote-follow-up reminders
+          // tied to them, so the footer was just noise there.
+          if (stage.id === 'quote_sent') {
             var nextR = PipelinePage._nextReminderForId(deal.id);
             var rText = nextR ? '⏰ Next reminder ' + UI.dateShort(nextR.date) + (nextR.stage === 2 ? ' (2nd)' : '')
                               : '✓ No upcoming reminders';
@@ -332,6 +338,20 @@ var PipelinePage = {
   },
 
   // Data management
+  // v714: a request is "raw / untriaged" if it auto-fired from an inbound
+  // channel (Dialpad call, SMS, web webhook) and hasn't been enriched —
+  // no real client name, generic placeholder name, or marked spam.
+  // Those belong in the Leads Center until Doug triages them.
+  _isRawLead: function(r) {
+    if (!r) return false;
+    if (r.spam === true) return true;
+    if (r.triaged === true || r.promotedAt) return false;
+    var name = (r.clientName || '').trim();
+    var generic = !name || /^(Phone caller|SMS sender|Web form|Unknown caller|Inbound)$/i.test(name);
+    var autoSource = /Phone|Dialpad|SMS|Webhook|Web form/i.test(r.source || '');
+    return generic && autoSource;
+  },
+
   getDeals: function() {
     var stored = localStorage.getItem('bm-pipeline');
     if (stored) { try { return JSON.parse(stored) || []; } catch(e) { return []; } }
@@ -339,9 +359,9 @@ var PipelinePage = {
     // Seed from existing requests/quotes
     var deals = [];
     DB.requests.getAll().forEach(function(r) {
-      if (r.status === 'new') {
-        deals.push({ id: r.id, clientName: r.clientName, clientId: r.clientId, description: r.property || '', value: 0, stage: 'new_lead', source: r.source, createdAt: r.createdAt });
-      }
+      if (r.status !== 'new') return;
+      if (PipelinePage._isRawLead(r)) return;  // stays in Leads Center
+      deals.push({ id: r.id, clientName: r.clientName, clientId: r.clientId, description: r.property || '', value: 0, stage: 'new_lead', source: r.source, createdAt: r.createdAt });
     });
     DB.quotes.getAll().forEach(function(q) {
       var stage = q.status === 'approved' || q.status === 'converted' ? 'won' : q.status === 'declined' ? 'lost' : q.status === 'sent' || q.status === 'awaiting' ? 'quote_sent' : 'assessment';
@@ -349,6 +369,24 @@ var PipelinePage = {
     });
     PipelinePage.saveDeals(deals);
     return deals;
+  },
+
+  // Also filter the cached deals on every read so localStorage-stored raw
+  // leads (from a previous boot before this filter existed) drop out.
+  _filterRawFromCached: function(deals) {
+    if (!Array.isArray(deals)) return deals;
+    var requests = (DB.requests && DB.requests.getAll) ? DB.requests.getAll() : [];
+    var rawIds = {};
+    requests.forEach(function(r) { if (PipelinePage._isRawLead(r)) rawIds[r.id] = 1; });
+    return deals.filter(function(d) { return !rawIds[d.id]; });
+  },
+
+  // Count of untriaged auto-leads sitting in DB.requests (for the header link)
+  _untriagedLeadCount: function() {
+    if (!DB.requests || !DB.requests.getAll) return 0;
+    return DB.requests.getAll().filter(function(r) {
+      return r.status === 'new' && PipelinePage._isRawLead(r);
+    }).length;
   },
 
   saveDeals: function(deals) {
