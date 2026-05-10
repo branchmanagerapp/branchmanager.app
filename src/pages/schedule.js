@@ -28,6 +28,9 @@ var SchedulePage = {
       var parts = String(n).trim().split(/\s+/);
       return parts[parts.length - 1];
     }
+    function snoozedOr(snoozed, fallback) {
+      return (snoozed && typeof snoozed === 'string') ? snoozed.substring(0,10) : fallback;
+    }
     var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
     qs.forEach(function(q) {
       if (!q.sentAt) return;
@@ -36,10 +39,13 @@ var SchedulePage = {
       var sent = new Date(q.sentAt);
       if (isNaN(sent)) return;
       var num = q.quoteNumber || q.id;
-      var label = 'Q#' + num + ' · ' + (q.clientName || 'client');
-      var short = 'Q' + num + ' ' + lastName(q.clientName);
-      if (!q.followupSentAt) push(add5d(sent, 5), { kind:'quote', stage:1, id:q.id, label:label, short:short });
-      if (!q.followup2SentAt) push(add5d(sent, 10), { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)', short:short + ' ²' });
+      var ln = lastName(q.clientName);
+      var label = 'Quote follow-up #' + num + ' · ' + (q.clientName || 'client');
+      var short = 'F:' + ln;
+      if (!q.followupSentAt) push(snoozedOr(q.followupSnoozedTo, add5d(sent, 5)),
+        { kind:'quote', stage:1, id:q.id, label:label, short:short });
+      if (!q.followup2SentAt) push(snoozedOr(q.followup2SnoozedTo, add5d(sent, 10)),
+        { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)', short:short + '²' });
     });
     var ivs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
     ivs.forEach(function(inv) {
@@ -49,10 +55,13 @@ var SchedulePage = {
       var due = new Date(inv.dueDate);
       if (isNaN(due)) return;
       var num = inv.invoiceNumber || inv.id;
-      var label = 'Inv #' + num + ' · ' + (inv.clientName || 'client');
-      var short = 'Inv' + num + ' ' + lastName(inv.clientName);
-      if (!inv.followupSentAt) push(add5d(due, 1), { kind:'invoice', stage:1, id:inv.id, label:label, short:short });
-      push(add5d(due, 4), { kind:'invoice', stage:2, id:inv.id, label:label + ' (overdue)', short:short + ' ⚠' });
+      var ln = lastName(inv.clientName);
+      var label = 'Invoice overdue #' + num + ' · ' + (inv.clientName || 'client');
+      var short = 'O:' + ln;
+      if (!inv.followupSentAt) push(snoozedOr(inv.followupSnoozedTo, add5d(due, 1)),
+        { kind:'invoice', stage:1, id:inv.id, label:label, short:short });
+      push(snoozedOr(inv.followup2SnoozedTo, add5d(due, 4)),
+        { kind:'invoice', stage:2, id:inv.id, label:label + ' (4d overdue)', short:short + '⚠' });
     });
     window._bmRemindersCache = idx;
     window._bmRemindersCacheKey = SchedulePage._cacheKey();
@@ -72,17 +81,30 @@ var SchedulePage = {
     var bd = r.kind === 'quote' ? '#f59e0b' : '#dc2626';
     var fg = r.kind === 'quote' ? '#92400e' : '#991b1b';
     var openCall = "SchedulePage._openReminder('" + r.kind + "','" + r.id + "'," + r.stage + ")";
+    var dismissCall = "event.stopPropagation();SchedulePage._markReminderSent('" + r.kind + "','" + r.id + "'," + r.stage + ")";
+    var dragStart = "event.stopPropagation();SchedulePage._dragReminderStart(event,'" + r.kind + "','" + r.id + "'," + r.stage + ")";
     var displayText = compact ? (r.short || r.label) : r.label;
+    var titleText = UI.esc(r.label) + ' — click to mark sent / open · drag to move · × to dismiss';
     if (compact) {
-      return '<div onclick="event.stopPropagation();' + openCall + '" '
-        + 'title="' + UI.esc(r.label) + ' — click to mark sent or open" '
-        + 'style="background:' + bg + ';color:' + fg + ';border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
-        + '⏰ ' + UI.esc(displayText) + '</div>';
+      return '<div draggable="true" '
+        + 'ondragstart="' + dragStart + '" '
+        + 'ondragend="SchedulePage._dragEnd(event)" '
+        + 'onclick="event.stopPropagation();' + openCall + '" '
+        + 'title="' + titleText + '" '
+        + 'style="background:' + bg + ';color:' + fg + ';border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;display:flex;align-items:center;gap:2px;cursor:grab;">'
+        +   '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">⏰ ' + UI.esc(displayText) + '</span>'
+        +   '<span onclick="' + dismissCall + '" title="Dismiss" style="cursor:pointer;opacity:.55;font-size:11px;line-height:1;padding:0 2px;flex-shrink:0;">×</span>'
+        + '</div>';
     }
-    return '<div onclick="event.stopPropagation();' + openCall + '" '
-      + 'title="' + UI.esc(r.label) + ' — click to mark sent or open" '
-      + 'style="background:' + bg + ';border-left:3px solid ' + bd + ';color:' + fg + ';border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;cursor:pointer;">'
-      + '⏰ ' + UI.esc(displayText) + '</div>';
+    return '<div draggable="true" '
+      + 'ondragstart="' + dragStart + '" '
+      + 'ondragend="SchedulePage._dragEnd(event)" '
+      + 'onclick="event.stopPropagation();' + openCall + '" '
+      + 'title="' + titleText + '" '
+      + 'style="background:' + bg + ';border-left:3px solid ' + bd + ';color:' + fg + ';border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;display:flex;align-items:center;gap:6px;cursor:grab;">'
+      +   '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">⏰ ' + UI.esc(displayText) + '</span>'
+      +   '<span onclick="' + dismissCall + '" title="Dismiss" style="cursor:pointer;opacity:.55;font-size:14px;line-height:1;padding:0 4px;flex-shrink:0;">×</span>'
+      + '</div>';
   },
 
   _openReminder: function(kind, id, stage) {
@@ -420,16 +442,37 @@ var SchedulePage = {
   },
 
   _dragJobId: null,
+  _dragReminder: null,
 
   _dragStart: function(e, jobId) {
     SchedulePage._dragJobId = jobId;
+    SchedulePage._dragReminder = null;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', jobId);
     e.target.style.opacity = '0.5';
   },
 
+  _dragReminderStart: function(e, kind, id, stage) {
+    SchedulePage._dragReminder = { kind: kind, id: id, stage: stage };
+    SchedulePage._dragJobId = null;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'reminder:' + kind + ':' + id + ':' + stage);
+    e.target.style.opacity = '0.5';
+  },
+
   _dragEnd: function(e) {
     e.target.style.opacity = '1';
+  },
+
+  _snoozeReminder: function(r, toDateStr) {
+    var key = r.stage === 2 ? 'followup2SnoozedTo' : 'followupSnoozedTo';
+    var patch = {};
+    patch[key] = toDateStr + 'T12:00:00.000Z';
+    if (r.kind === 'quote') DB.quotes.update(r.id, patch);
+    else DB.invoices.update(r.id, patch);
+    window._bmRemindersCacheKey = null;
+    UI.toast('Reminder moved to ' + toDateStr);
+    setTimeout(function() { loadPage('schedule'); }, 250);
   },
 
   _flashDrop: function(el) {
@@ -495,6 +538,13 @@ var SchedulePage = {
   _dropOnDay: function(e, dateStr) {
     e.preventDefault();
     var el = e.currentTarget;
+    if (SchedulePage._dragReminder) {
+      SchedulePage._flashDrop(el);
+      var r = SchedulePage._dragReminder;
+      SchedulePage._dragReminder = null;
+      SchedulePage._snoozeReminder(r, dateStr);
+      return;
+    }
     var jobId = SchedulePage._dragJobId;
     if (!jobId) return;
     SchedulePage._flashDrop(el);
@@ -508,10 +558,16 @@ var SchedulePage = {
     e.preventDefault();
     var el = e.currentTarget;
     if (el) { el.style.background = 'var(--white)'; el.style.boxShadow = 'none'; }
+    if (SchedulePage._dragReminder) {
+      SchedulePage._flashDrop(el);
+      var r = SchedulePage._dragReminder;
+      SchedulePage._dragReminder = null;
+      SchedulePage._markReminderSent(r.kind, r.id, r.stage);
+      return;
+    }
     var jobId = SchedulePage._dragJobId;
     if (!jobId) return;
     SchedulePage._flashDrop(el);
-    // Clear both scheduledDate and any specific startTime
     DB.jobs.update(jobId, { scheduledDate: null, startTime: null });
     UI.toast('Job unscheduled ✓');
     SchedulePage._dragJobId = null;
