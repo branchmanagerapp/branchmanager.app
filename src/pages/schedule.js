@@ -44,6 +44,12 @@ var SchedulePage = {
       converted:1, approved:1, accepted:1, won:1, archived:1, draft:1,
       changes_requested:1, declined:1, lost:1, rejected:1, cancelled:1
     };
+    function clientOptedOut(clientId, key) {
+      if (!clientId) return false;
+      var cl = (typeof DB !== 'undefined' && DB.clients && DB.clients.getById) ? DB.clients.getById(clientId) : null;
+      if (!cl || !cl.commSettings) return false;
+      return cl.commSettings[key] === false;
+    }
     var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
     qs.forEach(function(q) {
       if (!q.sentAt) return;
@@ -51,6 +57,8 @@ var SchedulePage = {
       if (QUOTE_RESOLVED[s]) return;
       // Also drop if any resolution timestamp is set or a job was spawned
       if (q.acceptedAt || q.approvedAt || q.declinedAt || q.convertedAt || q.jobId) return;
+      // Per-client opt-out for outstanding quote follow-ups
+      if (clientOptedOut(q.clientId, 'quoteFollowUps')) return;
       var sent = new Date(q.sentAt);
       if (isNaN(sent)) return;
       var num = q.quoteNumber || q.id;
@@ -75,6 +83,8 @@ var SchedulePage = {
       // Also drop if a resolution timestamp is set or balance is zero
       if (inv.paidAt || inv.voidedAt || inv.cancelledAt) return;
       if (typeof inv.balance === 'number' && inv.balance <= 0) return;
+      // Per-client opt-out for overdue invoice follow-ups
+      if (clientOptedOut(inv.clientId, 'invoiceFollowUps')) return;
       var due = new Date(inv.dueDate);
       if (isNaN(due)) return;
       var num = inv.invoiceNumber || inv.id;

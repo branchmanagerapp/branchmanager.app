@@ -1960,11 +1960,16 @@ var QuotesPage = {
       +         (client ? '<span style="width:8px;height:8px;border-radius:50%;background:#2e7d32;" title="Active client"></span>' : '')
       +       '</div>'
       +       (q.clientId
-              ? '<div style="position:relative;">'
-                + '<button type="button" onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.q-client-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';event.stopPropagation();" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:32px;height:28px;cursor:pointer;font-size:13px;color:var(--text);display:inline-flex;align-items:center;justify-content:center;">•••</button>'
+              ? '<div style="display:flex;gap:6px;align-items:center;">'
+                + '<button type="button" onclick="ClientsPage.showForm(\'' + q.clientId + '\')" title="Edit client details" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;height:28px;padding:0 10px;cursor:pointer;font-size:12px;color:var(--text);font-weight:600;display:inline-flex;align-items:center;gap:4px;">✏️ Edit</button>'
+                + '<button type="button" onclick="ClientsPage._showCommSettings(\'' + q.clientId + '\')" title="Communication settings" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px;color:var(--text);display:inline-flex;align-items:center;justify-content:center;">🔔</button>'
+                + '<div style="position:relative;">'
+                + '<button type="button" onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.q-client-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';event.stopPropagation();" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px;color:var(--text);display:inline-flex;align-items:center;justify-content:center;">•••</button>'
                 + '<div class="q-client-dd" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;padding:4px 0;z-index:200;min-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.12);">'
                 +   '<button type="button" onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">👁  View client profile</button>'
                 +   '<button type="button" onclick="ClientsPage.showForm(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✏️  Edit client details</button>'
+                +   '<button type="button" onclick="ClientsPage._showCommSettings(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🔔  Communication settings</button>'
+                + '</div>'
                 + '</div>'
                 + '</div>'
               : '')

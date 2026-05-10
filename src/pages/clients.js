@@ -619,21 +619,21 @@ var ClientsPage = {
         + '<button type="button" onclick="ClientsPage._importVCard()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;">📇 Import from iPhone Contacts</button>'
         + '</div>')
 
-      + UI.formSection('Identity', { tight: true })
+      // v711: Jobber-style section organization
+      + UI.formSection('Primary contact details', { tight: true })
       + UI.formField('First name', 'text', 'c-first', _fn, { required: true, noLabel: true, icon: 'user' })
       + UI.formField('Last name', 'text', 'c-last', _ln, { noLabel: true, icon: 'user' })
       + UI.formField('Company name (optional)', 'text', 'c-company', c.company, { noLabel: true, icon: 'building-2' })
 
-      + UI.formSection('Contact')
+      + UI.formSection('Communication')
       + UI.formField('Phone (914) 555-0000', 'tel', 'c-phone', c.phone, { required: true, noLabel: true, icon: 'phone' })
       + UI.formField('Email', 'email', 'c-email', c.email, { noLabel: true, icon: 'mail' })
-      + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin' })
+      + (id ? '<button type="button" onclick="ClientsPage._showCommSettings(\'' + id + '\')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:4px 0;text-decoration:underline;">Communication settings</button>' : '')
 
-      + UI.formSection('How they found you')
+      + UI.formSection('Lead information')
       // v630: Status field removed from intake — every new client starts as
       // "lead" and the system promotes to "active" automatically when the
-      // first quote is approved / first job created. (Hidden input keeps
-      // ClientsPage.save happy without changing its read path.)
+      // first quote is approved / first job created.
       + '<input type="hidden" id="c-status" value="' + UI.esc(c.status || 'lead') + '">'
       + UI.formField('Lead Source', 'select', 'c-source', c.source || '', { noLabel: true, icon: 'search', options: [
             { value: '',             label: '— Select where they came from —' },
@@ -653,10 +653,13 @@ var ClientsPage = {
             { value: 'Other',        label: 'Other' }
           ] })
 
+      + UI.formSection('Property address')
+      + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin' })
+
       // Less-used fields tucked behind a disclosure so the form looks shorter on mobile
       + '<details style="margin-top:18px;">'
       +   '<summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);padding:8px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;">'
-      +     'Tags &amp; Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);">— optional</span>'
+      +     'Additional client details <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);">— optional</span>'
       +   '</summary>'
       +   UI.formField('Tags (comma separated)', 'text', 'c-tags', (c.tags || []).join(', '), { noLabel: true, icon: 'tag' })
       +   UI.formField('Internal notes', 'textarea', 'c-notes', c.notes, { noLabel: true, icon: 'sticky-note' })
@@ -721,6 +724,51 @@ var ClientsPage = {
       var rows = DB[coll].getAll().filter(function(r){ return r.clientId === clientId; });
       rows.forEach(function(r){ DB[coll].update(r.id, snap); });
     });
+  },
+
+  // v711: Per-client communication preferences (Jobber-style toggles).
+  // Stored on client.commSettings; default is everything ON.
+  // Honored by SchedulePage._getReminderIndex (skips reminders for opted-out clients)
+  // and should be honored by marketing-automation when re-enabled.
+  _showCommSettings: function(clientId) {
+    var c = DB.clients.getById(clientId);
+    if (!c) { UI.toast('Client not found', 'error'); return; }
+    var s = c.commSettings || {};
+    function row(key, label) {
+      var on = (s[key] !== false); // default true
+      return '<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;">'
+        + '<span style="font-size:14px;color:var(--text);">' + label + '</span>'
+        + '<input type="checkbox" id="cs-' + key + '" ' + (on ? 'checked' : '') + ' style="width:36px;height:20px;cursor:pointer;accent-color:var(--green-dark);">'
+        + '</label>';
+    }
+    var body = '<div style="font-size:13px;color:var(--text-light);margin-bottom:14px;line-height:1.5;">Automated communications send emails and SMS to this client for key updates. Toggle on or off per client.</div>'
+      + '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px 14px;margin-bottom:8px;">'
+      +   '<div style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-light);padding:10px 0 4px;">Quotes &amp; Invoices</div>'
+      +   row('quoteFollowUps', 'Outstanding quote follow-ups')
+      +   row('invoiceFollowUps', 'Overdue invoice follow-ups')
+      + '</div>'
+      + '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px 14px;">'
+      +   '<div style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-light);padding:10px 0 4px;">Jobs &amp; Visits</div>'
+      +   row('visitReminders', 'Upcoming visit reminders')
+      +   row('jobClosure', 'Job closure follow-ups')
+      + '</div>';
+    UI.modal('Communication Settings', body, [
+      { label: 'Cancel', fn: 'UI.closeModal()' },
+      { label: 'Save', fn: "ClientsPage._saveCommSettings('" + clientId + "')", primary: true }
+    ]);
+  },
+
+  _saveCommSettings: function(clientId) {
+    var keys = ['quoteFollowUps','invoiceFollowUps','visitReminders','jobClosure'];
+    var settings = {};
+    keys.forEach(function(k) {
+      var el = document.getElementById('cs-' + k);
+      if (el) settings[k] = !!el.checked;
+    });
+    DB.clients.update(clientId, { commSettings: settings });
+    if (typeof window !== 'undefined') window._bmRemindersCacheKey = null;
+    UI.closeModal();
+    UI.toast('Communication settings saved');
   },
 
   remove: function(id) {
