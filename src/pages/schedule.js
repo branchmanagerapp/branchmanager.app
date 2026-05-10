@@ -84,6 +84,76 @@ var SchedulePage = {
   _getRemindersForDate: function(dateStr) {
     return SchedulePage._getReminderIndex()[dateStr] || [];
   },
+
+  // Paint recurring-job projected occurrences on the calendar.
+  // Reads from RecurringJobs.getAll() and walks the cadence forward from
+  // startDate within a +/-90 day window.
+  _getRecurringIndex: function() {
+    if (typeof RecurringJobs === 'undefined') return {};
+    if (window._bmRecurringCacheKey === SchedulePage._recurringCacheKey()) return window._bmRecurringCache;
+    var idx = {};
+    var intervals = { weekly:7, biweekly:14, monthly:30, quarterly:91, biannual:182, annual:365 };
+    var rangeStart = new Date(); rangeStart.setDate(rangeStart.getDate() - 30);
+    var rangeEnd = new Date(); rangeEnd.setDate(rangeEnd.getDate() + 120);
+    RecurringJobs.getAll().forEach(function(rec) {
+      if (!rec.active || !rec.startDate) return;
+      var step = intervals[rec.frequency] || 30;
+      var d = new Date(rec.startDate);
+      if (isNaN(d)) return;
+      // Walk forward to rangeStart
+      while (d < rangeStart) d.setDate(d.getDate() + step);
+      while (d <= rangeEnd) {
+        var ds = SchedulePage._localDateStr(d);
+        (idx[ds] = idx[ds] || []).push({
+          id: rec.id,
+          clientName: rec.clientName || 'client',
+          service: rec.service || '',
+          frequency: rec.frequency,
+          price: rec.price || 0
+        });
+        d.setDate(d.getDate() + step);
+      }
+    });
+    window._bmRecurringCache = idx;
+    window._bmRecurringCacheKey = SchedulePage._recurringCacheKey();
+    return idx;
+  },
+  _recurringCacheKey: function() {
+    var n = (typeof RecurringJobs !== 'undefined') ? RecurringJobs.getAll().length : 0;
+    return n + ':' + (Date.now() / 60000 | 0);
+  },
+  _getRecurringForDate: function(dateStr) {
+    return SchedulePage._getRecurringIndex()[dateStr] || [];
+  },
+  _renderRecurringPill: function(r, compact) {
+    function lastName(n) {
+      if (!n) return 'client';
+      var p = String(n).trim().split(/\s+/);
+      return p[p.length - 1];
+    }
+    var openCall = "loadPage('recurring')";
+    var displayText = compact ? ('R:' + lastName(r.clientName)) : ('🔁 ' + r.clientName + ' · ' + r.frequency);
+    var titleText = UI.esc((r.clientName || 'client') + ' · ' + r.frequency + (r.service ? ' · ' + r.service : '') + (r.price ? ' · $' + r.price : '') + ' — recurring');
+    if (compact) {
+      return '<div onclick="event.stopPropagation();' + openCall + '" '
+        + 'title="' + titleText + '" '
+        + 'style="background:#ede7f6;color:#5e35b1;border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+        + '🔁 ' + UI.esc(displayText) + '</div>';
+    }
+    return '<div onclick="event.stopPropagation();' + openCall + '" '
+      + 'title="' + titleText + '" '
+      + 'style="background:#ede7f6;border-left:3px solid #7b1fa2;color:#5e35b1;border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;cursor:pointer;">'
+      + UI.esc(displayText) + '</div>';
+  },
+  _recurringEnabled: function() {
+    return localStorage.getItem('bm-cal-recurring') !== 'false';
+  },
+  _toggleRecurring: function() {
+    var current = SchedulePage._recurringEnabled();
+    localStorage.setItem('bm-cal-recurring', current ? 'false' : 'true');
+    window._bmRecurringCacheKey = null;
+    loadPage('schedule');
+  },
   _renderReminderPill: function(r, compact) {
     var bg = r.kind === 'quote' ? '#fef3c7' : '#fee2e2';
     var bd = r.kind === 'quote' ? '#f59e0b' : '#dc2626';
@@ -213,6 +283,7 @@ var SchedulePage = {
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
       +   toggleSwitch('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
+      +   toggleSwitch('Recurring', SchedulePage._recurringEnabled(), 'SchedulePage._toggleRecurring()')
       +   ((self.view === 'week' || self.view === 'month') ? toggleSwitch('Panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
       +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
@@ -695,7 +766,10 @@ var SchedulePage = {
         var weekReminders = SchedulePage._getRemindersForDate(dateStr);
         weekReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, false); });
       }
-      // "+ job" quick-create removed from week view per user — create jobs via the universal '+' in topbar instead
+      if (SchedulePage._recurringEnabled()) {
+        var weekRec = SchedulePage._getRecurringForDate(dateStr);
+        weekRec.forEach(function(r) { html += SchedulePage._renderRecurringPill(r, false); });
+      }
       html += '</div>';
     }
     html += '</div>';
@@ -802,6 +876,10 @@ var SchedulePage = {
       if (SchedulePage._remindersEnabled()) {
         var monthReminders = SchedulePage._getRemindersForDate(dateStr);
         monthReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, true); });
+      }
+      if (SchedulePage._recurringEnabled()) {
+        var monthRec = SchedulePage._getRecurringForDate(dateStr);
+        monthRec.forEach(function(r) { html += SchedulePage._renderRecurringPill(r, true); });
       }
       html += '</div>';
     }
