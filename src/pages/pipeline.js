@@ -316,90 +316,123 @@ var PipelinePage = {
       + (openQuotes.length > 0 ? '<div style="margin-left:auto;"><button class="btn btn-outline" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage.importFromQuotes()">📋 Import ' + openQuotes.length + ' Quote' + (openQuotes.length !== 1 ? 's' : '') + '</button></div>' : '')
       + '</div>';
 
-    // Kanban board
-    html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px;">'
-      + '<div style="display:flex;gap:12px;min-width:' + (PipelinePage.stages.length * 240) + 'px;">';
+    // v721: Jobber-style two-section pipeline (Requests | Quotes), each
+    // with sub-columns. Cards display "Request for [Client]" / "Quote for
+    // [Client]", calendar-icon date + age badge with red ⚠ at 30d+.
+    var nowMs = Date.now();
+    var sevenDaysAgo = nowMs - 7  * 86400000;
+    var fourteenDaysAgo = nowMs - 14 * 86400000;
 
-    var now = Date.now();
-
-    PipelinePage.stages.forEach(function(stage) {
-      var stageDeals = deals.filter(function(d) { return d.stage === stage.id; });
-
-      html += '<div class="pipeline-column" data-stage="' + stage.id + '" style="flex:1;min-width:220px;background:var(--bg);border-radius:12px;padding:12px;"'
-        + ' ondragover="event.preventDefault();this.style.background=\'#e8f5e9\'" ondragleave="this.style.background=\'var(--bg)\'" ondrop="PipelinePage.drop(event, \'' + stage.id + '\')">';
-
-      // Column header
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:3px solid ' + stage.color + ';">'
-        + '<div style="font-weight:700;font-size:13px;">' + stage.icon + ' ' + stage.label + '</div>'
-        + '<div style="display:flex;align-items:center;gap:6px;">'
-        + '<span style="background:' + stage.color + ';color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">' + stageStats[stage.id].count + '</span>'
-        + '<span style="font-size:11px;color:var(--text-light);">' + UI.moneyInt(stageStats[stage.id].value) + '</span>'
-        + '</div></div>';
-
-      // Deal cards (limit to 15 per column for performance)
-      var maxShow = 15;
-      if (stageDeals.length === 0) {
-        html += '<div style="text-align:center;padding:20px;font-size:12px;color:#ccc;border:2px dashed #e0e0e0;border-radius:8px;">Drop here</div>';
-      } else {
-        stageDeals.slice(0, maxShow).forEach(function(deal) {
-          // Age urgency for non-terminal stages
-          var ageDays = deal.createdAt ? Math.floor((now - new Date(deal.createdAt).getTime()) / 86400000) : 0;
-          var isStale = (stage.id === 'follow_up' || stage.id === 'assessment') && ageDays > 14;
-          var isAging = (stage.id === 'follow_up' || stage.id === 'assessment') && ageDays > 7 && !isStale;
-          var cardBorder = isStale ? 'border-left:3px solid #dc3545;' : isAging ? 'border-left:3px solid #ff9800;' : '';
-
-          html += '<div class="pipeline-card" draggable="true" ondragstart="PipelinePage.dragStart(event, \'' + deal.id + '\')" onclick="PipelinePage.showDeal(\'' + deal.id + '\')"'
-            + ' style="background:var(--white);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border);' + cardBorder + 'cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .15s;"'
-            + ' onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.12)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.06)\'">'
-            + '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (deal.clientName || 'Unknown') + '</div>'
-            + '<div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">' + (deal.description || '') + '</div>'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-            + '<span style="font-size:1rem;font-weight:800;color:var(--green-dark);">' + UI.moneyInt(deal.value) + '</span>'
-            + '<span style="font-size:11px;color:' + (isStale ? '#dc3545' : isAging ? '#ff9800' : 'var(--text-light)') + ';">' + UI.dateRelative(deal.createdAt) + '</span>'
-            + '</div>'
-            + (deal.source ? '<div style="font-size:10px;color:var(--text-light);margin-top:4px;">via ' + deal.source + '</div>' : '')
-            + (deal.notes ? '<div style="font-size:11px;color:var(--text-light);margin-top:5px;padding-top:5px;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📌 ' + deal.notes + '</div>' : '');
-
-          // v712/v714: reminder-status footer — only meaningful on Quote Sent
-          // stage (that's where the follow-up timer actually exists). New Lead
-          // / Assessment / Follow Up cards don't have quote-follow-up reminders
-          // tied to them, so the footer was just noise there.
-          if (stage.id === 'quote_sent') {
-            var nextR = PipelinePage._nextReminderForId(deal.id);
-            var rText = nextR ? '⏰ Next reminder ' + UI.dateShort(nextR.date) + (nextR.stage === 2 ? ' (2nd)' : '')
-                              : '✓ No upcoming reminders';
-            var rColor = nextR ? '#92400e' : 'var(--text-light)';
-            html += '<div style="font-size:10px;color:' + rColor + ';margin-top:6px;padding-top:5px;border-top:1px solid var(--border);">' + rText + '</div>';
-          }
-
-          // v718: Quote-Sent cards get the closing actions inline:
-          //  • Convert to Job (client said yes → exits pipeline → Jobs)
-          //  • Mark Declined  (client said no → quote archived → exits)
-          // Once either fires the deal is removed by the next auto-prune.
-          if (stage.id === 'quote_sent') {
-            html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">'
-              + '<button onclick="PipelinePage.convertToJob(\'' + deal.id + '\')" style="flex:1;padding:8px 0;font-size:11px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;">🔨 Won → Job</button>'
-              + '<button onclick="PipelinePage._markDeclined(\'' + deal.id + '\')" style="flex:1;padding:8px 0;font-size:11px;background:var(--white);color:#c62828;border:1px solid #ef9a9a;border-radius:6px;cursor:pointer;font-weight:700;">✗ Declined</button>'
-              + '</div>';
-          }
-
-          html += '</div>';
-        });
-      }
-
-      // Show more button if truncated
-      if (stageDeals.length > maxShow) {
-        html += '<div style="text-align:center;padding:8px;font-size:12px;color:var(--accent);font-weight:600;">+ ' + (stageDeals.length - maxShow) + ' more</div>';
-      }
-
-      // Add deal button — all 3 stages can take new entries manually
-      html += '<button style="width:100%;padding:8px;background:none;border:2px dashed var(--border);border-radius:8px;color:var(--text-light);font-size:12px;cursor:pointer;margin-top:4px;" '
-        + 'onclick="PipelinePage.addDeal(\'' + stage.id + '\')">+ Add</button>';
-
-      html += '</div>';
+    // Decide section + sub-column for each deal
+    var requestSide = [];
+    var quoteSide = [];
+    deals.forEach(function(d) {
+      if (d.quoteId) quoteSide.push(d); else requestSide.push(d);
     });
 
-    html += '</div></div>';
+    function ageMs(d) { return d.createdAt ? new Date(d.createdAt).getTime() : 0; }
+
+    var subRequests = [
+      { id: 'req_new', label: 'New requests', color: '#2196f3',
+        items: requestSide.filter(function(d) { return ageMs(d) >= sevenDaysAgo; }) },
+      { id: 'req_aging', label: 'Aging', color: '#a78bfa',
+        items: requestSide.filter(function(d) { return ageMs(d) < sevenDaysAgo && ageMs(d) >= fourteenDaysAgo; }) },
+      { id: 'req_stale', label: 'Stale (14d+)', color: '#dc2626',
+        items: requestSide.filter(function(d) { return ageMs(d) > 0 && ageMs(d) < fourteenDaysAgo; }) }
+    ];
+
+    // For Quotes side, sub-categorize by underlying quote.status
+    var subQuotes = [
+      { id: 'q_draft', label: 'Draft', color: '#94a3b8', items: [] },
+      { id: 'q_sent', label: 'Sent', color: '#f59e0b', items: [] },
+      { id: 'q_approved', label: 'Approved', color: '#10b981', items: [] }
+    ];
+    quoteSide.forEach(function(d) {
+      var q = DB.quotes.getById(d.quoteId);
+      var s = q ? (q.status || '').toLowerCase() : '';
+      if (s === 'draft') subQuotes[0].items.push(d);
+      else if (s === 'approved') subQuotes[2].items.push(d);
+      else subQuotes[1].items.push(d); // sent/awaiting/changes_requested fall here
+    });
+
+    function renderJobberCard(d) {
+      var ageDays = d.createdAt ? Math.floor((nowMs - new Date(d.createdAt).getTime()) / 86400000) : 0;
+      var ageBg, ageFg, ageWarn;
+      if (ageDays >= 60)      { ageBg = '#fef2f2'; ageFg = '#dc2626'; ageWarn = '⚠ '; }
+      else if (ageDays >= 30) { ageBg = '#fff7ed'; ageFg = '#c2410c'; ageWarn = '⚠ '; }
+      else if (ageDays >= 14) { ageBg = '#fffbeb'; ageFg = '#a16207'; ageWarn = ''; }
+      else                    { ageBg = '#f1f5f9'; ageFg = '#64748b'; ageWarn = ''; }
+
+      var prefix = d.quoteId ? 'Quote for ' : 'Request for ';
+      var dateStr = d.createdAt ? UI.dateShort(d.createdAt) : '—';
+      var actions = '';
+      if (d.quoteId) {
+        actions = '<div style="display:flex;gap:4px;margin-top:8px;" onclick="event.stopPropagation()">'
+          + '<button onclick="PipelinePage.convertToJob(\'' + d.id + '\')" title="Convert to Job" style="flex:1;padding:6px 0;font-size:10px;background:#1565c0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;">🔨 Job</button>'
+          + '<button onclick="PipelinePage._markDeclined(\'' + d.id + '\')" title="Mark declined" style="flex:1;padding:6px 0;font-size:10px;background:var(--white);color:#c62828;border:1px solid #fecaca;border-radius:4px;cursor:pointer;font-weight:700;">✗ Declined</button>'
+          + '</div>';
+      }
+
+      return '<div onclick="PipelinePage.showDeal(\'' + d.id + '\')" '
+        + 'style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;line-height:1.4;transition:box-shadow .12s,border-color .12s;"'
+        + ' onmouseover="this.style.boxShadow=\'0 2px 10px rgba(0,0,0,.08)\';this.style.borderColor=\'#cbd5e1\';"'
+        + ' onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border)\';">'
+        + '<div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px;">' + prefix + UI.esc(d.clientName || 'Unknown') + '</div>'
+        + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(d.clientName || '') + (d.description ? ' · ' + UI.esc(d.description) : '') + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
+        +   '<span style="font-size:11px;color:var(--text-light);display:inline-flex;align-items:center;gap:3px;">📅 ' + dateStr + '</span>'
+        +   '<span style="background:' + ageBg + ';color:' + ageFg + ';font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;">' + ageWarn + ageDays + 'd</span>'
+        + '</div>'
+        + (d.quoteId && d.value ? '<div style="font-weight:700;color:var(--green-dark);margin-top:4px;font-size:13px;">' + UI.moneyInt(d.value) + '</div>' : '')
+        + actions
+        + '</div>';
+    }
+
+    function renderSubCol(col) {
+      var html = '<div style="background:var(--bg);border-radius:10px;padding:10px;min-height:160px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ' + col.color + ';">'
+        +   '<span style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;">' + col.label + '</span>'
+        +   '<span style="background:' + col.color + ';color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;">' + col.items.length + '</span>'
+        + '</div>';
+      if (col.items.length === 0) {
+        html += '<div style="text-align:center;padding:14px;font-size:11px;color:#cbd5e1;">Empty</div>';
+      } else {
+        col.items.slice(0, 12).forEach(function(d) { html += renderJobberCard(d); });
+        if (col.items.length > 12) {
+          html += '<div style="text-align:center;padding:6px;font-size:11px;color:var(--accent);font-weight:600;">+ ' + (col.items.length - 12) + ' more</div>';
+        }
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderSection(title, icon, subs, opts) {
+      opts = opts || {};
+      var totalCount = subs.reduce(function(s, c) { return s + c.items.length; }, 0);
+      var totalValue = subs.reduce(function(s, c) {
+        return s + c.items.reduce(function(s2, d) { return s2 + (Number(d.value) || 0); }, 0);
+      }, 0);
+      var html = '<section>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+        +   '<h3 style="font-size:16px;font-weight:800;margin:0;display:inline-flex;align-items:center;gap:6px;">' + icon + ' ' + title
+        +     '<span style="font-weight:500;color:var(--text-light);font-size:14px;margin-left:4px;">' + totalCount + '</span></h3>'
+        +   (totalValue > 0 ? '<span style="font-weight:700;color:var(--green-dark);font-size:14px;">' + UI.moneyInt(totalValue) + '</span>' : '')
+        + '</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(' + subs.length + ',1fr);gap:8px;">';
+      subs.forEach(function(c) { html += renderSubCol(c); });
+      html += '</div>';
+      html += '</section>';
+      return html;
+    }
+
+    html += '<style>'
+      + '.pipeline-jobber{display:grid;grid-template-columns:1fr 1fr;gap:20px;}'
+      + '@media(max-width:980px){.pipeline-jobber{grid-template-columns:1fr;}}'
+      + '</style>'
+      + '<div class="pipeline-jobber">'
+      +   renderSection('Requests', '📥', subRequests)
+      +   renderSection('Quotes', '📋', subQuotes)
+      + '</div>';
 
     return html;
   },
