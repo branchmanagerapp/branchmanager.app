@@ -133,6 +133,7 @@ var SchedulePage = {
       +   '</div>'
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
+      +   toggleSwitch('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
       +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
       + '</div>';
@@ -378,6 +379,16 @@ var SchedulePage = {
     loadPage('schedule');
   },
 
+  _remindersEnabled: function() {
+    return localStorage.getItem('bm-cal-reminders') === 'true';
+  },
+  _toggleReminders: function() {
+    var current = SchedulePage._remindersEnabled();
+    localStorage.setItem('bm-cal-reminders', current ? 'false' : 'true');
+    window._bmRemindersCacheKey = null;
+    loadPage('schedule');
+  },
+
   _photosEnabled: function() {
     return localStorage.getItem('bm-cal-photos') !== 'false';
   },
@@ -507,8 +518,10 @@ var SchedulePage = {
         html += '<div style="background:#f3e5f5;border-left:3px solid #7b1fa2;border-radius:4px;padding:3px 6px;font-size:11px;color:#6a1b9a;cursor:pointer;margin-top:2px;" onclick="event.stopPropagation();AdminTasks.toggleComplete(\'' + t.id + '\')">&#x1F4CB; ' + UI.esc(t.title) + '</div>';
       });
       // v677: Quote/invoice reminder pills (Jobber-style)
-      var weekReminders = SchedulePage._getRemindersForDate(dateStr);
-      weekReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, false); });
+      if (SchedulePage._remindersEnabled()) {
+        var weekReminders = SchedulePage._getRemindersForDate(dateStr);
+        weekReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, false); });
+      }
       // "+ job" quick-create removed from week view per user — create jobs via the universal '+' in topbar instead
       html += '</div>';
     }
@@ -600,8 +613,10 @@ var SchedulePage = {
         html += '<div style="font-size:9px;color:#7b1fa2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="event.stopPropagation();AdminTasks.toggleComplete(\'' + t.id + '\')">&#x25CF; ' + UI.esc(t.title) + '</div>';
       });
       // v677: Quote/invoice reminder pills (Jobber-style, click → detail)
-      var monthReminders = SchedulePage._getRemindersForDate(dateStr);
-      monthReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, true); });
+      if (SchedulePage._remindersEnabled()) {
+        var monthReminders = SchedulePage._getRemindersForDate(dateStr);
+        monthReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, true); });
+      }
       html += '</div>';
     }
 
