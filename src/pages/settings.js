@@ -29,7 +29,25 @@ var SettingsPage = {
       + '.settings-tab-btn{flex:1;padding:9px 14px;border:none;background:transparent;color:var(--text-light);font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}'
       + '.settings-tab-btn:hover{background:rgba(0,131,108,.06);color:var(--text);}'
       + '.settings-tab-btn.active{background:var(--green-dark);color:#fff;}'
+      // v733: search-driven filtering. Hidden cards get .bm-settings-hide;
+      // when the search has any text, every tab pane is forced visible so
+      // matches across tabs all show simultaneously.
+      + '.bm-settings-hide{display:none !important;}'
+      + 'body.bm-settings-search-active .settings-tab-pane{display:block !important;}'
+      + 'body.bm-settings-search-active .settings-tab-strip{display:none !important;}'
+      + '.bm-settings-search-bar{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0 8px;margin-bottom:8px;}'
+      + '.bm-settings-search-bar input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--white);outline:none;transition:border-color .12s,box-shadow .12s;}'
+      + '.bm-settings-search-bar input:focus{border-color:var(--green-dark);box-shadow:0 0 0 3px rgba(0,131,108,.12);}'
       + '</style>';
+
+    // v733: top search filters every collapsible card across all tabs by
+    // visible text content. Persists query in localStorage so refresh
+    // while searching keeps you in the filtered view.
+    var savedQuery = (function() { try { return localStorage.getItem('bm-settings-search') || ''; } catch(e) { return ''; } })();
+    html += '<div class="bm-settings-search-bar">'
+      +   '<input type="search" id="bm-settings-search-input" placeholder="🔍 Search settings — try \'Stripe\', \'reminders\', \'tax\'..." value="' + UI.esc(savedQuery) + '" oninput="SettingsPage._filterSearch(this.value)" autocomplete="off">'
+      + '</div>';
+
     html += '<div class="settings-tab-strip">'
       + tabs.map(function(t){
           return '<button class="settings-tab-btn' + (t.slug===activeTab?' active':'') + '" data-tab="' + t.slug + '" onclick="SettingsPage._switchTab(\'' + t.slug + '\')">'
@@ -49,6 +67,8 @@ var SettingsPage = {
       document.querySelectorAll('.settings-tab-pane').forEach(function(el) {
         el.classList.toggle('active', el.getAttribute('data-settings-tab') === activeTab);
       });
+      // v733: re-apply persisted search filter after the panes mount
+      if (savedQuery) SettingsPage._filterSearch(savedQuery);
     }, 0);
 
     // v674: Quick Setup checklist removed — was stale (referenced
@@ -1954,6 +1974,53 @@ var SettingsPage = {
         if (typeof UI !== 'undefined' && UI.toast) UI.toast('✅ Google Business connected');
       }
     } catch (e) { console.warn('GMB OAuth callback parse failed', e); }
+  },
+
+  // v733: live-filter every collapsible Settings card by query. Walks the
+  // tab panes, checks each card's text content, hides non-matches via
+  // .bm-settings-hide. Empty query restores normal tab navigation.
+  _filterSearch: function(q) {
+    var query = (q || '').trim().toLowerCase();
+    try { localStorage.setItem('bm-settings-search', query); } catch(e) {}
+    var body = document.body;
+    if (query) body.classList.add('bm-settings-search-active');
+    else       body.classList.remove('bm-settings-search-active');
+
+    var panes = document.querySelectorAll('.settings-tab-pane');
+    var anyMatch = false;
+    panes.forEach(function(pane) {
+      // Each card is the immediate <details> child of the pane (or a
+      // nested div with a header). We hide the whole card when its text
+      // doesn't match.
+      var cards = pane.querySelectorAll(':scope > details, :scope > div[style*="background:var(--white)"]');
+      var paneHasMatch = false;
+      cards.forEach(function(card) {
+        if (!query) {
+          card.classList.remove('bm-settings-hide');
+          return;
+        }
+        var text = (card.textContent || '').toLowerCase();
+        var hit = text.indexOf(query) >= 0;
+        card.classList.toggle('bm-settings-hide', !hit);
+        if (hit) { paneHasMatch = true; anyMatch = true; }
+      });
+      // When searching, force the pane visible so cross-tab matches show.
+      if (query) pane.classList.add('active');
+    });
+    // No-match banner — append once if needed
+    var existing = document.getElementById('bm-settings-no-match');
+    if (query && !anyMatch) {
+      if (!existing) {
+        var div = document.createElement('div');
+        div.id = 'bm-settings-no-match';
+        div.style.cssText = 'padding:24px;text-align:center;color:var(--text-light);font-size:13px;background:var(--white);border:1px dashed var(--border);border-radius:10px;margin-top:12px;';
+        div.textContent = 'No settings match "' + query + '"';
+        var firstPane = panes[0];
+        if (firstPane && firstPane.parentNode) firstPane.parentNode.insertBefore(div, firstPane);
+      }
+    } else if (existing) {
+      existing.remove();
+    }
   },
 
   _collapseAll: function(collapse) {
