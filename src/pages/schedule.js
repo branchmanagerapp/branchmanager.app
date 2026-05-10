@@ -633,14 +633,17 @@ var SchedulePage = {
     for (var day = 1; day <= daysInMonth; day++) {
       var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
       var isToday = dateStr === today;
+      var wkday = (firstDay + day - 1) % 7;
+      var isWeekend = (wkday === 0 || wkday === 6);
+      var cellBg = isWeekend ? '#f7f8fa' : 'var(--white)';
       var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
 
       html += '<div data-date="' + dateStr + '" '
         + 'ondragover="event.preventDefault();this.style.background=\'#e8f5e9\';this.style.boxShadow=\'inset 0 0 0 2px #4caf50\'" '
-        + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
+        + 'ondragleave="this.style.background=\'' + cellBg + '\';this.style.boxShadow=\'none\'" '
         + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
-        + 'style="background:var(--white);min-height:80px;padding:4px;cursor:pointer;transition:background .15s;">'
+        + 'style="background:' + cellBg + ';min-height:80px;padding:4px;cursor:pointer;transition:background .15s;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
         + (isToday
             ? '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + day + '</span>'
