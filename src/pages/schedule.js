@@ -20,9 +20,14 @@ var SchedulePage = {
   // Cached per-render via window._bmRemindersCache.
   _getReminderIndex: function() {
     if (window._bmRemindersCacheKey === SchedulePage._cacheKey()) return window._bmRemindersCache;
-    var idx = {}; // dateStr → [{kind, label, id}]
+    var idx = {}; // dateStr → [{kind, label, short, id, stage}]
     function push(dateStr, item) { (idx[dateStr] = idx[dateStr] || []).push(item); }
     function add5d(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return SchedulePage._localDateStr(x); }
+    function lastName(n) {
+      if (!n) return 'client';
+      var parts = String(n).trim().split(/\s+/);
+      return parts[parts.length - 1];
+    }
     var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
     qs.forEach(function(q) {
       if (!q.sentAt) return;
@@ -30,9 +35,11 @@ var SchedulePage = {
       if (s === 'converted' || s === 'approved' || s === 'archived' || s === 'draft' || s === 'changes_requested') return;
       var sent = new Date(q.sentAt);
       if (isNaN(sent)) return;
-      var label = 'Reminder about quote #' + (q.quoteNumber || q.id) + ' for ' + (q.clientName || 'client');
-      if (!q.followupSentAt) push(add5d(sent, 5), { kind:'quote', stage:1, id:q.id, label:label });
-      if (!q.followup2SentAt) push(add5d(sent, 10), { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)' });
+      var num = q.quoteNumber || q.id;
+      var label = 'Q#' + num + ' · ' + (q.clientName || 'client');
+      var short = 'Q' + num + ' ' + lastName(q.clientName);
+      if (!q.followupSentAt) push(add5d(sent, 5), { kind:'quote', stage:1, id:q.id, label:label, short:short });
+      if (!q.followup2SentAt) push(add5d(sent, 10), { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)', short:short + ' ²' });
     });
     var ivs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
     ivs.forEach(function(inv) {
@@ -41,9 +48,11 @@ var SchedulePage = {
       if (s === 'paid' || s === 'archived' || s === 'draft') return;
       var due = new Date(inv.dueDate);
       if (isNaN(due)) return;
-      var label = 'Reminder about invoice #' + (inv.invoiceNumber || inv.id) + ' for ' + (inv.clientName || 'client');
-      if (!inv.followupSentAt) push(add5d(due, 1), { kind:'invoice', stage:1, id:inv.id, label:label });
-      push(add5d(due, 4), { kind:'invoice', stage:2, id:inv.id, label:label + ' (4d overdue)' });
+      var num = inv.invoiceNumber || inv.id;
+      var label = 'Inv #' + num + ' · ' + (inv.clientName || 'client');
+      var short = 'Inv' + num + ' ' + lastName(inv.clientName);
+      if (!inv.followupSentAt) push(add5d(due, 1), { kind:'invoice', stage:1, id:inv.id, label:label, short:short });
+      push(add5d(due, 4), { kind:'invoice', stage:2, id:inv.id, label:label + ' (overdue)', short:short + ' ⚠' });
     });
     window._bmRemindersCache = idx;
     window._bmRemindersCacheKey = SchedulePage._cacheKey();
@@ -62,16 +71,54 @@ var SchedulePage = {
     var bg = r.kind === 'quote' ? '#fef3c7' : '#fee2e2';
     var bd = r.kind === 'quote' ? '#f59e0b' : '#dc2626';
     var fg = r.kind === 'quote' ? '#92400e' : '#991b1b';
-    var fn = r.kind === 'quote' ? 'QuotesPage.showDetail' : 'InvoicesPage.showDetail';
+    var openCall = "SchedulePage._openReminder('" + r.kind + "','" + r.id + "'," + r.stage + ")";
+    var displayText = compact ? (r.short || r.label) : r.label;
     if (compact) {
-      return '<div onclick="event.stopPropagation();' + fn + '(\'' + r.id + '\')" '
-        + 'title="' + UI.esc(r.label) + '" '
+      return '<div onclick="event.stopPropagation();' + openCall + '" '
+        + 'title="' + UI.esc(r.label) + ' — click to mark sent or open" '
         + 'style="background:' + bg + ';color:' + fg + ';border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
-        + '⏰ ' + UI.esc(r.label) + '</div>';
+        + '⏰ ' + UI.esc(displayText) + '</div>';
     }
-    return '<div onclick="event.stopPropagation();' + fn + '(\'' + r.id + '\')" '
+    return '<div onclick="event.stopPropagation();' + openCall + '" '
+      + 'title="' + UI.esc(r.label) + ' — click to mark sent or open" '
       + 'style="background:' + bg + ';border-left:3px solid ' + bd + ';color:' + fg + ';border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;cursor:pointer;">'
-      + '⏰ ' + UI.esc(r.label) + '</div>';
+      + '⏰ ' + UI.esc(displayText) + '</div>';
+  },
+
+  _openReminder: function(kind, id, stage) {
+    var item = (kind === 'quote') ? DB.quotes.getById(id) : DB.invoices.getById(id);
+    if (!item) { UI.toast('Item not found'); return; }
+    var num = (kind === 'quote' ? item.quoteNumber : item.invoiceNumber) || item.id;
+    var noun = kind === 'quote' ? 'Quote' : 'Invoice';
+    var stageName = stage === 2 ? '2nd follow-up' : '1st follow-up';
+    var dollars = UI.moneyInt(item.total || 0);
+
+    var body = '<div style="font-size:13px;line-height:1.5;">'
+      + '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + noun + ' #' + num + ' · ' + UI.esc(item.clientName || 'client') + '</div>'
+      + '<div style="color:var(--text-light);font-size:12px;margin-bottom:14px;">' + dollars + ' · ' + stageName + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">Mark this follow-up as already sent (so it disappears from your calendar), or open the ' + noun.toLowerCase() + ' to send it now.</div>'
+      + '</div>';
+
+    UI.modal(
+      '⏰ Reminder',
+      body,
+      [
+        { label: 'Mark Sent', fn: "SchedulePage._markReminderSent('" + kind + "','" + id + "'," + stage + ")" },
+        { label: 'Open ' + noun, fn: "UI.closeModal();" + (kind === 'quote' ? 'QuotesPage' : 'InvoicesPage') + ".showDetail('" + id + "')", primary: true }
+      ]
+    );
+  },
+
+  _markReminderSent: function(kind, id, stage) {
+    var key = stage === 2 ? 'followup2SentAt' : 'followupSentAt';
+    var patch = {};
+    patch[key] = new Date().toISOString();
+    if (kind === 'quote') DB.quotes.update(id, patch);
+    else DB.invoices.update(id, patch);
+    window._bmRemindersCacheKey = null;
+    UI.closeModal();
+    UI.toast('Reminder dismissed');
+    loadPage('schedule');
   },
 
   render: function() {
@@ -523,7 +570,7 @@ var SchedulePage = {
     html += '</div>';
     } // end skipUnscheduledBanner else
 
-    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
+    html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
 
     // Header
     for (var i = 0; i < 7; i++) {
@@ -630,7 +677,7 @@ var SchedulePage = {
     html += '</div>';
     } // end skipUnscheduledBanner else
 
-    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
+    html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
 
     days.forEach(function(day) {
       html += '<div style="background:var(--bg);padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--text-light);">' + day + '</div>';
