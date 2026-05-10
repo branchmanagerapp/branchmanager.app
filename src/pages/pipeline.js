@@ -4,14 +4,19 @@
  * Like legacy system's Pipeline feature
  */
 var PipelinePage = {
+  // v718: Pipeline simplified to the three stages that actually need
+  // active management. Jobs (Won) leave the pipeline entirely the
+  // moment a quote converts — they appear on the Schedule's Unscheduled
+  // banner / right-rail tab. Lost = archived (still on the customer
+  // profile, not in the kanban). New Lead = raw inbound, lives in the
+  // Leads Center until triaged.
   stages: [
-    { id: 'new_lead', label: 'New Lead', color: '#2196f3', icon: '📥' },
-    { id: 'assessment', label: 'Assessment', color: '#9c27b0', icon: '🔍' },
-    { id: 'quote_sent', label: 'Quote Sent', color: '#ff9800', icon: '📋' },
-    { id: 'follow_up', label: 'Follow Up', color: '#e91e63', icon: '📞' },
-    { id: 'won', label: 'Won', color: '#4caf50', icon: '✅' },
-    { id: 'lost', label: 'Lost', color: '#9e9e9e', icon: '❌' }
+    { id: 'request',    label: 'Requests',    color: '#2196f3', icon: '📥' },
+    { id: 'assessment', label: 'Assessment',  color: '#9c27b0', icon: '🔍' },
+    { id: 'quote_sent', label: 'Quote Sent',  color: '#ff9800', icon: '📋' }
   ],
+  // Kept for back-compat reads from older data; never rendered as columns.
+  _terminalStages: { won: 1, lost: 1, follow_up: 1, new_lead: 1 },
 
   _filterRecent: true,
 
@@ -153,24 +158,28 @@ var PipelinePage = {
     // v716: bust the per-render resolve cache so we read fresh DB state
     PipelinePage._resolveCache = {};
 
-    // v715: pre-pass — auto-promote any non-terminal deal whose underlying
-    // work has been done (job created, invoiced, or paid) into the Won
-    // column. Prevents Assessment/Quote-Sent cards from lingering after the
-    // quote was already converted via the Quote-detail "Convert to Job"
-    // button (which doesn't touch the pipeline deal record).
-    (function autoPromoteWon() {
+    // v718: pre-pass — drop anything that's no longer pipeline material.
+    //   1. Migrate legacy 'new_lead' deals to 'request' (stage rename).
+    //   2. Drop deals whose underlying work is DONE (job/invoice/paid) —
+    //      they belong on the Schedule Unscheduled list / Jobs page now,
+    //      not in the kanban. Also drops legacy 'won' / 'lost' / 'follow_up'
+    //      deals on first read.
+    (function migrateAndPrune() {
       var stored = PipelinePage.getDeals();
+      var keep = [];
       var dirty = false;
       stored.forEach(function(d) {
-        if (d.stage === 'won' || d.stage === 'lost') return;
+        if (!d || !d.stage) return;
+        // Stage rename
+        if (d.stage === 'new_lead') { d.stage = 'request'; dirty = true; }
+        // Drop terminal/legacy stages — they're not in the kanban anymore
+        if (PipelinePage._terminalStages[d.stage]) { dirty = true; return; }
+        // Drop if work is done (job exists, invoice sent or paid)
         var st = PipelinePage._resolveDealStatus(d);
-        if (st && st.kind && st.kind !== 'no_job') {
-          d.stage = 'won';
-          d.movedAt = d.movedAt || new Date().toISOString();
-          dirty = true;
-        }
+        if (st && st.kind && st.kind !== 'no_job') { dirty = true; return; }
+        keep.push(d);
       });
-      if (dirty) PipelinePage.saveDeals(stored);
+      if (dirty) PipelinePage.saveDeals(keep);
     })();
 
     var allDeals = PipelinePage._filterRawFromCached(PipelinePage.getDeals());
@@ -179,10 +188,7 @@ var PipelinePage = {
 
     // Filter: when recent mode, hide old assessment/quote_sent deals (import noise)
     var deals = PipelinePage._filterRecent
-      ? allDeals.filter(function(d) {
-          if (d.stage === 'won' || d.stage === 'lost' || d.stage === 'new_lead' || d.stage === 'follow_up') return true;
-          return !d.createdAt || new Date(d.createdAt) > sixMonthsAgo;
-        })
+      ? allDeals.filter(function(d) { return !d.createdAt || new Date(d.createdAt) > sixMonthsAgo; })
       : allDeals;
 
     var stageStats = {};
@@ -194,24 +200,23 @@ var PipelinePage = {
       }
     });
 
-    var totalValue = deals.reduce(function(s, d) { return s + (d.value || 0); }, 0);
-    var wonValue = deals.filter(function(d) { return d.stage === 'won'; }).reduce(function(s, d) { return s + (d.value || 0); }, 0);
-    var winRate = deals.length > 0 ? Math.round((stageStats.won.count / deals.length) * 100) : 0;
+    var activeValue = deals.reduce(function(s, d) { return s + (d.value || 0); }, 0);
+    var hiddenOld = allDeals.length - deals.length;
 
-    // Won This Month stat
+    // v718: Won/Lost stats now pulled from real sources (DB.jobs, declined
+    // quotes) since the pipeline no longer carries those stages.
+    var allJobs = DB.jobs.getAll();
+    var allQuotes2 = DB.quotes.getAll();
     var now2 = new Date();
     var monthStart = new Date(now2.getFullYear(), now2.getMonth(), 1);
-    var wonThisMonth = deals.filter(function(d) {
-      if (d.stage !== 'won') return false;
-      var moved = d.movedAt || d.createdAt;
-      return moved && new Date(moved) >= monthStart;
-    }).reduce(function(s, d) { return s + (d.value || 0); }, 0);
-
-    // legacy system-style stat cards
-    var activeDeals = deals.filter(function(d) { return d.stage !== 'won' && d.stage !== 'lost'; });
-    var activeValue = activeDeals.reduce(function(s,d){ return s + (d.value||0); }, 0);
-    var lostCount = stageStats.lost ? stageStats.lost.count : 0;
-    var hiddenOld = allDeals.length - deals.length;
+    var wonAllTime = allJobs.length;
+    var wonThisMonth = allJobs.filter(function(j) {
+      var d = j.createdAt || j.scheduledDate;
+      return d && new Date(d) >= monthStart;
+    }).reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
+    var wonValueAll = allJobs.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
+    var lostCount = allQuotes2.filter(function(q) { return q.status === 'declined' || q.status === 'lost'; }).length;
+    var winRate = (wonAllTime + lostCount) > 0 ? Math.round((wonAllTime / (wonAllTime + lostCount)) * 100) : 0;
 
     // Unconfirmed open quotes not yet in pipeline
     var existingIds = new Set(allDeals.map(function(d){ return d.id; }));
@@ -219,8 +224,8 @@ var PipelinePage = {
       return !existingIds.has(q.id) && (q.status === 'sent' || q.status === 'awaiting' || q.status === 'draft');
     });
 
-    // Conversion funnel percentages (new_lead → assessment → quote_sent → follow_up → won)
-    var funnelStages = ['new_lead','assessment','quote_sent','follow_up','won'];
+    // 3-stage funnel matching the new kanban
+    var funnelStages = ['request','assessment','quote_sent'];
     var funnelCounts = funnelStages.map(function(s){ return stageStats[s] ? stageStats[s].count : 0; });
     var funnelTotal  = funnelCounts.reduce(function(a,b){ return a+b; }, 0) || 1;
 
@@ -234,21 +239,21 @@ var PipelinePage = {
     html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);">'
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       + '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">Overview</div>'
-      + '<div style="font-size:12px;margin-bottom:2px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2196f3;margin-right:6px;"></span>New (' + (stageStats.new_lead?stageStats.new_lead.count:0) + ')</div>'
-      + '<div style="font-size:12px;margin-bottom:2px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff9800;margin-right:6px;"></span>Quote sent (' + (stageStats.quote_sent?stageStats.quote_sent.count:0) + ')</div>'
-      + '<div style="font-size:12px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4caf50;margin-right:6px;"></span>Won (' + (stageStats.won?stageStats.won.count:0) + ')</div>'
+      + '<div style="font-size:12px;margin-bottom:2px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2196f3;margin-right:6px;"></span>Requests (' + (stageStats.request?stageStats.request.count:0) + ')</div>'
+      + '<div style="font-size:12px;margin-bottom:2px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9c27b0;margin-right:6px;"></span>Assessment (' + (stageStats.assessment?stageStats.assessment.count:0) + ')</div>'
+      + '<div style="font-size:12px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff9800;margin-right:6px;"></span>Quote sent (' + (stageStats.quote_sent?stageStats.quote_sent.count:0) + ')</div>'
       + '</div>'
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       + '<div style="font-size:14px;font-weight:700;">Pipeline value</div>'
       + '<div style="font-size:12px;color:var(--text-light);">Active deals</div>'
       + '<div style="font-size:28px;font-weight:800;margin-top:8px;">' + UI.moneyInt(activeValue) + '</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">' + activeDeals.length + ' deal' + (activeDeals.length !== 1 ? 's' : '') + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">' + deals.length + ' deal' + (deals.length !== 1 ? 's' : '') + '</div>'
       + '</div>'
-      + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
+      + '<div style="padding:14px 16px;border-right:1px solid var(--border);cursor:pointer;" onclick="loadPage(\'jobs\')">'
       + '<div style="font-size:14px;font-weight:700;">Won</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">All time</div>'
-      + '<div style="font-size:28px;font-weight:800;margin-top:8px;color:var(--green-dark);">' + UI.moneyInt(wonValue) + '</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">' + (stageStats.won?stageStats.won.count:0) + ' deal' + ((stageStats.won?stageStats.won.count:0) !== 1 ? 's' : '') + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">All-time jobs</div>'
+      + '<div style="font-size:28px;font-weight:800;margin-top:8px;color:var(--green-dark);">' + UI.moneyInt(wonValueAll) + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">' + wonAllTime + ' job' + (wonAllTime !== 1 ? 's' : '') + ' →</div>'
       + '</div>'
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       + '<div style="font-size:14px;font-weight:700;">Won This Month</div>'
@@ -258,17 +263,17 @@ var PipelinePage = {
       + '</div>'
       + '<div style="padding:14px 16px;">'
       + '<div style="font-size:14px;font-weight:700;">Win rate</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">Conversion</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">Jobs vs declined</div>'
       + '<div style="font-size:28px;font-weight:800;margin-top:8px;color:' + (winRate >= 50 ? 'var(--green-dark)' : '#e07c24') + ';">' + winRate + '%</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">' + lostCount + ' lost</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">' + lostCount + ' declined</div>'
       + '</div></div>';
 
     // Conversion funnel bar
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">'
       + '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">Conversion Funnel</div>'
       + '<div style="display:flex;align-items:center;gap:0;">';
-    var funnelColors = ['#2196f3','#9c27b0','#ff9800','#e91e63','#4caf50'];
-    var funnelLabels = ['New Lead','Assessment','Quote Sent','Follow Up','Won'];
+    var funnelColors = ['#2196f3','#9c27b0','#ff9800'];
+    var funnelLabels = ['Requests','Assessment','Quote Sent'];
     funnelCounts.forEach(function(cnt, i) {
       var pct = Math.round((cnt / funnelTotal) * 100);
       var convPct = i === 0 ? 100 : (funnelCounts[0] > 0 ? Math.round((cnt / funnelCounts[0]) * 100) : 0);
@@ -350,30 +355,15 @@ var PipelinePage = {
             html += '<div style="font-size:10px;color:' + rColor + ';margin-top:6px;padding-top:5px;border-top:1px solid var(--border);">' + rText + '</div>';
           }
 
-          // Quick-action buttons — Won/Lost removed (auto-tracked by stage column).
-          // Drag a card between columns to change its stage.
-          // v713: Won-stage card resolves the deal's true state via the
-          // quote → job → invoice chain. Pipeline.deal.jobId only gets set
-          // when conversion happened through PipelinePage.convertToJob —
-          // quotes converted via the Quote detail page leave the deal naked
-          // and used to show "Convert to Job" forever even though work was
-          // already done and invoiced.
-          if (stage.id === 'won') {
-            var st = PipelinePage._resolveDealStatus(deal);
-            html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">';
-            if (st.kind === 'paid') {
-              html += '<button onclick="InvoicesPage.showDetail(\'' + st.invoiceId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">💰 Paid · ' + UI.moneyInt(st.amount) + '</button>';
-            } else if (st.kind === 'invoiced_unpaid') {
-              html += '<button onclick="InvoicesPage.showDetail(\'' + st.invoiceId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#fff3e0;color:#92400e;border:1px solid #f59e0b;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">📨 Invoice ' + UI.moneyInt(st.balance) + ' due</button>';
-            } else if (st.kind === 'job_done_no_invoice') {
-              html += '<button onclick="JobsPage.showDetail(\'' + st.jobId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">✅ Job done · invoice it</button>';
-            } else if (st.kind === 'job_in_progress') {
-              html += '<button onclick="JobsPage.showDetail(\'' + st.jobId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">🔨 Job ' + UI.esc(st.status || 'scheduled') + '</button>';
-            } else {
-              // no_job — original Convert to Job action
-              html += '<button onclick="PipelinePage.convertToJob(\'' + deal.id + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;min-height:38px;">🔨 Convert to Job</button>';
-            }
-            html += '</div>';
+          // v718: Quote-Sent cards get the closing actions inline:
+          //  • Convert to Job (client said yes → exits pipeline → Jobs)
+          //  • Mark Declined  (client said no → quote archived → exits)
+          // Once either fires the deal is removed by the next auto-prune.
+          if (stage.id === 'quote_sent') {
+            html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">'
+              + '<button onclick="PipelinePage.convertToJob(\'' + deal.id + '\')" style="flex:1;padding:8px 0;font-size:11px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;">🔨 Won → Job</button>'
+              + '<button onclick="PipelinePage._markDeclined(\'' + deal.id + '\')" style="flex:1;padding:8px 0;font-size:11px;background:var(--white);color:#c62828;border:1px solid #ef9a9a;border-radius:6px;cursor:pointer;font-weight:700;">✗ Declined</button>'
+              + '</div>';
           }
 
           html += '</div>';
@@ -385,11 +375,9 @@ var PipelinePage = {
         html += '<div style="text-align:center;padding:8px;font-size:12px;color:var(--accent);font-weight:600;">+ ' + (stageDeals.length - maxShow) + ' more</div>';
       }
 
-      // Add deal button
-      if (stage.id !== 'won' && stage.id !== 'lost') {
-        html += '<button style="width:100%;padding:8px;background:none;border:2px dashed var(--border);border-radius:8px;color:var(--text-light);font-size:12px;cursor:pointer;margin-top:4px;" '
-          + 'onclick="PipelinePage.addDeal(\'' + stage.id + '\')">+ Add</button>';
-      }
+      // Add deal button — all 3 stages can take new entries manually
+      html += '<button style="width:100%;padding:8px;background:none;border:2px dashed var(--border);border-radius:8px;color:var(--text-light);font-size:12px;cursor:pointer;margin-top:4px;" '
+        + 'onclick="PipelinePage.addDeal(\'' + stage.id + '\')">+ Add</button>';
 
       html += '</div>';
     });
@@ -423,10 +411,14 @@ var PipelinePage = {
     DB.requests.getAll().forEach(function(r) {
       if (r.status !== 'new') return;
       if (PipelinePage._isRawLead(r)) return;  // stays in Leads Center
-      deals.push({ id: r.id, clientName: r.clientName, clientId: r.clientId, description: r.property || '', value: 0, stage: 'new_lead', source: r.source, createdAt: r.createdAt });
+      deals.push({ id: r.id, clientName: r.clientName, clientId: r.clientId, description: r.property || '', value: 0, stage: 'request', source: r.source, createdAt: r.createdAt });
     });
     DB.quotes.getAll().forEach(function(q) {
-      var stage = q.status === 'approved' || q.status === 'converted' ? 'won' : q.status === 'declined' ? 'lost' : q.status === 'sent' || q.status === 'awaiting' ? 'quote_sent' : 'assessment';
+      // v718: skip resolved quotes — they're jobs (Won) or declined (Lost),
+      // both of which live outside the pipeline now. Keep only sent/awaiting/
+      // changes-requested as quote_sent and drafts as assessment.
+      if (q.status === 'approved' || q.status === 'converted' || q.status === 'declined' || q.status === 'lost' || q.status === 'archived') return;
+      var stage = (q.status === 'sent' || q.status === 'awaiting' || q.status === 'changes_requested') ? 'quote_sent' : 'assessment';
       deals.push({ id: q.id, clientName: q.clientName, clientId: q.clientId, description: q.description || '', value: q.total || 0, stage: stage, quoteId: q.id, createdAt: q.createdAt });
     });
     PipelinePage.saveDeals(deals);
@@ -537,22 +529,28 @@ var PipelinePage = {
     var deals = PipelinePage.getDeals();
     var deal = deals.find(function(d) { return d.id === PipelinePage._dragId; });
     if (deal) {
-      var oldStage = deal.stage;
       deal.stage = newStage;
       deal.movedAt = new Date().toISOString();
       PipelinePage.saveDeals(deals);
-
-      // Update linked records
-      if (newStage === 'won' && deal.quoteId) {
-        DB.quotes.update(deal.quoteId, { status: 'approved' });
-      } else if (newStage === 'lost' && deal.quoteId) {
-        DB.quotes.update(deal.quoteId, { status: 'declined' });
-      }
-
-      UI.toast('Moved to ' + PipelinePage.stages.find(function(s) { return s.id === newStage; }).label);
+      var stageObj = PipelinePage.stages.find(function(s) { return s.id === newStage; });
+      UI.toast('Moved to ' + (stageObj ? stageObj.label : newStage));
       loadPage('pipeline');
     }
     PipelinePage._dragId = null;
+  },
+
+  // v718: declined → quote.status='declined' → auto-prune removes from kanban.
+  _markDeclined: function(dealId) {
+    UI.confirm('Mark this quote as declined? It will move out of the pipeline (still visible on the customer profile).', function() {
+      var deals = PipelinePage.getDeals();
+      var deal = deals.find(function(d) { return d.id === dealId; });
+      if (!deal) return;
+      if (deal.quoteId) DB.quotes.update(deal.quoteId, { status: 'declined' });
+      // Drop the deal from the cached pipeline immediately
+      PipelinePage.saveDeals(deals.filter(function(d) { return d.id !== dealId; }));
+      UI.toast('Marked declined · archived');
+      loadPage('pipeline');
+    });
   },
 
   addDeal: function(stage) {
@@ -636,12 +634,14 @@ var PipelinePage = {
       + '<div style="font-size:13px;color:var(--text-light);">Created: ' + UI.dateRelative(deal.createdAt) + '</div>'
       + '</div>';
 
-    // Action buttons row
+    // Action buttons row — v718: convert-to-job + decline are universal
+    // closing actions on any stage. Both pull the deal out of the pipeline.
     html += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">'
-      + (deal.stage !== 'won' && deal.stage !== 'lost' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="PipelinePage.sendFollowUp(\'' + dealId + '\')">📧 Send Follow-up</button>' : '')
+      + '<button class="btn btn-outline" style="font-size:12px;" onclick="PipelinePage.sendFollowUp(\'' + dealId + '\')">📧 Send Follow-up</button>'
       + (clientPhone ? '<button class="btn btn-outline" style="font-size:12px;" onclick="if(typeof Dialpad!==\'undefined\'){var co=PipelinePage._co();Dialpad.showTextModal(\'' + cleanPhone + '\',\'Hi ' + firstName + ', this is Doug from \'+co.name+\'. Just following up on your estimate. Any questions? — Doug \'+co.phone);}">📱 Text</button>' : '')
-      + (deal.stage !== 'won' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="UI.closeModal();QuotesPage.showForm(null,\'' + deal.clientId + '\')">📋 Create Quote</button>' : '')
-      + (deal.stage === 'won' ? '<button class="btn btn-primary" style="font-size:12px;background:#2e7d32;" onclick="PipelinePage.convertToJob(\'' + dealId + '\')">🔨 Convert to Job</button>' : '')
+      + '<button class="btn btn-outline" style="font-size:12px;" onclick="UI.closeModal();QuotesPage.showForm(null,\'' + deal.clientId + '\')">📋 Create Quote</button>'
+      + '<button class="btn btn-primary" style="font-size:12px;background:#1565c0;" onclick="UI.closeModal();PipelinePage.convertToJob(\'' + dealId + '\')">🔨 Won → Job</button>'
+      + '<button class="btn" style="font-size:12px;background:var(--white);color:#c62828;border:1px solid #ef9a9a;" onclick="UI.closeModal();PipelinePage._markDeclined(\'' + dealId + '\')">✗ Declined</button>'
       + '</div>';
 
     // Move to stage buttons

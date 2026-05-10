@@ -1772,6 +1772,29 @@ var SettingsPage = {
     });
   },
 
+  // v718: One-click magic-link sign-in to restore the Supabase session.
+  // Hit when Cloud Health says "session: none" — sends an OTP email to the
+  // BM-account email; click the link in inbox → session restored → cloud
+  // writes start working again.
+  _supabaseSignInMagic: function() {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.client.auth) {
+      UI.toast('Supabase not loaded', 'error'); return;
+    }
+    var defaultEmail = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) || '';
+    var email = prompt('Send Supabase sign-in link to:', defaultEmail);
+    if (!email) return;
+    UI.toast('Sending magic link to ' + email + '...');
+    SupabaseDB.client.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + '/' }
+    }).then(function(res) {
+      if (res.error) UI.toast('Failed: ' + res.error.message, 'error');
+      else UI.toast('Magic link sent — check ' + email);
+    }).catch(function(e) {
+      UI.toast('Error: ' + (e && e.message || 'unknown'), 'error');
+    });
+  },
+
   // Cloud Health diagnostic — renders SettingsPage's #cloud-health-out box
   // with the result of CloudSync.diagnose(). One row per check, traffic-light
   // colored. Built to surface "fleet stuck"-style silent failures in one click.
@@ -1799,7 +1822,10 @@ var SettingsPage = {
         html += row('Supabase session', '✅ ' + (sess.email || sess.userId), '#2e7d32');
         if (sess.expiresInMin != null) html += row('Session expires in', sess.expiresInMin + ' min', expColor);
       } else {
-        html += row('Supabase session', '❌ none — writes will be RLS-rejected', '#c62828');
+        html += row('Supabase session',
+          '❌ none — writes will be RLS-rejected '
+          + '<button onclick="SettingsPage._supabaseSignInMagic()" style="margin-left:8px;background:var(--green-dark);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📧 Send sign-in link</button>',
+          '#c62828');
       }
       html += row('BM session (local)', s.bmUser ? (s.bmUser.email + ' · ' + (s.bmUser.role || 'owner')) : '(none)', s.bmUser ? 'var(--text)' : '#a37200');
       html += row('Tenant id', s.tenantId || '(none)', s.tenantId ? 'var(--text)' : '#a37200');
