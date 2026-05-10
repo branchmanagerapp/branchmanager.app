@@ -12,6 +12,35 @@ var ClientsPage = {
   _sortDir: -1,
   _tagFilter: '',
 
+  // v735: right-click context menu on client rows
+  _rowContextMenu: function(event, clientId) {
+    var c = DB.clients.getById(clientId);
+    if (!c) return;
+    var items = [
+      { label: '👁  Open profile',          fn: function() { ClientsPage.showDetail(clientId); } },
+      { label: '✏️  Edit details',           fn: function() { ClientsPage.showForm(clientId); } },
+      { label: '🔔  Communication settings', fn: function() { ClientsPage._showCommSettings(clientId); } },
+      '-',
+      { label: '+  New quote',  fn: function() { QuotesPage.showForm(null, clientId); } },
+      { label: '+  New job',    fn: function() { JobsPage.showForm(null, { clientId: clientId }); } }
+    ];
+    if (c.email) {
+      items.push('-');
+      items.push({ label: '🔗  Send portal invite', fn: function() {
+        if (typeof ClientsPage._sendPortalInvite === 'function') ClientsPage._sendPortalInvite(clientId);
+      }});
+    }
+    items.push('-');
+    items.push({ label: '🗑  Delete client', danger: true, fn: function() {
+      UI.confirm('Delete this client? This cannot be undone.', function() {
+        DB.clients.remove(clientId);
+        UI.toast('Client deleted');
+        loadPage('clients');
+      });
+    }});
+    UI.contextMenu(event, items);
+  },
+
   _co: function() {
     return {
       name: CompanyInfo.get('name'),
@@ -180,7 +209,7 @@ var ClientsPage = {
       html += '<tr><td colspan="5">' + (self._search ? '<div style="text-align:center;padding:24px;color:var(--text-light);">No clients match "' + UI.esc(self._search) + '"</div>' : UI.emptyState('👥', 'No clients yet', 'Add your first client or import.', '+ Add Client', 'ClientsPage.showForm()')) + '</td></tr>';
     } else {
       pageClients.forEach(function(c) {
-        html += '<tr style="cursor:pointer;" onclick="ClientsPage.showDetail(\'' + c.id + '\')">'
+        html += '<tr style="cursor:pointer;" onclick="ClientsPage.showDetail(\'' + c.id + '\')" oncontextmenu="ClientsPage._rowContextMenu(event,\'' + c.id + '\')">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="client-check" value="' + c.id + '" onchange="ClientsPage._updateBulk()" style="width:16px;height:16px;"></td>'
           + '<td><strong>' + UI.esc(c.name || 'Unnamed') + '</strong>'
           + (c.company ? '<div style="font-size:12px;color:var(--text-light);font-weight:400;">' + UI.esc(c.company) + '</div>' : '')

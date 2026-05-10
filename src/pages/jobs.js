@@ -5,6 +5,41 @@ var JobsPage = {
   _page: 0, _perPage: 50, _search: '', _filter: 'all', _sortCol: 'jobNumber', _sortDir: 'desc',
   _activeTab: 'jobs',
 
+  // v735: right-click context menu on job rows
+  _rowContextMenu: function(event, jobId) {
+    var j = DB.jobs.getById(jobId);
+    if (!j) return;
+    var items = [
+      { label: '👁  Open job',         fn: function() { JobsPage.showDetail(jobId); } },
+      { label: '✏️  Edit',              fn: function() { JobsPage.showForm(jobId); } }
+    ];
+    if (j.status !== 'completed') {
+      items.push({ label: '✓  Mark complete', fn: function() {
+        DB.jobs.update(jobId, { status: 'completed', completedAt: new Date().toISOString() });
+        UI.toast('Job #' + (j.jobNumber || '') + ' marked complete');
+        loadPage('jobs');
+      }});
+    }
+    if (j.status === 'completed' && !j.invoiceId) {
+      items.push({ label: '+  Create invoice', fn: function() {
+        if (typeof Workflow !== 'undefined' && Workflow.jobToInvoice) Workflow.jobToInvoice(jobId);
+      }});
+    }
+    if (j.clientId) {
+      items.push('-');
+      items.push({ label: '👤  Open client', fn: function() { ClientsPage.showDetail(j.clientId); } });
+    }
+    items.push('-');
+    items.push({ label: '🗑  Delete', danger: true, fn: function() {
+      UI.confirm('Delete job #' + (j.jobNumber || '') + '?', function() {
+        DB.jobs.remove(jobId);
+        UI.toast('Job deleted');
+        loadPage('jobs');
+      });
+    }});
+    UI.contextMenu(event, items);
+  },
+
   switchTab: function(tab) {
     JobsPage._activeTab = tab;
     loadPage('jobs');
@@ -176,7 +211,7 @@ var JobsPage = {
       html += '<tr><td colspan="9">' + (self._search ? '<div style="text-align:center;padding:24px;color:var(--text-light);">No jobs match "' + self._search + '"</div>' : UI.emptyState('🔧', 'No jobs yet', 'Create a job from an approved quote.', '+ New Job', 'JobsPage.showForm()')) + '</td></tr>';
     } else {
       page.forEach(function(j) {
-        html += '<tr style="cursor:pointer;" onclick="JobsPage.showDetail(\'' + j.id + '\')">'
+        html += '<tr style="cursor:pointer;" onclick="JobsPage.showDetail(\'' + j.id + '\')" oncontextmenu="JobsPage._rowContextMenu(event,\'' + j.id + '\')">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="job-check" value="' + j.id + '" onchange="JobsPage._updateBulk()" style="width:16px;height:16px;"></td>'
           + '<td><strong>' + UI.esc(j.clientName || '—') + '</strong></td>'
           + '<td>#' + (j.jobNumber || '') + '</td>'

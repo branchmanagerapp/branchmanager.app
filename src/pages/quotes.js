@@ -5,6 +5,46 @@
 var QuotesPage = {
   _page: 0, _perPage: 50, _search: '', _filter: 'all', _sortCol: 'quoteNumber', _sortDir: 'desc',
 
+  // v735: right-click context menu on quote rows
+  _rowContextMenu: function(event, quoteId) {
+    var q = DB.quotes.getById(quoteId);
+    if (!q) return;
+    var items = [
+      { label: '👁  Open quote',  fn: function() { QuotesPage.showDetail(quoteId); } },
+      { label: '✏️  Edit',         fn: function() { QuotesPage.showForm(quoteId); } }
+    ];
+    if (q.status === 'draft' || q.status === 'sent' || q.status === 'awaiting' || q.status === 'changes_requested') {
+      items.push({ label: '📤  Send to client', fn: function() { QuotesPage._sendQuote(quoteId); } });
+      items.push({ label: '🔁  Send follow-up', fn: function() { QuotesPage._quickFollowUp(quoteId); } });
+    }
+    if (q.status !== 'converted' && q.status !== 'declined') {
+      items.push({ label: '🔨  Convert to job', fn: function() {
+        if (typeof Workflow !== 'undefined' && Workflow.quoteToJob) {
+          var job = Workflow.quoteToJob(quoteId);
+          if (job) loadPage('jobs');
+        }
+      }});
+      items.push({ label: '✗  Mark declined', fn: function() {
+        DB.quotes.update(quoteId, { status: 'declined', declinedAt: new Date().toISOString() });
+        UI.toast('Quote declined');
+        loadPage('quotes');
+      }});
+    }
+    if (q.clientId) {
+      items.push('-');
+      items.push({ label: '👤  Open client', fn: function() { ClientsPage.showDetail(q.clientId); } });
+    }
+    items.push('-');
+    items.push({ label: '🗑  Delete', danger: true, fn: function() {
+      UI.confirm('Delete quote #' + (q.quoteNumber || '') + '?', function() {
+        DB.quotes.remove(quoteId);
+        UI.toast('Quote deleted');
+        loadPage('quotes');
+      });
+    }});
+    UI.contextMenu(event, items);
+  },
+
   _co: function() {
     return {
       name: CompanyInfo.get('name'),
@@ -131,7 +171,7 @@ var QuotesPage = {
       page.forEach(function(q) {
         var isStale = (q.status === 'sent' || q.status === 'awaiting') && q.createdAt && new Date(q.createdAt) < now7ago;
         var staleDot = isStale ? '<span title="Stale — sent 7+ days ago, needs follow-up" style="display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;margin-right:6px;vertical-align:middle;"></span>' : '';
-        html += '<tr onclick="QuotesPage.showForm(\'' + q.id + '\')" style="cursor:pointer;">'
+        html += '<tr onclick="QuotesPage.showForm(\'' + q.id + '\')" oncontextmenu="QuotesPage._rowContextMenu(event,\'' + q.id + '\')" style="cursor:pointer;">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="q-check" value="' + q.id + '" onchange="QuotesPage._updateBulk()" style="width:16px;height:16px;"></td>'
           + '<td>' + staleDot + '<strong>' + UI.esc(q.clientName || '—') + '</strong>'
           +   (q.property ? '<div style="font-size:11px;color:var(--text-light);margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(q.property) + '</div>' : '') + '</td>'

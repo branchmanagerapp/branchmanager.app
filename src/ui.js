@@ -551,6 +551,73 @@ var UI = (function() {
     return showModal(title, body, { keepModal: true, footer: footerHtml });
   }
 
+  // v735: lightweight right-click context menu. Pages call
+  //   UI.contextMenu(event, [{label, fn, danger}, '-', ...])
+  // from oncontextmenu attrs. '-' renders a divider. Auto-closes on
+  // outside click / Esc / scroll.
+  function contextMenu(event, items) {
+    if (event && event.preventDefault) event.preventDefault();
+    closeContextMenu();
+    if (!items || !items.length) return;
+    var ul = document.createElement('div');
+    ul.id = 'bm-context-menu';
+    ul.setAttribute('role', 'menu');
+    ul.style.cssText = 'position:fixed;z-index:5000;background:var(--white);border:1px solid var(--border);'
+      + 'border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:4px 0;min-width:180px;font-size:13px;';
+    items.forEach(function(it) {
+      if (it === '-') {
+        var hr = document.createElement('div');
+        hr.style.cssText = 'height:1px;background:var(--border);margin:4px 0;';
+        ul.appendChild(hr);
+        return;
+      }
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.style.cssText = 'display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;cursor:pointer;'
+        + 'color:' + (it.danger ? '#c62828' : 'var(--text)') + ';font-size:13px;line-height:1.3;';
+      btn.textContent = it.label || '';
+      btn.onmouseover = function() { btn.style.background = 'var(--bg)'; };
+      btn.onmouseout = function() { btn.style.background = 'none'; };
+      btn.onclick = function(ev) {
+        ev.stopPropagation();
+        closeContextMenu();
+        if (typeof it.fn === 'function') it.fn();
+      };
+      ul.appendChild(btn);
+    });
+    document.body.appendChild(ul);
+    // Position — clamp inside viewport
+    var x = (event && event.clientX) || 0;
+    var y = (event && event.clientY) || 0;
+    var rect = ul.getBoundingClientRect();
+    var vw = window.innerWidth, vh = window.innerHeight;
+    if (x + rect.width > vw - 8) x = vw - rect.width - 8;
+    if (y + rect.height > vh - 8) y = vh - rect.height - 8;
+    ul.style.left = Math.max(4, x) + 'px';
+    ul.style.top  = Math.max(4, y) + 'px';
+    // Close handlers
+    setTimeout(function() {
+      document.addEventListener('click', closeContextMenu, { once: true });
+      document.addEventListener('contextmenu', _ctxAvoidStack);
+      document.addEventListener('keydown', _ctxEsc);
+      window.addEventListener('scroll', closeContextMenu, true);
+    }, 0);
+  }
+  function _ctxEsc(e) { if (e.key === 'Escape') closeContextMenu(); }
+  function _ctxAvoidStack(e) {
+    // If the same right-click happens again somewhere else, close + let the
+    // new contextmenu attach. Don't preventDefault on the new event.
+    var ul = document.getElementById('bm-context-menu');
+    if (ul && !ul.contains(e.target)) closeContextMenu();
+  }
+  function closeContextMenu() {
+    var ul = document.getElementById('bm-context-menu');
+    if (ul && ul.parentNode) ul.parentNode.removeChild(ul);
+    document.removeEventListener('keydown', _ctxEsc);
+    document.removeEventListener('contextmenu', _ctxAvoidStack);
+    window.removeEventListener('scroll', closeContextMenu, true);
+  }
+
   return {
     showModal: showModal,
     modal: modal,
@@ -572,6 +639,8 @@ var UI = (function() {
     toast: toast,
     showLoading: showLoading,
     validateForm: validateForm,
+    contextMenu: contextMenu,
+    closeContextMenu: closeContextMenu,
     esc: esc
   };
 })();
