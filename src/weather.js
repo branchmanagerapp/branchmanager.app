@@ -11,6 +11,8 @@ var Weather = {
   // _renderPageContent and the inline expand under the dispatch map.
   _selectedDay: 0,
   _expanded: false,
+  // v698: when true, hourly table shows all 24 hours instead of 6a–8p work-hours window.
+  _showFullDay: false,
 
   isEnabled: function() {
     return localStorage.getItem('bm-weather-enabled') === 'true';
@@ -41,6 +43,20 @@ var Weather = {
   selectDay: function(idx) {
     Weather._selectedDay = +idx || 0;
     // Re-render whichever surface is open
+    if (document.getElementById('weather-page-content')) {
+      Weather._renderPageContent();
+    } else if (Weather._expanded) {
+      var inner = document.getElementById('weather-data');
+      if (inner) Weather._renderInto(inner, true);
+    }
+  },
+
+  // v698: flip between 6a–8p work-hours view and full 24-hour view of the
+  // selected day's hourly table. Replaces the static "Tap a day for hourly"
+  // hint with an action toggle (you already know how it works once you've
+  // tapped a day once).
+  toggleFullDay: function() {
+    Weather._showFullDay = !Weather._showFullDay;
     if (document.getElementById('weather-page-content')) {
       Weather._renderPageContent();
     } else if (Weather._expanded) {
@@ -273,9 +289,21 @@ var Weather = {
       var days = data.daily;
       var wrapPad = compact ? '12px' : '16px';
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:' + wrapPad + ';margin-bottom:12px;' + (compact ? '' : 'box-shadow:0 1px 3px rgba(0,0,0,.04);') + '">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      // v698: replaced the static "Tap a day for hourly" hint with a toggle
+      // that flips the hourly table below between work-hours (6a–8p, default)
+      // and full 24h view. The label communicates BOTH the tap-action and the
+      // current scope.
+      var fullDay = !!Weather._showFullDay;
+      var toggleBg = fullDay ? 'var(--green-dark)' : 'var(--white)';
+      var toggleColor = fullDay ? '#fff' : 'var(--green-dark)';
+      var toggleBorder = fullDay ? 'var(--green-dark)' : 'var(--green-dark)';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;">'
         + '<div style="font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">5-Day Forecast</div>'
-        + '<div style="font-size:11px;color:var(--text-light);">Tap a day for hourly</div>'
+        + '<button type="button" onclick="event.stopPropagation();Weather.toggleFullDay()" '
+        +   'title="' + (fullDay ? 'Showing all 24 hours — tap to limit to 6a–8p work hours' : 'Showing 6a–8p work hours — tap to see all 24 hours') + '" '
+        +   'style="font-size:11px;font-weight:700;background:' + toggleBg + ';color:' + toggleColor + ';border:1.5px solid ' + toggleBorder + ';border-radius:14px;padding:4px 12px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;gap:5px;">'
+        +   (fullDay ? '🌙 24h' : '☀️ Work hours') + (fullDay ? '' : ' · 6a–8p')
+        + '</button>'
         + '</div>';
       html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center;">';
       for (var i = 0; i < 5; i++) {
@@ -361,7 +389,9 @@ var Weather = {
         var tStr = h.time[k];
         if (tStr.indexOf(dayStr) !== 0) continue;
         var hour = parseInt(tStr.split('T')[1].split(':')[0], 10);
-        if (hour < 6 || hour > 20) continue;
+        // v698: respect Weather._showFullDay — when off, restrict to 6a–8p
+        // (default work-hours window for tree crews).
+        if (!Weather._showFullDay && (hour < 6 || hour > 20)) continue;
         var isPast = isToday && hour < nowHour;
         var isNow = isToday && hour === nowHour;
         var temp = Math.round(h.temperature_2m[k]);
@@ -369,7 +399,8 @@ var Weather = {
         var wind = h.wind_speed_10m ? Math.round(h.wind_speed_10m[k]) : null;
         var feels = h.apparent_temperature ? Math.round(h.apparent_temperature[k]) : null;
         var hIcon = Weather._icon(h.weather_code[k]);
-        var ampm = hour < 12 ? hour + 'am' : hour === 12 ? '12pm' : (hour - 12) + 'pm';
+        // v698: midnight = 12am (not 0am) once full-day view started showing the small hours
+        var ampm = hour === 0 ? '12am' : hour < 12 ? hour + 'am' : hour === 12 ? '12pm' : (hour - 12) + 'pm';
         var rowBg = isNow ? '#f0faf0' : (rowCount % 2 === 0 ? '#fff' : '#fafafa');
         html += '<tr style="background:' + rowBg + ';' + (isPast ? 'opacity:0.4;' : '') + 'border-top:1px solid var(--border);">'
           + '<td style="' + colStyle + 'text-align:left;padding-left:16px;font-weight:' + (isNow ? '700' : '500') + ';color:' + (isNow ? 'var(--green-dark)' : 'var(--text)') + ';white-space:nowrap;">'

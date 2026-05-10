@@ -1,5 +1,5 @@
 {
-  "version": 697,
+  "version": 698,
   "released": "2026-05-09",
-  "notes": "v697: Tasks restored to sidebar + critical v695 _save → _saveAll bug fix"
+  "notes": "v698: weather 24h toggle"
 }
