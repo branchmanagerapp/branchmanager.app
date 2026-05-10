@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 722; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 723; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -288,6 +288,17 @@
     overflow:hidden;
   }
   .sidebar.collapsed { width:56px; }
+  /* v723: hover-expand overlay — when collapsed sidebar is hovered (class
+     swapped via JS), expand to full width but keep the layout slot at 56px
+     so main content doesn't jolt sideways. Position absolute over the rail
+     position with elevated z + soft shadow to read as a flyout. */
+  .sidebar.hover-expanded {
+    width: var(--sidebar-w);
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    box-shadow: 0 8px 28px rgba(0,0,0,.15);
+    z-index: 200;
+  }
   .sidebar.collapsed .sidebar-header h1,
   .sidebar.collapsed .sidebar-user,
   .sidebar.collapsed .nav-section,
@@ -1049,7 +1060,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v722.min.js"></script>
+<script defer src="dist/bm.bundle.v723.min.js"></script>
 
 
 
@@ -1174,6 +1185,32 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
     loadPage(page);
   });
 });
+
+// v723: sidebar hover-expand. When the user has collapsed the sidebar,
+// hovering over the rail temporarily swaps to the full expanded state.
+// Touch devices (no real hover) skip this — they keep tap-to-toggle.
+(function setupSidebarHoverExpand() {
+  var sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+  var hoverTimer;
+  sidebar.addEventListener('mouseenter', function() {
+    if (sidebar.classList.contains('collapsed')) {
+      clearTimeout(hoverTimer);
+      sidebar.classList.add('hover-expanded');
+      sidebar.classList.remove('collapsed');
+    }
+  });
+  sidebar.addEventListener('mouseleave', function() {
+    if (sidebar.classList.contains('hover-expanded')) {
+      // 200ms grace so brief cursor flicks don't snap back instantly
+      hoverTimer = setTimeout(function() {
+        sidebar.classList.remove('hover-expanded');
+        sidebar.classList.add('collapsed');
+      }, 200);
+    }
+  });
+})();
 
 // v427: dark mode toggle (under DB avatar menu). data-theme="dark" toggles existing CSS rules.
 function toggleDarkMode() {

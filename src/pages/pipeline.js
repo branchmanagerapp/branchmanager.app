@@ -390,7 +390,7 @@ var PipelinePage = {
     }
 
     function renderSubCol(col) {
-      var html = '<div style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;">'
+      var html = '<div class="bm-pipe-col" style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;overflow:hidden;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">'
         +   '<span style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;">' + col.label + '</span>'
         +   '<span style="font-size:11px;color:var(--text-light);font-weight:600;">' + col.items.length + '</span>'
@@ -418,7 +418,10 @@ var PipelinePage = {
         +     ' <span style="font-weight:500;color:var(--text-light);font-size:13px;">' + totalCount + '</span></h3>'
         +   (totalValue > 0 ? '<span style="font-weight:700;color:var(--green-dark);font-size:13px;">' + UI.moneyInt(totalValue) + '</span>' : '')
         + '</div>';
-      html += '<div style="display:grid;grid-template-columns:repeat(' + subs.length + ',minmax(0,1fr));gap:6px;">';
+      // v723: flex layout so columns can flex-grow on hover. min-width on
+      // sub-cols keeps them readable when collapsed; :hover bumps to 3x
+      // basis so the focused column has room to breathe.
+      html += '<div class="bm-pipe-row">';
       subs.forEach(function(c) { html += renderSubCol(c); });
       html += '</div>';
       html += '</section>';
@@ -427,9 +430,15 @@ var PipelinePage = {
 
     // Width-balanced grid: Requests (2 sub-cols) gets less room than
     // Quotes (3 sub-cols). 2fr / 3fr roughly equalizes per-column width.
+    // v723: hover-expand on sub-cols via flex-grow.
     html += '<style>'
       + '.pipeline-jobber{display:grid;grid-template-columns:2fr 3fr;gap:18px;align-items:start;}'
+      + '.bm-pipe-row{display:flex;gap:6px;}'
+      + '.bm-pipe-row > .bm-pipe-col{flex:1 1 0;min-width:0;transition:flex .22s ease;}'
+      + '.bm-pipe-row > .bm-pipe-col:hover{flex:3 1 0;}'
+      + '.bm-pipe-row:hover > .bm-pipe-col:not(:hover){flex:0.6 1 0;}'
       + '@media(max-width:1100px){.pipeline-jobber{grid-template-columns:1fr;gap:18px;}}'
+      + '@media(hover:none){.bm-pipe-row > .bm-pipe-col:hover{flex:1 1 0;}.bm-pipe-row:hover > .bm-pipe-col:not(:hover){flex:1 1 0;}}'
       + '</style>'
       + '<div class="pipeline-jobber">'
       +   renderSection('Requests', subRequests)
