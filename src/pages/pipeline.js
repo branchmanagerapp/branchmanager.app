@@ -342,11 +342,13 @@ var PipelinePage = {
         items: requestSide.filter(function(d) { return ageMs(d) > 0 && ageMs(d) < sevenDaysAgo; }) }
     ];
 
-    // For Quotes side, sub-categorize by underlying quote.status
+    // For Quotes side, sub-categorize by underlying quote.status.
+    // v729: dropStatus tells renderSubCol to wire up drag/drop handlers
+    // — drag a quote card from one column to another flips quote.status.
     var subQuotes = [
-      { id: 'q_draft',    label: 'Draft',    items: [] },
-      { id: 'q_sent',     label: 'Sent',     items: [] },
-      { id: 'q_approved', label: 'Approved', items: [] }
+      { id: 'q_draft',    label: 'Draft',    dropStatus: 'draft',    items: [] },
+      { id: 'q_sent',     label: 'Sent',     dropStatus: 'sent',     items: [] },
+      { id: 'q_approved', label: 'Approved', dropStatus: 'approved', items: [] }
     ];
     quoteSide.forEach(function(d) {
       var q = DB.quotes.getById(d.quoteId);
@@ -374,8 +376,14 @@ var PipelinePage = {
           + '</div>';
       }
 
-      return '<div onclick="PipelinePage.showDeal(\'' + d.id + '\')" '
-        + 'style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:5px;cursor:pointer;line-height:1.35;transition:border-color .12s;"'
+      // v729: quote cards are draggable so they can be moved between
+      // Quote sub-columns (Draft / Sent / Approved). Request cards aren't
+      // — those columns are age-derived, not user-controllable.
+      var dragAttrs = d.quoteId
+        ? ' draggable="true" ondragstart="event.stopPropagation();PipelinePage.dragStart(event,\'' + d.id + '\')"'
+        : '';
+      return '<div' + dragAttrs + ' onclick="PipelinePage.showDeal(\'' + d.id + '\')" '
+        + 'style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:5px;cursor:' + (d.quoteId ? 'grab' : 'pointer') + ';line-height:1.35;transition:border-color .12s;"'
         + ' onmouseover="this.style.borderColor=\'#94a3b8\';"'
         + ' onmouseout="this.style.borderColor=\'var(--border)\';">'
         + '<div style="font-weight:700;font-size:13px;color:var(--text);">' + prefix + UI.esc(d.clientName || 'Unknown') + '</div>'
@@ -390,7 +398,12 @@ var PipelinePage = {
     }
 
     function renderSubCol(col) {
-      var html = '<div class="bm-pipe-col" style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;overflow:hidden;">'
+      // v729: drop attrs only on quote sub-cols — drag a quote card here
+      // and it flips quote.status to col.dropStatus.
+      var dropAttrs = col.dropStatus
+        ? ' ondragover="event.preventDefault();this.style.background=\'#e8f5e9\'" ondragleave="this.style.background=\'var(--bg)\'" ondrop="PipelinePage._quoteSubColDrop(event,\'' + col.dropStatus + '\')"'
+        : '';
+      var html = '<div class="bm-pipe-col"' + dropAttrs + ' style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;overflow:hidden;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">'
         +   '<span style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;">' + col.label + '</span>'
         +   '<span style="font-size:11px;color:var(--text-light);font-weight:600;">' + col.items.length + '</span>'
@@ -598,6 +611,29 @@ var PipelinePage = {
       loadPage('pipeline');
     }
     PipelinePage._dragId = null;
+  },
+
+  // v729: drop a quote card on a Quote sub-column → update quote.status
+  // (draft / sent / approved). Stamps sentAt / approvedAt on first
+  // transition into those states. Underlying deal stays in 'quote_sent'
+  // pipeline stage; the sub-column is purely a quote.status reflection.
+  _quoteSubColDrop: function(e, newStatus) {
+    e.preventDefault();
+    if (e.currentTarget && e.currentTarget.style) e.currentTarget.style.background = 'var(--bg)';
+    var dragId = PipelinePage._dragId;
+    PipelinePage._dragId = null;
+    if (!dragId) return;
+    var deal = PipelinePage.getDeals().find(function(d) { return d.id === dragId; });
+    if (!deal || !deal.quoteId) return;
+    var q = DB.quotes.getById(deal.quoteId);
+    if (!q) return;
+    if ((q.status || '').toLowerCase() === newStatus) return; // no-op
+    var patch = { status: newStatus };
+    if (newStatus === 'sent' && !q.sentAt) patch.sentAt = new Date().toISOString();
+    if (newStatus === 'approved' && !q.approvedAt) patch.approvedAt = new Date().toISOString();
+    DB.quotes.update(deal.quoteId, patch);
+    UI.toast('Quote → ' + newStatus.charAt(0).toUpperCase() + newStatus.slice(1));
+    loadPage('pipeline');
   },
 
   // v718: declined → quote.status='declined' → auto-prune removes from kanban.
