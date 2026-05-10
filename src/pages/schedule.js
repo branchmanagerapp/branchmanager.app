@@ -119,7 +119,8 @@ var SchedulePage = {
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">'
       + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
       +   '<button class="btn btn-outline" onclick="SchedulePage.prev()" style="padding:4px 10px;">&larr;</button>'
-      +   '<h3 id="cal-title" style="font-size:16px;font-weight:700;white-space:nowrap;margin:0 4px;">' + self._getTitle() + '</h3>'
+      +   '<h3 id="cal-title" onclick="SchedulePage._openMonthPicker(event)" title="Jump to month" style="font-size:16px;font-weight:700;white-space:nowrap;margin:0 4px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:4px;">' + self._getTitle() + '<span style="font-size:10px;color:var(--text-light);">&#9662;</span></h3>'
+      +   '<input type="month" id="cal-month-picker" value="' + self.currentDate.getFullYear() + '-' + String(self.currentDate.getMonth()+1).padStart(2,'0') + '" onchange="SchedulePage._jumpToMonth(this.value)" style="position:absolute;width:0;height:0;opacity:0;border:none;padding:0;">'
       +   '<button class="btn btn-outline" onclick="SchedulePage.next()" style="padding:4px 10px;">&rarr;</button>'
       +   '<button class="btn btn-outline" onclick="SchedulePage.goToday()" style="font-size:12px;padding:4px 10px;">Today</button>'
       + '</div>'
@@ -225,6 +226,19 @@ var SchedulePage = {
     return h + ':' + m + ' ' + ampm;
   },
 
+  // Compact form for cramped calendar pills: "9a", "3p", "2:30p"
+  _formatTimeShort: function(t) {
+    if (!t) return '';
+    var parts = t.split(':');
+    var h = parseInt(parts[0]);
+    if (isNaN(h)) return '';
+    var m = parts[1] || '00';
+    var suffix = h >= 12 ? 'p' : 'a';
+    if (h > 12) h -= 12;
+    if (h === 0) h = 12;
+    return (m === '00' ? String(h) : h + ':' + m) + suffix;
+  },
+
   _getTitle: function() {
     var d = SchedulePage.currentDate;
     var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -262,7 +276,7 @@ var SchedulePage = {
         + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       globalUnscheduled.slice(0, 10).forEach(function(j) {
         html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
-          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:8px 12px;cursor:grab;min-width:160px;flex-shrink:0;">'
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;min-width:160px;flex-shrink:0;">'
           + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
           + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
@@ -399,6 +413,19 @@ var SchedulePage = {
     loadPage('schedule');
   },
 
+  // Color the left-border stripe of unscheduled job cards by age.
+  // 0–4 days: normal green. 5–9 days: amber. 10+ days: red.
+  _unscheduledStripe: function(j) {
+    var ts = j.createdAt || j.created_at || j.quoteApprovedAt || j.updatedAt;
+    if (!ts) return 'var(--accent)';
+    var ms = new Date(ts).getTime();
+    if (isNaN(ms)) return 'var(--accent)';
+    var ageDays = (Date.now() - ms) / 86400000;
+    if (ageDays >= 10) return '#dc2626';
+    if (ageDays >= 5) return '#f59e0b';
+    return 'var(--accent)';
+  },
+
   _dockedMapEnabled: function() {
     return localStorage.getItem('bm-cal-map') !== 'false';
   },
@@ -479,7 +506,7 @@ var SchedulePage = {
       html += '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       unscheduled.slice(0, 10).forEach(function(j) {
         html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
-          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:8px 12px;cursor:grab;min-width:160px;flex-shrink:0;">'
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;min-width:160px;flex-shrink:0;">'
           + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
           + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
@@ -498,9 +525,12 @@ var SchedulePage = {
       dd.setDate(dd.getDate() + i);
       var dateStr = SchedulePage._localDateStr(dd);
       var isToday = dateStr === today;
-      html += '<div style="background:' + (isToday ? 'var(--green-dark)' : 'var(--bg)') + ';color:' + (isToday ? '#fff' : 'var(--text)') + ';padding:6px 8px 8px;text-align:center;font-size:12px;font-weight:700;">'
+      html += '<div style="background:var(--bg);color:var(--text);padding:6px 8px 8px;text-align:center;font-size:12px;font-weight:700;">'
         + (typeof Weather !== 'undefined' ? '<div style="margin-bottom:2px;min-height:16px;">' + Weather.getInline(dateStr) + '</div>' : '')
-        + days[i] + '<br><span style="font-size:18px;font-weight:800;">' + dd.getDate() + '</span>'
+        + days[i] + '<br>'
+        + (isToday
+          ? '<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:15px;font-weight:800;">' + dd.getDate() + '</span>'
+          : '<span style="font-size:18px;font-weight:800;">' + dd.getDate() + '</span>')
         + '</div>';
     }
 
@@ -517,7 +547,7 @@ var SchedulePage = {
         + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
         + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
-        + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;' + (isToday ? 'border-top:3px solid var(--green-dark);' : '') + 'transition:background .15s,box-shadow .15s;">';
+        + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;transition:background .15s,box-shadow .15s;">';
       dayJobs.forEach(function(j) {
         var bgColor = j.status === 'completed' ? '#e8f5e9' : j.status === 'late' ? '#ffebee' : j.status === 'in_progress' ? '#fff3e0' : '#e3f2fd';
         var borderColor = j.status === 'completed' ? '#4caf50' : j.status === 'late' ? '#f44336' : j.status === 'in_progress' ? '#ff9800' : '#2196f3';
@@ -528,8 +558,9 @@ var SchedulePage = {
           if (j.quoteId) jobPhotos = jobPhotos.concat(Photos.getAll('quote', j.quoteId));
           if (j.requestId) jobPhotos = jobPhotos.concat(Photos.getAll('request', j.requestId));
         }
+        var wkTime = SchedulePage._formatTimeShort(j.startTime);
         html += '<div draggable="true" ondragstart="event.stopPropagation();SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" onclick="event.stopPropagation();JobsPage.showDetail(\'' + j.id + '\')" style="background:' + bgColor + ';border-left:3px solid ' + borderColor + ';border-radius:6px;padding:6px 8px;margin-bottom:4px;cursor:grab;font-size:12px;">'
-          + '<div style="font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '') + '</div>'
+          + '<div style="font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (wkTime ? '<span style="color:var(--green-dark);">' + wkTime + '</span> ' : '') + UI.esc(j.clientName || '') + '</div>'
           + '<div style="color:var(--text-light);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '#' + j.jobNumber) + '</div>'
           + '<div style="font-weight:700;font-size:11px;color:var(--green-dark);margin-top:2px;">' + UI.moneyInt(j.total) + '</div>'
           + (jobPhotos.length > 0 ? '<div style="display:flex;gap:2px;margin-top:4px;overflow:hidden;">' + jobPhotos.slice(0, 3).map(function(p) { return '<img src="' + (p.url || p.dataUrl || '') + '" style="width:24px;height:24px;border-radius:3px;object-fit:cover;">'; }).join('') + (jobPhotos.length > 3 ? '<span style="font-size:9px;color:var(--text-light);align-self:center;">+' + (jobPhotos.length - 3) + '</span>' : '') + '</div>' : '')
@@ -578,7 +609,7 @@ var SchedulePage = {
       html += '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       unscheduled.slice(0, 10).forEach(function(j) {
         html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
-          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:8px 12px;cursor:grab;min-width:160px;flex-shrink:0;">'
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;min-width:160px;flex-shrink:0;">'
           + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
           + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
@@ -609,9 +640,11 @@ var SchedulePage = {
         + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
         + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
-        + 'style="background:var(--white);min-height:80px;padding:4px;cursor:pointer;transition:background .15s;' + (isToday ? 'border:2px solid var(--green-dark);' : '') + '">'
+        + 'style="background:var(--white);min-height:80px;padding:4px;cursor:pointer;transition:background .15s;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
-        + '<span style="font-size:12px;font-weight:' + (isToday ? '800' : '600') + ';color:' + (isToday ? 'var(--green-dark)' : 'var(--text)') + ';">' + day + '</span>'
+        + (isToday
+            ? '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + day + '</span>'
+            : '<span style="font-size:12px;font-weight:600;color:var(--text);">' + day + '</span>')
         + (typeof Weather !== 'undefined' ? Weather.getInline(dateStr) : '')
         + '</div>';
 
@@ -623,9 +656,11 @@ var SchedulePage = {
           if (j.quoteId) mPhotos = mPhotos.concat(Photos.getAll('quote', j.quoteId));
           if (j.requestId) mPhotos = mPhotos.concat(Photos.getAll('request', j.requestId));
         }
+        var moTime = SchedulePage._formatTimeShort(j.startTime);
         html += '<div draggable="true" ondragstart="event.stopPropagation();SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
           + 'onclick="event.stopPropagation();JobsPage.showDetail(\'' + j.id + '\')" '
           + 'style="background:' + bgColor + ';border-radius:4px;padding:2px 4px;margin-bottom:2px;cursor:grab;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+          + (moTime ? '<b style="color:var(--green-dark);">' + moTime + '</b> ' : '')
           + (j.clientName || '#' + j.jobNumber)
           + (mPhotos.length > 0 ? ' 📷' + mPhotos.length : '')
           + '</div>';
@@ -678,6 +713,30 @@ var SchedulePage = {
 
   goToday: function() {
     SchedulePage.currentDate = new Date();
+    loadPage('schedule');
+  },
+
+  _openMonthPicker: function(event) {
+    var picker = document.getElementById('cal-month-picker');
+    if (!picker) return;
+    if (event && event.target) {
+      var rect = event.target.getBoundingClientRect();
+      picker.style.left = (rect.left + window.scrollX) + 'px';
+      picker.style.top = (rect.bottom + window.scrollY) + 'px';
+    }
+    if (typeof picker.showPicker === 'function') {
+      try { picker.showPicker(); return; } catch(e) {}
+    }
+    picker.focus();
+    picker.click();
+  },
+  _jumpToMonth: function(val) {
+    if (!val) return;
+    var parts = val.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10) - 1;
+    if (isNaN(y) || isNaN(m)) return;
+    SchedulePage.currentDate = new Date(y, m, 1, 12, 0, 0);
     loadPage('schedule');
   },
 
