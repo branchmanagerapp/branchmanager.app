@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 725; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 726; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1078,7 +1078,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v725.min.js"></script>
+<script defer src="dist/bm.bundle.v726.min.js"></script>
 
 
 
@@ -2452,6 +2452,15 @@ var NotifCenter = (function() {
     else { dot.className = 'cc-dot'; }
   }
 
+  // v726: missed calls deliberately excluded — Doug doesn't want them in
+  // the system. Voicemails (transcripts) and SMS still come through.
+  // Edge function (dialpad-webhook) drops new ones at ingest; this filter
+  // is defense-in-depth for any historical rows already in the table.
+  function _isMissedCallRow(c) {
+    return c && c.channel === 'call' &&
+      (c.status === 'missed' || c.status === 'no-answer' || c.status === 'hangup');
+  }
+
   function _loadComms() {
     var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
     if (!sb) return;
@@ -2464,18 +2473,20 @@ var NotifCenter = (function() {
       .limit(50)
       .then(function(r) {
         if (r.error || !r.data) return;
+        // v726: drop missed calls before they hit cache, browser notif, or feed
+        var rows = r.data.filter(function(c) { return !_isMissedCallRow(c); });
         // Fire browser notifications for genuinely new items
         if (_lastPollTime) {
-          var newItems = r.data.filter(function(c) { return c.created_at > _lastPollTime; });
+          var newItems = rows.filter(function(c) { return c.created_at > _lastPollTime; });
           newItems.forEach(function(c) {
             var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
             var name = meta.name || c.from_number || 'Unknown';
-            var label = c.channel === 'sms' ? 'SMS from ' : (c.channel === 'voicemail' ? 'Voicemail from ' : 'Missed call from ');
+            var label = c.channel === 'sms' ? 'SMS from ' : (c.channel === 'voicemail' ? 'Voicemail from ' : 'Inbound from ');
             var snippet = c.body ? ' — ' + c.body.substring(0, 60) : '';
             _fireBrowserNotif('Branch Manager', label + name + snippet);
           });
         }
-        _commCache = r.data;
+        _commCache = rows;
         _lastPollTime = new Date().toISOString();
         _updateCCDot();
         updateBadge();

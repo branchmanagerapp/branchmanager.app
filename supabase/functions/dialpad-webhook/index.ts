@@ -335,6 +335,19 @@ Deno.serve(async (req) => {
     }
   }
 
+  // v726: Doug doesn't want missed calls in the system at all. They're noise
+  // — phone rings, nobody picks up, no transcript, no message. The follow-up
+  // path is "I see a missed call on my phone, I call them back." Recording
+  // them in `communications` just clutters Activity Feed + Leads Center.
+  // Voicemails (with transcripts) and real SMS still land here as before.
+  if (row.channel === "call" &&
+      (row.status === "missed" || row.status === "no-answer" || row.status === "hangup")) {
+    return new Response(JSON.stringify({ ok: true, skipped: "missed_call" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
   // Upsert (idempotent on dialpad_id)
   const { error } = await sb
     .from("communications")
