@@ -64,7 +64,17 @@ var ExpensesPage = {
       + '<div><label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px;">Job (optional)</label>'
       + '<input type="text" id="exp-job" placeholder="Job # or client" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;"></div>'
       + '<button onclick="ExpensesPage.addExpense()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Add</button>'
-      + '</div></div>';
+      + '</div>'
+      // v719: receipt photo (Jobber-pattern). Stored as a data URL on
+      // expense.receiptUrl. Tap → modal preview. Camera capture on phones.
+      + '<div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+      +   '<label for="exp-receipt-input" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px dashed var(--border);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--text-light);font-weight:600;">📷 Add receipt photo'
+      +     '<input id="exp-receipt-input" type="file" accept="image/*" capture="environment" onchange="ExpensesPage._onReceiptPicked(event)" style="display:none;">'
+      +   '</label>'
+      +   '<span id="exp-receipt-preview" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text-light);"></span>'
+      +   '<input type="hidden" id="exp-receipt-data" value="">'
+      + '</div>'
+      + '</div>';
 
     // Fixed costs setup
     html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:16px;">'
@@ -130,8 +140,11 @@ var ExpensesPage = {
         grouped[cat].forEach(function(e) {
           var vendorBadge = e.vendor ? ' <span style="font-size:11px;background:#e8f5e9;color:var(--green-dark);padding:1px 5px;border-radius:4px;">' + UI.esc(e.vendor) + '</span>' : '';
           var jobBadge = e.jobNote ? ' <span style="font-size:11px;background:var(--bg);padding:1px 5px;border-radius:4px;">' + UI.esc(e.jobNote) + '</span>' : '';
+          var receiptThumb = e.receiptUrl
+            ? '<img src="' + e.receiptUrl + '" onclick="event.stopPropagation();ExpensesPage._viewReceipt(\'' + e.id + '\')" style="width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--border);cursor:pointer;flex-shrink:0;margin-right:6px;" title="View receipt">'
+            : '';
           html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0 6px 24px;font-size:13px;border-bottom:1px solid #f5f5f5;">'
-            + '<span style="color:var(--text-light);">' + UI.esc(e.description || cat) + vendorBadge + jobBadge + ' <span style="font-size:11px;">' + UI.dateShort(e.date) + '</span></span>'
+            + '<div style="display:flex;align-items:center;flex:1;min-width:0;">' + receiptThumb + '<span style="color:var(--text-light);min-width:0;">' + UI.esc(e.description || cat) + vendorBadge + jobBadge + ' <span style="font-size:11px;">' + UI.dateShort(e.date) + '</span></span></div>'
             + '<div style="display:flex;align-items:center;gap:6px;"><span style="font-weight:600;">' + UI.money(e.amount) + '</span>'
             + '<button onclick="ExpensesPage.openEditModal(\'' + e.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:14px;padding:2px 4px;line-height:1;" title="Edit">✏️</button>'
             + '<button onclick="ExpensesPage.deleteExpense(\'' + e.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:16px;padding:2px 4px;line-height:1;" title="Delete">×</button></div></div>';
@@ -248,13 +261,16 @@ var ExpensesPage = {
     if (!amount || amount <= 0) { UI.toast('Enter an amount', 'error'); return; }
 
     var dateVal = (dateEl && dateEl.value) ? dateEl.value + 'T12:00:00.000Z' : new Date().toISOString();
+    var receiptEl = document.getElementById('exp-receipt-data');
+    var receiptUrl = receiptEl ? receiptEl.value : '';
     DB.expenses.create({
       amount: amount,
       category: category,
       description: desc,
       date: dateVal,
       vendor: vendorEl ? vendorEl.value.trim() : '',
-      jobNote: jobEl ? jobEl.value.trim() : ''
+      jobNote: jobEl ? jobEl.value.trim() : '',
+      receiptUrl: receiptUrl || null
     });
     document.getElementById('exp-amount').value = '';
     document.getElementById('exp-desc').value = '';
@@ -262,6 +278,50 @@ var ExpensesPage = {
     if (jobEl) jobEl.value = '';
     UI.toast('Expense added: ' + UI.money(amount));
     loadPage('expenses');
+  },
+
+  // v719: Receipt photo helpers
+  _onReceiptPicked: function(ev) {
+    var file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      UI.toast('Photo too large (max 8MB)', 'error');
+      ev.target.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function() {
+      var dataUrl = reader.result;
+      var hidden = document.getElementById('exp-receipt-data');
+      var preview = document.getElementById('exp-receipt-preview');
+      if (hidden) hidden.value = dataUrl;
+      if (preview) {
+        preview.style.display = 'inline-flex';
+        preview.innerHTML = '<img src="' + dataUrl + '" style="width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid var(--border);">'
+          + '<span>' + (file.name || 'receipt.jpg') + '</span>'
+          + '<button onclick="ExpensesPage._clearReceipt()" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:14px;padding:0 4px;" title="Remove">×</button>';
+      }
+    };
+    reader.readAsDataURL(file);
+  },
+
+  _clearReceipt: function() {
+    var hidden = document.getElementById('exp-receipt-data');
+    var preview = document.getElementById('exp-receipt-preview');
+    var input = document.getElementById('exp-receipt-input');
+    if (hidden) hidden.value = '';
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (input) input.value = '';
+  },
+
+  _viewReceipt: function(id) {
+    var exp = DB.expenses.getById(id);
+    if (!exp || !exp.receiptUrl) { UI.toast('No receipt on file', 'error'); return; }
+    var body = '<div style="text-align:center;"><img src="' + exp.receiptUrl + '" style="max-width:100%;max-height:70vh;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.15);"></div>'
+      + '<div style="margin-top:10px;font-size:13px;color:var(--text-light);text-align:center;">' + UI.esc(exp.description || '') + ' · ' + UI.money(exp.amount) + '</div>';
+    UI.modal('Receipt — ' + UI.dateShort(exp.date), body, [
+      { label: 'Close', fn: 'UI.closeModal()', primary: true }
+    ]);
   },
 
   deleteExpense: function(id) {

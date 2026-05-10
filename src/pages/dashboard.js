@@ -2,6 +2,40 @@
  * Branch Manager — Dashboard Page
  */
 var DashboardPage = {
+  // v719: Quick-add a task/note from the dashboard input. No due date,
+  // no overlay — straight to the TaskReminders store. Doug can promote
+  // to a real reminder later by opening the task.
+  _quickAddTask: function() {
+    var input = document.getElementById('dash-quickadd');
+    if (!input) return;
+    var raw = (input.value || '').trim();
+    if (!raw) { input.focus(); return; }
+    if (typeof TaskReminders === 'undefined' || !TaskReminders._getAll) {
+      UI.toast('Tasks module not loaded', 'error'); return;
+    }
+    var tasks = TaskReminders._getAll(true);
+    tasks.push({
+      id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      title: raw,
+      description: '',
+      assignedTo: '',
+      dueDate: '',
+      priority: 'normal',
+      category: '',
+      recurrence: '',
+      actionLink: '',
+      completed: false,
+      completedAt: null,
+      notified: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    TaskReminders._saveAll(tasks);
+    input.value = '';
+    UI.toast('Saved · "' + (raw.length > 32 ? raw.substring(0, 32) + '…' : raw) + '"');
+    loadPage('dashboard');
+  },
+
   render: function() {
     // One-time fix: mark legacy system-migrated completed jobs as already invoiced
     if (!localStorage.getItem('bm-legacy-jobs-fixed')) {
@@ -438,6 +472,39 @@ var DashboardPage = {
     var cutoff5dash  = new Date(now.getTime() - 5  * 86400000).toISOString();
     var todayStrIb   = now.toISOString().substring(0, 10);
 
+    // 0. Overdue + due-today tasks (top of inbox — most actionable)
+    if (typeof TaskReminders !== 'undefined' && TaskReminders._getAll) {
+      var taskList = TaskReminders._getAll();
+      var todayBoundary = new Date(); todayBoundary.setHours(23, 59, 59, 999);
+      var todayBStart = new Date(); todayBStart.setHours(0, 0, 0, 0);
+      taskList.forEach(function(t) {
+        if (t.completed || t.archived) return;
+        if (!t.dueDate) return; // open tasks without dueDate render via the Tasks page itself
+        var due = new Date(t.dueDate);
+        if (isNaN(due)) return;
+        if (due < todayBStart) {
+          // Overdue
+          var daysOver = Math.floor((Date.now() - due.getTime()) / 86400000);
+          inboxItems.push({
+            icon: 'clock-alert', tone: 'red',
+            label: 'Task overdue — ' + UI.esc(t.title || ''),
+            sub: daysOver + 'd overdue · was due ' + UI.dateShort(t.dueDate),
+            actionLabel: 'Done',
+            onclick: 'TaskReminders._toggleComplete(\'' + t.id + '\');loadPage(\'dashboard\');'
+          });
+        } else if (due <= todayBoundary) {
+          // Due today
+          inboxItems.push({
+            icon: 'check-square', tone: 'amber',
+            label: 'Due today — ' + UI.esc(t.title || ''),
+            sub: 'Tap to mark done',
+            actionLabel: 'Done',
+            onclick: 'TaskReminders._toggleComplete(\'' + t.id + '\');loadPage(\'dashboard\');'
+          });
+        }
+      });
+    }
+
     // 1. Approved quotes ready to convert to jobs
     allQuotes.filter(function(q) { return q.status === 'approved' && !q.convertedJobId; })
       .forEach(function(q) {
@@ -549,7 +616,18 @@ var DashboardPage = {
       });
     });
 
+    // v719: quick-add task/note input always shown, even if Inbox is empty.
+    var quickAddBlock = '<div style="background:var(--white);border-radius:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:12px;display:flex;gap:8px;align-items:center;">'
+      + '<i data-lucide="check-square" style="width:16px;height:16px;color:var(--text-light);flex-shrink:0;"></i>'
+      + '<input id="dash-quickadd" type="text" placeholder="Quick task or note — press Enter" '
+      +   'onkeydown="if(event.key===\'Enter\'){event.preventDefault();DashboardPage._quickAddTask();}" '
+      +   'style="flex:1;border:none;background:transparent;font-size:14px;outline:none;color:var(--text);">'
+      + '<button onclick="DashboardPage._quickAddTask()" style="background:var(--green-dark);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;">+ Add</button>'
+      + '<button onclick="loadPage(\'taskreminders\')" title="Open Tasks" style="background:none;border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);flex-shrink:0;">All →</button>'
+      + '</div>';
+
     if (inboxItems.length > 0) {
+      html += quickAddBlock;
       html += '<div style="background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid #c8e6c9;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px;">'
         +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
         +     '<div style="display:flex;align-items:center;gap:8px;"><i data-lucide="inbox" style="width:18px;height:18px;color:var(--green-dark);"></i><strong style="font-size:15px;color:var(--green-dark);">Needs your attention</strong>'
@@ -578,6 +656,9 @@ var DashboardPage = {
         html += '<div style="font-size:12px;color:var(--text-light);margin-top:8px;text-align:center;">+ ' + (inboxItems.length - 8) + ' more</div>';
       }
       html += '</div>';
+    } else {
+      // Empty inbox — still show the quick-add bar so Doug can drop a note
+      html += quickAddBlock;
     }
 
     // Daily Vehicle Inspection widget moved to Jobs + Crew View (Apr 19 2026).
