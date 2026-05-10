@@ -103,11 +103,41 @@ Doug's friend has a tree-service business and wants to use BM. Today's RLS hardc
 ## Status
 
 - [x] Roadmap written (this doc, May 2 2026)
-- [ ] Step 1 — SQL function + dual-policy RLS
-- [ ] Step 2 — tenant_config table
-- [ ] Step 3 — Edge functions parameterized
+- [x] Step 1 — SQL function + dual-policy RLS *(May 10 audit: function
+      `current_tenant_id()` exists, 26 of 36 tenant-scoped tables have
+      `mt_anon_*` policies. The one gap — `onboarding_signatures` missing
+      `mt_anon_select` + `mt_anon_insert` — closed via migration
+      `supabase/migrations/20260510_mt_phase2_step1_signatures.sql`.
+      Other tables without anon policies are intentionally auth-only or
+      service-key-only — out of scope for anon multi-tenant RLS.)*
+- [/] Step 2 — tenant_config table *(partial: `tenant_settings` table
+      exists; audit its schema vs the {brand_color, logo_url, stripe_key_ref,
+      resend_from, sms_from, services_default} spec and extend if gaps.)*
+- [ ] Step 3 — Edge functions parameterized *(17 functions; some already
+      read `X-Tenant-ID` per recent commits — audit each.)*
 - [ ] Step 4 — BM client tenant resolver
 - [ ] Step 5 — Cloudflare Worker subdomain routing
 - [ ] Step 6 — Friend tenant seed
 - [ ] Step 7 — Side-by-side validation
 - [ ] Step 8 — Drop legacy policies
+
+## v737 audit findings (May 10 2026)
+
+The Phase 1 work landed more thoroughly than the roadmap reflects. Real
+remaining gaps in priority order:
+
+1. **`onboarding_signatures` mt_anon parity** — migration drafted, awaits
+   review + apply.
+2. **`tenant_settings` schema vs the spec** — likely has SOME of the
+   fields but may be missing `services_default` / Stripe / SMS-from
+   columns. Need a `\d tenant_settings` audit.
+3. **Edge function tenant scoping (Step 3)** — biggest remaining work.
+   17 functions to walk, each either reading `X-Tenant-ID` (good) or
+   hardcoding the SNT uuid (needs fix).
+4. **Cloudflare Worker subdomain routing (Step 5)** — enables real
+   tenant isolation at the request layer. Until this lands, anon
+   clients can spoof `X-Tenant-ID` from devtools and read other
+   tenants' data. The mt_anon policies are correct but the security
+   model relies on the Worker injecting the header server-side.
+
+Phases 6–8 are downstream of 3 + 5.
