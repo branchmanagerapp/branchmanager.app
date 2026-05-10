@@ -1949,7 +1949,7 @@ var QuotesPage = {
             ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName || '—') + '</a>'
             : UI.esc(q.clientName || '—'))
       + '</h1>'
-      + '<div style="font-size:13px;color:var(--text-light);margin-bottom:16px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' · ' + UI.money(q.total) + (q.requestId ? ' · <a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;text-decoration:none;">📥 From Request</a>' : '') + '</div>'
+      + '<div style="font-size:13px;color:var(--text-light);margin-bottom:16px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' · ' + UI.money(q.total) + '</div>'
       // Two side-by-side cards: Client (left) / Meta (right)
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">'
       // ── Client card ──
@@ -1981,7 +1981,8 @@ var QuotesPage = {
       +       '<span style="color:var(--text-light);">Created</span><span>' + UI.dateShort(q.createdAt) + '</span>'
       +       (q.sentAt ? '<span style="color:var(--text-light);">Sent</span><span>' + UI.dateShort(q.sentAt) + '</span>' : '')
       +       (q.approvedAt ? '<span style="color:var(--text-light);">Approved</span><span style="color:var(--green-dark);font-weight:600;">' + UI.dateShort(q.approvedAt) + '</span>' : '')
-      +       (q.source ? '<span style="color:var(--text-light);">Lead source</span><span>📣 ' + UI.esc(q.source) + '</span>' : '')
+      +       (q.requestId ? '<span style="color:var(--text-light);">From Request</span><span><a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;text-decoration:underline;">' + ((function(){ var r=DB.requests&&DB.requests.getById?DB.requests.getById(q.requestId):null; return r&&r.createdAt?UI.dateShort(r.createdAt):'View request'; })()) + '</a></span>' : '')
+      +       (q.source ? '<span style="color:var(--text-light);">Lead source</span><span>' + UI.esc(q.source) + '</span>' : '')
       +     '</div>'
       +   '</div>'
       + '</div>'
