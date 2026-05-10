@@ -332,106 +332,108 @@ var PipelinePage = {
 
     function ageMs(d) { return d.createdAt ? new Date(d.createdAt).getTime() : 0; }
 
+    // v722: Two sub-columns per section (down from 3) so each gets real
+    // breathing room. Only use color where it earns it — stale warning
+    // and the green $ totals. Everything else is neutral gray.
     var subRequests = [
-      { id: 'req_new', label: 'New requests', color: '#2196f3',
+      { id: 'req_new',  label: 'New',
         items: requestSide.filter(function(d) { return ageMs(d) >= sevenDaysAgo; }) },
-      { id: 'req_aging', label: 'Aging', color: '#a78bfa',
-        items: requestSide.filter(function(d) { return ageMs(d) < sevenDaysAgo && ageMs(d) >= fourteenDaysAgo; }) },
-      { id: 'req_stale', label: 'Stale (14d+)', color: '#dc2626',
-        items: requestSide.filter(function(d) { return ageMs(d) > 0 && ageMs(d) < fourteenDaysAgo; }) }
+      { id: 'req_old',  label: 'Older',
+        items: requestSide.filter(function(d) { return ageMs(d) > 0 && ageMs(d) < sevenDaysAgo; }) }
     ];
 
     // For Quotes side, sub-categorize by underlying quote.status
     var subQuotes = [
-      { id: 'q_draft', label: 'Draft', color: '#94a3b8', items: [] },
-      { id: 'q_sent', label: 'Sent', color: '#f59e0b', items: [] },
-      { id: 'q_approved', label: 'Approved', color: '#10b981', items: [] }
+      { id: 'q_draft',    label: 'Draft',    items: [] },
+      { id: 'q_sent',     label: 'Sent',     items: [] },
+      { id: 'q_approved', label: 'Approved', items: [] }
     ];
     quoteSide.forEach(function(d) {
       var q = DB.quotes.getById(d.quoteId);
       var s = q ? (q.status || '').toLowerCase() : '';
       if (s === 'draft') subQuotes[0].items.push(d);
       else if (s === 'approved') subQuotes[2].items.push(d);
-      else subQuotes[1].items.push(d); // sent/awaiting/changes_requested fall here
+      else subQuotes[1].items.push(d);
     });
 
     function renderJobberCard(d) {
       var ageDays = d.createdAt ? Math.floor((nowMs - new Date(d.createdAt).getTime()) / 86400000) : 0;
-      var ageBg, ageFg, ageWarn;
-      if (ageDays >= 60)      { ageBg = '#fef2f2'; ageFg = '#dc2626'; ageWarn = '⚠ '; }
-      else if (ageDays >= 30) { ageBg = '#fff7ed'; ageFg = '#c2410c'; ageWarn = '⚠ '; }
-      else if (ageDays >= 14) { ageBg = '#fffbeb'; ageFg = '#a16207'; ageWarn = ''; }
-      else                    { ageBg = '#f1f5f9'; ageFg = '#64748b'; ageWarn = ''; }
+      // Color reserved for genuine warnings only.
+      var ageColor, ageWarn;
+      if (ageDays >= 30)      { ageColor = '#dc2626'; ageWarn = '⚠ '; }
+      else if (ageDays >= 14) { ageColor = '#a16207'; ageWarn = ''; }
+      else                    { ageColor = '#94a3b8'; ageWarn = ''; }
 
       var prefix = d.quoteId ? 'Quote for ' : 'Request for ';
       var dateStr = d.createdAt ? UI.dateShort(d.createdAt) : '—';
       var actions = '';
       if (d.quoteId) {
         actions = '<div style="display:flex;gap:4px;margin-top:8px;" onclick="event.stopPropagation()">'
-          + '<button onclick="PipelinePage.convertToJob(\'' + d.id + '\')" title="Convert to Job" style="flex:1;padding:6px 0;font-size:10px;background:#1565c0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;">🔨 Job</button>'
-          + '<button onclick="PipelinePage._markDeclined(\'' + d.id + '\')" title="Mark declined" style="flex:1;padding:6px 0;font-size:10px;background:var(--white);color:#c62828;border:1px solid #fecaca;border-radius:4px;cursor:pointer;font-weight:700;">✗ Declined</button>'
+          + '<button onclick="PipelinePage.convertToJob(\'' + d.id + '\')" title="Convert to Job" style="flex:1;padding:6px 0;font-size:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-weight:600;">🔨 Job</button>'
+          + '<button onclick="PipelinePage._markDeclined(\'' + d.id + '\')" title="Mark declined" style="flex:1;padding:6px 0;font-size:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-weight:600;">✗</button>'
           + '</div>';
       }
 
       return '<div onclick="PipelinePage.showDeal(\'' + d.id + '\')" '
-        + 'style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;line-height:1.4;transition:box-shadow .12s,border-color .12s;"'
-        + ' onmouseover="this.style.boxShadow=\'0 2px 10px rgba(0,0,0,.08)\';this.style.borderColor=\'#cbd5e1\';"'
-        + ' onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'var(--border)\';">'
-        + '<div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px;">' + prefix + UI.esc(d.clientName || 'Unknown') + '</div>'
-        + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(d.clientName || '') + (d.description ? ' · ' + UI.esc(d.description) : '') + '</div>'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
-        +   '<span style="font-size:11px;color:var(--text-light);display:inline-flex;align-items:center;gap:3px;">📅 ' + dateStr + '</span>'
-        +   '<span style="background:' + ageBg + ';color:' + ageFg + ';font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;">' + ageWarn + ageDays + 'd</span>'
+        + 'style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:5px;cursor:pointer;line-height:1.35;transition:border-color .12s;"'
+        + ' onmouseover="this.style.borderColor=\'#94a3b8\';"'
+        + ' onmouseout="this.style.borderColor=\'var(--border)\';">'
+        + '<div style="font-weight:700;font-size:13px;color:var(--text);">' + prefix + UI.esc(d.clientName || 'Unknown') + '</div>'
+        + (d.description ? '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(d.description) + '</div>' : '')
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11px;color:var(--text-light);">'
+        +   '<span>' + dateStr + '</span>'
+        +   '<span style="color:' + ageColor + ';font-weight:600;">' + ageWarn + ageDays + 'd</span>'
         + '</div>'
-        + (d.quoteId && d.value ? '<div style="font-weight:700;color:var(--green-dark);margin-top:4px;font-size:13px;">' + UI.moneyInt(d.value) + '</div>' : '')
+        + (d.quoteId && d.value ? '<div style="font-weight:700;color:var(--green-dark);margin-top:3px;font-size:13px;">' + UI.moneyInt(d.value) + '</div>' : '')
         + actions
         + '</div>';
     }
 
     function renderSubCol(col) {
-      var html = '<div style="background:var(--bg);border-radius:10px;padding:10px;min-height:160px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ' + col.color + ';">'
+      var html = '<div style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">'
         +   '<span style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;">' + col.label + '</span>'
-        +   '<span style="background:' + col.color + ';color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;">' + col.items.length + '</span>'
+        +   '<span style="font-size:11px;color:var(--text-light);font-weight:600;">' + col.items.length + '</span>'
         + '</div>';
       if (col.items.length === 0) {
-        html += '<div style="text-align:center;padding:14px;font-size:11px;color:#cbd5e1;">Empty</div>';
+        html += '<div style="text-align:center;padding:14px;font-size:11px;color:#cbd5e1;">—</div>';
       } else {
-        col.items.slice(0, 12).forEach(function(d) { html += renderJobberCard(d); });
-        if (col.items.length > 12) {
-          html += '<div style="text-align:center;padding:6px;font-size:11px;color:var(--accent);font-weight:600;">+ ' + (col.items.length - 12) + ' more</div>';
+        col.items.slice(0, 15).forEach(function(d) { html += renderJobberCard(d); });
+        if (col.items.length > 15) {
+          html += '<div style="text-align:center;padding:6px;font-size:11px;color:var(--accent);font-weight:600;">+ ' + (col.items.length - 15) + ' more</div>';
         }
       }
       html += '</div>';
       return html;
     }
 
-    function renderSection(title, icon, subs, opts) {
-      opts = opts || {};
+    function renderSection(title, subs) {
       var totalCount = subs.reduce(function(s, c) { return s + c.items.length; }, 0);
       var totalValue = subs.reduce(function(s, c) {
         return s + c.items.reduce(function(s2, d) { return s2 + (Number(d.value) || 0); }, 0);
       }, 0);
-      var html = '<section>';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-        +   '<h3 style="font-size:16px;font-weight:800;margin:0;display:inline-flex;align-items:center;gap:6px;">' + icon + ' ' + title
-        +     '<span style="font-weight:500;color:var(--text-light);font-size:14px;margin-left:4px;">' + totalCount + '</span></h3>'
-        +   (totalValue > 0 ? '<span style="font-weight:700;color:var(--green-dark);font-size:14px;">' + UI.moneyInt(totalValue) + '</span>' : '')
+      var html = '<section style="min-width:0;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">'
+        +   '<h3 style="font-size:15px;font-weight:700;margin:0;color:var(--text);">' + title
+        +     ' <span style="font-weight:500;color:var(--text-light);font-size:13px;">' + totalCount + '</span></h3>'
+        +   (totalValue > 0 ? '<span style="font-weight:700;color:var(--green-dark);font-size:13px;">' + UI.moneyInt(totalValue) + '</span>' : '')
         + '</div>';
-      html += '<div style="display:grid;grid-template-columns:repeat(' + subs.length + ',1fr);gap:8px;">';
+      html += '<div style="display:grid;grid-template-columns:repeat(' + subs.length + ',minmax(0,1fr));gap:6px;">';
       subs.forEach(function(c) { html += renderSubCol(c); });
       html += '</div>';
       html += '</section>';
       return html;
     }
 
+    // Width-balanced grid: Requests (2 sub-cols) gets less room than
+    // Quotes (3 sub-cols). 2fr / 3fr roughly equalizes per-column width.
     html += '<style>'
-      + '.pipeline-jobber{display:grid;grid-template-columns:1fr 1fr;gap:20px;}'
-      + '@media(max-width:980px){.pipeline-jobber{grid-template-columns:1fr;}}'
+      + '.pipeline-jobber{display:grid;grid-template-columns:2fr 3fr;gap:18px;align-items:start;}'
+      + '@media(max-width:1100px){.pipeline-jobber{grid-template-columns:1fr;gap:18px;}}'
       + '</style>'
       + '<div class="pipeline-jobber">'
-      +   renderSection('Requests', '📥', subRequests)
-      +   renderSection('Quotes', '📋', subQuotes)
+      +   renderSection('Requests', subRequests)
+      +   renderSection('Quotes', subQuotes)
       + '</div>';
 
     return html;
