@@ -1,5 +1,20 @@
 # BM Security Audit — May 10 2026
 
+## Status: bm_invites fix APPLIED ✅
+Two migrations ran against prod on May 10:
+1. `20260510_secure_bm_invites.sql` — replaced `anon_full_invites` with
+   scoped policies. Killed the write-fraud vector (anon UPDATE/INSERT/DELETE
+   all blocked).
+2. `20260510_bm_invites_column_grants.sql` — restricted anon SELECT to
+   the 9 columns invite.html needs. `stripe_customer_id`, `used_by_email`,
+   `created_by`, `stripe_subscription_id`, `stripe_promotion_code_id`
+   are now anon-invisible.
+
+Smoke-tested live with the real anon key:
+- ✅ `code,plan_type,status` lookup works (invite.html path)
+- ✅ `stripe_customer_id` request returns 42501 permission denied
+- ✅ PATCH with anon key returns 42501 — fraud vector closed
+
 ## TL;DR
 
 - **Source-code visibility via DevTools is normal and expected** for any web app. The question is what's IN the code. Your bundle is clean of server secrets (no service-role keys, no Stripe secret keys, no Resend keys). The Supabase anon key in the bundle is meant to be public — RLS is the actual gate.
