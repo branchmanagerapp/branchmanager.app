@@ -134,6 +134,7 @@ var SchedulePage = {
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
       +   toggleSwitch('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
+      +   ((self.view === 'week' || self.view === 'month') ? toggleSwitch('Map', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
       +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
       + '</div>';
@@ -151,8 +152,17 @@ var SchedulePage = {
       html += self._renderList();
     } else if (self.view === 'map') {
       html += self._renderMap();
-    } else if (self.view === 'week') {
-      html += self._renderWeek();
+    } else if (self.view === 'week' || self.view === 'month') {
+      var calBody = (self.view === 'week') ? self._renderWeek() : self._renderMonth();
+      var showDockedMap = self._dockedMapEnabled() && window.innerWidth >= 900;
+      if (showDockedMap) {
+        html += '<div style="display:flex;gap:12px;align-items:flex-start;">'
+          + '<div style="flex:1;min-width:0;">' + calBody + '</div>'
+          + '<div style="width:320px;flex-shrink:0;position:sticky;top:8px;">' + self._renderDockedMap() + '</div>'
+          + '</div>';
+      } else {
+        html += calBody;
+      }
     } else {
       html += self._renderMonth();
     }
@@ -386,6 +396,19 @@ var SchedulePage = {
     var current = SchedulePage._remindersEnabled();
     localStorage.setItem('bm-cal-reminders', current ? 'false' : 'true');
     window._bmRemindersCacheKey = null;
+    loadPage('schedule');
+  },
+
+  _dockedMapEnabled: function() {
+    return localStorage.getItem('bm-cal-map') !== 'false';
+  },
+  _toggleDockedMap: function() {
+    var current = SchedulePage._dockedMapEnabled();
+    localStorage.setItem('bm-cal-map', current ? 'false' : 'true');
+    if (SchedulePage._dockedMapInstance) {
+      try { SchedulePage._dockedMapInstance.remove(); } catch(e){}
+      SchedulePage._dockedMapInstance = null;
+    }
     loadPage('schedule');
   },
 
@@ -826,6 +849,96 @@ var SchedulePage = {
         el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-light);font-size:13px;">Map failed to load: ' + e.message + '</div>';
       }
     }, 60);
+
+    return html;
+  },
+
+  _rangeForView: function() {
+    var d = SchedulePage.currentDate;
+    var start, end;
+    if (SchedulePage.view === 'week') {
+      start = new Date(d); start.setDate(start.getDate() - start.getDay());
+      end = new Date(start); end.setDate(end.getDate() + 6);
+    } else {
+      var first = new Date(d.getFullYear(), d.getMonth(), 1);
+      start = new Date(first); start.setDate(start.getDate() - first.getDay());
+      var last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      end = new Date(last); end.setDate(end.getDate() + (6 - last.getDay()));
+    }
+    return { start: SchedulePage._localDateStr(start), end: SchedulePage._localDateStr(end) };
+  },
+
+  _renderDockedMap: function() {
+    var range = SchedulePage._rangeForView();
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var rangeJobs = allJobs.filter(function(j) {
+      if (!j.scheduledDate) return false;
+      var ds = j.scheduledDate.substring(0,10);
+      return ds >= range.start && ds <= range.end && (j.lat || j.latitude) && (j.lng || j.longitude || j.lon);
+    });
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);">'
+      +   '<div style="font-size:12px;font-weight:700;">Map · ' + rangeJobs.length + ' job' + (rangeJobs.length === 1 ? '' : 's') + '</div>'
+      +   '<button onclick="SchedulePage._toggleDockedMap()" title="Hide map" style="background:none;border:none;font-size:16px;line-height:1;cursor:pointer;color:var(--text-light);padding:0 4px;">&times;</button>'
+      + '</div>'
+      + '<div id="schedule-map-docked" style="height:520px;width:100%;background:#e8eef2;"></div>'
+      + '</div>';
+
+    setTimeout(function() {
+      var el = document.getElementById('schedule-map-docked');
+      if (!el || typeof maplibregl === 'undefined') return;
+      if (SchedulePage._dockedMapInstance) {
+        try { SchedulePage._dockedMapInstance.remove(); } catch(e){}
+        SchedulePage._dockedMapInstance = null;
+      }
+      try {
+        var first = rangeJobs[0];
+        var centerLng = first ? Number(first.lng || first.longitude || first.lon) : -73.9211;
+        var centerLat = first ? Number(first.lat || first.latitude) : 41.2901;
+        var map = new maplibregl.Map({
+          container: el,
+          style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+          center: [centerLng, centerLat],
+          zoom: rangeJobs.length ? 10 : 9
+        });
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        SchedulePage._dockedMapInstance = map;
+        map.on('load', function() {
+          var bounds = new maplibregl.LngLatBounds();
+          var anyAdded = false;
+          rangeJobs.forEach(function(j) {
+            var lng = Number(j.lng || j.longitude || j.lon);
+            var lat = Number(j.lat || j.latitude);
+            if (!lng || !lat) return;
+            var statusColor = j.status === 'completed' ? '#2e7d32'
+              : j.status === 'in_progress' ? '#e07c24'
+              : j.status === 'late' ? '#c62828'
+              : '#1565c0';
+            var pin = document.createElement('div');
+            pin.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + statusColor + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;';
+            pin.title = (j.clientName || '') + (j.scheduledDate ? ' · ' + j.scheduledDate.substring(5,10) : '');
+            pin.onclick = function() { JobsPage.showDetail(j.id); };
+            new maplibregl.Marker({ element: pin })
+              .setLngLat([lng, lat])
+              .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(
+                '<div style="font-size:13px;font-weight:700;">' + UI.esc(j.clientName || '') + '</div>'
+                + (j.scheduledDate ? '<div style="font-size:11px;color:#666;">' + UI.esc(j.scheduledDate.substring(0,10)) + (j.startTime ? ' · ' + UI.esc(j.startTime) : '') + '</div>' : '')
+                + (j.property ? '<div style="font-size:11px;margin-top:3px;">' + UI.esc(j.property) + '</div>' : '')
+              ))
+              .addTo(map);
+            bounds.extend([lng, lat]);
+            anyAdded = true;
+          });
+          if (anyAdded && rangeJobs.length > 1) map.fitBounds(bounds, { padding: 30, maxZoom: 13 });
+        });
+      } catch(e) {
+        el.innerHTML = '<div style="padding:18px;text-align:center;color:var(--text-light);font-size:12px;">Map failed: ' + e.message + '</div>';
+      }
+    }, 80);
 
     return html;
   }
