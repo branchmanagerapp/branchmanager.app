@@ -131,6 +131,7 @@ var VideoQuote = {
     VideoQuote._deduped = [];
     VideoQuote._processing = false;
     VideoQuote._currentFrame = 0;
+    VideoQuote._lastFile = file; // v717: keep for "save anyway" fallback
 
     // Check file size (500MB max — iPhone 4K .mov can easily exceed 100MB)
     if (file.size > 500 * 1024 * 1024) {
@@ -193,19 +194,49 @@ var VideoQuote = {
 
     video.onerror = function() {
       URL.revokeObjectURL(url);
-      var ext = (file.name || '').split('.').pop().toLowerCase();
-      var hint = ext === 'mov'
-        ? 'iPhone .mov files are sometimes HEVC-encoded which this browser can\'t decode. On iPhone Settings → Camera → Formats, switch to "Most Compatible" and re-record, or convert to MP4.'
-        : 'Try a different format (MP4, MOV with H.264, WebM).';
-      if (procEl) {
-        procEl.innerHTML = '<div style="background:#ffebee;border-radius:10px;padding:16px;text-align:center;">'
-          + '<div style="font-size:14px;font-weight:600;color:#c62828;">Could not load video (' + (file.type || ext || 'unknown format') + ')</div>'
-          + '<div style="font-size:12px;color:var(--text-light);margin-top:6px;line-height:1.4;">' + hint + '</div></div>';
-      }
-      UI.toast('Video format not supported by browser', 'error');
+      VideoQuote._showCodecFallback(file, 'video');
     };
 
     video.src = url;
+  },
+
+  // v717: rich fallback when the browser can't decode the uploaded video.
+  // Almost always HEVC iPhone .mov on Chrome/Firefox/non-Apple browsers.
+  // Offers: open in new tab (Safari handles HEVC), AirDrop instructions,
+  // download the raw file for external conversion, or attach the file as
+  // a generic asset on the quote so a Safari-using teammate can review.
+  _showCodecFallback: function(file, _ctx) {
+    var procEl = document.getElementById('vq-processing');
+    var ext = (file.name || '').split('.').pop().toLowerCase();
+    var isMov = ext === 'mov' || /quicktime/i.test(file.type || '');
+    var isUserAgentApple = /Safari/i.test(navigator.userAgent) && !/Chrome|Edg/i.test(navigator.userAgent);
+
+    var url = URL.createObjectURL(file);
+
+    var html = '<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:18px;">'
+      + '<div style="font-size:15px;font-weight:700;color:#9a3412;margin-bottom:6px;">⚠️ This browser can\'t decode the video</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;line-height:1.45;">'
+      +   (isMov && !isUserAgentApple
+            ? 'iPhone <strong>.mov</strong> files are usually HEVC-encoded. Safari + iOS handle them natively, Chrome/Firefox on Windows often don\'t. Quickest fixes:'
+            : 'The codec inside <strong>' + UI.esc(file.name) + '</strong> isn\'t supported here. Quickest fixes:')
+      + '</div>'
+      + '<ol style="font-size:13px;line-height:1.6;color:var(--text);padding-left:20px;margin:0 0 12px;">'
+      +   '<li>On iPhone: <strong>Settings → Camera → Formats → Most Compatible</strong> then re-record (gives you H.264 .mov that every browser plays).</li>'
+      +   (isUserAgentApple ? '' : '<li>Open this file in <strong>Safari</strong> — Safari decodes HEVC natively even on macOS/iOS.</li>')
+      +   '<li>Or use Photos / iMovie on Mac to <strong>Export &rarr; H.264 MP4</strong>, then upload that.</li>'
+      + '</ol>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +   '<a href="' + url + '" download="' + UI.esc(file.name) + '" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--text);">⬇ Save raw file</a>'
+      +   '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;color:var(--text);">↗ Open in new tab (try Safari)</a>'
+      +   '<button onclick="VideoQuote._uploadVideo()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Try a different file</button>'
+      + '</div>'
+      + '</div>';
+
+    if (procEl) {
+      procEl.style.display = 'block';
+      procEl.innerHTML = html;
+    }
+    UI.toast('Video codec not supported — see fallback options', 'error');
   },
 
   // ── Extract frames one at a time ──

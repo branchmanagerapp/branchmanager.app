@@ -6,33 +6,9 @@ var ReportsPage = {
   render: function() {
     var html = '';
 
-    // ── 10X Tools Snapshot ──
-    if (typeof CardoneTools !== 'undefined' && CardoneTools.getSummary) {
-      var s = CardoneTools.getSummary();
-      if (s.currentRevenue > 0 || s.rpe > 0 || s.closeRate > 0) {
-        var rpeColor = s.rpe >= 200000 ? '#059669' : s.rpe >= 150000 ? '#0891b2' : s.rpe >= 100000 ? '#d97706' : '#dc2626';
-        var closeColor = s.closeRate >= 40 ? '#059669' : s.closeRate >= 25 ? '#d97706' : '#dc2626';
-        html += '<div style="background:linear-gradient(135deg,#1a1a2e 0%,#0f3460 100%);color:#fff;border-radius:14px;padding:22px;margin-bottom:20px;">'
-          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
-          +   '<div><div style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#f97316;font-weight:700;margin-bottom:2px;">10X Progress</div>'
-          +     '<h3 style="margin:0;font-size:18px;font-weight:700;">Revenue, Efficiency & Sales Metrics</h3></div>'
-          +   '<button onclick="loadPage(\'cardone\')" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Edit in 10X Tools →</button>'
-          + '</div>'
-          + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">'
-          +   '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px;"><div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Current Revenue</div><div style="font-size:22px;font-weight:800;margin-top:4px;">$' + Math.round(s.currentRevenue).toLocaleString() + '</div></div>'
-          +   '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px;"><div style="font-size:10px;color:#f97316;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">10X Target</div><div style="font-size:22px;font-weight:800;margin-top:4px;color:#fdba74;">$' + Math.round(s.tenXTarget).toLocaleString() + '</div></div>'
-          +   '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px;"><div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Rev / Employee</div><div style="font-size:22px;font-weight:800;margin-top:4px;color:' + rpeColor + ';">$' + Math.round(s.rpe).toLocaleString() + '</div></div>'
-          +   '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px;"><div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Close Rate</div><div style="font-size:22px;font-weight:800;margin-top:4px;color:' + closeColor + ';">' + s.closeRate.toFixed(0) + '%</div></div>'
-          +   '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px;"><div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Avg Ticket</div><div style="font-size:22px;font-weight:800;margin-top:4px;">$' + Math.round(s.avgTicket).toLocaleString() + '</div></div>'
-          +   (s.cac > 0 ? '<div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px;"><div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">CAC</div><div style="font-size:22px;font-weight:800;margin-top:4px;">$' + Math.round(s.cac).toLocaleString() + '</div></div>' : '')
-          + '</div></div>';
-      } else {
-        html += '<div style="background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:12px;padding:16px;margin-bottom:20px;text-align:center;">'
-          + '<div style="font-size:13px;color:#64748b;margin-bottom:8px;">📊 <strong>10X Tools</strong> not yet configured — fill out your numbers to see revenue progress here.</div>'
-          + '<button onclick="loadPage(\'cardone\')" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Open 10X Tools →</button>'
-          + '</div>';
-      }
-    }
+    // v717: 10X Tools snapshot removed from Reports top per Doug —
+    // can be re-added later when actually filling out the numbers.
+    // CardoneTools module + standalone page still exist.
 
     // Invoice Aging Report
     var invoices = DB.invoices.getAll();
