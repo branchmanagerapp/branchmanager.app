@@ -41,67 +41,106 @@ var PipelinePage = {
     return hits[0] || null;
   },
 
-  // v713: resolve a deal's true state by chasing the quote → job → invoice
-  // links. Pipeline deal.jobId is only set when conversion happened via
-  // PipelinePage.convertToJob; quotes converted directly through the Quote
-  // detail page leave the deal "naked" — this helper finds them anyway.
-  // Returns one of:
-  //   { kind: 'paid',              jobId, invoiceId, amount }
-  //   { kind: 'invoiced_unpaid',   jobId, invoiceId, balance, dueDate }
-  //   { kind: 'job_done_no_invoice', jobId }
-  //   { kind: 'job_in_progress',   jobId, status }
-  //   { kind: 'no_job' }
+  // v716: resolve a deal's true state. Cached per render via
+  // PipelinePage._resolveCache (cleared at the top of render()).
+  // Aggressive matching for imported data:
+  //   1. Direct: deal.jobId
+  //   2. Quote-linked: deal.quoteId → quote.jobId → job
+  //   3. Quote-linked reverse: jobs[].quoteId === deal.quoteId
+  //   4. Same-id fallback: jobs[].quoteId === deal.id
+  //   5. CLIENT FUZZY (new): if clientId matches and a job/invoice exists
+  //      within ±90 days of deal.createdAt with similar value, count it.
+  // Pure read; never writes to localStorage — that was the source of the
+  // 200+-deal render lock.
   _resolveDealStatus: function(deal) {
     if (!deal) return { kind: 'no_job' };
+    if (!PipelinePage._resolveCache) PipelinePage._resolveCache = {};
+    var cached = PipelinePage._resolveCache[deal.id];
+    if (cached) return cached;
+
+    var allJobs   = (DB.jobs     && DB.jobs.getAll)     ? DB.jobs.getAll()     : [];
+    var allInvs   = (DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : [];
+    var allQuotes = (DB.quotes   && DB.quotes.getAll)   ? DB.quotes.getAll()   : [];
+
     var job = null;
-    if (deal.jobId && DB.jobs && DB.jobs.getById) job = DB.jobs.getById(deal.jobId);
-    // Quote-linked discovery
-    if (!job && deal.quoteId && DB.quotes && DB.quotes.getById) {
-      var q = DB.quotes.getById(deal.quoteId);
-      if (q && q.jobId && DB.jobs && DB.jobs.getById) job = DB.jobs.getById(q.jobId);
-      if (!job && DB.jobs && DB.jobs.getAll) {
-        var byQ = DB.jobs.getAll().filter(function(j) { return j.quoteId === deal.quoteId; });
-        if (byQ.length) job = byQ[0];
-      }
+    if (deal.jobId)   job = allJobs.find(function(j) { return j.id === deal.jobId; });
+    if (!job && deal.quoteId) {
+      var q = allQuotes.find(function(q) { return q.id === deal.quoteId; });
+      if (q && q.jobId) job = allJobs.find(function(j) { return j.id === q.jobId; });
+      if (!job)        job = allJobs.find(function(j) { return j.quoteId === deal.quoteId; });
     }
-    // deal.id == quote.id fallback (pipeline imports preserve id)
-    if (!job && DB.jobs && DB.jobs.getAll) {
-      var byId = DB.jobs.getAll().filter(function(j) { return j.quoteId === deal.id; });
-      if (byId.length) job = byId[0];
-    }
-    if (!job) return { kind: 'no_job' };
+    if (!job)          job = allJobs.find(function(j) { return j.quoteId === deal.id; });
 
-    // Found a job — backfill deal.jobId for next time
-    if (deal.jobId !== job.id) {
-      try { deal.jobId = job.id; PipelinePage.saveDeals(PipelinePage.getDeals()); } catch(e){}
+    // v716 client-fuzzy fallback for imported records with broken chains.
+    // Match by clientId + value (within 25%) + same-side of createdAt.
+    if (!job && deal.clientId && deal.value) {
+      var dealTs = deal.createdAt ? new Date(deal.createdAt).getTime() : Date.now();
+      var window = 90 * 86400000;
+      var candidate = allJobs.find(function(j) {
+        if (j.clientId !== deal.clientId) return false;
+        var jts = j.scheduledDate ? new Date(j.scheduledDate).getTime()
+                : j.createdAt    ? new Date(j.createdAt).getTime()    : 0;
+        if (Math.abs(jts - dealTs) > window) return false;
+        var jt = Number(j.total) || 0;
+        if (jt === 0 || deal.value === 0) return true; // can't compare values, accept
+        var ratio = jt / deal.value;
+        return ratio > 0.75 && ratio < 1.25;
+      });
+      if (candidate) job = candidate;
     }
 
-    var invoice = null;
-    if (DB.invoices && DB.invoices.getAll) {
-      var invs = DB.invoices.getAll().filter(function(i) { return i.jobId === job.id; });
-      if (invs.length) {
-        // Prefer paid > sent > draft if multiple
-        invs.sort(function(a, b) {
-          var rank = function(s) { return s === 'paid' ? 0 : (s === 'sent' || s === 'overdue') ? 1 : 2; };
-          return rank((a.status || '').toLowerCase()) - rank((b.status || '').toLowerCase());
-        });
-        invoice = invs[0];
+    var result;
+    if (!job) {
+      // Last resort: client has a paid invoice within window?
+      if (deal.clientId && deal.value) {
+        var dealTs2 = deal.createdAt ? new Date(deal.createdAt).getTime() : Date.now();
+        var paidInv = allInvs.filter(function(i) {
+          if (i.clientId !== deal.clientId) return false;
+          var paid = (i.status === 'paid') || i.paidAt || i.paidDate || (typeof i.balance === 'number' && i.balance <= 0);
+          if (!paid) return false;
+          var its = i.paidDate ? new Date(i.paidDate).getTime()
+                  : i.paidAt   ? new Date(i.paidAt).getTime()
+                  : i.createdAt? new Date(i.createdAt).getTime() : 0;
+          return Math.abs(its - dealTs2) < 180 * 86400000;
+        }).sort(function(a, b) {
+          var ad = Math.abs((a.total || 0) - deal.value);
+          var bd = Math.abs((b.total || 0) - deal.value);
+          return ad - bd;
+        })[0];
+        if (paidInv) {
+          result = { kind: 'paid', jobId: paidInv.jobId || null, invoiceId: paidInv.id, amount: paidInv.total || 0 };
+          PipelinePage._resolveCache[deal.id] = result;
+          return result;
+        }
       }
+      result = { kind: 'no_job' };
+      PipelinePage._resolveCache[deal.id] = result;
+      return result;
     }
+
+    var invoice = allInvs.filter(function(i) { return i.jobId === job.id; })
+      .sort(function(a, b) {
+        var rank = function(s) { return s === 'paid' ? 0 : (s === 'sent' || s === 'overdue') ? 1 : 2; };
+        return rank((a.status || '').toLowerCase()) - rank((b.status || '').toLowerCase());
+      })[0];
 
     if (invoice) {
       var st = (invoice.status || '').toLowerCase();
-      var paid = st === 'paid' || invoice.paidAt || (typeof invoice.balance === 'number' && invoice.balance <= 0);
-      if (paid) return { kind: 'paid', jobId: job.id, invoiceId: invoice.id, amount: invoice.total || job.total || 0 };
-      return { kind: 'invoiced_unpaid', jobId: job.id, invoiceId: invoice.id,
-        balance: (invoice.balance != null ? invoice.balance : invoice.total) || 0,
-        dueDate: invoice.dueDate };
+      var paid = st === 'paid' || invoice.paidAt || invoice.paidDate || (typeof invoice.balance === 'number' && invoice.balance <= 0);
+      if (paid) {
+        result = { kind: 'paid', jobId: job.id, invoiceId: invoice.id, amount: invoice.total || job.total || 0 };
+      } else {
+        result = { kind: 'invoiced_unpaid', jobId: job.id, invoiceId: invoice.id,
+          balance: (invoice.balance != null ? invoice.balance : invoice.total) || 0,
+          dueDate: invoice.dueDate };
+      }
+    } else if ((job.status || '').toLowerCase() === 'completed') {
+      result = { kind: 'job_done_no_invoice', jobId: job.id };
+    } else {
+      result = { kind: 'job_in_progress', jobId: job.id, status: job.status || 'scheduled' };
     }
-
-    if ((job.status || '').toLowerCase() === 'completed') {
-      return { kind: 'job_done_no_invoice', jobId: job.id };
-    }
-    return { kind: 'job_in_progress', jobId: job.id, status: job.status || 'scheduled' };
+    PipelinePage._resolveCache[deal.id] = result;
+    return result;
   },
 
   _statsCollapsed: function() { return localStorage.getItem('bm-pipeline-stats') === 'collapsed'; },
@@ -111,6 +150,9 @@ var PipelinePage = {
   },
 
   render: function() {
+    // v716: bust the per-render resolve cache so we read fresh DB state
+    PipelinePage._resolveCache = {};
+
     // v715: pre-pass — auto-promote any non-terminal deal whose underlying
     // work has been done (job created, invoiced, or paid) into the Won
     // column. Prevents Assessment/Quote-Sent cards from lingering after the
