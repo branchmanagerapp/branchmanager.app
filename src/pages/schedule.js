@@ -39,11 +39,18 @@ var SchedulePage = {
     var qFu2 = prefDays('bm-sched-q-fu2-days', 10);
     var iFu1 = prefDays('bm-sched-i-fu1-days', 1);
     var iFu2 = prefDays('bm-sched-i-fu2-days', 4);
+    // Statuses that mean the quote is resolved → no follow-up needed
+    var QUOTE_RESOLVED = {
+      converted:1, approved:1, accepted:1, won:1, archived:1, draft:1,
+      changes_requested:1, declined:1, lost:1, rejected:1, cancelled:1
+    };
     var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
     qs.forEach(function(q) {
       if (!q.sentAt) return;
       var s = (q.status || '').toLowerCase();
-      if (s === 'converted' || s === 'approved' || s === 'archived' || s === 'draft' || s === 'changes_requested') return;
+      if (QUOTE_RESOLVED[s]) return;
+      // Also drop if any resolution timestamp is set or a job was spawned
+      if (q.acceptedAt || q.approvedAt || q.declinedAt || q.convertedAt || q.jobId) return;
       var sent = new Date(q.sentAt);
       if (isNaN(sent)) return;
       var num = q.quoteNumber || q.id;
@@ -55,11 +62,19 @@ var SchedulePage = {
       if (!q.followup2SentAt) push(snoozedOr(q.followup2SnoozedTo, add5d(sent, qFu2)),
         { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)', short:short + '²' });
     });
+    // Statuses that mean the invoice is resolved → no nudge needed
+    var INVOICE_RESOLVED = {
+      paid:1, archived:1, draft:1, void:1, voided:1, cancelled:1,
+      refunded:1, written_off:1, writeoff:1
+    };
     var ivs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
     ivs.forEach(function(inv) {
       if (!inv.dueDate) return;
       var s = (inv.status || '').toLowerCase();
-      if (s === 'paid' || s === 'archived' || s === 'draft') return;
+      if (INVOICE_RESOLVED[s]) return;
+      // Also drop if a resolution timestamp is set or balance is zero
+      if (inv.paidAt || inv.voidedAt || inv.cancelledAt) return;
+      if (typeof inv.balance === 'number' && inv.balance <= 0) return;
       var due = new Date(inv.dueDate);
       if (isNaN(due)) return;
       var num = inv.invoiceNumber || inv.id;
@@ -272,14 +287,7 @@ var SchedulePage = {
       +   '<button class="btn btn-outline" onclick="SchedulePage.goToday()" style="font-size:12px;padding:4px 10px;">Today</button>'
       +   '<button onclick="JobsPage.showForm()" style="font-size:12px;padding:5px 12px;background:var(--green-dark);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New Job</button>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
-      +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;">'
-      +     _viewPill('day', 'Day')
-      +     _viewPill('list', 'List')
-      +     _viewPill('map', 'Map')
-      +     _viewPill('week', 'Week')
-      +     _viewPill('month', 'Month')
-      +   '</div>'
+      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;">'
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
       +   toggleSwitch('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
@@ -287,6 +295,17 @@ var SchedulePage = {
       +   ((self.view === 'week' || self.view === 'month') ? toggleSwitch('Panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
       +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
+      + '</div>'
+      // v709: View pills moved to a 2nd row directly under the toggles.
+      // Order: Day · Week · Month · List · Map (primary calendar views first).
+      + '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">'
+      +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;">'
+      +     _viewPill('day', 'Day')
+      +     _viewPill('week', 'Week')
+      +     _viewPill('month', 'Month')
+      +     _viewPill('list', 'List')
+      +     _viewPill('map', 'Map')
+      +   '</div>'
       + '</div>';
 
     // v647: Week scroller strip (S/M/T/W/T/F/S) — visible in Day/List/Map
