@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 727; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 728; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -321,12 +321,15 @@
     display:flex; align-items:center; gap:10px; cursor:pointer;
   }
   .sidebar-logo {
+    /* v728: use the iOS app icon (icons/icon-192.png) as the brand mark
+       so web + iOS feel like one product. Inline SVG branch retired. */
     width:36px; height:36px; flex-shrink:0; border-radius:9px; overflow:hidden;
-    background:linear-gradient(135deg, #1a3c12 0%, #2d6a1f 100%);
+    background:transparent;
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 1px 2px rgba(0,0,0,.08);
   }
-  .sidebar-logo svg { width:22px; height:22px; }
+  .sidebar-logo img { width:100%; height:100%; object-fit:cover; display:block; border-radius:9px; }
+  .sidebar-logo svg { width:22px; height:22px; } /* legacy fallback */
   .sidebar-header h1 {
     font-size:15px; font-weight:800; color:#1a1a2a; line-height:1.1; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
@@ -994,14 +997,9 @@
   <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
     <div class="sidebar-header" onclick="loadPage('dashboard'); if (window.innerWidth <= 768) toggleSidebar();" title="Go to dashboard">
       <div class="sidebar-logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-          <!-- v679: stylized branch — vertical trunk with two pairs of forking limbs. Clean BM mark. -->
-          <path d="M12 22 V4"/>
-          <path d="M12 8 L7 4"/>
-          <path d="M12 8 L17 4"/>
-          <path d="M12 14 L8 11"/>
-          <path d="M12 14 L16 11"/>
-        </svg>
+        <!-- v728: iOS app icon as the sidebar brand mark — same image
+             ships in icons/icon-180/192/etc. and in ios/App/App/Assets. -->
+        <img src="icons/icon-192.png" alt="Branch Manager">
       </div>
       <h1>Branch Manager<span data-bind="companyName">Second Nature Tree Service</span></h1>
     </div>
@@ -1120,7 +1118,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v727.min.js"></script>
+<script defer src="dist/bm.bundle.v728.min.js"></script>
 
 
 
