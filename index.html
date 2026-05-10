@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 731; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 732; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1120,7 +1120,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v731.min.js"></script>
+<script defer src="dist/bm.bundle.v732.min.js"></script>
 
 
 
@@ -2994,10 +2994,23 @@ var NotifCenter = (function() {
     setTimeout(init, 500);
   }
 
-  // v731: customize-feed view switching + per-category toggle setter
+  // v731/v732: customize-feed view switching + per-category toggle setter
   function showSettings() { _panelView = 'settings'; render(); }
   function showFeed()     { _panelView = 'feed';     render(); }
-  function setCat(key, val) { _setFeedCat(key, val); /* no re-render — only matters when feed view is active */ }
+  function setCat(key, val) {
+    _setFeedCat(key, val);
+    // v732: bell badge should reflect what's actually surfaced — refresh
+    // it immediately when a category flips so the count matches the feed.
+    updateBadge();
+  }
+
+  // v732: Esc closes the panel from anywhere; nice-to-have for kbd users
+  // (the bell click + outside click + × already worked).
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    var dd = document.getElementById('notif-dropdown');
+    if (dd && dd.classList.contains('open')) close();
+  });
 
   return {
     toggle: toggle,
