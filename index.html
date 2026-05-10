@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 730; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 731; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1120,7 +1120,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v730.min.js"></script>
+<script defer src="dist/bm.bundle.v731.min.js"></script>
 
 
 
@@ -2627,9 +2627,31 @@ var NotifCenter = (function() {
     try { localStorage.setItem('bm-feed-categories', JSON.stringify(cats)); } catch(e) {}
   }
 
-  // v730: panel can be in 'feed' (default) or 'settings' mode. Toggle
-  // via the gear button; both states share the slide-in container.
+  // v730/v731: panel has two views — 'feed' (default) and 'settings'.
+  // Gear button on the feed header → settings; back arrow → feed.
   var _panelView = 'feed';
+
+  function _renderSettingsBody() {
+    var cats = _feedCats();
+    var rows = _feedCatDefs.map(function(d) {
+      var on = cats[d.key] !== false;
+      return '<label style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);cursor:pointer;">'
+        +   '<span style="font-size:14px;color:var(--text);font-weight:500;">' + d.label + '</span>'
+        +   '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="NotifCenter.setCat(\'' + d.key + '\', this.checked)" style="width:36px;height:20px;cursor:pointer;accent-color:var(--green-dark);">'
+        + '</label>';
+    }).join('');
+    var support = '<div style="padding:18px 24px;border-top:6px solid var(--bg);">'
+      +   '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Support</div>'
+      +   '<button onclick="NotifCenter.close();loadPage(\'help\');" style="display:block;width:100%;text-align:left;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:8px;">📖 Help &amp; onboarding</button>'
+      +   '<a href="mailto:support@branchmanager.app?subject=BM%20support%20request" style="display:block;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;margin-bottom:8px;">✉ Email support</a>'
+      +   '<button onclick="NotifCenter.close();loadPage(\'settings\');" style="display:block;width:100%;text-align:left;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;">⚙ Open Settings</button>'
+      + '</div>';
+    return '<div style="overflow-y:auto;flex:1;">'
+      +   '<div style="padding:14px 24px;font-size:13px;color:var(--text-light);line-height:1.5;">Toggle which categories appear in the Activity Feed. Choices persist on this device.</div>'
+      +   rows
+      +   support
+      + '</div>';
+  }
 
   // v724: Activity Feed builder — Jobber-style entries with bold action +
   // amount, sub-line (ref # · description), client name, timestamp.
@@ -2658,7 +2680,7 @@ var NotifCenter = (function() {
       if (!r.createdAt || r.createdAt < sevenDaysAgo) return;
       var who = getClientName(r.clientId || r.client);
       items.push({
-        id: 'req-' + r.id, icon: '📥', iconBg: '#e8f5e9',
+        id: 'req-' + r.id, icon: '📥', iconBg: '#e8f5e9', cat: 'requests',
         title: 'New request',
         sub: r.property || r.notes || r.service || '',
         client: who,
@@ -2679,14 +2701,14 @@ var NotifCenter = (function() {
       var who = getClientName(q.clientId || q.client);
       // SENT — only when sentAt itself is recent
       if (q.status === 'sent' && !clientHasJob[q.clientId] && q.sentAt && q.sentAt >= sevenDaysAgo) {
-        items.push({ id: 'qsent-' + q.id, icon: '📤', iconBg: '#e3f2fd',
+        items.push({ id: 'qsent-' + q.id, icon: '📤', iconBg: '#e3f2fd', cat: 'quotes',
           title: 'Quote sent' + amt,
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
           client: who, time: q.sentAt, page: 'quotes', recordId: q.id });
       }
       // APPROVED — use approvedAt
       if (q.status === 'approved' && !clientHasPaid[q.clientId] && q.approvedAt && q.approvedAt >= sevenDaysAgo) {
-        items.push({ id: 'qappr-' + q.id, icon: '✅', iconBg: '#e8f5e9',
+        items.push({ id: 'qappr-' + q.id, icon: '✅', iconBg: '#e8f5e9', cat: 'quotes',
           title: 'Quote approved' + amt,
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
           client: who, time: q.approvedAt, page: 'quotes', recordId: q.id });
@@ -2695,14 +2717,14 @@ var NotifCenter = (function() {
       // timestamp; updatedAt is acceptable because the status itself
       // implies the change.
       if ((q.status === 'awaiting' || q.status === 'changes_requested') && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
-        items.push({ id: 'qchg-' + q.id, icon: '💬', iconBg: '#fff3e0',
+        items.push({ id: 'qchg-' + q.id, icon: '💬', iconBg: '#fff3e0', cat: 'quotes',
           title: 'Client requested changes',
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
           client: who, time: q.updatedAt, page: 'quotes', recordId: q.id });
       }
       // DECLINED — use declinedAt
       if (q.status === 'declined' && q.declinedAt && q.declinedAt >= sevenDaysAgo) {
-        items.push({ id: 'qdec-' + q.id, icon: '✗', iconBg: '#fce4ec',
+        items.push({ id: 'qdec-' + q.id, icon: '✗', iconBg: '#fce4ec', cat: 'quotes',
           title: 'Quote declined' + amt,
           sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
           client: who, time: q.declinedAt, page: 'quotes', recordId: q.id });
@@ -2716,7 +2738,7 @@ var NotifCenter = (function() {
       if (!ts || ts < sevenDaysAgo) return;
       var num = j.jobNumber || j.id.substring(0, 6);
       var amt = j.total ? ' — ' + moneyFn(j.total) : '';
-      items.push({ id: 'jdone-' + j.id, icon: '🌳', iconBg: '#fff3e0',
+      items.push({ id: 'jdone-' + j.id, icon: '🌳', iconBg: '#fff3e0', cat: 'jobs',
         title: 'Job completed' + amt,
         sub: 'Job #' + num + (j.description ? ' · ' + j.description : ''),
         client: getClientName(j.clientId || j.client),
@@ -2730,7 +2752,7 @@ var NotifCenter = (function() {
       var who = getClientName(inv.clientId || inv.client);
       var paidTs = inv.paidDate || inv.paidAt;
       if (inv.status === 'paid' && paidTs && paidTs >= sevenDaysAgo) {
-        items.push({ id: 'ipaid-' + inv.id, icon: '💰', iconBg: '#e8f5e9',
+        items.push({ id: 'ipaid-' + inv.id, icon: '💰', iconBg: '#e8f5e9', cat: 'payments',
           title: 'Payment received' + amt,
           sub: 'Invoice #' + num,
           client: who, time: paidTs, page: 'invoices', recordId: inv.id });
@@ -2741,7 +2763,7 @@ var NotifCenter = (function() {
         var due = new Date(inv.dueDate);
         if (due < now && !clientHasPaid[inv.clientId]) {
           var bal = (typeof inv.balance === 'number') ? inv.balance : inv.total;
-          items.push({ id: 'idue-' + inv.id, icon: '⚠', iconBg: '#fce4ec',
+          items.push({ id: 'idue-' + inv.id, icon: '⚠', iconBg: '#fce4ec', cat: 'invoices',
             title: 'Invoice past due — ' + moneyFn(bal),
             sub: 'Invoice #' + num,
             client: who, time: inv.dueDate, page: 'invoices', recordId: inv.id });
@@ -2749,7 +2771,37 @@ var NotifCenter = (function() {
       }
     });
 
-    // Inbound communications (SMS / calls / voicemails from Dialpad)
+    // v731: overdue / due-today tasks surface as feed items so they show
+    // up alongside other "needs your attention" events. Filtered by the
+    // 'tasks' cat toggle.
+    if (typeof TaskReminders !== 'undefined' && TaskReminders._getAll) {
+      var todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      var todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+      TaskReminders._getAll().forEach(function(t) {
+        if (t.completed || t.archived || !t.dueDate) return;
+        var due = new Date(t.dueDate);
+        if (isNaN(due)) return;
+        if (due < todayStart) {
+          var daysOver = Math.floor((Date.now() - due.getTime()) / 86400000);
+          items.push({
+            id: 'tover-' + t.id, icon: '⏰', iconBg: '#fee2e2', cat: 'tasks',
+            title: 'Task overdue (' + daysOver + 'd)',
+            sub: t.title || '', client: '',
+            time: t.dueDate, page: 'taskreminders', recordId: t.id
+          });
+        } else if (due <= todayEnd) {
+          items.push({
+            id: 'ttoday-' + t.id, icon: '⏰', iconBg: '#fff3e0', cat: 'tasks',
+            title: 'Task due today',
+            sub: t.title || '', client: '',
+            time: t.dueDate, page: 'taskreminders', recordId: t.id
+          });
+        }
+      });
+    }
+
+    // Inbound communications (SMS / voicemails from Dialpad — missed
+    // calls already filtered upstream by v726 _isMissedCallRow).
     _commCache.forEach(function(c) {
       var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
       var cName = meta.name || c.from_number || 'Unknown';
@@ -2757,7 +2809,7 @@ var NotifCenter = (function() {
       var cBg   = c.channel === 'sms' ? '#e3f2fd' : '#fce4ec';
       var cTitle = c.channel === 'sms' ? 'SMS received' : (c.channel === 'voicemail' ? 'Voicemail' : 'Missed call');
       items.push({
-        id: 'comm-' + c.id, icon: cIcon, iconBg: cBg,
+        id: 'comm-' + c.id, icon: cIcon, iconBg: cBg, cat: 'comms',
         title: cTitle,
         sub: meta.service_wanted ? meta.service_wanted.substring(0, 60) : (c.body ? c.body.substring(0, 60) : ''),
         client: cName,
@@ -2765,6 +2817,12 @@ var NotifCenter = (function() {
       });
     });
 
+    // v730/v731: filter by per-category visibility before sorting.
+    var cats = _feedCats();
+    items = items.filter(function(it) {
+      if (!it.cat) return true; // unknown category: always show
+      return cats[it.cat] !== false;
+    });
     items.sort(function(a, b) { return (b.time || '').localeCompare(a.time || ''); });
     return items.slice(0, 30);
   }
@@ -2776,11 +2834,25 @@ var NotifCenter = (function() {
     var items = buildNotifications();
     var readIds = getReadIds();
 
-    // v727: Jobber-style header — big "Activity Feed" title + close X.
-    // "Mark all read" demoted to a small text link below the title.
+    // v731: panel has two views — feed (default) and settings (customize
+    // categories). Header swaps title + actions based on _panelView.
+    var html;
+    if (_panelView === 'settings') {
+      html = '<div class="notif-dropdown-header">'
+        + '<button class="notif-close-btn" onclick="NotifCenter.showFeed()" title="Back" style="font-size:20px;">&larr;</button>'
+        + '<h3 style="flex:1;text-align:center;margin:0 8px;">Customize Feed</h3>'
+        + '<button class="notif-close-btn" onclick="NotifCenter.close()" title="Close">&times;</button>'
+        + '</div>'
+        + _renderSettingsBody();
+      dropdown.innerHTML = html;
+      return;
+    }
     var html = '<div class="notif-dropdown-header">'
       + '<h3>Activity Feed</h3>'
-      + '<button class="notif-close-btn" onclick="NotifCenter.close()" title="Close">&times;</button>'
+      + '<div style="display:flex;align-items:center;gap:4px;">'
+      +   '<button class="notif-close-btn" onclick="NotifCenter.showSettings()" title="Customize feed">⚙</button>'
+      +   '<button class="notif-close-btn" onclick="NotifCenter.close()" title="Close">&times;</button>'
+      + '</div>'
       + '</div>'
       + '<div style="padding:10px 24px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">'
       +   '<span style="font-size:12px;color:var(--text-light);">Last 7 days</span>'
@@ -2850,6 +2922,7 @@ var NotifCenter = (function() {
     if (isOpen) {
       close();
     } else {
+      _panelView = 'feed'; // v731: always start on feed view when reopening
       render();
       dropdown.classList.add('open');
       var backdrop = document.getElementById('notif-backdrop');
@@ -2921,6 +2994,11 @@ var NotifCenter = (function() {
     setTimeout(init, 500);
   }
 
+  // v731: customize-feed view switching + per-category toggle setter
+  function showSettings() { _panelView = 'settings'; render(); }
+  function showFeed()     { _panelView = 'feed';     render(); }
+  function setCat(key, val) { _setFeedCat(key, val); /* no re-render — only matters when feed view is active */ }
+
   return {
     toggle: toggle,
     close: close,
@@ -2928,7 +3006,10 @@ var NotifCenter = (function() {
     markAllRead: markAllRead,
     updateBadge: updateBadge,
     markCommsRead: markCommsRead,
-    refreshComms: _loadComms
+    refreshComms: _loadComms,
+    showSettings: showSettings,
+    showFeed: showFeed,
+    setCat: setCat
   };
 })();
 </script>
