@@ -41,6 +41,69 @@ var PipelinePage = {
     return hits[0] || null;
   },
 
+  // v713: resolve a deal's true state by chasing the quote → job → invoice
+  // links. Pipeline deal.jobId is only set when conversion happened via
+  // PipelinePage.convertToJob; quotes converted directly through the Quote
+  // detail page leave the deal "naked" — this helper finds them anyway.
+  // Returns one of:
+  //   { kind: 'paid',              jobId, invoiceId, amount }
+  //   { kind: 'invoiced_unpaid',   jobId, invoiceId, balance, dueDate }
+  //   { kind: 'job_done_no_invoice', jobId }
+  //   { kind: 'job_in_progress',   jobId, status }
+  //   { kind: 'no_job' }
+  _resolveDealStatus: function(deal) {
+    if (!deal) return { kind: 'no_job' };
+    var job = null;
+    if (deal.jobId && DB.jobs && DB.jobs.getById) job = DB.jobs.getById(deal.jobId);
+    // Quote-linked discovery
+    if (!job && deal.quoteId && DB.quotes && DB.quotes.getById) {
+      var q = DB.quotes.getById(deal.quoteId);
+      if (q && q.jobId && DB.jobs && DB.jobs.getById) job = DB.jobs.getById(q.jobId);
+      if (!job && DB.jobs && DB.jobs.getAll) {
+        var byQ = DB.jobs.getAll().filter(function(j) { return j.quoteId === deal.quoteId; });
+        if (byQ.length) job = byQ[0];
+      }
+    }
+    // deal.id == quote.id fallback (pipeline imports preserve id)
+    if (!job && DB.jobs && DB.jobs.getAll) {
+      var byId = DB.jobs.getAll().filter(function(j) { return j.quoteId === deal.id; });
+      if (byId.length) job = byId[0];
+    }
+    if (!job) return { kind: 'no_job' };
+
+    // Found a job — backfill deal.jobId for next time
+    if (deal.jobId !== job.id) {
+      try { deal.jobId = job.id; PipelinePage.saveDeals(PipelinePage.getDeals()); } catch(e){}
+    }
+
+    var invoice = null;
+    if (DB.invoices && DB.invoices.getAll) {
+      var invs = DB.invoices.getAll().filter(function(i) { return i.jobId === job.id; });
+      if (invs.length) {
+        // Prefer paid > sent > draft if multiple
+        invs.sort(function(a, b) {
+          var rank = function(s) { return s === 'paid' ? 0 : (s === 'sent' || s === 'overdue') ? 1 : 2; };
+          return rank((a.status || '').toLowerCase()) - rank((b.status || '').toLowerCase());
+        });
+        invoice = invs[0];
+      }
+    }
+
+    if (invoice) {
+      var st = (invoice.status || '').toLowerCase();
+      var paid = st === 'paid' || invoice.paidAt || (typeof invoice.balance === 'number' && invoice.balance <= 0);
+      if (paid) return { kind: 'paid', jobId: job.id, invoiceId: invoice.id, amount: invoice.total || job.total || 0 };
+      return { kind: 'invoiced_unpaid', jobId: job.id, invoiceId: invoice.id,
+        balance: (invoice.balance != null ? invoice.balance : invoice.total) || 0,
+        dueDate: invoice.dueDate };
+    }
+
+    if ((job.status || '').toLowerCase() === 'completed') {
+      return { kind: 'job_done_no_invoice', jobId: job.id };
+    }
+    return { kind: 'job_in_progress', jobId: job.id, status: job.status || 'scheduled' };
+  },
+
   _statsCollapsed: function() { return localStorage.getItem('bm-pipeline-stats') === 'collapsed'; },
   _toggleStats: function() {
     localStorage.setItem('bm-pipeline-stats', PipelinePage._statsCollapsed() ? 'shown' : 'collapsed');
@@ -221,12 +284,28 @@ var PipelinePage = {
 
           // Quick-action buttons — Won/Lost removed (auto-tracked by stage column).
           // Drag a card between columns to change its stage.
+          // v713: Won-stage card resolves the deal's true state via the
+          // quote → job → invoice chain. Pipeline.deal.jobId only gets set
+          // when conversion happened through PipelinePage.convertToJob —
+          // quotes converted via the Quote detail page leave the deal naked
+          // and used to show "Convert to Job" forever even though work was
+          // already done and invoiced.
           if (stage.id === 'won') {
-            html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">'
-              + (deal.jobId
-                ? '<div style="flex:1;padding:4px 0;font-size:11px;text-align:center;color:var(--text-light);font-style:italic;">Job created</div>'
-                : '<button style="width:100%;padding:10px 0;font-size:12px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;min-height:38px;" onclick="PipelinePage.convertToJob(\'' + deal.id + '\')">🔨 Convert to Job</button>')
-              + '</div>';
+            var st = PipelinePage._resolveDealStatus(deal);
+            html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">';
+            if (st.kind === 'paid') {
+              html += '<button onclick="InvoicesPage.showDetail(\'' + st.invoiceId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">💰 Paid · ' + UI.moneyInt(st.amount) + '</button>';
+            } else if (st.kind === 'invoiced_unpaid') {
+              html += '<button onclick="InvoicesPage.showDetail(\'' + st.invoiceId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#fff3e0;color:#92400e;border:1px solid #f59e0b;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">📨 Invoice ' + UI.moneyInt(st.balance) + ' due</button>';
+            } else if (st.kind === 'job_done_no_invoice') {
+              html += '<button onclick="JobsPage.showDetail(\'' + st.jobId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">✅ Job done · invoice it</button>';
+            } else if (st.kind === 'job_in_progress') {
+              html += '<button onclick="JobsPage.showDetail(\'' + st.jobId + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:6px;cursor:pointer;font-weight:700;min-height:38px;">🔨 Job ' + UI.esc(st.status || 'scheduled') + '</button>';
+            } else {
+              // no_job — original Convert to Job action
+              html += '<button onclick="PipelinePage.convertToJob(\'' + deal.id + '\')" style="width:100%;padding:10px 0;font-size:12px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;min-height:38px;">🔨 Convert to Job</button>';
+            }
+            html += '</div>';
           }
 
           html += '</div>';
