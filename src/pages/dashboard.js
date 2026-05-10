@@ -2,6 +2,15 @@
  * Branch Manager — Dashboard Page
  */
 var DashboardPage = {
+  // v720: kill switch for the "Needs your attention" inbox card. Persists
+  // in localStorage; when hidden the dashboard collapses to just the
+  // quick-add bar plus a small "Show" toggle.
+  _toggleAttention: function() {
+    var hidden = localStorage.getItem('bm-dash-attention-hidden') === 'true';
+    localStorage.setItem('bm-dash-attention-hidden', hidden ? 'false' : 'true');
+    loadPage('dashboard');
+  },
+
   // v719: Quick-add a task/note from the dashboard input. No due date,
   // no overlay — straight to the TaskReminders store. Doug can promote
   // to a real reminder later by opening the task.
@@ -463,9 +472,29 @@ var DashboardPage = {
     }
 
     // ── Inbox — unified "what needs your attention" surface ────────────────
-    // Replaces the old two-card Ready-to-Convert / Ready-to-Invoice strip
-    // with one richer feed. Pulls from quotes, jobs, invoices, requests,
-    // clients (needs_review), and chat unread (if available).
+    // v720: kill switch — if user hides the inbox we render only the quick-
+    // add bar (or skip entirely with a "show" toggle). Setting persists in
+    // localStorage as bm-dash-attention-hidden.
+    var attentionHidden = localStorage.getItem('bm-dash-attention-hidden') === 'true';
+
+    // v720: accuracy guard — pre-build a clientId set of "already has work"
+    // (any job exists in DB.jobs) so we can skip inbox items where a job
+    // is already linked to that client. Prevents stale "ready to convert"
+    // / "bill the job" items for clients whose work has been done.
+    var clientHasJob = {};
+    var clientHasInvoice = {};
+    var clientHasPaid = {};
+    allJobs.forEach(function(j) {
+      if (j.clientId) clientHasJob[j.clientId] = j;
+    });
+    allInvoices.forEach(function(i) {
+      if (i.clientId) {
+        clientHasInvoice[i.clientId] = i;
+        var paid = (i.status === 'paid') || i.paidAt || i.paidDate || (typeof i.balance === 'number' && i.balance <= 0);
+        if (paid) clientHasPaid[i.clientId] = i;
+      }
+    });
+
     var inboxItems = [];
     var cutoff60dash = new Date(now.getTime() - 60 * 86400000).toISOString().split('T')[0];
     var cutoff7dash  = new Date(now.getTime() - 7  * 86400000).toISOString();
@@ -505,21 +534,29 @@ var DashboardPage = {
       });
     }
 
-    // 1. Approved quotes ready to convert to jobs
-    allQuotes.filter(function(q) { return q.status === 'approved' && !q.convertedJobId; })
-      .forEach(function(q) {
-        inboxItems.push({
-          icon: 'check-circle', tone: 'green',
-          label: 'Approved quote — ' + (q.clientName || 'client'),
-          sub: UI.money(q.total) + ' · ready to schedule',
-          actionLabel: '+ Job',
-          onclick: 'var j=Workflow.quoteToJob(\'' + q.id + '\');if(j){loadPage(\'dashboard\');}'
-        });
+    // 1. Approved quotes ready to convert to jobs — but skip if the client
+    //    already has a job (likely already converted via different path).
+    allQuotes.filter(function(q) {
+      if (q.status !== 'approved' || q.convertedJobId || q.jobId) return false;
+      // v720: if any job for this client exists, this approved quote is
+      // probably already actioned. Drop from inbox.
+      if (q.clientId && clientHasJob[q.clientId]) return false;
+      return true;
+    }).forEach(function(q) {
+      inboxItems.push({
+        icon: 'check-circle', tone: 'green',
+        label: 'Approved quote — ' + (q.clientName || 'client'),
+        sub: UI.money(q.total) + ' · ready to schedule',
+        actionLabel: '+ Job',
+        onclick: 'var j=Workflow.quoteToJob(\'' + q.id + '\');if(j){loadPage(\'dashboard\');}'
       });
+    });
 
-    // 2. Completed jobs without an invoice
+    // 2. Completed jobs without an invoice — skip if any invoice exists
+    //    for this client (probably already billed via a different job link).
     allJobs.filter(function(j) {
       if (j.status !== 'completed' || j.invoiceId) return false;
+      if (j.clientId && clientHasInvoice[j.clientId]) return false; // v720
       return (j.scheduledDate && j.scheduledDate >= cutoff60dash)
           || (!j.scheduledDate && (j.createdAt || '') > cutoff7dash);
     }).forEach(function(j) {
@@ -572,9 +609,12 @@ var DashboardPage = {
       });
     });
 
-    // 6. Quotes sent 5+ days ago with no response
+    // 6. Quotes sent 5+ days ago with no response — skip if client got a
+    //    job or invoice since (the customer responded through another path).
     allQuotes.filter(function(q) {
-      return q.status === 'sent' && q.sentAt && q.sentAt < cutoff5dash;
+      if (q.status !== 'sent' || !q.sentAt || q.sentAt >= cutoff5dash) return false;
+      if (q.clientId && (clientHasJob[q.clientId] || clientHasInvoice[q.clientId])) return false; // v720
+      return true;
     }).slice(0, 5).forEach(function(q) {
       inboxItems.push({
         icon: 'mail-question', tone: 'amber',
@@ -589,8 +629,11 @@ var DashboardPage = {
     // v416: surfaces clients like Greg Ellson #279 / Denise Weber #175 — work
     // marked scheduled but never assigned a date. Either work happened off-the-
     // books OR customer ghosted; either way Doug needs to reconcile.
+    // v720: skip if the job has a paid invoice — already done.
     allJobs.filter(function(j) {
-      return j.status === 'scheduled' && !j.scheduledDate;
+      if (j.status !== 'scheduled' || j.scheduledDate) return false;
+      if (j.clientId && clientHasPaid[j.clientId]) return false;
+      return true;
     }).slice(0, 5).forEach(function(j) {
       inboxItems.push({
         icon: 'calendar-x', tone: 'amber',
@@ -626,12 +669,19 @@ var DashboardPage = {
       + '<button onclick="loadPage(\'taskreminders\')" title="Open Tasks" style="background:none;border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);flex-shrink:0;">All →</button>'
       + '</div>';
 
-    if (inboxItems.length > 0) {
+    if (attentionHidden) {
+      // Kill switch ON — only show quick-add bar plus a Show toggle.
+      html += quickAddBlock;
+      html += '<div style="text-align:right;margin-bottom:16px;">'
+        + '<button onclick="DashboardPage._toggleAttention()" style="background:none;border:none;color:var(--text-light);font-size:11px;cursor:pointer;padding:4px 8px;">▾ Show "Needs your attention"' + (inboxItems.length > 0 ? ' (' + inboxItems.length + ')' : '') + '</button>'
+        + '</div>';
+    } else if (inboxItems.length > 0) {
       html += quickAddBlock;
       html += '<div style="background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid #c8e6c9;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px;">'
         +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
         +     '<div style="display:flex;align-items:center;gap:8px;"><i data-lucide="inbox" style="width:18px;height:18px;color:var(--green-dark);"></i><strong style="font-size:15px;color:var(--green-dark);">Needs your attention</strong>'
         +     '<span style="font-size:12px;font-weight:600;background:var(--green-bg);color:var(--green-dark);padding:2px 8px;border-radius:999px;">' + inboxItems.length + '</span></div>'
+        +     '<button onclick="DashboardPage._toggleAttention()" title="Hide this section" style="background:none;border:none;color:var(--text-light);font-size:11px;cursor:pointer;padding:4px 8px;">▴ Hide</button>'
         +   '</div>';
       var TONE = { green:'var(--green-dark)', amber:'#e65100', blue:'#1565c0', red:'#c62828' };
       // v417: sort by urgency before slicing — red first, then amber, blue, green.

@@ -94,6 +94,23 @@ var PipelinePage = {
       if (candidate) job = candidate;
     }
 
+    // v720: aggressive any-job-for-client fallback. Imported pipeline deals
+    // often have value=0 (drafted quotes never sent) so the value-match
+    // fuzzy above never fires. If the client has ANY job within a generous
+    // ±180d window, the deal is effectively done — drop it from the kanban.
+    // False positives are corrected by drag-back-into-pipeline if needed.
+    if (!job && deal.clientId) {
+      var dealTs2 = deal.createdAt ? new Date(deal.createdAt).getTime() : Date.now();
+      var widerWindow = 180 * 86400000;
+      var anyJob = allJobs.find(function(j) {
+        if (j.clientId !== deal.clientId) return false;
+        var jts = j.scheduledDate ? new Date(j.scheduledDate).getTime()
+                : j.createdAt    ? new Date(j.createdAt).getTime()    : 0;
+        return Math.abs(jts - dealTs2) < widerWindow;
+      });
+      if (anyJob) job = anyJob;
+    }
+
     var result;
     if (!job) {
       // Last resort: client has a paid invoice within window?
