@@ -111,6 +111,26 @@ var PipelinePage = {
   },
 
   render: function() {
+    // v715: pre-pass — auto-promote any non-terminal deal whose underlying
+    // work has been done (job created, invoiced, or paid) into the Won
+    // column. Prevents Assessment/Quote-Sent cards from lingering after the
+    // quote was already converted via the Quote-detail "Convert to Job"
+    // button (which doesn't touch the pipeline deal record).
+    (function autoPromoteWon() {
+      var stored = PipelinePage.getDeals();
+      var dirty = false;
+      stored.forEach(function(d) {
+        if (d.stage === 'won' || d.stage === 'lost') return;
+        var st = PipelinePage._resolveDealStatus(d);
+        if (st && st.kind && st.kind !== 'no_job') {
+          d.stage = 'won';
+          d.movedAt = d.movedAt || new Date().toISOString();
+          dirty = true;
+        }
+      });
+      if (dirty) PipelinePage.saveDeals(stored);
+    })();
+
     var allDeals = PipelinePage._filterRawFromCached(PipelinePage.getDeals());
     var untriagedCount = PipelinePage._untriagedLeadCount();
     var sixMonthsAgo = new Date(Date.now() - 180 * 86400000);

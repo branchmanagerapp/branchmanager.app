@@ -493,7 +493,13 @@ var DB = (function() {
       data.status = data.status || 'scheduled';
       data.jobNumber = data.jobNumber || nextJobNum();
       _resolveClientId(data);
-      return create(KEYS.jobs, data);
+      var row = create(KEYS.jobs, data);
+      // v715: a client with a job is by definition not a lead anymore.
+      if (data.clientId) {
+        var cl = getById(KEYS.clients, data.clientId);
+        if (cl && cl.status === 'lead') update(KEYS.clients, data.clientId, { status: 'active' });
+      }
+      return row;
     },
     update: function(id, data) { return update(KEYS.jobs, id, data); },
     remove: function(id) { remove(KEYS.jobs, id); },
@@ -543,7 +549,13 @@ var DB = (function() {
       data.status = data.status || 'draft';
       data.invoiceNumber = data.invoiceNumber || nextInvNum();
       _resolveClientId(data);
-      return create(KEYS.invoices, data);
+      var row = create(KEYS.invoices, data);
+      // v715: a client with an invoice is no longer just a lead.
+      if (data.clientId) {
+        var cl = getById(KEYS.clients, data.clientId);
+        if (cl && cl.status === 'lead') update(KEYS.clients, data.clientId, { status: 'active' });
+      }
+      return row;
     },
     update: function(id, data) { return update(KEYS.invoices, id, data); },
     remove: function(id) { remove(KEYS.invoices, id); },

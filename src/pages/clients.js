@@ -53,6 +53,10 @@ var ClientsPage = {
         });
       });
     }, 100);
+    // v715: reconcile stale client statuses before rendering. A client is
+    // "active" if they have any approved/converted quote OR any job OR any
+    // invoice; otherwise "lead" (unless explicitly archived).
+    ClientsPage._reconcileStatuses();
     var stats = DB.dashboard.getStats();
     var clients = self._getFiltered();
 
@@ -730,6 +734,42 @@ var ClientsPage = {
   // Stored on client.commSettings; default is everything ON.
   // Honored by SchedulePage._getReminderIndex (skips reminders for opted-out clients)
   // and should be honored by marketing-automation when re-enabled.
+  // v715: re-derive client.status from related records so stale
+  // "lead" statuses on customers who actually became active (quote
+  // approved, job done, invoice paid) get corrected. Idempotent —
+  // only writes when status genuinely needs to change. Skips clients
+  // marked 'archived' (that's an explicit user choice).
+  _reconcileStatuses: function() {
+    if (!DB || !DB.clients || !DB.clients.getAll) return;
+    var clients = DB.clients.getAll();
+    if (!clients.length) return;
+
+    var quotes = (DB.quotes && DB.quotes.getAll) ? DB.quotes.getAll() : [];
+    var jobs   = (DB.jobs   && DB.jobs.getAll)   ? DB.jobs.getAll()   : [];
+    var invs   = (DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : [];
+
+    // Build a Set of client IDs that have any "active-signal" record
+    var activeIds = new Set();
+    var ACTIVE_QUOTE_STATUSES = { approved:1, converted:1, accepted:1, won:1 };
+    quotes.forEach(function(q) {
+      if (q.clientId && ACTIVE_QUOTE_STATUSES[(q.status||'').toLowerCase()]) activeIds.add(q.clientId);
+    });
+    jobs.forEach(function(j) {
+      if (j.clientId) activeIds.add(j.clientId);
+    });
+    invs.forEach(function(i) {
+      if (i.clientId) activeIds.add(i.clientId);
+    });
+
+    clients.forEach(function(c) {
+      if (!c || c.status === 'archived') return;
+      var shouldBe = activeIds.has(c.id) ? 'active' : 'lead';
+      if (c.status !== shouldBe) {
+        DB.clients.update(c.id, { status: shouldBe });
+      }
+    });
+  },
+
   _showCommSettings: function(clientId) {
     var c = DB.clients.getById(clientId);
     if (!c) { UI.toast('Client not found', 'error'); return; }
