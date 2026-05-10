@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 723; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 724; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -887,11 +887,29 @@
     justify-content:center; flex-shrink:0; font-size:15px;
   }
   .notif-dropdown-body { flex:1; min-width:0; }
+  /* v724: Jobber-style entries — title row (bold + time-right), sub-line, client */
+  .notif-row-top {
+    display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+  }
+  .notif-dropdown-title {
+    font-size:13px; font-weight:700; color:var(--text); line-height:1.35;
+    margin:0; flex:1; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .notif-dropdown-sub {
+    font-size:12px; color:var(--text-light); line-height:1.35; margin:1px 0 0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .notif-dropdown-client {
+    font-size:11px; color:var(--text-light); line-height:1.35; margin:1px 0 0;
+    font-weight:600;
+  }
+  /* Legacy single-line msg fallback (older renders) */
   .notif-dropdown-msg {
     font-size:13px; color:var(--text); line-height:1.35; margin:0 0 2px;
   }
   .notif-dropdown-time {
-    font-size:11px; color:var(--text-light); margin:0;
+    font-size:11px; color:var(--text-light); margin:0; flex-shrink:0; white-space:nowrap;
   }
   .notif-dropdown-dot {
     width:8px; height:8px; border-radius:50%; background:var(--accent);
@@ -1060,7 +1078,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v723.min.js"></script>
+<script defer src="dist/bm.bundle.v724.min.js"></script>
 
 
 
@@ -2501,135 +2519,132 @@ var NotifCenter = (function() {
     return client ? (client.name || client.firstName + ' ' + (client.lastName || '')) : 'Unknown';
   }
 
+  // v724: Activity Feed builder — Jobber-style entries with bold action +
+  // amount, sub-line (ref # · description), client name, timestamp.
+  // Each entry: { id, icon, iconBg, title, amount, sub, client, time, page, recordId }
   function buildNotifications() {
     if (typeof DB === 'undefined') return [];
     var items = [];
     var now = new Date();
     var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    var moneyFn = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt : function(n){ return '$' + (n||0); };
+
+    // Accuracy guards — same idea as v720 dashboard inbox. Don't surface
+    // events for clients whose work has obviously moved on (job exists
+    // for a "quote sent" event, paid invoice for an "approved" event).
+    var clientHasJob = {};
+    var clientHasPaid = {};
+    DB.jobs.getAll().forEach(function(j) { if (j.clientId) clientHasJob[j.clientId] = 1; });
+    DB.invoices.getAll().forEach(function(i) {
+      if (!i.clientId) return;
+      var paid = (i.status === 'paid') || i.paidAt || i.paidDate || (typeof i.balance === 'number' && i.balance <= 0);
+      if (paid) clientHasPaid[i.clientId] = 1;
+    });
 
     // New requests (last 7 days)
-    var requests = DB.requests.getAll();
-    for (var i = 0; i < requests.length; i++) {
-      var r = requests[i];
-      if (r.createdAt && r.createdAt >= sevenDaysAgo) {
-        items.push({
-          id: 'req-' + r.id,
-          icon: '📥',
-          iconBg: '#e8f5e9',
-          msg: 'New request from ' + getClientName(r.clientId || r.client),
-          time: r.createdAt,
-          page: 'requests',
-          recordId: r.id
-        });
-      }
-    }
+    DB.requests.getAll().forEach(function(r) {
+      if (!r.createdAt || r.createdAt < sevenDaysAgo) return;
+      var who = getClientName(r.clientId || r.client);
+      items.push({
+        id: 'req-' + r.id, icon: '📥', iconBg: '#e8f5e9',
+        title: 'New request',
+        sub: r.property || r.notes || r.service || '',
+        client: who,
+        time: r.createdAt, page: 'requests', recordId: r.id
+      });
+    });
 
-    // Quotes sent
-    var quotes = DB.quotes.getAll();
-    for (var i = 0; i < quotes.length; i++) {
-      var q = quotes[i];
-      if (q.status === 'sent' && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
-        items.push({
-          id: 'qsent-' + q.id,
-          icon: '📤',
-          iconBg: '#e3f2fd',
-          msg: 'Quote #' + (q.quoteNumber || '?') + ' sent to ' + getClientName(q.clientId || q.client),
-          time: q.updatedAt || q.createdAt,
-          page: 'quotes',
-          recordId: q.id
-        });
+    // Quotes — sent / approved / changes-requested
+    DB.quotes.getAll().forEach(function(q) {
+      var ts = q.updatedAt || q.createdAt;
+      if (!ts || ts < sevenDaysAgo) return;
+      var num = q.quoteNumber || q.id.substring(0, 6);
+      var amt = q.total ? ' — ' + moneyFn(q.total) : '';
+      var desc = q.description || '';
+      var who = getClientName(q.clientId || q.client);
+      if (q.status === 'sent' && !clientHasJob[q.clientId]) {
+        items.push({ id: 'qsent-' + q.id, icon: '📤', iconBg: '#e3f2fd',
+          title: 'Quote sent' + amt,
+          sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
+          client: who, time: ts, page: 'quotes', recordId: q.id });
       }
-      // Quotes approved
-      if (q.status === 'approved' && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
-        items.push({
-          id: 'qappr-' + q.id,
-          icon: '✅',
-          iconBg: '#e8f5e9',
-          msg: 'Quote #' + (q.quoteNumber || '?') + ' approved by ' + getClientName(q.clientId || q.client),
-          time: q.updatedAt || q.createdAt,
-          page: 'quotes',
-          recordId: q.id
-        });
+      if (q.status === 'approved' && !clientHasPaid[q.clientId]) {
+        items.push({ id: 'qappr-' + q.id, icon: '✅', iconBg: '#e8f5e9',
+          title: 'Quote approved' + amt,
+          sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
+          client: who, time: ts, page: 'quotes', recordId: q.id });
       }
-      // Changes requested by client
-      if (q.status === 'awaiting' && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
-        items.push({
-          id: 'qchg-' + q.id,
-          icon: '💬',
-          iconBg: '#fff3e0',
-          msg: 'Quote #' + (q.quoteNumber || '?') + ' — client requested changes',
-          time: q.updatedAt || q.createdAt,
-          page: 'quotes',
-          recordId: q.id
-        });
+      if (q.status === 'awaiting' || q.status === 'changes_requested') {
+        items.push({ id: 'qchg-' + q.id, icon: '💬', iconBg: '#fff3e0',
+          title: 'Client requested changes',
+          sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
+          client: who, time: ts, page: 'quotes', recordId: q.id });
       }
-    }
+      if (q.status === 'declined') {
+        items.push({ id: 'qdec-' + q.id, icon: '✗', iconBg: '#fce4ec',
+          title: 'Quote declined' + amt,
+          sub: 'Quote #' + num + (desc ? ' · ' + desc : ''),
+          client: who, time: ts, page: 'quotes', recordId: q.id });
+      }
+    });
 
     // Jobs completed (last 7 days)
-    var jobs = DB.jobs.getAll();
-    for (var i = 0; i < jobs.length; i++) {
-      var j = jobs[i];
-      if (j.status === 'completed' && j.updatedAt && j.updatedAt >= sevenDaysAgo) {
-        items.push({
-          id: 'jdone-' + j.id,
-          icon: '🔧',
-          iconBg: '#fff3e0',
-          msg: 'Job #' + (j.jobNumber || '?') + ' completed',
-          time: j.updatedAt || j.createdAt,
-          page: 'jobs',
-          recordId: j.id
-        });
-      }
-    }
+    DB.jobs.getAll().forEach(function(j) {
+      if (j.status !== 'completed') return;
+      var ts = j.completedAt || j.completedDate || j.updatedAt || j.scheduledDate;
+      if (!ts || ts < sevenDaysAgo) return;
+      var num = j.jobNumber || j.id.substring(0, 6);
+      var amt = j.total ? ' — ' + moneyFn(j.total) : '';
+      items.push({ id: 'jdone-' + j.id, icon: '🌳', iconBg: '#fff3e0',
+        title: 'Job completed' + amt,
+        sub: 'Job #' + num + (j.description ? ' · ' + j.description : ''),
+        client: getClientName(j.clientId || j.client),
+        time: ts, page: 'jobs', recordId: j.id });
+    });
 
-    // Invoices paid (last 7 days) + past due
-    var invoices = DB.invoices.getAll();
-    for (var i = 0; i < invoices.length; i++) {
-      var inv = invoices[i];
-      if (inv.status === 'paid' && (inv.paidDate || inv.updatedAt || '') >= sevenDaysAgo) {
-        items.push({
-          id: 'ipaid-' + inv.id,
-          icon: '💰',
-          iconBg: '#e8f5e9',
-          msg: 'Invoice #' + (inv.invoiceNumber || '?') + ' paid',
-          time: inv.paidDate || inv.updatedAt || inv.createdAt,
-          page: 'invoices',
-          recordId: inv.id
-        });
+    // Invoices — paid (last 7 days) + past due (always)
+    DB.invoices.getAll().forEach(function(inv) {
+      var num = inv.invoiceNumber || inv.id.substring(0, 6);
+      var amt = inv.total ? ' — ' + moneyFn(inv.total) : '';
+      var who = getClientName(inv.clientId || inv.client);
+      var paidTs = inv.paidDate || inv.paidAt;
+      if (inv.status === 'paid' && paidTs && paidTs >= sevenDaysAgo) {
+        items.push({ id: 'ipaid-' + inv.id, icon: '💰', iconBg: '#e8f5e9',
+          title: 'Payment received' + amt,
+          sub: 'Invoice #' + num,
+          client: who, time: paidTs, page: 'invoices', recordId: inv.id });
       }
-      if (inv.status !== 'paid' && inv.status !== 'draft' && inv.dueDate) {
+      // Past-due: only if not paid AND no clientHasPaid flag (client may have
+      // paid via another invoice / off-system). Avoids duplicate noise.
+      if (inv.status !== 'paid' && inv.status !== 'draft' && inv.status !== 'cancelled' && inv.dueDate) {
         var due = new Date(inv.dueDate);
-        if (due < now) {
-          items.push({
-            id: 'idue-' + inv.id,
-            icon: '⚠️',
-            iconBg: '#fce4ec',
-            msg: 'Invoice #' + (inv.invoiceNumber || '?') + ' past due',
-            time: inv.dueDate,
-            page: 'invoices',
-            recordId: inv.id
-          });
+        if (due < now && !clientHasPaid[inv.clientId]) {
+          var bal = (typeof inv.balance === 'number') ? inv.balance : inv.total;
+          items.push({ id: 'idue-' + inv.id, icon: '⚠', iconBg: '#fce4ec',
+            title: 'Invoice past due — ' + moneyFn(bal),
+            sub: 'Invoice #' + num,
+            client: who, time: inv.dueDate, page: 'invoices', recordId: inv.id });
         }
       }
-    }
+    });
 
     // Inbound communications (SMS / calls / voicemails from Dialpad)
-    for (var i = 0; i < _commCache.length; i++) {
-      var c = _commCache[i];
+    _commCache.forEach(function(c) {
       var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
       var cName = meta.name || c.from_number || 'Unknown';
       var cIcon = c.channel === 'sms' ? '💬' : (c.channel === 'voicemail' ? '📭' : '📵');
       var cBg   = c.channel === 'sms' ? '#e3f2fd' : '#fce4ec';
-      var cMsg  = (c.channel === 'sms' ? 'SMS from ' : (c.channel === 'voicemail' ? 'Voicemail from ' : 'Missed call from ')) + cName;
-      if (meta.service_wanted) cMsg += ' — ' + meta.service_wanted.substring(0, 35);
-      items.push({ id: 'comm-' + c.id, icon: cIcon, iconBg: cBg, msg: cMsg, time: c.created_at, page: 'callcenter', recordId: c.id });
-    }
-
-    // Sort by time descending
-    items.sort(function(a, b) {
-      return (b.time || '').localeCompare(a.time || '');
+      var cTitle = c.channel === 'sms' ? 'SMS received' : (c.channel === 'voicemail' ? 'Voicemail' : 'Missed call');
+      items.push({
+        id: 'comm-' + c.id, icon: cIcon, iconBg: cBg,
+        title: cTitle,
+        sub: meta.service_wanted ? meta.service_wanted.substring(0, 60) : (c.body ? c.body.substring(0, 60) : ''),
+        client: cName,
+        time: c.created_at, page: 'callcenter', recordId: c.id
+      });
     });
 
+    items.sort(function(a, b) { return (b.time || '').localeCompare(a.time || ''); });
     return items.slice(0, 30);
   }
 
@@ -2647,20 +2662,27 @@ var NotifCenter = (function() {
 
     html += '<div class="notif-dropdown-list">';
     if (items.length === 0) {
-      html += '<div class="notif-dropdown-empty">No recent notifications</div>';
+      html += '<div class="notif-dropdown-empty">No recent activity</div>';
     } else {
       for (var i = 0; i < items.length; i++) {
         var item = items[i];
         var isRead = readIds.indexOf(item.id) >= 0;
-        // Safely encode IDs so quotes/backslashes in data don't break the onclick
         var safePage = String(item.page || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         var safeRecordId = String(item.recordId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         var safeId = String(item.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        // v724: Jobber-style row — bold title (action + amount), thin
+        // sub-line (ref# + description), even thinner client line, time
+        // right-aligned at top.
+        var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
         html += '<div class="notif-dropdown-item' + (isRead ? '' : ' unread') + '" onclick="NotifCenter.clickItem(\'' + safePage + '\',\'' + safeRecordId + '\',\'' + safeId + '\')">'
           + '<div class="notif-dropdown-icon" style="background:' + item.iconBg + ';">' + item.icon + '</div>'
           + '<div class="notif-dropdown-body">'
-          + '<p class="notif-dropdown-msg">' + item.msg + '</p>'
-          + '<p class="notif-dropdown-time">' + timeAgo(item.time) + '</p>'
+          +   '<div class="notif-row-top">'
+          +     '<p class="notif-dropdown-title">' + esc(item.title || item.msg || '') + '</p>'
+          +     '<p class="notif-dropdown-time">' + timeAgo(item.time) + '</p>'
+          +   '</div>'
+          +   (item.sub    ? '<p class="notif-dropdown-sub">'    + esc(item.sub)    + '</p>' : '')
+          +   (item.client ? '<p class="notif-dropdown-client">' + esc(item.client) + '</p>' : '')
           + '</div>'
           + (isRead ? '' : '<div class="notif-dropdown-dot"></div>')
           + '</div>';
