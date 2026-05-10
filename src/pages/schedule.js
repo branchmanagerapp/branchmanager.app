@@ -123,6 +123,7 @@ var SchedulePage = {
       +   '<input type="month" id="cal-month-picker" value="' + self.currentDate.getFullYear() + '-' + String(self.currentDate.getMonth()+1).padStart(2,'0') + '" onchange="SchedulePage._jumpToMonth(this.value)" style="position:absolute;width:0;height:0;opacity:0;border:none;padding:0;">'
       +   '<button class="btn btn-outline" onclick="SchedulePage.next()" style="padding:4px 10px;">&rarr;</button>'
       +   '<button class="btn btn-outline" onclick="SchedulePage.goToday()" style="font-size:12px;padding:4px 10px;">Today</button>'
+      +   '<button onclick="JobsPage.showForm()" style="font-size:12px;padding:5px 12px;background:var(--green-dark);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New Job</button>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
       +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;">'
@@ -155,6 +156,7 @@ var SchedulePage = {
       html += self._renderMap();
     } else if (self.view === 'week' || self.view === 'month') {
       var showRail = self._dockedMapEnabled() && window.innerWidth >= 900;
+      html += self._renderStatStrip(allJobs);
       var calBody = (self.view === 'week') ? self._renderWeek(showRail) : self._renderMonth(showRail);
       if (showRail) {
         html += '<div style="display:flex;gap:12px;align-items:flex-start;">'
@@ -921,6 +923,37 @@ var SchedulePage = {
     }, 60);
 
     return html;
+  },
+
+  _renderStatStrip: function(allJobs) {
+    var range = SchedulePage._rangeForView();
+    var rangeJobs = allJobs.filter(function(j) {
+      if (!j.scheduledDate) return false;
+      var ds = j.scheduledDate.substring(0,10);
+      return ds >= range.start && ds <= range.end;
+    });
+    var revenue = rangeJobs.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
+    var completed = rangeJobs.filter(function(j) { return j.status === 'completed'; }).length;
+    var unscheduled = allJobs.filter(function(j) {
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled';
+    });
+    var queueValue = unscheduled.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
+    var rangeLabel = SchedulePage.view === 'week' ? 'This Week' : 'This Month';
+
+    function pill(label, value, color) {
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:6px 12px;display:inline-flex;align-items:baseline;gap:6px;">'
+        + '<span style="font-size:11px;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:.3px;">' + label + '</span>'
+        + '<span style="font-size:14px;font-weight:800;color:' + (color || 'var(--text)') + ';">' + value + '</span>'
+        + '</div>';
+    }
+
+    return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;">'
+      + '<span style="font-size:11px;color:var(--text-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">' + rangeLabel + '</span>'
+      + pill('Jobs', rangeJobs.length)
+      + pill('Revenue', UI.moneyInt(revenue), 'var(--green-dark)')
+      + pill('Done', completed + '/' + rangeJobs.length)
+      + pill('Queue', unscheduled.length + (queueValue ? ' · ' + UI.moneyInt(queueValue) : ''), unscheduled.length > 0 ? '#e07c24' : 'var(--text-light)')
+      + '</div>';
   },
 
   _rangeForView: function() {
