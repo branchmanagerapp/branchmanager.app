@@ -1817,7 +1817,17 @@ var QuotesPage = {
       notes: document.getElementById('q-notes').value.trim(),
       // Field removed from form; preserve existing value if editing, else default true
       showEquipMapToClient: (existingQ && existingQ.showEquipMapToClient !== undefined) ? existingQ.showEquipMapToClient : true,
-      status: form.dataset.saveStatus || 'draft',
+      status: (function() {
+        // v734: respect a one-shot status hint from Pipeline cross-section
+        // drag (request dropped on Sent / Approved column).
+        var pending;
+        try { pending = localStorage.getItem('bm-pending-quote-status'); } catch(_e) { pending = null; }
+        if (pending && (pending === 'sent' || pending === 'approved')) {
+          try { localStorage.removeItem('bm-pending-quote-status'); } catch(_e) {}
+          return pending;
+        }
+        return form.dataset.saveStatus || 'draft';
+      })(),
       // Preserve origin request link (don't lose on edit)
       requestId: QuotesPage._originRequestId || existingQ.requestId || null,
       depositRequired: depositRequired,
@@ -1849,6 +1859,12 @@ var QuotesPage = {
         };
       })()
     };
+
+    // v734: stamp event timestamps if the resolved status implies them.
+    // Keeps the Activity Feed v725 sentAt/approvedAt-driven timeline
+    // accurate when a quote is created via Pipeline cross-section drag.
+    if (data.status === 'sent') data.sentAt = data.sentAt || new Date().toISOString();
+    if (data.status === 'approved') data.approvedAt = data.approvedAt || new Date().toISOString();
 
     var savedId;
     if (quoteId) {

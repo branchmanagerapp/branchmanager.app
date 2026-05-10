@@ -376,14 +376,13 @@ var PipelinePage = {
           + '</div>';
       }
 
-      // v729: quote cards are draggable so they can be moved between
-      // Quote sub-columns (Draft / Sent / Approved). Request cards aren't
-      // — those columns are age-derived, not user-controllable.
-      var dragAttrs = d.quoteId
-        ? ' draggable="true" ondragstart="event.stopPropagation();PipelinePage.dragStart(event,\'' + d.id + '\')"'
-        : '';
+      // v729/v734: every card is draggable. Quote cards (d.quoteId) move
+      // between Quote sub-cols → quote.status flip. Request cards (no
+      // quoteId) can be dragged into the Quote section → opens a new
+      // quote form pre-populated with the request's client + property.
+      var dragAttrs = ' draggable="true" ondragstart="event.stopPropagation();PipelinePage.dragStart(event,\'' + d.id + '\')"';
       return '<div' + dragAttrs + ' onclick="PipelinePage.showDeal(\'' + d.id + '\')" '
-        + 'style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:5px;cursor:' + (d.quoteId ? 'grab' : 'pointer') + ';line-height:1.35;transition:border-color .12s;"'
+        + 'style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:5px;cursor:grab;line-height:1.35;transition:border-color .12s;"'
         + ' onmouseover="this.style.borderColor=\'#94a3b8\';"'
         + ' onmouseout="this.style.borderColor=\'var(--border)\';">'
         + '<div style="font-weight:700;font-size:13px;color:var(--text);">' + prefix + UI.esc(d.clientName || 'Unknown') + '</div>'
@@ -613,10 +612,11 @@ var PipelinePage = {
     PipelinePage._dragId = null;
   },
 
-  // v729: drop a quote card on a Quote sub-column → update quote.status
-  // (draft / sent / approved). Stamps sentAt / approvedAt on first
-  // transition into those states. Underlying deal stays in 'quote_sent'
-  // pipeline stage; the sub-column is purely a quote.status reflection.
+  // v729/v734: drop handler for Quote sub-cols.
+  // - Quote card source: update quote.status (draft / sent / approved)
+  // - Request card source: open new-quote form pre-populated with the
+  //   request's client + property + requestId. Doug fills in line items
+  //   and saves; the resulting quote inherits the dropped column's status.
   _quoteSubColDrop: function(e, newStatus) {
     e.preventDefault();
     if (e.currentTarget && e.currentTarget.style) e.currentTarget.style.background = 'var(--bg)';
@@ -624,7 +624,28 @@ var PipelinePage = {
     PipelinePage._dragId = null;
     if (!dragId) return;
     var deal = PipelinePage.getDeals().find(function(d) { return d.id === dragId; });
-    if (!deal || !deal.quoteId) return;
+    if (!deal) return;
+
+    // Request → Quote (cross-section). Open new-quote form with prefill.
+    if (!deal.quoteId) {
+      var clientId = deal.clientId || null;
+      var requestId = deal.id; // pipeline imports preserve request id
+      // Stash a one-shot prefill so QuotesPage.save can stamp the right
+      // status (draft / sent / approved) when the user submits.
+      try { localStorage.setItem('bm-pending-quote-status', newStatus); } catch(_e) {}
+      UI.toast('New quote from request — fill in line items');
+      // Defer to next tick so Pipeline render/cleanup completes first
+      setTimeout(function() {
+        if (typeof QuotesPage !== 'undefined' && QuotesPage.showForm) {
+          QuotesPage.showForm(null, clientId, requestId);
+        } else {
+          loadPage('quotes');
+        }
+      }, 0);
+      return;
+    }
+
+    // Quote → Quote (same section, status flip)
     var q = DB.quotes.getById(deal.quoteId);
     if (!q) return;
     if ((q.status || '').toLowerCase() === newStatus) return; // no-op
