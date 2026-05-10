@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 726; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 727; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -852,39 +852,80 @@
   .avatar-menu button:hover { background:var(--bg); }
   .avatar-menu hr { border:none; border-top:1px solid var(--border); margin:0; }
 
-  /* ── Notification Dropdown ── */
+  /* ── v727: Activity Feed slide-in panel (Jobber pattern) ── */
   .notif-dropdown {
-    display:none; position:absolute; top:44px; right:0; width:380px;
-    background:var(--white); border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.18);
-    border:1px solid var(--border); z-index:400; overflow:hidden;
+    /* Always present in DOM, translated off-screen until open. Full-height
+       right rail, fixed position, transition slides it in/out. */
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 380px; max-width: 92vw;
+    background: var(--white);
+    box-shadow: -8px 0 32px rgba(0,0,0,.12);
+    border-left: 1px solid var(--border);
+    z-index: 600;
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s cubic-bezier(.2,.8,.2,1);
+    overflow: hidden;
   }
-  .notif-dropdown.open { display:block; }
+  .notif-dropdown.open { transform: translateX(0); }
+  /* Click-outside backdrop — fades in when panel opens, click closes it. */
+  .notif-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, .35);
+    z-index: 590;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .notif-backdrop.open { opacity: 1; pointer-events: auto; }
+
   .notif-dropdown-header {
     display:flex; align-items:center; justify-content:space-between;
-    padding:14px 16px; border-bottom:1px solid var(--border);
+    padding: 22px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
   }
   .notif-dropdown-header h3 {
-    font-size:15px; font-weight:700; color:var(--text); margin:0;
+    font-size: 22px; font-weight: 800; color: var(--text); margin: 0;
+    letter-spacing: -0.01em;
   }
   .notif-dropdown-header a {
-    font-size:12px; color:var(--accent); cursor:pointer; text-decoration:none; font-weight:600;
+    font-size: 13px; color: var(--accent); cursor: pointer;
+    text-decoration: none; font-weight: 600;
   }
-  .notif-dropdown-header a:hover { text-decoration:underline; }
+  .notif-dropdown-header a:hover { text-decoration: underline; }
+  .notif-close-btn {
+    background: none; border: none; color: var(--text-light);
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px; line-height: 1; padding: 0; flex-shrink: 0;
+    transition: background .12s;
+  }
+  .notif-close-btn:hover { background: var(--bg); }
+
   .notif-dropdown-list {
-    max-height:420px; overflow-y:auto;
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
   }
   .notif-dropdown-item {
-    display:flex; align-items:flex-start; gap:10px; padding:12px 16px;
-    cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s;
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 24px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background .12s;
   }
-  .notif-dropdown-item:last-child { border-bottom:none; }
-  .notif-dropdown-item:hover { background:var(--bg); }
-  .notif-dropdown-item.unread { background:var(--green-bg); }
-  .notif-dropdown-item.unread:hover { background:#e2f5ea; }
-  [data-theme="dark"] .notif-dropdown-item.unread:hover { background:#243b2e; }
+  .notif-dropdown-item:last-child { border-bottom: none; }
+  .notif-dropdown-item:hover { background: var(--bg); }
+  .notif-dropdown-item.unread { background: var(--green-bg); }
+  .notif-dropdown-item.unread:hover { background: #e2f5ea; }
+  [data-theme="dark"] .notif-dropdown-item.unread:hover { background: #243b2e; }
   .notif-dropdown-icon {
-    width:32px; height:32px; border-radius:8px; display:flex; align-items:center;
-    justify-content:center; flex-shrink:0; font-size:15px;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px;
+    margin-top: 2px;
   }
   .notif-dropdown-body { flex:1; min-width:0; }
   /* v724: Jobber-style entries — title row (bold + time-right), sub-line, client */
@@ -1046,6 +1087,7 @@
             </button>
             <div class="notif-dropdown" id="notif-dropdown"></div>
           </div>
+          <div class="notif-backdrop" id="notif-backdrop" onclick="NotifCenter.close()"></div>
           <button class="topbar-icon" onclick="AI.toggle()" title="AI Assistant">
             <i data-lucide="sparkles" style="width:17px;height:17px;stroke:var(--text-light);stroke-width:1.75;"></i>
           </button>
@@ -1078,7 +1120,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v726.min.js"></script>
+<script defer src="dist/bm.bundle.v727.min.js"></script>
 
 
 
@@ -2675,9 +2717,15 @@ var NotifCenter = (function() {
     var items = buildNotifications();
     var readIds = getReadIds();
 
+    // v727: Jobber-style header — big "Activity Feed" title + close X.
+    // "Mark all read" demoted to a small text link below the title.
     var html = '<div class="notif-dropdown-header">'
-      + '<h3>Notifications</h3>'
-      + '<a onclick="NotifCenter.markAllRead()">Mark all read</a>'
+      + '<h3>Activity Feed</h3>'
+      + '<button class="notif-close-btn" onclick="NotifCenter.close()" title="Close">&times;</button>'
+      + '</div>'
+      + '<div style="padding:10px 24px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">'
+      +   '<span style="font-size:12px;color:var(--text-light);">Last 7 days</span>'
+      +   '<a onclick="NotifCenter.markAllRead()" style="font-size:13px;color:var(--accent);cursor:pointer;font-weight:600;">Mark all read</a>'
       + '</div>';
 
     html += '<div class="notif-dropdown-list">';
@@ -2745,12 +2793,16 @@ var NotifCenter = (function() {
     } else {
       render();
       dropdown.classList.add('open');
+      var backdrop = document.getElementById('notif-backdrop');
+      if (backdrop) backdrop.classList.add('open');
     }
   }
 
   function close() {
     var dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.remove('open');
+    var backdrop = document.getElementById('notif-backdrop');
+    if (backdrop) backdrop.classList.remove('open');
   }
 
   function clickItem(page, recordId, notifId) {
