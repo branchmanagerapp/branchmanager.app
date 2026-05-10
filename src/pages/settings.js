@@ -519,6 +519,30 @@ var SettingsPage = {
       + '<div style="margin-top:14px;text-align:right;"><button onclick="SettingsPage._saveWorkSettings()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">Save</button></div>'
       + '</div></details>';
 
+    // ── Schedule & Reminders ──
+    var schedPrefs = {
+      qFu1: parseInt(localStorage.getItem('bm-sched-q-fu1-days') || '5', 10),
+      qFu2: parseInt(localStorage.getItem('bm-sched-q-fu2-days') || '10', 10),
+      iFu1: parseInt(localStorage.getItem('bm-sched-i-fu1-days') || '1', 10),
+      iFu2: parseInt(localStorage.getItem('bm-sched-i-fu2-days') || '4', 10)
+    };
+    html += cardOpen('📅 Schedule & Reminders <span style="font-weight:400;color:var(--text-light);font-size:12px;margin-left:6px;">calendar follow-up timing</span>')
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">When to surface follow-up reminders on the calendar after a quote is sent or an invoice goes overdue. Drag a pill to a different day on the calendar to one-off snooze it; these settings control the default schedule for new reminders.</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">'
+      +   '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Quote follow-up #1 (days after sent)</label>'
+      +     '<input type="number" id="sp-q-fu1" value="' + schedPrefs.qFu1 + '" min="1" max="60" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;"></div>'
+      +   '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Quote follow-up #2 (days after sent)</label>'
+      +     '<input type="number" id="sp-q-fu2" value="' + schedPrefs.qFu2 + '" min="1" max="60" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;"></div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">'
+      +   '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Invoice nudge #1 (days after due)</label>'
+      +     '<input type="number" id="sp-i-fu1" value="' + schedPrefs.iFu1 + '" min="0" max="60" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;"></div>'
+      +   '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Invoice nudge #2 (days after due)</label>'
+      +     '<input type="number" id="sp-i-fu2" value="' + schedPrefs.iFu2 + '" min="0" max="60" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;"></div>'
+      + '</div>'
+      + '<div style="margin-top:14px;text-align:right;"><button onclick="SettingsPage._saveSchedulePrefs()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">Save</button></div>'
+      + cardClose();
+
     // ── Location Services ──
     var locTrack = localStorage.getItem('bm-gps-tracking') !== 'false';
     var locWorkOnly = localStorage.getItem('bm-gps-work-only') !== 'false';
@@ -3151,6 +3175,21 @@ var SettingsPage = {
       if (el) localStorage.setItem('bm-bh-' + day, el.value.trim());
     });
     UI.toast('Work settings saved');
+  },
+
+  _saveSchedulePrefs: function() {
+    function clamp(id, min, max) {
+      var v = parseInt(document.getElementById(id).value, 10);
+      if (isNaN(v) || v < min) v = min;
+      if (v > max) v = max;
+      return String(v);
+    }
+    localStorage.setItem('bm-sched-q-fu1-days', clamp('sp-q-fu1', 1, 60));
+    localStorage.setItem('bm-sched-q-fu2-days', clamp('sp-q-fu2', 1, 60));
+    localStorage.setItem('bm-sched-i-fu1-days', clamp('sp-i-fu1', 0, 60));
+    localStorage.setItem('bm-sched-i-fu2-days', clamp('sp-i-fu2', 0, 60));
+    if (typeof SchedulePage !== 'undefined') window._bmRemindersCacheKey = null;
+    UI.toast('Reminder schedule saved');
   },
 
   _saveNotifSettings: function() {

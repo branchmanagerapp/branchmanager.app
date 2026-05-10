@@ -31,6 +31,14 @@ var SchedulePage = {
     function snoozedOr(snoozed, fallback) {
       return (snoozed && typeof snoozed === 'string') ? snoozed.substring(0,10) : fallback;
     }
+    function prefDays(key, fallback) {
+      var v = parseInt(localStorage.getItem(key), 10);
+      return isNaN(v) ? fallback : v;
+    }
+    var qFu1 = prefDays('bm-sched-q-fu1-days', 5);
+    var qFu2 = prefDays('bm-sched-q-fu2-days', 10);
+    var iFu1 = prefDays('bm-sched-i-fu1-days', 1);
+    var iFu2 = prefDays('bm-sched-i-fu2-days', 4);
     var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
     qs.forEach(function(q) {
       if (!q.sentAt) return;
@@ -42,9 +50,9 @@ var SchedulePage = {
       var ln = lastName(q.clientName);
       var label = 'Quote follow-up #' + num + ' · ' + (q.clientName || 'client');
       var short = 'F:' + ln;
-      if (!q.followupSentAt) push(snoozedOr(q.followupSnoozedTo, add5d(sent, 5)),
+      if (!q.followupSentAt) push(snoozedOr(q.followupSnoozedTo, add5d(sent, qFu1)),
         { kind:'quote', stage:1, id:q.id, label:label, short:short });
-      if (!q.followup2SentAt) push(snoozedOr(q.followup2SnoozedTo, add5d(sent, 10)),
+      if (!q.followup2SentAt) push(snoozedOr(q.followup2SnoozedTo, add5d(sent, qFu2)),
         { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)', short:short + '²' });
     });
     var ivs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
@@ -58,10 +66,10 @@ var SchedulePage = {
       var ln = lastName(inv.clientName);
       var label = 'Invoice overdue #' + num + ' · ' + (inv.clientName || 'client');
       var short = 'O:' + ln;
-      if (!inv.followupSentAt) push(snoozedOr(inv.followupSnoozedTo, add5d(due, 1)),
+      if (!inv.followupSentAt) push(snoozedOr(inv.followupSnoozedTo, add5d(due, iFu1)),
         { kind:'invoice', stage:1, id:inv.id, label:label, short:short });
-      push(snoozedOr(inv.followup2SnoozedTo, add5d(due, 4)),
-        { kind:'invoice', stage:2, id:inv.id, label:label + ' (4d overdue)', short:short + '⚠' });
+      push(snoozedOr(inv.followup2SnoozedTo, add5d(due, iFu2)),
+        { kind:'invoice', stage:2, id:inv.id, label:label + ' (' + iFu2 + 'd overdue)', short:short + '⚠' });
     });
     window._bmRemindersCache = idx;
     window._bmRemindersCacheKey = SchedulePage._cacheKey();
@@ -656,7 +664,9 @@ var SchedulePage = {
         + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
         + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
-        + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;transition:background .15s,box-shadow .15s;">';
+        + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;transition:background .15s,box-shadow .15s;position:relative;"'
+        + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();JobsPage.showForm(null,{date:\'' + dateStr + '\'})" title="New job on ' + dateStr + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;z-index:2;">+</button>';
       dayJobs.forEach(function(j) {
         var bgColor = j.status === 'completed' ? '#e8f5e9' : j.status === 'late' ? '#ffebee' : j.status === 'in_progress' ? '#fff3e0' : '#e3f2fd';
         var borderColor = j.status === 'completed' ? '#4caf50' : j.status === 'late' ? '#f44336' : j.status === 'in_progress' ? '#ff9800' : '#2196f3';
@@ -756,7 +766,9 @@ var SchedulePage = {
         + 'ondragleave="this.style.background=\'' + cellBg + '\';this.style.boxShadow=\'none\'" '
         + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
-        + 'style="background:' + cellBg + ';min-height:80px;padding:4px;cursor:pointer;transition:background .15s;">'
+        + 'style="background:' + cellBg + ';min-height:80px;padding:4px;cursor:pointer;transition:background .15s;position:relative;"'
+        + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();JobsPage.showForm(null,{date:\'' + dateStr + '\'})" title="New job on ' + dateStr + '" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;">+</button>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
         + (isToday
             ? '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + day + '</span>'
