@@ -24,6 +24,29 @@ var PipelinePage = {
     };
   },
 
+  // v712: helper — returns the next upcoming reminder for a given quote/invoice id.
+  // Walks SchedulePage._getReminderIndex() honoring the global cache + comm-settings.
+  _nextReminderForId: function(id) {
+    if (!id || typeof SchedulePage === 'undefined' || !SchedulePage._getReminderIndex) return null;
+    var idx = SchedulePage._getReminderIndex();
+    var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    var hits = [];
+    Object.keys(idx).forEach(function(dateStr) {
+      if (dateStr < todayStr) return;
+      idx[dateStr].forEach(function(r) {
+        if (r.id === id) hits.push({ date: dateStr, stage: r.stage, kind: r.kind });
+      });
+    });
+    hits.sort(function(a, b) { return a.date < b.date ? -1 : 1; });
+    return hits[0] || null;
+  },
+
+  _statsCollapsed: function() { return localStorage.getItem('bm-pipeline-stats') === 'collapsed'; },
+  _toggleStats: function() {
+    localStorage.setItem('bm-pipeline-stats', PipelinePage._statsCollapsed() ? 'shown' : 'collapsed');
+    loadPage('pipeline');
+  },
+
   render: function() {
     var allDeals = PipelinePage.getDeals();
     var sixMonthsAgo = new Date(Date.now() - 180 * 86400000);
@@ -75,7 +98,14 @@ var PipelinePage = {
     var funnelCounts = funnelStages.map(function(s){ return stageStats[s] ? stageStats[s].count : 0; });
     var funnelTotal  = funnelCounts.reduce(function(a,b){ return a+b; }, 0) || 1;
 
-    var html = '<div class="stat-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);">'
+    var statsCollapsed = PipelinePage._statsCollapsed();
+    var html = '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">'
+      + '<button onclick="PipelinePage._toggleStats()" style="background:none;border:none;color:var(--text-light);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;">' + (statsCollapsed ? '▾ Show stats' : '▴ Hide stats') + '</button>'
+      + '</div>';
+    if (statsCollapsed) {
+      html += '';
+    } else {
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);">'
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       + '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">Overview</div>'
       + '<div style="font-size:12px;margin-bottom:2px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2196f3;margin-right:6px;"></span>New (' + (stageStats.new_lead?stageStats.new_lead.count:0) + ')</div>'
@@ -125,16 +155,14 @@ var PipelinePage = {
         + (i < funnelCounts.length - 1 ? '<div style="font-size:16px;color:var(--border);padding:0 2px;margin-top:8px;">&#8250;</div>' : '');
     });
     html += '</div></div>';
+    } // end stats collapsed-else
 
     // Filter bar + Import from Quotes button
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">'
       + '<button class="btn ' + (PipelinePage._filterRecent ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage._filterRecent=true;loadPage(\'pipeline\')">6 Months</button>'
       + '<button class="btn ' + (!PipelinePage._filterRecent ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage._filterRecent=false;loadPage(\'pipeline\')">All Time</button>'
       + (hiddenOld > 0 ? '<span style="font-size:12px;color:var(--text-light);">' + hiddenOld + ' older deals hidden</span>' : '')
-      + '<div style="margin-left:auto;display:flex;gap:8px;">'
-      + (openQuotes.length > 0 ? '<button class="btn btn-outline" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage.importFromQuotes()">📋 Import ' + openQuotes.length + ' Quote' + (openQuotes.length !== 1 ? 's' : '') + '</button>' : '')
-      + '<button class="btn btn-primary" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage.addDeal(\'new_lead\')">+ New Deal</button>'
-      + '</div>'
+      + (openQuotes.length > 0 ? '<div style="margin-left:auto;"><button class="btn btn-outline" style="font-size:12px;padding:5px 14px;" onclick="PipelinePage.importFromQuotes()">📋 Import ' + openQuotes.length + ' Quote' + (openQuotes.length !== 1 ? 's' : '') + '</button></div>' : '')
       + '</div>';
 
     // Kanban board
@@ -181,13 +209,19 @@ var PipelinePage = {
             + (deal.source ? '<div style="font-size:10px;color:var(--text-light);margin-top:4px;">via ' + deal.source + '</div>' : '')
             + (deal.notes ? '<div style="font-size:11px;color:var(--text-light);margin-top:5px;padding-top:5px;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📌 ' + deal.notes + '</div>' : '');
 
-          // Quick-action buttons
+          // v712: reminder-status footer — shows next upcoming follow-up date
+          // or "No upcoming reminders". Skipped on terminal stages.
           if (stage.id !== 'won' && stage.id !== 'lost') {
-            html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">'
-              + '<button style="flex:1;padding:10px 0;font-size:12px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:6px;cursor:pointer;font-weight:600;min-height:38px;" onclick="PipelinePage.quickMove(\'' + deal.id + '\',\'won\')">Won ✓</button>'
-              + '<button style="flex:1;padding:10px 0;font-size:12px;background:#fce4ec;color:#c62828;border:1px solid #ef9a9a;border-radius:6px;cursor:pointer;font-weight:600;min-height:38px;" onclick="PipelinePage.quickMove(\'' + deal.id + '\',\'lost\')">Lost ✗</button>'
-              + '</div>';
-          } else if (stage.id === 'won') {
+            var nextR = PipelinePage._nextReminderForId(deal.id);
+            var rText = nextR ? '⏰ Next reminder ' + UI.dateShort(nextR.date) + (nextR.stage === 2 ? ' (2nd)' : '')
+                              : '✓ No upcoming reminders';
+            var rColor = nextR ? '#92400e' : 'var(--text-light)';
+            html += '<div style="font-size:10px;color:' + rColor + ';margin-top:6px;padding-top:5px;border-top:1px solid var(--border);">' + rText + '</div>';
+          }
+
+          // Quick-action buttons — Won/Lost removed (auto-tracked by stage column).
+          // Drag a card between columns to change its stage.
+          if (stage.id === 'won') {
             html += '<div style="display:flex;gap:5px;margin-top:8px;" onclick="event.stopPropagation()">'
               + (deal.jobId
                 ? '<div style="flex:1;padding:4px 0;font-size:11px;text-align:center;color:var(--text-light);font-style:italic;">Job created</div>'

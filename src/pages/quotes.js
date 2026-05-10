@@ -1988,6 +1988,15 @@ var QuotesPage = {
       +       (q.approvedAt ? '<span style="color:var(--text-light);">Approved</span><span style="color:var(--green-dark);font-weight:600;">' + UI.dateShort(q.approvedAt) + '</span>' : '')
       +       (q.requestId ? '<span style="color:var(--text-light);">From Request</span><span><a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;text-decoration:underline;">' + ((function(){ var r=DB.requests&&DB.requests.getById?DB.requests.getById(q.requestId):null; return r&&r.createdAt?UI.dateShort(r.createdAt):'View request'; })()) + '</a></span>' : '')
       +       (q.source ? '<span style="color:var(--text-light);">Lead source</span><span>' + UI.esc(q.source) + '</span>' : '')
+      +       (function(){
+              // v712: next upcoming reminder (or "none") so the user can see
+              // when this quote will next nudge the client.
+              if (typeof PipelinePage === 'undefined' || !PipelinePage._nextReminderForId) return '';
+              var nx = PipelinePage._nextReminderForId(id);
+              if (nx) return '<span style="color:var(--text-light);">Next reminder</span><span style="color:#92400e;">⏰ ' + UI.dateShort(nx.date) + (nx.stage === 2 ? ' (2nd)' : '') + '</span>';
+              if (q.followupSentAt && q.followup2SentAt) return '<span style="color:var(--text-light);">Reminders</span><span style="color:var(--text-light);">✓ Both follow-ups sent</span>';
+              return '<span style="color:var(--text-light);">Reminders</span><span style="color:var(--text-light);">✓ None upcoming</span>';
+            })()
       +     '</div>'
       +   '</div>'
       + '</div>'
