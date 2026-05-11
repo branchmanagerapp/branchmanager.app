@@ -1228,11 +1228,14 @@ var JobsPage = {
     }
     html += '</div>'
 
-      // Notes — inline editable
+      // Notes — inline editable + v789 voice memo
       + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
       + '<h4 style="font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin:0;">Notes</h4>'
-      + '<button onclick="JobsPage._editNote(\'' + id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;">✏️ Edit</button>'
+      + '<div style="display:flex;gap:8px;">'
+      +   '<button id="job-mic-btn-' + id + '" onclick="JobsPage._toggleVoiceMemo(\'' + id + '\')" title="Voice memo — speech-to-text, appends to notes" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--accent);">🎤</button>'
+      +   '<button onclick="JobsPage._editNote(\'' + id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;">✏️ Edit</button>'
+      + '</div>'
       + '</div>'
       + '<div id="job-note-view-' + id + '" style="font-size:13px;color:' + (j.notes ? 'var(--text)' : 'var(--text-light)') + ';line-height:1.6;min-height:32px;">' + (j.notes ? UI.esc(j.notes) : 'No notes. Tap Edit to add.') + '</div>'
       + '<div id="job-note-edit-' + id + '" style="display:none;">'
@@ -1313,6 +1316,106 @@ var JobsPage = {
     var e = document.getElementById('job-note-edit-' + jobId);
     if (e) e.style.display = 'none';
     UI.toast('Notes saved');
+  },
+
+  // v789: Voice memo on job notes. Uses browser SpeechRecognition (free,
+  // no API roundtrip) to live-transcribe and append to job.notes with a
+  // timestamp prefix. Tap once to start, tap again to stop + save.
+  _voiceMemoState: null,
+  _toggleVoiceMemo: function(jobId) {
+    var btn = document.getElementById('job-mic-btn-' + jobId);
+    var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) {
+      UI.toast('Voice memo not supported in this browser', 'error');
+      return;
+    }
+    // Already recording? Stop.
+    if (JobsPage._voiceMemoState && JobsPage._voiceMemoState.recog) {
+      try { JobsPage._voiceMemoState.recog.stop(); } catch(e) {}
+      return;
+    }
+    var recog = new Rec();
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.lang = 'en-US';
+    JobsPage._voiceMemoState = { recog: recog, jobId: jobId, finalText: '', interim: '' };
+
+    // Live preview overlay
+    var preview = document.createElement('div');
+    preview.id = 'job-mic-preview-' + jobId;
+    preview.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f2937;color:#fff;padding:14px 18px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.3);font-size:14px;line-height:1.5;max-width:min(90vw,520px);z-index:9999;';
+    preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:50%;animation:pulse 1.2s infinite;"></span><b>🎤 Recording…</b> <span style="color:#9ca3af;font-size:12px;margin-left:auto;">tap mic to stop</span></div><div id="job-mic-text-' + jobId + '" style="color:#e5e7eb;min-height:24px;">Listening…</div>';
+    document.body.appendChild(preview);
+    // Pulse keyframe (one-shot inject)
+    if (!document.getElementById('job-mic-pulse-style')) {
+      var st = document.createElement('style');
+      st.id = 'job-mic-pulse-style';
+      st.textContent = '@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}';
+      document.head.appendChild(st);
+    }
+
+    recog.onresult = function(ev) {
+      var state = JobsPage._voiceMemoState;
+      if (!state) return;
+      var interim = '';
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        var t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) {
+          state.finalText += (state.finalText ? ' ' : '') + t.trim();
+        } else {
+          interim += t;
+        }
+      }
+      state.interim = interim;
+      var liveEl = document.getElementById('job-mic-text-' + state.jobId);
+      if (liveEl) {
+        liveEl.innerHTML = '<span>' + UI.esc(state.finalText) + '</span><span style="color:#6b7280;"> ' + UI.esc(interim) + '</span>';
+      }
+    };
+    recog.onerror = function(ev) {
+      console.warn('[Jobs] voice memo error', ev);
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        UI.toast('Mic permission denied — enable in browser settings', 'error');
+      }
+    };
+    recog.onend = function() {
+      var state = JobsPage._voiceMemoState;
+      JobsPage._voiceMemoState = null;
+      var prv = document.getElementById('job-mic-preview-' + jobId);
+      if (prv) prv.remove();
+      var btnEl = document.getElementById('job-mic-btn-' + jobId);
+      if (btnEl) { btnEl.style.background = 'none'; btnEl.style.color = 'var(--accent)'; btnEl.textContent = '🎤'; }
+      if (!state || !state.finalText.trim()) {
+        UI.toast('Nothing recorded');
+        return;
+      }
+      // Append to job notes with timestamp prefix
+      var j = DB.jobs.getById(jobId);
+      if (!j) return;
+      var now = new Date();
+      var stamp = (now.getMonth() + 1) + '/' + now.getDate() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      var memoLine = '[🎤 ' + stamp + '] ' + state.finalText.trim();
+      var newNotes = ((j.notes || '').trim() + '\n\n' + memoLine).trim();
+      DB.jobs.update(jobId, { notes: newNotes });
+      UI.toast('🎤 Memo saved — ' + state.finalText.trim().split(/\s+/).length + ' words');
+      // Refresh the notes view
+      var v = document.getElementById('job-note-view-' + jobId);
+      if (v) {
+        v.textContent = newNotes;
+        v.style.color = 'var(--text)';
+      }
+    };
+
+    try {
+      recog.start();
+      if (btn) { btn.style.background = '#ef4444'; btn.style.color = '#fff'; btn.textContent = '■'; }
+      UI.toast('🎤 Recording — tap to stop');
+    } catch(e) {
+      UI.toast('Could not start mic: ' + e.message, 'error');
+      JobsPage._voiceMemoState = null;
+      var prv2 = document.getElementById('job-mic-preview-' + jobId);
+      if (prv2) prv2.remove();
+    }
   },
 
   // Legacy modal (not used)
