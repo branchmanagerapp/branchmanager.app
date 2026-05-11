@@ -43,7 +43,12 @@ var RecurringJobs = {
       + '<h3 style="font-size:15px;margin-bottom:12px;">Create Recurring Job</h3>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
       + '<div><label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:3px;">Client</label>'
-      + '<input type="text" id="rec-client" placeholder="Client name" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;"></div>'
+      + '<input type="text" id="rec-client" list="rec-client-list" placeholder="Start typing a client…" autocomplete="off" '
+      +    'style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;">'
+      + '<datalist id="rec-client-list">'
+      +    DB.clients.getAll().filter(function(c){return c && c.name;}).sort(function(a,b){return (a.name||"").localeCompare(b.name||"");}).map(function(c){return "<option value=\"" + UI.esc(c.name) + "\">";}).join("")
+      + '</datalist>'
+      + '</div>'
       + '<div><label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:3px;">Service</label>'
       + '<select id="rec-service" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;">'
       + '<option value="tree_pruning">Tree Pruning</option>'
@@ -125,8 +130,15 @@ var RecurringJobs = {
     if (!clientName) { UI.toast('Enter a client name', 'error'); return; }
     if (!startDate) { UI.toast('Pick a start date', 'error'); return; }
 
+    // v753: resolve clientName to clientId so generated jobs link back
+    // to the real client record (was orphan-name-only before).
+    var matchedClient = DB.clients.getAll().find(function(c) {
+      return c && c.name && c.name.trim().toLowerCase() === clientName.toLowerCase();
+    });
+
     var record = {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+      clientId: matchedClient ? matchedClient.id : null,
       clientName: clientName,
       service: service,
       frequency: frequency,
@@ -163,7 +175,18 @@ var RecurringJobs = {
     if (!rec) return;
 
     var nextDate = RecurringJobs._getNextDate(rec);
+    // v753: backfill clientId from name if the rec was created before
+    // we started recording clientId, so the new job links to the real
+    // client. Otherwise jobs end up orphan and won't show on the client
+    // detail timeline.
+    if (!rec.clientId && rec.clientName) {
+      var match = DB.clients.getAll().find(function(c) {
+        return c && c.name && c.name.trim().toLowerCase() === rec.clientName.toLowerCase();
+      });
+      if (match) rec.clientId = match.id;
+    }
     var job = DB.jobs.create({
+      clientId: rec.clientId || null,
       clientName: rec.clientName,
       description: rec.service.replace(/_/g, ' ') + (rec.notes ? ' — ' + rec.notes : ''),
       scheduledDate: nextDate,
@@ -172,11 +195,14 @@ var RecurringJobs = {
       source: 'recurring',
       recurringId: rec.id
     });
-    return job;
-
+    // v753: stamp lastGenerated AFTER create, before return. The previous
+    // version had a dead-code block after `return job;` so lastGenerated
+    // never updated — generateAllDue would re-create the same job every
+    // run within the window.
     rec.lastGenerated = new Date().toISOString();
     localStorage.setItem('bm-recurring', JSON.stringify(all));
     UI.toast('Job created for ' + rec.clientName + ' on ' + UI.dateShort(nextDate));
+    return job;
   },
 
   delete: function(id) {
