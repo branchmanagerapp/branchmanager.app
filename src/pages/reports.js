@@ -35,7 +35,19 @@ var ReportsPage = {
 
     // List unpaid invoices
     if (unpaid.length > 0) {
-      html += '<table class="data-table"><thead><tr><th>Client</th><th>#</th><th>Due</th><th>Days</th><th style="text-align:right;">Amount</th><th>Action</th></tr></thead><tbody>';
+      // v766: bulk-action toolbar — one click to text every 30+ overdue.
+      var over30 = unpaid.filter(function(i) {
+        return i.dueDate && Math.floor((now - new Date(i.dueDate).getTime()) / 86400000) > 30;
+      });
+      var lastSent = {};
+      try { lastSent = JSON.parse(localStorage.getItem('bm-aging-last-sent') || '{}'); } catch(e) {}
+
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">'
+        + '<div style="font-size:13px;color:var(--text-light);flex:1;">' + unpaid.length + ' unpaid · <b style="color:var(--text);">' + UI.money(sumOf(unpaid)) + '</b> outstanding</div>'
+        + (over30.length > 0 ? '<button onclick="ReportsPage._bulkRemind(' + over30.length + ',30)" class="btn btn-outline" style="font-size:12px;">📲 Text all ' + over30.length + ' 30+ overdue</button>' : '')
+        + '</div>';
+
+      html += '<table class="data-table"><thead><tr><th>Client</th><th>#</th><th>Due</th><th>Days</th><th style="text-align:right;">Amount</th><th>Last reminder</th><th>Action</th></tr></thead><tbody>';
       unpaid.sort(function(a, b) {
         var da = a.dueDate ? new Date(a.dueDate).getTime() : 0;
         var db = b.dueDate ? new Date(b.dueDate).getTime() : 0;
@@ -44,13 +56,28 @@ var ReportsPage = {
         var days = inv.dueDate ? Math.floor((now - new Date(inv.dueDate).getTime()) / 86400000) : 0;
         var color = days > 90 ? '#b71c1c' : days > 60 ? '#c62828' : days > 30 ? '#e65100' : 'var(--text)';
         var daysLabel = !inv.dueDate ? 'No due date' : days > 0 ? days + 'd overdue' : 'Current';
+        var lastTs = lastSent[inv.id];
+        var lastLabel = '—';
+        var recentlySent = false;
+        if (lastTs) {
+          var hours = (Date.now() - lastTs) / 3600000;
+          recentlySent = hours < 24;
+          lastLabel = recentlySent
+            ? '<span style="color:#e65100;">' + Math.round(hours) + 'h ago ⚠</span>'
+            : '<span style="color:var(--text-light);">' + Math.round(hours / 24) + 'd ago</span>';
+        }
         html += '<tr>'
-          + '<td><strong>' + (inv.clientName || '—') + '</strong></td>'
-          + '<td>#' + (inv.invoiceNumber || '') + '</td>'
+          + '<td><strong>' + UI.esc(inv.clientName || '—') + '</strong></td>'
+          + '<td>#' + UI.esc(inv.invoiceNumber || '') + '</td>'
           + '<td>' + UI.dateShort(inv.dueDate) + '</td>'
           + '<td style="font-weight:700;color:' + color + ';">' + daysLabel + '</td>'
           + '<td style="text-align:right;font-weight:600;">' + UI.money(inv.balance || inv.total) + '</td>'
-          + '<td><button class="btn btn-outline" style="font-size:11px;padding:4px 10px;" onclick="if(typeof Workflow!==\'undefined\')Workflow.sendInvoice(\'' + inv.id + '\')">Send Reminder</button></td>'
+          + '<td style="font-size:12px;">' + lastLabel + '</td>'
+          + '<td style="white-space:nowrap;">'
+          +   '<button onclick="ReportsPage._remindSMS(\'' + inv.id + '\')" title="Text reminder" style="font-size:11px;padding:4px 8px;background:' + (recentlySent ? 'var(--bg)' : 'var(--green-bg)') + ';border:1px solid var(--border);border-radius:5px;cursor:pointer;margin-right:3px;">💬</button>'
+          +   '<button onclick="if(typeof Workflow!==\'undefined\')Workflow.sendInvoice(\'' + inv.id + '\')" title="Email invoice" style="font-size:11px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;cursor:pointer;margin-right:3px;">✉️</button>'
+          +   '<button onclick="ReportsPage._remindCall(\'' + inv.id + '\')" title="Call client" style="font-size:11px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;cursor:pointer;">📞</button>'
+          + '</td>'
           + '</tr>';
       });
       html += '</tbody></table>';
@@ -470,5 +497,101 @@ var ReportsPage = {
         if (count === tables.length) UI.toast('All ' + count + ' files downloaded');
       }, i * 500); // stagger downloads so browser doesn't block them
     });
+  },
+
+  // v766: aging report actions — SMS / Call / bulk-SMS. Tracks each
+  // reminder send timestamp in bm-aging-last-sent so the UI can show
+  // "sent 3h ago ⚠" and Doug doesn't double-ping the same client.
+  _recordSent: function(invoiceId) {
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem('bm-aging-last-sent') || '{}'); } catch(e) {}
+    map[invoiceId] = Date.now();
+    try { localStorage.setItem('bm-aging-last-sent', JSON.stringify(map)); } catch(e) {}
+  },
+
+  _reminderBody: function(inv) {
+    var firstName = (inv.clientName || '').split(' ')[0] || 'there';
+    var amt = UI.money(inv.balance || inv.total);
+    var days = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
+    var co = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || 'us';
+    var base = (typeof location !== 'undefined') ? (location.origin + location.pathname.replace(/[^/]*$/, '')) : 'https://branchmanager.app/';
+    var payLink = base + 'pay.html?id=' + inv.id;
+    var dueStr = days > 0 ? days + ' day' + (days === 1 ? '' : 's') + ' overdue' : 'due';
+    return 'Hi ' + firstName + ', a quick reminder — Invoice #' + (inv.invoiceNumber || '') + ' for ' + amt + ' is ' + dueStr + '. You can pay online here: ' + payLink + '\nThanks! — ' + co;
+  },
+
+  _remindSMS: function(invoiceId) {
+    var inv = DB.invoices.getById(invoiceId);
+    if (!inv) return;
+    var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+    var phone = inv.clientPhone || (client && client.phone) || '';
+    if (!phone) { UI.toast('No client phone on file', 'error'); return; }
+    var lastSent = {};
+    try { lastSent = JSON.parse(localStorage.getItem('bm-aging-last-sent') || '{}'); } catch(e) {}
+    var last = lastSent[invoiceId];
+    if (last && (Date.now() - last) < 24 * 3600000) {
+      var hours = Math.round((Date.now() - last) / 3600000);
+      if (!confirm('A reminder was sent ' + hours + 'h ago. Send another now?')) return;
+    }
+    var msg = ReportsPage._reminderBody(inv);
+    if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
+      Dialpad.sendSMS(phone, msg, inv.clientId || null);
+      UI.toast('Reminder sent to ' + (inv.clientName || 'client'));
+    } else {
+      window.open('sms:' + phone.replace(/\D/g, '') + '?&body=' + encodeURIComponent(msg));
+    }
+    ReportsPage._recordSent(invoiceId);
+    setTimeout(function() { if (window._currentPage === 'reports') loadPage('reports'); }, 600);
+  },
+
+  _remindCall: function(invoiceId) {
+    var inv = DB.invoices.getById(invoiceId);
+    if (!inv) return;
+    var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+    var phone = inv.clientPhone || (client && client.phone) || '';
+    if (!phone) { UI.toast('No client phone on file', 'error'); return; }
+    if (typeof Dialpad !== 'undefined' && Dialpad.call) {
+      Dialpad.call(phone, inv.clientId, inv.clientName || '');
+    } else {
+      window.open('tel:' + phone.replace(/\D/g, ''));
+    }
+    ReportsPage._recordSent(invoiceId);
+  },
+
+  _bulkRemind: function(count, minDays) {
+    if (!confirm('Send SMS reminders to all ' + count + ' clients with invoices ' + minDays + '+ days overdue?\n\nClients with a reminder in the last 24h will be skipped.\nThis sends REAL SMS to REAL clients — there is no un-send.')) return;
+    var now = Date.now();
+    var lastSent = {};
+    try { lastSent = JSON.parse(localStorage.getItem('bm-aging-last-sent') || '{}'); } catch(e) {}
+    var invoices = DB.invoices.getAll().filter(function(i) {
+      if (i.status === 'paid' || !i.dueDate || (i.total || 0) <= 0) return false;
+      var days = Math.floor((now - new Date(i.dueDate).getTime()) / 86400000);
+      if (days <= minDays) return false;
+      var last = lastSent[i.id];
+      if (last && (now - last) < 24 * 3600000) return false; // skip recent
+      return true;
+    });
+    if (!invoices.length) { UI.toast('Nothing to send — everyone overdue was reminded in the last 24h'); return; }
+    var sent = 0, skipped = 0, i = 0;
+    function next() {
+      if (i >= invoices.length) {
+        UI.toast('Bulk reminder done — sent ' + sent + (skipped > 0 ? ', skipped ' + skipped + ' (no phone)' : ''));
+        if (window._currentPage === 'reports') loadPage('reports');
+        return;
+      }
+      var inv = invoices[i++];
+      var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+      var phone = inv.clientPhone || (client && client.phone) || '';
+      if (!phone) { skipped++; setTimeout(next, 60); return; }
+      var msg = ReportsPage._reminderBody(inv);
+      if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
+        Dialpad.sendSMS(phone, msg, inv.clientId || null);
+      }
+      ReportsPage._recordSent(inv.id);
+      sent++;
+      // Stagger so we don't slam Dialpad's API
+      setTimeout(next, 800);
+    }
+    next();
   }
 };
