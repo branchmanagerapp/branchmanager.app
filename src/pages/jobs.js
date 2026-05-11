@@ -1501,6 +1501,8 @@ var JobsPage = {
     // user lands on invoice detail. On Not Yet → job completes, no invoice.
     // Batch/crew/system flows auto-draft via Workflow.completeAndDraft.
     if (!j.invoiceId) {
+      // v795: cross-sell suggestions from the client's TreeInventory
+      var crossSellHtml = JobsPage._renderCrossSellSuggestions(j);
       var modal = '<div style="text-align:center;padding:8px 0;">'
         + '<div style="font-size:48px;margin-bottom:12px;">💰</div>'
         + '<h3 style="font-size:18px;margin-bottom:8px;">Job Complete!</h3>'
@@ -1508,7 +1510,9 @@ var JobsPage = {
         + '<div style="display:flex;gap:8px;justify-content:center;">'
         + '<button class="btn btn-outline" onclick="UI.closeModal();loadPage(\'jobs\');">Not Yet</button>'
         + '<button class="btn btn-primary" onclick="UI.closeModal();JobsPage.createInvoice(\'' + id + '\');loadPage(\'invoices\');">Create Invoice Now</button>'
-        + '</div></div>';
+        + '</div>'
+        + crossSellHtml
+        + '</div>';
       UI.showModal('Job Completed', modal, {
         footer: '<button class="btn btn-outline" onclick="UI.closeModal();loadPage(\'jobs\');">Close</button>' + reviewBtn
       });
@@ -1516,6 +1520,112 @@ var JobsPage = {
       UI.toast('Job marked complete');
       loadPage('jobs');
     }
+  },
+
+  // v795: Cross-sell suggestion block — surfaces other trees on this client's
+  // property that have flagged condition (Hazard / Poor) or pending workNeeded.
+  // Rendered inside the Job Complete modal as a CTA to create a follow-up
+  // quote while the crew + client are still mentally in tree-work mode.
+  _renderCrossSellSuggestions: function(j) {
+    if (!j || !j.clientId || typeof TreeInventory === 'undefined') return '';
+    var trees = TreeInventory.getForClient(j.clientId);
+    if (!trees || !trees.length) return '';
+
+    // Exclude trees that look like THIS job — match by species in the
+    // description or line items so we don't suggest the tree we just did.
+    var jobText = ((j.description || '') + ' ' + (j.lineItems || []).map(function(li){ return (li.service || '') + ' ' + (li.description || '') + ' ' + (li.species || ''); }).join(' ')).toLowerCase();
+    var opportunities = trees.filter(function(t) {
+      if (!t.species) return false;
+      // Skip if this tree's species appears in the just-finished job's text
+      // AND its location does too (rough heuristic — same tree on same spot)
+      var sLower = (t.species || '').toLowerCase();
+      var lLower = (t.location || '').toLowerCase();
+      if (sLower && jobText.indexOf(sLower) >= 0 && lLower && jobText.indexOf(lLower) >= 0) return false;
+      // Opportunities = explicit workNeeded set, OR condition = Hazard / Poor
+      if (t.workNeeded && String(t.workNeeded).trim()) return true;
+      if (t.condition === 'Hazard' || t.condition === 'Poor') return true;
+      return false;
+    });
+    if (!opportunities.length) return '';
+
+    // Cap to top 4 (Hazard first, then Poor, then others)
+    var rank = { 'Hazard': 0, 'Poor': 1, 'Fair': 2, 'Good': 3, 'Excellent': 4 };
+    opportunities.sort(function(a, b) {
+      return (rank[a.condition] || 99) - (rank[b.condition] || 99);
+    });
+    var top = opportunities.slice(0, 4);
+
+    var rowsHtml = top.map(function(t) {
+      var condColor = t.condition === 'Hazard' ? '#991b1b' : t.condition === 'Poor' ? '#c2410c' : 'var(--text-light)';
+      var condPill = t.condition
+        ? '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + condColor + '20;color:' + condColor + ';font-weight:700;text-transform:uppercase;">' + UI.esc(t.condition) + '</span>'
+        : '';
+      var work = t.workNeeded ? '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + UI.esc(t.workNeeded) + '</div>' : '';
+      return '<div style="text-align:left;padding:8px 0;border-top:1px solid var(--border);">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
+        +   '<div style="font-size:13px;font-weight:600;">' + UI.esc(t.species || '') + (t.location ? ' <span style="color:var(--text-light);font-weight:400;">· ' + UI.esc(t.location) + '</span>' : '') + '</div>'
+        +   condPill
+        + '</div>'
+        + work
+        + '</div>';
+    }).join('');
+
+    var label = opportunities.length === 1
+      ? '1 other tree on this property needs work'
+      : opportunities.length + ' other trees on this property need work';
+
+    return '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-top:18px;text-align:left;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">'
+      +   '<div style="font-size:13px;font-weight:700;color:#92400e;">🌳 ' + label + (opportunities.length > top.length ? ' (showing top ' + top.length + ')' : '') + '</div>'
+      +   '<button onclick="UI.closeModal();JobsPage._followUpQuoteFromTrees(\'' + j.clientId + '\')" style="background:#92400e;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Follow-up quote</button>'
+      + '</div>'
+      + '<div style="font-size:12px;color:#92400e;margin-bottom:4px;">Strike while the crew is still on-site and the client\'s mind is on trees.</div>'
+      + rowsHtml
+      + '</div>';
+  },
+
+  // v795: Spin up a new quote pre-filled with this client + a description
+  // listing the flagged trees. Doug lands on the quote form ready to edit.
+  _followUpQuoteFromTrees: function(clientId) {
+    var c = DB.clients.getById(clientId);
+    if (!c) { UI.toast('Client not found', 'error'); return; }
+    var trees = (typeof TreeInventory !== 'undefined') ? TreeInventory.getForClient(clientId) : [];
+    var opportunities = trees.filter(function(t) {
+      if (!t.species) return false;
+      if (t.workNeeded && String(t.workNeeded).trim()) return true;
+      if (t.condition === 'Hazard' || t.condition === 'Poor') return true;
+      return false;
+    });
+    var lineItems = opportunities.map(function(t) {
+      return {
+        service: t.workNeeded || 'Assess/quote',
+        description: (t.species || 'Tree') + (t.location ? ' · ' + t.location : '') + (t.condition ? ' (' + t.condition + ')' : ''),
+        species: t.species || '',
+        location: t.location || '',
+        qty: 1,
+        rate: 0
+      };
+    });
+    var desc = 'Follow-up assessment for the ' + opportunities.length + ' tree' + (opportunities.length === 1 ? '' : 's') + ' flagged on this property.';
+    var newQuote = DB.quotes.create({
+      clientId: clientId,
+      clientName: c.name,
+      clientEmail: c.email || '',
+      clientPhone: c.phone || '',
+      property: c.address || '',
+      description: desc,
+      lineItems: lineItems,
+      status: 'draft',
+      source: 'cross-sell from completed job'
+    });
+    if (!newQuote || !newQuote.id) { UI.toast('Could not create quote', 'error'); return; }
+    UI.toast('Draft quote #' + newQuote.quoteNumber + ' created — edit & send');
+    setTimeout(function() {
+      if (typeof QuotesPage !== 'undefined' && QuotesPage.showForm) {
+        loadPage('quotes');
+        setTimeout(function() { QuotesPage.showForm(newQuote.id); }, 80);
+      }
+    }, 100);
   },
 
   setStatus: function(id, status) {
