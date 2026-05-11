@@ -418,6 +418,11 @@ var ReportsPage = {
     // service types Doug consistently underestimates.
     html += ReportsPage._renderDurationAccuracy();
 
+    // v803: NPS results dashboard — aggregate score, P/P/D breakdown,
+    // recent verbatim quotes, sourced from jobs.satisfaction (populated
+    // by the v802 nps-submit edge fn when clients fill out sat.html).
+    html += ReportsPage._renderNPSResults();
+
     // v403: Break-Even calculator (was in Tools → Calculators). Reports is
     // its proper home — it's a financial planning surface.
     html += '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-top:20px;overflow:hidden;">'
@@ -645,6 +650,106 @@ var ReportsPage = {
       +   '80% close by <b style="color:#92400e;">' + p80 + 'd</b></div>'
       + bars
       + goingColdMsg
+      + '</div>';
+  },
+
+  // v803: NPS results section. Scans every job's satisfaction.nps_score
+  // (populated by v802 sat.html → nps-submit edge fn). Renders the
+  // canonical NPS calculation (promoter% - detractor%), the response
+  // count, the P/P/D breakdown, and the 6 most-recent verbatim quotes.
+  // Hidden if no responses yet.
+  _renderNPSResults: function() {
+    var jobs = DB.jobs.getAll();
+    var responses = [];
+    jobs.forEach(function(j) {
+      var s = j.satisfaction;
+      if (!s) return;
+      var score = Number(s.nps_score);
+      if (isNaN(score) || score < 0 || score > 10) return;
+      if (!s.nps_submitted_at) return;
+      responses.push({
+        jobId: j.id,
+        clientName: j.clientName || '',
+        description: j.description || '',
+        score: score,
+        category: s.nps_category || (score >= 9 ? 'promoter' : score >= 7 ? 'passive' : 'detractor'),
+        verbatim: s.nps_verbatim || '',
+        submittedAt: s.nps_submitted_at
+      });
+    });
+
+    if (!responses.length) return '';
+
+    var promoters = responses.filter(function(r){ return r.category === 'promoter'; }).length;
+    var passives  = responses.filter(function(r){ return r.category === 'passive'; }).length;
+    var detractors = responses.filter(function(r){ return r.category === 'detractor'; }).length;
+    var total = responses.length;
+    var npsScore = Math.round(((promoters / total) - (detractors / total)) * 100);
+
+    // Tone for the headline number
+    var npsColor = npsScore >= 50 ? '#15803d' : npsScore >= 0 ? '#ca8a04' : '#991b1b';
+    var npsLabel = npsScore >= 70 ? 'World-class'
+                 : npsScore >= 50 ? 'Excellent'
+                 : npsScore >= 30 ? 'Good'
+                 : npsScore >= 0  ? 'Needs work'
+                                  : 'Critical';
+
+    var bar = function(count, color) {
+      var pct = total > 0 ? (count / total) * 100 : 0;
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+        + '<div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct.toFixed(1) + '%;background:' + color + ';"></div></div>'
+        + '<div style="font-size:12px;font-weight:700;color:' + color + ';width:60px;text-align:right;">' + count + ' (' + Math.round(pct) + '%)</div>'
+        + '</div>';
+    };
+
+    // 6 most-recent verbatim quotes — newest first
+    var withVerb = responses
+      .filter(function(r){ return r.verbatim && r.verbatim.trim(); })
+      .sort(function(a, b){ return new Date(b.submittedAt) - new Date(a.submittedAt); })
+      .slice(0, 6);
+
+    var verbatimHtml = '';
+    if (withVerb.length) {
+      verbatimHtml = '<div style="margin-top:14px;border-top:1px dashed var(--border);padding-top:12px;">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Recent verbatims</div>';
+      withVerb.forEach(function(r) {
+        var catColor = r.category === 'promoter' ? '#15803d' : r.category === 'detractor' ? '#991b1b' : '#ca8a04';
+        verbatimHtml += '<div style="padding:8px 0;border-top:1px solid var(--border);font-size:13px;">'
+          + '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">'
+          +   '<span style="font-weight:600;color:' + catColor + ';">' + r.score + '/10 · ' + UI.esc(r.clientName) + '</span>'
+          +   '<span style="font-size:11px;color:var(--text-light);">' + UI.dateShort(r.submittedAt) + '</span>'
+          + '</div>'
+          + '<div style="color:var(--text);margin-top:2px;font-style:italic;">"' + UI.esc(r.verbatim) + '"</div>'
+          + '</div>';
+      });
+      verbatimHtml += '</div>';
+    }
+
+    var googleReviewCTA = (promoters > 0)
+      ? '<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:13px;color:#166534;">'
+        + '<b>' + promoters + ' promoter' + (promoters === 1 ? '' : 's') + '</b> — ask each one for a Google review. They\'re your warmest advocates.'
+        + '</div>'
+      : '';
+
+    return '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<h3 style="margin-bottom:4px;">NPS — customer satisfaction</h3>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">' + total + ' response' + (total === 1 ? '' : 's') + ' via sat.html. Industry: 0 = avg, 50+ = excellent, 70+ = world-class.</div>'
+      + '<div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;">'
+      +   '<div style="text-align:center;">'
+      +     '<div style="font-size:48px;font-weight:900;color:' + npsColor + ';line-height:1;">' + npsScore + '</div>'
+      +     '<div style="font-size:11px;font-weight:700;color:' + npsColor + ';text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">' + npsLabel + '</div>'
+      +   '</div>'
+      +   '<div>'
+      +     '<div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:2px;">Promoters (9-10)</div>'
+      +     bar(promoters, '#15803d')
+      +     '<div style="font-size:11px;font-weight:700;color:#ca8a04;margin-top:8px;margin-bottom:2px;">Passives (7-8)</div>'
+      +     bar(passives, '#ca8a04')
+      +     '<div style="font-size:11px;font-weight:700;color:#991b1b;margin-top:8px;margin-bottom:2px;">Detractors (0-6)</div>'
+      +     bar(detractors, '#991b1b')
+      +   '</div>'
+      + '</div>'
+      + googleReviewCTA
+      + verbatimHtml
       + '</div>';
   },
 
