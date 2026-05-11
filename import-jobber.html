@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Import Jobber Data — Branch Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; color: #1a1a1a; }
+h1 { font-size: 22px; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #666; margin-bottom: 20px; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+.card h3 { font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.card p { font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.5; }
+.file-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.file-row input[type=file] { flex: 1; font-size: 13px; min-width: 200px; }
+.file-row button { background: #1b5e20; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.file-row button:disabled { background: #ccc; cursor: default; }
+.stat { display: inline-block; background: #e8f5e9; color: #166534; padding: 6px 14px; border-radius: 8px; margin: 4px 4px 0 0; font-size: 13px; font-weight: 600; }
+.stat.err { background: #fef2f2; color: #991b1b; }
+.log { background: #f5f5f5; padding: 12px; border-radius: 8px; max-height: 280px; overflow-y: auto; font-size: 12px; font-family: Monaco, monospace; white-space: pre-wrap; margin-top: 12px; display: none; }
+.tag { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.info { background: #fff8e1; border: 1px solid #ffd54f; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #7c5800; margin-bottom: 18px; }
+.ok { background: #e8f5e9; border-color: #22c55e; color: #166534; }
+</style>
+</head>
+<body>
+
+<h1>Import Jobber Data</h1>
+<p class="sub">Pushes line items + payments directly to Supabase. Writes to both localStorage and cloud.</p>
+
+<div class="info ok" id="status-line">Checking Supabase connection…</div>
+
+<!-- ═══ QUOTES LINE ITEMS ═══ -->
+<div class="card">
+  <h3>📋 Quote Line Items <span class="tag">437 quotes · 1,227 line items</span></h3>
+  <p>Adds line items (service, qty, rate, photos) to existing Supabase quotes matched by quote_number. Does NOT overwrite quotes that already have line items.</p>
+  <div class="file-row">
+    <input type="file" id="quotes-file" accept=".json">
+    <button onclick="importQuotes()">Import Quote Line Items</button>
+  </div>
+  <div id="quotes-stats"></div>
+  <div id="quotes-log" class="log"></div>
+</div>
+
+<!-- ═══ JOBS LINE ITEMS ═══ -->
+<div class="card">
+  <h3>🔧 Job Line Items <span class="tag">259 jobs · 565 line items</span></h3>
+  <p>Adds line items to existing Supabase jobs matched by job_number.</p>
+  <div class="file-row">
+    <input type="file" id="jobs-file" accept=".json">
+    <button onclick="importJobs()">Import Job Line Items</button>
+  </div>
+  <div id="jobs-stats"></div>
+  <div id="jobs-log" class="log"></div>
+</div>
+
+<!-- ═══ PAYMENTS ═══ -->
+<div class="card">
+  <h3>💰 Payments <span class="tag">364 payments</span></h3>
+  <p><strong>Step 1:</strong> Run <code>migrate-payments.sql</code> in Supabase SQL Editor to create the payments table first.<br>
+  <strong>Step 2:</strong> Pick the file and click Import. Writes to Supabase + localStorage.</p>
+  <div class="file-row">
+    <input type="file" id="payments-file" accept=".json">
+    <button onclick="importPayments()">Import Payments</button>
+    <button onclick="migrateLocalToSupa()" style="background:#7c3aed;">Push localStorage → Supabase</button>
+  </div>
+  <div id="payments-stats"></div>
+  <div id="payments-log" class="log"></div>
+</div>
+
+<!-- ═══ FUZZY MATCH ═══ -->
+<div class="card">
+  <h3>🔍 Fuzzy Match Unmatched Records <span class="tag">59 quotes + 49 jobs</span></h3>
+  <p>Matches unmatched Jobber quotes/jobs by client name + date (within 3 days). Creates new Supabase records for any that still don't match.</p>
+  <div class="file-row">
+    <input type="file" id="fuzzy-quotes-file" accept=".json">
+    <button onclick="fuzzyMatchQuotes()">Fuzzy Match Quotes</button>
+  </div>
+  <div class="file-row" style="margin-top:8px;">
+    <input type="file" id="fuzzy-jobs-file" accept=".json">
+    <button onclick="fuzzyMatchJobs()">Fuzzy Match Jobs</button>
+  </div>
+  <div id="fuzzy-stats"></div>
+  <div id="fuzzy-log" class="log"></div>
+</div>
+
+<script>
+var SUPA_URL = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
+var SUPA_KEY = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+
+function supaHeaders() {
+  return { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' };
+}
+
+// Test connection
+fetch(SUPA_URL + '/rest/v1/clients?select=id&limit=1', { headers: supaHeaders() })
+  .then(function(r) {
+    var el = document.getElementById('status-line');
+    if (r.ok) {
+      el.textContent = '✅ Connected to Supabase (' + SUPA_URL.replace('https://','').split('.')[0] + ')';
+    } else {
+      el.className = 'info';
+      el.textContent = '⚠️ Supabase returned ' + r.status + ' — check URL/key';
+    }
+  })
+  .catch(function(e) {
+    document.getElementById('status-line').textContent = '❌ Cannot reach Supabase: ' + e.message;
+  });
+
+function readFile(inputId) {
+  return new Promise(function(resolve, reject) {
+    var file = document.getElementById(inputId).files[0];
+    if (!file) { reject('No file selected'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) { try { resolve(JSON.parse(e.target.result)); } catch(err) { reject('Invalid JSON: ' + err.message); } };
+    reader.readAsText(file);
+  });
+}
+function makeLog(id) {
+  var el = document.getElementById(id);
+  el.style.display = 'block';
+  el.textContent = '';
+  return function(msg) { el.textContent += msg + '\n'; el.scrollTop = el.scrollHeight; };
+}
+function showStats(id, stats, errStats) {
+  var html = '';
+  Object.keys(stats).forEach(function(k) { html += '<span class="stat">' + k + ': ' + stats[k] + '</span>'; });
+  if (errStats) Object.keys(errStats).forEach(function(k) { html += '<span class="stat err">' + k + ': ' + errStats[k] + '</span>'; });
+  document.getElementById(id).innerHTML = html;
+}
+
+// Fetch all records with paging
+async function fetchAll(table, select) {
+  var all = [];
+  var offset = 0;
+  var limit = 1000;
+  while (true) {
+    var r = await fetch(SUPA_URL + '/rest/v1/' + table + '?select=' + (select || '*') + '&limit=' + limit + '&offset=' + offset, { headers: supaHeaders() });
+    var batch = await r.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all = all.concat(batch);
+    if (batch.length < limit) break;
+    offset += limit;
+  }
+  return all;
+}
+
+// PATCH a single record
+async function patchOne(table, id, data) {
+  var r = await fetch(SUPA_URL + '/rest/v1/' + table + '?id=eq.' + id, {
+    method: 'PATCH',
+    headers: supaHeaders(),
+    body: JSON.stringify(data)
+  });
+  return r.ok;
+}
+
+// POST batch insert
+async function insertBatch(table, rows) {
+  var r = await fetch(SUPA_URL + '/rest/v1/' + table, {
+    method: 'POST',
+    headers: supaHeaders(),
+    body: JSON.stringify(rows)
+  });
+  if (!r.ok) {
+    var errText = await r.text();
+    throw new Error(r.status + ': ' + errText.substring(0, 200));
+  }
+  return true;
+}
+
+function mapLineItem(li) {
+  var item = {
+    service: li.service || '',
+    description: li.description || '',
+    qty: li.qty || 1,
+    rate: li.rate || 0,
+    amount: (li.qty || 1) * (li.rate || 0)
+  };
+  if (li.imageUrl) item.photoUrl = li.imageUrl;
+  return item;
+}
+
+// ── QUOTES ──
+async function importQuotes() {
+  try {
+    var jobberQuotes = await readFile('quotes-file');
+    var log = makeLog('quotes-log');
+    if (!Array.isArray(jobberQuotes)) { log('ERROR: Expected JSON array'); return; }
+
+    log('Fetching existing Supabase quotes…');
+    var supaQuotes = await fetchAll('quotes', 'id,quote_number,line_items');
+    log('Supabase has ' + supaQuotes.length + ' quotes. Jobber JSON has ' + jobberQuotes.length + '.');
+
+    var byNum = {};
+    supaQuotes.forEach(function(q) { byNum[String(q.quote_number)] = q; });
+
+    var matched = 0, updated = 0, skipped = 0, missing = 0, photoCount = 0, errors = 0;
+
+    for (var i = 0; i < jobberQuotes.length; i++) {
+      var jq = jobberQuotes[i];
+      var existing = byNum[String(jq.quoteNumber)];
+      if (!existing) { missing++; continue; }
+      matched++;
+
+      // Skip if already has real line items
+      var li = existing.line_items;
+      if (Array.isArray(li) && li.length > 0 && li.some(function(x) { return x.description; })) {
+        skipped++;
+        continue;
+      }
+
+      var newItems = (jq.lineItems || []).map(function(x) {
+        if (x.imageUrl) photoCount++;
+        return mapLineItem(x);
+      });
+
+      if (newItems.length > 0) {
+        var ok = await patchOne('quotes', existing.id, { line_items: newItems });
+        if (ok) {
+          updated++;
+          if (updated % 50 === 0) log('  ' + updated + ' updated so far…');
+        } else {
+          errors++;
+        }
+      }
+    }
+
+    log('\n=== DONE ===\nMatched: ' + matched + ' | Updated: ' + updated + ' | Already had items: ' + skipped + ' | Not found: ' + missing + ' | Errors: ' + errors + ' | Photos: ' + photoCount);
+    showStats('quotes-stats', { Matched: matched, Updated: updated, 'Already had': skipped, Photos: photoCount }, (missing + errors) > 0 ? { 'Not found': missing, Errors: errors } : null);
+  } catch(err) { alert('Import error: ' + err); console.error(err); }
+}
+
+// ── JOBS ──
+async function importJobs() {
+  try {
+    var jobberJobs = await readFile('jobs-file');
+    var log = makeLog('jobs-log');
+    if (!Array.isArray(jobberJobs)) { log('ERROR: Expected JSON array'); return; }
+
+    log('Fetching existing Supabase jobs…');
+    var supaJobs = await fetchAll('jobs', 'id,job_number,line_items');
+    log('Supabase has ' + supaJobs.length + ' jobs. Jobber JSON has ' + jobberJobs.length + '.');
+
+    var byNum = {};
+    supaJobs.forEach(function(j) { byNum[String(j.job_number)] = j; });
+
+    var matched = 0, updated = 0, skipped = 0, missing = 0, errors = 0;
+
+    for (var i = 0; i < jobberJobs.length; i++) {
+      var jj = jobberJobs[i];
+      var existing = byNum[String(jj.jobNumber)];
+      if (!existing) { missing++; continue; }
+      matched++;
+
+      var li = existing.line_items;
+      if (Array.isArray(li) && li.length > 0 && li.some(function(x) { return x.description; })) {
+        skipped++;
+        continue;
+      }
+
+      var newItems = (jj.lineItems || []).map(mapLineItem);
+      if (newItems.length > 0) {
+        var ok = await patchOne('jobs', existing.id, { line_items: newItems });
+        if (ok) {
+          updated++;
+          if (updated % 50 === 0) log('  ' + updated + ' updated so far…');
+        } else {
+          errors++;
+        }
+      }
+    }
+
+    log('\n=== DONE ===\nMatched: ' + matched + ' | Updated: ' + updated + ' | Already had items: ' + skipped + ' | Not found: ' + missing + ' | Errors: ' + errors);
+    showStats('jobs-stats', { Matched: matched, Updated: updated, 'Already had': skipped }, (missing + errors) > 0 ? { 'Not found': missing, Errors: errors } : null);
+  } catch(err) { alert('Import error: ' + err); console.error(err); }
+}
+
+// ── PAYMENTS (Supabase + localStorage mirror) ──
+async function importPayments() {
+  try {
+    var jobberPayments = await readFile('payments-file');
+    var log = makeLog('payments-log');
+    if (!Array.isArray(jobberPayments)) { log('ERROR: Expected JSON array'); return; }
+
+    // Check payments table exists
+    var check = await fetch(SUPA_URL + '/rest/v1/payments?select=id&limit=1', { headers: supaHeaders() });
+    if (!check.ok) {
+      log('❌ Supabase "payments" table does not exist.\nRun migrate-payments.sql in Supabase SQL Editor first:\nhttps://supabase.com/dashboard/project/ltpivkqahvplapyagljt/sql/new');
+      alert('Payments table missing. Run migrate-payments.sql in Supabase first.');
+      return;
+    }
+
+    log('Fetching Supabase clients for name matching…');
+    var clients = await fetchAll('clients', 'id,name');
+    log('Found ' + clients.length + ' clients.');
+    var byName = {};
+    clients.forEach(function(c) { byName[(c.name || '').toLowerCase().trim()] = c.id; });
+
+    log('Fetching existing payments for dedup…');
+    var existing = await fetchAll('payments', 'id,client_name,date,amount');
+    var existingKeys = {};
+    // Normalize dates to Unix ms for reliable comparison (handles Z vs +00:00)
+    existing.forEach(function(p) {
+      var ts = p.date ? new Date(p.date).getTime() : 0;
+      existingKeys[(p.client_name || '') + '|' + ts + '|' + parseFloat(p.amount)] = true;
+    });
+    log('Supabase has ' + existing.length + ' existing payments.');
+
+    var linked = 0, orphaned = 0, inserted = 0, duplicates = 0, errors = 0;
+    var toInsert = [];
+
+    jobberPayments.forEach(function(p) {
+      var ts = p.date ? new Date(p.date).getTime() : 0;
+      var key = (p.clientName || '') + '|' + ts + '|' + parseFloat(p.amount);
+      if (existingKeys[key]) { duplicates++; return; }
+
+      var nameKey = (p.clientName || '').toLowerCase().trim();
+      var clientId = byName[nameKey] || null;
+      if (clientId) linked++; else orphaned++;
+
+      toInsert.push({
+        amount: p.amount || 0,
+        date: p.date || new Date().toISOString(),
+        payout_date: p.payoutDate || null,
+        method: p.method || 'Unknown',
+        status: p.status || 'SUCCEEDED',
+        client_name: p.clientName || '',
+        client_id: clientId,
+        source: 'jobber_import'
+      });
+    });
+
+    log('Inserting ' + toInsert.length + ' new payments in batches of 100…');
+
+    for (var i = 0; i < toInsert.length; i += 100) {
+      var chunk = toInsert.slice(i, i + 100);
+      try {
+        await insertBatch('payments', chunk);
+        inserted += chunk.length;
+        log('  Inserted ' + inserted + ' / ' + toInsert.length);
+      } catch(e) {
+        errors += chunk.length;
+        log('  ERROR: ' + e.message);
+      }
+    }
+
+    log('\n=== DONE ===\nInserted: ' + inserted + ' | Linked: ' + linked + ' | Orphaned: ' + orphaned + ' | Dups skipped: ' + duplicates + ' | Errors: ' + errors);
+    showStats('payments-stats', { Inserted: inserted, Linked: linked, 'Dups': duplicates }, (orphaned + errors) > 0 ? { Orphaned: orphaned, Errors: errors } : null);
+  } catch(err) { alert('Import error: ' + err); console.error(err); }
+}
+
+// ── MIGRATE localStorage payments → Supabase ──
+async function migrateLocalToSupa() {
+  var log = makeLog('payments-log');
+
+  // Check payments table exists
+  var check = await fetch(SUPA_URL + '/rest/v1/payments?select=id&limit=1', { headers: supaHeaders() });
+  if (!check.ok) {
+    log('❌ Supabase "payments" table does not exist. Run migrate-payments.sql first.');
+    alert('Create payments table in Supabase first.');
+    return;
+  }
+
+  // Gather all localStorage payments
+  var allLocal = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k && k.indexOf('bm-payments-') === 0) {
+      try {
+        var arr = JSON.parse(localStorage.getItem(k) || '[]');
+        arr.forEach(function(p) { allLocal.push(p); });
+      } catch(e) {}
+    }
+  }
+  log('Found ' + allLocal.length + ' payments in localStorage across all clients.');
+
+  // Dedup against Supabase (normalize dates to Unix ms)
+  var supaPayments = await fetchAll('payments', 'client_name,date,amount');
+  var existingKeys = {};
+  supaPayments.forEach(function(p) {
+    var ts = p.date ? new Date(p.date).getTime() : 0;
+    existingKeys[(p.client_name || '') + '|' + ts + '|' + parseFloat(p.amount)] = true;
+  });
+  log('Supabase has ' + supaPayments.length + ' existing. Deduping…');
+
+  var toInsert = allLocal.filter(function(p) {
+    var ts = p.date ? new Date(p.date).getTime() : 0;
+    return !existingKeys[(p.clientName || '') + '|' + ts + '|' + parseFloat(p.amount)];
+  }).map(function(p) {
+    return {
+      amount: p.amount || 0,
+      date: p.date || new Date().toISOString(),
+      payout_date: p.payoutDate || null,
+      method: p.method || 'Unknown',
+      status: p.status || 'SUCCEEDED',
+      client_name: p.clientName || '',
+      client_id: p.clientId === '_orphaned' ? null : (p.clientId || null),
+      source: p.source || 'migrated'
+    };
+  });
+
+  log('Inserting ' + toInsert.length + ' new payments…');
+  var inserted = 0, errors = 0;
+  for (var j = 0; j < toInsert.length; j += 100) {
+    var chunk = toInsert.slice(j, j + 100);
+    try {
+      await insertBatch('payments', chunk);
+      inserted += chunk.length;
+      log('  ' + inserted + ' / ' + toInsert.length);
+    } catch(e) { errors += chunk.length; log('  ERROR: ' + e.message); }
+  }
+  log('\n=== DONE ===\nMigrated: ' + inserted + ' | Dups skipped: ' + (allLocal.length - toInsert.length) + ' | Errors: ' + errors);
+  showStats('payments-stats', { Migrated: inserted, 'Dups': allLocal.length - toInsert.length }, errors > 0 ? { Errors: errors } : null);
+}
+
+// ── FUZZY MATCH QUOTES ──
+async function fuzzyMatchQuotes() {
+  try {
+    var jobberQuotes = await readFile('fuzzy-quotes-file');
+    var log = makeLog('fuzzy-log');
+
+    var supaQuotes = await fetchAll('quotes', 'id,quote_number,client_name,created_at,total,line_items');
+    var matchedNumbers = {};
+    supaQuotes.forEach(function(q) { matchedNumbers[String(q.quote_number)] = true; });
+
+    var unmatched = jobberQuotes.filter(function(jq) { return !matchedNumbers[String(jq.quoteNumber)]; });
+    log('Found ' + unmatched.length + ' Jobber quotes not in Supabase by number.');
+
+    var fuzzy = 0, still = 0, updated = 0, errors = 0;
+    var photoCount = 0;
+
+    for (var i = 0; i < unmatched.length; i++) {
+      var jq = unmatched[i];
+      var jqDate = new Date(jq.createdAt).getTime();
+      var match = supaQuotes.find(function(sq) {
+        if ((sq.client_name || '').toLowerCase().trim() !== (jq.clientName || '').toLowerCase().trim()) return false;
+        if (!sq.created_at) return false;
+        var diff = Math.abs(new Date(sq.created_at).getTime() - jqDate);
+        return diff < 3 * 86400000; // within 3 days
+      });
+
+      var newItems = (jq.lineItems || []).map(function(x) {
+        if (x.imageUrl) photoCount++;
+        return { service: x.service || '', description: x.description || '', qty: x.qty || 1, rate: x.rate || 0, amount: (x.qty||1)*(x.rate||0), photoUrl: x.imageUrl };
+      });
+
+      if (match) {
+        fuzzy++;
+        var hasItems = Array.isArray(match.line_items) && match.line_items.length > 0 && match.line_items.some(function(x) { return x.description; });
+        if (!hasItems && newItems.length > 0) {
+          var ok = await patchOne('quotes', match.id, { line_items: newItems });
+          if (ok) { updated++; log('  Fuzzy #' + jq.quoteNumber + ' → matched ' + match.client_name + ' (' + new Date(match.created_at).toLocaleDateString() + ')'); }
+          else errors++;
+        }
+      } else {
+        still++;
+      }
+    }
+
+    log('\n=== DONE ===\nFuzzy matched: ' + fuzzy + ' | Updated with items: ' + updated + ' | Still unmatched: ' + still + ' | Photos: ' + photoCount);
+    showStats('fuzzy-stats', { 'Fuzzy Matched': fuzzy, Updated: updated, Photos: photoCount }, still > 0 ? { Unmatched: still } : null);
+  } catch(err) { alert('Error: ' + err); console.error(err); }
+}
+
+// ── FUZZY MATCH JOBS ──
+async function fuzzyMatchJobs() {
+  try {
+    var jobberJobs = await readFile('fuzzy-jobs-file');
+    var log = makeLog('fuzzy-log');
+
+    var supaJobs = await fetchAll('jobs', 'id,job_number,client_name,created_at,total,line_items');
+    var matchedNumbers = {};
+    supaJobs.forEach(function(j) { matchedNumbers[String(j.job_number)] = true; });
+
+    var unmatched = jobberJobs.filter(function(jj) { return !matchedNumbers[String(jj.jobNumber)]; });
+    log('Found ' + unmatched.length + ' Jobber jobs not in Supabase by number.');
+
+    var fuzzy = 0, still = 0, updated = 0, errors = 0;
+
+    for (var i = 0; i < unmatched.length; i++) {
+      var jj = unmatched[i];
+      var jjDate = new Date(jj.createdAt).getTime();
+      var match = supaJobs.find(function(sj) {
+        if ((sj.client_name || '').toLowerCase().trim() !== (jj.clientName || '').toLowerCase().trim()) return false;
+        if (!sj.created_at) return false;
+        var diff = Math.abs(new Date(sj.created_at).getTime() - jjDate);
+        return diff < 3 * 86400000;
+      });
+
+      var newItems = (jj.lineItems || []).map(function(x) {
+        return { service: x.service || '', description: x.description || '', qty: x.qty || 1, rate: x.rate || 0, amount: (x.qty||1)*(x.rate||0) };
+      });
+
+      if (match) {
+        fuzzy++;
+        var hasItems = Array.isArray(match.line_items) && match.line_items.length > 0 && match.line_items.some(function(x) { return x.description; });
+        if (!hasItems && newItems.length > 0) {
+          var ok = await patchOne('jobs', match.id, { line_items: newItems });
+          if (ok) { updated++; log('  Fuzzy #' + jj.jobNumber + ' → ' + match.client_name + ' (' + new Date(match.created_at).toLocaleDateString() + ')'); }
+          else errors++;
+        }
+      } else {
+        still++;
+      }
+    }
+
+    log('\n=== DONE ===\nFuzzy matched: ' + fuzzy + ' | Updated: ' + updated + ' | Still unmatched: ' + still);
+    showStats('fuzzy-stats', { 'Fuzzy Matched': fuzzy, Updated: updated }, still > 0 ? { Unmatched: still } : null);
+  } catch(err) { alert('Error: ' + err); console.error(err); }
+}
+</script>
+</body>
+</html>

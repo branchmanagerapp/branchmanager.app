@@ -17,12 +17,41 @@ var EquipmentPage = {
       } catch(err) {}
     });
 
+    // v796: downtime tracking — count of equipment currently flagged "down"
+    // by the most recent Pre-Trip inspection (pass=false with no clean
+    // inspection following). Computed by EquipmentPage._currentlyDown().
+    var downtime = EquipmentPage._currentlyDown();
+    var downCount = downtime.length;
+
     var html = '<div class="stat-grid">'
       + UI.statCard('Equipment', equipment.length.toString(), 'Total items tracked', '', '')
       + UI.statCard('Needs Service', needsMaint.length.toString(), needsMaint.length > 0 ? '⚠️ Overdue' : 'All good ✅', needsMaint.length > 0 ? 'down' : 'up', '')
+      + UI.statCard('Down', downCount.toString(), downCount > 0 ? '🛠 Defect flagged' : 'All up ✅', downCount > 0 ? 'down' : 'up', '')
       + UI.statCard('Total Value', UI.moneyInt(equipment.reduce(function(s, e) { return s + (e.value || 0); }, 0)), 'Replacement cost', '', '')
-      + UI.statCard('Maintenance Cost', UI.moneyInt(totalMaintCost), 'All logged service costs', '', '')
       + '</div>';
+
+    // v796: down-equipment detail strip — shows each currently-down piece,
+    // days down, and what was flagged. Auto-clears when next clean Pre-Trip
+    // inspection lands. Lives above the legacy "Maintenance Due" callout
+    // because Pre-Trip failures are the most-recent signal.
+    if (downCount) {
+      html += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+        + '<div style="font-weight:700;font-size:14px;color:#991b1b;margin-bottom:8px;">🛠 Currently down — ' + downCount + ' item' + (downCount === 1 ? '' : 's') + '</div>';
+      downtime.forEach(function(d) {
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-top:1px solid #fde2e2;font-size:13px;">'
+          + '<div style="flex:1;min-width:0;">'
+          +   '<div style="font-weight:600;">' + UI.esc(d.label) + '</div>'
+          +   (d.notes ? '<div style="font-size:11px;color:#7f1d1d;margin-top:2px;">' + UI.esc(d.notes) + '</div>' : '')
+          + '</div>'
+          + '<div style="text-align:right;flex-shrink:0;margin-left:10px;">'
+          +   '<div style="font-weight:800;color:#991b1b;">' + d.daysDown + 'd</div>'
+          +   '<div style="font-size:10px;color:#7f1d1d;">since ' + UI.dateShort(d.firstFailDate) + '</div>'
+          + '</div>'
+          + '</div>';
+      });
+      html += '<div style="font-size:11px;color:#7f1d1d;margin-top:8px;font-style:italic;">Auto-clears when a clean Pre-Trip inspection lands.</div>'
+        + '</div>';
+    }
 
     // Maintenance alerts
     if (needsMaint.length) {
@@ -211,6 +240,62 @@ var EquipmentPage = {
     if (!e.lastService) return !!e.nextService;
     var daysSince = (Date.now() - new Date(e.lastService).getTime()) / 86400000;
     return daysSince > (e.serviceIntervalDays || 90);
+  },
+
+  // v796: which DailyInspection vehicles/equipment are currently flagged
+  // down? Walks bm-inspection-history (newest-first). For each vehicle:
+  //   - Find the most recent inspection.
+  //   - If it's pass=true → vehicle is up, skip.
+  //   - If it's pass=false → walk back to find the OLDEST consecutive
+  //     fail (i.e. how long since the most recent clean inspection).
+  //   - "Down since" = that oldest consecutive fail's completedAt date.
+  // Returns array of { vehicleId, label, daysDown, firstFailDate, notes }.
+  _currentlyDown: function() {
+    var hist = [];
+    try { hist = JSON.parse(localStorage.getItem('bm-inspection-history') || '[]'); } catch(e) { return []; }
+    if (!hist.length) return [];
+
+    // Group inspections by vehicleId newest-first (history is already newest-
+    // first per dailyinspection.js: history.unshift(record)).
+    var byVeh = {};
+    hist.forEach(function(r) {
+      if (!r || !r.vehicleId) return;
+      var arr = byVeh[r.vehicleId] || (byVeh[r.vehicleId] = []);
+      arr.push(r);
+    });
+
+    var down = [];
+    var nowMs = Date.now();
+    Object.keys(byVeh).forEach(function(vid) {
+      var inspections = byVeh[vid];
+      if (!inspections.length) return;
+      // Sort newest-first defensively
+      inspections.sort(function(a, b) {
+        return new Date(b.completedAt || b.date).getTime() - new Date(a.completedAt || a.date).getTime();
+      });
+      var newest = inspections[0];
+      if (newest.pass) return; // currently up
+      // Walk back to find the oldest CONSECUTIVE failure in the current
+      // run (stop at the first pass that bisects).
+      var firstFail = newest;
+      for (var i = 1; i < inspections.length; i++) {
+        if (inspections[i].pass) break;
+        firstFail = inspections[i];
+      }
+      var ts = new Date(firstFail.completedAt || firstFail.date).getTime();
+      if (isNaN(ts)) return;
+      var daysDown = Math.max(0, Math.floor((nowMs - ts) / 86400000));
+      down.push({
+        vehicleId: vid,
+        label: newest.vehicleLabel || vid,
+        daysDown: daysDown,
+        firstFailDate: ts,
+        notes: newest.notes || ''
+      });
+    });
+    // Sort by daysDown desc — chronic issues at the top
+    down.sort(function(a, b) { return b.daysDown - a.daysDown; });
+    return down;
   },
 
   showForm: function(id) {
