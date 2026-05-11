@@ -204,6 +204,9 @@ var PipelinePage = {
       if (dirty) PipelinePage.saveDeals(keep);
     })();
 
+    // v778: one-time orphan purge per session
+    PipelinePage._purgeOrphans();
+
     var allDeals = PipelinePage._filterRawFromCached(PipelinePage.getDeals());
     var untriagedCount = PipelinePage._untriagedLeadCount();
     var sixMonthsAgo = new Date(Date.now() - 180 * 86400000);
@@ -379,6 +382,14 @@ var PipelinePage = {
           + '<button onclick="PipelinePage.convertToJob(\'' + d.id + '\')" title="Convert to Job" style="flex:1;padding:6px 0;font-size:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-weight:600;">🔨 Job</button>'
           + '<button onclick="PipelinePage._markDeclined(\'' + d.id + '\')" title="Mark declined" style="flex:1;padding:6px 0;font-size:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-weight:600;">✗</button>'
           + '</div>';
+      } else {
+        // v778: request-stage card gets a one-click "+ Quote" so Doug
+        // can promote it without navigating to Requests. The quote is
+        // back-linked via quote.requestId for funnel reporting.
+        actions = '<div style="display:flex;gap:4px;margin-top:8px;" onclick="event.stopPropagation()">'
+          + '<button onclick="PipelinePage._quoteFromRequest(\'' + d.id + '\')" title="Create a quote linked to this request" style="flex:1;padding:6px 0;font-size:10px;background:var(--green-bg);color:var(--green-dark);border:1px solid var(--green-dark);border-radius:4px;cursor:pointer;font-weight:700;">+ Quote</button>'
+          + '<button onclick="PipelinePage._markDeclined(\'' + d.id + '\')" title="Mark declined" style="flex:1;padding:6px 0;font-size:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-weight:600;">✗</button>'
+          + '</div>';
       }
 
       // v729/v734: every card is draggable. Quote cards (d.quoteId) move
@@ -536,12 +547,55 @@ var PipelinePage = {
 
   // Also filter the cached deals on every read so localStorage-stored raw
   // leads (from a previous boot before this filter existed) drop out.
+  // v778: also drops ORPHAN deals — cached entries whose underlying
+  // request OR quote no longer exists. Happens when Doug deletes a
+  // request, when a quote is archived, or when an old localStorage
+  // entry pre-dates the current data shape.
   _filterRawFromCached: function(deals) {
     if (!Array.isArray(deals)) return deals;
     var requests = (DB.requests && DB.requests.getAll) ? DB.requests.getAll() : [];
+    var quotes   = (DB.quotes && DB.quotes.getAll)     ? DB.quotes.getAll()     : [];
     var rawIds = {};
-    requests.forEach(function(r) { if (PipelinePage._isRawLead(r)) rawIds[r.id] = 1; });
-    return deals.filter(function(d) { return !rawIds[d.id]; });
+    var liveReqIds = {};
+    var liveQuoteIds = {};
+    requests.forEach(function(r) {
+      if (!r) return;
+      liveReqIds[r.id] = 1;
+      if (PipelinePage._isRawLead(r)) rawIds[r.id] = 1;
+    });
+    quotes.forEach(function(q) { if (q) liveQuoteIds[q.id] = 1; });
+
+    // Orphan-purge guard: only run when BOTH datasets have at least one
+    // row each — proxy for "data has loaded." Avoids nuking the entire
+    // cache during a cold-start race where CloudSync hasn't filled yet.
+    var dataLoaded = requests.length > 0 && quotes.length > 0;
+
+    return deals.filter(function(d) {
+      if (rawIds[d.id]) return false;
+      if (!dataLoaded) return true;
+      var matchesRequest = !!liveReqIds[d.id];
+      var matchesQuote = !!(liveQuoteIds[d.id] || (d.quoteId && liveQuoteIds[d.quoteId]));
+      return matchesRequest || matchesQuote;
+    });
+  },
+
+  // v778: one-time-per-session orphan purge that PERSISTS the cleaned
+  // cache (not just filters on read). Runs when Pipeline mounts so the
+  // localStorage shrinks back to honest size instead of holding stale
+  // entries that just get filtered out on every render.
+  _purgeOrphans: function() {
+    if (PipelinePage._purgedThisSession) return;
+    var stored = localStorage.getItem('bm-pipeline');
+    if (!stored) { PipelinePage._purgedThisSession = true; return; }
+    var deals;
+    try { deals = JSON.parse(stored) || []; } catch(e) { return; }
+    var before = deals.length;
+    var clean = PipelinePage._filterRawFromCached(deals);
+    if (clean.length < before) {
+      PipelinePage.saveDeals(clean);
+      console.log('[Pipeline] purged ' + (before - clean.length) + ' orphan/raw deals from cache');
+    }
+    PipelinePage._purgedThisSession = true;
   },
 
   // Count of untriaged auto-leads sitting in DB.requests (for the header link)
@@ -554,6 +608,20 @@ var PipelinePage = {
 
   saveDeals: function(deals) {
     localStorage.setItem('bm-pipeline', JSON.stringify(deals));
+  },
+
+  // v778: open the quote form pre-linked to the request behind this
+  // pipeline card. RequestsPage._createQuote already handles back-
+  // linkage (status → converted, passes requestId to QuotesPage.showForm).
+  _quoteFromRequest: function(dealId) {
+    var deals = PipelinePage.getDeals();
+    var d = deals.find(function(x) { return x.id === dealId; });
+    if (!d) { UI.toast('Deal not found', 'error'); return; }
+    if (typeof RequestsPage !== 'undefined' && RequestsPage._createQuote) {
+      RequestsPage._createQuote(d.id, d.clientId, d.clientName);
+    } else if (typeof QuotesPage !== 'undefined' && QuotesPage.showForm) {
+      QuotesPage.showForm(null, d.clientId, d.id);
+    }
   },
 
   // Import open quotes not yet in pipeline

@@ -462,10 +462,68 @@ var SchedulePage = {
         + 'style="background:var(--green-bg);border:1px solid var(--green-dark);color:var(--green-dark);border-radius:18px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">'
         + label + '</button>';
     }).join('');
+
+    // v778: crew availability mini-pills — who's clocked in today vs.
+    // who's assigned to a scheduled job. "On clock" pill is green;
+    // "Idle" (no active clock-in, no assignment) is grey; "Booked"
+    // (assigned to today's job) is blue.
+    var crewHtml = SchedulePage._renderCrewMini(dateStr);
+
     return '<div id="truck-strip-' + dateStr + '" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">'
       + '<span style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-right:6px;">Today\'s Trucks</span>'
       + pills
+      + crewHtml
       + '</div>';
+  },
+
+  // v778: compact crew-status row alongside the truck pills. Pulls
+  // bm-team for the roster, time_entries for "clocked in," and
+  // today's jobs for assignment.
+  _renderCrewMini: function(dateStr) {
+    var team = [];
+    try { team = JSON.parse(localStorage.getItem('bm-team') || '[]'); } catch(e) {}
+    if (!team.length) return '';
+    var todayDate = dateStr;
+    // Time entries — anyone with clockIn today AND no clockOut = on-clock
+    var entries = [];
+    try {
+      entries = (typeof DB !== 'undefined' && DB.timeEntries && DB.timeEntries.getAll)
+        ? DB.timeEntries.getAll()
+        : JSON.parse(localStorage.getItem('bm-time-entries') || '[]');
+    } catch(e) {}
+    var onClock = {};
+    entries.forEach(function(t) {
+      var when = (t.clockIn || t.date || '').substring(0, 10);
+      if (when !== todayDate) return;
+      var user = t.user || t.userId || '';
+      if (!user) return;
+      if (t.clockIn && !t.clockOut) onClock[user] = true;
+    });
+    // Jobs on this date — assigned crew = booked
+    var booked = {};
+    try {
+      var jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : [];
+      jobs.forEach(function(j) {
+        if (!j.scheduledDate || j.scheduledDate.substring(0, 10) !== todayDate) return;
+        if (j.status === 'cancelled' || j.status === 'archived') return;
+        (j.crew || []).forEach(function(name) { if (name) booked[name] = true; });
+      });
+    } catch(e) {}
+
+    var members = team.filter(function(m) { return m && m.name && (m.active !== false); });
+    if (!members.length) return '';
+    var pills = members.map(function(m) {
+      var clock = !!onClock[m.name];
+      var book = !!booked[m.name];
+      var label, bg, border, color, icon;
+      if (clock) { icon = '🟢'; label = m.name + ' · clocked in'; bg = '#dcfce7'; border = '#86efac'; color = '#065f46'; }
+      else if (book) { icon = '📅'; label = m.name + ' · booked'; bg = '#dbeafe'; border = '#93c5fd'; color = '#1e40af'; }
+      else { icon = '⚪'; label = m.name + ' · idle'; bg = 'var(--white)'; border = 'var(--border)'; color = 'var(--text-light)'; }
+      return '<span title="' + label + '" style="background:' + bg + ';border:1px solid ' + border + ';color:' + color + ';border-radius:18px;padding:4px 10px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">'
+        + icon + ' ' + (m.name || '').split(' ')[0]
+        + '</span>';
+    }).join('');
+    return '<span style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-left:10px;margin-right:6px;">Crew</span>' + pills;
   },
 
   _loadTruckStrip: function(dateStr) {
