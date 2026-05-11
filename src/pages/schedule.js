@@ -577,6 +577,22 @@ var SchedulePage = {
       html += '</div></div>';
     }
 
+    // v804: Crew double-booking detector — flag any crew member assigned
+    // to 2+ jobs whose startTime + estimatedHours windows overlap.
+    var conflicts = SchedulePage._detectCrewConflicts(dayJobs);
+    if (conflicts.length) {
+      html += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;">'
+        + '<div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:4px;">⚠ ' + conflicts.length + ' crew double-booking' + (conflicts.length === 1 ? '' : 's') + '</div>';
+      conflicts.slice(0, 5).forEach(function(c) {
+        html += '<div style="font-size:12px;color:#7f1d1d;padding:3px 0;">'
+          + '<b>' + UI.esc(c.crew) + '</b> assigned to: '
+          + c.jobs.map(function(j){ return UI.esc(j.clientName || '#' + j.jobNumber) + ' (' + (j.startTime || '?') + ')'; }).join(' · ')
+          + '</div>';
+      });
+      if (conflicts.length > 5) html += '<div style="font-size:11px;color:#7f1d1d;margin-top:4px;">...and ' + (conflicts.length - 5) + ' more.</div>';
+      html += '</div>';
+    }
+
     // v788: Route optimization button — surfaces only when 2+ jobs that day
     // have lat/lng and at least one is already time-scheduled. Lets Doug
     // re-sequence the day by nearest-neighbor with a single tap.
@@ -1474,6 +1490,46 @@ var SchedulePage = {
       + '</div>'
       + '</div>';  // close drop-target wrapper
     return html;
+  },
+
+  // v804: detect crew double-bookings on a given day. For each crew name
+  // assigned to 2+ jobs, returns the conflicting jobs whose time windows
+  // (startTime → startTime + estimatedHours||2h) overlap. Returns array
+  // of {crew, jobs:[...]}.
+  _detectCrewConflicts: function(dayJobs) {
+    if (!dayJobs || !dayJobs.length) return [];
+    var byCrew = {}; // crewName → [jobs with startTime]
+    dayJobs.forEach(function(j) {
+      if (!j.startTime || !Array.isArray(j.crew) || !j.crew.length) return;
+      j.crew.forEach(function(name) {
+        var k = (name || '').trim().toLowerCase();
+        if (!k) return;
+        (byCrew[k] = byCrew[k] || []).push(j);
+      });
+    });
+    var conflicts = [];
+    Object.keys(byCrew).forEach(function(k) {
+      var list = byCrew[k];
+      if (list.length < 2) return;
+      // Sort by startTime ascending
+      list.sort(function(a, b) { return (a.startTime || '00:00') < (b.startTime || '00:00') ? -1 : 1; });
+      // Detect overlap of any two consecutive jobs in the list
+      function timeToMin(t) { var p = (t || '00:00').split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+      var overlapJobs = [];
+      for (var i = 0; i < list.length - 1; i++) {
+        var aStart = timeToMin(list[i].startTime);
+        var aEnd   = aStart + (parseFloat(list[i].estimatedHours) || 2) * 60;
+        var bStart = timeToMin(list[i+1].startTime);
+        if (bStart < aEnd) {
+          if (overlapJobs.indexOf(list[i]) < 0) overlapJobs.push(list[i]);
+          overlapJobs.push(list[i+1]);
+        }
+      }
+      if (overlapJobs.length) {
+        conflicts.push({ crew: list[0].crew.find(function(n){ return (n||'').toLowerCase() === k; }) || k, jobs: overlapJobs });
+      }
+    });
+    return conflicts;
   },
 
   // v788: nearest-neighbor route optimization for a single day. Re-orders
