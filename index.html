@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 741; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 742; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v741.min.js"></script>
+<script defer src="dist/bm.bundle.v742.min.js"></script>
 
 
 
@@ -1305,12 +1305,20 @@ function toggleSidebar() {
   if (window.innerWidth <= 768) {
     sb.classList.toggle('open');
     ov.classList.toggle('open');
-  } else {
-    sb.classList.toggle('collapsed');
-    localStorage.setItem('bm-sidebar-collapsed', sb.classList.contains('collapsed'));
-    var btn = document.getElementById('sidebar-toggle-btn');
-    if (btn) btn.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+    return;
   }
+  // v742: authoritative state lives in localStorage, NOT the DOM. The
+  // DOM's .collapsed class is temporarily stripped during hover-expand,
+  // so reading from it makes clicks behave randomly when the user clicks
+  // the toggle while the sidebar is hover-popped. Flip from the saved
+  // value, then rebuild the class set deterministically.
+  var wasCollapsed = localStorage.getItem('bm-sidebar-collapsed') === 'true';
+  var nowCollapsed = !wasCollapsed;
+  localStorage.setItem('bm-sidebar-collapsed', nowCollapsed);
+  sb.classList.remove('hover-expanded');
+  sb.classList.toggle('collapsed', nowCollapsed);
+  var btn = document.getElementById('sidebar-toggle-btn');
+  if (btn) btn.textContent = nowCollapsed ? '▶' : '◀';
 }
 
 // ── Page Config ──
