@@ -897,6 +897,8 @@ var InvoicesPage = {
       +         '<button type="button" onclick="InvoicesPage._copyPayLink(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Copy pay link</button>'
       +         '<button type="button" onclick="PDF.generateInvoice(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Download PDF</button>'
       +         '<button type="button" onclick="InvoicesPage.showForm(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Edit invoice</button>'
+      +         '<button type="button" onclick="InvoicesPage.duplicate(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🧬 Duplicate invoice</button>'
+      +         (inv.status === 'paid' ? '<button type="button" onclick="InvoicesPage._sendReceiptEmail(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🧾 Resend receipt</button>' : '')
       +         '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
       +         '<button type="button" onclick="InvoicesPage._archiveInvoice(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Archive</button>'
       +         '<button type="button" onclick="InvoicesPage.setStatus(\'' + id + '\',\'cancelled\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:#dc3545;">Cancel invoice</button>'
@@ -1072,6 +1074,43 @@ var InvoicesPage = {
     DB.invoices.update(id, { status: 'archived' });
     UI.toast('Invoice archived');
     loadPage('invoices');
+  },
+
+  // v751: duplicate an invoice. Common workflow for repeat billing
+  // (recurring maintenance, similar jobs). Clones line items + client,
+  // resets status to draft, regenerates the invoice number, opens the
+  // new one in the form for tweaks.
+  duplicate: function(id) {
+    var src = DB.invoices.getById(id);
+    if (!src) { UI.toast('Invoice not found', 'error'); return; }
+    var copy = Object.assign({}, src);
+    delete copy.id;
+    delete copy.invoiceNumber;
+    delete copy.createdAt;
+    delete copy.sentAt;
+    delete copy.viewedAt;
+    delete copy.paidDate;
+    delete copy.paidAt;
+    delete copy.payments;
+    delete copy.stripePaymentIntentId;
+    delete copy.stripeChargeId;
+    copy.status = 'draft';
+    copy.balance = Number(src.total || 0);
+    if (Array.isArray(src.lineItems)) {
+      copy.lineItems = src.lineItems.map(function(li) { return Object.assign({}, li); });
+    }
+    var today = new Date();
+    copy.issueDate = today.toISOString().split('T')[0];
+    var netDays = parseInt(localStorage.getItem('bm-invoice-default-net-days') || '0', 10);
+    if (isNaN(netDays) || netDays < 0) netDays = 0;
+    var due = new Date(today);
+    due.setDate(due.getDate() + netDays);
+    copy.dueDate = due.toISOString().split('T')[0];
+    copy.notes = (src.notes ? src.notes + '\n\n' : '') + '— Duplicated from invoice #' + (src.invoiceNumber || src.id) + ' on ' + today.toLocaleDateString();
+    var created = DB.invoices.create(copy);
+    if (!created || !created.id) { UI.toast('Duplicate failed', 'error'); return; }
+    UI.toast('Duplicated as #' + (created.invoiceNumber || '') + ' — opening editor');
+    setTimeout(function() { InvoicesPage.showForm(created.id); }, 80);
   },
 
   setStatus: function(id, status) {
