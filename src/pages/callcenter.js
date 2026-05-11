@@ -23,7 +23,9 @@ var CallCenter = {
       + '</div>';
 
     // ── Tab bar ─────────────────────────────────────────────────
-    var _tabs = [['missed','📵 Missed'],['threads','💬 Messages'],['emails','📧 Emails'],['activity','📋 All Activity']];
+    // v759: "Missed" → "Triage" — the tab is the qualify-then-promote zone,
+    // not a missed-call list. Missed calls are excluded entirely.
+    var _tabs = [['missed','🎯 Triage'],['threads','💬 Messages'],['emails','📧 Emails'],['activity','📋 All Activity']];
     html += '<div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:0;gap:0;">';
     _tabs.forEach(function(t) {
       var active = CallCenter._activeTab === t[0];
@@ -251,25 +253,50 @@ var CallCenter = {
         .eq('direction', 'inbound')
         .in('channel', ['call', 'voicemail', 'sms'])
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(150);
 
       if (error) throw error;
-      var rows = data || [];
+      var allRows = data || [];
+
+      // v759: Leads Center is a triage zone. Hide rows already qualified
+      // (promoted to a request) or marked junk so Doug only sees what
+      // still needs a decision. "Show qualified/junk" toggle lets him
+      // re-open the full history.
+      var showHandled = !!CallCenter._showHandled;
+      var rows = showHandled ? allRows : allRows.filter(function(c) {
+        var m = (c.metadata && typeof c.metadata === 'object') ? c.metadata : {};
+        return !m.qualified && !m.junk;
+      });
+      // v759: same rule as v748 — missed calls should NOT show in the
+      // system at all. Defense-in-depth: even if a row sneaks past the
+      // webhook filter, drop it here too.
+      rows = rows.filter(function(c) {
+        if (c.channel !== 'call') return true;
+        var s = (c.status || '').toLowerCase();
+        return s !== 'missed' && s !== 'no-answer' && s !== 'no_answer' && s !== 'hangup';
+      });
 
       var clients = (typeof ClientsPage !== 'undefined' && ClientsPage._cache) ? ClientsPage._cache : [];
       var clientMap = {};
       clients.forEach(function(c) { if (c.id) clientMap[c.id] = c; });
 
+      // ── Header banner: explain the qualify-then-promote model ──
+      var handledCount = allRows.length - rows.length;
+      var bannerHtml = '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+        + '<div style="flex:1;min-width:200px;"><b>Triage inbox.</b> Raw inbound lands here. <b>✓ Qualify</b> a real lead to promote it to Requests with a name + service. <b>✗ Junk</b> wrong numbers / robocalls.</div>'
+        + (handledCount > 0 ? '<button onclick="CallCenter._showHandled=' + (showHandled ? 'false' : 'true') + ';CallCenter._loadMissed();" style="font-size:11px;padding:4px 10px;background:var(--white);border:1px solid #fbbf24;border-radius:6px;cursor:pointer;font-weight:700;color:#92400e;">' + (showHandled ? 'Hide handled' : 'Show ' + handledCount + ' handled') + '</button>' : '')
+        + '</div>';
+
       if (!rows.length) {
-        el.innerHTML = '<div style="padding:80px 24px;text-align:center;color:var(--text-light);">'
-          + '<div style="font-size:40px;margin-bottom:12px;">📵</div>'
-          + '<div style="font-size:15px;font-weight:600;margin-bottom:6px;">No communications yet</div>'
-          + '<div style="font-size:13px;">Missed calls, voicemails, SMS, and bid emails will appear here.</div>'
+        el.innerHTML = bannerHtml + '<div style="padding:80px 24px;text-align:center;color:var(--text-light);">'
+          + '<div style="font-size:40px;margin-bottom:12px;">✅</div>'
+          + '<div style="font-size:15px;font-weight:600;margin-bottom:6px;">Inbox clean</div>'
+          + '<div style="font-size:13px;">' + (handledCount > 0 ? 'All ' + handledCount + ' inbound items have been qualified or dismissed.' : 'New inbound calls / voicemails / SMS will appear here for triage.') + '</div>'
           + '</div>';
         return;
       }
 
-      var html = '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px;">';
+      var html = bannerHtml + '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px;">';
 
       rows.forEach(function(c, idx) {
         var cl = c.client_id ? clientMap[c.client_id] : null;
@@ -338,11 +365,14 @@ var CallCenter = {
           + (service ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">Wants: ' + service + '</div>' : '')
           + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;flex-shrink:0;">' + ts + '</div>'
-          + (digits ? '<div style="display:flex;gap:4px;flex-shrink:0;">'
-            + '<button onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeName + '\',\'' + safePhone + '\',\'call\')" title="Call back" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">📞</button>'
-            + '<button onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeName + '\',\'' + safePhone + '\',\'sms\')" title="Text back" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">💬</button>'
+          + '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
+            + (digits ? '<button onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeName + '\',\'' + safePhone + '\',\'call\')" title="Call back" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">📞</button>' : '')
+            + (digits ? '<button onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeName + '\',\'' + safePhone + '\',\'sms\')" title="Text back" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">💬</button>' : '')
             + (c.recording_url ? '<a href="' + c.recording_url + '" target="_blank" rel="noopener noreferrer" title="Listen" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;">▶</a>' : '')
-            + '</div>' : '')
+            // v759: qualify-then-promote
+            + '<button onclick="CallCenter._qualifyComm(\'' + c.id + '\')" title="Qualify → promote to Requests" style="height:30px;padding:0 10px;background:var(--green-dark);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">✓ Qualify</button>'
+            + '<button onclick="CallCenter._junkComm(\'' + c.id + '\')" title="Mark junk — won\'t show again" style="width:30px;height:30px;background:none;border:1px solid #fecaca;color:#c62828;border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✗</button>'
+            + '</div>'
           + '</div>';
       });
 
@@ -351,6 +381,88 @@ var CallCenter = {
     } catch(e) {
       el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light);">Failed to load. ' + e.message + '</div>';
     }
+  },
+
+  // v759: Qualify a raw inbound row → promote to Requests with a real
+  // name + service interest. Opens a small modal pre-filled from the
+  // comm row (transcript / SMS body / phone), Doug confirms name +
+  // service, save creates a `requests` row AND flags the comm row's
+  // metadata.qualified=true so it falls off the triage list.
+  _qualifyComm: async function(commId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    var r = await sb.from('communications').select('*').eq('id', commId).maybeSingle();
+    var c = r && r.data;
+    if (!c) { UI.toast('Inbound row not found', 'error'); return; }
+    var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+    var defaultName = meta.name || meta.from_name || meta.caller_name || '';
+    var transcriptOrBody = (c.body || '').slice(0, 500);
+    var phone = c.from_number || '';
+    var phoneFmt = CallCenter._fmtPhone(phone) || phone;
+    CallCenter._qualCommId = commId;
+    var html = '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">From <b style="color:var(--text);">' + UI.esc(phoneFmt) + '</b> · ' + UI.esc(c.channel) + (c.status ? ' · ' + UI.esc(c.status) : '') + '</div>'
+      + UI.field('Caller name *', '<input id="qc-name" type="text" value="' + UI.esc(defaultName) + '" placeholder="Real name — not &quot;Phone caller&quot;" autofocus>')
+      + UI.field('Service wanted *', '<input id="qc-service" type="text" placeholder="e.g. tree removal at 123 Main St">')
+      + UI.field('Address (optional)', '<input id="qc-addr" type="text" placeholder="Property address if known">')
+      + UI.field('Notes', '<textarea id="qc-notes" rows="4" style="font-family:inherit;">' + UI.esc(transcriptOrBody) + '</textarea>');
+    UI.showModal('✓ Qualify — promote to Requests', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="CallCenter._saveQualification()">Promote to Request</button>'
+    });
+  },
+
+  _saveQualification: async function() {
+    var commId = CallCenter._qualCommId;
+    var name = (document.getElementById('qc-name') || {}).value || '';
+    var service = (document.getElementById('qc-service') || {}).value || '';
+    var addr = (document.getElementById('qc-addr') || {}).value || '';
+    var notes = (document.getElementById('qc-notes') || {}).value || '';
+    name = name.trim(); service = service.trim();
+    if (!name) { UI.toast('Name is required', 'error'); return; }
+    if (!service) { UI.toast('Service wanted is required', 'error'); return; }
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    var r = await sb.from('communications').select('*').eq('id', commId).maybeSingle();
+    var c = (r && r.data) || null;
+    if (!c) { UI.toast('Row vanished', 'error'); return; }
+    // 1. Insert a real `requests` row
+    var reqRow = {
+      client_name: name,
+      title: service,
+      property: addr || null,
+      client_phone: c.from_number || null,
+      notes: (notes || '').trim() || null,
+      source: 'Leads Center (qualified)',
+      status: 'new'
+    };
+    if (tenantId) reqRow.tenant_id = tenantId;
+    var ins = await sb.from('requests').insert(reqRow).select('id').single();
+    if (ins.error) { UI.toast('Save failed: ' + ins.error.message, 'error'); return; }
+    // 2. Mark the comm row qualified so it falls off the triage list
+    var nextMeta = Object.assign({}, c.metadata || {}, {
+      qualified: true,
+      qualified_at: new Date().toISOString(),
+      qualified_request_id: ins.data && ins.data.id,
+      qualified_name: name,
+      qualified_service: service
+    });
+    await sb.from('communications').update({ metadata: nextMeta }).eq('id', commId);
+    UI.closeModal();
+    UI.toast('Promoted to Requests as "' + name + '" ✓');
+    CallCenter._loadMissed();
+  },
+
+  _junkComm: async function(commId) {
+    if (!confirm('Mark this as junk?\n\nIt won\'t show in the Leads Center triage list anymore. Use "Show handled" to bring it back.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var r = await sb.from('communications').select('metadata').eq('id', commId).maybeSingle();
+    var cur = (r && r.data && r.data.metadata) || {};
+    var nextMeta = Object.assign({}, cur, { junk: true, junk_at: new Date().toISOString() });
+    await sb.from('communications').update({ metadata: nextMeta }).eq('id', commId);
+    UI.toast('Marked junk');
+    CallCenter._loadMissed();
   },
 
   // ── Email Leads ──────────────────────────────────────────────
