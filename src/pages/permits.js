@@ -1016,6 +1016,20 @@ var PermitsPage = {
     var p = (PermitsPage._savedPermits || []).find(function(x) { return x.id === id; });
     if (!p) return;
     var expSoon = p.expires_at && new Date(p.expires_at) < new Date(Date.now() + 30 * 86400000);
+    var fileUrls = Array.isArray(p.file_urls) ? p.file_urls : [];
+    var filesHtml = '';
+    if (fileUrls.length) {
+      filesHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">'
+        + '<b>📎 Attachments (' + fileUrls.length + '):</b><br>'
+        + fileUrls.map(function(u, i) {
+            var label = u.split('/').pop().replace(/^\d+_/, '');
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;">'
+              + '<a href="' + UI.esc(u) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-size:12px;">' + UI.esc(label) + '</a>'
+              + '<button onclick="PermitsPage._removePermitFile(\'' + id + '\',' + i + ')" style="font-size:11px;background:none;border:none;color:#c62828;cursor:pointer;">✕</button>'
+              + '</div>';
+          }).join('')
+        + '</div>';
+    }
     var html = '<div style="font-size:13px;line-height:1.7;">'
       +   '<div><b>Jurisdiction:</b> ' + UI.esc(p.jurisdiction || '—') + '</div>'
       +   '<div><b>Status:</b> ' + UI.esc(p.status || '—') + '</div>'
@@ -1029,11 +1043,60 @@ var PermitsPage = {
       +   (p.contact_email ? '<div><b>Email:</b> <a href="mailto:' + UI.esc(p.contact_email) + '">' + UI.esc(p.contact_email) + '</a></div>' : '')
       +   (p.portal_url ? '<div><b>Portal:</b> <a href="' + UI.esc(p.portal_url) + '" target="_blank" rel="noopener noreferrer">' + UI.esc(p.portal_url) + '</a></div>' : '')
       +   (p.notes ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><b>Notes:</b><br>' + UI.esc(p.notes) + '</div>' : '')
+      +   filesHtml
+      +   '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">'
+      +     '<label style="font-size:12px;color:var(--text-light);display:block;margin-bottom:4px;">📎 ATTACH PDF / PHOTO</label>'
+      +     '<input type="file" id="permit-file-' + id + '" accept=".pdf,image/*" '
+      +       'onchange="PermitsPage._attachPermitFile(\'' + id + '\', this.files[0])" '
+      +       'style="font-size:12px;">'
+      +     '<div id="permit-upload-status-' + id + '" style="font-size:11px;margin-top:4px;min-height:14px;color:var(--text-light);"></div>'
+      +   '</div>'
       + '</div>';
     var footer = '<button class="btn btn-outline" style="color:#c62828;margin-right:auto;" onclick="PermitsPage._deletePermit(\'' + id + '\')">Delete</button>'
       + '<button class="btn btn-outline" onclick="PermitsPage._editPermitNotes(\'' + id + '\')">Edit notes / #</button>'
       + '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>';
     UI.showModal('Permit detail', html, { footer: footer });
+  },
+
+  _attachPermitFile: async function(id, file) {
+    if (!file) return;
+    var statusEl = document.getElementById('permit-upload-status-' + id);
+    if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '…';
+    try {
+      var up = await BMUpload.uploadFile(file, 'permit-docs/' + id);
+      var p = (PermitsPage._savedPermits || []).find(function(x) { return x.id === id; });
+      if (!p) throw new Error('Permit row vanished');
+      var fileUrls = Array.isArray(p.file_urls) ? p.file_urls.slice() : [];
+      fileUrls.push(up.url);
+      var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+      if (!sb) throw new Error('Supabase not connected');
+      var r = await sb.from('job_permits').update({ file_urls: fileUrls, updated_at: new Date().toISOString() }).eq('id', id);
+      if (r.error) throw new Error(r.error.message);
+      p.file_urls = fileUrls; // update cache
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--green-dark);">✓ Attached</span>';
+      // Reopen modal to show the new attachment
+      UI.closeModal();
+      setTimeout(function() { PermitsPage._openPermit(id); }, 80);
+    } catch (e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#c62828;">Upload failed: ' + UI.esc(e.message || 'unknown') + '</span>';
+    }
+  },
+
+  _removePermitFile: function(id, idx) {
+    var p = (PermitsPage._savedPermits || []).find(function(x) { return x.id === id; });
+    if (!p) return;
+    var fileUrls = Array.isArray(p.file_urls) ? p.file_urls.slice() : [];
+    if (idx < 0 || idx >= fileUrls.length) return;
+    if (!confirm('Remove this attachment from the permit record? (File stays in Storage; just unlinks here.)')) return;
+    fileUrls.splice(idx, 1);
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('job_permits').update({ file_urls: fileUrls, updated_at: new Date().toISOString() }).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Remove failed: ' + r.error.message, 'error'); return; }
+      p.file_urls = fileUrls;
+      UI.closeModal();
+      setTimeout(function() { PermitsPage._openPermit(id); }, 80);
+    });
   },
 
   _editPermitNotes: function(id) {

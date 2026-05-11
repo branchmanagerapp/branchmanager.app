@@ -1,4 +1,26 @@
 /**
+ * BMUpload — shared Storage upload helper.
+ * Returns { url, path } on success. Uses job-photos bucket so we don't
+ * need a new RLS setup. Caller chooses the prefix (e.g. "vehicle-docs/<id>"
+ * or "permit-docs/<id>") to keep things organized.
+ */
+var BMUpload = {
+  uploadFile: async function(file, prefix) {
+    if (!file) throw new Error('No file selected');
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) {
+      throw new Error('Supabase not connected — sign in and retry');
+    }
+    var BUCKET = (typeof Photos !== 'undefined' && Photos.BUCKET) ? Photos.BUCKET : 'job-photos';
+    var safeName = (file.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+    var path = (prefix || 'misc').replace(/^\/+|\/+$/g, '') + '/' + Date.now() + '_' + safeName;
+    var up = await SupabaseDB.client.storage.from(BUCKET).upload(path, file, { contentType: file.type || 'application/octet-stream' });
+    if (up.error) throw up.error;
+    var pub = SupabaseDB.client.storage.from(BUCKET).getPublicUrl(path);
+    return { url: pub && pub.data && pub.data.publicUrl, path: path };
+  }
+};
+
+/**
  * ExpiringDocsAlert — dashboard banner for insurance / permit / vehicle
  * documents within 30 days of expiry. Mirrors the v760 SalesTaxCounter
  * pattern (red ≤7 days, amber ≤30 days, hidden otherwise).

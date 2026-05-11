@@ -498,8 +498,13 @@ var FleetPage = {
       +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">EXPIRES</div>'
       +     '<input id="vd-expires" type="date" value="' + UI.esc(d.expires_date || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
       + '</div>'
-      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">FILE URL <span style="font-weight:400;">(optional — paste from Storage)</span></div>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">UPLOAD FILE <span style="font-weight:400;">(PDF / image)</span></div>'
+      +   '<input type="file" id="vd-file" accept=".pdf,image/*" '
+      +     'onchange="FleetPage._uploadVehicleDocFile(\'' + vehicleId + '\', this.files[0])" '
+      +     'style="width:100%;font-size:12px;padding:4px;"></label>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">…or paste file URL</div>'
       +   '<input id="vd-fileurl" type="url" value="' + UI.esc(d.file_url || '') + '" placeholder="https://…/registration.pdf" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;font-family:monospace;"></label>'
+      + '<div id="vd-upload-status" style="font-size:11px;color:var(--text-light);min-height:14px;"></div>'
       + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">NOTES</div>'
       +   '<textarea id="vd-notes" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;font-family:inherit;">' + UI.esc(d.notes || '') + '</textarea></label>'
       + '</div>';
@@ -508,6 +513,20 @@ var FleetPage = {
       + '<button class="btn btn-primary" onclick="FleetPage._saveVehicleDoc(\'' + (docId || '') + '\',\'' + vehicleId + '\')">Save</button>';
     UI.showModal(docId ? 'Edit document' : 'Add document', body, { footer: footer });
   },
+  _uploadVehicleDocFile: async function(vehicleId, file) {
+    if (!file) return;
+    var statusEl = document.getElementById('vd-upload-status');
+    if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '…';
+    try {
+      var res = await BMUpload.uploadFile(file, 'vehicle-docs/' + vehicleId);
+      var urlEl = document.getElementById('vd-fileurl');
+      if (urlEl) urlEl.value = res.url;
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--green-dark);">✓ Uploaded · ' + UI.esc(file.name) + '</span>';
+    } catch (e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#c62828;">Upload failed: ' + UI.esc(e.message || 'unknown') + '</span>';
+    }
+  },
+
   _saveVehicleDoc: function(docId, vehicleId) {
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
