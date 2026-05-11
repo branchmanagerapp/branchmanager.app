@@ -63,6 +63,20 @@ var CloudSync = {
             return newRow;
           });
 
+          // v761: filter out tombstoned rows BEFORE overwriting local
+          // cache. Without this, a freshly-deleted row resurrects on
+          // every sync tick because the async DELETE hasn't propagated
+          // yet. The tombstone TTL is 24h; success of the cloud delete
+          // (in db.js _deleteFromCloud) clears it earlier.
+          var tomb = (window._bmTombstones && window._bmTombstones.getForTable)
+            ? window._bmTombstones.getForTable(table)
+            : {};
+          var beforeFilter = converted.length;
+          converted = converted.filter(function(r) { return !tomb[r.id]; });
+          if (beforeFilter !== converted.length && typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) {
+            console.debug('CloudSync: dropped ' + (beforeFilter - converted.length) + ' tombstoned ' + table + ' rows');
+          }
+
           localStorage.setItem(localKey, JSON.stringify(converted));
           totalRows += converted.length;
           if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: loaded ' + converted.length + ' ' + table);

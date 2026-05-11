@@ -582,12 +582,61 @@ var TaskReminders = {
     loadPage(window._currentPage || 'taskreminders');
   },
 
-  _deleteCloud: function(ids) {
-    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+  // v761: tombstone tracker. Any locally-deleted task ID is held here
+  // for 24h so a racing _pullCloud (focus / visibilitychange / realtime
+  // event firing before the async cloud delete completes) can't see the
+  // cloud row, treat local as "missing," and resurrect the deleted task.
+  TOMBSTONE_KEY: 'bm-task-tombstones',
+  TOMBSTONE_TTL_MS: 24 * 3600 * 1000,
+  _getTombstones: function() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(TaskReminders.TOMBSTONE_KEY) || '[]');
+      var cutoff = Date.now() - TaskReminders.TOMBSTONE_TTL_MS;
+      var live = raw.filter(function(t) { return t && t.deletedAt > cutoff; });
+      if (live.length !== raw.length) {
+        localStorage.setItem(TaskReminders.TOMBSTONE_KEY, JSON.stringify(live));
+      }
+      return live;
+    } catch (e) { return []; }
+  },
+  _addTombstones: function(ids) {
     if (!ids || !ids.length) return;
+    var existing = TaskReminders._getTombstones();
+    var seen = {};
+    existing.forEach(function(t) { seen[t.id] = true; });
+    var now = Date.now();
+    ids.forEach(function(id) {
+      if (!seen[id]) existing.push({ id: id, deletedAt: now });
+    });
+    try { localStorage.setItem(TaskReminders.TOMBSTONE_KEY, JSON.stringify(existing)); } catch(e) {}
+  },
+  _clearTombstones: function(ids) {
+    if (!ids || !ids.length) return;
+    var keep = {};
+    ids.forEach(function(id) { keep[id] = true; });
+    var existing = TaskReminders._getTombstones().filter(function(t) { return !keep[t.id]; });
+    try { localStorage.setItem(TaskReminders.TOMBSTONE_KEY, JSON.stringify(existing)); } catch(e) {}
+  },
+  _isTombstoned: function(id) {
+    return TaskReminders._getTombstones().some(function(t) { return t.id === id; });
+  },
+
+  _deleteCloud: function(ids) {
+    if (!ids || !ids.length) return;
+    // Always record the tombstone, even if Supabase isn't connected — a
+    // later pull (after we come online) still must not resurrect.
+    TaskReminders._addTombstones(ids);
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
     try {
       SupabaseDB.client.from('tasks').delete().in('id', ids).then(function(res) {
-        if (res.error) console.warn('[Tasks] cloud delete failed:', res.error.message);
+        if (res.error) {
+          // Keep the tombstone — future pulls will continue to hide the
+          // row until TTL or until a manual retry succeeds.
+          console.warn('[Tasks] cloud delete failed:', res.error.message);
+        } else {
+          // Cloud confirms gone — we can drop the tombstone immediately.
+          TaskReminders._clearTombstones(ids);
+        }
       });
     } catch (e) { console.warn('[Tasks] cloud delete threw:', e); }
   },
@@ -797,12 +846,35 @@ var TaskReminders = {
         }
         if (!res.data) return;
 
+        // v761: pull tombstones once up-front. Any cloud row whose id
+        // is tombstoned (i.e. locally deleted within the last 24h) MUST
+        // be skipped entirely — even if the cloud still has it because
+        // our async delete hasn't landed yet. Otherwise we resurrect the
+        // row the user just nuked.
+        var tombstoneIds = {};
+        TaskReminders._getTombstones().forEach(function(t) { tombstoneIds[t.id] = true; });
+        var staleCloudIds = [];
+
         // Last-write-wins merge keyed by id, comparing updated_at
         var local = TaskReminders._getAll(true);
         var byId = {};
         local.forEach(function(t) { byId[t.id] = t; });
         var cloudById = {};
-        res.data.forEach(function(r) { cloudById[r.id] = TaskReminders._fromCloudRow(r); });
+        res.data.forEach(function(r) {
+          if (tombstoneIds[r.id]) {
+            // Cloud still has a row we marked deleted — re-issue the
+            // delete on this pass so the tombstone eventually clears.
+            staleCloudIds.push(r.id);
+            return;
+          }
+          cloudById[r.id] = TaskReminders._fromCloudRow(r);
+        });
+
+        if (staleCloudIds.length) {
+          // Fire a best-effort retry of the cloud delete for stragglers.
+          // _deleteCloud also re-stamps the tombstone (cheap, idempotent).
+          TaskReminders._deleteCloud(staleCloudIds);
+        }
 
         var changedFromCloud = false;
         var toPushUp = [];

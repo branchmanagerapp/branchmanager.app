@@ -375,11 +375,75 @@ var DB = (function() {
     _pushToCloud(key, all[idx], 'update');
     return all[idx];
   }
+  // v761: Global tombstones — when you delete a row locally, we record
+  // (table, id, deletedAt) here. Until the cloud delete confirms or 24h
+  // elapses, any pull/sync path MUST drop matching rows from cloud
+  // responses so the deleted row can't resurrect. Without this, the
+  // pattern was:
+  //   1. user deletes row → local row removed, async cloud DELETE fires
+  //   2. user switches tabs (or focus → visibilitychange → realtime
+  //      tick) → CloudSync.sync pulls cloud → cloud still has the row
+  //      because our DELETE hasn't propagated → CloudSync overwrites
+  //      localStorage with cloud → row is BACK.
+  // Tasks had its own version of this fix; this is the table-agnostic
+  // one for clients/jobs/quotes/invoices/etc.
+  var TOMBSTONE_KEY_DB = 'bm-tombstones';
+  var TOMBSTONE_TTL_MS = 24 * 3600 * 1000;
+  function _getTombstones() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(TOMBSTONE_KEY_DB) || '{}');
+      var cutoff = Date.now() - TOMBSTONE_TTL_MS;
+      var changed = false;
+      Object.keys(raw).forEach(function(table) {
+        var live = (raw[table] || []).filter(function(t) { return t && t.deletedAt > cutoff; });
+        if (live.length !== (raw[table] || []).length) changed = true;
+        if (live.length) raw[table] = live; else { delete raw[table]; changed = true; }
+      });
+      if (changed) localStorage.setItem(TOMBSTONE_KEY_DB, JSON.stringify(raw));
+      return raw;
+    } catch (e) { return {}; }
+  }
+  function _addTombstone(table, id) {
+    if (!table || !id) return;
+    var raw = _getTombstones();
+    raw[table] = raw[table] || [];
+    if (!raw[table].some(function(t) { return t.id === id; })) {
+      raw[table].push({ id: id, deletedAt: Date.now() });
+      try { localStorage.setItem(TOMBSTONE_KEY_DB, JSON.stringify(raw)); } catch(e) {}
+    }
+  }
+  function _clearTombstone(table, id) {
+    if (!table || !id) return;
+    var raw = _getTombstones();
+    if (!raw[table]) return;
+    raw[table] = raw[table].filter(function(t) { return t.id !== id; });
+    if (!raw[table].length) delete raw[table];
+    try { localStorage.setItem(TOMBSTONE_KEY_DB, JSON.stringify(raw)); } catch(e) {}
+  }
+  function _isTombstoned(table, id) {
+    var raw = _getTombstones();
+    return (raw[table] || []).some(function(t) { return t.id === id; });
+  }
+  // Expose so CloudSync (different file) can filter pulls.
+  window._bmTombstones = {
+    isTombstoned: _isTombstoned,
+    getForTable: function(table) {
+      var raw = _getTombstones();
+      var ids = {};
+      (raw[table] || []).forEach(function(t) { ids[t.id] = true; });
+      return ids;
+    },
+    add: _addTombstone,
+    clear: _clearTombstone
+  };
+
   function remove(key, id) {
     var item = _get(key).find(function(r) { return r.id === id; });
     _audit('delete', key, id, item ? (item.name || item.clientName || '') : '');
     var all = _get(key).filter(function(r) { return r.id !== id; });
     _set(key, all);
+    var table = REMOTE_TABLE[key];
+    if (table) _addTombstone(table, id); // record before async delete fires
     _deleteFromCloud(key, id);
   }
 
@@ -397,6 +461,11 @@ var DB = (function() {
       fetch(url + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + apiKey }
+      }).then(function(r) {
+        // Cloud confirms gone → tombstone can be dropped immediately.
+        // Anything that's not 2xx (or 404 = already gone) keeps the
+        // tombstone so future pulls keep filtering.
+        if (r.ok || r.status === 404) _clearTombstone(table, id);
       }).catch(function(e) { console.warn('[DB cloud delete]', table, e); });
     } catch(e) { console.warn('[DB cloud delete] error', e); }
   }
