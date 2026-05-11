@@ -27,6 +27,12 @@ verify_jwt = false
 [functions.bouncie-oauth-callback]
 verify_jwt = false
 
+# Cron-triggered (pg_cron net.http_post) — same pattern as marketing-automation.
+# Function is read-only (pulls positions from Bouncie API, inserts to
+# vehicle_positions) and has no spam vector, so safe to expose without JWT.
+[functions.bouncie-rest-sync]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 
