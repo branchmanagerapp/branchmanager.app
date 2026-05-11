@@ -53,6 +53,9 @@ var Geofence = {
   _onPosition: function(pos) {
     var lat = pos.coords.latitude;
     var lng = pos.coords.longitude;
+    // v799: stash the latest position so late-arrival detector (which runs
+    // on a fixed 60s interval, not on every GPS update) can read it.
+    Geofence._lastPos = { lat: lat, lng: lng, ts: Date.now() };
     var distToBase = Geofence._distance(lat, lng, Geofence.BASE.lat, Geofence.BASE.lng);
     var wasAtBase = Geofence.isAtBase;
     Geofence.isAtBase = distToBase <= Geofence.BASE.radius;
@@ -161,6 +164,50 @@ var Geofence = {
           j.clientName + ' is scheduled NOW',
           'job-now'
         );
+      }
+
+      // v799: late-arrival auto-text. If job's startTime has passed by >15
+      // min AND we're not at the property yet (>500m), text the client a
+      // courtesy "running behind, on the way" + ETA. Fires once per job
+      // per day. Skips silently when:
+      //   - no client phone on file
+      //   - no job lat/lng
+      //   - Dialpad not configured (no DIALPAD_API_KEY)
+      //   - kill switch bm-late-text-disabled set
+      var lateKey = 'bm-late-text-' + j.id;
+      if (
+        minutesUntil < -15
+        && minutesUntil > -180  // give up after 3hrs late — too late, call instead
+        && !localStorage.getItem(lateKey)
+        && localStorage.getItem('bm-late-text-disabled') !== 'true'
+        && j.clientPhone && (j.clientPhone || '').replace(/\D/g, '').length >= 10
+        && j._lat && j._lng
+        && Geofence._lastPos
+        && typeof Dialpad !== 'undefined' && Dialpad.sendSMS
+      ) {
+        var distToJob = Geofence._distance(
+          Geofence._lastPos.lat, Geofence._lastPos.lng,
+          j._lat, j._lng
+        );
+        if (distToJob > 500) {
+          // ETA estimate: 35mph average through suburbs/highways = ~14.7 m/s.
+          // Floored to 5min granularity for a believable number.
+          var etaMin = Math.max(5, Math.round(distToJob / 14.7 / 60 / 5) * 5);
+          var firstName = (j.clientName || '').split(' ')[0] || 'there';
+          var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get && CompanyInfo.get('name')) || 'us';
+          var msg = 'Hi ' + firstName + ', it\'s ' + coName + ' — running about ' + etaMin + ' min behind on today\'s appointment. We\'re on the way! Sorry for the delay.';
+          try {
+            Dialpad.sendSMS(j.clientPhone, msg, j.clientId);
+            localStorage.setItem(lateKey, new Date().toISOString());
+            Geofence._notify(
+              '🚚 Late-arrival SMS sent',
+              'Texted ' + j.clientName + ' that we\'re ~' + etaMin + ' min behind.',
+              'late-text'
+            );
+          } catch(err) {
+            console.warn('[Geofence] late-arrival SMS failed:', err);
+          }
+        }
       }
     });
 
