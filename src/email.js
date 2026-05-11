@@ -144,7 +144,7 @@ var Email = {
     if (!t) { UI.toast('Template not found', 'error'); return; }
     if (!clientData.email) { UI.toast('No email on file for ' + (clientData.name || 'this client'), 'error'); return; }
 
-    var subject = t.subject ? Templates.fill(t.subject, clientData) : BM_CONFIG.companyName;
+    var subject = t.subject ? Templates.fill(t.subject, clientData) : ((typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || (BM_CONFIG && BM_CONFIG.companyName) || 'Branch Manager');
     var body = Templates.fill(t.body, clientData);
 
     Email.send(clientData.email, subject, body);
@@ -167,6 +167,22 @@ var Email = {
   },
 
   htmlWrap: function(bodyText) {
+    // v755: pull branding from CompanyInfo (tenant-aware) instead of
+    // BM_CONFIG (SNT-hardcoded). Every outbound email previously
+    // leaked SNT name/phone/email/website in the header banner and
+    // footer regardless of which tenant sent it.
+    var ci = (typeof CompanyInfo !== 'undefined') ? CompanyInfo : null;
+    var get = function(key, fallback) {
+      try { return ci ? (ci.get(key) || fallback) : fallback; } catch (e) { return fallback; }
+    };
+    var coName    = get('name',         (BM_CONFIG && BM_CONFIG.companyName) || 'Branch Manager');
+    var coTag     = get('tagline',      (BM_CONFIG && BM_CONFIG.tagline)     || '');
+    var coPhone   = get('phone',        (BM_CONFIG && BM_CONFIG.phone)       || '');
+    var coDigits  = get('phoneDigits',  (BM_CONFIG && BM_CONFIG.phoneDigits) || (coPhone || '').replace(/\D/g, ''));
+    var coEmail   = get('email',        (BM_CONFIG && BM_CONFIG.email)       || '');
+    var coWebUrl  = get('websiteUrl',   (BM_CONFIG && BM_CONFIG.websiteUrl)  || '');
+    var coWebTxt  = get('website',      (BM_CONFIG && BM_CONFIG.website)     || '');
+
     var htmlBody = bodyText
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -182,20 +198,23 @@ var Email = {
       + '<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">'
       + '<tr><td style="background:#1a3c12;padding:24px 32px;">'
       + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
-      + '<td><div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.3px;">' + BM_CONFIG.companyName + '</div>'
-      + '<div style="font-size:12px;color:#a8d5a2;margin-top:3px;">' + BM_CONFIG.tagline + '</div></td>'
+      + '<td><div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.3px;">' + coName + '</div>'
+      + (coTag ? '<div style="font-size:12px;color:#a8d5a2;margin-top:3px;">' + coTag + '</div>' : '')
+      + '</td>'
       + '</tr></table></td></tr>'
       + '<tr><td style="padding:32px;font-size:15px;line-height:1.7;color:#333333;">'
       + '<p style="margin:0 0 12px;">' + htmlBody + '</p>'
       + '</td></tr>'
       + '<tr><td style="background:#f8f8f8;padding:20px 32px;border-top:1px solid #e8e8e8;text-align:center;">'
       + '<div style="font-size:13px;color:#888;line-height:1.6;">'
-      + '<strong style="color:#555;">' + BM_CONFIG.companyName + '</strong><br>'
-      + '<a href="tel:' + BM_CONFIG.phoneDigits + '" style="color:#00836c;text-decoration:none;">' + BM_CONFIG.phone + '</a> &nbsp;·&nbsp; '
-      + '<a href="mailto:' + BM_CONFIG.email + '" style="color:#00836c;text-decoration:none;">' + BM_CONFIG.email + '</a> &nbsp;·&nbsp; '
-      + '<a href="' + BM_CONFIG.websiteUrl + '" style="color:#00836c;text-decoration:none;">' + BM_CONFIG.website + '</a>'
+      + '<strong style="color:#555;">' + coName + '</strong><br>'
+      + (coPhone ? '<a href="tel:' + coDigits + '" style="color:#00836c;text-decoration:none;">' + coPhone + '</a>' : '')
+      + (coPhone && coEmail ? ' &nbsp;·&nbsp; ' : '')
+      + (coEmail ? '<a href="mailto:' + coEmail + '" style="color:#00836c;text-decoration:none;">' + coEmail + '</a>' : '')
+      + ((coPhone || coEmail) && coWebTxt ? ' &nbsp;·&nbsp; ' : '')
+      + (coWebTxt ? '<a href="' + (coWebUrl || ('https://' + coWebTxt)) + '" style="color:#00836c;text-decoration:none;">' + coWebTxt + '</a>' : '')
       + '</div>'
-      + '<div style="font-size:11px;color:#aaa;margin-top:8px;">You received this because you contacted ' + BM_CONFIG.companyName + '.</div>'
+      + '<div style="font-size:11px;color:#aaa;margin-top:8px;">You received this because you contacted ' + coName + '.</div>'
       + '</td></tr>'
       + '</table>'
       + '</td></tr></table>'
@@ -224,7 +243,12 @@ var Email = {
   },
 
   testSend: function() {
-    Email.send(BM_CONFIG.email, 'Branch Manager Test Email',
+    // v755: send to the tenant's configured email, not SNT's.
+    var to = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('email'))
+      || (BM_CONFIG && BM_CONFIG.email)
+      || '';
+    if (!to) { UI.toast('No company email set — add one in Settings first', 'error'); return; }
+    Email.send(to, 'Branch Manager Test Email',
       'This is a test email from Branch Manager.\n\nIf you received this, email sending is working!\n\n— Branch Manager');
   }
 };
