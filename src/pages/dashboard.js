@@ -11,6 +11,106 @@ var DashboardPage = {
     loadPage('dashboard');
   },
 
+  // v806: "Next best action" — picks the ONE highest-dollar-at-stake item
+  // across overdue invoices, going-cold quotes, and approved-not-scheduled
+  // quotes. Renders as a bold colored callout above the rest of the
+  // dashboard. Doug sees ONE thing to do right now instead of scanning
+  // the full inbox.
+  _computeNextBestAction: function() {
+    var now = Date.now();
+    var candidates = [];
+
+    // Source 1: invoices 90+ days overdue (urgent + highest weight)
+    DB.invoices.getAll().forEach(function(i) {
+      if (i.status === 'paid' || i.status === 'draft' || (i.balance || i.total || 0) <= 0) return;
+      var anchor = i.dueDate || i.sentAt || i.createdAt;
+      if (!anchor) return;
+      var days = Math.floor((now - new Date(anchor).getTime()) / 86400000);
+      if (days < 60) return;
+      var bal = Number(i.balance) || Number(i.total) || 0;
+      candidates.push({
+        score: bal * (days >= 90 ? 3 : 1.5),
+        kind: 'ar-overdue',
+        amount: bal,
+        days: days,
+        clientName: i.clientName || '',
+        action: 'Call about ' + (i.clientName || 'invoice') + ' — ' + UI.moneyInt(bal) + ' overdue ' + days + ' days',
+        onclick: 'InvoicesPage.showDetail(\'' + i.id + '\')',
+        color: days >= 90 ? '#991b1b' : '#c2410c',
+        icon: '⚠'
+      });
+    });
+
+    // Source 2: quotes past the going-cold p80 (compute from data if available)
+    var allQuotes = DB.quotes.getAll();
+    var closedDays = [];
+    allQuotes.forEach(function(q) {
+      if (q.status !== 'approved' && q.status !== 'converted') return;
+      var s = q.sentAt || q.createdAt;
+      var a = q.approvedAt || q.acceptedAt;
+      if (!s || !a) return;
+      var d = Math.floor((new Date(a).getTime() - new Date(s).getTime()) / 86400000);
+      if (d >= 0) closedDays.push(d);
+    });
+    var p80 = closedDays.length >= 3
+      ? closedDays.sort(function(a,b){return a-b;})[Math.floor(closedDays.length * 0.8)]
+      : 7; // default cutoff for sparse data
+    allQuotes.forEach(function(q) {
+      if (q.status !== 'sent' && q.status !== 'awaiting') return;
+      var s = q.sentAt || q.createdAt;
+      if (!s) return;
+      var daysSinceSent = Math.floor((now - new Date(s).getTime()) / 86400000);
+      if (daysSinceSent < p80) return;
+      var total = Number(q.total) || 0;
+      if (total <= 0) return;
+      candidates.push({
+        score: total * 1.2,
+        kind: 'quote-cold',
+        amount: total,
+        days: daysSinceSent,
+        clientName: q.clientName || '',
+        action: 'Follow up on ' + (q.clientName || 'quote #' + q.quoteNumber) + ' — ' + UI.moneyInt(total) + ' sent ' + daysSinceSent + ' days ago (past p80 of ' + p80 + 'd)',
+        onclick: 'QuotesPage.showDetail(\'' + q.id + '\')',
+        color: '#c2410c',
+        icon: '🕒'
+      });
+    });
+
+    // Source 3: approved quotes not yet converted/scheduled
+    allQuotes.forEach(function(q) {
+      if (q.status !== 'approved' || q.convertedJobId || q.jobId) return;
+      var total = Number(q.total) || 0;
+      if (total <= 0) return;
+      candidates.push({
+        score: total * 1.0,
+        kind: 'approved-unsched',
+        amount: total,
+        clientName: q.clientName || '',
+        action: 'Schedule ' + (q.clientName || 'quote #' + q.quoteNumber) + ' — ' + UI.moneyInt(total) + ' approved, not on the calendar yet',
+        onclick: 'QuotesPage._convertAndBook(\'' + q.id + '\')',
+        color: '#15803d',
+        icon: '✓'
+      });
+    });
+
+    if (!candidates.length) return null;
+
+    // Pick the highest score
+    candidates.sort(function(a, b) { return b.score - a.score; });
+    var top = candidates[0];
+
+    var html = '<div onclick="' + top.onclick + '" style="background:linear-gradient(135deg,' + top.color + ',' + top.color + 'dd);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(0,0,0,0.12);">'
+      + '<div style="font-size:28px;flex-shrink:0;">' + top.icon + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.85;">Next best action</div>'
+      +   '<div style="font-size:15px;font-weight:700;margin-top:2px;">' + UI.esc(top.action) + '</div>'
+      + '</div>'
+      + '<div style="font-size:20px;flex-shrink:0;opacity:.7;">→</div>'
+      + '</div>';
+
+    return { html: html, top: top };
+  },
+
   // v719: Quick-add a task/note from the dashboard input. No due date,
   // no overlay — straight to the TaskReminders store. Doug can promote
   // to a real reminder later by opening the task.
@@ -66,6 +166,14 @@ var DashboardPage = {
     // Show sync banner if no local data but Supabase is connected
     var localClients = JSON.parse(localStorage.getItem('bm-clients') || '[]');
     var html = '';
+
+    // v806: Single highest-leverage action chip. Scans every signal and
+    // surfaces the ONE item with the most $ at stake. Renders BEFORE the
+    // sales-tax banner so it's the first thing Doug sees.
+    try {
+      var nba = DashboardPage._computeNextBestAction();
+      if (nba) html += nba.html;
+    } catch(e) { console.debug('[Dashboard] NBA skip', e); }
 
     // v760: Sales tax counter banner — shows at the top of the dashboard
     // any time tax is owed for the current/upcoming filing period. Color
