@@ -31,11 +31,16 @@ var FleetPage = {
       + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
       +   '<h3 style="font-size:16px;font-weight:700;margin:0;">Fleet</h3>'
       +   '<span style="font-size:13px;color:var(--text-light);">(' + self._vehicles.length + ')</span>'
+      +   '<span id="fleet-bouncie-pill" style="font-size:11px;color:var(--text-light);">Bouncie: <span style="opacity:.6;">checking…</span></span>'
       + '</div>'
-      + '<div style="display:flex;gap:8px;">'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +   '<button onclick="FleetPage.connectBouncie()" class="btn btn-outline" style="font-size:12px;" title="Connect this tenant to Bouncie for REST backfill">🔗 Connect Bouncie</button>'
       +   '<button onclick="FleetPage.showAdd()" class="btn btn-primary" style="font-size:12px;">+ Add Vehicle</button>'
       +   '<button onclick="FleetPage._refresh(true)" class="btn btn-outline" style="font-size:12px;">↻ Refresh</button>'
       + '</div></div>';
+
+    // Update the Bouncie pill async — reads tenants.config.bouncie.access_token
+    setTimeout(function() { FleetPage._refreshBouncieStatus(); }, 30);
 
     if (self._err) {
       html += '<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;">' + UI.esc(self._err) + '</div>';
@@ -343,6 +348,52 @@ var FleetPage = {
       UI.closeModal();
       FleetPage._fetched = false;
       FleetPage._refresh(true);
+    });
+  },
+
+  // v745: One-click Bouncie OAuth bootstrap. Constructs the authorize
+  // URL with the SNT BM OAuth client_id, the bouncie-oauth-callback
+  // endpoint as redirect_uri, and the current tenant_id as `state` so
+  // the callback knows which tenants.config.bouncie row to update.
+  //
+  // The client_id is the same one stored in Supabase secrets as
+  // BOUNCIE_CLIENT_ID. It's safe to embed client-side — OAuth client_ids
+  // are PUBLIC by design; the secret is enforced server-side in the
+  // token exchange.
+  connectBouncie: function() {
+    var BOUNCIE_CLIENT_ID = '616a27da73c303dd7203b5a705288ea41a55e735fcf01727c0ffd4963e536b85';
+    var REDIRECT = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/bouncie-oauth-callback';
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!tenantId) { UI.toast('Tenant ID unknown — can\'t bootstrap OAuth', 'error'); return; }
+    var url = 'https://auth.bouncie.com/dialog/authorize'
+      + '?client_id=' + encodeURIComponent(BOUNCIE_CLIENT_ID)
+      + '&redirect_uri=' + encodeURIComponent(REDIRECT)
+      + '&response_type=code'
+      + '&state=' + encodeURIComponent(tenantId);
+    var msg = 'About to open Bouncie\'s authorize page. Log in with the Bouncie account that owns your trucks, approve, and you\'ll bounce back here.\n\nProceed?';
+    if (!confirm(msg)) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  },
+
+  // v745: refresh the small Bouncie status pill in the Fleet header.
+  // Shows ✓ Connected (when tenants.config.bouncie.access_token is set)
+  // or "Not connected" with a link to start OAuth.
+  _refreshBouncieStatus: function() {
+    var pill = document.getElementById('fleet-bouncie-pill');
+    if (!pill) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) { pill.innerHTML = 'Bouncie: <span style="opacity:.6;">unknown</span>'; return; }
+    sb.from('tenants').select('config').eq('id', tenantId).maybeSingle().then(function(r) {
+      var cfg = r && r.data && r.data.config && r.data.config.bouncie;
+      if (cfg && cfg.access_token) {
+        var exp = cfg.expires_at ? new Date(cfg.expires_at) : null;
+        var expSoon = exp && exp.getTime() < Date.now() + 24 * 3600 * 1000;
+        var label = expSoon ? '<span style="color:#a16207;">⚠ Token near expiry</span>' : '<span style="color:var(--green-dark);">✓ Connected</span>';
+        pill.innerHTML = 'Bouncie: ' + label;
+      } else {
+        pill.innerHTML = 'Bouncie: <span style="color:#a16207;">Not connected — click 🔗 above</span>';
+      }
     });
   },
 

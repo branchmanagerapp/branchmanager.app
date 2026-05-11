@@ -194,7 +194,12 @@ var PayrollPage = {
       var weekTotal = 0;
       var weekIssues = 0;
       var empKey = self._approvalKey(emp.name || emp.id, weekStart);
-      var weekApproved = approvals[empKey] === 'approved';
+      // v745: week-level approval = explicit week-approval OR every
+      // working-day cell individually approved (computed below as we
+      // walk the date cells).
+      var weekExplicit = approvals[empKey] === 'approved';
+      var workingDaysCount = 0;
+      var daysApprovedCount = 0;
 
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;align-items:stretch;">';
 
@@ -230,6 +235,11 @@ var PayrollPage = {
         var dayApproved = approvals[dayKey] === 'approved';
         var barColor = issues.length > 0 ? '#ef4444' : (dayHours > 0 ? '#22c55e' : '#e5e7eb');
         var editedAfterApproval = dayApproved && approvals[dayKey + '_editedAfter'];
+        // v745: track per-day rollup. Only days with hours OR entries count.
+        if (dayHours > 0 || entries.length > 0) {
+          workingDaysCount++;
+          if (dayApproved && !editedAfterApproval) daysApprovedCount++;
+        }
 
         if (editedAfterApproval) barColor = '#f59e0b';
 
@@ -271,12 +281,19 @@ var PayrollPage = {
         html += '</div>';
       });
 
-      // Weekly total
+      // Weekly total (v745: derived approval — week tile shows ✓ if the
+      // week is explicitly approved OR every working day is approved.
+      // Partial day approvals show ✓ N/M).
       var overtime = Math.max(0, weekTotal - 40);
+      var allDaysOk = workingDaysCount > 0 && daysApprovedCount === workingDaysCount;
+      var weekApproved = weekExplicit || allDaysOk;
+      var partialBadge = (!weekApproved && daysApprovedCount > 0)
+        ? '<div style="font-size:9px;color:#16a34a;">✓ ' + daysApprovedCount + '/' + workingDaysCount + '</div>'
+        : '';
       html += '<div style="padding:10px 6px;text-align:center;font-weight:800;font-size:15px;background:' + (weekApproved ? '#f0fdf4' : 'var(--bg)') + ';border-left:2px solid var(--border);">'
         + weekTotal.toFixed(1)
         + (overtime > 0 ? '<div style="font-size:10px;color:#ef4444;font-weight:600;">' + overtime.toFixed(1) + ' OT</div>' : '')
-        + (weekApproved ? '<div style="font-size:9px;color:#22c55e;">✓</div>' : '')
+        + (weekApproved ? '<div style="font-size:9px;color:#22c55e;">✓</div>' : partialBadge)
         + (weekIssues > 0 ? '<div style="font-size:9px;color:#ef4444;">' + weekIssues + ' issues</div>' : '')
         + '</div>';
 
@@ -308,18 +325,33 @@ var PayrollPage = {
 
     employees.forEach(function(emp) {
       var empWeek = 0;
+      var workingDays = 0;
+      var daysApproved = 0;
       dates.forEach(function(d) {
         var entries = PayrollPage._getEntriesForDate(emp.name || emp.id, d);
-        empWeek += PayrollPage._totalHours(entries);
+        var dayHrs = PayrollPage._totalHours(entries);
+        empWeek += dayHrs;
         var issues = PayrollPage._hasIssues(entries, d);
         issues.forEach(function(iss) { warnings.push(emp.name + ' (' + d + '): ' + iss); });
+        // v745: track per-day approvals so they can roll up to the week.
+        // A day "needs approval" only if it has hours OR notes; days with
+        // nothing don't count against the rollup.
+        if (dayHrs > 0 || entries.length > 0) {
+          workingDays++;
+          var dayKey = PayrollPage._dayApprovalKey(emp.name || emp.id, d);
+          if (approvals[dayKey] === 'approved' && !approvals[dayKey + '_editedAfter']) daysApproved++;
+        }
       });
       totalHours += empWeek;
       var ot = Math.max(0, empWeek - 40);
       totalOT += ot;
 
+      // Roll up: employee is "approved" if their week is explicitly approved
+      // OR every one of their working days is individually approved.
       var empKey = PayrollPage._approvalKey(emp.name || emp.id, weekStart);
-      if (approvals[empKey] === 'approved') approved++;
+      var weekExplicit = approvals[empKey] === 'approved';
+      var allDaysApproved = workingDays > 0 && daysApproved === workingDays;
+      if (weekExplicit || allDaysApproved) approved++;
       else pending++;
     });
 
@@ -583,8 +615,23 @@ var PayrollPage = {
       grandTotal += gross;
       totalHours += weekHours;
       totalOT += ot;
+      // v745: same rollup as the Payroll grid — week tile shows ✓ if
+      // explicit week-approval OR every working day is individually approved.
+      var apx = PayrollPage._getApprovals();
       var empKey = PayrollPage._approvalKey(emp.name || emp.id, weekStart);
-      var approved = PayrollPage._getApprovals()[empKey] === 'approved';
+      var weekExp = apx[empKey] === 'approved';
+      var wDays = 0, wDaysOk = 0;
+      dates.forEach(function(d) {
+        var ents = PayrollPage._getEntriesForDate(emp.name || emp.id, d);
+        var dh = PayrollPage._totalHours(ents);
+        if (dh > 0 || ents.length > 0) {
+          wDays++;
+          var dk = PayrollPage._dayApprovalKey(emp.name || emp.id, d);
+          if (apx[dk] === 'approved' && !apx[dk + '_editedAfter']) wDaysOk++;
+        }
+      });
+      var approved = weekExp || (wDays > 0 && wDays === wDaysOk);
+      var partialNote = (!approved && wDaysOk > 0) ? ' <span style="color:var(--text-light);font-weight:400;">(' + wDaysOk + '/' + wDays + ')</span>' : '';
 
       html += '<tr>'
         + '<td style="font-weight:600;">' + UI.esc(emp.name || '') + '</td>'
@@ -594,7 +641,7 @@ var PayrollPage = {
         + '<td>' + (rate ? '$' + rate.toFixed(2) + '/hr' : '<span style="color:var(--text-light);">— set —</span>')
         +   ' <button onclick="PayrollPage.editRate(\'' + UI.esc(emp.id) + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-light);padding:0 4px;" title="Edit rate">✏️</button></td>'
         + '<td style="font-weight:700;">' + (rate ? '$' + gross.toFixed(2) : '—') + '</td>'
-        + '<td>' + (approved ? '<span style="color:#22c55e;font-weight:600;">✓ Approved</span>' : '<span style="color:#d97706;">Pending</span>') + '</td>'
+        + '<td>' + (approved ? '<span style="color:#22c55e;font-weight:600;">✓ Approved</span>' : '<span style="color:#d97706;">Pending' + partialNote + '</span>') + '</td>'
         + '</tr>';
     });
 

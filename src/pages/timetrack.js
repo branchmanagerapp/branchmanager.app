@@ -89,6 +89,15 @@ var TimeTrackPage = {
   // 20260510_vehicle_daily_hours_view.sql). Adds a configurable prep
   // buffer (default 30 min) on top of road time to account for yard
   // load-up, equipment checks, etc.
+  // v745: click-to-focus a Truck Hours row. Stores the row key
+  // (vehicle_id + '__' + day) so a redraw preserves the focus.
+  _activeTruckRowKey: null,
+  _focusTruckRow: function(keyEnc) {
+    var key = decodeURIComponent(keyEnc);
+    TimeTrackPage._activeTruckRowKey = (TimeTrackPage._activeTruckRowKey === key) ? null : key;
+    TimeTrackPage._renderTruckHoursAsync();
+  },
+
   _truckPrepBufferMin: function() {
     var v = parseInt(localStorage.getItem('bm-truck-prep-buffer-min') || '30', 10);
     return isNaN(v) ? 30 : v;
@@ -211,7 +220,16 @@ var TimeTrackPage = {
             + '⏱ Apply to ' + UI.esc(driver.split(' ')[0]) + '&rsquo;s timesheet' + '</button>';
         }
 
-        html += '<div style="padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
+        // v745: click-to-focus a row. Click expands a detail strip with
+        // recent positions + action buttons; click another to move the
+        // focus. State held in TimeTrackPage._activeTruckRowKey so re-
+        // renders keep it.
+        var rowKey = r.vehicle_id + '__' + r.day;
+        var isFocused = TimeTrackPage._activeTruckRowKey === rowKey;
+        html += '<div onclick="TimeTrackPage._focusTruckRow(\'' + encodeURIComponent(rowKey) + '\')" '
+          + 'style="padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;cursor:pointer;'
+          + (isFocused ? 'background:#f0fdf4;border-left:3px solid var(--green-dark);' : 'border-left:3px solid transparent;')
+          + '">'
           +   '<div style="flex:1;min-width:0;">'
           +     '<div style="font-weight:700;font-size:14px;">🚛 ' + (UI.esc ? UI.esc(displayName) : displayName) + '</div>'
           +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">'
@@ -221,13 +239,25 @@ var TimeTrackPage = {
           +     '</div>'
           +     driverPill
           +   '</div>'
-          +   '<div style="text-align:right;flex-shrink:0;">'
+          +   '<div style="text-align:right;flex-shrink:0;" onclick="event.stopPropagation()">'
           +     '<div style="font-size:11px;color:var(--text-light);">Road ' + fmtDuration(roadSec) + '</div>'
           +     '<div style="font-size:16px;font-weight:800;color:var(--green-dark);">' + fmtDuration(paidSec) + '</div>'
           +     '<div style="font-size:10px;color:var(--text-light);">incl. ' + prepMin + 'm prep · ' + paidHrs + 'h</div>'
           +     applyBtn
           +   '</div>'
           + '</div>';
+        // Expanded detail strip
+        if (isFocused) {
+          html += '<div style="background:#f9fafb;padding:10px 14px;border-bottom:1px solid #f5f5f5;font-size:12px;color:var(--text-light);display:flex;flex-wrap:wrap;gap:12px;align-items:center;">'
+            +   '<span><b style="color:var(--text);">Day window:</b> ' + fmtDuration(roadSec) + ' of road time</span>'
+            +   '<span><b style="color:var(--text);">Pings:</b> ' + r.ping_count + '</span>'
+            +   (r.max_speed_mph ? '<span><b style="color:var(--text);">Top speed:</b> ' + Math.round(r.max_speed_mph) + ' mph</span>' : '')
+            +   '<span style="margin-left:auto;display:flex;gap:6px;" onclick="event.stopPropagation()">'
+            +     '<button onclick="window._opsTab=\'dispatch\';loadPage(\'operations\')" '
+            +       'style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--white);border-radius:6px;cursor:pointer;">🗺 Open on map</button>'
+            +   '</span>'
+            + '</div>';
+        }
       });
       html += '</div>';
     });
