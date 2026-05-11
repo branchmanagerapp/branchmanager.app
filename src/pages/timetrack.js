@@ -174,6 +174,7 @@ var TimeTrackPage = {
       (byDay[r.day] = byDay[r.day] || []).push(r);
     });
     var days = Object.keys(byDay).sort().reverse();
+    var me = TimeTrackPage.currentUser;
 
     var html = '';
     days.forEach(function(day) {
@@ -182,8 +183,35 @@ var TimeTrackPage = {
       byDay[day].forEach(function(r) {
         var roadSec = r.duration_seconds || 0;
         var paidSec = roadSec + prepMin * 60;
+        var paidHrs = (paidSec / 3600).toFixed(2);
         var displayName = r.vehicle_nickname || r.vehicle_name || 'Unnamed truck';
-        html += '<div style="padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+        var driver = r.driver_name || '';
+        var driverIsMe = driver && driver.trim().toLowerCase() === (me || '').trim().toLowerCase();
+        var encVeh = encodeURIComponent(r.vehicle_id);
+        var encDay = encodeURIComponent(r.day);
+        var encFirst = encodeURIComponent(r.first_seen_ts);
+        var encLast = encodeURIComponent(r.last_seen_ts);
+
+        var driverPill = '<button onclick="TimeTrackPage._editTruckDriver(\'' + encVeh + '\',\'' + encDay + '\')" '
+          + 'style="background:' + (driver ? 'var(--green-bg)' : '#fef3c7') + ';color:' + (driver ? 'var(--green-dark)' : '#92400e') + ';'
+          + 'border:1px solid ' + (driver ? 'var(--green-dark)' : '#fbbf24') + ';border-radius:14px;'
+          + 'padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;margin-top:4px;" '
+          + 'title="' + (r.driver_is_override ? 'Day-specific assignment' : (driver ? 'Default driver' : 'No driver assigned')) + '">'
+          + '👤 ' + (driver ? UI.esc(driver) : 'Assign driver') + (r.driver_is_override ? ' *' : '')
+          + '</button>';
+
+        var applyBtn;
+        if (driverIsMe || !driver) {
+          applyBtn = '<button onclick="TimeTrackPage._applyTruckDayToTimesheet(\'' + encVeh + '\',\'' + encDay + '\',\'' + encFirst + '\',\'' + encLast + '\',\'' + (driver ? encodeURIComponent(driver) : encodeURIComponent(me)) + '\')" '
+            + 'style="background:var(--green-dark);color:#fff;border:0;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;">'
+            + '⏱ Apply to my timesheet' + '</button>';
+        } else {
+          applyBtn = '<button onclick="TimeTrackPage._applyTruckDayToTimesheet(\'' + encVeh + '\',\'' + encDay + '\',\'' + encFirst + '\',\'' + encLast + '\',\'' + encodeURIComponent(driver) + '\')" '
+            + 'style="background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;">'
+            + '⏱ Apply to ' + UI.esc(driver.split(' ')[0]) + '&rsquo;s timesheet' + '</button>';
+        }
+
+        html += '<div style="padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
           +   '<div style="flex:1;min-width:0;">'
           +     '<div style="font-weight:700;font-size:14px;">🚛 ' + (UI.esc ? UI.esc(displayName) : displayName) + '</div>'
           +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">'
@@ -191,17 +219,116 @@ var TimeTrackPage = {
           +       ' · ' + r.ping_count + ' pings'
           +       (r.max_speed_mph ? ' · max ' + Math.round(r.max_speed_mph) + ' mph' : '')
           +     '</div>'
+          +     driverPill
           +   '</div>'
           +   '<div style="text-align:right;flex-shrink:0;">'
           +     '<div style="font-size:11px;color:var(--text-light);">Road ' + fmtDuration(roadSec) + '</div>'
           +     '<div style="font-size:16px;font-weight:800;color:var(--green-dark);">' + fmtDuration(paidSec) + '</div>'
-          +     '<div style="font-size:10px;color:var(--text-light);">incl. ' + prepMin + 'm prep</div>'
+          +     '<div style="font-size:10px;color:var(--text-light);">incl. ' + prepMin + 'm prep · ' + paidHrs + 'h</div>'
+          +     applyBtn
           +   '</div>'
           + '</div>';
       });
       html += '</div>';
     });
     return html;
+  },
+
+  // v741: Apply a truck-day window to a timesheet. Creates a timeEntries
+  // row using first/last ping ± prep buffer (prep is added to clock-in,
+  // not clock-out, so the entry reflects "got to yard 30 min early").
+  _applyTruckDayToTimesheet: function(vehicleId, day, firstIso, lastIso, driverEnc) {
+    var first = decodeURIComponent(firstIso);
+    var last = decodeURIComponent(lastIso);
+    var driver = driverEnc ? decodeURIComponent(driverEnc) : TimeTrackPage.currentUser;
+    var prepMin = TimeTrackPage._truckPrepBufferMin();
+    var firstDt = new Date(first);
+    var clockIn = new Date(firstDt.getTime() - prepMin * 60000).toISOString();
+    var clockOut = last;
+    var hours = (new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 3600000;
+    if (!isFinite(hours) || hours <= 0) {
+      UI.toast('Invalid window — cannot apply');
+      return;
+    }
+    // Dedupe: if there's already a truck-derived entry for this user/day, replace it.
+    var dayStr = decodeURIComponent(day);
+    var existing = DB.timeEntries.getAll().filter(function(t) {
+      return (t.user === driver || t.userId === driver)
+        && (t.date || '').indexOf(dayStr) === 0
+        && t.source === 'truck-derived';
+    });
+    if (existing.length) {
+      if (!confirm(driver + ' already has a truck-derived entry on ' + dayStr + '. Replace it?')) return;
+      // Direct localStorage delete since DB API has no remove method
+      try {
+        var allKey = 'bm-time-entries';
+        var allRows = JSON.parse(localStorage.getItem(allKey) || '[]');
+        var keepIds = {};
+        existing.forEach(function(e) { keepIds[e.id] = 1; });
+        var remaining = allRows.filter(function(r) { return !keepIds[r.id]; });
+        localStorage.setItem(allKey, JSON.stringify(remaining));
+      } catch(err) {}
+    }
+    var entry = {
+      user: driver,
+      userId: driver,
+      jobId: null,
+      date: dayStr,
+      clockIn: clockIn,
+      clockOut: clockOut,
+      hours: Math.round(hours * 100) / 100,
+      manual: true,
+      source: 'truck-derived',
+      vehicleId: vehicleId,
+      notes: 'Auto-applied from truck GPS (incl. ' + prepMin + 'm prep)'
+    };
+    if (typeof DB !== 'undefined' && DB.timeEntries && DB.timeEntries.create) {
+      DB.timeEntries.create(entry);
+    } else {
+      var key = 'bm-time-entries';
+      var all = [];
+      try { all = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
+      entry.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+      all.unshift(entry);
+      localStorage.setItem(key, JSON.stringify(all));
+    }
+    UI.toast('Applied ' + hours.toFixed(2) + 'h to ' + driver + ' on ' + dayStr);
+  },
+
+  // v741: Set/clear driver for a specific truck-day. Click → prompt for
+  // the employee name; blank input clears the override (falls back to
+  // the vehicle's default_driver_name).
+  _editTruckDriver: function(vehicleIdEnc, dayEnc) {
+    var vehicleId = decodeURIComponent(vehicleIdEnc);
+    var day = decodeURIComponent(dayEnc);
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected'); return; }
+    var currentName = '';
+    sb.from('vehicle_day_assignments')
+      .select('driver_name')
+      .eq('vehicle_id', vehicleId).eq('day', day).maybeSingle()
+      .then(function(r) {
+        currentName = (r && r.data && r.data.driver_name) || '';
+        var entered = prompt('Driver for this truck on ' + day + '\n\n(Leave blank to clear day override and use the truck\'s default driver. To set the default, edit the truck on the Fleet page.)', currentName);
+        if (entered === null) return;
+        entered = entered.trim();
+        if (!entered) {
+          sb.from('vehicle_day_assignments').delete().eq('vehicle_id', vehicleId).eq('day', day).then(function(r2) {
+            if (r2.error) { UI.toast('Error: ' + r2.error.message); return; }
+            UI.toast('Day override cleared');
+            TimeTrackPage._renderTruckHoursAsync();
+          });
+          return;
+        }
+        var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+        var row = { vehicle_id: vehicleId, day: day, driver_name: entered };
+        if (tenantId) row.tenant_id = tenantId;
+        sb.from('vehicle_day_assignments').upsert(row, { onConflict: 'vehicle_id,day' }).then(function(r3) {
+          if (r3.error) { UI.toast('Error: ' + r3.error.message); return; }
+          UI.toast('Driver set: ' + entered);
+          TimeTrackPage._renderTruckHoursAsync();
+        });
+      });
   },
 
   _renderAllEmployees: function() {

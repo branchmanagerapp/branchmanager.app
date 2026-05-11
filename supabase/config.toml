@@ -23,6 +23,10 @@ verify_jwt = false
 [functions.bouncie-webhook]
 verify_jwt = false
 
+# OAuth redirect target — browsers hit this directly with no Supabase JWT.
+[functions.bouncie-oauth-callback]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 

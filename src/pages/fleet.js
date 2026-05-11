@@ -207,6 +207,7 @@ var FleetPage = {
       + (v.license_plate ? '<div><b>Plate:</b> ' + UI.esc(v.license_plate) + '</div>' : '')
       + (v.type ? '<div><b>Type:</b> ' + UI.esc(v.type) + '</div>' : '')
       + (v.tracker_provider ? '<div><b>Tracker:</b> ' + UI.esc(v.tracker_provider) + (v.tracker_device_id ? ' <code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:11px;">' + UI.esc(v.tracker_device_id) + '</code>' : '') + '</div>' : '<div style="color:var(--text-light);"><b>Tracker:</b> not configured</div>')
+      + '<div><b>Default driver:</b> ' + (v.default_driver_name ? UI.esc(v.default_driver_name) : '<span style="color:var(--text-light);">unassigned</span>') + ' <a href="#" onclick="event.preventDefault();FleetPage.editDefaultDriver(\'' + id + '\')" style="font-size:11px;color:var(--accent);margin-left:6px;">edit</a></div>'
       + '</div>'
       + '<div id="fleet-detail-extra" style="margin-top:12px;"><div style="color:var(--text-light);font-size:12px;">Loading history…</div></div>';
 
@@ -342,6 +343,27 @@ var FleetPage = {
       UI.closeModal();
       FleetPage._fetched = false;
       FleetPage._refresh(true);
+    });
+  },
+
+  // v741: set the sticky default driver for a vehicle. Used by the
+  // Truck Hours tab to attribute GPS-derived hours when there's no
+  // day-specific override.
+  editDefaultDriver: function(id) {
+    var v = FleetPage._vehicles.filter(function(x) { return x.id === id; })[0];
+    if (!v) return;
+    var current = v.default_driver_name || '';
+    var entered = prompt('Default driver name (employee name as it appears in TimeTrack)\n\nLeave blank to clear.', current);
+    if (entered === null) return;
+    entered = entered.trim();
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    sb.from('vehicles').update({ default_driver_name: entered || null }).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      v.default_driver_name = entered || null;
+      UI.toast(entered ? 'Default driver: ' + entered : 'Default driver cleared');
+      UI.closeModal();
+      FleetPage.showDetail(id);
     });
   },
 
