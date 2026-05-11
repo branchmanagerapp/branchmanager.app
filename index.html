@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 738; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 739; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1042,10 +1042,11 @@
 
     <div class="sidebar-footer" style="padding:10px 14px;">
       <!-- Switch Mode disabled v360 — will restore once role-based access is the priority -->
+      <!-- v739: simplified — one toggle. Expanded = always-full sidebar.
+           Collapsed = thin rail that pops out on hover. Pin button removed;
+           hover-expand is implicit when in collapsed state. -->
       <div style="display:flex;gap:6px;">
-        <button id="sidebar-toggle-btn" onclick="toggleSidebar()" style="background:rgba(0,0,0,.04);border:1px solid #e8eaed;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:14px;color:#9ca3af;flex:1;" title="Collapse sidebar">◀</button>
-        <!-- v730: hover-expand pin toggle. ⚲ = unpinned (hover-expands), 📌 = pinned (stays put). -->
-        <button id="sidebar-pin-btn" onclick="toggleSidebarPin()" style="background:rgba(0,0,0,.04);border:1px solid #e8eaed;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;color:#9ca3af;" title="Toggle hover-expand">⚲</button>
+        <button id="sidebar-toggle-btn" onclick="toggleSidebar()" style="background:rgba(0,0,0,.04);border:1px solid #e8eaed;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:14px;color:#9ca3af;flex:1;" title="Collapse / expand sidebar">◀</button>
         <button class="log-out-btn" onclick="Auth.logout()" style="background:rgba(0,0,0,.04);border:1px solid #e8eaed;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;color:#dc3545;white-space:nowrap;" title="Log out">Log Out</button>
       </div>
     </div>
@@ -1120,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v738.min.js"></script>
+<script defer src="dist/bm.bundle.v739.min.js"></script>
 
 
 
@@ -1246,44 +1247,18 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
   });
 });
 
-// v723/v730: sidebar hover-expand. When the user has collapsed the sidebar,
+// v723/v739: sidebar hover-expand. When the user has collapsed the sidebar,
 // hovering over the rail temporarily swaps to the full expanded state.
 // Touch devices (no real hover) skip this — they keep tap-to-toggle.
-// v730: gated by the pin toggle (📌 in the sidebar footer). When pinned,
-// the collapsed sidebar stays put and never auto-expands.
-function _sidebarPinned() {
-  return localStorage.getItem('bm-sidebar-pinned') === 'true';
-}
-function toggleSidebarPin() {
-  var pinned = _sidebarPinned();
-  localStorage.setItem('bm-sidebar-pinned', pinned ? 'false' : 'true');
-  _refreshPinBtn();
-  // If we're pinning while currently hover-expanded, snap it shut.
-  var sidebar = document.querySelector('.sidebar');
-  if (sidebar && !pinned && sidebar.classList.contains('hover-expanded')) {
-    sidebar.classList.remove('hover-expanded');
-    sidebar.classList.add('collapsed');
-  }
-  if (typeof UI !== 'undefined' && UI.toast) {
-    UI.toast(pinned ? 'Sidebar hover-expand on' : 'Sidebar pinned — hover-expand off');
-  }
-}
-function _refreshPinBtn() {
-  var btn = document.getElementById('sidebar-pin-btn');
-  if (!btn) return;
-  var pinned = _sidebarPinned();
-  btn.textContent = pinned ? '📌' : '⚲';
-  btn.title = pinned ? 'Hover-expand OFF (click to enable)' : 'Hover-expand ON (click to pin position)';
-  btn.style.color = pinned ? 'var(--green-dark)' : '#9ca3af';
-}
+// v739: pin toggle removed. The ◀/▶ button is the only control:
+//   Expanded → always full width, no hover effect needed
+//   Collapsed → thin rail that pops out on hover
 (function setupSidebarHoverExpand() {
   var sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
-  _refreshPinBtn();
   if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
   var hoverTimer;
   sidebar.addEventListener('mouseenter', function() {
-    if (_sidebarPinned()) return;
     if (sidebar.classList.contains('collapsed')) {
       clearTimeout(hoverTimer);
       sidebar.classList.add('hover-expanded');
