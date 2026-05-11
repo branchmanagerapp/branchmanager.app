@@ -577,6 +577,20 @@ var SchedulePage = {
       html += '</div></div>';
     }
 
+    // v788: Route optimization button — surfaces only when 2+ jobs that day
+    // have lat/lng and at least one is already time-scheduled. Lets Doug
+    // re-sequence the day by nearest-neighbor with a single tap.
+    var routableJobs = dayJobs.filter(function(j){
+      return (j.lat || j.latitude) && (j.lng || j.longitude || j.lon)
+        && j.status !== 'completed' && j.status !== 'cancelled';
+    });
+    if (routableJobs.length >= 2) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;">'
+        + '<div style="font-size:12px;color:#075985;">🧭 ' + routableJobs.length + ' geocoded jobs today · optimize for least driving?</div>'
+        + '<button onclick="SchedulePage._optimizeRoute(\'' + dateStr + '\')" style="font-size:12px;font-weight:700;padding:6px 12px;background:#075985;color:#fff;border:none;border-radius:6px;cursor:pointer;">Optimize route</button>'
+        + '</div>';
+    }
+
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
 
     for (var h = 6; h <= 19; h++) {
@@ -1460,6 +1474,111 @@ var SchedulePage = {
       + '</div>'
       + '</div>';  // close drop-target wrapper
     return html;
+  },
+
+  // v788: nearest-neighbor route optimization for a single day. Re-orders
+  // every time-scheduled job (with lat/lng) starting from the earliest
+  // currently-scheduled job's location. Preserves the time-slot for the
+  // first job; subsequent jobs get re-stamped at original earliest+offset
+  // honoring their estimatedHours (default 2h each). Skips jobs without
+  // coordinates so manual placements aren't disturbed.
+  _optimizeRoute: function(dateStr) {
+    var allJobs = DB.jobs.getAll();
+    var dayJobs = allJobs.filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0, 10) === dateStr
+        && j.status !== 'completed' && j.status !== 'cancelled'
+        && (j.lat || j.latitude) && (j.lng || j.longitude || j.lon);
+    });
+    if (dayJobs.length < 2) { UI.toast('Need 2+ geocoded jobs to optimize', 'error'); return; }
+
+    // Anchor = earliest-scheduled job (or first by jobNumber if no startTimes)
+    dayJobs.sort(function(a, b) {
+      var ta = a.startTime || '99:99';
+      var tb = b.startTime || '99:99';
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return (a.jobNumber || 0) - (b.jobNumber || 0);
+    });
+    var startJob = dayJobs[0];
+    var startTime = startJob.startTime || '08:00';
+
+    // Helper: distance in meters
+    var dist = function(a, b) {
+      var R = 6371000, toRad = function(d){ return d * Math.PI / 180; };
+      var aLat = Number(a.lat || a.latitude), aLng = Number(a.lng || a.longitude || a.lon);
+      var bLat = Number(b.lat || b.latitude), bLng = Number(b.lng || b.longitude || b.lon);
+      var dLat = toRad(bLat - aLat), dLng = toRad(bLng - aLng);
+      var lat1 = toRad(aLat), lat2 = toRad(bLat);
+      var h = Math.sin(dLat/2)*Math.sin(dLat/2) +
+              Math.sin(dLng/2)*Math.sin(dLng/2)*Math.cos(lat1)*Math.cos(lat2);
+      return 2 * R * Math.asin(Math.sqrt(h));
+    };
+
+    // Compute current order's total drive distance (between consecutive jobs)
+    var currentTotal = 0;
+    for (var i = 1; i < dayJobs.length; i++) currentTotal += dist(dayJobs[i-1], dayJobs[i]);
+
+    // Greedy nearest-neighbor starting from startJob
+    var remaining = dayJobs.slice(1);
+    var route = [startJob];
+    var cursor = startJob;
+    while (remaining.length) {
+      var best = -1, bestD = Infinity;
+      for (var k = 0; k < remaining.length; k++) {
+        var d = dist(cursor, remaining[k]);
+        if (d < bestD) { bestD = d; best = k; }
+      }
+      cursor = remaining[best];
+      route.push(cursor);
+      remaining.splice(best, 1);
+    }
+
+    // New total distance
+    var newTotal = 0;
+    for (var n = 1; n < route.length; n++) newTotal += dist(route[n-1], route[n]);
+
+    // Format savings
+    var saved = currentTotal - newTotal;
+    var savedMi = saved / 1609.34;
+    var pctSaved = currentTotal > 0 ? Math.round((saved / currentTotal) * 100) : 0;
+
+    // Compute new times: each job gets earliest+offset where offset is
+    // cumulative (estimatedHours||2) + 30min drive between sites.
+    var offsetMin = 0;
+    var baseH = parseInt(startTime.split(':')[0], 10) || 8;
+    var baseM = parseInt(startTime.split(':')[1], 10) || 0;
+    var baseTotalMin = baseH * 60 + baseM;
+    var assignments = route.map(function(j, idx) {
+      var t = baseTotalMin + offsetMin;
+      var h = Math.floor(t / 60), m = t % 60;
+      var newStart = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+      var dur = parseFloat(j.estimatedHours) || 2;
+      offsetMin += Math.round(dur * 60) + (idx < route.length - 1 ? 30 : 0); // +30min drive buffer
+      return { id: j.id, newStart: newStart, oldStart: j.startTime || '—', name: j.clientName || '#' + j.jobNumber };
+    });
+
+    var preview = assignments.slice(0, 8).map(function(a, idx) {
+      return (idx + 1) + '. ' + a.oldStart + ' → ' + a.newStart + '  ' + a.name;
+    }).join('\n');
+    if (assignments.length > 8) preview += '\n  ...and ' + (assignments.length - 8) + ' more';
+
+    var msg = '🧭 Route optimization\n\n'
+      + 'Current order: ' + (currentTotal / 1609.34).toFixed(1) + ' mi between sites\n'
+      + 'Optimized:     ' + (newTotal / 1609.34).toFixed(1) + ' mi between sites\n'
+      + (saved > 0 ? '✓ Saves ' + savedMi.toFixed(1) + ' mi (' + pctSaved + '%)' : '— No improvement, current order is already efficient')
+      + '\n\nNew sequence:\n' + preview + '\n\nApply?';
+    if (saved <= 100) {
+      // Less than 100m savings = noise; offer info but don't bother applying
+      alert(msg.replace('Apply?', 'Current order is already efficient — no changes.'));
+      return;
+    }
+    if (!confirm(msg)) return;
+
+    // Apply
+    assignments.forEach(function(a) {
+      DB.jobs.update(a.id, { startTime: a.newStart });
+    });
+    UI.toast('🧭 Route optimized — saved ' + savedMi.toFixed(1) + ' mi (' + pctSaved + '%)');
+    loadPage('schedule');
   },
 
   // v779: Quote → Schedule one-click booking. Opens a date+time picker

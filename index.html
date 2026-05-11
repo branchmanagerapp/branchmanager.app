@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 787; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 788; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v787.min.js"></script>
+<script defer src="dist/bm.bundle.v788.min.js"></script>
 
 
 
