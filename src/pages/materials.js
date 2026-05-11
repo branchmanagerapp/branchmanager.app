@@ -100,6 +100,53 @@ var Materials = {
       + UI.statCard('This Quarter', UI.moneyInt(quarterCost), quarterUsage.length + ' items used', '', '')
       + '</div>';
 
+    // v808: Price-shock alerts — flag any material whose unitCost rose
+    // 25%+ in the most recent price-history entry within the last 90 days.
+    // Sourced from v771 _getPriceHistory. Surfaces supplier price increases
+    // BEFORE Doug accidentally quotes at the old rate. Red banner with
+    // per-material rows + dismiss button (per-material 30-day silencer).
+    var ninetyMs = Date.now() - 90 * 86400000;
+    var priceShocks = [];
+    try {
+      var silencer = {};
+      try { silencer = JSON.parse(localStorage.getItem('bm-price-shock-silencer') || '{}'); } catch(e) {}
+      catalog.forEach(function(m) {
+        if (silencer[m.id] && Number(silencer[m.id]) > Date.now()) return;
+        var hist = Materials._getPriceHistory(m.id);
+        if (!hist || hist.length < 2) return;
+        // Walk hist newest-first for last 90 days entries
+        for (var i = hist.length - 1; i > 0; i--) {
+          var ts = new Date(hist[i].changedAt).getTime();
+          if (ts < ninetyMs) break;
+          var from = Number(hist[i].from), to = Number(hist[i].to);
+          if (!from || !to || from <= 0) continue;
+          var delta = ((to - from) / from) * 100;
+          if (delta >= 25) {
+            priceShocks.push({
+              id: m.id, name: m.name, from: from, to: to,
+              deltaPct: Math.round(delta * 10) / 10,
+              when: hist[i].changedAt
+            });
+            break; // only flag the most recent shock per material
+          }
+        }
+      });
+    } catch(e) { console.debug('[Materials] price-shock scan skip', e); }
+
+    if (priceShocks.length) {
+      html += '<div style="background:#fef2f2;border-radius:12px;padding:14px 16px;border-left:4px solid #991b1b;margin-bottom:14px;">'
+        + '<h4 style="color:#991b1b;margin:0 0 8px;font-size:14px;">💥 Price-shock alerts — supplier raised ≥25%</h4>';
+      priceShocks.forEach(function(s) {
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-top:1px solid #fde2e2;">'
+          + '<span><strong>' + UI.esc(s.name) + '</strong> — '
+          + UI.money(s.from) + ' → <span style="color:#991b1b;font-weight:700;">' + UI.money(s.to) + ' (+' + s.deltaPct + '%)</span> · ' + UI.dateShort(s.when) + '</span>'
+          + '<button onclick="Materials._silenceShock(\'' + s.id + '\')" title="Silence this alert for 30 days" style="background:none;border:1px solid var(--border);color:var(--text-light);font-size:11px;padding:3px 8px;border-radius:5px;cursor:pointer;">Dismiss 30d</button>'
+          + '</div>';
+      });
+      html += '<div style="font-size:11px;color:#7f1d1d;margin-top:8px;">Check your saved-quote rates — open quotes using these materials may be priced below cost.</div>'
+        + '</div>';
+    }
+
     // ── Low stock alerts ──
     if (lowStock.length > 0) {
       html += '<div style="background:#fff3e0;border-radius:12px;padding:16px;border-left:4px solid #e65100;margin-bottom:16px;">'
@@ -523,6 +570,17 @@ var Materials = {
     try { return JSON.parse(localStorage.getItem(Materials._historyKey) || '{}') || {}; }
     catch(e) { return {}; }
   },
+  // v808: silence a price-shock alert for 30 days (per-material).
+  _silenceShock: function(materialId) {
+    if (!materialId) return;
+    var sil = {};
+    try { sil = JSON.parse(localStorage.getItem('bm-price-shock-silencer') || '{}'); } catch(e) {}
+    sil[materialId] = Date.now() + 30 * 86400000;
+    localStorage.setItem('bm-price-shock-silencer', JSON.stringify(sil));
+    UI.toast('Alert silenced 30 days');
+    loadPage('materials');
+  },
+
   _appendPriceHistory: function(materialId, fromPrice, toPrice) {
     if (!materialId) return;
     var all = Materials._allHistory();
