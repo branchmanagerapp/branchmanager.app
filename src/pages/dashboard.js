@@ -534,6 +534,38 @@ var DashboardPage = {
       });
     }
 
+    // 0b. v746: Unread inbound SMS — surfaces every phone thread (client
+    // or unmatched number) with unread inbound messages. Click jumps to
+    // the thread, which clears the unread count.
+    try {
+      var unreadMap = {};
+      try { unreadMap = JSON.parse(localStorage.getItem('bm-msg-unread') || '{}'); } catch(e) {}
+      Object.keys(unreadMap).forEach(function(key) {
+        var n = unreadMap[key] | 0;
+        if (n <= 0) return;
+        var label, sub, onClick;
+        if (key.indexOf('phone:') === 0) {
+          var l10 = key.replace('phone:', '');
+          var fmt = '(' + l10.substring(0, 3) + ') ' + l10.substring(3, 6) + '-' + l10.substring(6);
+          label = 'Unread SMS — ' + fmt;
+          sub = n + ' new from unknown number';
+          onClick = 'MessagingPage.selectPhone(\'' + l10 + '\')';
+        } else {
+          var c = DB.clients.getById(key);
+          label = 'Unread SMS — ' + (c ? UI.esc(c.name || '') : 'client');
+          sub = n + ' new message' + (n === 1 ? '' : 's');
+          onClick = 'MessagingPage.selectClient(\'' + key + '\')';
+        }
+        inboxItems.push({
+          icon: 'message-square', tone: 'blue',
+          label: label,
+          sub: sub,
+          actionLabel: 'Open',
+          onclick: onClick
+        });
+      });
+    } catch(e) { /* swallow — unread surfacing is best-effort */ }
+
     // 1. Approved quotes ready to convert to jobs — but skip if the client
     //    already has a job (likely already converted via different path).
     allQuotes.filter(function(q) {

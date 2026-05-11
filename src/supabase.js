@@ -575,6 +575,10 @@ var SupabaseDB = {
             }
           }, 0);
         }
+      } else if (window._currentPage === 'dashboard' && typeof loadPage === 'function') {
+        // v746: dashboard inbox now surfaces unread SMS, so re-render
+        // when an inbound lands so the new item appears live.
+        loadPage('dashboard');
       }
     } catch (e) { console.warn('[Realtime] propagate failed:', e); }
   },

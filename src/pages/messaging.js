@@ -434,13 +434,64 @@ var MessagingPage = {
     MessagingPage.selectClient(clientId);
   },
 
+  // v746: New-message modal now supports two paths:
+  //   1. Search the existing client list (typing filters live).
+  //   2. Text any 10-digit number directly — lands in the phone-bucket
+  //      flow so the thread + reply already work; "+ Convert to Client"
+  //      remains available once a conversation forms.
   newMessage: function() {
     var clients = DB.clients.getAll().filter(function(c) { return c.phone || c.email; });
     var options = clients.map(function(c) {
-      return '<div onclick="MessagingPage.selectClient(\'' + c.id + '\');UI.closeModal();" style="padding:10px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;" onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'\'">'
-        + '<strong>' + c.name + '</strong><span style="color:var(--text-light);font-size:12px;margin-left:8px;">' + (c.phone || c.email) + '</span></div>';
+      var contact = c.phone ? UI.phone(c.phone) : c.email;
+      return '<div data-search="' + UI.esc(((c.name || '') + ' ' + (c.phone || '') + ' ' + (c.email || '')).toLowerCase()) + '" '
+        + 'onclick="MessagingPage.selectClient(\'' + c.id + '\');UI.closeModal();" '
+        + 'style="padding:10px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;" '
+        + 'onmouseover="this.style.background=\'var(--green-bg)\'" onmouseout="this.style.background=\'\'">'
+        + '<strong>' + UI.esc(c.name || '') + '</strong><span style="color:var(--text-light);font-size:12px;margin-left:8px;">' + UI.esc(contact || '') + '</span></div>';
     }).join('');
-    UI.showModal('New Message', '<div style="max-height:400px;overflow-y:auto;">' + options + '</div>');
+    var html = '<div style="margin-bottom:12px;">'
+      +   '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Text any number</div>'
+      +   '<div style="display:flex;gap:6px;">'
+      +     '<input id="new-msg-phone" type="tel" inputmode="tel" placeholder="(914) 555-1234" '
+      +       'style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;" '
+      +       'onkeydown="if(event.key===\'Enter\')MessagingPage._openAdhocPhone()">'
+      +     '<button onclick="MessagingPage._openAdhocPhone()" class="btn btn-primary" style="font-size:13px;">Open thread →</button>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Or pick a client</div>'
+      + '<input id="new-msg-search" type="search" placeholder="Search clients…" '
+      +   'style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:8px;" '
+      +   'oninput="MessagingPage._filterNewMsgList(this.value)">'
+      + '<div id="new-msg-clients" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">' + options + '</div>';
+    UI.showModal('New Message', html);
+    setTimeout(function() { var n = document.getElementById('new-msg-phone'); if (n) n.focus(); }, 50);
+  },
+
+  _filterNewMsgList: function(q) {
+    var qLower = (q || '').toLowerCase().trim();
+    var list = document.getElementById('new-msg-clients');
+    if (!list) return;
+    Array.prototype.forEach.call(list.children, function(el) {
+      var hay = el.getAttribute('data-search') || '';
+      el.style.display = (!qLower || hay.indexOf(qLower) >= 0) ? '' : 'none';
+    });
+  },
+
+  _openAdhocPhone: function() {
+    var raw = (document.getElementById('new-msg-phone') || {}).value || '';
+    var digits = raw.replace(/\D/g, '');
+    if (digits.length === 11 && digits.charAt(0) === '1') digits = digits.substring(1);
+    if (digits.length !== 10) { UI.toast('Enter a 10-digit US number', 'error'); return; }
+    // Reuse the phone-bucket flow — selectPhone bridges into the
+    // unmatched-phone thread, which already supports send + Convert.
+    UI.closeModal();
+    // Ensure the bucket cache has at least an empty row so the thread
+    // header doesn't error when looking up a brand-new number.
+    if (!window._bmUnmatchedSmsCache) window._bmUnmatchedSmsCache = {};
+    if (!window._bmUnmatchedSmsCache[digits]) {
+      window._bmUnmatchedSmsCache[digits] = { messages: [], latest: new Date().toISOString() };
+    }
+    MessagingPage.selectPhone(digits);
   },
 
   showTemplates: function(clientId) {
