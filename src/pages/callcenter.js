@@ -322,6 +322,7 @@ var CallCenter = {
       var bulkBarHtml = '<div id="cc-bulk-bar" style="display:none;position:fixed;bottom:0;left:var(--sidebar-w,0);right:0;z-index:500;background:#1a1a2e;color:#fff;padding:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
         + '<span id="cc-bulk-count" style="font-weight:700;font-size:14px;">0 selected</span>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        +   '<button onclick="CallCenter._bulkQualify()" style="background:var(--green-dark);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">✓ Promote to Requests</button>'
         +   '<button onclick="CallCenter._bulkJunk()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">✗ Junk</button>'
         +   '<button onclick="CallCenter._bulkDelete()" style="background:#c62828;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🗑 Delete</button>'
         +   '<button onclick="CallCenter._clearBulk()" style="background:none;color:rgba(255,255,255,.6);border:none;font-size:13px;cursor:pointer;padding:7px 0;">Cancel</button>'
@@ -657,6 +658,110 @@ var CallCenter = {
     var r = await sb.from('communications').delete().in('id', ids);
     if (r.error) { UI.toast('Delete failed: ' + r.error.message, 'error'); return; }
     UI.toast('Deleted ' + ids.length);
+    CallCenter._clearBulk();
+    CallCenter._loadMissed();
+  },
+
+  // v777: bulk-qualify — promote N selected inbound rows to real
+  // `requests` at once. Opens a single review modal listing each row
+  // with a pre-filled name (from metadata, phone format, or "Phone
+  // caller") and a shared service field. Doug can edit each name
+  // inline if needed, types ONE service that applies to all (since
+  // they're being batch-qualified, presumably similar intent), and
+  // hits Promote. Inserts N requests rows + flags N comm rows.
+  _bulkQualify: async function() {
+    var ids = CallCenter._selectedIds();
+    if (!ids.length) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    // Pull the selected comm rows
+    var pulls = ids.map(function(id) {
+      return sb.from('communications').select('*').eq('id', id).maybeSingle();
+    });
+    var results = await Promise.all(pulls);
+    var rows = results.map(function(r) { return r && r.data; }).filter(Boolean);
+    if (!rows.length) { UI.toast('Could not load selected rows', 'error'); return; }
+
+    // Build the inline review form
+    CallCenter._bulkPending = rows;
+    var rowsHtml = rows.map(function(c, idx) {
+      var meta = (c.metadata && typeof c.metadata === 'object') ? c.metadata : {};
+      var phone = c.from_number || '';
+      var phoneFmt = CallCenter._fmtPhone(phone) || phone || '';
+      var suggestedName = meta.name || meta.from_name || meta.caller_name || phoneFmt || 'Phone caller';
+      var preview = ((c.body || '').replace(/\s+/g, ' ').slice(0, 100)).trim();
+      return '<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 0;' + (idx < rows.length - 1 ? 'border-bottom:1px solid var(--border);' : '') + '">'
+        +   '<div style="font-size:11px;color:var(--text-light);width:90px;flex-shrink:0;padding-top:6px;">' + UI.esc(phoneFmt || c.channel) + '</div>'
+        +   '<input class="bulk-q-name" data-comm="' + UI.esc(c.id) + '" value="' + UI.esc(suggestedName) + '" placeholder="Real name" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+        +   (preview ? '<div title="' + UI.esc(c.body || '') + '" style="flex:2;min-width:160px;font-size:11px;color:var(--text-light);padding-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(preview) + '</div>' : '')
+        + '</div>';
+    }).join('');
+
+    var html = '<div style="font-size:13px;color:var(--text-light);margin-bottom:10px;">'
+      + 'Promoting <b style="color:var(--text);">' + rows.length + '</b> inbound row' + (rows.length === 1 ? '' : 's') + ' to Requests. They\'ll show up in the Pipeline once qualified.'
+      + '</div>'
+      + UI.field('Service wanted (applied to all) *', '<input id="bulk-q-service" placeholder="e.g. tree removal, pruning, estimate" autofocus>')
+      + '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:10px;max-height:340px;overflow-y:auto;">'
+      +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);margin-bottom:6px;">Names (edit if needed)</div>'
+      +   rowsHtml
+      + '</div>';
+    UI.showModal('✓ Bulk promote to Requests', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="CallCenter._saveBulkQualify()">Promote ' + rows.length + ' →</button>'
+    });
+  },
+
+  _saveBulkQualify: async function() {
+    var rows = CallCenter._bulkPending || [];
+    if (!rows.length) { UI.closeModal(); return; }
+    var service = ((document.getElementById('bulk-q-service') || {}).value || '').trim();
+    if (!service) { UI.toast('Service wanted is required', 'error'); return; }
+    // Collect per-row names
+    var nameById = {};
+    document.querySelectorAll('.bulk-q-name').forEach(function(inp) {
+      nameById[inp.getAttribute('data-comm')] = (inp.value || '').trim();
+    });
+    var missing = rows.filter(function(c) { return !nameById[c.id]; });
+    if (missing.length) { UI.toast(missing.length + ' row(s) missing a name', 'error'); return; }
+
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+
+    // Build all the request rows + the corresponding comm-update payloads
+    var reqRows = rows.map(function(c) {
+      var notes = (c.body || '').trim().slice(0, 500);
+      var row = {
+        client_name: nameById[c.id],
+        title: service,
+        property: null,
+        client_phone: c.from_number || null,
+        notes: notes || null,
+        source: 'Leads Center (qualified)',
+        status: 'new'
+      };
+      if (tenantId) row.tenant_id = tenantId;
+      return { commId: c.id, commMeta: c.metadata || {}, row: row };
+    });
+
+    var ok = 0, failed = 0;
+    for (var i = 0; i < reqRows.length; i++) {
+      var entry = reqRows[i];
+      var ins = await sb.from('requests').insert(entry.row).select('id').single();
+      if (ins.error) { failed++; continue; }
+      var nextMeta = Object.assign({}, entry.commMeta, {
+        qualified: true,
+        qualified_at: new Date().toISOString(),
+        qualified_request_id: ins.data && ins.data.id,
+        qualified_name: entry.row.client_name,
+        qualified_service: service
+      });
+      await sb.from('communications').update({ metadata: nextMeta }).eq('id', entry.commId);
+      ok++;
+    }
+    UI.closeModal();
+    UI.toast('Promoted ' + ok + (failed ? ' · ' + failed + ' failed' : '') + ' to Requests');
+    CallCenter._bulkPending = null;
     CallCenter._clearBulk();
     CallCenter._loadMissed();
   },
