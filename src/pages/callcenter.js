@@ -311,6 +311,23 @@ var CallCenter = {
         + (handledCount > 0 ? '<button onclick="CallCenter._showHandled=' + (showHandled ? 'false' : 'true') + ';CallCenter._loadMissed();" style="font-size:11px;padding:4px 10px;background:var(--white);border:1px solid #fbbf24;border-radius:6px;cursor:pointer;font-weight:700;color:#92400e;">' + (showHandled ? 'Hide handled' : 'Show ' + handledCount + ' handled') + '</button>' : '')
         + '</div>';
 
+      // v775: select-all bar + fixed bottom bulk bar (matches the
+      // TaskReminders pattern). Visible whenever rows.length > 0.
+      var selectAllHtml = '<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">'
+        + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-light);">'
+        +   '<input type="checkbox" onchange="CallCenter._selectAll(this)" style="width:16px;height:16px;cursor:pointer;">'
+        +   '<span>Select all (' + rows.length + ')</span>'
+        + '</label>'
+        + '</div>';
+      var bulkBarHtml = '<div id="cc-bulk-bar" style="display:none;position:fixed;bottom:0;left:var(--sidebar-w,0);right:0;z-index:500;background:#1a1a2e;color:#fff;padding:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+        + '<span id="cc-bulk-count" style="font-weight:700;font-size:14px;">0 selected</span>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        +   '<button onclick="CallCenter._bulkJunk()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">✗ Junk</button>'
+        +   '<button onclick="CallCenter._bulkDelete()" style="background:#c62828;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🗑 Delete</button>'
+        +   '<button onclick="CallCenter._clearBulk()" style="background:none;color:rgba(255,255,255,.6);border:none;font-size:13px;cursor:pointer;padding:7px 0;">Cancel</button>'
+        + '</div>'
+        + '</div>';
+
       if (!rows.length) {
         el.innerHTML = bannerHtml + '<div style="padding:80px 24px;text-align:center;color:var(--text-light);">'
           + '<div style="font-size:40px;margin-bottom:12px;">✅</div>'
@@ -320,7 +337,7 @@ var CallCenter = {
         return;
       }
 
-      var html = bannerHtml + '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px;">';
+      var html = bannerHtml + selectAllHtml + bulkBarHtml + '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px;">';
 
       rows.forEach(function(c, idx) {
         var cl = c.client_id ? clientMap[c.client_id] : null;
@@ -351,6 +368,7 @@ var CallCenter = {
           if (!CallCenter._emailRows) CallCenter._emailRows = [];
           if (!CallCenter._emailRows.find(function(r){ return r.id === c.id; })) CallCenter._emailRows.push(c);
           html += '<div onclick="CallCenter._openEmailModal(' + safeId + ')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + '" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\'">'
+            + '<label onclick="event.stopPropagation()" style="display:flex;align-items:center;flex-shrink:0;cursor:pointer;"><input type="checkbox" class="cc-check" value="' + UI.esc(c.id) + '" onchange="CallCenter._updateBulk()" style="width:16px;height:16px;cursor:pointer;"></label>'
             + '<div style="flex-shrink:0;width:34px;height:34px;background:' + bidBg + ';border:1px solid ' + bidBorder + ';border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;">' + bidIcon + '</div>'
             + '<div style="flex:1;min-width:0;">'
             + '<div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(agency) + '</div>'
@@ -379,6 +397,7 @@ var CallCenter = {
         var isLast = idx === rows.length - 1;
 
         html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + '">'
+          + '<label style="display:flex;align-items:center;flex-shrink:0;cursor:pointer;"><input type="checkbox" class="cc-check" value="' + UI.esc(c.id) + '" onchange="CallCenter._updateBulk()" style="width:16px;height:16px;cursor:pointer;"></label>'
           + '<div style="flex-shrink:0;width:32px;height:32px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">' + icon + '</div>'
           + '<div style="flex:1;min-width:0;">'
           + '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</div>'
@@ -583,6 +602,62 @@ var CallCenter = {
     var nextMeta = Object.assign({}, cur, { junk: true, junk_at: new Date().toISOString() });
     await sb.from('communications').update({ metadata: nextMeta }).eq('id', commId);
     UI.toast('Marked junk');
+    CallCenter._loadMissed();
+  },
+
+  // v775: bulk-action plumbing for the Triage tab. Mirrors the
+  // TaskReminders pattern — checkboxes per row, dark bottom bar,
+  // Junk (soft-hide) / Delete (hard-remove from communications).
+  _updateBulk: function() {
+    var checked = document.querySelectorAll('.cc-check:checked');
+    var bar = document.getElementById('cc-bulk-bar');
+    var cnt = document.getElementById('cc-bulk-count');
+    if (bar) bar.style.display = checked.length > 0 ? 'flex' : 'none';
+    if (cnt) cnt.textContent = checked.length + ' selected';
+  },
+  _selectAll: function(cb) {
+    document.querySelectorAll('.cc-check').forEach(function(c) { c.checked = cb.checked; });
+    CallCenter._updateBulk();
+  },
+  _clearBulk: function() {
+    document.querySelectorAll('.cc-check').forEach(function(c) { c.checked = false; });
+    CallCenter._updateBulk();
+  },
+  _selectedIds: function() {
+    return Array.from(document.querySelectorAll('.cc-check:checked')).map(function(c) { return c.value; });
+  },
+  _bulkJunk: async function() {
+    var ids = CallCenter._selectedIds();
+    if (!ids.length) return;
+    if (!confirm('Mark ' + ids.length + ' inbound row' + (ids.length === 1 ? '' : 's') + ' as junk?\n\nThey\'ll fall off the triage list. Use "Show handled" to bring them back.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    // Fetch existing metadata so we don't blow away other keys, then patch each.
+    var pulls = ids.map(function(id) {
+      return sb.from('communications').select('id,metadata').eq('id', id).maybeSingle();
+    });
+    var results = await Promise.all(pulls);
+    var updates = results.map(function(r) {
+      if (!r || !r.data) return Promise.resolve();
+      var cur = r.data.metadata || {};
+      var nextMeta = Object.assign({}, cur, { junk: true, junk_at: new Date().toISOString() });
+      return sb.from('communications').update({ metadata: nextMeta }).eq('id', r.data.id);
+    });
+    await Promise.all(updates);
+    UI.toast('Marked ' + ids.length + ' junk');
+    CallCenter._clearBulk();
+    CallCenter._loadMissed();
+  },
+  _bulkDelete: async function() {
+    var ids = CallCenter._selectedIds();
+    if (!ids.length) return;
+    if (!confirm('Permanently delete ' + ids.length + ' inbound row' + (ids.length === 1 ? '' : 's') + ' from communications?\n\nThis removes the rows entirely — transcript / SMS body / call record gone. Can\'t be undone. Use Junk instead if you might want to review later.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var r = await sb.from('communications').delete().in('id', ids);
+    if (r.error) { UI.toast('Delete failed: ' + r.error.message, 'error'); return; }
+    UI.toast('Deleted ' + ids.length);
+    CallCenter._clearBulk();
     CallCenter._loadMissed();
   },
 
