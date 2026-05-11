@@ -130,8 +130,18 @@ Deno.serve(async (req) => {
   // Build the list of position pings to insert from this event.
   // tripData = array under .data; tripStart = single ping under .start;
   // tripEnd has no GPS (just odometer); tripMetrics = aggregate, no GPS.
-  type Ping = { ts: string; lat: number; lon: number; speed?: number | null; heading?: number | null; ignition?: boolean | null; raw: any };
+  type Ping = { ts: string; lat: number; lon: number; speed?: number | null; heading?: number | null; ignition?: boolean | null; fuel_level?: number | null; odometer?: number | null; battery?: number | null; raw: any };
   const pings: Ping[] = [];
+  // v740: ignition state is event-driven (Bouncie doesn't ship per-ping
+  // ignition flags). tripStart → ON, tripEnd → OFF, tripData → ON (engine
+  // running since data is flowing). Also captures fuel_level, odometer,
+  // battery when the payload includes them — columns exist on
+  // vehicle_positions but had been NULL because the writer never reached
+  // them.
+  const ignitionFromEvent: boolean | null =
+    (event === "tripStart" || event === "tripData" || event === "tripMetrics") ? true :
+    (event === "tripEnd")                                                       ? false :
+    null;
   const pushPing = (src: any) => {
     if (!src) return;
     const gps = src.gps || src.location || src;
@@ -143,7 +153,10 @@ Deno.serve(async (req) => {
       lat, lon,
       speed: src.speed ?? gps.speed ?? null,
       heading: src.heading ?? gps.heading ?? src.bearing ?? null,
-      ignition: src.ignition ?? null,
+      ignition: src.ignition ?? ignitionFromEvent,
+      fuel_level: src.fuelLevel ?? src.fuel_level ?? src.fuel ?? null,
+      odometer: src.odometer ?? src.totalIdle ?? null,
+      battery: src.battery ?? src.batteryVoltage ?? null,
       raw: src,
     });
   };
@@ -152,10 +165,14 @@ Deno.serve(async (req) => {
   if (payload.end) pushPing(payload.end);
 
   if (pings.length) {
-    // Insert all pings into vehicle_positions
+    // v740: now writes fuel_level, odometer, battery (columns already
+    // existed but the previous writer skipped them).
     const rows = pings.map((p) => ({
       vehicle_id: vehicleId, ts: p.ts, lat: p.lat, lon: p.lon,
-      speed_mph: p.speed, heading: p.heading, ignition: p.ignition, raw: p.raw,
+      speed_mph: p.speed, heading: p.heading, ignition: p.ignition,
+      fuel_level: p.fuel_level, odometer: p.odometer, battery: p.battery,
+      tenant_id: TENANT_ID,
+      raw: p.raw,
     }));
     await sb.from("vehicle_positions").insert(rows);
     // Update last-known cache from the most recent ping

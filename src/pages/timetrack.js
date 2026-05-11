@@ -46,21 +46,28 @@ var TimeTrackPage = {
     if (TimeTrackPage.isOwnerOrManager) {
       var activeTab = TimeTrackPage._tab;
       var tabStyle = 'padding:10px 20px;border:none;cursor:pointer;font-size:14px;transition:all .15s;border-bottom:3px solid transparent;';
+      function tabBtn(key, label) {
+        var on = activeTab === key;
+        return '<button id="tab-tt-' + key + '" onclick="TimeTrackPage.setTab(\'' + key + '\')" style="' + tabStyle
+          + (on ? 'border-bottom:3px solid var(--green-dark);color:var(--green-dark);font-weight:700;background:transparent;' : 'color:var(--text-light);font-weight:500;background:transparent;')
+          + '">' + label + '</button>';
+      }
       html += '<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">'
-        + '<button id="tab-tt-mine" onclick="TimeTrackPage.setTab(\'mine\')" style="' + tabStyle
-          + (activeTab === 'mine' ? 'border-bottom:3px solid var(--green-dark);color:var(--green-dark);font-weight:700;background:transparent;' : 'color:var(--text-light);font-weight:500;background:transparent;')
-          + '">My Time</button>'
-        + '<button id="tab-tt-all" onclick="TimeTrackPage.setTab(\'all\')" style="' + tabStyle
-          + (activeTab === 'all' ? 'border-bottom:3px solid var(--green-dark);color:var(--green-dark);font-weight:700;background:transparent;' : 'color:var(--text-light);font-weight:500;background:transparent;')
-          + '">All Employees</button>'
+        + tabBtn('mine', 'My Time')
+        + tabBtn('all', 'All Employees')
+        + tabBtn('trucks', '🚛 Truck Hours')
         + '</div>';
     }
 
-    html += '<div id="timetrack-content">'
-      + (TimeTrackPage._tab === 'all' && TimeTrackPage.isOwnerOrManager
-          ? TimeTrackPage._renderAllEmployees()
-          : TimeTrackPage._renderMyTime())
-      + '</div>';
+    var content;
+    if (TimeTrackPage._tab === 'trucks' && TimeTrackPage.isOwnerOrManager) {
+      content = TimeTrackPage._renderTruckHours();
+    } else if (TimeTrackPage._tab === 'all' && TimeTrackPage.isOwnerOrManager) {
+      content = TimeTrackPage._renderAllEmployees();
+    } else {
+      content = TimeTrackPage._renderMyTime();
+    }
+    html += '<div id="timetrack-content">' + content + '</div>';
 
     // Manual entry modal placeholder
     html += TimeTrackPage._renderManualEntryModal();
@@ -73,6 +80,127 @@ var TimeTrackPage = {
     var html = TimeTrackPage.renderClockWidget();
     html += TimeTrackPage.renderTimesheet();
     html += TimeTrackPage._renderPayPeriodSummary();
+    return html;
+  },
+
+  // v740: Truck Hours tab — falls back to GPS-derived work hours when an
+  // employee forgets to clock in, or as company-wide policy. Pulls from
+  // public.vehicle_daily_hours view (created in
+  // 20260510_vehicle_daily_hours_view.sql). Adds a configurable prep
+  // buffer (default 30 min) on top of road time to account for yard
+  // load-up, equipment checks, etc.
+  _truckPrepBufferMin: function() {
+    var v = parseInt(localStorage.getItem('bm-truck-prep-buffer-min') || '30', 10);
+    return isNaN(v) ? 30 : v;
+  },
+  _setTruckPrepBuffer: function(min) {
+    var n = parseInt(min, 10);
+    if (isNaN(n) || n < 0) n = 0;
+    if (n > 240) n = 240;
+    localStorage.setItem('bm-truck-prep-buffer-min', String(n));
+    TimeTrackPage._renderTruckHoursAsync();
+  },
+  _renderTruckHours: function() {
+    // Kick off the fetch right after render; placeholder shown until then.
+    setTimeout(TimeTrackPage._renderTruckHoursAsync, 30);
+    var buf = TimeTrackPage._truckPrepBufferMin();
+    return '<div id="truck-hours-root">'
+      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+      +   '<div>'
+      +     '<div style="font-size:13px;font-weight:700;">Prep buffer (per truck-day)</div>'
+      +     '<div style="font-size:12px;color:var(--text-light);">Added on top of road time to cover yard load-up, equipment checks, drive prep.</div>'
+      +   '</div>'
+      +   '<div style="display:inline-flex;align-items:center;gap:8px;">'
+      +     '<input type="number" id="truck-prep-buf" value="' + buf + '" min="0" max="240" '
+      +       'onchange="TimeTrackPage._setTruckPrepBuffer(this.value)" '
+      +       'style="width:80px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:600;text-align:center;">'
+      +     '<span style="font-size:13px;color:var(--text-light);">min</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div id="truck-hours-list" style="padding:40px 16px;text-align:center;color:var(--text-light);font-size:13px;">Loading truck hours…</div>'
+      + '</div>';
+  },
+
+  _renderTruckHoursAsync: function() {
+    var listEl = document.getElementById('truck-hours-list');
+    if (!listEl) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) {
+      listEl.innerHTML = '<div style="color:#c62828;">Supabase not connected — sign in and retry.</div>';
+      return;
+    }
+    var cutoff = new Date(Date.now() - 14 * 86400000).toISOString().substring(0, 10);
+    sb.from('vehicle_daily_hours')
+      .select('*')
+      .gte('day', cutoff)
+      .order('day', { ascending: false })
+      .then(function(r) {
+        if (r.error) {
+          listEl.innerHTML = '<div style="color:#c62828;">Couldn\'t load truck hours: ' + (r.error.message || 'unknown error') + '</div>';
+          return;
+        }
+        listEl.innerHTML = TimeTrackPage._renderTruckRows(r.data || []);
+      });
+  },
+
+  _renderTruckRows: function(rows) {
+    if (!rows.length) {
+      return '<div style="padding:30px;text-align:center;color:var(--text-light);font-size:13px;background:var(--white);border:1px solid var(--border);border-radius:10px;">'
+        + 'No truck activity in the last 14 days.'
+        + '</div>';
+    }
+    var prepMin = TimeTrackPage._truckPrepBufferMin();
+    function fmtTime(iso) {
+      try {
+        var d = new Date(iso);
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      } catch(e) { return iso; }
+    }
+    function fmtDate(d) {
+      try {
+        var dt = new Date(d + 'T12:00:00');
+        return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      } catch(e) { return d; }
+    }
+    function fmtDuration(sec) {
+      var h = Math.floor(sec / 3600);
+      var m = Math.round((sec - h * 3600) / 60);
+      return h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+    }
+
+    // Group by day
+    var byDay = {};
+    rows.forEach(function(r) {
+      (byDay[r.day] = byDay[r.day] || []).push(r);
+    });
+    var days = Object.keys(byDay).sort().reverse();
+
+    var html = '';
+    days.forEach(function(day) {
+      html += '<div style="margin-bottom:14px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">'
+        +   '<div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-weight:700;font-size:13px;">' + fmtDate(day) + '</div>';
+      byDay[day].forEach(function(r) {
+        var roadSec = r.duration_seconds || 0;
+        var paidSec = roadSec + prepMin * 60;
+        var displayName = r.vehicle_nickname || r.vehicle_name || 'Unnamed truck';
+        html += '<div style="padding:12px 14px;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+          +   '<div style="flex:1;min-width:0;">'
+          +     '<div style="font-weight:700;font-size:14px;">🚛 ' + (UI.esc ? UI.esc(displayName) : displayName) + '</div>'
+          +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">'
+          +       fmtTime(r.first_seen_ts) + ' → ' + fmtTime(r.last_seen_ts)
+          +       ' · ' + r.ping_count + ' pings'
+          +       (r.max_speed_mph ? ' · max ' + Math.round(r.max_speed_mph) + ' mph' : '')
+          +     '</div>'
+          +   '</div>'
+          +   '<div style="text-align:right;flex-shrink:0;">'
+          +     '<div style="font-size:11px;color:var(--text-light);">Road ' + fmtDuration(roadSec) + '</div>'
+          +     '<div style="font-size:16px;font-weight:800;color:var(--green-dark);">' + fmtDuration(paidSec) + '</div>'
+          +     '<div style="font-size:10px;color:var(--text-light);">incl. ' + prepMin + 'm prep</div>'
+          +   '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    });
     return html;
   },
 
