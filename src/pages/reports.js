@@ -398,6 +398,11 @@ var ReportsPage = {
     // crushed margins" patterns that the P&L totals hide.
     html += ReportsPage._renderProfitHeatMap();
 
+    // v793: Quote-to-close time histogram. Shows the distribution of days
+    // between quote sent and approved across the last year, plus a median +
+    // p80 line so Doug knows when a quote is "going cold" (past p80 ≈ dead).
+    html += ReportsPage._renderQuoteCloseHistogram();
+
     // v403: Break-Even calculator (was in Tools → Calculators). Reports is
     // its proper home — it's a financial planning surface.
     html += '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-top:20px;overflow:hidden;">'
@@ -540,6 +545,91 @@ var ReportsPage = {
       + legend
       + '<h4 style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;margin-top:20px;margin-bottom:0;">By day of week</h4>'
       + dowBars
+      + '</div>';
+  },
+
+  // v793: Distribution of days from quote sent → approved across the last
+  // 12 months. Shows median + p80 as overlay lines so the "going cold"
+  // cutoff is data-driven, not a gut feel.
+  _renderQuoteCloseHistogram: function() {
+    var quotes = DB.quotes.getAll();
+    var nowMs = Date.now();
+    var cutoffMs = nowMs - 365 * 86400000;
+    var pairs = [];
+    quotes.forEach(function(q) {
+      if (q.status !== 'approved' && q.status !== 'converted') return;
+      var sent = q.sentAt || q.createdAt;
+      var approved = q.approvedAt || q.acceptedAt;
+      if (!sent || !approved) return;
+      var sentMs = new Date(sent).getTime();
+      var apprMs = new Date(approved).getTime();
+      if (isNaN(sentMs) || isNaN(apprMs)) return;
+      if (apprMs < sentMs) return; // bad data
+      if (apprMs < cutoffMs) return;
+      var days = Math.floor((apprMs - sentMs) / 86400000);
+      pairs.push({ id: q.id, num: q.quoteNumber, client: q.clientName, days: days, total: q.total });
+    });
+    if (!pairs.length) return '';
+
+    // Bucket: 0d (same day), 1d, 2d, 3d, 4-7d, 8-14d, 15-30d, 30+d
+    var buckets = [
+      { label: '0d',     min: 0,  max: 0,  count: 0, dollars: 0, color: '#15803d' },
+      { label: '1d',     min: 1,  max: 1,  count: 0, dollars: 0, color: '#16a34a' },
+      { label: '2d',     min: 2,  max: 2,  count: 0, dollars: 0, color: '#65a30d' },
+      { label: '3d',     min: 3,  max: 3,  count: 0, dollars: 0, color: '#84cc16' },
+      { label: '4–7d',   min: 4,  max: 7,  count: 0, dollars: 0, color: '#ca8a04' },
+      { label: '8–14d',  min: 8,  max: 14, count: 0, dollars: 0, color: '#d97706' },
+      { label: '15–30d', min: 15, max: 30, count: 0, dollars: 0, color: '#c2410c' },
+      { label: '30+d',   min: 31, max: 9999, count: 0, dollars: 0, color: '#991b1b' }
+    ];
+    pairs.forEach(function(p) {
+      for (var i = 0; i < buckets.length; i++) {
+        if (p.days >= buckets[i].min && p.days <= buckets[i].max) {
+          buckets[i].count++;
+          buckets[i].dollars += (Number(p.total) || 0);
+          break;
+        }
+      }
+    });
+    var maxCount = Math.max.apply(null, buckets.map(function(b){ return b.count; })) || 1;
+
+    // Median + p80
+    var sortedDays = pairs.map(function(p){ return p.days; }).sort(function(a,b){ return a - b; });
+    var median = sortedDays[Math.floor(sortedDays.length / 2)];
+    var p80 = sortedDays[Math.min(sortedDays.length - 1, Math.floor(sortedDays.length * 0.8))];
+    var mean = Math.round(sortedDays.reduce(function(a,b){return a+b;},0) / sortedDays.length);
+
+    var bars = '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:end;height:140px;margin:14px 0 6px;">';
+    buckets.forEach(function(b) {
+      var pct = (b.count / maxCount) * 100;
+      var h = Math.max(b.count > 0 ? 8 : 2, Math.round(pct * 1.2));
+      var tip = b.label + ': ' + b.count + ' quote' + (b.count === 1 ? '' : 's') + ' · ' + UI.moneyInt(b.dollars);
+      bars += '<div title="' + tip + '" style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;">'
+        + (b.count > 0
+            ? '<div style="font-size:11px;font-weight:700;color:' + b.color + ';">' + b.count + '</div>'
+            : '<div style="font-size:11px;color:var(--text-light);">—</div>')
+        + '<div style="width:100%;height:' + h + 'px;background:' + b.color + ';border-radius:3px 3px 0 0;"></div>'
+        + '<div style="font-size:10px;color:var(--text-light);font-weight:600;">' + b.label + '</div>'
+        + '</div>';
+    });
+    bars += '</div>';
+
+    // p80 alert callout
+    var goingColdMsg = '';
+    if (p80 > 0) {
+      goingColdMsg = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:13px;">'
+        + '<strong>Going-cold cutoff: ' + p80 + ' days</strong> — 80% of your closed quotes were approved within ' + p80 + ' days of being sent. '
+        + 'Anything still open past ' + p80 + ' days is statistically a long shot.'
+        + '</div>';
+    }
+
+    return '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<h3 style="margin-bottom:4px;">Quote close-time distribution</h3>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">' + pairs.length + ' approved quote' + (pairs.length === 1 ? '' : 's') + ' in the last 12 months · '
+      +   'median <b style="color:var(--text);">' + median + 'd</b> · mean <b style="color:var(--text);">' + mean + 'd</b> · '
+      +   '80% close by <b style="color:#92400e;">' + p80 + 'd</b></div>'
+      + bars
+      + goingColdMsg
       + '</div>';
   },
 
