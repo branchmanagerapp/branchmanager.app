@@ -393,6 +393,11 @@ var ReportsPage = {
     html += '</tbody></table>'
       + '</div>';
 
+    // v792: Daily profit heat-map — last 90 days as a calendar grid colored
+    // by per-day margin. Surfaces "Tuesdays are unprofitable" / "spring rush
+    // crushed margins" patterns that the P&L totals hide.
+    html += ReportsPage._renderProfitHeatMap();
+
     // v403: Break-Even calculator (was in Tools → Calculators). Reports is
     // its proper home — it's a financial planning surface.
     html += '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-top:20px;overflow:hidden;">'
@@ -405,6 +410,170 @@ var ReportsPage = {
       + '</details>';
 
     return html;
+  },
+
+  // v792: Daily profit heat-map. 90-day grid, color-coded by per-day margin
+  // (red < 0 / orange 0-20 / yellow 20-40 / light-green 40-60 / dark-green >60),
+  // computed via JobCosting.getJobStats when available, falling back to
+  // job.total minus tracked expenses & material costs.
+  _renderProfitHeatMap: function() {
+    var jobs = DB.jobs.getAll().filter(function(j) { return j.status === 'completed'; });
+    if (!jobs.length) return '';
+
+    var nowMs = Date.now();
+    var cutoff = nowMs - 90 * 86400000;
+
+    // Group by completedDate / scheduledDate falling in the last 90 days.
+    var byDay = {}; // yyyy-mm-dd → {revenue, cost, jobs:[id…]}
+    jobs.forEach(function(j) {
+      var when = j.completedDate || j.scheduledDate || j.createdAt;
+      if (!when) return;
+      var t = new Date(when).getTime();
+      if (isNaN(t) || t < cutoff || t > nowMs) return;
+      var dayStr = new Date(when).toISOString().substring(0, 10);
+      var bucket = byDay[dayStr] || { revenue: 0, cost: 0, jobs: [], margin: null };
+      var stats = (typeof JobCosting !== 'undefined' && JobCosting.getJobStats)
+        ? JobCosting.getJobStats(j)
+        : null;
+      var rev = stats ? stats.revenue : (Number(j.total) || 0);
+      var cost = stats ? (stats.laborCost + stats.materialsCost + stats.expenseTotal)
+                       : 0;
+      bucket.revenue += rev;
+      bucket.cost += cost;
+      bucket.jobs.push(j.id);
+      byDay[dayStr] = bucket;
+    });
+
+    var days = Object.keys(byDay);
+    if (!days.length) return '';
+    days.forEach(function(d) {
+      var b = byDay[d];
+      b.profit = b.revenue - b.cost;
+      b.margin = b.revenue > 0 ? Math.round((b.profit / b.revenue) * 100) : null;
+    });
+
+    // Build a 7-col × 14-row grid (98 cells covering ~90 days + edge buffer).
+    // Most-recent day = bottom-right. Use ISO Mon-start so columns = M-Sun.
+    var cells = [];
+    for (var i = 89; i >= 0; i--) {
+      var d = new Date(nowMs - i * 86400000);
+      var ds = d.toISOString().substring(0, 10);
+      cells.push({ date: ds, dayOfWeek: (d.getDay() + 6) % 7, data: byDay[ds] || null });
+    }
+    // Column layout: leading empty cells so the first cell sits in its
+    // correct dayOfWeek row.
+    var leadingBlanks = cells[0].dayOfWeek;
+
+    var colorFor = function(margin) {
+      if (margin == null) return '#f3f4f6'; // no jobs this day
+      if (margin < 0)   return '#dc2626';
+      if (margin < 20)  return '#f59e0b';
+      if (margin < 40)  return '#fbbf24';
+      if (margin < 60)  return '#84cc16';
+      return '#16a34a';
+    };
+
+    var grid = '';
+    grid += '<div style="display:grid;grid-template-columns:repeat(14,1fr);grid-template-rows:repeat(7,18px);gap:3px;direction:ltr;">';
+    // Insert leading blanks
+    for (var lb = 0; lb < leadingBlanks; lb++) {
+      grid += '<div style="background:transparent;"></div>';
+    }
+    cells.forEach(function(c) {
+      var d = c.data;
+      var bg = colorFor(d ? d.margin : null);
+      var label = c.date;
+      if (d) {
+        label += ' — ' + d.jobs.length + ' job' + (d.jobs.length === 1 ? '' : 's')
+          + ' · rev ' + UI.moneyInt(d.revenue)
+          + (d.margin != null ? ' · ' + d.margin + '% margin' : '');
+      } else {
+        label += ' — no jobs';
+      }
+      grid += '<div title="' + label + '"' + (d ? ' onclick="ReportsPage._showHeatMapDay(\'' + c.date + '\')" style="cursor:pointer;' : ' style="') + 'background:' + bg + ';border-radius:3px;width:100%;height:18px;"></div>';
+    });
+    grid += '</div>';
+
+    // Legend
+    var legend = '<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-light);margin-top:10px;flex-wrap:wrap;">'
+      + '<span>Margin:</span>'
+      + '<span><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;vertical-align:middle;"></span> &lt;0%</span>'
+      + '<span><span style="display:inline-block;width:10px;height:10px;background:#f59e0b;border-radius:2px;vertical-align:middle;"></span> 0–20%</span>'
+      + '<span><span style="display:inline-block;width:10px;height:10px;background:#fbbf24;border-radius:2px;vertical-align:middle;"></span> 20–40%</span>'
+      + '<span><span style="display:inline-block;width:10px;height:10px;background:#84cc16;border-radius:2px;vertical-align:middle;"></span> 40–60%</span>'
+      + '<span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;vertical-align:middle;"></span> 60%+</span>'
+      + '<span><span style="display:inline-block;width:10px;height:10px;background:#f3f4f6;border-radius:2px;vertical-align:middle;border:1px solid #d1d5db;"></span> no jobs</span>'
+      + '</div>';
+
+    // Day-of-week trend roll-up (which weekdays earn best on average?)
+    var dowAgg = [0,0,0,0,0,0,0].map(function(){ return { sumMargin: 0, count: 0 }; });
+    days.forEach(function(ds) {
+      var b = byDay[ds];
+      if (b.margin == null) return;
+      var dow = (new Date(ds).getDay() + 6) % 7;
+      dowAgg[dow].sumMargin += b.margin;
+      dowAgg[dow].count++;
+    });
+    var dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var dowBars = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px;">';
+    var dowMaxAbs = 0;
+    dowAgg.forEach(function(a){ if (a.count) { var avg = Math.abs(a.sumMargin / a.count); if (avg > dowMaxAbs) dowMaxAbs = avg; } });
+    if (dowMaxAbs < 10) dowMaxAbs = 10;
+    dowAgg.forEach(function(a, idx) {
+      var avg = a.count ? Math.round(a.sumMargin / a.count) : null;
+      var pct = avg != null ? Math.min(100, Math.abs(avg) / dowMaxAbs * 100) : 0;
+      var color = colorFor(avg);
+      dowBars += '<div style="text-align:center;">'
+        + '<div style="font-size:10px;color:var(--text-light);font-weight:600;">' + dowLabels[idx] + '</div>'
+        + '<div style="height:46px;display:flex;align-items:flex-end;justify-content:center;margin-top:2px;">'
+        +   (avg != null ? '<div style="width:60%;height:' + pct + '%;background:' + color + ';border-radius:2px 2px 0 0;" title="' + avg + '% avg margin · ' + a.count + ' day' + (a.count === 1 ? '' : 's') + '"></div>' : '<div style="font-size:9px;color:var(--text-light);">—</div>')
+        + '</div>'
+        + '<div style="font-size:10px;font-weight:700;color:' + (avg != null ? color : 'var(--text-light)') + ';margin-top:2px;">' + (avg != null ? avg + '%' : '—') + '</div>'
+        + '</div>';
+    });
+    dowBars += '</div>';
+
+    return '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<h3 style="margin-bottom:4px;">Profit heat-map — last 90 days</h3>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Per-day margin by completed-jobs revenue minus tracked labor/materials/expenses. Click a cell to drill into that day.</div>'
+      + grid
+      + legend
+      + '<h4 style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;margin-top:20px;margin-bottom:0;">By day of week</h4>'
+      + dowBars
+      + '</div>';
+  },
+
+  // v792: drill-down from a heat-map cell — list jobs on that date with their
+  // per-job revenue, cost, and margin so the why is visible.
+  _showHeatMapDay: function(dateStr) {
+    var jobs = DB.jobs.getAll().filter(function(j) {
+      if (j.status !== 'completed') return false;
+      var when = (j.completedDate || j.scheduledDate || j.createdAt || '').substring(0, 10);
+      return when === dateStr;
+    });
+    if (!jobs.length) { UI.toast('No completed jobs on ' + dateStr, 'error'); return; }
+    var rows = '';
+    jobs.forEach(function(j) {
+      var stats = (typeof JobCosting !== 'undefined' && JobCosting.getJobStats) ? JobCosting.getJobStats(j) : null;
+      var rev = stats ? stats.revenue : (Number(j.total) || 0);
+      var cost = stats ? (stats.laborCost + stats.materialsCost + stats.expenseTotal) : 0;
+      var profit = rev - cost;
+      var marg = rev > 0 ? Math.round((profit / rev) * 100) : null;
+      var color = marg == null ? 'var(--text-light)' : (marg < 0 ? '#dc2626' : marg < 20 ? '#f59e0b' : marg < 40 ? '#fbbf24' : marg < 60 ? '#84cc16' : '#16a34a');
+      rows += '<tr style="border-top:1px solid var(--border);">'
+        + '<td style="padding:6px 0;"><a onclick="UI.closeModal();JobsPage.showDetail(\'' + j.id + '\')" style="color:var(--accent);cursor:pointer;font-weight:600;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</a></td>'
+        + '<td style="text-align:right;padding:6px 0;">' + UI.moneyInt(rev) + '</td>'
+        + '<td style="text-align:right;padding:6px 0;color:var(--text-light);">' + UI.moneyInt(cost) + '</td>'
+        + '<td style="text-align:right;padding:6px 0;font-weight:700;color:' + color + ';">' + (marg == null ? '—' : marg + '%') + '</td>'
+        + '</tr>';
+    });
+    var body = '<div style="font-size:13px;">'
+      + '<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+      + '<thead><tr><th style="text-align:left;padding-bottom:6px;">Job</th><th style="text-align:right;padding-bottom:6px;">Revenue</th><th style="text-align:right;padding-bottom:6px;">Cost</th><th style="text-align:right;padding-bottom:6px;">Margin</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div>';
+    UI.showModal('📊 ' + UI.dateShort(dateStr), body, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+    });
   },
 
   download: function(type) {
