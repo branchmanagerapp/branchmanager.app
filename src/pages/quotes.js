@@ -843,7 +843,7 @@ var QuotesPage = {
       var photos = [];
       if (photoRow && photoRow.dataset.photos) { try { photos = JSON.parse(photoRow.dataset.photos); } catch(e){} }
       else if (photoRow && photoRow.dataset.photo) { photos = [photoRow.dataset.photo]; }
-      data.lineItems.push({
+      var li = {
         species: (wrap.querySelector('.q-item-species') || {}).value || '',
         location: (wrap.querySelector('.q-item-location') || {}).value || '',
         service: (wrap.querySelector('.q-item-service') || {}).value || '',
@@ -852,7 +852,13 @@ var QuotesPage = {
         rate: (wrap.querySelector('.q-item-rate') || {}).value || '',
         photos: photos,
         photo: photos[0] || ''
-      });
+      };
+      // v780: tag materials so v774-A margin-erosion detector picks them up
+      if (wrap.dataset.kind === 'material') {
+        li.kind = 'material';
+        if (wrap.dataset.materialId) li.materialId = wrap.dataset.materialId;
+      }
+      data.lineItems.push(li);
     });
     try {
       localStorage.setItem(QuotesPage._autoSaveKey, JSON.stringify(data));
@@ -1081,7 +1087,12 @@ var QuotesPage = {
       + '</div>'  // close Photo & AI wrapper
       + '</div>'; // close .q-item-body
 
-    return '<div class="q-item-wrap" data-index="' + index + '" style="margin-bottom:10px;padding:12px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+    // v780: round-trip material tagging — when the row is rendered from a
+    // saved line item flagged as kind='material', preserve the data-kind
+    // attr + materialId on the wrap so the next save keeps the tag.
+    var kindAttr = (item && (item.kind === 'material' || item.type === 'material')) ? ' data-kind="material"' : '';
+    var matIdAttr = (item && item.materialId) ? ' data-material-id="' + UI.esc(String(item.materialId)) + '"' : '';
+    return '<div class="q-item-wrap" data-index="' + index + '"' + kindAttr + matIdAttr + ' style="margin-bottom:10px;padding:12px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
       + summary
       + body
       + '</div>';
@@ -1637,6 +1648,32 @@ var QuotesPage = {
     var descInput = wrap.querySelector('.q-item-desc');
     if (!rateInput || !descInput) return;
 
+    // v780: material catalog match short-circuits service pricing. If the user
+    // typed a name that matches a catalog material exactly, auto-fill rate at
+    // current unitCost, tag the wrap as kind=material (so the save path sets
+    // li.kind = 'material' for v774-A drift detection), and surface the 90d
+    // trend pill where the DBH formula hint usually lives.
+    var mat = QuotesPage._lookupMaterial(svc);
+    if (mat) {
+      rateInput.value = Number(mat.unitCost) || 0;
+      wrap.dataset.kind = 'material';
+      wrap.dataset.materialId = mat.id || '';
+      if (!descInput.value && mat.unit) descInput.value = '/ ' + mat.unit;
+      var hint = wrap.querySelector('.q-item-formula');
+      if (hint && typeof Materials !== 'undefined' && Materials.trendPill) {
+        hint.innerHTML = '📦 ' + UI.esc(mat.name) + ' · ' + UI.money(mat.unitCost) + ' / ' + UI.esc(mat.unit || 'ea') + ' ' + Materials.trendPill(mat.id);
+      }
+      QuotesPage.calcTotal();
+      return;
+    }
+    // Clear material tag if user typed over with a non-material name.
+    if (wrap.dataset.kind === 'material') {
+      delete wrap.dataset.kind;
+      delete wrap.dataset.materialId;
+      var oldHint = wrap.querySelector('.q-item-formula');
+      if (oldHint) oldHint.innerHTML = '';
+    }
+
     var pricing = QuotesPage._servicePricing[svc];
     if (pricing) {
       var measurement = prompt(pricing.prompt);
@@ -1825,7 +1862,13 @@ var QuotesPage = {
         else if (photoRow && photoRow.dataset.photo) { photos = [photoRow.dataset.photo]; }
         var species = (wrap.querySelector('.q-item-species') || {}).value || '';
         var location = (wrap.querySelector('.q-item-location') || {}).value || '';
-        items.push({ species: species, location: location, service: service, description: desc, qty: qty, rate: rate, amount: qty * rate, photos: photos, photo: photos[0] || '' });
+        var liOut = { species: species, location: location, service: service, description: desc, qty: qty, rate: rate, amount: qty * rate, photos: photos, photo: photos[0] || '' };
+        // v780: persist material tagging so v774-A price-drift detector works
+        if (wrap.dataset.kind === 'material') {
+          liOut.kind = 'material';
+          if (wrap.dataset.materialId) liOut.materialId = wrap.dataset.materialId;
+        }
+        items.push(liOut);
         subtotal += qty * rate;
       }
     });
@@ -2617,8 +2660,12 @@ var QuotesPage = {
 
   // Injects a shared <datalist> with all service suggestions. The line-item
   // service input is an <input list="q-svc-datalist"> so users can type or pick.
+  // v780: also folds in the Materials catalog so typing "Mulch" or "Salt"
+  // surfaces a match — _onServiceChange auto-fills rate + flags kind='material'.
   _dataListOnce: function(services) {
-    if (document.getElementById('q-svc-datalist')) return;
+    // Always re-build so material catalog edits show up without a page reload.
+    var existing = document.getElementById('q-svc-datalist');
+    if (existing) existing.remove();
     setTimeout(function() {
       if (document.getElementById('q-svc-datalist')) return;
       var dl = document.createElement('datalist');
@@ -2633,8 +2680,35 @@ var QuotesPage = {
         ['Tree Removal','Tree Pruning','Stump Grinding','Cabling','Clean Up','Arborist Letter','Other']
           .forEach(function(n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
       }
+      // v780: append catalog materials so they autocomplete in the service field.
+      // The native datalist will filter as the user types; picking one fires
+      // _onServiceChange which detects the match via QuotesPage._lookupMaterial().
+      try {
+        if (typeof Materials !== 'undefined' && Materials._getCatalog) {
+          Materials._getCatalog().forEach(function(m) {
+            if (!m || !m.name) return;
+            var opt = document.createElement('option');
+            opt.value = m.name;
+            opt.label = '📦 ' + UI.money(m.unitCost || 0) + ' / ' + (m.unit || 'ea');
+            dl.appendChild(opt);
+          });
+        }
+      } catch(e) { console.debug('[Quotes] materials datalist skip', e); }
       document.body.appendChild(dl);
     }, 0);
+  },
+
+  // v780: case-insensitive lookup of a material in the Materials catalog.
+  // Returns null if Materials isn't loaded or no match found.
+  _lookupMaterial: function(name) {
+    if (!name || typeof Materials === 'undefined' || !Materials._getCatalog) return null;
+    var target = name.trim().toLowerCase();
+    if (!target) return null;
+    var catalog = Materials._getCatalog();
+    for (var i = 0; i < catalog.length; i++) {
+      if ((catalog[i].name || '').trim().toLowerCase() === target) return catalog[i];
+    }
+    return null;
   },
 
   // ── Photo-first flow — focused one-tree-at-a-time with MULTIPLE photos for AI ──
