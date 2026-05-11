@@ -6,6 +6,16 @@ var ReportsPage = {
   render: function() {
     var html = '';
 
+    // v794: Weekly KPI digest — manual-fire button. The edge fn is deployed
+    // but NOT auto-scheduled (per memory rule "never re-enable marketing
+    // cron without explicit Doug OK"). Doug fires it himself until he opts
+    // into a pg_cron schedule. Dedup at the edge fn side prevents accidental
+    // re-sends within 6 days.
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;">'
+      + '<h2 style="margin:0;font-size:20px;font-weight:700;">Reports</h2>'
+      + '<button onclick="ReportsPage._sendWeeklyDigest()" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);" title="Email this week\'s KPI summary to the owner email on file">📨 Email weekly KPI</button>'
+      + '</div>';
+
     // v717: 10X Tools snapshot removed from Reports top per Doug —
     // can be re-added later when actually filling out the numbers.
     // CardoneTools module + standalone page still exist.
@@ -663,6 +673,38 @@ var ReportsPage = {
       + '<tbody>' + rows + '</tbody></table></div>';
     UI.showModal('📊 ' + UI.dateShort(dateStr), body, {
       footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+    });
+  },
+
+  // v794: manual trigger for the weekly KPI digest edge fn. Uses POST
+  // (no dry_run), which sends the email subject to the function's own
+  // per-week dedup. Doug sees toast confirmation + the recipient email.
+  _sendWeeklyDigest: function() {
+    if (!confirm('Send the weekly KPI digest now?\n\nIt goes to the tenant owner email on file. The edge fn skips if a digest was already sent in the last 6 days.')) return;
+    UI.toast('📨 Sending weekly digest…');
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/weekly-kpi-digest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var results = data.results || [];
+      if (!results.length) { UI.toast('No tenants found', 'error'); return; }
+      var sent = results.filter(function(r){ return r.sent; });
+      var skipped = results.filter(function(r){ return r.skipped; });
+      if (sent.length) {
+        UI.toast('✓ Sent to ' + sent.map(function(r){ return r.to; }).join(', '));
+      } else if (skipped.length) {
+        var why = skipped[0].skipped;
+        UI.toast('Skipped: ' + why, why === 'already-sent-this-week' ? 'info' : 'error');
+      } else {
+        var err = results.find(function(r){ return r.error; });
+        UI.toast('Error: ' + (err ? err.error : 'unknown'), 'error');
+      }
+    })
+    .catch(function(e) {
+      UI.toast('Network error: ' + e.message, 'error');
     });
   },
 
