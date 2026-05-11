@@ -472,8 +472,16 @@ var SupabaseDB = {
   // Asks for permission once per session if it's still 'default'.
   _notifyInboundComm: function(c) {
     try {
+      // v747: missed calls deliberately suppressed everywhere per Doug's
+      // standing rule ("missed calls should not come into notifications
+      // or the system at all"). Even though the activity feed already
+      // filters them, the realtime notifier was still firing toast +
+      // browser Notification + beep on every missed call. Drop here too.
+      if (c.channel === 'call' && (c.status === 'missed' || c.status === 'no_answer' || c.status === 'hangup' || c.status === 'no-answer')) {
+        return;
+      }
       var labelMap = {
-        call: (c.status === 'missed' || c.status === 'no_answer') ? '📵 Missed call' : '📞 Inbound call',
+        call: '📞 Inbound call',
         voicemail: '📭 Voicemail',
         sms: '💬 SMS received',
         email: '✉️ Email'
