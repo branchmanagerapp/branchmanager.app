@@ -148,9 +148,139 @@ var Photos = {
     return html;
   },
 
+  // v784: read EXIF GPS from a JPEG/HEIC file. Returns {lat,lng} or null.
+  // Minimal inline parser — reads first 128KB, walks APP1 EXIF block, pulls
+  // GPSLatitude/GPSLongitude IFD entries. Robust enough for iPhone/Android
+  // camera output; gracefully returns null on anything else.
+  _readExifGps: function(file) {
+    return new Promise(function(resolve) {
+      try {
+        var slice = file.slice(0, 128 * 1024);
+        var reader = new FileReader();
+        reader.onerror = function() { resolve(null); };
+        reader.onload = function(e) {
+          try {
+            var dv = new DataView(e.target.result);
+            // JPEG SOI = 0xFFD8
+            if (dv.getUint16(0, false) !== 0xFFD8) return resolve(null);
+            var offset = 2;
+            while (offset < dv.byteLength) {
+              if (dv.getUint8(offset) !== 0xFF) return resolve(null);
+              var marker = dv.getUint8(offset + 1);
+              var size = dv.getUint16(offset + 2, false);
+              if (marker === 0xE1) {
+                // APP1 — check for "Exif\0\0"
+                if (dv.getUint32(offset + 4, false) !== 0x45786966) return resolve(null);
+                var tiff = offset + 10;
+                var little = dv.getUint16(tiff, false) === 0x4949;
+                if (dv.getUint16(tiff + 2, little) !== 0x002A) return resolve(null);
+                var ifd0 = tiff + dv.getUint32(tiff + 4, little);
+                var nEntries = dv.getUint16(ifd0, little);
+                var gpsIfdOffset = null;
+                for (var i = 0; i < nEntries; i++) {
+                  var entry = ifd0 + 2 + i * 12;
+                  var tag = dv.getUint16(entry, little);
+                  if (tag === 0x8825) {
+                    gpsIfdOffset = tiff + dv.getUint32(entry + 8, little);
+                    break;
+                  }
+                }
+                if (!gpsIfdOffset) return resolve(null);
+                var gNEntries = dv.getUint16(gpsIfdOffset, little);
+                var latRef = null, lat = null, lngRef = null, lng = null;
+                var readRational = function(entryOff) {
+                  var typeCount = dv.getUint32(entryOff + 4, little);
+                  var valOff = dv.getUint32(entryOff + 8, little) + tiff;
+                  // 3 RATIONALs = degrees, minutes, seconds
+                  if (typeCount < 3) return null;
+                  var deg = dv.getUint32(valOff, little) / dv.getUint32(valOff + 4, little);
+                  var min = dv.getUint32(valOff + 8, little) / dv.getUint32(valOff + 12, little);
+                  var sec = dv.getUint32(valOff + 16, little) / dv.getUint32(valOff + 20, little);
+                  return deg + min / 60 + sec / 3600;
+                };
+                for (var k = 0; k < gNEntries; k++) {
+                  var ge = gpsIfdOffset + 2 + k * 12;
+                  var gt = dv.getUint16(ge, little);
+                  if (gt === 0x0001) latRef = String.fromCharCode(dv.getUint8(ge + 8));
+                  else if (gt === 0x0002) lat = readRational(ge);
+                  else if (gt === 0x0003) lngRef = String.fromCharCode(dv.getUint8(ge + 8));
+                  else if (gt === 0x0004) lng = readRational(ge);
+                }
+                if (lat == null || lng == null) return resolve(null);
+                if (latRef === 'S') lat = -lat;
+                if (lngRef === 'W') lng = -lng;
+                return resolve({ lat: lat, lng: lng });
+              }
+              offset += 2 + size;
+            }
+            resolve(null);
+          } catch(err) { resolve(null); }
+        };
+        reader.readAsArrayBuffer(slice);
+      } catch(err) { resolve(null); }
+    });
+  },
+
+  // v784: Haversine distance in meters between two {lat,lng} pairs.
+  _haversineMeters: function(a, b) {
+    if (!a || !b) return null;
+    var R = 6371000;
+    var toRad = function(deg) { return deg * Math.PI / 180; };
+    var dLat = toRad(b.lat - a.lat);
+    var dLng = toRad(b.lng - a.lng);
+    var lat1 = toRad(a.lat);
+    var lat2 = toRad(b.lat);
+    var h = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.sin(dLng/2) * Math.sin(dLng/2) * Math.cos(lat1) * Math.cos(lat2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  },
+
+  // v784: returns the property {lat,lng} for a record, or null. Currently
+  // only jobs are checked — could extend to quotes/clients later.
+  _getRecordLatLng: function(recordType, recordId) {
+    if (recordType !== 'job') return null;
+    try {
+      var j = DB.jobs.getById(recordId);
+      if (!j) return null;
+      var lat = Number(j.lat || j.latitude);
+      var lng = Number(j.lng || j.longitude || j.lon);
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
+      return { lat: lat, lng: lng };
+    } catch(e) { return null; }
+  },
+
   upload: async function(event, recordType, recordId) {
     var files = event.target.files;
     if (!files || !files.length) return;
+
+    // v784: pre-flight EXIF/property cross-check. If a job has lat/lng on
+    // file and the file's EXIF GPS is > 250m away, ask before uploading.
+    // Skipped silently for non-job uploads or photos without EXIF GPS.
+    var propLatLng = Photos._getRecordLatLng(recordType, recordId);
+    if (propLatLng && files.length) {
+      var farFiles = [];
+      for (var fi = 0; fi < files.length; fi++) {
+        var exif = await Photos._readExifGps(files[fi]);
+        if (exif) {
+          var dist = Photos._haversineMeters(exif, propLatLng);
+          if (dist != null && dist > 250) {
+            farFiles.push({ name: files[fi].name, dist: Math.round(dist) });
+          }
+        }
+      }
+      if (farFiles.length) {
+        var msg = '⚠ EXIF location mismatch\n\n'
+          + farFiles.length + ' of ' + files.length + ' photo(s) were taken more than 250m from this job\'s property:\n\n'
+          + farFiles.slice(0, 4).map(function(f){ return '  • ' + f.name + ' — ' + (f.dist > 1000 ? (f.dist/1000).toFixed(1) + 'km' : f.dist + 'm') + ' away'; }).join('\n')
+          + (farFiles.length > 4 ? '\n  • ...and ' + (farFiles.length - 4) + ' more' : '')
+          + '\n\nProceed with upload anyway? (Cancel = skip these photos)';
+        if (!confirm(msg)) {
+          UI.toast('Upload cancelled — verify the right job is selected');
+          event.target.value = '';
+          return;
+        }
+      }
+    }
 
     // Get GPS once for the whole batch (in parallel with first file read)
     var gpsPromise = Photos._getGps();
