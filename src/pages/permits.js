@@ -13,8 +13,18 @@ var PermitsPage = {
   _loading: false,
 
   // ── Known jurisdictions — high-confidence, no AI needed ──────────────
-  // Key: lowercase normalized city/town/village name
+  // Westchester + Putnam County coverage. Each entry cites its source so
+  // Doug can re-verify when ordinances change. `confidence` is:
+  //   high   = official .gov page confirmed threshold + fee + contact
+  //   medium = threshold + contact confirmed; fee from generic schedule
+  //   low    = only some fields verified, rest needs phone call to confirm
+  //
+  // Key: lowercase normalized city/town/village name (matched by _extractCity).
+  // For ambiguous names (Ossining village vs town), the village entry is
+  // primary — falls back to AI lookup for the town if ZIP disambiguation
+  // is ever needed.
   _knownJurisdictions: {
+    // ─── WESTCHESTER ─────────────────────────────────────────────────────
     'ossining': {
       jurisdiction: 'Village of Ossining, NY',
       department: 'Building Department',
@@ -26,10 +36,504 @@ var PermitsPage = {
       email: 'permits@villageofossining.org',
       portal_url: 'https://citysquared.com/#/app/OssiningVillageNY/landing',
       portal_name: 'CitySquared Online Portal',
-      notes: 'Submit online only — in-person no longer accepted as of Sept 2023. Upload site sketch showing tree locations + replacement plan. Trimming/pruning that does not kill or remove the tree does not require a permit.',
+      notes: 'Submit online only — in-person no longer accepted as of Sept 2023. Upload site sketch + replacement plan. Pruning that doesn\'t kill/remove the tree is exempt.',
+      sources: ['https://www.villageofossining.org/'],
       confidence: 'high',
       last_verified: 'Apr 2026'
+    },
+    'peekskill': {
+      jurisdiction: 'City of Peekskill, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: '6 inches DBH or greater on private property (any species)',
+      fee: 'Per consolidated fee schedule — call City Clerk to confirm current amount',
+      processing_time: 'Per Building Inspector — call to confirm',
+      phone: '(914) 734-4140',
+      email: null,
+      portal_url: 'https://www.cityofpeekskillny.gov/241/Permits-Forms',
+      portal_name: 'Peekskill Permits Page',
+      notes: 'Code Chapter 530 (Tree Preservation). Application is PDF download from city site — submit to Building Inspector.',
+      sources: ['https://www.cityofpeekskillny.gov/241/Permits-Forms', 'https://ecode360.com/38211587'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'yorktown': {
+      jurisdiction: 'Town of Yorktown, NY',
+      department: 'Engineering & Sewer Department',
+      permit_required: true,
+      size_threshold: 'Regulated activity per Chapter 270 (administrative vs full review depending on scope)',
+      fee: 'See Master Fee Schedule — payable to Town of Yorktown',
+      processing_time: 'Administrative permits faster; full reviews scheduled with board',
+      phone: '(914) 962-5722 x3',
+      email: 'engineering@yorktownny.gov',
+      portal_url: 'https://www.yorktownny.gov/engineeringandsewer/tree-permit-application',
+      portal_name: 'Yorktown Engineering Dept',
+      notes: 'Original signed application + Short or Full EAF + SWPPP-set if applicable + Tree Permit Worksheet (admin) or Tree Inventory Worksheet (non-admin). Submit at Town Hall, 363 Underhill Ave, Yorktown Heights.',
+      sources: ['https://www.yorktownny.gov/engineeringandsewer/tree-permit-application'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'yorktown heights': { _alias: 'yorktown' },
+    'cortlandt': {
+      jurisdiction: 'Town of Cortlandt, NY',
+      department: 'Department of Technical Services — Code Enforcement',
+      permit_required: true,
+      size_threshold: 'Per Town Code Chapter 283 (Trees) — regulated activity',
+      fee: 'Tree permit fee bundled into building permit packet. Standard application fee $50 non-refundable (covers some scopes).',
+      processing_time: 'Director of Technical Services reviews',
+      phone: '(914) 734-1010',
+      email: 'code@townofcortlandt.com',
+      portal_url: 'https://www.townofcortlandtny.gov/cn/webpage.cfm?tpid=2513',
+      portal_name: 'Cortlandt Code Enforcement',
+      notes: 'Town Hall, 1 Heady Street, Cortlandt Manor. Director of Technical Services is the approving authority for regulated tree activities.',
+      sources: ['https://www.townofcortlandtny.gov/cn/webpage.cfm?tpid=2513', 'https://ecode360.com/7695873'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'cortlandt manor': { _alias: 'cortlandt' },
+    'mount kisco': {
+      jurisdiction: 'Town/Village of Mount Kisco, NY',
+      department: 'Engineering Dept (reviewed by Tree Preservation Board)',
+      permit_required: true,
+      size_threshold: '4 inches DBH or greater — Mt Kisco protects all 4″+ trees per the ISA Westchester analysis. Steep slopes have additional Steep Slopes Permit overlay.',
+      fee: '$15 per tree (Tree Removal/Alteration Permit, per ecode360 fee schedule)',
+      processing_time: 'Board meets 2nd Wednesday monthly · apps due by NOON 1st Wednesday',
+      phone: '(914) 241-0500',
+      email: 'webmaster@mountkiscony.gov',
+      portal_url: 'https://www.mountkiscony.gov/departments/engineering_department/tree_removal_alteration_permits.php',
+      portal_name: 'Mount Kisco Engineering Dept',
+      notes: 'Trees MUST be ribbon/tape/paint-marked before app deadline or app is rejected. Tree Preservation Board does site visits. 104 Main Street, Mount Kisco.',
+      sources: ['https://www.mountkiscony.gov/departments/engineering_department/tree_removal_alteration_permits.php', 'https://ecode360.com/11765553', 'https://ecode360.com/10862576'],
+      confidence: 'high',
+      last_verified: 'May 2026'
+    },
+    'mt kisco': { _alias: 'mount kisco' },
+    'irvington': {
+      jurisdiction: 'Village of Irvington, NY',
+      department: 'Village Clerk (Tree Commission reviews)',
+      permit_required: true,
+      size_threshold: '8 inches DBH or more (3 inches in wetlands / steep slopes)',
+      fee: '$10 per tree',
+      processing_time: '~2 weeks for well-documented cases',
+      phone: '(914) 591-7070',
+      email: null,
+      portal_url: 'https://www.irvingtonny.gov/394/FAQs',
+      portal_name: 'Irvington Tree Removal FAQ',
+      notes: 'Certified arborist letter required (except obviously dead or healthy-by-choice). Property survey w/ tree locations. Mark trees clearly. 5+ trees = landscaping restoration plan. Permit sign must display on-site during work; contractor must carry permit. 85 Main Street.',
+      sources: ['https://www.irvingtonny.gov/394/FAQs'],
+      confidence: 'high',
+      last_verified: 'May 2026'
+    },
+    'bedford': {
+      jurisdiction: 'Town of Bedford, NY',
+      department: 'Tree Advisory Board / Building Department',
+      permit_required: true,
+      size_threshold: '18″ DBH or greater (8″ within 150 ft of a scenic road). Properties ≤4 acres: permit only needed when removing >10 trees in a calendar year.',
+      fee: '$50 base + $5 per tree (when removing more than 10 trees)',
+      processing_time: 'Per Tree Advisory Board review',
+      phone: null,
+      email: 'treeadvisory@bedfordny.gov',
+      portal_url: 'https://bedfordny.gov/755',
+      portal_name: 'Bedford Online Permit Portal',
+      notes: 'Printable form at bedfordny.gov/369. Scenic-road overlay reduces threshold to 8″. Smaller properties exempt unless bulk removal.',
+      sources: ['https://bedfordny.gov/384/Understanding-the-Tree-Ordinance'],
+      confidence: 'high',
+      last_verified: 'May 2026'
+    },
+    'bedford hills': { _alias: 'bedford' },
+    'katonah': { _alias: 'bedford' },
+    'pound ridge': {
+      jurisdiction: 'Town of Pound Ridge, NY',
+      department: 'Building Inspector',
+      permit_required: true,
+      size_threshold: 'Per Town Code — comprehensive ordinance covering tree removal on private land. Performance bonds required for restoration on development projects.',
+      fee: 'Contact Building Inspector',
+      processing_time: 'Per Building Inspector review',
+      phone: '(914) 764-5511',
+      email: 'jperry@townofpoundridge.com',
+      portal_url: 'https://www.townofpoundridge.com/building/tree-cutting-permit-application',
+      portal_name: 'Pound Ridge Tree Cutting Permit',
+      notes: 'Building Inspector James H. Perry. Town House contact. Ordinance has strong enforcement w/ performance bonds for development.',
+      sources: ['https://www.townofpoundridge.com/building/tree-cutting-permit-application'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'scarsdale': {
+      jurisdiction: 'Village of Scarsdale, NY',
+      department: 'Village Engineer',
+      permit_required: true,
+      size_threshold: '6″ DBH or greater. Self-exempt: 2 trees per property per 12-month period between 6″ and 24″ DBH may be removed w/ written notification to Village Engineer (no formal permit).',
+      fee: 'Per Village Engineer — not published in search results',
+      processing_time: 'Per Village Engineer review',
+      phone: null,
+      email: null,
+      portal_url: 'https://www.scarsdale.gov/675/Applications-for-Permits',
+      portal_name: 'Scarsdale Permits',
+      notes: 'NEW TREE SERVICE LICENSING LAW EFFECTIVE JAN 1, 2026 — read scarsdale.gov news flash before pulling permits. Violations: $250–$1,000/tree + mandatory replacement. Performance bond on development restoration.',
+      sources: ['https://www.scarsdale.gov/675/Applications-for-Permits', 'https://www.scarsdale.gov/DocumentCenter/View/165/-Tree-Removal-Permit-Application-PDF', 'https://www.scarsdale.gov/m/newsflash/Home/Detail/862'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'lewisboro': {
+      jurisdiction: 'Town of Lewisboro, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: 'Restricted to lots over 5 acres (similar to Bedford). Below 5 acres typically no permit.',
+      fee: 'Contact Building Department',
+      processing_time: 'Per Town review',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Per ISA Westchester analysis: Lewisboro ordinance scopes to large lots (>5 acres). Smaller residential parcels typically exempt for routine removal. Call to confirm before any commercial development project.',
+      sources: ['https://auf.isa-arbor.com/content/22/6/270'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'south salem': { _alias: 'lewisboro' },
+    'cross river': { _alias: 'lewisboro' },
+    'goldens bridge': { _alias: 'lewisboro' },
+    'harrison': {
+      jurisdiction: 'Town/Village of Harrison, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: '4 inches diameter or more (includes dead and storm-damaged trees)',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: 'https://www.harrison-ny.gov/building-department/faq/do-i-need-a-permit-to-remove-a-tree',
+      portal_name: 'Harrison Building Dept',
+      notes: 'Application MUST be accompanied by a property survey marking the trees being removed. Dead/storm-damaged trees still require permit at 4″+.',
+      sources: ['https://www.harrison-ny.gov/building-department/faq/do-i-need-a-permit-to-remove-a-tree'],
+      confidence: 'high',
+      last_verified: 'May 2026'
+    },
+    'greenburgh': {
+      jurisdiction: 'Town of Greenburgh, NY',
+      department: 'Department of Community Development and Conservation',
+      permit_required: true,
+      size_threshold: '6 inches DBH or greater (per ISA Westchester analysis)',
+      fee: 'See application packet (Town Board TB-24-01)',
+      processing_time: 'Per Community Development review',
+      phone: '(914) 989-1536',
+      email: 'treepermit@greenburghny.com',
+      portal_url: 'https://www.greenburghny.com/626/Town-Tree-Ordinance',
+      portal_name: 'Greenburgh Tree Ordinance',
+      notes: '10-or-less-tree application form is shorter; larger removals use full packet.',
+      sources: ['https://www.greenburghny.com/626/Town-Tree-Ordinance', 'https://www.greenburghny.com/DocumentCenter/View/7361/Tree-Removal-Permit-Application---10-or-less-trees-5-18-20', 'https://ecode360.com/6817633'],
+      confidence: 'high',
+      last_verified: 'May 2026'
+    },
+    'tarrytown': {
+      jurisdiction: 'Village of Tarrytown, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: '4 inches DBH or greater (per ISA Westchester analysis — Tarrytown one of strictest)',
+      fee: 'Contact Building Dept',
+      processing_time: 'Per review',
+      phone: '(914) 631-3668',
+      email: null,
+      portal_url: 'https://www.tarrytownny.gov/about-tarrytown/pages/planning-a-project-building-tree-permits',
+      portal_name: 'Tarrytown Building & Tree Permits',
+      notes: 'Strictest threshold in the area (4″ — same tier as Harrison and Mt Kisco).',
+      sources: ['https://www.tarrytownny.gov/about-tarrytown/pages/planning-a-project-building-tree-permits', 'https://auf.isa-arbor.com/content/22/6/270'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'sleepy hollow': {
+      jurisdiction: 'Village of Sleepy Hollow, NY (historically "North Tarrytown")',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: '4 inches DBH or greater (per ISA Westchester — listed as "North Tarrytown" in the paper)',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Same threshold tier as Tarrytown / Harrison / Mt Kisco. Village changed name from North Tarrytown to Sleepy Hollow in 1996.',
+      sources: ['https://auf.isa-arbor.com/content/22/6/270'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'north tarrytown': { _alias: 'sleepy hollow' },
+    'north castle': {
+      jurisdiction: 'Town of North Castle, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: '6 inches DBH or greater (per ISA Westchester analysis)',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Includes Armonk hamlet. Call before any tree work.',
+      sources: ['https://auf.isa-arbor.com/content/22/6/270'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'armonk': { _alias: 'north castle' },
+    'rye brook': {
+      jurisdiction: 'Village of Rye Brook, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: 'Large diameter trees (per ISA Westchester — exact threshold needs phone confirmation)',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Rye Brook protects "large diameter" trees per ISA analysis. Call before commercial work.',
+      sources: ['https://auf.isa-arbor.com/content/22/6/270'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'white plains': {
+      jurisdiction: 'City of White Plains, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: '12 inches diameter or greater AND crown ≥ 15 feet (protected-tree characteristics per Aptera summary)',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Protected tree status depends on both size and species. Confirm before any 12″+ tree work.',
+      sources: ['https://auf.isa-arbor.com/content/22/6/270'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'new rochelle': {
+      jurisdiction: 'City of New Rochelle, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: 'Permit required on lots ≥ 1 acre. On smaller lots, permit only for >3 trees in 12 months on Unimproved Lot, or any specimen tree.',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: 'https://ecode360.com/6737926',
+      portal_name: 'New Rochelle Tree Code',
+      notes: 'Acre-threshold makes routine residential work on small lots typically exempt. Always confirm for unimproved lots and specimen trees.',
+      sources: ['https://ecode360.com/6737926'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'yonkers': {
+      jurisdiction: 'City of Yonkers, NY',
+      department: 'Department of Public Works (Forestry)',
+      permit_required: true,
+      size_threshold: 'City ordinance applies to all trees — permit required for trimming or cutting per city tree ordinance.',
+      fee: 'Contact DPW',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Yonkers ordinance is broad — applies to public-property trees absolutely; private property work should be confirmed in advance.',
+      sources: ['https://www.gotreequotes.com/tree-removals/laws-permits/yonkers-ny/'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'briarcliff manor': {
+      jurisdiction: 'Village of Briarcliff Manor, NY',
+      department: 'Building & Engineering Department',
+      permit_required: true,
+      size_threshold: '10 or more trees with DBH ≥ 7″ in any quarter-acre area within 12 months triggers permit',
+      fee: 'Contact Building Dept',
+      processing_time: 'Per review',
+      phone: '(914) 944-2770',
+      email: null,
+      portal_url: 'https://www.briarcliffmanor.gov/308/Forms-Applications',
+      portal_name: 'Briarcliff Manor Forms',
+      notes: 'Routine 1–9 tree removals at standard sizes typically below threshold. Code Chapter 202 (Trees) is the governing ordinance.',
+      sources: ['https://ecode360.com/7690650', 'https://www.briarcliffmanor.gov/308/Forms-Applications'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'croton-on-hudson': {
+      jurisdiction: 'Village of Croton-on-Hudson, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: 'More than 10 trees with DBH ≥ 4″ on a lot within 12 months triggers permit',
+      fee: 'Contact Building Department',
+      processing_time: 'Per review',
+      phone: '(914) 271-4783',
+      email: null,
+      portal_url: 'https://ecode360.com/9144182',
+      portal_name: 'Croton Tree Preservation Code',
+      notes: 'Threshold is volume-based (10+ trees) not single-tree based. Routine single-tree removals typically exempt.',
+      sources: ['https://ecode360.com/9144182', 'https://ecode360.com/9144160'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'croton on hudson': { _alias: 'croton-on-hudson' },
+    'pleasantville': {
+      jurisdiction: 'Village of Pleasantville, NY',
+      department: 'Building Department',
+      permit_required: null, // unknown — not in ISA paper, no specific ordinance found
+      size_threshold: 'No specific tree ordinance found in research — call to confirm',
+      fee: 'Call to confirm',
+      processing_time: 'Call to confirm',
+      phone: '(914) 769-1926',
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Pleasantville does not appear in the Westchester County ISA tree-ordinance survey. Call Building Dept before any tree work to verify current status.',
+      sources: [],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+
+    // ─── PUTNAM ──────────────────────────────────────────────────────────
+    'putnam valley': {
+      jurisdiction: 'Town of Putnam Valley, NY',
+      department: 'Building Department',
+      permit_required: true,
+      size_threshold: 'Tree-cutting ordinance applies — up to 3 non-specimen trees per 12 months on a single owner\'s property allowed within the regulated zone. Specimen trees always require permit.',
+      fee: 'See 2025 Building Dept fee schedule',
+      processing_time: 'Per review',
+      phone: '(845) 526-2377',
+      email: null,
+      portal_url: 'https://www.putnamvalley.gov/building-department-forms/',
+      portal_name: 'Putnam Valley Building Forms',
+      notes: 'Violations: fines based on diameter + count of trees unlawfully removed, possible building-permit denial, mandatory replacement planting. Don\'t cut without checking.',
+      sources: ['https://ecode360.com/15019072', 'https://www.putnamvalley.gov/documents/Tree_Brochure.pdf'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'philipstown': {
+      jurisdiction: 'Town of Philipstown, NY',
+      department: 'Natural Resources Review Officer / Conservation Board',
+      permit_required: true,
+      size_threshold: 'Timber harvesting ordinance. Exempt: clearing ≤ 40,000 sq ft on single lot (or ≤ 2 contiguous acres across adjacent lots), OR ≤ 10,000 board feet or ≤ 20 cords per 12 months (whichever greater).',
+      fee: 'Per Conservation Board',
+      processing_time: 'Major operations need Conservation Board approval',
+      phone: null,
+      email: null,
+      portal_url: 'https://ecode360.com/6318811',
+      portal_name: 'Philipstown Timber Harvesting Code',
+      notes: 'Routine residential single-tree work on a typical lot falls well within exemptions. Required for commercial timber operations and large clearing.',
+      sources: ['https://ecode360.com/6318811'],
+      confidence: 'medium',
+      last_verified: 'May 2026'
+    },
+    'cold spring': { _alias: 'philipstown' },
+    'garrison': { _alias: 'philipstown' },
+    'nelsonville': {
+      jurisdiction: 'Village of Nelsonville, NY (within Philipstown)',
+      department: 'Village Building / Philipstown Conservation Board',
+      permit_required: true,
+      size_threshold: 'Inherits Philipstown timber-harvesting rules (Nelsonville is within Philipstown Town)',
+      fee: 'See Philipstown',
+      processing_time: 'See Philipstown',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Small village (~600 residents) inside Philipstown — Philipstown Town code applies for tree work.',
+      sources: ['https://ecode360.com/6318811'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'carmel': {
+      jurisdiction: 'Town of Carmel, NY',
+      department: 'Building Department',
+      permit_required: null, // unverified — no specific tree ordinance found
+      size_threshold: 'No specific town-wide tree-removal ordinance found in research. Generally < 5″ DBH on private property exempt. Confirm with Building Dept before commercial work.',
+      fee: 'Call to confirm',
+      processing_time: 'Call to confirm',
+      phone: null,
+      email: null,
+      portal_url: null,
+      portal_name: null,
+      notes: 'Includes Mahopac and Mahopac Falls hamlets. No comprehensive tree code located in public sources — verify before any > 5″ DBH commercial removal.',
+      sources: [],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'mahopac': { _alias: 'carmel' },
+    'mahopac falls': { _alias: 'carmel' },
+    'brewster': {
+      jurisdiction: 'Village of Brewster, NY (within Town of Southeast)',
+      department: 'Village / Town Building Department',
+      permit_required: null,
+      size_threshold: 'No comprehensive tree ordinance located in public sources. Town of Southeast governs for outside-village.',
+      fee: 'Call to confirm',
+      processing_time: 'Call to confirm',
+      phone: null,
+      email: null,
+      portal_url: 'https://www.southeast-ny.gov/172/Building-Permit-Forms',
+      portal_name: 'Southeast Building Forms',
+      notes: 'Brewster village is inside Town of Southeast. Tree work typically falls under building permit packet if part of construction; standalone tree-removal ordinance not located.',
+      sources: ['https://www.southeast-ny.gov/171/Building-Department-Code-Enforcement'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'southeast': {
+      jurisdiction: 'Town of Southeast, NY',
+      department: 'Building Department & Code Enforcement',
+      permit_required: null,
+      size_threshold: 'Building permit required for excavation, construction, demolition, occupancy change, most home improvements. No standalone tree-removal threshold located in public sources.',
+      fee: 'Per Building permit packet',
+      processing_time: 'Per review',
+      phone: null,
+      email: null,
+      portal_url: 'https://www.southeast-ny.gov/171/Building-Department-Code-Enforcement',
+      portal_name: 'Southeast Building Dept',
+      notes: 'Tree work typically only requires permit if tied to a construction project. Standalone routine residential tree removal — call to confirm.',
+      sources: ['https://www.southeast-ny.gov/171/Building-Department-Code-Enforcement'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'kent': {
+      jurisdiction: 'Town of Kent, NY',
+      department: 'Building Department',
+      permit_required: null,
+      size_threshold: 'Building permit required for various activities — no standalone tree-removal ordinance located.',
+      fee: 'Per Building permit packet',
+      processing_time: 'Per review',
+      phone: '(845) 306-5620',
+      email: null,
+      portal_url: 'https://www.townofkentny.gov/building-department',
+      portal_name: 'Kent Building Dept',
+      notes: '25 Sybil\'s Crossing, Kent Lakes, NY 10512. Hours 8am–4pm. No tree-specific code found.',
+      sources: ['https://www.townofkentny.gov/building-department', 'https://www.townofkentny.gov/building-department/pages/when-is-a-permit-required'],
+      confidence: 'low',
+      last_verified: 'May 2026'
+    },
+    'kent lakes': { _alias: 'kent' },
+    'patterson': {
+      jurisdiction: 'Town of Patterson, NY',
+      department: 'Building Department',
+      permit_required: null,
+      size_threshold: 'Town offers General Building Permit, Fill, Wetlands/Watercourse permits — no standalone tree permit form located.',
+      fee: 'Call to confirm',
+      processing_time: 'Call to confirm',
+      phone: null,
+      email: null,
+      portal_url: 'https://www.pattersonny.org/Forms.php',
+      portal_name: 'Patterson Forms',
+      notes: 'Tree work in wetlands/watercourse buffers may fall under the wetlands permit. Call before any tree work in wet areas.',
+      sources: ['https://www.pattersonny.org/Forms.php'],
+      confidence: 'low',
+      last_verified: 'May 2026'
     }
+  },
+
+  // Resolve an alias chain. Returns the final resolved entry or null.
+  _resolveJurisdiction: function(key) {
+    var seen = {};
+    var cur = PermitsPage._knownJurisdictions[key];
+    while (cur && cur._alias && !seen[cur._alias]) {
+      seen[cur._alias] = true;
+      cur = PermitsPage._knownJurisdictions[cur._alias];
+    }
+    return cur || null;
   },
 
   // ── Normalize city name for lookup ────────────────────────────────────
@@ -240,9 +744,11 @@ var PermitsPage = {
     PermitsPage._loading = true;
     loadPage('permits');
 
-    // Check known jurisdictions first (instant)
+    // Check known jurisdictions first (instant). _resolveJurisdiction
+    // follows alias chains so "Bedford Hills" → Bedford, "Mahopac" →
+    // Carmel, etc.
     var city = PermitsPage._extractCity(address);
-    var known = PermitsPage._knownJurisdictions[city];
+    var known = PermitsPage._resolveJurisdiction(city);
     if (known) {
       PermitsPage._loading = false;
       PermitsPage._result = known;
