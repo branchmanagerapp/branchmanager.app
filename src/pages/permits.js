@@ -11,6 +11,9 @@ var PermitsPage = {
   _pendingAddress: '',
   _result: null,       // last lookup result
   _loading: false,
+  _tab: 'research',    // 'research' | 'mypermits'  (v764)
+  _savedPermits: null, // cache of job_permits rows for "My Permits" tab
+  _pendingJobLink: null, // when set, _saveToJob attaches to this jobId
 
   // ── Known jurisdictions — high-confidence, no AI needed ──────────────
   // Westchester + Putnam County coverage. Each entry cites its source so
@@ -617,10 +620,31 @@ var PermitsPage = {
     var html = '<div style="max-width:820px;">';
 
     // Header
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-      + '<h2 style="margin:0;">🏛️ Permit Research</h2>'
-      + '<div style="font-size:12px;color:var(--text-light);">AI-powered tree work permit lookup</div>'
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
+      + '<h2 style="margin:0;">🏛️ Permits</h2>'
+      + '<div style="font-size:12px;color:var(--text-light);">Lookup + per-job tracking</div>'
       + '</div>';
+
+    // v764: tab toggle — Research vs My Permits
+    var tabs = [['research', '🔍 Research'], ['mypermits', '📋 My Permits']];
+    html += '<div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:18px;gap:0;">';
+    tabs.forEach(function(t) {
+      var active = PermitsPage._tab === t[0];
+      html += '<button onclick="PermitsPage._tab=\'' + t[0] + '\';loadPage(\'permits\')" '
+        + 'style="padding:10px 20px;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;'
+        + 'color:' + (active ? 'var(--accent)' : 'var(--text-light)') + ';'
+        + 'border-bottom:2px solid ' + (active ? 'var(--accent)' : 'transparent') + ';margin-bottom:-2px;">'
+        + t[1] + '</button>';
+    });
+    html += '</div>';
+
+    if (PermitsPage._tab === 'mypermits') {
+      html += PermitsPage._renderMyPermits();
+      html += '</div>';
+      return html;
+    }
+
+    // ─── RESEARCH TAB (original UI) ────────────────────────────────
 
     // Search card
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">'
@@ -774,50 +798,279 @@ var PermitsPage = {
     });
   },
 
-  // ── Save permit info as a note on an existing job/quote ───────────────
+  // v764: Save current lookup as a tracked job_permits row. If we're
+  // attached to a specific job (via _pendingJobLink set by Jobs page
+  // permit button), link it directly. Else offer matching jobs in a
+  // picker, or save with no job link for "research now, attach later".
   _saveToJob: function(address) {
     var r = PermitsPage._result;
     if (!r) return;
-
-    var note = '🏛️ Permit Research (' + (new Date().toLocaleDateString()) + ')\n'
-      + 'Address: ' + address + '\n'
-      + 'Jurisdiction: ' + (r.jurisdiction || 'Unknown') + '\n'
-      + 'Permit required: ' + (r.permit_required ? 'YES' : 'NO') + '\n'
-      + (r.size_threshold ? 'Threshold: ' + r.size_threshold + '\n' : '')
-      + (r.fee ? 'Fee: ' + r.fee + '\n' : '')
-      + (r.processing_time ? 'Processing: ' + r.processing_time + '\n' : '')
-      + (r.portal_url ? 'Portal: ' + r.portal_url + '\n' : '')
-      + (r.notes ? 'Notes: ' + r.notes : '');
-
-    // Find open jobs matching address
     var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
-    if (sb) {
-      // Try to find a matching job by property address
-      var addrKey = address.toLowerCase().replace(/[^a-z0-9]/g, '');
-      sb.from('jobs').select('id, title, client_name, property').eq('status', 'scheduled')
-        .then(function(res) {
-          var jobs = (res.data || []).filter(function(j) {
-            return j.property && j.property.toLowerCase().replace(/[^a-z0-9]/g, '').includes(addrKey.substring(0, 8));
-          });
-          if (jobs.length === 1) {
-            // Auto-attach to the one matching job
-            sb.from('jobs').update({ notes: note }).eq('id', jobs[0].id)
-              .then(function() { UI.toast('Saved to job: ' + (jobs[0].title || jobs[0].client_name)); });
-          } else if (jobs.length > 1) {
-            // Let user pick
-            var opts = jobs.map(function(j) { return { label: (j.client_name || '') + ' — ' + (j.title || ''), fn: 'PermitsPage._attachNote("' + j.id + '","' + encodeURIComponent(note) + '")' }; });
-            opts.push({ label: 'Cancel', fn: 'UI.closeModal()' });
-            UI.modal('Attach to which job?', '<p style="color:var(--text-light);font-size:13px;">Multiple open jobs found for this address.</p>', opts);
-          } else {
-            // No job found — copy to clipboard
-            UI.toast('No matching job found — note copied to clipboard');
-            try { navigator.clipboard.writeText(note); } catch(e) {}
-          }
-        });
-    } else {
-      // No Supabase — just copy
-      try { navigator.clipboard.writeText(note); UI.toast('Permit info copied to clipboard'); } catch(e) { UI.toast('Copied to clipboard'); }
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) { UI.toast('Supabase not connected', 'error'); return; }
+
+    function insertRow(jobId, clientId) {
+      var fee = PermitsPage._parseFee(r.fee);
+      var row = {
+        tenant_id: tenantId,
+        job_id: jobId || null,
+        client_id: clientId || null,
+        jurisdiction: r.jurisdiction || null,
+        status: r.permit_required === false ? 'not_required' : 'required',
+        fee_amount: fee,
+        contact_phone: r.phone || null,
+        contact_email: r.email || null,
+        portal_url: r.portal_url || null,
+        notes: [r.size_threshold && ('Threshold: ' + r.size_threshold), r.fee && ('Fee from lookup: ' + r.fee), r.processing_time && ('Processing: ' + r.processing_time), r.notes].filter(Boolean).join('\n')
+      };
+      sb.from('job_permits').insert(row).select('id').single().then(function(ins) {
+        if (ins.error) { UI.toast('Save failed: ' + ins.error.message, 'error'); return; }
+        if (jobId) sb.from('jobs').update({ permit_required: true }).eq('id', jobId).then(function(){});
+        if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+        PermitsPage._savedPermits = null;
+        UI.toast('Saved to My Permits' + (jobId ? ' + linked to job' : ''));
+        PermitsPage._pendingJobLink = null;
+      });
     }
+
+    // If we already know which job (set when arriving from Jobs page),
+    // skip the picker.
+    if (PermitsPage._pendingJobLink) {
+      insertRow(PermitsPage._pendingJobLink, null);
+      return;
+    }
+
+    // Otherwise look for jobs at this address.
+    var addrKey = (address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!addrKey) { insertRow(null, null); return; }
+    sb.from('jobs').select('id,job_number,client_id,client_name,property,status')
+      .neq('status', 'cancelled').neq('status', 'completed')
+      .then(function(res) {
+        var matches = (res.data || []).filter(function(j) {
+          return j.property && j.property.toLowerCase().replace(/[^a-z0-9]/g, '').includes(addrKey.substring(0, Math.min(addrKey.length, 8)));
+        });
+        if (matches.length === 1) {
+          insertRow(matches[0].id, matches[0].client_id);
+          return;
+        }
+        if (matches.length > 1) {
+          var listHtml = matches.map(function(j) {
+            return '<button onclick="PermitsPage._pickJob(\'' + j.id + '\',\'' + (j.client_id || '') + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:6px;"><b>' + UI.esc(j.client_name || '—') + '</b> · #' + UI.esc(j.job_number || '') + ' · ' + UI.esc((j.property || '').slice(0, 60)) + '</button>';
+          }).join('');
+          UI.showModal('Link to which open job?',
+            '<p style="font-size:13px;color:var(--text-light);margin-bottom:10px;">Multiple open jobs match this address. Pick one, or skip to save without a link.</p>'
+            + listHtml
+            + '<button onclick="PermitsPage._pickJob(\'\',\'\')" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-light);">Skip — save with no job link</button>'
+          );
+          return;
+        }
+        // No matches — save without link.
+        insertRow(null, null);
+      });
+  },
+
+  _pickJob: function(jobId, clientId) {
+    UI.closeModal();
+    var r = PermitsPage._result;
+    if (!r) return;
+    PermitsPage._pendingJobLink = jobId || null;
+    PermitsPage._saveToJob(PermitsPage._pendingAddress);
+  },
+
+  // Pull a dollar figure out of a free-form fee string like
+  // "$75 for 1–2 trees" or "$10/tree". Best-effort; returns null if
+  // nothing parseable.
+  _parseFee: function(s) {
+    if (!s) return null;
+    var m = String(s).match(/\$([\d,]+(?:\.\d+)?)/);
+    if (!m) return null;
+    var n = parseFloat(m[1].replace(/,/g, ''));
+    return isNaN(n) ? null : n;
+  },
+
+  // v764: invoked from JobsPage detail to start the permit flow with the
+  // job already linked. Sets _pendingJobLink so _saveToJob skips the picker.
+  startFromJob: function(jobId, address) {
+    PermitsPage._pendingJobLink = jobId;
+    PermitsPage._pendingAddress = address || '';
+    PermitsPage._result = null;
+    PermitsPage._tab = 'research';
+    loadPage('permits');
+    // Auto-run the lookup once we land on the page.
+    setTimeout(function() {
+      if (PermitsPage._pendingAddress) PermitsPage._lookup();
+    }, 80);
+  },
+
+  // ── v764: My Permits — per-job status tracker ─────────────────────────
+  _renderMyPermits: function() {
+    if (PermitsPage._savedPermits === null && !PermitsPage._savedPermitsLoading) {
+      PermitsPage._loadSavedPermits();
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px;text-align:center;color:var(--text-light);">Loading permits…</div>';
+    }
+    var rows = PermitsPage._savedPermits || [];
+    if (!rows.length) {
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px;text-align:center;">'
+        + '<div style="font-size:32px;margin-bottom:8px;">📋</div>'
+        + '<div style="font-weight:700;margin-bottom:6px;">No saved permits yet</div>'
+        + '<div style="font-size:13px;color:var(--text-light);max-width:380px;margin:0 auto;">Use the <b>🔍 Research</b> tab to look up a jurisdiction, then click <b>💾 Save to Job</b> to start tracking the permit through approval and inspection.</div>'
+        + '</div>';
+    }
+    // Group by status
+    var STAGES = [
+      ['required',     '⏳ Required',       '#d97706'],
+      ['applied',      '📤 Applied',        '#1d4ed8'],
+      ['submitted',    '📤 Submitted',      '#1d4ed8'],
+      ['paid',         '💳 Paid · awaiting','#7c3aed'],
+      ['approved',     '✅ Approved',       '#16a34a'],
+      ['inspected',    '🔍 Inspected',      '#0d9488'],
+      ['closed',       '🏁 Closed',         '#525252'],
+      ['not_required', '⚪️ Not required',   '#737373'],
+      ['denied',       '❌ Denied',         '#dc2626']
+    ];
+    var byStatus = {};
+    rows.forEach(function(r) {
+      var s = r.status || 'required';
+      (byStatus[s] = byStatus[s] || []).push(r);
+    });
+    var html = '';
+    STAGES.forEach(function(stage) {
+      var bucket = byStatus[stage[0]];
+      if (!bucket || !bucket.length) return;
+      html += '<div style="margin-bottom:14px;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+        + '<div style="padding:10px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:' + stage[2] + ';background:' + stage[2] + '15;border-bottom:1px solid var(--border);">'
+        + stage[1] + ' · ' + bucket.length + '</div>';
+      bucket.forEach(function(p) {
+        var expSoon = p.expires_at && new Date(p.expires_at) < new Date(Date.now() + 30 * 86400000);
+        html += '<div onclick="PermitsPage._openPermit(\'' + p.id + '\')" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+          + '<div style="min-width:0;">'
+          +   '<div style="font-weight:700;font-size:14px;">' + UI.esc(p.jurisdiction || 'Unknown jurisdiction') + (p.permit_number ? ' · <span style="font-family:monospace;font-size:12px;color:var(--text-light);">' + UI.esc(p.permit_number) + '</span>' : '') + '</div>'
+          +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">'
+          +     (p.job_id ? '🔧 linked to job' : '<i>no job link</i>')
+          +     (p.fee_amount ? ' · $' + Number(p.fee_amount).toFixed(2) : '')
+          +     (p.applied_at ? ' · applied ' + UI.dateShort(p.applied_at) : '')
+          +     (p.expires_at ? ' · ' + (expSoon ? '<b style="color:#dc2626;">expires ' + UI.dateShort(p.expires_at) + '</b>' : 'expires ' + UI.dateShort(p.expires_at)) : '')
+          +   '</div>'
+          + '</div>'
+          + '<div style="display:flex;gap:4px;flex-shrink:0;" onclick="event.stopPropagation()">'
+          +   PermitsPage._statusButtons(p)
+          + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  },
+
+  _statusButtons: function(p) {
+    // Surface the most-likely-next-state as a quick action.
+    var next = {
+      required: ['applied', '📤 Mark applied'],
+      applied: ['paid', '💳 Mark paid'],
+      submitted: ['paid', '💳 Mark paid'],
+      paid: ['approved', '✅ Mark approved'],
+      approved: ['inspected', '🔍 Mark inspected'],
+      inspected: ['closed', '🏁 Close']
+    }[p.status || 'required'];
+    if (!next) return '';
+    return '<button onclick="PermitsPage._advanceStatus(\'' + p.id + '\',\'' + next[0] + '\')" '
+      + 'style="font-size:11px;padding:4px 9px;background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;">'
+      + next[1] + '</button>';
+  },
+
+  _loadSavedPermits: function() {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { PermitsPage._savedPermits = []; return; }
+    PermitsPage._savedPermitsLoading = true;
+    sb.from('job_permits').select('*').order('created_at', { ascending: false }).then(function(r) {
+      PermitsPage._savedPermitsLoading = false;
+      if (r.error) {
+        // Table doesn't exist yet (migration not applied) — fail soft
+        console.warn('[Permits] job_permits load:', r.error.message);
+        PermitsPage._savedPermits = [];
+      } else {
+        PermitsPage._savedPermits = r.data || [];
+      }
+      if (window._currentPage === 'permits') loadPage('permits');
+    });
+  },
+
+  _advanceStatus: function(id, next) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var patch = { status: next, updated_at: new Date().toISOString() };
+    if (next === 'applied') patch.applied_at = new Date().toISOString();
+    if (next === 'paid') patch.fee_paid_at = new Date().toISOString();
+    if (next === 'approved') patch.approved_at = new Date().toISOString();
+    if (next === 'inspected') patch.inspection_at = new Date().toISOString();
+    sb.from('job_permits').update(patch).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Update failed: ' + r.error.message, 'error'); return; }
+      UI.toast('→ ' + next);
+      PermitsPage._savedPermits = null; // bust cache
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+      loadPage('permits');
+    });
+  },
+
+  _openPermit: function(id) {
+    var p = (PermitsPage._savedPermits || []).find(function(x) { return x.id === id; });
+    if (!p) return;
+    var expSoon = p.expires_at && new Date(p.expires_at) < new Date(Date.now() + 30 * 86400000);
+    var html = '<div style="font-size:13px;line-height:1.7;">'
+      +   '<div><b>Jurisdiction:</b> ' + UI.esc(p.jurisdiction || '—') + '</div>'
+      +   '<div><b>Status:</b> ' + UI.esc(p.status || '—') + '</div>'
+      +   (p.permit_number ? '<div><b>Permit #:</b> <code>' + UI.esc(p.permit_number) + '</code></div>' : '')
+      +   (p.job_id ? '<div><b>Job:</b> linked</div>' : '<div style="color:var(--text-light);"><b>Job:</b> not linked</div>')
+      +   (p.fee_amount ? '<div><b>Fee:</b> $' + Number(p.fee_amount).toFixed(2) + (p.fee_paid_at ? ' (paid ' + UI.dateShort(p.fee_paid_at) + ')' : '') + '</div>' : '')
+      +   (p.applied_at ? '<div><b>Applied:</b> ' + UI.dateShort(p.applied_at) + '</div>' : '')
+      +   (p.approved_at ? '<div><b>Approved:</b> ' + UI.dateShort(p.approved_at) + '</div>' : '')
+      +   (p.expires_at ? '<div><b>Expires:</b> ' + (expSoon ? '<span style="color:#dc2626;font-weight:700;">' + UI.dateShort(p.expires_at) + ' (soon)</span>' : UI.dateShort(p.expires_at)) + '</div>' : '')
+      +   (p.contact_phone ? '<div><b>Phone:</b> <a href="tel:' + p.contact_phone.replace(/\D/g,'') + '">' + UI.esc(p.contact_phone) + '</a></div>' : '')
+      +   (p.contact_email ? '<div><b>Email:</b> <a href="mailto:' + UI.esc(p.contact_email) + '">' + UI.esc(p.contact_email) + '</a></div>' : '')
+      +   (p.portal_url ? '<div><b>Portal:</b> <a href="' + UI.esc(p.portal_url) + '" target="_blank" rel="noopener noreferrer">' + UI.esc(p.portal_url) + '</a></div>' : '')
+      +   (p.notes ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><b>Notes:</b><br>' + UI.esc(p.notes) + '</div>' : '')
+      + '</div>';
+    var footer = '<button class="btn btn-outline" style="color:#c62828;margin-right:auto;" onclick="PermitsPage._deletePermit(\'' + id + '\')">Delete</button>'
+      + '<button class="btn btn-outline" onclick="PermitsPage._editPermitNotes(\'' + id + '\')">Edit notes / #</button>'
+      + '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>';
+    UI.showModal('Permit detail', html, { footer: footer });
+  },
+
+  _editPermitNotes: function(id) {
+    var p = (PermitsPage._savedPermits || []).find(function(x) { return x.id === id; });
+    if (!p) return;
+    var num = prompt('Permit number (assigned by jurisdiction)', p.permit_number || '');
+    if (num === null) return;
+    var fee = prompt('Fee amount in dollars (e.g. 75 or 75.00) — leave blank to skip', p.fee_amount != null ? String(p.fee_amount) : '');
+    if (fee === null) return;
+    var notes = prompt('Notes', p.notes || '');
+    if (notes === null) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var patch = { permit_number: num.trim() || null, notes: notes.trim() || null, updated_at: new Date().toISOString() };
+    var feeN = parseFloat(fee);
+    if (!isNaN(feeN) && feeN >= 0) patch.fee_amount = feeN;
+    sb.from('job_permits').update(patch).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Update failed: ' + r.error.message, 'error'); return; }
+      UI.closeModal();
+      UI.toast('Updated');
+      PermitsPage._savedPermits = null;
+      loadPage('permits');
+    });
+  },
+
+  _deletePermit: function(id) {
+    if (!confirm('Delete this permit record? (Job stays — only this permit row is removed.)')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('job_permits').delete().eq('id', id).then(function(r) {
+      UI.closeModal();
+      if (r.error) { UI.toast('Delete failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Permit deleted');
+      PermitsPage._savedPermits = null;
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+      loadPage('permits');
+    });
   },
 
   _attachNote: function(jobId, encodedNote) {

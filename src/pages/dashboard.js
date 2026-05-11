@@ -78,6 +78,15 @@ var DashboardPage = {
       }
     } catch(e) { /* swallow — never block dashboard render */ }
 
+    // v764: Expiring docs alert — insurance / vehicle / permit docs
+    // within 30 days of expiry land here. Same color-escalation pattern
+    // as the sales tax counter.
+    try {
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.renderBanner) {
+        html += ExpiringDocsAlert.renderBanner();
+      }
+    } catch(e) {}
+
     // === GREETING (show first on mobile) ===
     var now = new Date();
     var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

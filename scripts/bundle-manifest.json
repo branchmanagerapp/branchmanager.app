@@ -44,6 +44,7 @@
     "src/email.js",
     "src/pages/reports.js",
     "src/pages/reportscatalog.js",
+    "src/pages/expiringdocs.js",
     "src/pages/reviewtools.js",
     "src/pages/weeklysummary.js",
     "src/pages/backup.js",

@@ -905,6 +905,7 @@ var JobsPage = {
       })()
       + (j.crew && j.crew.length > 0 ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._textCrew(\'' + id + '\')">📲 Text Crew</button>' : '')
       + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._etaToClient(\'' + id + '\')" title="Send ETA SMS to client">⏱ ETA to Client</button>' : '')
+      + (j.property ? '<button class="btn btn-outline" style="font-size:12px;" onclick="PermitsPage.startFromJob(\'' + id + '\', decodeURIComponent(\'' + encodeURIComponent(j.property) + '\'))" title="Look up permit + link to this job">🏛 Pull Permit</button>' : '')
       + (j.status === 'completed' ? '<button class="btn btn-outline" style="font-size:12px;color:#f9a825;border-color:#f9a825;" onclick="JobsPage._requestReview(\'' + id + '\')">⭐ Request Review</button>' : '')
       + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._markComplete(\'' + id + '\')">✓ Mark Complete</button>' : '')
       + (j.status === 'completed' && !j.invoiceId ? '<button class="btn btn-primary" style="font-size:12px;" onclick="(function(){var inv=Workflow.jobToInvoice(\'' + id + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})()">💰 Create Invoice</button>' : '')

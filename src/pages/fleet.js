@@ -223,6 +223,7 @@ var FleetPage = {
       + (v.tracker_provider ? '<div><b>Tracker:</b> ' + UI.esc(v.tracker_provider) + (v.tracker_device_id ? ' <code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:11px;">' + UI.esc(v.tracker_device_id) + '</code>' : '') + '</div>' : '<div style="color:var(--text-light);"><b>Tracker:</b> not configured</div>')
       + '<div><b>Default driver:</b> ' + (v.default_driver_name ? UI.esc(v.default_driver_name) : '<span style="color:var(--text-light);">unassigned</span>') + ' <a href="#" onclick="event.preventDefault();FleetPage.editDefaultDriver(\'' + id + '\')" style="font-size:11px;color:var(--accent);margin-left:6px;">edit</a></div>'
       + '</div>'
+      + '<div id="fleet-docs" style="margin-top:14px;"><div style="color:var(--text-light);font-size:12px;">Loading docs…</div></div>'
       + '<div id="fleet-detail-extra" style="margin-top:12px;"><div style="color:var(--text-light);font-size:12px;">Loading history…</div></div>';
 
     var assignBtn = !v.tracker_device_id
@@ -233,8 +234,11 @@ var FleetPage = {
       + '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>';
     UI.showModal(v.name + (v.nickname ? ' — ' + v.nickname : ''), baseHtml, { footer: footer });
 
-    // Async: load position history + open maintenance alerts
+    // Async: load position history + open maintenance alerts + docs
     if (!sb) return;
+    // v764: vehicle_documents — best-effort fetch (table may not exist
+    // yet if the migration hasn't been applied).
+    FleetPage._loadVehicleDocs(id);
     try {
       var [posRes, maintRes] = await Promise.all([
         sb.from('vehicle_positions').select('ts,lat,lon,speed_mph,ignition').eq('vehicle_id', id).order('ts', { ascending: false }).limit(12),
@@ -403,6 +407,147 @@ var FleetPage = {
       } else {
         pill.innerHTML = 'Bouncie: <span style="color:#a16207;">Not connected — click 🔗 above</span>';
       }
+    });
+  },
+
+  // v764: vehicle documents (reg / inspection / insurance card / lease).
+  // Each row points at a file in Supabase Storage (job-photos bucket,
+  // vehicle-docs/<vehicle_id>/ prefix). Expiry rolls into the dashboard
+  // ExpiringDocsAlert banner.
+  _vehicleDocKindLabel: function(k) {
+    var map = { registration: 'Registration', inspection: 'NY inspection', insurance_card: 'Insurance ID card', lease: 'Lease', other: 'Other' };
+    return map[k] || k;
+  },
+  _loadVehicleDocs: function(vehicleId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var el = document.getElementById('fleet-docs');
+    if (!sb || !el) return;
+    sb.from('vehicle_documents').select('*').eq('vehicle_id', vehicleId).order('expires_date', { ascending: true, nullsFirst: false }).then(function(r) {
+      if (r.error) {
+        // Table doesn't exist yet (migration not applied) — silent fail
+        if (el) el.innerHTML = '';
+        console.warn('[Fleet] vehicle_documents load:', r.error.message);
+        return;
+      }
+      FleetPage._renderVehicleDocs(vehicleId, r.data || []);
+    });
+  },
+  _renderVehicleDocs: function(vehicleId, docs) {
+    var el = document.getElementById('fleet-docs');
+    if (!el) return;
+    var now = Date.now();
+    var html = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);">📄 Documents · ' + docs.length + '</div>'
+      +   '<button onclick="FleetPage._addVehicleDoc(\'' + vehicleId + '\')" style="font-size:11px;padding:4px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600;">+ Add</button>'
+      + '</div>';
+    if (!docs.length) {
+      html += '<div style="font-size:12px;color:var(--text-light);">No documents on file. Add Registration, NY Inspection, Insurance ID card, etc.</div>';
+    } else {
+      docs.forEach(function(d) {
+        var daysLeft = d.expires_date ? Math.ceil((new Date(d.expires_date).getTime() - now) / 86400000) : null;
+        var color = daysLeft === null ? 'var(--text-light)' : daysLeft < 0 ? '#c62828' : daysLeft < 30 ? '#e65100' : '#2e7d32';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">'
+          + '<div style="min-width:0;">'
+          +   '<b>' + UI.esc(FleetPage._vehicleDocKindLabel(d.kind)) + '</b>'
+          +   (d.issuer ? ' · ' + UI.esc(d.issuer) : '')
+          +   (d.document_number ? ' · <code style="font-size:11px;">' + UI.esc(d.document_number) + '</code>' : '')
+          +   (d.expires_date ? ' · <span style="color:' + color + ';">expires ' + d.expires_date + (daysLeft !== null ? ' (' + (daysLeft < 0 ? Math.abs(daysLeft) + 'd overdue' : daysLeft + 'd') + ')' : '') + '</span>' : '')
+          + '</div>'
+          + '<div style="display:flex;gap:4px;">'
+          +   (d.file_url ? '<a href="' + UI.esc(d.file_url) + '" target="_blank" rel="noopener noreferrer" style="font-size:11px;padding:3px 8px;background:var(--white);border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text);">View</a>' : '')
+          +   '<button onclick="FleetPage._editVehicleDoc(\'' + d.id + '\',\'' + vehicleId + '\')" style="font-size:11px;padding:3px 8px;background:var(--white);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Edit</button>'
+          +   '<button onclick="FleetPage._deleteVehicleDoc(\'' + d.id + '\',\'' + vehicleId + '\')" style="font-size:11px;padding:3px 7px;background:var(--white);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:#c62828;">✕</button>'
+          + '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  },
+
+  _addVehicleDoc: function(vehicleId) {
+    FleetPage._openVehicleDocForm(null, vehicleId, {});
+  },
+  _editVehicleDoc: function(docId, vehicleId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('vehicle_documents').select('*').eq('id', docId).maybeSingle().then(function(r) {
+      if (r.error || !r.data) return;
+      FleetPage._openVehicleDocForm(docId, vehicleId, r.data);
+    });
+  },
+  _openVehicleDocForm: function(docId, vehicleId, d) {
+    var kinds = [['registration','Registration'],['inspection','NY Inspection'],['insurance_card','Insurance ID card'],['lease','Lease'],['other','Other']];
+    var kindOpts = kinds.map(function(k) {
+      var sel = (d.kind === k[0]) ? ' selected' : '';
+      return '<option value="' + k[0] + '"' + sel + '>' + k[1] + '</option>';
+    }).join('');
+    var body = '<div style="display:flex;flex-direction:column;gap:10px;">'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">DOC TYPE</div>'
+      +   '<select id="vd-kind" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">' + kindOpts + '</select></label>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">ISSUER</div>'
+      +     '<input id="vd-issuer" value="' + UI.esc(d.issuer || '') + '" placeholder="e.g. NY DMV / Travelers" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">DOC #</div>'
+      +     '<input id="vd-docnum" value="' + UI.esc(d.document_number || '') + '" placeholder="Reg / Policy #" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;font-family:monospace;"></label>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">ISSUED</div>'
+      +     '<input id="vd-issued" type="date" value="' + UI.esc(d.issued_date || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">EXPIRES</div>'
+      +     '<input id="vd-expires" type="date" value="' + UI.esc(d.expires_date || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
+      + '</div>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">FILE URL <span style="font-weight:400;">(optional — paste from Storage)</span></div>'
+      +   '<input id="vd-fileurl" type="url" value="' + UI.esc(d.file_url || '') + '" placeholder="https://…/registration.pdf" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;font-family:monospace;"></label>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">NOTES</div>'
+      +   '<textarea id="vd-notes" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;font-family:inherit;">' + UI.esc(d.notes || '') + '</textarea></label>'
+      + '</div>';
+    var footer = (docId ? '<button class="btn btn-outline" style="color:#c62828;margin-right:auto;" onclick="FleetPage._deleteVehicleDoc(\'' + docId + '\',\'' + vehicleId + '\')">Delete</button>' : '')
+      + '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+      + '<button class="btn btn-primary" onclick="FleetPage._saveVehicleDoc(\'' + (docId || '') + '\',\'' + vehicleId + '\')">Save</button>';
+    UI.showModal(docId ? 'Edit document' : 'Add document', body, { footer: footer });
+  },
+  _saveVehicleDoc: function(docId, vehicleId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) { UI.toast('Supabase not connected', 'error'); return; }
+    var row = {
+      kind: (document.getElementById('vd-kind') || {}).value || 'other',
+      issuer: ((document.getElementById('vd-issuer') || {}).value || '').trim() || null,
+      document_number: ((document.getElementById('vd-docnum') || {}).value || '').trim() || null,
+      issued_date: ((document.getElementById('vd-issued') || {}).value || '').trim() || null,
+      expires_date: ((document.getElementById('vd-expires') || {}).value || '').trim() || null,
+      file_url: ((document.getElementById('vd-fileurl') || {}).value || '').trim() || null,
+      notes: ((document.getElementById('vd-notes') || {}).value || '').trim() || null,
+      updated_at: new Date().toISOString()
+    };
+    var p;
+    if (docId) {
+      p = sb.from('vehicle_documents').update(row).eq('id', docId);
+    } else {
+      row.tenant_id = tenantId;
+      row.vehicle_id = vehicleId;
+      p = sb.from('vehicle_documents').insert(row);
+    }
+    p.then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      UI.closeModal();
+      UI.toast('Saved');
+      FleetPage._loadVehicleDocs(vehicleId);
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+    });
+  },
+  _deleteVehicleDoc: function(docId, vehicleId) {
+    if (!confirm('Delete this document?')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('vehicle_documents').delete().eq('id', docId).then(function(r) {
+      UI.closeModal();
+      if (r.error) { UI.toast('Delete failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Deleted');
+      FleetPage._loadVehicleDocs(vehicleId);
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
     });
   },
 

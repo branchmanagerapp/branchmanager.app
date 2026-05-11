@@ -371,7 +371,18 @@ var InsurancePage = {
     var policyTypes = ['General Liability', 'Workers Compensation', 'Commercial Auto', 'Umbrella / Excess', 'Inland Marine / Equipment', 'Other'];
     var now = Date.now();
 
-    var html = '<div style="margin-bottom:14px;display:flex;justify-content:flex-end;">'
+    // v764: nudge toward the cloud-synced Compliance tab. The legacy
+    // bm-ins-policies localStorage list is single-device; compliance_documents
+    // is multi-device + has the expiring-soon banner feeding the dashboard.
+    var html = '';
+    if (policies.length) {
+      html += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:#1e40af;">'
+        + '<div style="flex:1;min-width:240px;"><b>Heads up:</b> Policies on this tab are stored locally on this device. The <b>Compliance</b> tab syncs across devices + feeds the dashboard "expiring soon" alert. Migrate any policies below to keep everything in one place.</div>'
+        + '<button onclick="InsurancePage._migratePoliciesToCloud()" style="font-size:12px;padding:6px 12px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">↑ Migrate to cloud</button>'
+        + '</div>';
+    }
+
+    html += '<div style="margin-bottom:14px;display:flex;justify-content:flex-end;">'
       + '<button onclick="InsurancePage._showPolicyForm(null)" style="background:var(--green-dark);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">+ Add Policy</button>'
       + '</div>';
 
@@ -539,6 +550,11 @@ var InsurancePage = {
 
     // Send email to agent if configured
     if (agent.email) {
+      // v764: COI auto-fill — expand "Policies to include" into a full
+      // detailed list with carrier + policy # + limit + expiry pulled
+      // from both localStorage bm-ins-policies AND cloud compliance_documents.
+      // Agent doesn't have to look anything up — body has everything.
+      var detailedPolicies = InsurancePage._buildPolicyListForCOI();
       var subject = 'COI Request — ' + holderName + (description ? ' / ' + description : '');
       var bodyLines = [
         'Hi ' + (agent.name || 'there') + ',',
@@ -550,13 +566,15 @@ var InsurancePage = {
         description ? 'Project / Work Description: ' + description : '',
         neededBy ? 'Needed By: ' + neededBy : '',
         '',
-        'Policies to include: ' + policyList,
+        '── Policies to include ──',
+        detailedPolicies || ('  ' + policyList),
+        '',
         addlInsured ? '→ Please list the certificate holder as ADDITIONAL INSURED.' : '',
         waiver ? '→ Please include a Waiver of Subrogation in favor of the holder.' : '',
         '',
         'Thank you,',
         CompanyInfo.get('name'),
-        '(914) 391-5233'
+        CompanyInfo.get('phone')
       ].filter(function(l) { return l !== ''; }).join('\n');
 
       window.location.href = 'mailto:' + encodeURIComponent(agent.email)
@@ -596,11 +614,113 @@ var InsurancePage = {
     if (!cert) return;
     var agent = InsurancePage._getAgent();
     if (!agent.email) { UI.toast('No agent email saved', 'error'); return; }
-    var policies = InsurancePage._getPolicies();
-    var policyList = policies.length ? policies.map(function(p) { return p.type; }).join(', ') : 'General Liability, Workers Compensation, Commercial Auto';
+    var detailedPolicies = InsurancePage._buildPolicyListForCOI();
     var subject = 'COI Request (Follow-up) — ' + (cert.holderName || cert.clientName);
-    var body = 'Hi ' + (agent.name || 'there') + ',\n\nFollowing up on my COI request for:\n\nCertificate Holder: ' + (cert.holderName || '') + '\n' + (cert.holderAddr ? 'Address: ' + cert.holderAddr + '\n' : '') + (cert.description ? 'Project: ' + cert.description + '\n' : '') + '\nPolicies: ' + policyList + '\n' + (cert.additionalInsured ? '\n→ Additional Insured required\n' : '') + (cert.waiverSubrogation ? '\n→ Waiver of Subrogation required\n' : '') + '\nThank you,\n' + CompanyInfo.get('name');
-    window.location.href = 'mailto:' + encodeURIComponent(agent.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    var bodyLines = [
+      'Hi ' + (agent.name || 'there') + ',',
+      '',
+      'Following up on my COI request for:',
+      '',
+      'Certificate Holder: ' + (cert.holderName || ''),
+      cert.holderAddr ? 'Address: ' + cert.holderAddr : '',
+      cert.description ? 'Project: ' + cert.description : '',
+      '',
+      '── Policies to include ──',
+      detailedPolicies || 'General Liability, Workers Compensation, Commercial Auto',
+      '',
+      cert.additionalInsured ? '→ Additional Insured required' : '',
+      cert.waiverSubrogation ? '→ Waiver of Subrogation required' : '',
+      '',
+      'Thank you,',
+      CompanyInfo.get('name'),
+      CompanyInfo.get('phone')
+    ].filter(function(l) { return l !== ''; }).join('\n');
+    window.location.href = 'mailto:' + encodeURIComponent(agent.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyLines);
+  },
+
+  // v764: produce the policy block used in COI agent emails — merges
+  // localStorage policies AND cloud compliance_documents into one
+  // human-readable list with carrier · policy # · limit · expiry.
+  _buildPolicyListForCOI: function() {
+    var lines = [];
+    var seenKey = {};
+    // 1. localStorage policies (legacy)
+    InsurancePage._getPolicies().forEach(function(p) {
+      var line = '  • ' + (p.type || 'Policy');
+      if (p.carrier) line += ' — ' + p.carrier;
+      if (p.policyNum) line += ' (Policy #' + p.policyNum + ')';
+      if (p.limit) line += ' — limit ' + p.limit;
+      if (p.expiry) line += ' — expires ' + p.expiry;
+      var key = (p.carrier || '') + '|' + (p.policyNum || '');
+      if (key !== '|' && seenKey[key]) return; // dedupe vs cloud
+      if (key !== '|') seenKey[key] = true;
+      lines.push(line);
+    });
+    // 2. Cloud compliance docs (preferred)
+    var INSURANCE_KINDS = ['general_liability','auto_liability','umbrella','wc_policy','db_policy','pfl_policy'];
+    (InsurancePage._compliance || []).forEach(function(d) {
+      if (!d || !d.kind || INSURANCE_KINDS.indexOf(d.kind) === -1) return;
+      if (!d.active) return;
+      var key = (d.carrier || '') + '|' + (d.policy_number || '');
+      if (key !== '|' && seenKey[key]) return;
+      if (key !== '|') seenKey[key] = true;
+      var line = '  • ' + InsurancePage._kindLabel(d.kind);
+      if (d.carrier) line += ' — ' + d.carrier;
+      if (d.policy_number) line += ' (Policy #' + d.policy_number + ')';
+      if (d.coverage_limit) line += ' — limit ' + d.coverage_limit;
+      if (d.expires_date) line += ' — expires ' + d.expires_date;
+      lines.push(line);
+    });
+    return lines.join('\n');
+  },
+
+  // v764: Push localStorage bm-ins-policies up to cloud compliance_documents.
+  // Maps policy type → compliance kind, copies carrier/policyNum/limit/expiry/notes.
+  // Per Doug rules: never auto-fabricate kind for an unrecognized policy type;
+  // skip those and report so user can re-classify.
+  _migratePoliciesToCloud: function() {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) { UI.toast('Supabase not connected', 'error'); return; }
+    var policies = InsurancePage._getPolicies();
+    if (!policies.length) { UI.toast('No local policies to migrate'); return; }
+    var KIND_MAP = {
+      'general liability': 'general_liability',
+      'workers compensation': 'wc_policy',
+      'commercial auto': 'auto_liability',
+      'umbrella / excess': 'umbrella',
+      'umbrella': 'umbrella',
+      'inland marine / equipment': 'general_liability',
+      'inland marine': 'general_liability'
+    };
+    var rows = [];
+    var skipped = [];
+    policies.forEach(function(p) {
+      var key = (p.type || '').toLowerCase().trim();
+      var kind = KIND_MAP[key];
+      if (!kind) { skipped.push(p.type || '(no type)'); return; }
+      rows.push({
+        tenant_id: tenantId,
+        kind: kind,
+        active: true,
+        carrier: p.carrier || null,
+        policy_number: p.policyNum || null,
+        coverage_limit: p.limit || null,
+        expires_date: p.expiry || null,
+        notes: p.notes || null
+      });
+    });
+    if (!rows.length) { UI.toast('No mappable policies to migrate (skipped: ' + skipped.join(', ') + ')', 'error'); return; }
+    if (!confirm('Migrate ' + rows.length + ' polic' + (rows.length === 1 ? 'y' : 'ies') + ' to the cloud Compliance tab?\n\nLocal policies will remain visible here until you delete them. Migrated rows are cloud-synced and feed the dashboard alert.' + (skipped.length ? '\n\nSkipped (unknown type): ' + skipped.join(', ') : ''))) return;
+    sb.from('compliance_documents').insert(rows).then(function(r) {
+      if (r.error) { UI.toast('Migrate failed: ' + r.error.message, 'error'); return; }
+      InsurancePage._compliance = null; // bust cache so next render pulls fresh
+      InsurancePage._fetchCompliance();
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+      UI.toast('Migrated ' + rows.length + ' → Compliance' + (skipped.length ? ' (skipped ' + skipped.length + ')' : ''));
+      InsurancePage._tab = 'compliance';
+      loadPage('insurance');
+    });
   },
 
   _deleteCert: function(certId) {
