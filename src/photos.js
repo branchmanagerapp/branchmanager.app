@@ -117,12 +117,23 @@ var Photos = {
   },
 
   // Render upload button + gallery for a record
+  // v807: adds a Grid / Timeline view toggle. Timeline auto-buckets by
+  // EXIF timestamp using the v801 30min-gap heuristic — anything before
+  // a >30min gap = "Before", anything after the LAST >30min gap = "After",
+  // everything between = "Mid-job".
   renderGallery: function(recordType, recordId) {
     var photos = Photos.getPhotos(recordType, recordId);
+    var view = (typeof Photos._galleryView === 'string') ? Photos._galleryView : 'grid';
     var html = '<div style="margin-top:16px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
-      + '<h4 style="font-size:14px;">📸 Photos (' + photos.length + ')</h4>'
-      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
+      + '<h4 style="font-size:14px;margin:0;">📸 Photos (' + photos.length + ')</h4>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
+      + (photos.length >= 3
+          ? '<div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:11px;">'
+            +   '<button onclick="Photos._setView(\'grid\',\'' + recordType + '\',\'' + recordId + '\')" style="padding:5px 10px;border:none;cursor:pointer;background:' + (view === 'grid' ? 'var(--green-dark)' : '#fff') + ';color:' + (view === 'grid' ? '#fff' : 'var(--text-light)') + ';font-weight:600;">Grid</button>'
+            +   '<button onclick="Photos._setView(\'timeline\',\'' + recordType + '\',\'' + recordId + '\')" style="padding:5px 10px;border:none;cursor:pointer;background:' + (view === 'timeline' ? 'var(--green-dark)' : '#fff') + ';color:' + (view === 'timeline' ? '#fff' : 'var(--text-light)') + ';font-weight:600;border-left:1px solid var(--border);">Timeline</button>'
+            + '</div>'
+          : '')
       + (photos.length ? '<button onclick="Photos.shareGallery(\'' + recordType + '\', \'' + recordId + '\')" style="background:var(--white);color:var(--text);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">🔗 Share</button>' : '')
       + (photos.length >= 2 ? '<button onclick="Photos.shareSlider(\'' + recordType + '\', \'' + recordId + '\')" style="background:var(--white);color:var(--text);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">✨ B/A Slider</button>' : '')
       + (photos.length ? '<button onclick="Photos.generateReport(\'' + recordType + '\', \'' + recordId + '\', \'' + recordType + '\')" style="background:var(--white);color:var(--text);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📄 Report</button>' : '')
@@ -131,19 +142,118 @@ var Photos = {
       + '</label></div></div>';
 
     if (photos.length) {
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">';
-      photos.forEach(function(p, idx) {
-        html += '<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:pointer;" onclick="Photos.viewFull(\'' + recordType + '\', \'' + recordId + '\', ' + idx + ')">'
-          + '<img src="' + p.url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">'
-          + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:4px 6px;font-size:10px;color:#fff;">'
-          + (p.label || '') + ' ' + (p.date ? UI.dateShort(p.date) : '') + '</div>'
-          + '</div>';
-      });
-      html += '</div>';
+      if (view === 'timeline' && photos.length >= 3) {
+        html += Photos._renderTimeline(photos, recordType, recordId);
+      } else {
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">';
+        photos.forEach(function(p, idx) {
+          html += '<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:pointer;" onclick="Photos.viewFull(\'' + recordType + '\', \'' + recordId + '\', ' + idx + ')">'
+            + '<img src="' + p.url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">'
+            + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:4px 6px;font-size:10px;color:#fff;">'
+            + (p.label || '') + ' ' + (p.date ? UI.dateShort(p.date) : '') + '</div>'
+            + '</div>';
+        });
+        html += '</div>';
+      }
     } else {
       html += '<div style="text-align:center;padding:24px;border:2px dashed var(--border);border-radius:10px;color:var(--text-light);font-size:13px;">'
         + 'No photos yet. Tap + Add Photo to attach before/after shots.</div>';
     }
+    html += '</div>';
+    return html;
+  },
+
+  // v807: timeline view toggle handler
+  _setView: function(view, recordType, recordId) {
+    Photos._galleryView = view;
+    // Replace the gallery in-place by re-running the parent page render
+    // (caller — usually JobsPage.showDetail — owns refresh).
+    if (typeof loadPage === 'function' && window._currentPage) {
+      loadPage(window._currentPage);
+    }
+  },
+
+  // v807: bucket photos into Before / Mid-job / After by timestamp gaps.
+  // The single largest > 30min gap separates Before-Mid; the second-largest
+  // (or only one if there's just one gap) separates Mid-After. If the
+  // largest gap is the LAST in the sorted series (i.e. all-but-one are
+  // clustered then a late shot), the After bucket holds just that last
+  // photo and Before/Mid split a 50/50 of the rest. Falls back to grid
+  // if buckets can't be cleanly formed.
+  _renderTimeline: function(photos, recordType, recordId) {
+    var dated = photos.map(function(p, idx) {
+      return { p: p, idx: idx, ts: new Date(p.date || p.taken_at || 0).getTime() };
+    }).filter(function(x) { return !isNaN(x.ts) && x.ts > 0; });
+
+    if (dated.length < 3) return Photos._fallbackGrid(photos, recordType, recordId);
+
+    dated.sort(function(a, b) { return a.ts - b.ts; });
+
+    // Find the largest two inter-photo gaps that exceed 30 min
+    var gaps = [];
+    for (var i = 1; i < dated.length; i++) {
+      var gapMs = dated[i].ts - dated[i-1].ts;
+      if (gapMs > 30 * 60000) gaps.push({ at: i, ms: gapMs });
+    }
+
+    var beforeEnd, midEnd; // exclusive indices in `dated`
+    if (gaps.length >= 2) {
+      gaps.sort(function(a, b) { return b.ms - a.ms; });
+      var firstTwo = gaps.slice(0, 2).sort(function(a, b) { return a.at - b.at; });
+      beforeEnd = firstTwo[0].at;
+      midEnd    = firstTwo[1].at;
+    } else if (gaps.length === 1) {
+      // Only one gap — call everything before it "Before", everything after "After"
+      beforeEnd = gaps[0].at;
+      midEnd    = beforeEnd; // no Mid bucket
+    } else {
+      return Photos._fallbackGrid(photos, recordType, recordId);
+    }
+
+    var buckets = [
+      { label: 'Before', color: '#c2410c', photos: dated.slice(0, beforeEnd) },
+      { label: 'Mid-job', color: '#ca8a04', photos: dated.slice(beforeEnd, midEnd) },
+      { label: 'After', color: '#15803d', photos: dated.slice(midEnd) }
+    ].filter(function(b) { return b.photos.length > 0; });
+
+    var sectionHtml = '';
+    buckets.forEach(function(b) {
+      var first = b.photos[0].ts, last = b.photos[b.photos.length - 1].ts;
+      var rangeLabel;
+      if (b.photos.length === 1) {
+        rangeLabel = UI.dateShort(b.photos[0].p.date) + ' ' + new Date(first).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else {
+        rangeLabel = new Date(first).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          + ' – ' + new Date(last).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      sectionHtml += '<div style="margin-bottom:18px;">'
+        + '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">'
+        +   '<span style="font-size:12px;font-weight:700;color:' + b.color + ';text-transform:uppercase;letter-spacing:.05em;">' + b.label + '</span>'
+        +   '<span style="font-size:11px;color:var(--text-light);">' + b.photos.length + ' photo' + (b.photos.length === 1 ? '' : 's') + ' · ' + rangeLabel + '</span>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">';
+      b.photos.forEach(function(item) {
+        sectionHtml += '<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:pointer;border:2px solid ' + b.color + '40;" onclick="Photos.viewFull(\'' + recordType + '\', \'' + recordId + '\', ' + item.idx + ')">'
+          + '<img src="' + item.p.url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">'
+          + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:3px 5px;font-size:9px;color:#fff;">'
+          +   new Date(item.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          + '</div></div>';
+      });
+      sectionHtml += '</div></div>';
+    });
+    return sectionHtml;
+  },
+
+  _fallbackGrid: function(photos, recordType, recordId) {
+    var html = '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px;font-style:italic;">Not enough timestamp variation for a timeline — showing grid.</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">';
+    photos.forEach(function(p, idx) {
+      html += '<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:pointer;" onclick="Photos.viewFull(\'' + recordType + '\', \'' + recordId + '\', ' + idx + ')">'
+        + '<img src="' + p.url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">'
+        + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:4px 6px;font-size:10px;color:#fff;">'
+        + (p.label || '') + ' ' + (p.date ? UI.dateShort(p.date) : '') + '</div>'
+        + '</div>';
+    });
     html += '</div>';
     return html;
   },
