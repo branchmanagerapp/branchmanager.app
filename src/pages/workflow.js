@@ -46,7 +46,7 @@ var Workflow = {
           + '<div style="font-weight:600;font-size:14px;">' + UI.esc(q.clientName || '') + (q.quoteNumber ? ' · Quote #' + q.quoteNumber : '') + '</div>'
           + '<div style="font-size:12px;color:var(--text-light);">' + (q.description || '').substr(0, 60) + ' · ' + UI.money(q.total) + '</div>'
           + '</div>'
-          + '<button onclick="var j=Workflow.quoteToJob(\'' + q.id + '\');if(j){loadPage(\'jobs\');setTimeout(function(){JobsPage.showDetail(j.id);},100);}" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">→ Create Job</button>'
+          + '<button onclick="QuotesPage._convertAndBook(\'' + q.id + '\')" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">→ Create &amp; Book</button>'
           + '</div>';
       });
       html += '</div>';
@@ -266,7 +266,7 @@ var Workflow = {
       return '<div style="padding:8px 12px;background:#e8f5e9;border-radius:6px;font-size:13px;color:#2e7d32;">✅ Converted to job</div>';
     }
     return '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<button onclick="Workflow.quoteToJob(\'' + quoteId + '\');loadPage(\'jobs\');" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">✅ Convert to Job</button>'
+      + '<button onclick="QuotesPage._convertAndBook(\'' + quoteId + '\')" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">✅ Convert &amp; Book</button>'
       + '<button onclick="Workflow.sendQuote(\'' + quoteId + '\')" style="background:#1565c0;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">📧 Send to Client</button>'
       + '<button onclick="PDFGen.generateQuote(\'' + quoteId + '\')" style="background:#6a1b9a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">📄 Download PDF</button>'
       + '</div>';

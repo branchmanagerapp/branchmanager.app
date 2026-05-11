@@ -1460,6 +1460,86 @@ var SchedulePage = {
       + '</div>'
       + '</div>';  // close drop-target wrapper
     return html;
+  },
+
+  // v779: Quote → Schedule one-click booking. Opens a date+time picker
+  // for a newly-converted job so it lands on the calendar in one step
+  // instead of dumping the user on the Jobs page with no date set.
+  // Defaults: tomorrow @ 9:00 AM, 2h duration (matches the most common
+  // tree-job slot for SNT — Doug can change before saving).
+  _quickBookJob: function(jobId, opts) {
+    opts = opts || {};
+    var j = DB.jobs.getById(jobId);
+    if (!j) { UI.toast('Job not found', 'error'); return; }
+
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    var defDate = SchedulePage._localDateStr(tomorrow);
+    var defTime = '09:00';
+    var defDur  = 2;
+
+    // If we can guess a duration from line-item hours, prefer that.
+    if (j.lineItems && j.lineItems.length) {
+      var sumHours = 0;
+      j.lineItems.forEach(function(li) {
+        var h = parseFloat(li.hours || li.qty || 0);
+        if (h && h < 24) sumHours += h;
+      });
+      if (sumHours >= 0.5 && sumHours <= 16) defDur = Math.round(sumHours * 2) / 2;
+    }
+
+    var label = (j.clientName || '#' + (j.jobNumber || jobId.substring(0,6))) + (j.description ? ' · ' + j.description : '');
+    var body = '<div style="font-size:13px;line-height:1.5;">'
+      + '<div style="font-weight:700;font-size:14px;margin-bottom:2px;">📅 Book Job</div>'
+      + '<div style="color:var(--text-light);font-size:12px;margin-bottom:14px;">' + UI.esc(label) + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      +   '<label style="display:block;"><div style="font-size:11px;color:var(--text-light);font-weight:600;margin-bottom:4px;">Date</div>'
+      +     '<input type="date" id="qbj-date" value="' + defDate + '" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      +   '</label>'
+      +   '<label style="display:block;"><div style="font-size:11px;color:var(--text-light);font-weight:600;margin-bottom:4px;">Start time</div>'
+      +     '<input type="time" id="qbj-time" value="' + defTime + '" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      +   '</label>'
+      + '</div>'
+      + '<label style="display:block;margin-bottom:14px;"><div style="font-size:11px;color:var(--text-light);font-weight:600;margin-bottom:4px;">Estimated duration (hours)</div>'
+      +   '<input type="number" id="qbj-dur" value="' + defDur + '" step="0.5" min="0.5" max="16" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      + '</label>'
+      + '<div style="font-size:11px;color:var(--text-light);">Skip = leaves the job in the Unscheduled queue.</div>'
+      + '</div>';
+
+    UI.showModal('📅 Book on calendar', body, {
+      footer: '<button class="btn btn-outline" onclick="SchedulePage._quickBookSkip(\'' + jobId + '\')">Skip</button>'
+        + ' <button class="btn btn-primary" onclick="SchedulePage._quickBookSave(\'' + jobId + '\')">Book it</button>'
+    });
+  },
+
+  _quickBookSkip: function(jobId) {
+    UI.closeModal();
+    UI.toast('Saved unscheduled — book later from Schedule');
+    loadPage('schedule');
+  },
+
+  _quickBookSave: function(jobId) {
+    var dateEl = document.getElementById('qbj-date');
+    var timeEl = document.getElementById('qbj-time');
+    var durEl  = document.getElementById('qbj-dur');
+    if (!dateEl || !timeEl) { UI.toast('Modal lost — try again', 'error'); return; }
+    var date = (dateEl.value || '').trim();
+    var time = (timeEl.value || '').trim();
+    var dur  = parseFloat(durEl && durEl.value || 0) || 2;
+    if (!date) { UI.toast('Pick a date', 'error'); return; }
+    DB.jobs.update(jobId, {
+      scheduledDate: date,
+      startTime: time || null,
+      estimatedHours: dur
+    });
+    UI.closeModal();
+    UI.toast('Booked ' + UI.dateShort(date) + (time ? ' at ' + time : ''));
+    // Land the user on the day view of the booked date so they can confirm.
+    try {
+      SchedulePage.currentDate = new Date(date + 'T12:00:00');
+      SchedulePage.view = 'day';
+    } catch(e) {}
+    loadPage('schedule');
   }
 };
 

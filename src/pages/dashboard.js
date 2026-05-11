@@ -599,8 +599,8 @@ var DashboardPage = {
         icon: 'check-circle', tone: 'green',
         label: 'Approved quote — ' + (q.clientName || 'client'),
         sub: UI.money(q.total) + ' · ready to schedule',
-        actionLabel: '+ Job',
-        onclick: 'var j=Workflow.quoteToJob(\'' + q.id + '\');if(j){loadPage(\'dashboard\');}'
+        actionLabel: 'Book Job',
+        onclick: 'QuotesPage._convertAndBook(\'' + q.id + '\')'
       });
     });
 

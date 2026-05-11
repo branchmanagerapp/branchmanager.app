@@ -1969,7 +1969,7 @@ var QuotesPage = {
       + (q.status !== 'converted' && q.status !== 'declined'
           ? '<button class="btn btn-outline" onclick="QuotesPage._sendQuote(\'' + id + '\')" style="font-size:12px;">Send Quote</button>' : '')
       + (q.status === 'approved' || q.status === 'converted'
-          ? '<button class="btn btn-primary" onclick="if(typeof Workflow!==\'undefined\')Workflow.quoteToJob(\'' + id + '\');loadPage(\'jobs\');" style="font-size:12px;">Convert to Job</button>'
+          ? '<button class="btn btn-primary" onclick="QuotesPage._convertAndBook(\'' + id + '\')" style="font-size:12px;">Convert &amp; Book</button>'
           : '<button class="btn btn-primary" onclick="QuotesPage.showForm(\'' + id + '\')" style="font-size:12px;">Edit Quote</button>')
       + '<div style="position:relative;display:inline-block;">'
       + '<button onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.more-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';" class="btn btn-outline" style="font-size:13px;padding:6px 10px;">•••</button>'
@@ -2119,7 +2119,7 @@ var QuotesPage = {
       + '<div style="display:flex;flex-direction:column;gap:6px;">'
       + '<button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;" onclick="PDF.generateQuote(\'' + id + '\')">📄 Download PDF</button>'
       + (q.property ? '<button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;" onclick="PropertyMap.show(\'' + (q.property || '').replace(/'/g, "\\'") + '\')">📐 Equipment Layout</button>' : '')
-      + (q.status !== 'converted' ? '<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="if(typeof Workflow!==\'undefined\')Workflow.quoteToJob(\'' + id + '\');loadPage(\'jobs\');">✅ Convert to Job</button>' : '')
+      + (q.status !== 'converted' ? '<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="QuotesPage._convertAndBook(\'' + id + '\')">✅ Convert &amp; Book</button>' : '')
       + '</div></div>'
 
       + '</div>'
@@ -2588,13 +2588,23 @@ var QuotesPage = {
     DB.quotes.update(id, { status: status });
 
     // Auto-convert approved quotes to jobs (legacy system-style pipeline)
+    // v779: after job creation, open quick-book modal so the new job lands
+    // on the calendar in one step instead of dumping the user on /jobs.
     if (status === 'approved') {
       var q = DB.quotes.getById(id);
       if (q && !q.convertedJobId) {
         UI.confirm(QuotesPage._term(true) + ' approved! Create a job from this ' + QuotesPage._term(false) + '?', function() {
           if (typeof Workflow !== 'undefined') {
             var job = Workflow.quoteToJob(id);
-            if (job) { UI.toast('✅ Job #' + job.jobNumber + ' created'); loadPage('jobs'); return; }
+            if (job) {
+              UI.toast('✅ Job #' + job.jobNumber + ' created');
+              if (typeof SchedulePage !== 'undefined' && SchedulePage._quickBookJob) {
+                setTimeout(function() { SchedulePage._quickBookJob(job.id); }, 120);
+              } else {
+                loadPage('jobs');
+              }
+              return;
+            }
           }
           QuotesPage.showDetail(id);
         }, function() { UI.toast(QuotesPage._term(true) + ' approved'); QuotesPage.showDetail(id); });
@@ -3743,6 +3753,30 @@ var QuotesPage = {
     UI.toast('Job #' + job.jobNumber + ' created from quote');
     UI.closeModal();
     loadPage('jobs');
+  },
+
+  // v779: One-click "Convert & Book" — creates the job via Workflow.quoteToJob
+  // (which is the canonical converter) and immediately opens the quick-book
+  // date-picker. Skips the modal-skip path used by setStatus() because here
+  // the user explicitly chose to book.
+  _convertAndBook: function(quoteId) {
+    if (typeof Workflow === 'undefined' || !Workflow.quoteToJob) {
+      UI.toast('Workflow unavailable', 'error');
+      return;
+    }
+    var existing = DB.quotes.getById(quoteId);
+    var job;
+    if (existing && existing.convertedJobId) {
+      job = DB.jobs.getById(existing.convertedJobId);
+    } else {
+      job = Workflow.quoteToJob(quoteId);
+    }
+    if (!job) { UI.toast('Job creation failed', 'error'); return; }
+    if (typeof SchedulePage !== 'undefined' && SchedulePage._quickBookJob) {
+      setTimeout(function() { SchedulePage._quickBookJob(job.id); }, 80);
+    } else {
+      loadPage('schedule');
+    }
   },
 
   // ── Video Walkthrough ──
