@@ -205,7 +205,7 @@ var Materials = {
           + '<div style="display:flex;align-items:center;gap:8px;">'
           + '<span style="width:8px;height:8px;border-radius:50%;background:' + stockColor + ';flex-shrink:0;"></span>'
           + '<div><strong style="font-size:14px;">' + m.name + '</strong>'
-          + '<div style="font-size:12px;color:var(--text-light);">' + UI.money(m.unitCost) + ' / ' + m.unit + '</div></div></div>'
+          + '<div style="font-size:12px;color:var(--text-light);display:flex;align-items:center;gap:6px;">' + UI.money(m.unitCost) + ' / ' + m.unit + ' ' + Materials.trendPill(m.id) + '</div></div></div>'
           + '<div style="text-align:right;">'
           + '<div style="font-size:14px;font-weight:600;color:' + stockColor + ';">' + m.currentStock + ' ' + m.unit + (m.currentStock !== 1 ? 's' : '') + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);">Reorder at ' + m.reorderPoint + '</div></div></div>';
@@ -222,7 +222,7 @@ var Materials = {
         var stockColor = m.currentStock === 0 ? '#f44336' : isLow ? '#ff9800' : '#4caf50';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;" onclick="Materials.showDetail(\'' + m.id + '\')">'
           + '<div><strong style="font-size:14px;">' + m.name + '</strong>'
-          + '<div style="font-size:12px;color:var(--text-light);">' + UI.money(m.unitCost) + ' / ' + m.unit + '</div></div>'
+          + '<div style="font-size:12px;color:var(--text-light);display:flex;align-items:center;gap:6px;">' + UI.money(m.unitCost) + ' / ' + m.unit + ' ' + Materials.trendPill(m.id) + '</div></div>'
           + '<div style="text-align:right;">'
           + '<div style="font-size:14px;font-weight:600;color:' + stockColor + ';">' + m.currentStock + '</div></div></div>';
       });
@@ -492,18 +492,82 @@ var Materials = {
         if (catalog[i].id === editId) { idx = i; break; }
       }
       if (idx >= 0) {
+        // v771: capture price history before we overwrite the row
+        var prev = catalog[idx];
+        if (prev && Number(prev.unitCost) !== Number(data.unitCost)) {
+          Materials._appendPriceHistory(editId, prev.unitCost, data.unitCost);
+        }
         data.id = editId;
         catalog[idx] = data;
       }
     } else {
       data.id = 'mat_' + Materials._genId();
       catalog.push(data);
+      // v771: seed history with the initial price so even brand-new items
+      // have at least one history point.
+      Materials._appendPriceHistory(data.id, null, data.unitCost);
     }
 
     Materials._saveCatalog(catalog);
     UI.closeModal();
     UI.toast(editId ? 'Material updated' : 'Material added');
     loadPage('materials');
+  },
+
+  // v771: price-history capture. Stored in a single localStorage key
+  // keyed by material id → array of { from, to, changedAt, deltaPct }.
+  // Kept lightweight (no Supabase table) — most tenants have <50
+  // materials and price changes happen monthly, not hourly.
+  _historyKey: 'bm-materials-price-history',
+  _allHistory: function() {
+    try { return JSON.parse(localStorage.getItem(Materials._historyKey) || '{}') || {}; }
+    catch(e) { return {}; }
+  },
+  _appendPriceHistory: function(materialId, fromPrice, toPrice) {
+    if (!materialId) return;
+    var all = Materials._allHistory();
+    var arr = (all[materialId] || []).slice();
+    var fromN = (fromPrice == null) ? null : Number(fromPrice) || 0;
+    var toN = Number(toPrice) || 0;
+    var delta = (fromN && fromN > 0) ? Math.round(((toN - fromN) / fromN) * 1000) / 10 : null;
+    arr.push({ from: fromN, to: toN, changedAt: new Date().toISOString(), deltaPct: delta });
+    // Cap at 50 entries per material — anything older falls off.
+    if (arr.length > 50) arr = arr.slice(arr.length - 50);
+    all[materialId] = arr;
+    try { localStorage.setItem(Materials._historyKey, JSON.stringify(all)); } catch(e) {}
+  },
+  _getPriceHistory: function(materialId) {
+    var all = Materials._allHistory();
+    return (all[materialId] || []).slice();
+  },
+  // 90-day trend percentage for a material. Returns null if no baseline
+  // 90 days ago. Positive number = price went UP (margin pressure).
+  _trend90d: function(materialId) {
+    var hist = Materials._getPriceHistory(materialId);
+    if (!hist.length) return null;
+    var cutoff = Date.now() - 90 * 86400000;
+    // Latest price = most recent entry
+    var latest = hist[hist.length - 1].to;
+    // Baseline = the price at or before 90 days ago. If no entry that
+    // old, no trend (item is too new).
+    var baseline = null;
+    for (var i = 0; i < hist.length; i++) {
+      var ts = new Date(hist[i].changedAt).getTime();
+      if (ts <= cutoff) baseline = hist[i].to;
+      else break;
+    }
+    if (baseline == null || baseline <= 0) return null;
+    return Math.round(((latest - baseline) / baseline) * 1000) / 10;
+  },
+  // Compact trend pill (↑ +X% / ↓ -X% / —) for the catalog list.
+  trendPill: function(materialId) {
+    var t = Materials._trend90d(materialId);
+    if (t == null) return '<span style="font-size:10px;color:var(--text-light);">—</span>';
+    if (Math.abs(t) < 0.5) return '<span title="No meaningful 90-day change" style="font-size:10px;color:var(--text-light);background:var(--bg);padding:1px 6px;border-radius:8px;">flat</span>';
+    var up = t > 0;
+    var color = up ? '#c2410c' : '#16a34a';
+    var arrow = up ? '↑' : '↓';
+    return '<span title="90-day change" style="font-size:10px;font-weight:700;color:' + color + ';background:' + color + '15;padding:1px 6px;border-radius:8px;">' + arrow + ' ' + (up ? '+' : '') + t + '%</span>';
   },
 
   _deleteMaterial: function(id) {
@@ -537,6 +601,44 @@ var Materials = {
       + '<div>In Stock: <strong style="color:' + (isLow ? '#f44336' : '#4caf50') + ';">' + mat.currentStock + ' ' + mat.unit + (mat.currentStock !== 1 ? 's' : '') + '</strong>' + (isLow ? ' ⚠️' : '') + '</div>'
       + '<div>Reorder At: <strong>' + mat.reorderPoint + '</strong></div>'
       + '<div>Total Used: <strong>' + totalUsed + '</strong> (' + UI.money(totalCost) + ')</div></div></div></div>';
+
+    // v771: Price history block — shows when this material's price changed.
+    // Hidden if there's only one entry (the seed) since there's nothing to compare.
+    var priceHist = Materials._getPriceHistory(id);
+    if (priceHist.length > 1) {
+      var first = priceHist[0];
+      var last = priceHist[priceHist.length - 1];
+      var totalDelta = (first.to && first.to > 0)
+        ? Math.round(((last.to - first.to) / first.to) * 1000) / 10
+        : null;
+      var trend90 = Materials._trend90d(id);
+      html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">'
+        +   '<h4 style="margin:0;font-size:13px;">💵 Price history</h4>'
+        +   '<div style="font-size:11px;color:var(--text-light);">'
+        +     (trend90 != null ? '90d: ' + Materials.trendPill(id) + ' · ' : '')
+        +     (totalDelta != null ? 'all-time ' + (totalDelta >= 0 ? '+' : '') + totalDelta + '%' : '')
+        +   '</div>'
+        + '</div>'
+        + '<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+        + '<thead><tr style="border-bottom:1px solid var(--border);">'
+        +   '<th style="text-align:left;padding:4px 0;">Changed</th>'
+        +   '<th style="text-align:right;padding:4px 0;">From</th>'
+        +   '<th style="text-align:right;padding:4px 0;">To</th>'
+        +   '<th style="text-align:right;padding:4px 0;">Δ</th>'
+        + '</tr></thead><tbody>';
+      priceHist.slice().reverse().forEach(function(p) {
+        var dColor = p.deltaPct == null ? 'var(--text-light)' : p.deltaPct > 0 ? '#c2410c' : p.deltaPct < 0 ? '#16a34a' : 'var(--text-light)';
+        var dLabel = p.deltaPct == null ? '—' : (p.deltaPct > 0 ? '+' : '') + p.deltaPct + '%';
+        html += '<tr style="border-bottom:1px solid #f5f5f5;">'
+          + '<td style="padding:4px 0;">' + UI.dateShort(p.changedAt) + '</td>'
+          + '<td style="text-align:right;padding:4px 0;color:var(--text-light);">' + (p.from == null ? '—' : UI.money(p.from)) + '</td>'
+          + '<td style="text-align:right;padding:4px 0;font-weight:600;">' + UI.money(p.to) + '</td>'
+          + '<td style="text-align:right;padding:4px 0;color:' + dColor + ';font-weight:600;">' + dLabel + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
 
     // Usage history for this material
     if (usage.length > 0) {
