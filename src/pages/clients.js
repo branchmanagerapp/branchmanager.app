@@ -127,6 +127,7 @@ var ClientsPage = {
           var now = Date.now();
           var count = DB.clients.getAll().filter(function(c) {
             if (!c.id || c.status === 'archived' || c.status === 'inactive') return false;
+            if (c.outreachDormant === true) return false; // v781: dormant clients hidden from banner count
             if (snoozes[c.id] && Number(snoozes[c.id]) > now) return false;
             var r = rev[c.id] || rev[(c.name||'').toLowerCase()] || 0;
             if (r < threshold) return false;
@@ -1626,6 +1627,8 @@ var ClientsPage = {
   // Renders nothing if the client is below the threshold, recently
   // contacted, or the user snoozed the banner.
   _renderOutreachBanner: function(c, id, clientJobs, clientQuotes, clientInvoices) {
+    // v781: dormant (marked unreachable) clients never see the banner.
+    if (c && c.outreachDormant === true) return '';
     // Snooze check (per-client, 30-day TTL)
     try {
       var snoozes = JSON.parse(localStorage.getItem('bm-outreach-snooze') || '{}');

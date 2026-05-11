@@ -55,7 +55,10 @@ var StaleClients = {
     }
 
     // Build the candidate list
+    // v781: dormant clients (Mark unreachable) collected separately so they
+    // don't nag forever but stay reversible in their own section.
     var stale = [];
+    var dormant = [];
     clients.forEach(function(c) {
       if (!c.id || c.status === 'archived' || c.status === 'inactive') return;
       var k = c.id || (c.name || '').toLowerCase();
@@ -65,6 +68,14 @@ var StaleClients = {
       if (!lastTouch) return;
       var daysQuiet = Math.floor((nowMs - lastTouch) / 86400000);
       if (daysQuiet < 90) return;
+      if (c.outreachDormant === true) {
+        dormant.push({
+          id: c.id, name: c.name, revenue: rev, daysQuiet: daysQuiet,
+          lastTouch: lastTouch,
+          dormantAt: c.outreachDormantAt || null
+        });
+        return;
+      }
       var snoozedUntil = snoozes[c.id];
       var isSnoozed = snoozedUntil && Number(snoozedUntil) > nowMs;
       stale.push({
@@ -164,14 +175,68 @@ var StaleClients = {
             ? '<button onclick="StaleClients._unsnooze(\'' + s.id + '\')" style="font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;">Unsnooze</button>'
             : (canSMS ? '<button onclick="ClientsPage._sendOutreachSMS(\'' + s.id + '\');setTimeout(function(){loadPage(\'staleclients\');},400);" title="Send check-in SMS" style="font-size:11px;padding:4px 8px;background:var(--green-bg);border:1px solid var(--border);border-radius:5px;cursor:pointer;margin-right:3px;">📲</button>' : '')
               + (canEmail ? '<button onclick="ClientsPage._sendOutreachEmail(\'' + s.id + '\');setTimeout(function(){loadPage(\'staleclients\');},400);" title="Email" style="font-size:11px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;cursor:pointer;margin-right:3px;">✉️</button>' : '')
-              + '<button onclick="ClientsPage._snoozeOutreach(\'' + s.id + '\', 30);setTimeout(function(){loadPage(\'staleclients\');},400);" style="font-size:11px;padding:4px 8px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-light);">Snooze</button>')
+              + '<button onclick="ClientsPage._snoozeOutreach(\'' + s.id + '\', 30);setTimeout(function(){loadPage(\'staleclients\');},400);" style="font-size:11px;padding:4px 8px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--text-light);margin-right:3px;">Snooze</button>'
+              + '<button onclick="StaleClients._markUnreachable(\'' + s.id + '\')" title="Stop nagging — client never responds" style="font-size:11px;padding:4px 8px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:#7f1d1d;">🚫 Unreachable</button>')
         + '</td>'
         + '</tr>';
     });
     html += '</tbody></table></div>';
 
+    // v781: Dormant (Marked unreachable) section — kept reversible so a
+    // mistaken click stays fixable, and so revenue context is visible.
+    if (dormant.length) {
+      html += '<div style="margin-top:18px;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+        + '<div style="padding:10px 14px;font-size:12px;font-weight:700;background:var(--bg);border-bottom:1px solid var(--border);color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;">🚫 Dormant — marked unreachable (' + dormant.length + ')</div>'
+        + '<table class="data-table" style="width:100%;font-size:13px;">'
+        + '<thead><tr>'
+        +   '<th style="text-align:left;">Client</th>'
+        +   '<th style="text-align:right;">Lifetime</th>'
+        +   '<th style="text-align:right;">Last touch</th>'
+        +   '<th style="text-align:right;">Quiet</th>'
+        +   '<th>Marked</th>'
+        +   '<th>Actions</th>'
+        + '</tr></thead><tbody>';
+      dormant.forEach(function(d) {
+        html += '<tr>'
+          + '<td><a onclick="ClientsPage.showDetail(\'' + d.id + '\')" style="color:var(--accent);cursor:pointer;font-weight:600;">' + UI.esc(d.name || '—') + '</a></td>'
+          + '<td style="text-align:right;font-weight:600;">' + UI.moneyInt(d.revenue) + '</td>'
+          + '<td style="text-align:right;color:var(--text-light);">' + UI.dateShort(d.lastTouch) + '</td>'
+          + '<td style="text-align:right;color:var(--text-light);">' + d.daysQuiet + 'd</td>'
+          + '<td style="font-size:11px;color:var(--text-light);">' + (d.dormantAt ? UI.dateShort(d.dormantAt) : '—') + '</td>'
+          + '<td style="white-space:nowrap;"><button onclick="StaleClients._undoUnreachable(\'' + d.id + '\')" style="font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;">↩ Undo dormant</button></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
     html += '</div>';
     return html;
+  },
+
+  // v781: Stop nagging. Clients who never respond after 2 outreach attempts
+  // can be flipped to "dormant" so they leave the outreach-due list AND the
+  // per-client banner. Reversible from the Dormant section below the table.
+  _markUnreachable: function(clientId) {
+    var c = DB.clients.getById(clientId);
+    if (!c) { UI.toast('Client not found', 'error'); return; }
+    if (!confirm('Mark "' + (c.name || 'this client') + '" as unreachable?\n\nThey\'ll stop appearing in outreach-due and the per-client banner. You can undo this from the Dormant section below the table.')) return;
+    DB.clients.update(clientId, {
+      outreachDormant: true,
+      outreachDormantAt: new Date().toISOString()
+    });
+    UI.toast('Marked dormant — won\'t nag again');
+    loadPage('staleclients');
+  },
+
+  _undoUnreachable: function(clientId) {
+    var c = DB.clients.getById(clientId);
+    if (!c) return;
+    DB.clients.update(clientId, {
+      outreachDormant: false,
+      outreachDormantAt: null
+    });
+    UI.toast('Restored — back in outreach pool');
+    loadPage('staleclients');
   },
 
   _bulkSMS: function() {
@@ -204,6 +269,7 @@ var StaleClients = {
     }
     var sendList = clients.filter(function(c) {
       if (!c.id || c.status === 'archived' || c.status === 'inactive') return false;
+      if (c.outreachDormant === true) return false; // v781: dormant = never auto-text
       if (snoozes[c.id] && Number(snoozes[c.id]) > nowMs) return false;
       var rev = revByClient[c.id] || revByClient[(c.name || '').toLowerCase()] || 0;
       if (rev < threshold || threshold <= 0) return false;
