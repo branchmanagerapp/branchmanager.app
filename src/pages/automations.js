@@ -480,7 +480,20 @@ var AutomationsPage = {
     }, 3600000);
   },
 
-  runReviewRequests: function() {
+  // v805: NPS scale embedded directly into the review-request email.
+  // Computes SHA-256 token per-job (matches nps-submit edge fn) so the
+  // 0-10 buttons each link to a tokenized sat.html URL. NPS responses
+  // land on jobs.satisfaction → surface in Reports via v803.
+  _NPS_SALT: 'default-bm-salt-2026',
+  _npsToken: async function(jobId) {
+    var buf = await crypto.subtle.digest('SHA-256',
+      new TextEncoder().encode(jobId + ':' + AutomationsPage._NPS_SALT));
+    return Array.from(new Uint8Array(buf))
+      .map(function(b) { return b.toString(16).padStart(2, '0'); })
+      .join('').slice(0, 12);
+  },
+
+  runReviewRequests: async function() {
     var config = AutomationsPage.getConfig();
     if (!config.reviewRequest || !config.reviewRequest.enabled) {
       UI.toast('Review requests are disabled — enable in Automations settings', 'warning');
@@ -491,22 +504,63 @@ var AutomationsPage = {
       return j.status === 'completed' && !j.reviewSentAt && new Date(j.completedAt || j.updatedAt || j.createdAt).getTime() <= cutoff;
     });
     var sent = 0, skipped = 0;
-    jobs.forEach(function(job) {
+    var co = AutomationsPage._co();
+    var coName = co.name;
+    var ownerName = CompanyInfo.get('ownerName');
+
+    for (var i = 0; i < jobs.length; i++) {
+      var job = jobs[i];
       var client = job.clientId ? DB.clients.getById(job.clientId) : null;
       var email = job.clientEmail || (client && client.email) || '';
-      if (!email) { skipped++; return; }
+      if (!email) { skipped++; continue; }
       var firstName = (job.clientName || '').split(' ')[0] || 'there';
-      var subject = 'How did we do? — ' + AutomationsPage._co().name;
+      var subject = 'How did we do? — ' + coName;
       var reviewLink = 'https://g.page/r/CcVkZHV_EKlEEBM/review';
-      var body = 'Hi ' + firstName + ',\n\nThank you so much for choosing ' + AutomationsPage._co().name + '! We hope everything turned out exactly how you imagined.\n\n'
-        + 'If you have a moment, we\'d love to hear about your experience. Leaving a quick Google review helps other homeowners in the area find trusted tree care:\n\n'
-        + '⭐ Leave a Review: ' + reviewLink + '\n\n'
-        + 'It takes less than a minute and means the world to our small business.\n\n'
-        + 'Thank you for your support,\n' + CompanyInfo.get('ownerName') + '\n' + AutomationsPage._co().name + '\n' + AutomationsPage._co().phone + '\n' + AutomationsPage._co().website;
-      if (typeof Email !== 'undefined') Email.send(email, subject, body, { silent: !!AutomationsPage._silentMode });
+
+      // v805: build NPS scale buttons (0-10) with tokenized sat.html links
+      var token = await AutomationsPage._npsToken(job.id);
+      var jobLabel = encodeURIComponent((job.clientName || 'Job') + (job.description ? ' — ' + job.description.slice(0, 40) : ''));
+      var npsButtonsHtml = '';
+      for (var n = 0; n <= 10; n++) {
+        var color = n >= 9 ? '#15803d' : n >= 7 ? '#ca8a04' : '#dc2626';
+        var url = 'https://branchmanager.app/sat.html?job=' + encodeURIComponent(job.id) + '&token=' + token + '&score=' + n + '&label=' + jobLabel;
+        npsButtonsHtml += '<a href="' + url + '" style="display:inline-block;width:34px;height:34px;line-height:34px;margin:2px;border:2px solid ' + color + ';color:' + color + ';background:#fff;font-weight:700;font-size:14px;text-align:center;border-radius:6px;text-decoration:none;">' + n + '</a>';
+      }
+
+      // Plain-text body (fallback for text/* readers)
+      var body = 'Hi ' + firstName + ',\n\nThank you so much for choosing ' + coName + '! We hope everything turned out exactly how you imagined.\n\n'
+        + 'How likely are you to recommend us to a friend or neighbor? (0 = not likely, 10 = extremely likely)\n'
+        + 'Rate us here: https://branchmanager.app/sat.html?job=' + encodeURIComponent(job.id) + '&token=' + token + '&label=' + jobLabel + '\n\n'
+        + 'If you have a moment, a Google review also means the world to our small business:\n'
+        + '⭐ ' + reviewLink + '\n\n'
+        + 'Thank you for your support,\n' + ownerName + '\n' + coName + '\n' + co.phone + '\n' + co.website;
+
+      // Pretty HTML body with embedded NPS scale
+      var htmlBody = '<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:20px;color:#1a1a1a;background:#fff;">'
+        + '<p style="font-size:15px;line-height:1.6;">Hi ' + UI.esc(firstName) + ',</p>'
+        + '<p style="font-size:15px;line-height:1.6;">Thank you so much for choosing ' + UI.esc(coName) + '! We hope everything turned out exactly how you imagined.</p>'
+        + '<div style="background:#f9fafb;border-radius:10px;padding:18px;margin:18px 0;border:1px solid #e5e7eb;">'
+        +   '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">How likely are you to recommend us?</div>'
+        +   '<div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Tap a number — takes about 5 seconds.</div>'
+        +   '<div style="text-align:center;">' + npsButtonsHtml + '</div>'
+        +   '<div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-top:6px;"><span>Not at all</span><span>Extremely</span></div>'
+        + '</div>'
+        + '<p style="font-size:14px;line-height:1.6;color:#4b5563;">A quick Google review also helps other homeowners find us — if you have 30 seconds, it means the world:</p>'
+        + '<p style="text-align:center;margin:18px 0;"><a href="' + reviewLink + '" style="display:inline-block;background:#065f46;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700;">⭐ Leave a Google review</a></p>'
+        + '<p style="font-size:14px;line-height:1.6;margin-top:24px;">Thank you for your support,<br>'
+        +   UI.esc(ownerName) + '<br>'
+        +   '<strong>' + UI.esc(coName) + '</strong><br>'
+        +   UI.esc(co.phone) + ' · ' + UI.esc(co.website)
+        + '</p>'
+        + '</body></html>';
+
+      if (typeof Email !== 'undefined') {
+        Email.send(email, subject, body, { silent: !!AutomationsPage._silentMode, htmlBody: htmlBody });
+      }
       DB.jobs.update(job.id, { reviewSentAt: new Date().toISOString() });
       sent++;
-    });
+    }
+
     var rMsg = sent > 0 ? 'Sent ' + sent + ' review request' + (sent !== 1 ? 's' : '') : skipped > 0 ? skipped + ' jobs missing client email' : 'No completed jobs ready for review requests';
     AutomationsPage._logActivity(rMsg);
     if (sent > 0) {
