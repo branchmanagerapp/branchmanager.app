@@ -45,13 +45,25 @@ var MessagingPage = {
       .then(function(res) {
         MessagingPage._unmatchedFetchInFlight = false;
         if (res.error || !res.data) return;
-        var buckets = {};
+        // v746: merge rather than replace so any ad-hoc-created bucket
+        // (from "Text any number" in New Message) survives the fetch.
+        var buckets = window._bmUnmatchedSmsCache || {};
         res.data.forEach(function(r) {
           var phone = r.direction === 'inbound' ? r.from_number : r.to_number;
           var k = MessagingPage._last10(phone);
           if (k.length !== 10) return;
           if (!buckets[k]) buckets[k] = { last10: k, messages: [], latest: r.created_at };
-          buckets[k].messages.push(r);
+          // Avoid duplicate inserts on refetch
+          if (!buckets[k].messages.some(function(m) { return m.id === r.id; })) {
+            buckets[k].messages.push(r);
+          }
+        });
+        // Re-sort each bucket and recompute latest
+        Object.keys(buckets).forEach(function(k) {
+          buckets[k].messages.sort(function(a, b) {
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+          if (buckets[k].messages.length) buckets[k].latest = buckets[k].messages[0].created_at;
         });
         window._bmUnmatchedSmsCache = buckets;
         MessagingPage._unmatchedLoaded = true;
@@ -81,8 +93,10 @@ var MessagingPage = {
     var selectedId = MessagingPage._selected || null;
     var isPhoneBucket = typeof selectedId === 'string' && selectedId.indexOf('phone:') === 0;
 
-    // Lazy-load unmatched SMS buckets on first render
-    if (!MessagingPage._unmatchedLoaded && !window._bmUnmatchedSmsCache) {
+    // Lazy-load unmatched SMS buckets on first render. v746: check
+    // _unmatchedLoaded only — an empty ad-hoc bucket could otherwise
+    // satisfy the truthy-cache check and skip the real fetch.
+    if (!MessagingPage._unmatchedLoaded) {
       MessagingPage._loadUnmatchedSms();
     }
     var unmatched = window._bmUnmatchedSmsCache || {};
@@ -485,11 +499,24 @@ var MessagingPage = {
     // Reuse the phone-bucket flow — selectPhone bridges into the
     // unmatched-phone thread, which already supports send + Convert.
     UI.closeModal();
+    // First check if this number already matches an existing client by phone.
+    // If yes, jump straight to that client's thread.
+    var existingClient = DB.clients.getAll().find(function(c) {
+      var d = (c.phone || '').replace(/\D/g, '');
+      if (d.length === 11 && d[0] === '1') d = d.slice(1);
+      return d === digits;
+    });
+    if (existingClient) {
+      MessagingPage.selectClient(existingClient.id);
+      return;
+    }
     // Ensure the bucket cache has at least an empty row so the thread
-    // header doesn't error when looking up a brand-new number.
+    // header doesn't error when looking up a brand-new number. Keep
+    // _unmatchedLoaded as-is so the next render still fetches real rows
+    // if it hasn't yet.
     if (!window._bmUnmatchedSmsCache) window._bmUnmatchedSmsCache = {};
     if (!window._bmUnmatchedSmsCache[digits]) {
-      window._bmUnmatchedSmsCache[digits] = { messages: [], latest: new Date().toISOString() };
+      window._bmUnmatchedSmsCache[digits] = { last10: digits, messages: [], latest: new Date().toISOString() };
     }
     MessagingPage.selectPhone(digits);
   },
