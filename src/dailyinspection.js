@@ -6,6 +6,9 @@ var DailyInspection = {
 
   // Fleet — edit here when you add/retire equipment.
   // Each vehicle: { id, label, icon, dot (DOT-required?), items: [section, [checks]] }
+  // v786: tracks_hours flag distinguishes non-OBD equipment (chippers,
+  // skid, trailer) — they use engine hours instead of odometer miles.
+  // service_interval_hours = oil/blade-change interval; warn 10h before.
   _vehicles: [
     {
       id: 'altec_bucket', label: 'Altec Bucket Truck', icon: '🚛', dot: true,
@@ -99,6 +102,7 @@ var DailyInspection = {
     },
     {
       id: 'chipper_200xp', label: 'Bandit 200XP Chipper', icon: '🪵', dot: false,
+      tracks_hours: true, service_interval_hours: 100,
       items: [
         ['Pre-start', [
           'Knives / blades — sharp, tight, no chips',
@@ -119,6 +123,7 @@ var DailyInspection = {
     },
     {
       id: 'chipper_254', label: 'Bandit 254 Chipper', icon: '🪵', dot: false,
+      tracks_hours: true, service_interval_hours: 100,
       items: [
         ['Pre-start', [
           'Knives / blades — sharp, tight, no chips',
@@ -139,6 +144,7 @@ var DailyInspection = {
     },
     {
       id: 'mini_skid', label: 'Mini-skid / Loader', icon: '🚜', dot: false,
+      tracks_hours: true, service_interval_hours: 250,
       items: [
         ['Pre-start', [
           'Tracks — no cracks, proper tension',
@@ -339,7 +345,7 @@ var DailyInspection = {
     }
 
     var totalCount = v.items.reduce(function(s,sec){return s+sec[1].length;},0);
-    var html = '<div style="border:2px solid #e65100;border-radius:12px;padding:14px;background:#fff8ed;">'
+    var html = '<div data-veh="' + v.id + '" style="border:2px solid #e65100;border-radius:12px;padding:14px;background:#fff8ed;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
       +   '<div style="font-weight:700;font-size:15px;">' + v.icon + ' ' + v.label + '</div>'
       +   '<button onclick="document.getElementById(\'insp-active\').innerHTML=\'\';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-light);">×</button>'
@@ -348,13 +354,18 @@ var DailyInspection = {
       +   '<input type="text" id="insp-driver" placeholder="Driver name" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
       +   '<input type="text" id="insp-plate" placeholder="Plate / unit #" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
       + '</div>'
-      // v783: odometer entry + Bouncie cross-check. The hint span async-fills
-      // with latest Bouncie odo + reading age when available. On Complete,
-      // any |entered − bouncie| > 50mi gets noted on the record.
-      + '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center;">'
-      +   '<input type="number" id="insp-odo" placeholder="Odometer (miles)" min="0" step="1" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" oninput="DailyInspection._checkOdoDrift()">'
-      +   '<span id="insp-odo-hint" style="font-size:11px;color:var(--text-light);white-space:nowrap;">📡 checking Bouncie…</span>'
-      + '</div>'
+      // v783 + v786: odometer (miles, trucks) OR engine hours (chippers/skid).
+      // Trucks: Bouncie cross-check. Hours-tracked equipment: service-due
+      // chip based on _vehicles config service_interval_hours.
+      + (v.tracks_hours
+          ? '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center;">'
+            +   '<input type="number" id="insp-odo" placeholder="Engine hours" min="0" step="0.1" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" oninput="DailyInspection._checkHoursService()">'
+            +   '<span id="insp-odo-hint" style="font-size:11px;color:var(--text-light);white-space:nowrap;">' + DailyInspection._serviceHintInitial(v) + '</span>'
+            + '</div>'
+          : '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center;">'
+            +   '<input type="number" id="insp-odo" placeholder="Odometer (miles)" min="0" step="1" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" oninput="DailyInspection._checkOdoDrift()">'
+            +   '<span id="insp-odo-hint" style="font-size:11px;color:var(--text-light);white-space:nowrap;">📡 checking Bouncie…</span>'
+            + '</div>')
       + '<input type="text" id="insp-notes" placeholder="Defects / notes (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-bottom:10px;">';
 
     v.items.forEach(function(sec) {
@@ -380,7 +391,18 @@ var DailyInspection = {
     var d = document.getElementById('insp-driver');
     if (d && !d.value && user) d.value = user;
     document.getElementById('insp-active').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // v783: async Bouncie odo fetch + pre-fill hint
+    // v786: hours-tracked equipment skips Bouncie (no OBD plug). Pre-fill
+    // the field with the last recorded hours so user only needs to update.
+    if (v.tracks_hours) {
+      var last = DailyInspection._getLastHours(vehId);
+      var inputEl = document.getElementById('insp-odo');
+      if (inputEl && last && last.hours) inputEl.value = last.hours;
+      // Refresh the hint with calc'd service-due bucket using whatever
+      // value is now in the input.
+      DailyInspection._checkHoursService();
+      return;
+    }
+    // v783: async Bouncie odo fetch + pre-fill hint (trucks only)
     DailyInspection._fetchLatestBouncieOdo(vehId).then(function(odo) {
       DailyInspection._lastBouncieOdo = odo;
       var hintEl = document.getElementById('insp-odo-hint');
@@ -438,6 +460,106 @@ var DailyInspection = {
     });
   },
 
+  // v786: store / retrieve engine-hours history per equipment.
+  _hoursKey: function(vehId) { return 'bm-equipment-hours-' + vehId; },
+  _getHoursHistory: function(vehId) {
+    try { return JSON.parse(localStorage.getItem(DailyInspection._hoursKey(vehId)) || '[]'); }
+    catch(e) { return []; }
+  },
+  _getLastHours: function(vehId) {
+    var h = DailyInspection._getHoursHistory(vehId);
+    return h.length ? h[h.length - 1] : null;
+  },
+  _appendHoursEntry: function(vehId, hours) {
+    var hist = DailyInspection._getHoursHistory(vehId);
+    hist.push({ date: new Date().toISOString(), hours: hours });
+    // Cap to last 365 entries (1yr of daily readings)
+    if (hist.length > 365) hist = hist.slice(-365);
+    localStorage.setItem(DailyInspection._hoursKey(vehId), JSON.stringify(hist));
+    return hist;
+  },
+  // Settings: track last-service-hours per equipment so we can compute
+  // "due in X hours". Doug edits via the chip's wrench link in the hint.
+  _svcKey: function(vehId) { return 'bm-equipment-service-' + vehId; },
+  _getLastServiceHours: function(vehId) {
+    var v = parseFloat(localStorage.getItem(DailyInspection._svcKey(vehId)) || '');
+    return isNaN(v) ? null : v;
+  },
+  _setLastServiceHours: function(vehId, hours) {
+    if (hours == null || isNaN(hours)) {
+      localStorage.removeItem(DailyInspection._svcKey(vehId));
+    } else {
+      localStorage.setItem(DailyInspection._svcKey(vehId), String(hours));
+    }
+  },
+  _markServiced: function(vehId) {
+    var inputEl = document.getElementById('insp-odo');
+    var entered = inputEl ? parseFloat(inputEl.value) : NaN;
+    var current = !isNaN(entered) && entered > 0 ? entered : (DailyInspection._getLastHours(vehId) || {}).hours;
+    if (!current) { UI.toast('Enter current engine hours first', 'error'); return; }
+    if (!confirm('Mark service completed at ' + current + ' hours? Next service will calculate from this baseline.')) return;
+    DailyInspection._setLastServiceHours(vehId, current);
+    UI.toast('Service baseline set @ ' + current + 'h');
+    DailyInspection._checkHoursService();
+  },
+  _serviceHintInitial: function(v) {
+    var last = DailyInspection._getLastHours(v.id);
+    var lastSvc = DailyInspection._getLastServiceHours(v.id);
+    var label = lastSvc != null
+      ? 'last svc @ ' + lastSvc + 'h'
+      : (last ? 'last reading ' + last.hours + 'h' : 'first reading');
+    return '<span style="color:var(--text-light);">⚙ ' + label + '</span>';
+  },
+  // Live service-due chip beside the engine-hours input.
+  _checkHoursService: function() {
+    var inputEl = document.getElementById('insp-odo');
+    var hintEl = document.getElementById('insp-odo-hint');
+    if (!inputEl || !hintEl) return;
+    // Pick the active vehicle from the rendered header label — cheap.
+    var activeWrap = hintEl.closest('[data-veh]');
+    var vehId = activeWrap ? activeWrap.getAttribute('data-veh') : null;
+    if (!vehId) {
+      // Fallback: scan _vehicles to find one whose label appears in the modal heading.
+      var headerEl = hintEl.closest('div').parentElement && hintEl.closest('div').parentElement.querySelector('div[style*="font-weight:700"]');
+      var headerText = headerEl ? headerEl.textContent : '';
+      var match = DailyInspection._vehicles.find(function(x) {
+        return x.tracks_hours && headerText.indexOf(x.label) >= 0;
+      });
+      vehId = match ? match.id : null;
+    }
+    if (!vehId) return;
+    var v = DailyInspection._vehicles.find(function(x){ return x.id === vehId; });
+    if (!v || !v.tracks_hours) return;
+    var entered = parseFloat(inputEl.value);
+    if (isNaN(entered) || entered <= 0) {
+      hintEl.innerHTML = DailyInspection._serviceHintInitial(v)
+        + ' <a href="#" onclick="event.preventDefault();DailyInspection._markServiced(\'' + v.id + '\')" style="color:var(--accent);margin-left:6px;">🔧 mark serviced</a>';
+      return;
+    }
+    var interval = v.service_interval_hours || 100;
+    var lastSvc = DailyInspection._getLastServiceHours(v.id);
+    var sinceSvc = (lastSvc != null) ? (entered - lastSvc) : null;
+    var dueInLabel, color;
+    if (sinceSvc == null) {
+      dueInLabel = 'no service baseline · interval ' + interval + 'h';
+      color = 'var(--text-light)';
+    } else {
+      var remaining = interval - sinceSvc;
+      if (remaining <= 0) {
+        dueInLabel = '🛠 SERVICE OVERDUE by ' + Math.abs(Math.round(remaining * 10) / 10) + 'h';
+        color = '#991b1b';
+      } else if (remaining <= 10) {
+        dueInLabel = '🛠 service in ' + (Math.round(remaining * 10) / 10) + 'h';
+        color = '#c2410c';
+      } else {
+        dueInLabel = '✓ ' + Math.round(remaining) + 'h to next service';
+        color = '#15803d';
+      }
+    }
+    hintEl.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + dueInLabel + '</span>'
+      + ' <a href="#" onclick="event.preventDefault();DailyInspection._markServiced(\'' + v.id + '\')" style="color:var(--accent);margin-left:6px;font-weight:400;">🔧</a>';
+  },
+
   // v783: live drift indicator under the odo input. Anything > 50mi off the
   // Bouncie reading gets a warning pill (catches transposed digits / wrong
   // truck submitted). Hint slot is also where the "use" link lives so we
@@ -483,9 +605,26 @@ var DailyInspection = {
     var plate = (document.getElementById('insp-plate') || {}).value || '';
     var notes = (document.getElementById('insp-notes') || {}).value || '';
     if (!driver) { alert('Enter driver name'); return; }
-    // v783: capture odometer + flag drift > 50mi from Bouncie reading
+    // v783 + v786: capture odometer (miles) or engine hours, depending on
+    // whether this equipment is OBD-tracked or hours-tracked.
     var odoVal = parseFloat((document.getElementById('insp-odo') || {}).value || '');
-    var odometer = (!isNaN(odoVal) && odoVal > 0) ? Math.round(odoVal) : null;
+    var odometer = null, engineHours = null, hoursServiceDue = null;
+    if (v.tracks_hours) {
+      engineHours = (!isNaN(odoVal) && odoVal > 0) ? Math.round(odoVal * 10) / 10 : null;
+      if (engineHours != null) {
+        DailyInspection._appendHoursEntry(v.id, engineHours);
+        var lastSvc = DailyInspection._getLastServiceHours(v.id);
+        if (lastSvc != null) {
+          var interval = v.service_interval_hours || 100;
+          var remaining = interval - (engineHours - lastSvc);
+          if (remaining <= 10) {
+            hoursServiceDue = { remaining: Math.round(remaining * 10) / 10, interval: interval, lastService: lastSvc };
+          }
+        }
+      }
+    } else {
+      odometer = (!isNaN(odoVal) && odoVal > 0) ? Math.round(odoVal) : null;
+    }
     var bouncieOdo = DailyInspection._lastBouncieOdo;
     var odoDrift = null;
     if (odometer && bouncieOdo) {
@@ -503,6 +642,8 @@ var DailyInspection = {
       vehicleId: v.id,
       vehicleLabel: v.label,
       odometer: odometer,
+      engineHours: engineHours,
+      hoursServiceDue: hoursServiceDue,
       odoDrift: odoDrift,
       checked: done,
       total: checks.length,
@@ -520,6 +661,10 @@ var DailyInspection = {
 
     var toastSuffix = '';
     if (odoDrift) toastSuffix = ' · ⚠ odo ' + (odoDrift.diff > 0 ? '+' : '') + odoDrift.diff + 'mi vs Bouncie';
+    if (hoursServiceDue) {
+      toastSuffix += ' · 🛠 svc '
+        + (hoursServiceDue.remaining <= 0 ? 'OVERDUE ' + Math.abs(hoursServiceDue.remaining) + 'h' : 'in ' + hoursServiceDue.remaining + 'h');
+    }
     UI.toast((record.pass ? '✓ ' : '⚠️ ') + v.label + ' — ' + (record.pass ? 'all clear' : done + '/' + checks.length + ' passed') + toastSuffix);
     if (typeof loadPage === 'function' && window._currentPage === 'pretrip') loadPage('pretrip');
   },
