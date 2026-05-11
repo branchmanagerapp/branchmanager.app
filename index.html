@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 769; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 770; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v769.min.js"></script>
+<script defer src="dist/bm.bundle.v770.min.js"></script>
 
 
 
@@ -3090,15 +3090,24 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
-    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:420px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.2);">'
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:440px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.2);">'
       + '<div style="font-size:42px;margin-bottom:8px;">🌳</div>'
       + '<div style="font-size:20px;font-weight:800;margin-bottom:6px;">Welcome to Branch Manager' + (name ? ', ' + name.replace(/[<>"]/g, '') : '') + '!</div>'
-      + '<div style="font-size:14px;color:#666;line-height:1.5;margin-bottom:16px;">This is your own private workspace. Add a few clients, send a test quote, see how the workflow feels — none of it is visible to anyone else.</div>'
-      + '<button id="welcome-close" style="background:#1a3c12;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:700;cursor:pointer;">Start exploring →</button>'
+      + '<div style="font-size:14px;color:#666;line-height:1.5;margin-bottom:18px;">This is your own private workspace. The quickest path to a working tool is the <b>Setup checklist</b> — about 5 minutes to wire up company info, Stripe, and email.</div>'
+      + '<button id="welcome-setup" style="background:#1a3c12;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;width:100%;margin-bottom:10px;">🛠️ Set up my workspace →</button>'
+      + '<button id="welcome-close" style="background:none;color:#666;border:none;padding:6px;cursor:pointer;font-size:12px;text-decoration:underline;">Just look around — I\'ll set up later</button>'
       + '</div>';
     document.body.appendChild(ov);
-    document.getElementById('welcome-close').onclick = function() { ov.remove(); };
-    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    function dismiss() { try { ov.remove(); } catch(e){} }
+    document.getElementById('welcome-setup').onclick = function() {
+      // v770: route the new tenant directly into the v769 setup checklist
+      // with it expanded (clear collapse flag).
+      try { localStorage.setItem('bm-setup-collapsed', '0'); } catch(e) {}
+      dismiss();
+      if (typeof loadPage === 'function') loadPage('settings');
+    };
+    document.getElementById('welcome-close').onclick = dismiss;
+    ov.onclick = function(e) { if (e.target === ov) dismiss(); };
   }, 600);
 });
 // Restore sidebar state. v657: storage-guarded for data:-URL contexts.
