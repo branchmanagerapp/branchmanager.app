@@ -41,6 +41,15 @@ var FleetPage = {
 
     // Update the Bouncie pill async — reads tenants.config.bouncie.access_token
     setTimeout(function() { FleetPage._refreshBouncieStatus(); }, 30);
+    // v749: also refresh when the tab regains focus — likely the user
+    // just returned from the OAuth tab, so the pill needs to flip from
+    // "Not connected" to "✓ Connected" without a full reload.
+    if (!FleetPage._focusHooked) {
+      FleetPage._focusHooked = true;
+      window.addEventListener('focus', function() {
+        if (document.getElementById('fleet-bouncie-pill')) FleetPage._refreshBouncieStatus();
+      });
+    }
 
     if (self._err) {
       html += '<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;">' + UI.esc(self._err) + '</div>';
