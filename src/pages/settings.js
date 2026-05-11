@@ -56,6 +56,15 @@ var SettingsPage = {
         }).join('')
       + '</div>';
 
+    // v769: Tenant setup checklist — sits above the expand/collapse toolbar
+    // so new tenants land on it. Auto-collapses to a status bar once
+    // everything's wired.
+    try {
+      if (typeof TenantSetup !== 'undefined' && TenantSetup.renderChecklist) {
+        html += TenantSetup.renderChecklist();
+      }
+    } catch(e) { /* never block Settings render */ }
+
     // Expand-all / Collapse-all toolbar
     html += '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">'
       +   '<button onclick="SettingsPage._collapseAll(true)" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);">Collapse all (this tab)</button>'
