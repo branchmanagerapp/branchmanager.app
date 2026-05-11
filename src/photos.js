@@ -216,7 +216,24 @@ var Photos = {
       { label: 'After', color: '#15803d', photos: dated.slice(midEnd) }
     ].filter(function(b) { return b.photos.length > 0; });
 
-    var sectionHtml = '';
+    // v809: one-click save Before-bucket + After-bucket as a B/A pair
+    var beforeBucket = buckets.find(function(b){ return b.label === 'Before'; });
+    var afterBucket  = buckets.find(function(b){ return b.label === 'After'; });
+    var canPair = beforeBucket && afterBucket && recordType === 'job';
+    var pairBtnHtml = '';
+    if (canPair) {
+      var beforeUrl = beforeBucket.photos[0].p.url;
+      var afterUrl  = afterBucket.photos[afterBucket.photos.length - 1].p.url;
+      pairBtnHtml = '<div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;">'
+        + '<div style="font-size:12px;color:#065f46;flex:1;min-width:200px;">📌 First "Before" + last "After" can become a saved B/A pair.</div>'
+        + '<button onclick="Photos._saveBucketsAsPair(\'' + recordId + '\','
+        +   '\'' + beforeUrl.replace(/'/g, "\\'") + '\','
+        +   '\'' + afterUrl.replace(/'/g, "\\'")  + '\')" '
+        + 'style="background:#15803d;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ Save as B/A pair</button>'
+        + '</div>';
+    }
+
+    var sectionHtml = pairBtnHtml;
     buckets.forEach(function(b) {
       var first = b.photos[0].ts, last = b.photos[b.photos.length - 1].ts;
       var rangeLabel;
@@ -242,6 +259,43 @@ var Photos = {
       sectionHtml += '</div></div>';
     });
     return sectionHtml;
+  },
+
+  // v809: directly promote the timeline Before/After picks to a saved
+  // bm-beforeafter pair. Bypasses the v801 auto-suggest modal — for users
+  // who already see the buckets and want one tap.
+  _saveBucketsAsPair: function(jobId, beforeUrl, afterUrl) {
+    if (!jobId || !beforeUrl || !afterUrl) { UI.toast('Missing pair data', 'error'); return; }
+    if (typeof DB === 'undefined' || !DB.jobs) { UI.toast('DB unavailable', 'error'); return; }
+    var job = DB.jobs.getById(jobId);
+    if (!job) { UI.toast('Job not found', 'error'); return; }
+    // Block duplicate pairs for this same job
+    if (typeof BeforeAfter !== 'undefined' && BeforeAfter.getForJob) {
+      var existing = BeforeAfter.getForJob(jobId);
+      if (existing && existing.length) {
+        if (!confirm('A B/A pair already exists for this job. Add another?')) return;
+      }
+    }
+    var pair = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 6),
+      jobId: jobId,
+      clientName: job.clientName || '',
+      beforeImg: beforeUrl,
+      afterImg: afterUrl,
+      caption: job.description || '',
+      tags: [],
+      createdAt: new Date().toISOString(),
+      source: 'timeline-bucket'
+    };
+    if (typeof BeforeAfter !== 'undefined' && BeforeAfter.getAll && BeforeAfter._save) {
+      var all = BeforeAfter.getAll();
+      all.push(pair);
+      BeforeAfter._save(all);
+      UI.toast('✓ B/A pair saved');
+      if (typeof loadPage === 'function' && window._currentPage) loadPage(window._currentPage);
+    } else {
+      UI.toast('BeforeAfter module unavailable', 'error');
+    }
   },
 
   _fallbackGrid: function(photos, recordType, recordId) {
