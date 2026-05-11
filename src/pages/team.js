@@ -189,20 +189,70 @@ var TeamPage = {
     });
   },
 
-  // v743: edit a crew member's photo URL. URL-based for now (point at
-  // any hosted image — Supabase Storage, S3, social profile, etc.).
-  // Per Doug's preference, file upload is a future task; keeping URL
-  // input means it works today without a storage bucket commitment.
+  // v753: edit a crew member's photo. Supports both file upload (writes
+  // to the job-photos bucket under crew/<id>/) and URL paste (point at
+  // any hosted image). Reuses the existing Photos.BUCKET so no new
+  // storage commitment.
   _editPhoto: function(id) {
     var m = TeamPage.getMembers().find(function(x){ return x.id === id; });
     if (!m) return;
     var current = m.photo_url || '';
-    var val = prompt('Photo URL for ' + (m.name || 'this crew member') + '\n\n(Leave blank to clear)', current);
-    if (val === null) return;
-    val = val.trim();
-    TeamPage.saveMember(Object.assign({}, m, { photo_url: val || null }));
-    UI.toast(val ? 'Photo updated' : 'Photo cleared');
+    var preview = current
+      ? '<img src="' + UI.esc(current) + '" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;background:#f3f4f6;display:block;margin:0 auto 12px;">'
+      : '<div style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px;">👷</div>';
+    var html = preview
+      + '<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-light);letter-spacing:.4px;margin-bottom:6px;">Upload from your device</div>'
+      + '<input type="file" id="tm-photo-file" accept="image/*" '
+      +   'onchange="TeamPage._uploadPhotoFile(\'' + id + '\', this.files[0])" '
+      +   'style="display:block;width:100%;margin-bottom:14px;font-size:13px;">'
+      + '<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-light);letter-spacing:.4px;margin-bottom:6px;">…or paste an image URL</div>'
+      + '<input type="url" id="tm-photo-url" value="' + UI.esc(current) + '" placeholder="https://…" '
+      +   'style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:4px;">'
+      + '<div id="tm-photo-status" style="font-size:11px;color:var(--text-light);min-height:16px;margin-top:8px;"></div>';
+    UI.showModal('Photo — ' + UI.esc(m.name || ''), html, {
+      footer: '<button class="btn btn-outline" style="color:#c62828;margin-right:auto;" onclick="TeamPage._savePhotoUrl(\'' + id + '\', \'\')">Remove photo</button>'
+        + '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="TeamPage._savePhotoUrl(\'' + id + '\', document.getElementById(\'tm-photo-url\').value)">Save URL</button>'
+    });
+  },
+
+  _savePhotoUrl: function(id, url) {
+    var m = TeamPage.getMembers().find(function(x){ return x.id === id; });
+    if (!m) return;
+    var clean = (url || '').trim();
+    TeamPage.saveMember(Object.assign({}, m, { photo_url: clean || null }));
+    UI.closeModal();
+    UI.toast(clean ? 'Photo updated' : 'Photo cleared');
     TeamPage.showDetail(id);
+  },
+
+  _uploadPhotoFile: async function(id, file) {
+    if (!file) return;
+    var status = document.getElementById('tm-photo-status');
+    if (status) status.textContent = 'Uploading…';
+    var m = TeamPage.getMembers().find(function(x){ return x.id === id; });
+    if (!m) return;
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) {
+      if (status) status.textContent = 'Supabase not connected — paste a URL instead.';
+      return;
+    }
+    var BUCKET = (typeof Photos !== 'undefined' && Photos.BUCKET) ? Photos.BUCKET : 'job-photos';
+    try {
+      var safeName = (file.name || 'avatar.jpg').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '.jpg');
+      var path = 'crew/' + id + '/' + Date.now() + '_' + safeName;
+      var up = await SupabaseDB.client.storage.from(BUCKET).upload(path, file, { contentType: file.type || 'image/jpeg' });
+      if (up.error) throw up.error;
+      var pub = SupabaseDB.client.storage.from(BUCKET).getPublicUrl(path);
+      var url = pub && pub.data && pub.data.publicUrl;
+      if (!url) throw new Error('No public URL returned');
+      // Reflect in the URL field for visibility, then save
+      var urlEl = document.getElementById('tm-photo-url');
+      if (urlEl) urlEl.value = url;
+      TeamPage._savePhotoUrl(id, url);
+    } catch (e) {
+      console.error('photo upload failed:', e);
+      if (status) status.textContent = 'Upload failed: ' + (e.message || 'unknown error');
+    }
   },
 
   // v743: edit hourly rate inline from the profile (same data lane as
