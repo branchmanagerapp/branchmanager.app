@@ -24,8 +24,36 @@ var ReportsPage = {
     });
     var sumOf = function(arr) { return arr.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0); };
 
+    // v782: stacked bar above the 4 stat tiles so the bucket *mix* is
+    // visible at a glance — not just the totals. The mix matters more than
+    // the absolute dollar count for cash-flow decisions.
+    var agingArr = [
+      { label:'Current', total: sumOf(aging.current), count: aging.current.length, color:'#15803d' },
+      { label:'30+',     total: sumOf(aging.over30),  count: aging.over30.length,  color:'#ca8a04' },
+      { label:'60+',     total: sumOf(aging.over60),  count: aging.over60.length,  color:'#c2410c' },
+      { label:'90+',     total: sumOf(aging.over90),  count: aging.over90.length,  color:'#991b1b' }
+    ];
+    var agingTotal = agingArr.reduce(function(s,b){ return s + b.total; }, 0);
+    var agingBarHtml = '';
+    if (agingTotal > 0) {
+      var bar = '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--bg);margin-bottom:6px;">';
+      agingArr.forEach(function(b) {
+        var pct = b.total / agingTotal * 100;
+        if (pct > 0) bar += '<div title="' + b.label + ': ' + UI.moneyInt(b.total) + ' (' + b.count + ')" style="background:' + b.color + ';width:' + pct.toFixed(2) + '%;"></div>';
+      });
+      bar += '</div>';
+      var pctLabel = '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);">';
+      agingArr.forEach(function(b) {
+        var pct = (b.total / agingTotal * 100).toFixed(0);
+        pctLabel += '<span><span style="display:inline-block;width:8px;height:8px;background:' + b.color + ';border-radius:50%;margin-right:4px;"></span>' + b.label + ' · <b style="color:' + b.color + ';">' + pct + '%</b></span>';
+      });
+      pctLabel += '</div>';
+      agingBarHtml = '<div style="margin-bottom:14px;">' + bar + pctLabel + '</div>';
+    }
+
     html += '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
       + '<h3 style="margin-bottom:16px;">Invoice Aging</h3>'
+      + agingBarHtml
       + '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">'
       + '<div style="text-align:center;padding:14px;background:#e8f5e9;border-radius:10px;"><div style="font-size:11px;color:#666;text-transform:uppercase;font-weight:600;">Current</div><div style="font-size:22px;font-weight:800;color:#2e7d32;">' + UI.moneyInt(sumOf(aging.current)) + '</div><div style="font-size:12px;color:#666;">' + aging.current.length + ' invoice' + (aging.current.length !== 1 ? 's' : '') + '</div></div>'
       + '<div style="text-align:center;padding:14px;background:#fff3e0;border-radius:10px;"><div style="font-size:11px;color:#666;text-transform:uppercase;font-weight:600;">30+ Days</div><div style="font-size:22px;font-weight:800;color:#e65100;">' + UI.moneyInt(sumOf(aging.over30)) + '</div><div style="font-size:12px;color:#666;">' + aging.over30.length + ' invoice' + (aging.over30.length !== 1 ? 's' : '') + '</div></div>'

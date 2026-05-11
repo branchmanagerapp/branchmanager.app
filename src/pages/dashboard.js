@@ -461,7 +461,52 @@ var DashboardPage = {
       // v636: roll the Overdue Invoices count into the Receivables card so
       // the dropped collapsed card's info isn't lost.
       var rcvOverdueTotal = overdueInvoices.reduce(function(s, i) { return s + (Number(i.balance) || Number(i.total) || 0);}, 0);
-      var rcvBody = '';
+
+      // v782: AR aging buckets (0–30 / 31–60 / 61–90 / 90+) as a stacked bar
+      // above the invoice list. Uses dueDate if present; falls back to
+      // createdAt or sentAt so even draft-to-sent invoices land in a bucket.
+      var nowMsAR = Date.now();
+      var agingBuckets = [
+        { key:'cur',  label:'0–30d',  total:0, count:0, color:'#15803d' },
+        { key:'b30',  label:'31–60d', total:0, count:0, color:'#ca8a04' },
+        { key:'b60',  label:'61–90d', total:0, count:0, color:'#c2410c' },
+        { key:'b90',  label:'90+d',   total:0, count:0, color:'#991b1b' }
+      ];
+      rcvUnpaid.forEach(function(inv) {
+        var anchor = inv.dueDate || inv.sentAt || inv.createdAt;
+        if (!anchor) return;
+        var days = Math.floor((nowMsAR - new Date(anchor).getTime()) / 86400000);
+        if (isNaN(days) || days < 0) days = 0;
+        var bal = Number(inv.balance) || Number(inv.total) || 0;
+        var b;
+        if (days > 90) b = agingBuckets[3];
+        else if (days > 60) b = agingBuckets[2];
+        else if (days > 30) b = agingBuckets[1];
+        else b = agingBuckets[0];
+        b.total += bal;
+        b.count += 1;
+      });
+      var agingTotalAR = agingBuckets.reduce(function(s,b){ return s + b.total; }, 0);
+      var agingBarHtml = '';
+      if (agingTotalAR > 0) {
+        var bar = '<div style="display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--bg);">';
+        agingBuckets.forEach(function(b) {
+          var pct = b.total / agingTotalAR * 100;
+          if (pct > 0) bar += '<div title="' + b.label + ': ' + UI.moneyInt(b.total) + ' (' + b.count + ')" style="background:' + b.color + ';width:' + pct.toFixed(2) + '%;"></div>';
+        });
+        bar += '</div>';
+        var legend = '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:5px;">';
+        agingBuckets.forEach(function(b) {
+          legend += '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:7px;height:7px;background:' + b.color + ';border-radius:50%;"></span>' + b.label + ' <b style="color:' + b.color + ';">' + UI.moneyInt(b.total) + '</b></span>';
+        });
+        legend += '</div>';
+        agingBarHtml = '<div style="margin-bottom:10px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--text-light);margin-bottom:4px;"><span style="font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Aging</span><span>' + rcvUnpaid.length + ' open</span></div>'
+          + bar + legend
+          + '</div>';
+      }
+
+      var rcvBody = agingBarHtml;
       rcvUnpaid.slice(0, 6).forEach(function(inv) {
         var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
         var lateColor = daysLate > 30 ? '#dc3545' : daysLate > 0 ? '#e65100' : 'var(--text-light)';
