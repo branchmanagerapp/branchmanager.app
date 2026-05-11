@@ -140,6 +140,14 @@ var Templates = {
   fill: function(template, data) {
     var text = template;
     var base = (typeof location !== 'undefined') ? (location.origin + location.pathname.replace(/[^/]*$/, '')) : 'https://branchmanager.app/';
+    // v754: pull company strings from CompanyInfo (which checks localStorage
+    // overrides first) instead of raw BM_CONFIG. Was: tenant-customized
+    // companyName/phone/email/etc never reached outbound SMS or email
+    // because Templates.fill hardcoded SNT defaults via BM_CONFIG.
+    var ci = (typeof CompanyInfo !== 'undefined') ? CompanyInfo : null;
+    var get = function(key, fallback) {
+      try { return ci ? (ci.get(key) || fallback) : fallback; } catch (e) { return fallback; }
+    };
     var vars = {
       '{{name}}': data.name || data.clientName || '',
       '{{company}}': data.company || '',
@@ -156,12 +164,12 @@ var Templates = {
       '{{invoiceId}}': data.invoiceId || data.id || '',
       '{{approvalLink}}': data.approvalLink || (data.quoteId || data.id ? base + 'approve.html?id=' + (data.quoteId || data.id) : ''),
       '{{payLink}}': data.payLink || (data.invoiceId || data.id ? base + 'pay.html?id=' + (data.invoiceId || data.id) : ''),
-      '{{reviewLink}}': BM_CONFIG.googleReviewUrl || data.reviewLink || 'https://g.page/r/CcVkZHV_EKlEEBM/review',
-      '{{companyName}}': BM_CONFIG.companyName,
-      '{{companyPhone}}': BM_CONFIG.phone,
-      '{{companyEmail}}': BM_CONFIG.email,
-      '{{companyWebsite}}': BM_CONFIG.website,
-      '{{ownerName}}': BM_CONFIG.ownerName
+      '{{reviewLink}}': get('googleReviewUrl', data.reviewLink || (BM_CONFIG && BM_CONFIG.googleReviewUrl) || ''),
+      '{{companyName}}': get('name', BM_CONFIG && BM_CONFIG.companyName),
+      '{{companyPhone}}': get('phone', BM_CONFIG && BM_CONFIG.phone),
+      '{{companyEmail}}': get('email', BM_CONFIG && BM_CONFIG.email),
+      '{{companyWebsite}}': get('website', BM_CONFIG && BM_CONFIG.website),
+      '{{ownerName}}': get('ownerName', (BM_CONFIG && BM_CONFIG.ownerName) || '')
     };
     Object.keys(vars).forEach(function(key) {
       text = text.split(key).join(vars[key]);
