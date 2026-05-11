@@ -47,6 +47,7 @@
     "src/pages/expiringdocs.js",
     "src/pages/tenantsetup.js",
     "src/tenant-switcher.js",
+    "src/supa-health.js",
     "src/pages/staleclients.js",
     "src/pages/reviewtools.js",
     "src/pages/weeklysummary.js",
