@@ -978,16 +978,30 @@ var EquipmentPage = {
     // OEM part number quick-reference for the Giant 254T Loader / Kubota D902-E4B.
     // Each row deep-links to the Messick's product page so Add-to-Cart is one tap.
     // R&L still uses search since their slugs aren't predictable.
+    // v811: PNs cross-checked May 11 2026 against the official Kubota
+    // D902-E4B-PBS-1 Illustrated Parts List PDF (in this equipment's docs as
+    // doc-g5) — section 050000 WATER FLANGE AND THERMOSTAT, page 29:
+    //   • REF 100 ASSY THERMOSTAT     = 19434-7301-4 (= 19434-73014)
+    //     19434-73015 is the current supersession Messick's ships.
+    //   • REF 120 GASKET, THERMOSTAT  = 16221-7327-0 (= 16221-73270)
+    //   • REF 030 SWITCH,ASSY (THERMO)= 19498-8304-0 (= 19498-83040)
+    //     16222-83040 is the documented cross-reference — interchange part.
+    // Note: Kubota labels it a "SWITCH" not a "SENSOR" — single-wire overheat
+    // threshold device for the warning light. If the Giant has an analog
+    // gauge with a needle, that's a SECOND Giant-installed sender (not in
+    // Kubota's IPL — call dealer with engine + machine serials).
     if (id === 'eq4b') {
       var parts = [
-        { name: 'Water Pump',          pn: '1E051-73036' },
-        { name: 'W/P Gasket',          pn: '16871-73430' },
-        { name: 'Thermostat',          pn: '19434-73015' },
-        { name: 'T-stat Gasket',       pn: '16221-73270' },
+        { name: 'Water Pump',           pn: '1E051-73036' },
+        { name: 'W/P Gasket',           pn: '16871-73430' },
+        { name: 'Thermostat',           pn: '19434-73015' },
+        { name: 'T-stat Gasket',        pn: '16221-73270' },
         // v644: added after May 6 2026 conversation — repeated overheats may
         // have fried the coolant temp sender; gauge reads low → easy to
         // re-cook the engine. ~$25-40, 5-min swap.
-        { name: 'Coolant Temp Sender', pn: '16222-83040' }
+        // v811: PN updated 16222-83040 → 19498-83040 to match the official
+        // D902-E4B IPL (16222-83040 is a valid cross-reference / interchange).
+        { name: 'Coolant Temp Switch',  pn: '19498-83040' }
       ];
       html += '<div style="margin-top:12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;">'
         + '<div style="font-size:12px;font-weight:700;color:#8a6d00;margin-bottom:8px;">🔩 Giant 254T · Kubota D902-E4B Cooling Kit · OEM Part Numbers</div>';
@@ -1032,13 +1046,15 @@ var EquipmentPage = {
         +       '<li>New gasket every install (PN 16221-73270) — never re-use</li>'
         +       '<li>Bolts in cross/star pattern: snug, then torque to WSM spec (see Service Manual ▸ Cooling)</li>'
         +     '</ul>'
-        +     '<div style="font-weight:700;margin-bottom:4px;">Suspect a fried coolant temp sender (PN 16222-83040)</div>'
-        +     '<div style="margin:0 0 6px;">Repeated overheats can drift the thermistor permanently. Symptom: gauge reads low/cold even when engine is hot — easy way to re-cook it.</div>'
-        +     '<ul style="margin:0;padding-left:20px;">'
-        +       '<li><strong>Quick test (multimeter):</strong> cold engine ≈ kΩ range · at op-temp ≈ few hundred Ω</li>'
-        +       '<li>Stays high or bounces wildly → fried, swap it</li>'
+        +     '<div style="font-weight:700;margin-bottom:4px;">Coolant temp switch (PN 19498-83040 · cross-ref 16222-83040)</div>'
+        +     '<div style="margin:0 0 6px;">Kubota labels this a SWITCH not a sender — single-wire overheat threshold on the water flange. Trips the dash warning light when coolant exceeds set temp. Repeated overheats can also kill it.</div>'
+        +     '<ul style="margin:0 0 10px;padding-left:20px;">'
+        +       '<li><strong>1 wire to it</strong> = it\'s this switch (PN above)</li>'
+        +       '<li><strong>2 wires to it</strong> = analog sender installed by Giant downstream of Kubota — NOT in Kubota IPL. Call Tobroco-Giant with engine + machine serials</li>'
+        +       '<li><strong>Quick test (multimeter):</strong> cold engine ≈ open circuit · at op-temp threshold ≈ closes</li>'
         +       '<li>~$25–40, 5-min job · ordered with the cooling kit above</li>'
         +     '</ul>'
+        +     '<div style="font-size:11px;color:#1e40af;font-style:italic;">Source: Kubota D902-E4B-PBS-1 IPL (97898-80830, Mar 2013) — section 050000 · page 29 · in this equipment\'s docs as <code>doc-g5</code>.</div>'
         +   '</div>'
         + '</div>';
     }
