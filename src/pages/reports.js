@@ -413,6 +413,11 @@ var ReportsPage = {
     // p80 line so Doug knows when a quote is "going cold" (past p80 ≈ dead).
     html += ReportsPage._renderQuoteCloseHistogram();
 
+    // v797: Job duration accuracy — compare estimatedHours on completed
+    // jobs against actual tracked hours from time_entries. Surfaces which
+    // service types Doug consistently underestimates.
+    html += ReportsPage._renderDurationAccuracy();
+
     // v403: Break-Even calculator (was in Tools → Calculators). Reports is
     // its proper home — it's a financial planning surface.
     html += '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-top:20px;overflow:hidden;">'
@@ -640,6 +645,119 @@ var ReportsPage = {
       +   '80% close by <b style="color:#92400e;">' + p80 + 'd</b></div>'
       + bars
       + goingColdMsg
+      + '</div>';
+  },
+
+  // v797: duration accuracy — average variance between estimatedHours
+  // and actual tracked hours per service type. Bias > 0 means we typically
+  // run OVER our estimate (and our prices are too low for that work type).
+  // Bias < 0 means we OVER-estimated (could've quoted faster / cheaper to
+  // win more). Uses time_entries hours summed per jobId.
+  _renderDurationAccuracy: function() {
+    var jobs = DB.jobs.getAll().filter(function(j) { return j.status === 'completed'; });
+    if (!jobs.length) return '';
+
+    var entries = (DB.timeEntries && DB.timeEntries.getAll) ? DB.timeEntries.getAll() : [];
+    var actualByJob = {};
+    entries.forEach(function(t) {
+      if (!t.jobId || !t.hours) return;
+      actualByJob[t.jobId] = (actualByJob[t.jobId] || 0) + (Number(t.hours) || 0);
+    });
+
+    // Per-service-type aggregate: extract primary service from line items
+    // (most common service across the job's lineItems wins; fallback to
+    // job.description first 40 chars). Tracks count, sumEst, sumActual,
+    // and a max-abs-variance sample for tooltip context.
+    var bySvc = {};
+    var totalSample = 0, totalEst = 0, totalAct = 0;
+    jobs.forEach(function(j) {
+      var actual = actualByJob[j.id];
+      var est = Number(j.estimatedHours);
+      if (!actual || !est || actual <= 0 || est <= 0) return;
+      // Determine primary service
+      var svc = 'Other';
+      if (Array.isArray(j.lineItems) && j.lineItems.length) {
+        var counts = {};
+        j.lineItems.forEach(function(li) {
+          var k = (li.service || li.description || '').trim().slice(0, 30);
+          if (k) counts[k] = (counts[k] || 0) + 1;
+        });
+        var best = null, bestN = 0;
+        Object.keys(counts).forEach(function(k) {
+          if (counts[k] > bestN) { bestN = counts[k]; best = k; }
+        });
+        if (best) svc = best;
+      } else if (j.description) {
+        svc = j.description.trim().slice(0, 30);
+      }
+      var b = bySvc[svc] || (bySvc[svc] = { svc: svc, count: 0, sumEst: 0, sumAct: 0 });
+      b.count++;
+      b.sumEst += est;
+      b.sumAct += actual;
+      totalSample++;
+      totalEst += est;
+      totalAct += actual;
+    });
+
+    if (totalSample === 0) {
+      return '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+        + '<h3 style="margin-bottom:4px;">Duration accuracy</h3>'
+        + '<div style="font-size:13px;color:var(--text-light);">No jobs with BOTH estimatedHours set AND time entries logged yet. Set estimatedHours when scheduling (now done automatically by Convert &amp; Book) and clock in/out per job to populate this report.</div>'
+        + '</div>';
+    }
+
+    // Sort by largest absolute variance
+    var rows = Object.values(bySvc).map(function(b) {
+      b.avgEst = b.sumEst / b.count;
+      b.avgAct = b.sumAct / b.count;
+      b.varPct = b.avgEst > 0 ? Math.round(((b.avgAct - b.avgEst) / b.avgEst) * 100) : 0;
+      return b;
+    }).sort(function(a, b) { return Math.abs(b.varPct) - Math.abs(a.varPct); });
+
+    var overallBias = Math.round(((totalAct - totalEst) / totalEst) * 100);
+
+    var rowsHtml = rows.slice(0, 12).map(function(b) {
+      var color = b.varPct > 25 ? '#991b1b' : b.varPct > 10 ? '#c2410c' : b.varPct < -25 ? '#15803d' : b.varPct < -10 ? '#65a30d' : 'var(--text-light)';
+      var arrow = b.varPct > 0 ? '↑' : b.varPct < 0 ? '↓' : '·';
+      var sign = b.varPct > 0 ? '+' : '';
+      return '<tr style="border-top:1px solid var(--border);">'
+        + '<td style="padding:6px 4px;font-size:13px;">' + UI.esc(b.svc) + '</td>'
+        + '<td style="padding:6px 4px;text-align:right;color:var(--text-light);">' + b.count + '</td>'
+        + '<td style="padding:6px 4px;text-align:right;">' + b.avgEst.toFixed(1) + 'h</td>'
+        + '<td style="padding:6px 4px;text-align:right;">' + b.avgAct.toFixed(1) + 'h</td>'
+        + '<td style="padding:6px 4px;text-align:right;font-weight:700;color:' + color + ';">' + arrow + ' ' + sign + b.varPct + '%</td>'
+        + '</tr>';
+    }).join('');
+
+    var biasColor = overallBias > 10 ? '#c2410c' : overallBias < -10 ? '#65a30d' : 'var(--text-light)';
+    var biasInterp;
+    if (overallBias > 15) biasInterp = 'You\'re consistently running OVER estimate. Quotes may be too cheap — consider raising rates or padding hours.';
+    else if (overallBias > 5) biasInterp = 'Slightly over estimate on average. Watch for the worst offenders below.';
+    else if (overallBias < -15) biasInterp = 'You\'re consistently UNDER estimate. Quoting padded — could win more by quoting tighter.';
+    else if (overallBias < -5) biasInterp = 'Slightly under estimate. Estimating is well-calibrated.';
+    else biasInterp = 'Estimates are well-calibrated.';
+
+    return '<div style="background:var(--white);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<h3 style="margin-bottom:4px;">Duration accuracy — est. vs actual hours</h3>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">' + totalSample + ' completed job' + (totalSample === 1 ? '' : 's') + ' with both an estimate AND tracked hours.</div>'
+      + '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px;">'
+      +   '<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">'
+      +     '<div style="font-size:13px;font-weight:700;">Overall bias</div>'
+      +     '<div style="font-size:18px;font-weight:800;color:' + biasColor + ';">' + (overallBias > 0 ? '+' : '') + overallBias + '%</div>'
+      +   '</div>'
+      +   '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">' + biasInterp + '</div>'
+      + '</div>'
+      + '<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+      +   '<thead><tr style="color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-size:11px;">'
+      +     '<th style="text-align:left;padding-bottom:6px;">Service / Work Type</th>'
+      +     '<th style="text-align:right;padding-bottom:6px;">n</th>'
+      +     '<th style="text-align:right;padding-bottom:6px;">Avg est</th>'
+      +     '<th style="text-align:right;padding-bottom:6px;">Avg actual</th>'
+      +     '<th style="text-align:right;padding-bottom:6px;">Bias</th>'
+      +   '</tr></thead>'
+      +   '<tbody>' + rowsHtml + '</tbody>'
+      + '</table>'
+      + (rows.length > 12 ? '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">Showing top 12 by absolute variance. ' + (rows.length - 12) + ' more service types in the data.</div>' : '')
       + '</div>';
   },
 
