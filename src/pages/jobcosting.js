@@ -12,6 +12,85 @@ var JobCosting = {
     return v !== null ? parseFloat(v) : def;
   },
 
+  // v768: Single source of truth for per-job P&L numbers.
+  // Reused by:
+  //   - JobsPage._renderProfitCard (the per-job card)
+  //   - JobCosting.render (the report-wide table)
+  // Inputs: a job object (any shape — uses .id / .total / .lineItems) and
+  // optionally the pre-filtered timeEntries (saves a getAll() call from
+  // hot paths like JobsPage.showDetail which already has them).
+  //
+  // Cost model:
+  //   labor    = sum(timeEntries.hours) × hourlyRate
+  //   hourlyRate = job.crew[0]'s rate from bm-team if set; else
+  //                bm-my-rate localStorage default $50
+  //   materials = sum(line items with item.kind === 'material' OR
+  //                   matching service in DB.materials)
+  //   expenses  = sum(bm-job-expenses-{id})
+  //   revenue   = job.total
+  //   profit    = revenue - (labor + materials + expenses)
+  //   margin    = round(profit / revenue * 100), 0 if no revenue
+  getJobStats: function(job, preFilteredEntries) {
+    if (!job) return { revenue:0, laborCost:0, materialsAndExpenses:0, totalCost:0, profit:0, margin:0, hours:0, hourlyRate:0, expenseCount:0 };
+    var entries = preFilteredEntries;
+    if (!entries) {
+      var allEntries = (typeof DB !== 'undefined' && DB.timeEntries && DB.timeEntries.getAll)
+        ? DB.timeEntries.getAll()
+        : (function(){ try { return JSON.parse(localStorage.getItem('bm-time-entries') || '[]'); } catch(e) { return []; } })();
+      entries = allEntries.filter(function(e) { return e.jobId === job.id; });
+    }
+    var hours = entries.reduce(function(s, e) { return s + (Number(e.hours) || 0); }, 0);
+    // Pick a blended rate. If the first crew member has a saved rate, use
+    // that; else fall back to bm-my-rate (legacy) or $50.
+    var hourlyRate = 0;
+    try {
+      var team = JSON.parse(localStorage.getItem('bm-team') || '[]');
+      if (job.crew && job.crew.length) {
+        for (var i = 0; i < job.crew.length; i++) {
+          var m = team.find(function(t) { return t.name === job.crew[i]; });
+          if (m && Number(m.rate) > 0) { hourlyRate = Number(m.rate); break; }
+        }
+      }
+    } catch(e) {}
+    if (!hourlyRate) {
+      hourlyRate = parseFloat(localStorage.getItem('bm-my-rate') || '50') || 50;
+    }
+    var laborCost = hours * hourlyRate;
+    // Logged per-job expenses (manually entered cost rows)
+    var expenses = [];
+    try { expenses = JSON.parse(localStorage.getItem('bm-job-expenses-' + job.id) || '[]'); } catch(e) {}
+    var expenseTotal = expenses.reduce(function(s, e) { return s + (Number(e.amount) || 0); }, 0);
+    // Materials extracted from line items where kind=='material' OR rate>0
+    // and service description matches a known material.
+    var materialsCost = 0;
+    if (Array.isArray(job.lineItems)) {
+      job.lineItems.forEach(function(li) {
+        if (li && (li.kind === 'material' || li.type === 'material')) {
+          var qty = Number(li.qty || 1);
+          var rate = Number(li.rate || li.cost || 0);
+          materialsCost += qty * rate;
+        }
+      });
+    }
+    var revenue = Number(job.total) || 0;
+    var totalCost = laborCost + materialsCost + expenseTotal;
+    var profit = revenue - totalCost;
+    var margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+    return {
+      revenue: revenue,
+      laborCost: laborCost,
+      materialsCost: materialsCost,
+      expenseTotal: expenseTotal,
+      materialsAndExpenses: materialsCost + expenseTotal,
+      totalCost: totalCost,
+      profit: profit,
+      margin: margin,
+      hours: hours,
+      hourlyRate: hourlyRate,
+      expenseCount: expenses.length
+    };
+  },
+
   render: function() {
     var jobs = DB.jobs.getAll().filter(function(j) { return j.status === 'completed'; });
     var timeEntries = JSON.parse(localStorage.getItem('bm-time-entries') || '[]');

@@ -417,6 +417,49 @@ var JobsPage = {
   // know when the crew is actually rolling. Routes through Dialpad if
   // available (logs to communications + threads in Messaging) and
   // falls back to a native sms: link otherwise.
+  // v768: Per-job profitability card — labor + materials + expenses
+  // vs revenue. Shows on every job detail. Reuses
+  // JobCosting.getJobStats so the math stays consistent with the
+  // Reports → Job Costing tab.
+  _renderProfitCard: function(j, timeEntries) {
+    if (typeof JobCosting === 'undefined' || !JobCosting.getJobStats) return '';
+    var s = JobCosting.getJobStats(j, timeEntries);
+    var marginColor = s.margin >= 40 ? '#2e7d32' : s.margin >= 20 ? '#e65100' : s.margin >= 0 ? '#c62828' : '#7f1d1d';
+    var marginBg    = s.margin >= 40 ? '#e8f5e9' : s.margin >= 20 ? '#fff3e0' : s.margin >= 0 ? '#ffebee' : '#fce4ec';
+    var marginLabel = s.margin >= 40 ? 'Excellent' : s.margin >= 20 ? 'OK' : s.margin >= 0 ? 'Below target' : 'Losing money';
+    // Layout: 4 numbers + margin pill + bar
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
+      +   '<h4 style="font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin:0;">💰 Profitability</h4>'
+      +   '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:' + marginBg + ';color:' + marginColor + ';">' + s.margin + '% · ' + marginLabel + '</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Revenue</div><div style="font-size:18px;font-weight:800;color:var(--text);">' + UI.money(s.revenue) + '</div></div>'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Labor</div><div style="font-size:18px;font-weight:800;color:var(--text);">' + UI.money(s.laborCost) + '</div><div style="font-size:11px;color:var(--text-light);">' + s.hours.toFixed(1) + 'h × $' + s.hourlyRate.toFixed(0) + '</div></div>'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Materials + Expenses</div><div style="font-size:18px;font-weight:800;color:var(--text);">' + UI.money(s.materialsAndExpenses) + '</div></div>'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Profit</div><div style="font-size:18px;font-weight:800;color:' + marginColor + ';">' + UI.money(s.profit) + '</div></div>'
+      + '</div>'
+      // Stacked bar visualization (revenue baseline)
+      + '<div style="position:relative;height:8px;border-radius:4px;background:var(--bg);overflow:hidden;display:flex;">';
+    if (s.revenue > 0) {
+      var laborPct  = Math.min(100, (s.laborCost / s.revenue) * 100);
+      var matlPct   = Math.min(100 - laborPct, (s.materialsAndExpenses / s.revenue) * 100);
+      var profitPct = Math.max(0, 100 - laborPct - matlPct);
+      html += '<div style="width:' + laborPct.toFixed(1) + '%;background:#1565c0;" title="Labor ' + UI.money(s.laborCost) + '"></div>'
+        + '<div style="width:' + matlPct.toFixed(1) + '%;background:#e65100;" title="Materials + Expenses ' + UI.money(s.materialsAndExpenses) + '"></div>'
+        + '<div style="width:' + profitPct.toFixed(1) + '%;background:' + (s.profit >= 0 ? '#2e7d32' : '#7f1d1d') + ';" title="Profit ' + UI.money(s.profit) + '"></div>';
+    }
+    html += '</div>'
+      + '<div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--text-light);">'
+      +   '<span><span style="display:inline-block;width:10px;height:10px;background:#1565c0;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Labor</span>'
+      +   '<span><span style="display:inline-block;width:10px;height:10px;background:#e65100;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Materials + Expenses</span>'
+      +   '<span><span style="display:inline-block;width:10px;height:10px;background:' + (s.profit >= 0 ? '#2e7d32' : '#7f1d1d') + ';border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Profit</span>'
+      + '</div>'
+      + (s.expenseCount > 0 ? '<div style="margin-top:8px;font-size:11px;color:var(--text-light);">📒 ' + s.expenseCount + ' expense row' + (s.expenseCount === 1 ? '' : 's') + ' logged · <a onclick="window._reportsTab=\'jobcosting\';loadPage(\'reports\')" style="color:var(--accent);cursor:pointer;">edit on Job Costing →</a></div>' : '<div style="margin-top:8px;font-size:11px;color:var(--text-light);">No expenses logged yet · <a onclick="window._reportsTab=\'jobcosting\';loadPage(\'reports\')" style="color:var(--accent);cursor:pointer;">add on Job Costing →</a></div>')
+      + '</div>';
+    return html;
+  },
+
   _etaToClient: function(id) {
     var j = DB.jobs.getById(id);
     if (!j) return;
@@ -1000,6 +1043,12 @@ var JobsPage = {
         + sb[1] + '</button>';
     });
     html += '</div></div>'
+
+      // v768: Per-job profitability card — labor (time × rate) + expenses
+      // + materials vs revenue. Visible on every job detail.
+      + (typeof JobCosting !== 'undefined' && JobCosting.getJobStats
+          ? JobsPage._renderProfitCard(j, timeEntries)
+          : '')
 
       // Description
       + (j.description ? '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">'
