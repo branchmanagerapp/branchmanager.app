@@ -472,18 +472,43 @@ var PipelinePage = {
   },
 
   // Data management
-  // v714: a request is "raw / untriaged" if it auto-fired from an inbound
-  // channel (Dialpad call, SMS, web webhook) and hasn't been enriched —
-  // no real client name, generic placeholder name, or marked spam.
-  // Those belong in the Leads Center until Doug triages them.
+  // v776: a request is "raw / untriaged" UNLESS it's been explicitly
+  // qualified. Previously this was an OR-gate (generic-name OR auto-
+  // source) — so any auto-routed request that happened to have a
+  // half-real name (e.g. "Phone caller from 914-555-1234") slipped
+  // through to the Pipeline. Now we flip the polarity: a request only
+  // earns Pipeline placement when it has clear positive qualification
+  // signals.
+  //
+  // QUALIFIED (returns false / shows in Pipeline) when ANY of:
+  //   - r.triaged === true OR r.promotedAt is set (explicit Doug action)
+  //   - r.source === 'Leads Center (qualified)' (v759 triage path)
+  //   - r.source === 'Online Form' / 'Book form' (book.html — already
+  //     validates name + contact at the edge fn per the v490ish hardening)
+  //   - Has real client name (non-generic) AND substantive title/notes
+  //     (>=8 chars beyond the name itself)
+  //
+  // EVERYTHING ELSE is "raw" → stays in Leads Center Triage.
   _isRawLead: function(r) {
     if (!r) return false;
     if (r.spam === true) return true;
     if (r.triaged === true || r.promotedAt) return false;
+    var src = (r.source || '').toLowerCase();
+    // Whitelist the trusted-source flags
+    if (src.indexOf('leads center (qualified)') >= 0) return false;
+    if (src === 'online form' || src === 'book form' || src === 'website') return false;
     var name = (r.clientName || '').trim();
-    var generic = !name || /^(Phone caller|SMS sender|Web form|Unknown caller|Inbound)$/i.test(name);
-    var autoSource = /Phone|Dialpad|SMS|Webhook|Web form/i.test(r.source || '');
-    return generic && autoSource;
+    var genericNamePattern = /^(phone caller|sms sender|web form|unknown(\s+caller)?|inbound|caller|customer|new lead)$/i;
+    var hasRealName = !!name && !genericNamePattern.test(name) && name.length >= 3;
+    var title = (r.title || r.notes || r.description || '').trim();
+    // Require BOTH a real-looking name AND meaningful service info before
+    // the request earns Pipeline placement.
+    var hasMeaningfulRequest = hasRealName && title.length >= 8;
+    if (hasMeaningfulRequest) return false;
+    // Everything else — including anything from Phone/Dialpad/SMS/Webhook
+    // that hasn't been explicitly qualified — is raw and belongs in
+    // Leads Center Triage.
+    return true;
   },
 
   getDeals: function() {
