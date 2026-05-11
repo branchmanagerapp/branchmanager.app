@@ -475,10 +475,14 @@ var TimeTrackPage = {
           var clockOutDisplay = t.clockOut
             ? new Date(t.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
             : (isActive ? '<span style="color:var(--green-dark);font-weight:600;">active</span>' : '—');
+          // v785: ⚠ flag for entries clocked in > 500m from job property
+          var offSiteFlag = t.clockInOffsite
+            ? ' <span title="Clocked in ' + (t.clockInDistM || '?') + 'm from property" style="color:#c2410c;font-weight:700;">⚠</span>'
+            : '';
           html += '<tr>'
             + '<td>' + (i === 0 ? '<strong>' + UI.dateShort(date) + '</strong>' : '') + '</td>'
             + '<td>' + (job ? UI.esc(job.clientName + ' #' + job.jobNumber) : 'General') + '</td>'
-            + '<td>' + (t.clockIn ? new Date(t.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—') + '</td>'
+            + '<td>' + (t.clockIn ? new Date(t.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—') + offSiteFlag + '</td>'
             + '<td>' + clockOutDisplay + '</td>'
             + '<td style="text-align:right;font-weight:600;">' + hours.toFixed(1) + '</td>'
             + '</tr>';
@@ -734,11 +738,79 @@ var TimeTrackPage = {
   _tickInterval: null,
 
   clockIn: function(jobId) {
+    // v785: geofence soft-check. If clocking in to a specific job whose
+    // property has lat/lng on file, sanity-check the device GPS to catch
+    // accidental "clocked in from home" entries. Distances > 500m prompt
+    // a confirm — user can still override (e.g. shop-prep before going on
+    // site, or a real GPS dropout). Distances ≤ 500m proceed silently.
+    if (jobId && typeof navigator !== 'undefined' && navigator.geolocation) {
+      var job = DB.jobs.getById(jobId);
+      var jLat = job ? Number(job.lat || job.latitude) : null;
+      var jLng = job ? Number(job.lng || job.longitude || job.lon) : null;
+      if (jLat && jLng && !isNaN(jLat) && !isNaN(jLng)) {
+        // Soft 3s timeout — don't block clock-in on a flaky GPS lock.
+        var timedOut = false;
+        var fallback = setTimeout(function() {
+          timedOut = true;
+          TimeTrackPage._actuallyClockIn(jobId, null);
+        }, 3000);
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          if (timedOut) return;
+          clearTimeout(fallback);
+          var dist = TimeTrackPage._geoMeters(
+            { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            { lat: jLat, lng: jLng }
+          );
+          if (dist != null && dist > 500) {
+            var distLabel = dist > 1000 ? (dist/1000).toFixed(1) + ' km' : Math.round(dist) + ' m';
+            var jobLabel = (job && (job.clientName || job.property)) ? (job.clientName || job.property) : '#' + jobId.substring(0,6);
+            if (!confirm('⚠ You appear to be ' + distLabel + ' from this job\'s property:\n\n  ' + jobLabel + '\n\nClock in anyway? (Override = on-site without GPS / shop prep work)')) {
+              UI.toast('Clock-in cancelled');
+              return;
+            }
+          }
+          TimeTrackPage._actuallyClockIn(jobId, { lat: pos.coords.latitude, lng: pos.coords.longitude, distM: dist });
+        }, function() {
+          if (timedOut) return;
+          clearTimeout(fallback);
+          TimeTrackPage._actuallyClockIn(jobId, null);
+        }, { enableHighAccuracy: true, timeout: 3000, maximumAge: 30000 });
+        return;
+      }
+    }
+    TimeTrackPage._actuallyClockIn(jobId, null);
+  },
+
+  // v785: Haversine distance in meters.
+  _geoMeters: function(a, b) {
+    if (!a || !b) return null;
+    var R = 6371000;
+    var toRad = function(d) { return d * Math.PI / 180; };
+    var dLat = toRad(b.lat - a.lat);
+    var dLng = toRad(b.lng - a.lng);
+    var lat1 = toRad(a.lat);
+    var lat2 = toRad(b.lat);
+    var h = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.sin(dLng/2)*Math.sin(dLng/2)*Math.cos(lat1)*Math.cos(lat2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  },
+
+  _actuallyClockIn: function(jobId, geo) {
     var entry = DB.timeEntries.clockIn(TimeTrackPage.currentUser, jobId);
+    // v785: stash the clock-in GPS + distance so payroll review can audit
+    // entries flagged as "clocked in off-site".
+    if (entry && entry.id && geo) {
+      try {
+        var patch = { clockInLat: geo.lat, clockInLng: geo.lng };
+        if (geo.distM != null) patch.clockInDistM = Math.round(geo.distM);
+        if (geo.distM != null && geo.distM > 500) patch.clockInOffsite = true;
+        DB.timeEntries.update(entry.id, patch);
+      } catch(e) { console.debug('[TimeTrack] geo stash skip', e); }
+    }
     if (jobId) {
       DB.jobs.update(jobId, { status: 'in_progress' });
     }
-    UI.toast('Clocked in');
+    UI.toast('Clocked in' + (geo && geo.distM != null && geo.distM <= 500 ? ' ✓ on-site' : ''));
     loadPage(currentPage);
   },
 
