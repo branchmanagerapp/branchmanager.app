@@ -4,6 +4,11 @@
  * Like legacy system's Pipeline feature
  */
 var PipelinePage = {
+  // v744: click-to-focus column. Was a CSS :hover-only effect, which felt
+  // like the columns chased the mouse. Now you click a column, it grows
+  // and stays grown until you click another one. Stored as the col.id so
+  // re-renders preserve the focus state.
+  _activeColId: null,
   // v718: Pipeline simplified to the three stages that actually need
   // active management. Jobs (Won) leave the pipeline entirely the
   // moment a quote converts — they appear on the Schedule's Unscheduled
@@ -402,7 +407,12 @@ var PipelinePage = {
       var dropAttrs = col.dropStatus
         ? ' ondragover="event.preventDefault();this.style.background=\'#e8f5e9\'" ondragleave="this.style.background=\'var(--bg)\'" ondrop="PipelinePage._quoteSubColDrop(event,\'' + col.dropStatus + '\')"'
         : '';
-      var html = '<div class="bm-pipe-col"' + dropAttrs + ' style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;overflow:hidden;">'
+      // v744: click any column to focus it. The handler updates the DOM
+      // in place (toggles class) — no full re-render — so the click feels
+      // instant. Card clicks inside still fire (the handler only mutates
+      // classes; bubbling continues).
+      var focusedCls = PipelinePage._activeColId === col.id ? ' is-focused' : '';
+      var html = '<div class="bm-pipe-col' + focusedCls + '" data-col-id="' + col.id + '" onclick="PipelinePage._focusCol(\'' + col.id + '\')"' + dropAttrs + ' style="background:var(--bg);border-radius:8px;padding:10px;min-width:0;overflow:hidden;cursor:pointer;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">'
         +   '<span style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;">' + col.label + '</span>'
         +   '<span style="font-size:11px;color:var(--text-light);font-weight:600;">' + col.items.length + '</span>'
@@ -442,15 +452,16 @@ var PipelinePage = {
 
     // Width-balanced grid: Requests (2 sub-cols) gets less room than
     // Quotes (3 sub-cols). 2fr / 3fr roughly equalizes per-column width.
-    // v723: hover-expand on sub-cols via flex-grow.
+    // v744: click-to-focus replaces the old :hover-grow rules. Clicking
+    // a sub-col adds .is-focused; the :has() selector then shrinks its
+    // siblings in the same row. Click another col to move the focus.
     html += '<style>'
       + '.pipeline-jobber{display:grid;grid-template-columns:2fr 3fr;gap:18px;align-items:start;}'
       + '.bm-pipe-row{display:flex;gap:6px;}'
       + '.bm-pipe-row > .bm-pipe-col{flex:1 1 0;min-width:0;transition:flex .22s ease;}'
-      + '.bm-pipe-row > .bm-pipe-col:hover{flex:3 1 0;}'
-      + '.bm-pipe-row:hover > .bm-pipe-col:not(:hover){flex:0.6 1 0;}'
+      + '.bm-pipe-row > .bm-pipe-col.is-focused{flex:3 1 0;}'
+      + '.bm-pipe-row:has(> .bm-pipe-col.is-focused) > .bm-pipe-col:not(.is-focused){flex:0.6 1 0;}'
       + '@media(max-width:1100px){.pipeline-jobber{grid-template-columns:1fr;gap:18px;}}'
-      + '@media(hover:none){.bm-pipe-row > .bm-pipe-col:hover{flex:1 1 0;}.bm-pipe-row:hover > .bm-pipe-col:not(:hover){flex:1 1 0;}}'
       + '</style>'
       + '<div class="pipeline-jobber">'
       +   renderSection('Requests', subRequests)
@@ -582,6 +593,19 @@ var PipelinePage = {
     var stageLabel = PipelinePage.stages.find(function(s) { return s.id === newStage; }).label;
     UI.toast((deal.clientName || 'Deal') + ' moved to ' + stageLabel);
     loadPage('pipeline');
+  },
+
+  // v744: click-to-focus a sub-column. Toggles the .is-focused class on
+  // the clicked col and strips it from siblings, with no full re-render
+  // so the click feels snappy. Stores _activeColId so subsequent
+  // re-renders (drag drops, deal moves, etc.) restore the same focus.
+  _focusCol: function(colId) {
+    PipelinePage._activeColId = colId;
+    var nodes = document.querySelectorAll('.bm-pipe-col');
+    nodes.forEach(function(n) {
+      if (n.getAttribute('data-col-id') === colId) n.classList.add('is-focused');
+      else n.classList.remove('is-focused');
+    });
   },
 
   // Drag and drop
