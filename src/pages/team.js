@@ -78,16 +78,12 @@ var TeamPage = {
   },
 
   getMembers: function() {
-    var stored = JSON.parse(localStorage.getItem('bm-team') || '[]');
-    if (stored.length === 0) {
-      stored = [
-        { id: 'owner', name: BM_CONFIG.ownerName, role: 'owner', phone: BM_CONFIG.phone, email: BM_CONFIG.email, active: true },
-        { id: 'ryan', name: 'Ryan Knapp', role: 'crew_lead', phone: '', email: '', active: true },
-        { id: 'anthony', name: 'Anthony Turner', role: 'crew_member', phone: '', email: '', active: true },
-        { id: 'catherine', name: 'Catherine Conway', role: 'crew_member', phone: '', email: '', active: true }
-      ];
-      localStorage.setItem('bm-team', JSON.stringify(stored));
-    }
+    // v756: was seeding hardcoded SNT crew (Ryan/Anthony/Catherine) plus
+    // an SNT-branded owner on ANY tenant with empty bm-team. That violated
+    // the "never fabricate data" rule and leaked SNT identity into other
+    // tenants. Now seeds nothing — Doug adds his own crew via + Add Crew.
+    var stored = [];
+    try { stored = JSON.parse(localStorage.getItem('bm-team') || '[]'); } catch (e) { stored = []; }
     return stored;
   },
 

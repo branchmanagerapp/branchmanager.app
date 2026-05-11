@@ -8,8 +8,10 @@
  */
 var Dialpad = {
   apiKey: null,
-  companyPhone: BM_CONFIG.phone,
-  companyPhoneClean: '1' + BM_CONFIG.phoneDigits,
+  // v756: companyPhone/companyPhoneClean were SNT-hardcoded module-load
+  // constants with zero callers. Dropped — the dialpad-sms-send edge
+  // function uses DIALPAD_FROM_NUMBER (Supabase secret) for the from-
+  // number, no client-side value needed.
 
   init: function() {
     Dialpad.apiKey = localStorage.getItem('bm-dialpad-key') || null;

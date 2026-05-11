@@ -733,7 +733,10 @@ var Photos = {
   generateReport: function(recordType, recordId, title) {
     var photos = Photos.getPhotos(recordType, recordId);
     if (!photos.length) { UI.toast('No photos to include', 'error'); return; }
-    var brand = (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.companyName) || 'Branch Manager';
+    // v756: prefer CompanyInfo (tenant-aware) over BM_CONFIG (SNT defaults).
+    var brand = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name'))
+      || (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.companyName)
+      || 'Branch Manager';
     var w = window.open('', '_blank');
     var body = '<html><head><title>Photo Report — ' + (title || recordId) + '</title><style>'
       + 'body{font-family:-apple-system,sans-serif;max-width:800px;margin:0 auto;padding:30px;color:#333;}'
