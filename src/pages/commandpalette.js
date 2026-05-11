@@ -21,7 +21,7 @@ var CommandPalette = {
     { category: 'Navigate', label: 'Go to Timesheets', icon: '⏱', action: function() { loadPage('timesheet'); }, keywords: 'time tracking hours' },
     { category: 'Navigate', label: 'Go to Expenses', icon: '💸', action: function() { loadPage('expenses'); }, keywords: 'costs receipts' },
     { category: 'Navigate', label: 'Go to Reporting', icon: '📈', action: function() { loadPage('reports'); }, keywords: 'analytics stats' },
-    { category: 'Navigate', label: 'Go to Team', icon: '👷', action: function() { window._payrollTab='members'; loadPage('payroll'); }, keywords: 'crew employees staff payroll' },
+    { category: 'Navigate', label: 'Go to Crew', icon: '👷', action: function() { window._payrollTab='payroll'; loadPage('payroll'); }, keywords: 'crew employees staff team payroll' },
     { category: 'Navigate', label: 'Go to Settings', icon: '⚙️', action: function() { loadPage('settings'); }, keywords: 'preferences config' },
     { category: 'Navigate', label: 'Go to Dispatch', icon: '🗺️', action: function() { loadPage('dispatch'); }, keywords: 'route map driving' },
     { category: 'Navigate', label: 'Go to Crew Performance', icon: '🏆', action: function() { loadPage('crewperformance'); }, keywords: 'leaderboard stats metrics' },

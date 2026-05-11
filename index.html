@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 740; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 741; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v740.min.js"></script>
+<script defer src="dist/bm.bundle.v741.min.js"></script>
 
 
 
@@ -1327,7 +1327,7 @@ var pageConfigs = {
   insights: { title: 'Insights', action: null },
   reviews: { title: 'Reviews', action: null },
   socialbranch: { title: 'Marketing', action: null },
-  team: { title: 'Team', action: '+ Add Member', actionFn: 'TeamPage.showForm()' },
+  team: { title: 'Payroll', action: '+ Add Crew', actionFn: 'TeamPage.showForm()' },
   operations: { title: 'Operations', action: null },
   weather: { title: 'Weather', action: null },
   timesheet: { title: 'Timesheet', action: null },
@@ -1483,14 +1483,16 @@ var ToolsHub = {
   }
 };
 
-// ── Team Hub ──
-// v419: TeamHub merged into PayrollHub. Tabs: Payroll / Team / Timesheets / My Pay.
-// Deep links #team, #timesheets, #payroll, #employeecenter all route into PayrollHub.
+// ── Payroll Hub ──
+// v741: Team tab dropped — the standalone roster was redundant with the
+// Payroll grid (employees × days). Crew profiles are now reachable by
+// clicking an employee's name directly in the Payroll grid. TeamPage is
+// still loaded (its showDetail/showForm/saveMember are reused), it just
+// no longer has its own tab.
 var PayrollHub = {
   render: function() {
     var tabs = [
       ['payroll', 'Payroll'],
-      ['members', 'Team'],
       ['timesheets', 'Timesheets'],
       ['mypay', 'My Pay']
     ];
@@ -1498,17 +1500,17 @@ var PayrollHub = {
     var body = '';
     try {
       if (r.tab === 'payroll') body = PayrollPage.render();
-      else if (r.tab === 'members') body = TeamPage.render();
       else if (r.tab === 'timesheets') body = TimeTrackPage.render();
       else if (r.tab === 'mypay') body = (typeof EmployeeCenterPage !== 'undefined') ? EmployeeCenterPage.render() : '<div style="padding:16px;color:var(--text-light);">My Pay module not loaded.</div>';
+      else body = PayrollPage.render(); // unknown tab → payroll
     } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
     return r.html + body;
   }
 };
-// Back-compat for legacy deep links / search to "team" page
+// Back-compat for legacy deep links / search to "team" page — drop them onto Payroll.
 var TeamHub = {
   render: function() {
-    if (window._payrollTab !== 'members' && window._payrollTab !== 'timesheets') window._payrollTab = 'members';
+    window._payrollTab = 'payroll';
     return PayrollHub.render();
   }
 };

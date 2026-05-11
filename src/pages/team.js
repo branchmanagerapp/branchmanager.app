@@ -1,18 +1,18 @@
 /**
- * Branch Manager — Team Management
- * Add/edit team members, assign roles, view hours, ISA cert tracking
+ * Branch Manager — Team / Crew profile module
+ * v741: standalone Team page tab dropped (was redundant with Payroll grid).
+ * This module remains because the Payroll grid uses TeamPage.getMembers /
+ * showDetail / showForm / saveMember / _createLogin for crew CRUD, profile
+ * view, and login provisioning. The `render()` method is no longer wired
+ * to a tab; it's kept as a safety fallback for legacy deep links into the
+ * unused "team" route (which now just redirects to Payroll).
  */
 var TeamPage = {
   render: function() {
     var members = TeamPage.getMembers();
 
-    var html = '';
-
-    // v426: quick links inside Team tab — Crew Performance pulls from Team data
-    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'
-      + '<button onclick="loadPage(\'crewperformance\')" class="btn btn-outline" style="font-size:12px;">📊 Crew Performance</button>'
-      + '<button onclick="window._payrollTab=\'timesheets\';loadPage(\'payroll\')" class="btn btn-outline" style="font-size:12px;">⏱ Timesheets</button>'
-      + '<button onclick="window.open(\'onboarding/\',\'_blank\')" class="btn btn-outline" style="font-size:12px;">🎓 Onboarding</button>'
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--text-light);">'
+      + 'The dedicated Team tab moved into the Payroll grid — click any employee row there to open their profile.'
       + '</div>';
 
     html += '<div class="stat-grid">'
@@ -257,7 +257,8 @@ var TeamPage = {
     UI.confirm('Remove this team member?', function() {
       UI.toast('Member removed ✓');
       TeamPage.removeMember(id);
-      loadPage('team');
+      window._payrollTab = 'payroll';
+      loadPage('payroll');
     });
   },
 
@@ -310,7 +311,7 @@ var TeamPage = {
     // Render as full page (not a modal popup)
     var pageHtml = '<div style="max-width:760px;margin:0 auto;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
-      +   '<button class="btn btn-outline" onclick="loadPage(\'team\')" style="padding:6px 12px;font-size:12px;">← Back to Team</button>'
+      +   '<button class="btn btn-outline" onclick="window._payrollTab=\'payroll\';loadPage(\'payroll\')" style="padding:6px 12px;font-size:12px;">← Back to Payroll</button>'
       +   '<button class="btn btn-primary" onclick="TeamPage.showForm(\'' + id + '\')">Edit</button>'
       + '</div>'
       + html
