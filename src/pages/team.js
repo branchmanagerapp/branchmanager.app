@@ -189,6 +189,37 @@ var TeamPage = {
     });
   },
 
+  // v743: edit a crew member's photo URL. URL-based for now (point at
+  // any hosted image — Supabase Storage, S3, social profile, etc.).
+  // Per Doug's preference, file upload is a future task; keeping URL
+  // input means it works today without a storage bucket commitment.
+  _editPhoto: function(id) {
+    var m = TeamPage.getMembers().find(function(x){ return x.id === id; });
+    if (!m) return;
+    var current = m.photo_url || '';
+    var val = prompt('Photo URL for ' + (m.name || 'this crew member') + '\n\n(Leave blank to clear)', current);
+    if (val === null) return;
+    val = val.trim();
+    TeamPage.saveMember(Object.assign({}, m, { photo_url: val || null }));
+    UI.toast(val ? 'Photo updated' : 'Photo cleared');
+    TeamPage.showDetail(id);
+  },
+
+  // v743: edit hourly rate inline from the profile (same data lane as
+  // PayrollPage.editRate). Provided here so the profile is self-sufficient.
+  _editRate: function(id) {
+    var m = TeamPage.getMembers().find(function(x){ return x.id === id; });
+    if (!m) return;
+    var cur = Number(m.rate || m.payRate || 0);
+    var val = prompt('Hourly rate for ' + (m.name || '') + ' ($/hr):', cur.toString());
+    if (val === null) return;
+    var n = parseFloat(val);
+    if (isNaN(n) || n < 0) { UI.toast('Invalid rate', 'error'); return; }
+    TeamPage.saveMember(Object.assign({}, m, { rate: n }));
+    UI.toast('Rate set: $' + n.toFixed(2) + '/hr');
+    TeamPage.showDetail(id);
+  },
+
   _createLogin: function(id) {
     var m = TeamPage.getMembers().find(function(x){ return x.id === id; });
     if (!m || !m.email) { UI.toast('Save the member with an email first', 'error'); return; }
@@ -266,15 +297,26 @@ var TeamPage = {
     var m = TeamPage.getMembers().find(function(mem) { return mem.id === id; });
     if (!m) return;
 
+    // v743: header now shows photo (if set), rate, and an inline rate editor.
+    var rate = Number(m.rate || m.payRate || 0);
+    var weekHrs = TeamPage.memberWeekHours(m.name);
+    var avatarHtml = m.photo_url
+      ? '<img src="' + UI.esc(m.photo_url) + '" alt="" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--border);background:#f3f4f6;">'
+      : '<div style="width:96px;height:96px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:38px;font-weight:700;">' + (m.name || '?').charAt(0).toUpperCase() + '</div>';
     var html = '<div style="text-align:center;margin-bottom:20px;">'
-      + '<div style="font-size:48px;margin-bottom:8px;">👷</div>'
-      + '<h2>' + m.name + '</h2>'
+      + '<div style="position:relative;display:inline-block;margin-bottom:8px;">' + avatarHtml
+      +   '<button onclick="TeamPage._editPhoto(\'' + id + '\')" title="Edit photo" '
+      +     'style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;line-height:1;">📷</button>'
+      + '</div>'
+      + '<h2 style="margin:0;">' + UI.esc(m.name) + '</h2>'
       + '<div>' + UI.statusBadge(m.role) + '</div>'
       + '</div>'
       + '<div style="font-size:14px;line-height:2;">'
       + (m.phone ? '<div>📞 ' + UI.phone(m.phone) + '</div>' : '')
-      + (m.email ? '<div>✉️ ' + m.email + '</div>' : '')
-      + '<div>⏱️ Hours this week: <strong>' + TeamPage.memberWeekHours(m.name).toFixed(1) + '</strong></div>'
+      + (m.email ? '<div>✉️ ' + UI.esc(m.email) + '</div>' : '')
+      + '<div>💵 Rate: <strong>' + (rate ? '$' + rate.toFixed(2) + '/hr' : '<span style="color:var(--text-light);">unset</span>') + '</strong>'
+      +   ' <button onclick="TeamPage._editRate(\'' + id + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-light);padding:0 4px;">✏️</button></div>'
+      + '<div>⏱️ Hours this week: <strong>' + weekHrs.toFixed(1) + '</strong>' + (rate ? ' · ~$' + (weekHrs * rate).toFixed(0) + ' so far' : '') + '</div>'
       + '</div>';
 
     // ── App Login section (Create / Reset) ──
@@ -293,6 +335,23 @@ var TeamPage = {
       html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin-top:16px;margin-bottom:16px;font-size:13px;color:#92400e;">'
         + '⚠️ Add an email address (click Edit below) to enable login creation.'
         + '</div>';
+    }
+
+    // v743: Performance section — folded in from the retired
+    // CrewPerformance page so all crew analytics live on the profile.
+    if (typeof CrewPerformance !== 'undefined' && CrewPerformance._getCrewStats) {
+      try {
+        var stats = CrewPerformance._getCrewStats(m.id, 'month', DB.jobs.getAll(), DB.timeEntries.getAll(), m.name);
+        html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px;">'
+          + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:10px;">📊 Performance · last 30 days</div>'
+          + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+          +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + UI.moneyInt(stats.revenue || 0) + '</div><div style="font-size:10px;color:var(--text-light);">Revenue</div></div>'
+          +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + (stats.jobsCompleted || 0) + '</div><div style="font-size:10px;color:var(--text-light);">Jobs done</div></div>'
+          +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + (stats.hoursWorked || 0).toFixed(0) + '</div><div style="font-size:10px;color:var(--text-light);">Hours</div></div>'
+          +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + (stats.avgRating > 0 ? stats.avgRating.toFixed(1) + '★' : '—') + '</div><div style="font-size:10px;color:var(--text-light);">Rating</div></div>'
+          + '</div>'
+          + '</div>';
+      } catch(e) { /* swallow — stats helper is best-effort */ }
     }
 
     // Recent time entries

@@ -9,6 +9,8 @@ var PayrollPage = {
   _expandedCells: {},
   _selectedEmployees: {},
   _approvals: null,
+  _approvalsLoaded: false,
+  _lastRun: null,
 
   // ── Helpers ──
   _getWeekDates: function(offset) {
@@ -25,15 +27,82 @@ var PayrollPage = {
     return dates;
   },
 
+  // v743: approvals are now cloud-synced via the payroll_approvals
+  // table. localStorage is a write-through cache so the UI is instant
+  // while a background insert/upsert hits Supabase. On page open we
+  // also pull-merge cloud rows so iPhone↔desktop stays in sync.
   _getApprovals: function() {
     if (!PayrollPage._approvals) {
       try { PayrollPage._approvals = JSON.parse(localStorage.getItem('bm-payroll-approvals') || '{}'); } catch(e) { PayrollPage._approvals = {}; }
+    }
+    if (!PayrollPage._approvalsLoaded) {
+      PayrollPage._approvalsLoaded = true;
+      PayrollPage._pullCloudApprovals();
     }
     return PayrollPage._approvals;
   },
 
   _saveApprovals: function() {
     localStorage.setItem('bm-payroll-approvals', JSON.stringify(PayrollPage._approvals || {}));
+  },
+
+  _pullCloudApprovals: function() {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    // Pull last 90 days so we don't bloat memory
+    var cutoff = new Date(Date.now() - 90 * 86400000).toISOString().substring(0, 10);
+    sb.from('payroll_approvals').select('*').gte('week_start', cutoff).then(function(r) {
+      if (r.error || !r.data) return;
+      var changed = false;
+      r.data.forEach(function(row) {
+        var key = row.day
+          ? (row.employee_name + '_day_' + row.day)
+          : (row.employee_name + '_' + row.week_start);
+        var prev = PayrollPage._approvals[key];
+        if (prev !== row.status) { PayrollPage._approvals[key] = row.status; changed = true; }
+        if (row.edited_after) {
+          var ea = key + '_editedAfter';
+          if (!PayrollPage._approvals[ea]) { PayrollPage._approvals[ea] = true; changed = true; }
+        }
+      });
+      if (changed) {
+        PayrollPage._saveApprovals();
+        // Only re-render if user is still on the payroll page
+        if (window.currentPage === 'payroll') loadPage('payroll');
+      }
+    });
+  },
+
+  _pushCloudApproval: function(employeeName, weekStart, day, status, editedAfter) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!tenantId) return;
+    var approvedBy = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : null;
+    var row = {
+      tenant_id: tenantId,
+      employee_name: employeeName,
+      week_start: weekStart,
+      day: day || null,
+      status: status,
+      edited_after: !!editedAfter,
+      approved_by: approvedBy,
+      approved_at: new Date().toISOString()
+    };
+    sb.from('payroll_approvals')
+      .upsert(row, { onConflict: 'tenant_id,employee_name,week_start,day' })
+      .then(function(r) {
+        if (r.error) console.warn('payroll_approvals upsert failed:', r.error.message);
+      });
+  },
+
+  _deleteCloudApproval: function(employeeName, weekStart, day) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var q = sb.from('payroll_approvals').delete()
+      .eq('employee_name', employeeName).eq('week_start', weekStart);
+    q = day ? q.eq('day', day) : q.is('day', null);
+    q.then(function(){});
   },
 
   _getEmployees: function() {
@@ -129,14 +198,22 @@ var PayrollPage = {
 
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;align-items:stretch;">';
 
-      // Employee name cell — click opens the crew profile (TeamPage.showDetail)
+      // Employee name cell — click opens the crew profile (TeamPage.showDetail).
+      // v743: avatar shows photo_url if present, falls back to first-letter monogram.
+      var avatar;
+      if (emp.photo_url) {
+        avatar = '<img src="' + UI.esc(emp.photo_url) + '" alt="" '
+          + 'style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#f3f4f6;">';
+      } else {
+        avatar = '<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">'
+          + (emp.name || '?').charAt(0).toUpperCase() + '</div>';
+      }
       html += '<div onclick="if(typeof TeamPage!==\'undefined\')TeamPage.showDetail(\'' + UI.esc(emp.id) + '\')" '
         + 'title="View crew profile" '
         + 'style="padding:10px 12px;display:flex;align-items:center;gap:8px;border-right:1px solid #f0f0f0;cursor:pointer;">'
-        + '<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">'
-        + (emp.name || '?').charAt(0).toUpperCase() + '</div>'
+        + avatar
         + '<div style="min-width:0;"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent);">' + UI.esc(emp.name || '') + '</div>'
-        + '<div style="font-size:10px;color:var(--text-light);">' + UI.esc(emp.role || '') + '</div></div>'
+        + '<div style="font-size:10px;color:var(--text-light);">' + UI.esc(emp.role || '') + (emp.rate ? ' · $' + Number(emp.rate).toFixed(0) + '/hr' : '') + '</div></div>'
         + '</div>';
 
       // Day cells
@@ -268,7 +345,7 @@ var PayrollPage = {
       + '<div style="font-size:12px;color:' + (payrollReady ? '#166534' : '#92400e') + ';">'
       + (payrollReady ? 'All hours approved, no warnings. Ready to sync with Gusto.' : (pending > 0 ? pending + ' employee(s) pending approval. ' : '') + (warnings.length > 0 ? warnings.length + ' warning(s) to resolve.' : ''))
       + '</div></div>'
-      + (payrollReady ? '<button onclick="PayrollPage.triggerGusto(\'' + weekStart + '\')" class="btn btn-primary" style="margin-left:auto;white-space:nowrap;">🚀 Send to Gusto</button>' : '')
+      + (payrollReady ? '<button onclick="PayrollPage.showPayrollSummary(\'' + weekStart + '\')" class="btn btn-primary" style="margin-left:auto;white-space:nowrap;">💰 Run Payroll</button>' : '')
       + '</div>';
 
     // Warnings list
@@ -439,13 +516,19 @@ var PayrollPage = {
     loadPage('payroll');
   },
 
-  // ── Approvals ──
+  // ── Approvals (cloud-synced v743) ──
   approveDay: function(userId, date) {
     var dayKey = PayrollPage._dayApprovalKey(userId, date);
     PayrollPage._getApprovals();
     PayrollPage._approvals[dayKey] = 'approved';
     delete PayrollPage._approvals[dayKey + '_editedAfter'];
     PayrollPage._saveApprovals();
+    // Derive week_start for cloud row
+    var d = new Date(date);
+    var monday = new Date(d);
+    monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    var weekStart = monday.toISOString().substring(0, 10);
+    PayrollPage._pushCloudApproval(userId, weekStart, date, 'approved', false);
     UI.closeModal();
     UI.toast('Day approved ✓');
     loadPage('payroll');
@@ -456,6 +539,7 @@ var PayrollPage = {
     PayrollPage._getApprovals();
     PayrollPage._approvals[empKey] = 'approved';
     PayrollPage._saveApprovals();
+    PayrollPage._pushCloudApproval(userId, weekStart, null, 'approved', false);
     UI.toast(userId + ' approved for the week ✓');
     loadPage('payroll');
   },
@@ -464,8 +548,10 @@ var PayrollPage = {
     var employees = PayrollPage._getEmployees();
     PayrollPage._getApprovals();
     employees.forEach(function(emp) {
-      var empKey = PayrollPage._approvalKey(emp.name || emp.id, weekStart);
+      var name = emp.name || emp.id;
+      var empKey = PayrollPage._approvalKey(name, weekStart);
       PayrollPage._approvals[empKey] = 'approved';
+      PayrollPage._pushCloudApproval(name, weekStart, null, 'approved', false);
     });
     PayrollPage._saveApprovals();
     UI.toast('All employees approved ✓');
@@ -473,12 +559,18 @@ var PayrollPage = {
   },
 
   // ── Payroll Summary Modal ──
+  // v743: rates are editable inline (✏️ next to each rate); export
+  // generates an ACH-ready CSV (employee name, hours, gross, blank
+  // routing/account for the bank's batch importer to fill); "Mark Paid"
+  // records the run in payroll_runs.
   showPayrollSummary: function(weekStart) {
     var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
     var employees = PayrollPage._getEmployees();
     var html = '<table class="data-table" style="width:100%;font-size:13px;"><thead><tr><th>Employee</th><th>Regular</th><th>OT</th><th>Total Hrs</th><th>Rate</th><th>Gross Pay</th><th>Status</th></tr></thead><tbody>';
 
     var grandTotal = 0;
+    var totalHours = 0;
+    var totalOT = 0;
     employees.forEach(function(emp) {
       var weekHours = 0;
       dates.forEach(function(d) {
@@ -486,9 +578,11 @@ var PayrollPage = {
       });
       var regular = Math.min(weekHours, 40);
       var ot = Math.max(0, weekHours - 40);
-      var rate = emp.rate || emp.payRate || 0;
+      var rate = Number(emp.rate || emp.payRate || 0);
       var gross = (regular * rate) + (ot * rate * 1.5);
       grandTotal += gross;
+      totalHours += weekHours;
+      totalOT += ot;
       var empKey = PayrollPage._approvalKey(emp.name || emp.id, weekStart);
       var approved = PayrollPage._getApprovals()[empKey] === 'approved';
 
@@ -497,18 +591,192 @@ var PayrollPage = {
         + '<td>' + regular.toFixed(1) + '</td>'
         + '<td style="color:' + (ot > 0 ? '#d97706' : 'var(--text)') + ';">' + ot.toFixed(1) + '</td>'
         + '<td style="font-weight:700;">' + weekHours.toFixed(1) + '</td>'
-        + '<td>' + (rate ? '$' + rate.toFixed(2) + '/hr' : '—') + '</td>'
+        + '<td>' + (rate ? '$' + rate.toFixed(2) + '/hr' : '<span style="color:var(--text-light);">— set —</span>')
+        +   ' <button onclick="PayrollPage.editRate(\'' + UI.esc(emp.id) + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-light);padding:0 4px;" title="Edit rate">✏️</button></td>'
         + '<td style="font-weight:700;">' + (rate ? '$' + gross.toFixed(2) : '—') + '</td>'
         + '<td>' + (approved ? '<span style="color:#22c55e;font-weight:600;">✓ Approved</span>' : '<span style="color:#d97706;">Pending</span>') + '</td>'
         + '</tr>';
     });
 
-    html += '<tr style="font-weight:800;border-top:2px solid var(--border);"><td>TOTAL</td><td></td><td></td><td></td><td></td><td>$' + grandTotal.toFixed(2) + '</td><td></td></tr>';
+    html += '<tr style="font-weight:800;border-top:2px solid var(--border);background:var(--bg);">'
+      + '<td>TOTAL</td><td>' + Math.min(totalHours, totalHours - totalOT + 40 * employees.length).toFixed(1) + '</td>'
+      + '<td>' + totalOT.toFixed(1) + '</td><td>' + totalHours.toFixed(1) + '</td><td></td>'
+      + '<td>$' + grandTotal.toFixed(2) + '</td><td></td></tr>';
     html += '</tbody></table>';
+
+    // Last run banner if any payroll_run exists for this week
+    html += '<div id="last-run-banner" style="margin-top:12px;"></div>';
 
     UI.showModal('Payroll Summary — Week of ' + new Date(weekStart).toLocaleDateString(), html, { wide: true,
       footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
-        + ' <button class="btn btn-primary" onclick="PayrollPage.triggerGusto(\'' + weekStart + '\')">🚀 Send to Gusto</button>'
+        + ' <button class="btn btn-outline" onclick="PayrollPage.exportACH(\'' + weekStart + '\')">📥 ACH-Ready CSV</button>'
+        + ' <button class="btn btn-primary" onclick="PayrollPage.markPaid(\'' + weekStart + '\')">💰 Mark Paid</button>'
+    });
+
+    // Async: show "last run" banner if this week was already paid
+    PayrollPage._loadLastRunBanner(weekStart);
+  },
+
+  // v743: edit an employee's hourly rate. Lives in team_members.rate
+  // (cloud-synced via DB.team). Also updates the local cache so the
+  // modal re-renders with the new number.
+  editRate: function(empId) {
+    var emp = PayrollPage._getEmployees().find(function(e) { return e.id === empId; });
+    if (!emp) { UI.toast('Employee not found', 'error'); return; }
+    var cur = (emp.rate || emp.payRate || 0);
+    var val = prompt('Hourly rate for ' + (emp.name || '') + ' ($/hr):', cur.toString());
+    if (val === null) return;
+    var n = parseFloat(val);
+    if (isNaN(n) || n < 0) { UI.toast('Invalid rate', 'error'); return; }
+    // Update team_members via DB.team if available, else localStorage.
+    if (typeof DB !== 'undefined' && DB.team && DB.team.update) {
+      DB.team.update(empId, { rate: n });
+    } else {
+      var members = [];
+      try { members = JSON.parse(localStorage.getItem('bm-team') || '[]'); } catch(e){}
+      var idx = members.findIndex(function(m) { return m.id === empId; });
+      if (idx >= 0) { members[idx].rate = n; localStorage.setItem('bm-team', JSON.stringify(members)); }
+    }
+    UI.toast('Rate set: $' + n.toFixed(2) + '/hr');
+    // Re-render summary modal with new rate
+    UI.closeModal();
+    setTimeout(function() { PayrollPage.showPayrollSummary(PayrollPage._getWeekDates(PayrollPage._weekOffset)[0]); }, 60);
+  },
+
+  // v743: ACH-ready CSV export. Bank-friendly column order: employee
+  // name, gross pay, hours, OT hours, plus blank routing/account so
+  // Doug can paste the bank's saved values OR the bank can map them
+  // from the file's header row.
+  exportACH: function(weekStart) {
+    var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
+    var employees = PayrollPage._getEmployees();
+    var rows = ['Employee Name,Routing Number,Account Number,Hours,Overtime Hours,Rate,Gross Pay,Pay Period Start,Pay Period End,Memo'];
+    var weekEnd = dates[6];
+    var grandTotal = 0;
+    var employeeCount = 0;
+    var totalHours = 0;
+    var totalOT = 0;
+    var batch = [];
+    employees.forEach(function(emp) {
+      var weekHours = 0;
+      dates.forEach(function(d) {
+        weekHours += PayrollPage._totalHours(PayrollPage._getEntriesForDate(emp.name || emp.id, d));
+      });
+      if (weekHours <= 0) return;
+      var ot = Math.max(0, weekHours - 40);
+      var reg = Math.min(weekHours, 40);
+      var rate = Number(emp.rate || emp.payRate || 0);
+      var gross = (reg * rate) + (ot * rate * 1.5);
+      grandTotal += gross;
+      employeeCount++;
+      totalHours += weekHours;
+      totalOT += ot;
+      var memo = 'BM Payroll ' + weekStart + ' to ' + weekEnd;
+      // Escape commas inside name
+      var csvName = (emp.name || '').indexOf(',') >= 0 ? '"' + emp.name.replace(/"/g, '""') + '"' : (emp.name || '');
+      rows.push([csvName, '', '', weekHours.toFixed(2), ot.toFixed(2), rate.toFixed(2), gross.toFixed(2), weekStart, weekEnd, memo].join(','));
+      batch.push({ name: emp.name, hours: weekHours, ot: ot, rate: rate, gross: gross });
+    });
+    if (!employeeCount) { UI.toast('No hours to export', 'error'); return; }
+
+    var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'payroll-ach-' + weekStart + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+    // Record the export as a payroll_run with status='exported'
+    PayrollPage._recordRun(weekStart, weekEnd, batch, {
+      totalHours: totalHours, totalOT: totalOT, totalGross: grandTotal,
+      employeeCount: employeeCount, method: 'ach_csv', status: 'exported'
+    });
+    UI.toast('ACH CSV exported — $' + grandTotal.toFixed(2) + ' across ' + employeeCount + ' employee(s)');
+  },
+
+  // v743: Mark Paid records a payroll_run row. Doug confirms before
+  // committing because reversing a paid run is manual.
+  markPaid: function(weekStart) {
+    var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
+    var employees = PayrollPage._getEmployees();
+    var weekEnd = dates[6];
+    var totalHours = 0, totalOT = 0, totalGross = 0, employeeCount = 0;
+    var batch = [];
+    employees.forEach(function(emp) {
+      var weekHours = 0;
+      dates.forEach(function(d) {
+        weekHours += PayrollPage._totalHours(PayrollPage._getEntriesForDate(emp.name || emp.id, d));
+      });
+      if (weekHours <= 0) return;
+      var ot = Math.max(0, weekHours - 40);
+      var reg = Math.min(weekHours, 40);
+      var rate = Number(emp.rate || emp.payRate || 0);
+      var gross = (reg * rate) + (ot * rate * 1.5);
+      employeeCount++;
+      totalHours += weekHours;
+      totalOT += ot;
+      totalGross += gross;
+      batch.push({ name: emp.name, hours: weekHours, ot: ot, rate: rate, gross: gross });
+    });
+    if (!employeeCount) { UI.toast('No hours to pay', 'error'); return; }
+
+    if (!confirm('Mark week of ' + weekStart + ' as PAID?\n\n'
+      + employeeCount + ' employee(s) · ' + totalHours.toFixed(1) + ' hrs · $' + totalGross.toFixed(2)
+      + '\n\nThis records a payroll run. Reverse only if needed.')) return;
+
+    PayrollPage._recordRun(weekStart, weekEnd, batch, {
+      totalHours: totalHours, totalOT: totalOT, totalGross: totalGross,
+      employeeCount: employeeCount, method: 'manual', status: 'paid'
+    });
+    UI.toast('Marked paid: $' + totalGross.toFixed(2));
+    UI.closeModal();
+  },
+
+  _recordRun: function(weekStart, weekEnd, batch, meta) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) {
+      // Fallback: localStorage cache only
+      try {
+        var local = JSON.parse(localStorage.getItem('bm-payroll-runs') || '[]');
+        local.unshift({ weekStart: weekStart, weekEnd: weekEnd, batch: batch, meta: meta, at: new Date().toISOString() });
+        localStorage.setItem('bm-payroll-runs', JSON.stringify(local.slice(0, 60)));
+      } catch(e){}
+      return;
+    }
+    var paidBy = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : null;
+    var row = {
+      tenant_id: tenantId,
+      week_start: weekStart,
+      week_end: weekEnd,
+      status: meta.status,
+      total_hours: meta.totalHours,
+      total_ot: meta.totalOT,
+      total_gross: meta.totalGross,
+      employee_count: meta.employeeCount,
+      method: meta.method,
+      batch_payload: batch,
+      paid_by: paidBy
+    };
+    if (meta.status === 'paid') row.paid_at = new Date().toISOString();
+    if (meta.status === 'exported') row.exported_at = new Date().toISOString();
+    sb.from('payroll_runs').insert(row).then(function(r) {
+      if (r.error) console.warn('payroll_runs insert failed:', r.error.message);
+    });
+  },
+
+  _loadLastRunBanner: function(weekStart) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('payroll_runs').select('*').eq('week_start', weekStart).order('created_at', { ascending: false }).limit(1).maybeSingle().then(function(r) {
+      var el = document.getElementById('last-run-banner');
+      if (!el || !r.data) return;
+      var run = r.data;
+      var label = run.status === 'paid' ? '💰 Marked paid' : '📥 Exported';
+      var when = new Date(run.paid_at || run.exported_at || run.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+      el.innerHTML = '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:12px;">'
+        + label + ' ' + when + ' · $' + Number(run.total_gross || 0).toFixed(2)
+        + ' across ' + (run.employee_count || 0) + ' employee(s) via ' + UI.esc(run.method || '?')
+        + '</div>';
     });
   },
 
@@ -541,20 +809,10 @@ var PayrollPage = {
     UI.toast('Payroll exported');
   },
 
-  // ── Gusto Integration ──
+  // v743: triggerGusto kept as a thin shim so anything still wired to
+  // the old button just opens the new Payroll Summary modal. Delete
+  // once nothing in the codebase calls it.
   triggerGusto: function(weekStart) {
-    var gustoKey = localStorage.getItem('bm-gusto-api-key');
-    if (!gustoKey) {
-      UI.showModal('Connect Gusto', '<div style="text-align:center;padding:20px;">'
-        + '<div style="font-size:48px;margin-bottom:12px;">💰</div>'
-        + '<h3>Connect Gusto for Payroll</h3>'
-        + '<p style="color:var(--text-light);margin-bottom:16px;">Enter your Gusto API key to sync employees and submit payroll.</p>'
-        + UI.field('Gusto API Key', '<input type="text" id="gusto-key" placeholder="Enter Gusto API key...">')
-        + '<button class="btn btn-primary" onclick="localStorage.setItem(\'bm-gusto-api-key\',document.getElementById(\'gusto-key\').value);UI.closeModal();UI.toast(\'Gusto connected!\');loadPage(\'payroll\')">Connect</button>'
-        + '</div>');
-      return;
-    }
-    UI.toast('Payroll data sent to Gusto! 🚀');
-    // In production: POST to Gusto API with hours data
+    PayrollPage.showPayrollSummary(weekStart);
   }
 };
