@@ -105,6 +105,11 @@ export interface TenantBranding {
   address_short: string;       // composed: "Peekskill, NY"
   effective_date: string;
   license_text: string;
+  // v739: SNT-specific license numbers ("WC-32079 / PC-50644") — empty for
+  // tenants that don't have a state-issued license to display. Used in
+  // customer-facing email footers (quote-notify, invoice-notify) so other
+  // tenants don't inherit SNT's certificate numbers.
+  licenses_long: string;
   logo_url: string;
   brand_color: string;
   vertical: string;
@@ -134,6 +139,7 @@ const SNT_DEFAULTS: TenantBranding = {
   address_short: "Peekskill, NY",
   effective_date: "April 2026",
   license_text: "Licensed & Fully Insured",
+  licenses_long: "WC-32079 / PC-50644",
   logo_url: "https://branchmanager.app/icons/icon-512.png",
   brand_color: "#1a3c12",
   vertical: "tree_service",
@@ -201,6 +207,11 @@ export async function loadTenantBranding(
     address_short: "",
     effective_date: get("effective_date", SNT_DEFAULTS.effective_date),
     license_text: get("license_text", SNT_DEFAULTS.license_text),
+    // v739: only fall back to SNT's actual cert numbers when this IS SNT;
+    // other tenants get an empty string unless their tenants.config sets
+    // a licenses_long explicitly. Prevents SNT's WC# leaking into other
+    // tenants' customer-facing emails.
+    licenses_long: get("licenses_long", key === SNT_TENANT_ID ? SNT_DEFAULTS.licenses_long : ""),
     logo_url: get("logo_url", SNT_DEFAULTS.logo_url),
     brand_color: get("brand_color", SNT_DEFAULTS.brand_color),
     vertical: get("vertical", SNT_DEFAULTS.vertical),

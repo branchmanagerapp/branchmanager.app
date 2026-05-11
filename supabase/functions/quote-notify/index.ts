@@ -56,8 +56,9 @@ async function sendEmail(b: TenantBranding, to: string, _toName: string, subject
 }
 
 function htmlWrap(b: TenantBranding, headerBg: string, headerContent: string, bodyContent: string): string {
-  const wcCert = b.tenant_id === '93af4348-8bba-4045-ac3e-5e71ec1cc8c5'
-    ? ' · WC-32079 / PC-50644' : '';  // Only SNT shows its specific WC# in footer; other tenants leave it off.
+  // v739: per-tenant license text in email footer. Empty for tenants
+  // without state-issued cert numbers (other than SNT's defaults).
+  const wcCert = b.licenses_long ? ' · ' + b.licenses_long : '';
   return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;">
   <div style="background:${headerBg};padding:24px 28px;border-radius:10px 10px 0 0;">
     ${headerContent}
