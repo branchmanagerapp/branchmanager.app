@@ -998,6 +998,10 @@ var ClientsPage = {
       +   '</div>'
       + '</div>'
 
+      // v772: Lifetime-value snapshot — avg job, margin, win rate, days
+      // since contact, client age, last-12-months activity bars.
+      + ClientsPage._renderLTVSnapshot(c, id, clientJobs, clientQuotes, clientInvoices, completedJobs)
+
       // ── Tabs nav ──
       + '<div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;">'
       +   '<button class="cd-tab active" onclick="ClientsPage._tab(this,\'cd-overview\')" style="padding:10px 16px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;color:var(--accent);white-space:nowrap;">Overview</button>'
@@ -1571,6 +1575,144 @@ var ClientsPage = {
       status.textContent = 'Saved';
       setTimeout(function(){ if (status.textContent === 'Saved') status.textContent = ''; }, 1500);
     }
+  },
+
+  // v772: per-client lifetime-value snapshot. Shown on Client detail
+  // below the 3 main KPIs. Six metrics + a 12-month activity bar.
+  _renderLTVSnapshot: function(c, id, clientJobs, clientQuotes, clientInvoices, completedJobs) {
+    var nowMs = Date.now();
+    var paidInvoices = clientInvoices.filter(function(i){ return i.status === 'paid'; });
+
+    // Avg job value (from completed jobs that have a total)
+    var jobValues = completedJobs.filter(function(j) { return Number(j.total) > 0; }).map(function(j) { return Number(j.total); });
+    var avgJobValue = jobValues.length ? jobValues.reduce(function(a,b){return a+b;},0) / jobValues.length : 0;
+
+    // Avg margin via JobCosting.getJobStats (v768 shared helper).
+    // Only count jobs with >0 hours tracked OR >0 expenses logged so the
+    // sample is meaningful — otherwise margin defaults to 100% and noise
+    // dominates.
+    var marginSum = 0, marginCount = 0;
+    if (typeof JobCosting !== 'undefined' && JobCosting.getJobStats) {
+      completedJobs.forEach(function(j) {
+        var s = JobCosting.getJobStats(j);
+        if (s.revenue > 0 && (s.hours > 0 || s.expenseTotal > 0 || s.materialsCost > 0)) {
+          marginSum += s.margin;
+          marginCount++;
+        }
+      });
+    }
+    var avgMargin = marginCount > 0 ? Math.round(marginSum / marginCount) : null;
+
+    // Quote win rate — accepted / (accepted + declined). Drafts and
+    // unsent quotes are excluded; they don't represent a decision.
+    var decided = clientQuotes.filter(function(q) {
+      var s = (q.status || '').toLowerCase();
+      return s === 'approved' || s === 'converted' || s === 'declined' || s === 'lost';
+    });
+    var won = decided.filter(function(q) {
+      var s = (q.status || '').toLowerCase();
+      return s === 'approved' || s === 'converted';
+    });
+    var winRate = decided.length > 0 ? Math.round((won.length / decided.length) * 100) : null;
+
+    // Days since last contact — newest of any comm, quote, job, invoice.
+    var lastTouches = [];
+    if (typeof CommsLog !== 'undefined' && CommsLog.getAll) {
+      var comms = CommsLog.getAll(id);
+      if (comms && comms.length) lastTouches.push(comms[0].date);
+    }
+    clientJobs.forEach(function(j){ lastTouches.push(j.scheduledDate || j.createdAt); });
+    clientQuotes.forEach(function(q){ lastTouches.push(q.sentAt || q.createdAt); });
+    clientInvoices.forEach(function(i){ lastTouches.push(i.paidDate || i.createdAt); });
+    lastTouches = lastTouches.filter(Boolean).map(function(d){ return new Date(d).getTime(); }).filter(function(t){ return !isNaN(t); });
+    var lastTouchMs = lastTouches.length ? Math.max.apply(null, lastTouches) : null;
+    var daysSinceTouch = lastTouchMs ? Math.floor((nowMs - lastTouchMs) / 86400000) : null;
+
+    // Client age — earliest createdAt across the client + their records.
+    var firstSeen = [c.createdAt].concat(
+      clientJobs.map(function(j){ return j.createdAt; }),
+      clientQuotes.map(function(q){ return q.createdAt; }),
+      clientInvoices.map(function(i){ return i.createdAt; })
+    ).filter(Boolean).map(function(d){ return new Date(d).getTime(); }).filter(function(t){ return !isNaN(t); });
+    var firstSeenMs = firstSeen.length ? Math.min.apply(null, firstSeen) : null;
+    var clientAgeDays = firstSeenMs ? Math.floor((nowMs - firstSeenMs) / 86400000) : null;
+    var clientAgeLabel = '';
+    if (clientAgeDays != null) {
+      if (clientAgeDays < 30) clientAgeLabel = clientAgeDays + ' day' + (clientAgeDays === 1 ? '' : 's');
+      else if (clientAgeDays < 365) clientAgeLabel = Math.round(clientAgeDays / 30) + ' mo';
+      else clientAgeLabel = (clientAgeDays / 365).toFixed(1) + ' yr';
+    }
+
+    // Last-12-months activity bars (count of jobs per month).
+    var monthBuckets = new Array(12).fill(0);
+    var thisMonth = new Date();
+    thisMonth.setDate(1);
+    var labels = [];
+    for (var i = 11; i >= 0; i--) {
+      var d = new Date(thisMonth.getFullYear(), thisMonth.getMonth() - i, 1);
+      labels.push(d.toLocaleDateString('en-US', { month: 'short' }));
+    }
+    completedJobs.forEach(function(j) {
+      var when = j.completedDate || j.scheduledDate || j.createdAt;
+      if (!when) return;
+      var t = new Date(when);
+      if (isNaN(t)) return;
+      var diffMonths = (thisMonth.getFullYear() - t.getFullYear()) * 12 + (thisMonth.getMonth() - t.getMonth());
+      if (diffMonths >= 0 && diffMonths < 12) {
+        monthBuckets[11 - diffMonths]++;
+      }
+    });
+    var maxBucket = Math.max.apply(null, monthBuckets) || 1;
+    var hasActivity = monthBuckets.some(function(v){ return v > 0; });
+
+    // Build the card
+    function metric(label, value, sub, color) {
+      return '<div>'
+        + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);">' + label + '</div>'
+        + '<div style="font-size:16px;font-weight:700;margin-top:2px;' + (color ? 'color:' + color + ';' : '') + '">' + value + '</div>'
+        + (sub ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">' + sub + '</div>' : '')
+        + '</div>';
+    }
+    var marginColor = (avgMargin == null) ? null : (avgMargin >= 40 ? '#2e7d32' : avgMargin >= 20 ? '#e65100' : avgMargin >= 0 ? '#c62828' : '#7f1d1d');
+    var winColor = (winRate == null) ? null : (winRate >= 60 ? '#2e7d32' : winRate >= 30 ? '#e65100' : '#c62828');
+    var touchColor = (daysSinceTouch == null) ? null : (daysSinceTouch <= 30 ? '#2e7d32' : daysSinceTouch <= 90 ? '#e65100' : '#c62828');
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">'
+      +   '<h4 style="margin:0;font-size:13px;color:var(--text);">📊 Client snapshot</h4>'
+      +   '<div style="font-size:11px;color:var(--text-light);">based on ' + completedJobs.length + ' completed job' + (completedJobs.length === 1 ? '' : 's') + ' · ' + paidInvoices.length + ' paid invoice' + (paidInvoices.length === 1 ? '' : 's') + '</div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;margin-bottom:14px;">'
+      +   metric('Avg job', avgJobValue > 0 ? UI.moneyInt(avgJobValue) : '—', jobValues.length + ' billed', null)
+      +   metric('Avg margin', avgMargin == null ? '—' : avgMargin + '%', marginCount > 0 ? marginCount + ' jobs costed' : 'no cost data', marginColor)
+      +   metric('Win rate', winRate == null ? '—' : winRate + '%', decided.length > 0 ? won.length + ' / ' + decided.length + ' decided' : 'no decisions yet', winColor)
+      +   metric('Days since contact', daysSinceTouch == null ? '—' : daysSinceTouch + 'd', daysSinceTouch == null ? '' : (daysSinceTouch === 0 ? 'today' : daysSinceTouch <= 30 ? 'recent' : daysSinceTouch <= 90 ? 'cooling' : 'stale'), touchColor)
+      +   metric('Client age', clientAgeLabel || '—', firstSeenMs ? 'since ' + UI.dateShort(firstSeenMs) : '', null)
+      +   metric('Lifetime billed', UI.moneyInt(clientInvoices.reduce(function(s,i){return s + (Number(i.total)||0);},0)), clientInvoices.length + ' invoice' + (clientInvoices.length === 1 ? '' : 's'), null)
+      + '</div>';
+
+    // 12-month activity strip
+    if (hasActivity) {
+      html += '<div style="border-top:1px dashed var(--border);padding-top:10px;">'
+        + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);margin-bottom:6px;">Last 12 months · completed jobs</div>'
+        + '<div style="display:flex;align-items:flex-end;gap:3px;height:40px;">';
+      monthBuckets.forEach(function(count, idx) {
+        var pct = maxBucket > 0 ? (count / maxBucket) * 100 : 0;
+        var h = Math.max(count > 0 ? 4 : 1, Math.round(pct * 0.4));
+        var bg = count > 0 ? 'var(--green-dark)' : 'var(--border)';
+        var lbl = labels[idx] + (count > 0 ? ' · ' + count + ' job' + (count === 1 ? '' : 's') : '');
+        html += '<div title="' + lbl + '" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">'
+          +   '<div style="width:100%;height:' + h + 'px;background:' + bg + ';border-radius:2px 2px 0 0;"></div>'
+          +   '<div style="font-size:9px;color:var(--text-light);">' + labels[idx].charAt(0) + '</div>'
+          + '</div>';
+      });
+      html += '</div></div>';
+    } else {
+      html += '<div style="border-top:1px dashed var(--border);padding-top:10px;font-size:11px;color:var(--text-light);text-align:center;">No completed jobs in the last 12 months</div>';
+    }
+
+    html += '</div>';
+    return html;
   },
 
   _archiveClient: function(id) {
