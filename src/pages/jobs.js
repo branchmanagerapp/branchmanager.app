@@ -412,6 +412,39 @@ var JobsPage = {
     }
   },
 
+  // v751: "ETA to Client" — sends a heads-up SMS to the customer with
+  // crew ETA + tracking link. Common request because clients want to
+  // know when the crew is actually rolling. Routes through Dialpad if
+  // available (logs to communications + threads in Messaging) and
+  // falls back to a native sms: link otherwise.
+  _etaToClient: function(id) {
+    var j = DB.jobs.getById(id);
+    if (!j) return;
+    var client = j.clientId ? DB.clients.getById(j.clientId) : null;
+    var phone = j.clientPhone || (client && client.phone) || '';
+    if (!phone) { UI.toast('No client phone on file', 'error'); return; }
+    var firstName = (j.clientName || '').split(' ')[0] || 'there';
+    var minsDefault = 30;
+    var mins = prompt('ETA in minutes?', String(minsDefault));
+    if (mins === null) return;
+    var n = parseInt(mins, 10);
+    if (isNaN(n) || n < 0 || n > 600) { UI.toast('Enter a number 0–600', 'error'); return; }
+    var co = (JobsPage._co && JobsPage._co()) || { name: 'the crew' };
+    var msg;
+    if (n === 0) msg = 'Hi ' + firstName + '! ' + co.name + ' is on-site now to work on Job #' + (j.jobNumber || '') + '. Let us know if you need anything.';
+    else msg = 'Hi ' + firstName + '! Heads-up — ' + co.name + ' is heading to ' + (j.property ? j.property + ' ' : '') + 'for Job #' + (j.jobNumber || '') + '. ETA about ' + n + ' min. We\'ll text again when on-site.';
+
+    // Prefer Dialpad (logs to communications, threads in Messaging)
+    if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
+      Dialpad.sendSMS(phone, msg, j.clientId || null);
+      UI.toast('ETA sent to ' + firstName);
+      return;
+    }
+    // Fallback: native sms: link
+    var digits = phone.replace(/\D/g, '');
+    window.open('sms:' + digits + '?&body=' + encodeURIComponent(msg));
+  },
+
   _requestReview: function(id) {
     var j = DB.jobs.getById(id);
     if (!j) return;
@@ -871,6 +904,7 @@ var JobsPage = {
           + '<a href="sms:' + phone.replace(/\D/g,'') + '" class="btn btn-outline" style="font-size:12px;">💬 Text</a>' : '';
       })()
       + (j.crew && j.crew.length > 0 ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._textCrew(\'' + id + '\')">📲 Text Crew</button>' : '')
+      + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._etaToClient(\'' + id + '\')" title="Send ETA SMS to client">⏱ ETA to Client</button>' : '')
       + (j.status === 'completed' ? '<button class="btn btn-outline" style="font-size:12px;color:#f9a825;border-color:#f9a825;" onclick="JobsPage._requestReview(\'' + id + '\')">⭐ Request Review</button>' : '')
       + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._markComplete(\'' + id + '\')">✓ Mark Complete</button>' : '')
       + (j.status === 'completed' && !j.invoiceId ? '<button class="btn btn-primary" style="font-size:12px;" onclick="(function(){var inv=Workflow.jobToInvoice(\'' + id + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})()">💰 Create Invoice</button>' : '')
@@ -882,6 +916,7 @@ var JobsPage = {
       + '<button onclick="JobsPage.showForm(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✏️ Edit Job</button>'
       + '<button onclick="PDF.generateJobSheet(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">📄 Job Sheet PDF</button>'
       + (j.property ? '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(j.property) + '" target="_blank" rel="noopener noreferrer" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);text-decoration:none;">🗺 Navigate to Property</a>' : '')
+      + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button onclick="JobsPage._etaToClient(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">⏱ ETA to Client</button>' : '')
       + (j.status !== 'completed' ? '<button onclick="JobsPage._markComplete(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✓ Mark Complete</button>' : '')
       + (j.status === 'completed' && !j.invoiceId ? '<button onclick="(function(){var inv=Workflow.jobToInvoice(\'' + id + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})()" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">💰 Create Invoice</button>' : '')
       + '<button onclick="JobsPage._requestReview(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">⭐ Request Review</button>'

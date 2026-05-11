@@ -30,6 +30,7 @@ var QuotesPage = {
         loadPage('quotes');
       }});
     }
+    items.push({ label: '🧬  Duplicate', fn: function() { QuotesPage.duplicate(quoteId); } });
     if (q.clientId) {
       items.push('-');
       items.push({ label: '👤  Open client', fn: function() { ClientsPage.showDetail(q.clientId); } });
@@ -1979,6 +1980,7 @@ var QuotesPage = {
       + '<button onclick="QuotesPage._copyApprovalLink(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Copy Approval Link</button>'
       + '<button onclick="PDF.generateQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Download PDF</button>'
       + '<button onclick="QuotesPage._quickFollowUp(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Send Follow-up</button>'
+      + '<button onclick="QuotesPage.duplicate(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🧬 Duplicate Quote</button>'
       + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
       + '<button onclick="QuotesPage.setStatus(\'' + id + '\',\'declined\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:#dc3545;">Mark Declined</button>'
       + '<button onclick="QuotesPage._archiveQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text-light);">Archive</button>'
@@ -2544,6 +2546,42 @@ var QuotesPage = {
       }
       QuotesPage.showDetail(id);
     });
+  },
+
+  // v751: duplicate a quote. Common workflow when the same client comes
+  // back for a similar job, or when Doug needs to quote a variant. Copies
+  // line items, fields, and re-opens the new quote in the form ready for
+  // tweaks. Number is regenerated; status resets to draft; sentAt cleared.
+  duplicate: function(id) {
+    var src = DB.quotes.getById(id);
+    if (!src) { UI.toast('Quote not found', 'error'); return; }
+    var copy = Object.assign({}, src);
+    // Strip identifiers / status / lifecycle timestamps from the copy
+    delete copy.id;
+    delete copy.quoteNumber;
+    delete copy.createdAt;
+    delete copy.sentAt;
+    delete copy.approvedAt;
+    delete copy.declinedAt;
+    delete copy.convertedJobId;
+    delete copy.jobId;
+    delete copy.viewedAt;
+    delete copy.signature;
+    delete copy.signedBy;
+    delete copy.signedAt;
+    copy.status = 'draft';
+    copy.notes = (src.notes ? src.notes + '\n\n' : '') + '— Duplicated from quote #' + (src.quoteNumber || src.id) + ' on ' + new Date().toLocaleDateString();
+    // Deep-clone line items so edits on the copy don't mutate the source
+    if (Array.isArray(src.lineItems)) {
+      copy.lineItems = src.lineItems.map(function(li) { return Object.assign({}, li); });
+    }
+    if (Array.isArray(src.photos)) {
+      copy.photos = src.photos.slice();
+    }
+    var created = DB.quotes.create(copy);
+    if (!created || !created.id) { UI.toast('Duplicate failed', 'error'); return; }
+    UI.toast('Duplicated as #' + (created.quoteNumber || '') + ' — opening editor');
+    setTimeout(function() { QuotesPage.showForm(created.id); }, 80);
   },
 
   setStatus: function(id, status) {
