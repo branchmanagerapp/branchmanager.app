@@ -33,6 +33,12 @@ verify_jwt = false
 [functions.bouncie-rest-sync]
 verify_jwt = false
 
+# BM Receptionist — Twilio voice webhook. Twilio posts form-encoded
+# data without a Supabase JWT. Function verifies the request internally
+# via TWILIO_AUTH_TOKEN signature when configured.
+[functions.bm-receptionist]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 
