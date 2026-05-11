@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 759; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 760; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v759.min.js"></script>
+<script defer src="dist/bm.bundle.v760.min.js"></script>
 
 
 
@@ -1429,7 +1429,10 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
 // ── Reports Hub ──
 var ReportsHub = {
   render: function() {
+    // v760: catalog tab leads — Jobber-parity report directory with sales
+    // tax counter at top. Old tabs kept as deep-dive views.
     var tabs = [
+      ['catalog', 'Catalog'],
       ['insights', 'Overview'],
       ['books', 'Books'],
       ['payments', 'Payments'],
@@ -1440,10 +1443,11 @@ var ReportsHub = {
       ['weeklysummary', 'Weekly Summary'],
       ['export', 'Export']
     ];
-    var r = _renderHubTabs('_reportsTab', tabs, 'insights');
+    var r = _renderHubTabs('_reportsTab', tabs, 'catalog');
     var body = '';
     try {
-      if (r.tab === 'insights') body = InsightsPage.render();
+      if (r.tab === 'catalog') body = (typeof ReportsCatalog !== 'undefined' ? ReportsCatalog.render() : '<div style="padding:16px;color:var(--text-light);">Reports catalog module not loaded.</div>');
+      else if (r.tab === 'insights') body = InsightsPage.render();
       else if (r.tab === 'books') body = (typeof BooksPage !== 'undefined' ? BooksPage.render() : '<div style="padding:16px;color:var(--text-light);">Books module not loaded.</div>');
       else if (r.tab === 'payments') body = (typeof Payments !== 'undefined' ? Payments.render() : '<div style="padding:16px;color:var(--text-light);">Payments module not loaded.</div>');
       else if (r.tab === 'profitloss') body = ProfitLossPage.render();

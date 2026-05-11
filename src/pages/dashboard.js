@@ -67,6 +67,17 @@ var DashboardPage = {
     var localClients = JSON.parse(localStorage.getItem('bm-clients') || '[]');
     var html = '';
 
+    // v760: Sales tax counter banner — shows at the top of the dashboard
+    // any time tax is owed for the current/upcoming filing period. Color
+    // escalates as the due date approaches; on 1st / 15th / 19th / 20th
+    // of the filing month it goes red. Doug sees this every day; he can't
+    // forget the quarterly NY return.
+    try {
+      if (typeof SalesTaxCounter !== 'undefined' && SalesTaxCounter.renderBanner) {
+        html += SalesTaxCounter.renderBanner();
+      }
+    } catch(e) { /* swallow — never block dashboard render */ }
+
     // === GREETING (show first on mobile) ===
     var now = new Date();
     var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
