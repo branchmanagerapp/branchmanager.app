@@ -235,16 +235,31 @@ var MessagingPage = {
       // Messages
       html += '<div id="msg-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;">';
       if (comms.length) {
+        var inboundNeedsClassify = [];
         comms.slice().reverse().forEach(function(m) {
           var isOutbound = m.direction === 'outbound';
           var icons = { call: '📞', text: '💬', email: '📧', note: '📌', visit: '🏠', voicemail: '📱' };
+          // v791: intent classification for inbound text-like messages
+          var intentChip = '';
+          if (!isOutbound && (m.type === 'text' || m.type === 'voicemail' || m.type === 'email') && m.notes && m.id) {
+            var intent = MessagingPage._getIntent(m.id);
+            if (intent) {
+              intentChip = MessagingPage._renderIntentChip(intent);
+            } else if (m.notes.length > 4) {
+              inboundNeedsClassify.push({ id: m.id, text: m.notes });
+            }
+          }
           html += '<div style="display:flex;justify-content:' + (isOutbound ? 'flex-end' : 'flex-start') + ';">'
             + '<div style="max-width:75%;padding:10px 14px;border-radius:' + (isOutbound ? '16px 16px 4px 16px' : '16px 16px 16px 4px') + ';background:' + (isOutbound ? 'var(--green-dark)' : 'var(--bg)') + ';color:' + (isOutbound ? '#fff' : 'var(--text)') + ';font-size:14px;">'
             + '<div>' + (icons[m.type] || '') + ' ' + (m.notes || '') + '</div>'
-            + '<div style="font-size:10px;opacity:.6;margin-top:4px;text-align:right;">' + UI.dateRelative(m.date) + ' · ' + m.type + '</div>'
+            + '<div style="font-size:10px;opacity:.6;margin-top:4px;text-align:right;">' + UI.dateRelative(m.date) + ' · ' + m.type + intentChip + '</div>'
             + MessagingPage._renderActionChip(m)
             + '</div></div>';
         });
+        // Kick off batch classification for uncached inbound messages.
+        if (inboundNeedsClassify.length) {
+          setTimeout(function() { MessagingPage._classifyBatch(inboundNeedsClassify); }, 200);
+        }
       } else {
         html += '<div style="text-align:center;padding:40px;color:var(--text-light);font-size:13px;">No messages yet. Send the first one below.</div>';
       }
@@ -606,6 +621,117 @@ var MessagingPage = {
     }
 
     return '<div style="padding:8px 12px;background:#fafafa;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;overflow-x:auto;">' + chips.join('') + '</div>';
+  },
+
+  // v791: SMS intent classification cache. Stored per-msg-id in localStorage
+  // so we classify once and the chip survives reloads.
+  _intentCacheKey: 'bm-msg-intent',
+  _intentCache: null,
+  _loadIntentCache: function() {
+    if (MessagingPage._intentCache) return MessagingPage._intentCache;
+    try { MessagingPage._intentCache = JSON.parse(localStorage.getItem(MessagingPage._intentCacheKey) || '{}'); }
+    catch(e) { MessagingPage._intentCache = {}; }
+    return MessagingPage._intentCache;
+  },
+  _saveIntentCache: function() {
+    if (!MessagingPage._intentCache) return;
+    try { localStorage.setItem(MessagingPage._intentCacheKey, JSON.stringify(MessagingPage._intentCache)); }
+    catch(e) {}
+  },
+  _getIntent: function(msgId) {
+    var cache = MessagingPage._loadIntentCache();
+    return cache[msgId] || null;
+  },
+  _setIntent: function(msgId, intent) {
+    var cache = MessagingPage._loadIntentCache();
+    cache[msgId] = intent;
+    MessagingPage._saveIntentCache();
+  },
+
+  _intentChipColors: {
+    'COMPLAINT':     { bg: '#fee2e2', fg: '#991b1b', icon: '😠' },
+    'RESCHEDULE':    { bg: '#fef3c7', fg: '#92400e', icon: '📅' },
+    'ACCEPT_QUOTE':  { bg: '#dcfce7', fg: '#15803d', icon: '✓'  },
+    'DECLINE_QUOTE': { bg: '#fee2e2', fg: '#7f1d1d', icon: '✗'  },
+    'PRICE_QUESTION':{ bg: '#dbeafe', fg: '#1e40af', icon: '💲' },
+    'SCHEDULING':    { bg: '#e0e7ff', fg: '#3730a3', icon: '🗓' },
+    'STOP':          { bg: '#f3f4f6', fg: '#374151', icon: '🛑' },
+    'GENERAL':       { bg: '#f3f4f6', fg: '#6b7280', icon: '💬' }
+  },
+  _renderIntentChip: function(intent) {
+    var conf = MessagingPage._intentChipColors[intent] || MessagingPage._intentChipColors.GENERAL;
+    return ' <span title="AI-classified intent: ' + intent + '" style="margin-left:6px;padding:1px 6px;border-radius:8px;background:' + conf.bg + ';color:' + conf.fg + ';font-weight:700;font-size:9px;letter-spacing:.3px;">' + conf.icon + ' ' + intent.replace('_', ' ') + '</span>';
+  },
+
+  // v791: classify up to 4 messages in one ai-chat call so we batch API
+  // round-trips. Output is a JSON array of {id, intent} pairs the model
+  // produces from a strict label set. Cached per id so we never re-ask.
+  _classifyInFlight: false,
+  _classifyBatch: function(items) {
+    if (!items || !items.length) return;
+    if (MessagingPage._classifyInFlight) return;
+    // Skip if no API key path
+    var apiKey = (typeof window.bmAIKey === 'function' && window.bmAIKey()) || (typeof AI !== 'undefined' && AI._apiKey);
+    if (!apiKey) return; // silent — no AI configured
+
+    MessagingPage._classifyInFlight = true;
+    var batch = items.slice(0, 4);
+    var prompt = 'Classify each customer SMS reply below into ONE label. Return ONLY a JSON array, no other text.\n\nLabels (pick exactly one per message):\n'
+      + '- COMPLAINT — angry, dissatisfied, demanding refund/redo\n'
+      + '- RESCHEDULE — wants to move appointment / cancel / postpone\n'
+      + '- ACCEPT_QUOTE — yes, approving, ready to schedule\n'
+      + '- DECLINE_QUOTE — no thanks, too expensive, going elsewhere\n'
+      + '- PRICE_QUESTION — asking about cost / itemization / discount\n'
+      + '- SCHEDULING — asking about timing / availability / when\n'
+      + '- STOP — unsubscribe / "stop" / opt out\n'
+      + '- GENERAL — none of the above (chit-chat, ack, "thanks")\n\n'
+      + 'Messages:\n'
+      + batch.map(function(it, i) { return (i+1) + '. "' + (it.text || '').slice(0, 200).replace(/"/g, '\\"') + '"'; }).join('\n')
+      + '\n\nOutput format: [{"n":1,"intent":"LABEL"}, ...]';
+
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 256,
+        messages: [{ role: 'user', content: prompt }],
+        apiKey: apiKey
+      })
+    })
+    .then(function(res) { if (!res.ok) throw new Error('AI ' + res.status); return res.json(); })
+    .then(function(data) {
+      if (!data || !data.content || !data.content[0]) return;
+      var raw = data.content[0].text || '';
+      // Pull the JSON array out of the response (model sometimes adds prose)
+      var match = raw.match(/\[[\s\S]*\]/);
+      if (!match) return;
+      var arr;
+      try { arr = JSON.parse(match[0]); } catch(e) { return; }
+      if (!Array.isArray(arr)) return;
+      var updated = false;
+      arr.forEach(function(r) {
+        var idx = (Number(r.n) || 0) - 1;
+        if (idx < 0 || idx >= batch.length) return;
+        var validLabels = Object.keys(MessagingPage._intentChipColors);
+        var lbl = (r.intent || '').toUpperCase().trim();
+        if (validLabels.indexOf(lbl) < 0) lbl = 'GENERAL';
+        MessagingPage._setIntent(batch[idx].id, lbl);
+        updated = true;
+      });
+      if (updated && window._currentPage === 'messaging') {
+        // Soft re-render only if user is still on the page
+        loadPage('messaging');
+      }
+    })
+    .catch(function(err) { console.debug('[Msg] intent classify err', err && err.message); })
+    .finally(function() {
+      MessagingPage._classifyInFlight = false;
+      // If there are more queued, fire the next batch after a brief gap
+      if (items.length > 4) {
+        setTimeout(function() { MessagingPage._classifyBatch(items.slice(4)); }, 800);
+      }
+    });
   },
 
   // Render an inline action chip on inbound SMS bubbles whose communications row
