@@ -72,6 +72,12 @@ verify_jwt = false
 [functions.portal-update]
 verify_jwt = false
 
+# Portal "Pay All Outstanding" — combined Stripe Checkout across every
+# unpaid invoice for the logged-in customer. Auths via custom session
+# token, not Supabase JWT.
+[functions.portal-pay-all]
+verify_jwt = false
+
 # Public marketing-site renderer — anyone hitting clients.branchmanager.app
 # /{slug}/llm-info/ (or any other generated page) should reach this without
 # a JWT. The function only reads tenants.config (no writes), so opening it

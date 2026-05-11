@@ -368,6 +368,18 @@ function renderInvoices(invoices) {
 
   if (unpaid.length) {
     html += '<div class="card"><h3>💳 Outstanding</h3>';
+    // v767: Pay All Outstanding — single combined Stripe Checkout for
+    // every unpaid balance. Skip the button if there's only one invoice
+    // (the per-row Pay Now is identical in that case).
+    if (unpaid.length > 1) {
+      html += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
+        +   '<div style="flex:1;min-width:200px;">'
+        +     '<div style="font-size:13px;font-weight:700;color:#065f46;">Pay everything in one step</div>'
+        +     '<div style="font-size:12px;color:#065f46;margin-top:2px;">Combined total across <b>' + unpaid.length + ' invoices</b>: <b>' + money(unpaidTotal) + '</b></div>'
+        +   '</div>'
+        +   '<button id="pay-all-btn" onclick="payAll()" class="btn btn-primary" style="font-size:14px;font-weight:700;">💳 Pay All ' + money(unpaidTotal) + '</button>'
+        + '</div>';
+    }
     unpaid.forEach(function(inv) {
       var bal = inv.balance || inv.total || 0;
       html += '<div class="row">'
@@ -448,6 +460,37 @@ function renderPhotos(photos) {
   });
   html += '</div></div>';
   return html;
+}
+
+// ── Pay All Outstanding (v767) ────────────────────────────────────────────────
+// Calls portal-pay-all edge fn which builds a Stripe Checkout Session
+// across every unpaid invoice and returns the hosted-checkout URL.
+function payAll() {
+  var btn = document.getElementById('pay-all-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Building checkout…'; }
+  var token = getToken();
+  if (!token) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign in first'; }
+    return;
+  }
+  fetch(PORTAL_API + '/portal-pay-all', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: token,
+      returnUrl: location.origin + location.pathname
+    })
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (!res || !res.ok || !res.url) {
+      if (btn) { btn.disabled = false; btn.textContent = '💳 Try again'; }
+      alert((res && res.error) || 'Could not start checkout. Please try paying individual invoices.');
+      return;
+    }
+    location.href = res.url;
+  }).catch(function(err) {
+    if (btn) { btn.disabled = false; btn.textContent = '💳 Try again'; }
+    alert('Checkout failed: ' + (err && err.message || 'network error'));
+  });
 }
 
 // ── Logout ────────────────────────────────────────────────────────────────────

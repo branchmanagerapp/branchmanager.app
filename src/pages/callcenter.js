@@ -363,6 +363,7 @@ var CallCenter = {
           + '</div>'
           + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c.body.slice(0, 90) + (c.body.length > 90 ? '…' : '') + '</div>' : '')
           + (service ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">Wants: ' + service + '</div>' : '')
+          + CallCenter._intentBadges(c)
           + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;flex-shrink:0;">' + ts + '</div>'
           + '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
@@ -381,6 +382,32 @@ var CallCenter = {
     } catch(e) {
       el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light);">Failed to load. ' + e.message + '</div>';
     }
+  },
+
+  // v767: Intent badges — pure rule-based scan of the SMS/voicemail
+  // body so Doug can triage faster. No AI cost, runs on every render.
+  // Badge meanings:
+  //   💰 price/quote — body mentions $, price, cost, quote, estimate
+  //   📅 schedule    — body asks about scheduling, time, date, when
+  //   ❓ question    — body ends with ? (likely a real question)
+  //   🛑 STOP        — TCPA opt-out keyword
+  //   ⚠ urgent      — body mentions emergency, hazard, asap, today
+  //   ✅ confirm    — yes/confirm/approved (already auto-routed but
+  //                   surfaces if the auto-route didn't match)
+  _intentBadges: function(c) {
+    var body = String(c.body || '').toLowerCase();
+    if (!body) return '';
+    var badges = [];
+    if (/\b(stop|stopall|unsubscribe|quit|cancel)\b/.test(body)) badges.push(['🛑', 'STOP — TCPA opt-out', '#991b1b']);
+    if (/\b(emergency|hazard|asap|urgent|today|right now|fallen|down on|on my house|on my car)\b/.test(body)) badges.push(['⚠', 'Urgent', '#c2410c']);
+    if (/(\$\d|price|cost|estimate|quote|how much)/.test(body)) badges.push(['💰', 'Asks about price', '#92400e']);
+    if (/\b(reschedule|schedul|when can|what time|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|am|pm|appointment)\b/.test(body)) badges.push(['📅', 'Scheduling', '#1d4ed8']);
+    if (/\b(yes|yep|confirm|approved|sounds good|go ahead|all set)\b/.test(body) && !c.metadata?.suggested_action) badges.push(['✅', 'Confirmation-like reply', '#16a34a']);
+    if (/\?\s*$/.test(body)) badges.push(['❓', 'Open question', '#525252']);
+    if (!badges.length) return '';
+    return '<div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">' + badges.map(function(b) {
+      return '<span title="' + b[1] + '" style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + b[2] + '20;color:' + b[2] + ';border:1px solid ' + b[2] + '40;font-weight:600;">' + b[0] + ' ' + b[1] + '</span>';
+    }).join('') + '</div>';
   },
 
   // v759: Qualify a raw inbound row → promote to Requests with a real

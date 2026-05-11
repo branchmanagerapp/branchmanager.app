@@ -326,6 +326,9 @@ var SchedulePage = {
     }
 
     if (self.view === 'day') {
+      // v767: today's truck plan strip — surfaces vehicle_day_assignments
+      // for the current day so Doug sees who's driving what at a glance.
+      html += self._renderTruckStrip();
       html += self._renderDay();
     } else if (self.view === 'list') {
       html += self._renderList();
@@ -435,6 +438,59 @@ var SchedulePage = {
     end.setDate(end.getDate() + 6);
     var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return sm[start.getMonth()] + ' ' + start.getDate() + ' - ' + (end.getMonth() !== start.getMonth() ? sm[end.getMonth()] + ' ' : '') + end.getDate() + ', ' + end.getFullYear();
+  },
+
+  // v767: Today's truck plan — compact strip above the day view that
+  // surfaces vehicle_day_assignments for the day in focus. Lazy-loaded
+  // and cached on first render. Each pill shows truck + driver and
+  // links to its Fleet detail.
+  _renderTruckStrip: function() {
+    var dateStr = SchedulePage._localDateStr(SchedulePage.currentDate);
+    var cache = window._bmTruckStripCache || {};
+    var entry = cache[dateStr];
+    if (!entry) {
+      SchedulePage._loadTruckStrip(dateStr);
+      return '<div id="truck-strip-' + dateStr + '" style="margin-bottom:10px;"></div>';
+    }
+    if (!entry.length) {
+      return '<div id="truck-strip-' + dateStr + '" style="margin-bottom:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;font-size:12px;color:var(--text-light);">🚛 No truck assignments for ' + dateStr + '. <a href="#" onclick="event.preventDefault();loadPage(\'timesheet\');" style="color:var(--accent);">Assign on the Truck Hours tab →</a></div>';
+    }
+    var pills = entry.map(function(t) {
+      var label = '🚛 ' + (t.vehicle_nickname || t.vehicle_name || 'Truck');
+      if (t.driver_name) label += ' · 👤 ' + t.driver_name;
+      return '<button onclick="FleetPage.showDetail(\'' + t.vehicle_id + '\')" '
+        + 'style="background:var(--green-bg);border:1px solid var(--green-dark);color:var(--green-dark);border-radius:18px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">'
+        + label + '</button>';
+    }).join('');
+    return '<div id="truck-strip-' + dateStr + '" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">'
+      + '<span style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-right:6px;">Today\'s Trucks</span>'
+      + pills
+      + '</div>';
+  },
+
+  _loadTruckStrip: function(dateStr) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) {
+      window._bmTruckStripCache = window._bmTruckStripCache || {};
+      window._bmTruckStripCache[dateStr] = [];
+      return;
+    }
+    // Pull from vehicle_daily_hours (the view that already joins vehicles +
+    // assignments) so each row has vehicle_name, vehicle_nickname, driver_name.
+    sb.from('vehicle_daily_hours').select('vehicle_id,vehicle_name,vehicle_nickname,driver_name').eq('day', dateStr).then(function(r) {
+      window._bmTruckStripCache = window._bmTruckStripCache || {};
+      window._bmTruckStripCache[dateStr] = (r && r.data) ? r.data : [];
+      // Re-render only if we're still on the schedule + the same date is shown
+      if (window._currentPage === 'schedule' && SchedulePage._localDateStr(SchedulePage.currentDate) === dateStr) {
+        var el = document.getElementById('truck-strip-' + dateStr);
+        if (el) {
+          // Replace just our strip — avoid full page re-render
+          var temp = document.createElement('div');
+          temp.innerHTML = SchedulePage._renderTruckStrip();
+          if (temp.firstChild) el.replaceWith(temp.firstChild);
+        }
+      }
+    });
   },
 
   _renderDay: function() {
