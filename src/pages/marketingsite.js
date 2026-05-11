@@ -424,10 +424,13 @@ var MarketingSite = (function() {
       +   ta('ms-why-us', 'Direct communication with the owners\nHonest pricing — no hidden fees\nComplete job site cleanup', whyUs.join('\n'), 100)
 
       +   _section('Team <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; "name | role | bio" per line</span>')
-      +   ta('ms-team', 'Catherine Conway | Branch Manager & Sales | Your first point of contact…\nDoug Brown | Operations | Ensures the crew runs safely…', team.map(function(m){ return [m.name, m.role || '', m.bio || ''].join(' | '); }).join('\n'), 110)
+      // v757: placeholders genericized — used to seed SNT staff names
+      // ("Catherine Conway", "Doug Brown") even for other tenants editing
+      // their own marketing site.
+      +   ta('ms-team', 'Jane Smith | Operations Manager | Your first point of contact for scheduling and quotes.\nJohn Doe | Lead Arborist | Oversees crew safety and quality on every job.', team.map(function(m){ return [m.name, m.role || '', m.bio || ''].join(' | '); }).join('\n'), 110)
 
       +   _section('Testimonials <span style="font-weight:400;color:var(--text-light);font-size:11px;">&middot; "stars | quote | name | location" per line (stars defaults to 5)</span>')
-      +   ta('ms-testimonials', '5 | The crew was careful, professional, and cleaned up everything. | Mark R. | Yorktown, NY\n5 | Prompt, fair pricing, owners on site. | Jennifer L. | Briarcliff Manor, NY', testimonials.map(function(t){ return [t.stars||5, t.quote||'', t.name||'', t.location||''].join(' | '); }).join('\n'), 140)
+      +   ta('ms-testimonials', '5 | The crew was careful, professional, and cleaned up everything. | First customer | City, ST\n5 | Prompt, fair pricing, owners on site. | Second customer | City, ST', testimonials.map(function(t){ return [t.stars||5, t.quote||'', t.name||'', t.location||''].join(' | '); }).join('\n'), 140)
 
       +   '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">'
       +     '<div>' + _section('Rating &mdash; stars') + '<input id="ms-rating-stars" type="number" min="0" max="5" step="0.1" value="' + _esc(rating.stars || '') + '" placeholder="5.0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></div>'

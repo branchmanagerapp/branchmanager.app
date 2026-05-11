@@ -233,7 +233,7 @@ var Email = {
       + '<div style="display:flex;gap:8px;">'
       + '<button onclick="Email.testSend()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;">Test Send</button>'
       + '</div>'
-      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">From address: onboarding@resend.dev (until <code>peekskilltree.com</code> is DNS-verified in Resend, then we can switch to <code>info@peekskilltree.com</code>).</p>'
+      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">From address defaults to <code>onboarding@resend.dev</code>. Once your domain is DNS-verified in Resend, set <code>RESEND_FROM_EMAIL</code> in Supabase secrets to switch to <code>info@yourdomain.com</code>.</p>'
       + '</div>';
   },
 
