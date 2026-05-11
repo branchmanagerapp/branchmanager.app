@@ -177,8 +177,16 @@ var AutomationsPage = {
 
     return '<div style="background:var(--white);border-radius:12px;padding:20px;border:2px solid var(--green-light);margin-bottom:16px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
-      + '<h3 style="margin:0;font-size:15px;">⚡ Server Automations <span style="font-size:11px;font-weight:400;color:var(--text-light);margin-left:6px;">runs on Supabase cron, works even when app is closed</span></h3>'
+      + '<h3 style="margin:0;font-size:15px;">⚡ Server Automations <span style="font-size:11px;font-weight:400;color:var(--text-light);margin-left:6px;">manual-only — automatic cron is disabled</span></h3>'
       + '<button id="server-auto-run-btn" onclick="AutomationsPage.runServerAutomations()" style="background:var(--green-dark);color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">▶ Run Now</button>'
+      + '</div>'
+      // v746: cron disabled banner. After the May 6 incident (Fred Romer
+      // got an automated upsell mid-conversation with Doug), the
+      // marketing-automation pg_cron job was unscheduled. Toggling rules
+      // below configures *what would run* — nothing fires until the cron
+      // is re-enabled, which only Doug should do.
+      + '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#92400e;">'
+      +   '<b>⚠ Automatic schedule is OFF.</b> The pg_cron job is unscheduled after the May 6 2026 incident. The rules below configure what <i>would</i> run; nothing fires automatically. Use <b>▶ Run Now</b> for manual sweeps.'
       + '</div>'
       + '<div style="font-size:11px;color:var(--text-light);margin-bottom:12px;">Last run: ' + lastLabel + resultHtml + '</div>'
       + onOff('review', '⭐ Review Request (24h after job completes)', 'Sends "how did we do?" email with Google review link')
@@ -201,6 +209,10 @@ var AutomationsPage = {
   },
 
   runServerAutomations: function() {
+    // v746: explicit confirmation before any send, post-May-6 incident.
+    // The function evaluates review/follow-up/upsell rules across all
+    // tenants and can fire real emails to real clients. Always confirm.
+    if (!confirm('Run marketing automation now?\n\nThis will evaluate review-request / quote-follow-up / upsell rules and may send REAL emails + SMS to clients. You can\'t un-send.\n\nContinue?')) return;
     var btn = document.getElementById('server-auto-run-btn');
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     fetch(AutomationsPage.EDGE_URL, {
