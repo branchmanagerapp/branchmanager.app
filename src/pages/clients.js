@@ -1885,6 +1885,109 @@ var ClientsPage = {
       html += '<div style="border-top:1px dashed var(--border);padding-top:10px;font-size:11px;color:var(--text-light);text-align:center;">No completed jobs in the last 12 months</div>';
     }
 
+    // v790: Referral chain — who referred this client + who they referred.
+    // Matches on case-insensitive name across the bm-referrals table.
+    html += ClientsPage._renderReferralChain(c);
+
+    html += '</div>';
+    return html;
+  },
+
+  // v790: referral chain block — surfaces upstream referrer + downstream
+  // referrals. Pulls from bm-referrals (free-text referrerName/referredName),
+  // matches case-insensitive by name to this client, and resolves the OTHER
+  // side back to a real client record for click-through where possible.
+  _renderReferralChain: function(c) {
+    if (!c || !c.name) return '';
+    var allReferrals = [];
+    try { allReferrals = JSON.parse(localStorage.getItem('bm-referrals') || '[]'); } catch(e) {}
+    if (!allReferrals.length) return '';
+
+    var myName = (c.name || '').trim().toLowerCase();
+    var allClients = DB.clients.getAll();
+    var clientByName = {};
+    allClients.forEach(function(x) {
+      if (x && x.name) clientByName[(x.name || '').trim().toLowerCase()] = x;
+    });
+
+    // Upstream: who referred THIS client?
+    var referredBy = allReferrals.filter(function(r) {
+      return (r.referredName || '').trim().toLowerCase() === myName;
+    });
+    // Downstream: who did this client refer?
+    var hasReferred = allReferrals.filter(function(r) {
+      return (r.referrerName || '').trim().toLowerCase() === myName;
+    });
+
+    if (!referredBy.length && !hasReferred.length) return '';
+
+    // Compute LTV of downstream referrals (sum of paid invoices for each
+    // referred client that resolves to a real record).
+    var invoices = DB.invoices.getAll();
+    var invByClient = {};
+    invoices.forEach(function(i) {
+      if (i.status !== 'paid' || !i.clientId) return;
+      invByClient[i.clientId] = (invByClient[i.clientId] || 0) + (Number(i.total) || 0);
+    });
+    var downstreamLtv = 0;
+    var downstreamRows = hasReferred.map(function(r) {
+      var refClient = clientByName[(r.referredName || '').trim().toLowerCase()];
+      var ltv = refClient ? (invByClient[refClient.id] || 0) : 0;
+      downstreamLtv += ltv;
+      return {
+        name: r.referredName || 'Unknown',
+        clientId: refClient ? refClient.id : null,
+        status: r.status || 'pending',
+        ltv: ltv
+      };
+    });
+
+    var html = '<div style="border-top:1px dashed var(--border);padding-top:10px;margin-top:10px;">'
+      + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);margin-bottom:8px;">🌳 Referral chain</div>';
+
+    // Upstream referrer
+    if (referredBy.length) {
+      var refSrc = referredBy[0]; // typically one per client
+      var srcClient = clientByName[(refSrc.referrerName || '').trim().toLowerCase()];
+      html += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;">'
+        + '<span style="color:var(--text-light);">Referred by</span>'
+        + (srcClient
+            ? '<a onclick="ClientsPage.showDetail(\'' + srcClient.id + '\')" style="color:var(--accent);cursor:pointer;font-weight:600;">' + UI.esc(refSrc.referrerName || '') + '</a>'
+            : '<span style="font-weight:600;">' + UI.esc(refSrc.referrerName || 'Unknown') + '</span>')
+        + '<span style="color:var(--text-light);font-size:11px;">' + UI.dateShort(refSrc.createdAt || refSrc.date || '') + '</span>'
+        + '</div>';
+    }
+
+    // Downstream — who they referred
+    if (downstreamRows.length) {
+      html += '<div style="font-size:12px;margin-top:' + (referredBy.length ? '8px' : '0') + ';">'
+        + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'
+        +   '<span style="color:var(--text-light);">Referred ' + downstreamRows.length + ' client' + (downstreamRows.length === 1 ? '' : 's') + '</span>'
+        +   (downstreamLtv > 0 ? '<span style="color:var(--green-dark);font-weight:700;">' + UI.moneyInt(downstreamLtv) + ' downstream LTV</span>' : '')
+        + '</div>';
+      var statusColor = function(s) {
+        s = (s || '').toLowerCase();
+        if (s === 'converted') return '#15803d';
+        if (s === 'contacted') return '#0891b2';
+        if (s === 'expired') return '#7f1d1d';
+        return '#6b7280';
+      };
+      downstreamRows.slice(0, 8).forEach(function(d) {
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--border);">'
+          + (d.clientId
+              ? '<a onclick="ClientsPage.showDetail(\'' + d.clientId + '\')" style="color:var(--accent);cursor:pointer;">' + UI.esc(d.name) + '</a>'
+              : '<span>' + UI.esc(d.name) + '</span>')
+          + '<div style="display:flex;align-items:center;gap:10px;">'
+          +   (d.ltv > 0 ? '<span style="font-weight:600;">' + UI.moneyInt(d.ltv) + '</span>' : '<span style="color:var(--text-light);font-size:11px;">—</span>')
+          +   '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + statusColor(d.status) + '20;color:' + statusColor(d.status) + ';font-weight:700;">' + (d.status || 'pending') + '</span>'
+          + '</div></div>';
+      });
+      if (downstreamRows.length > 8) {
+        html += '<div style="font-size:11px;color:var(--text-light);padding:4px 0;">...and ' + (downstreamRows.length - 8) + ' more</div>';
+      }
+      html += '</div>';
+    }
+
     html += '</div>';
     return html;
   },
