@@ -86,8 +86,9 @@ var BeforeAfter = {
       + '<button onclick="BeforeAfter._clearFilters()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;">Clear</button>'
       + '</div></div>';
 
-    // Add button
-    html += '<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">'
+    // Add buttons — v801 also adds "🤖 Auto-pair from job photos"
+    html += '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">'
+      + '<button onclick="BeforeAfter._suggestAutoPairs()" title="Scan job photos and propose before/after pairs by timestamp" style="background:var(--white);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">🤖 Auto-pair</button>'
       + '<button onclick="BeforeAfter.addPair()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;">+ Add Before/After</button>'
       + '</div>';
 
@@ -822,5 +823,112 @@ var BeforeAfter = {
 
     html += '</div>';
     return html;
+  },
+
+  // v801: Auto-pair suggestor. Scans every job's photos, finds jobs that
+  // have 2+ photos taken on the same day AND don't already have a
+  // before/after pair, and proposes the earliest photo as "before" and
+  // the latest as "after". Time gap of 30+ minutes required (otherwise
+  // it's two angles of the same moment, not before/after).
+  // Doug picks which suggestions to save in a checkbox modal.
+  _suggestAutoPairs: function() {
+    if (typeof DB === 'undefined' || !DB.jobs) { UI.toast('No jobs loaded', 'error'); return; }
+    var jobs = DB.jobs.getAll();
+    var existingPairs = BeforeAfter.getAll();
+    var pairedJobIds = {};
+    existingPairs.forEach(function(p) { if (p.jobId) pairedJobIds[p.jobId] = 1; });
+
+    var suggestions = [];
+    jobs.forEach(function(j) {
+      if (pairedJobIds[j.id]) return; // already has a pair
+      if (typeof Photos === 'undefined' || !Photos.getPhotos) return;
+      var photos = Photos.getPhotos('job', j.id);
+      if (!photos || photos.length < 2) return;
+      // Parse dates and sort
+      var dated = photos.map(function(p) {
+        return { p: p, ts: new Date(p.date || p.taken_at || 0).getTime() };
+      }).filter(function(x) { return !isNaN(x.ts) && x.ts > 0; });
+      if (dated.length < 2) return;
+      dated.sort(function(a, b) { return a.ts - b.ts; });
+      var earliest = dated[0];
+      var latest = dated[dated.length - 1];
+      var gapMin = (latest.ts - earliest.ts) / 60000;
+      // Require 30min gap so we don't pair two angles of the same moment
+      if (gapMin < 30) return;
+      suggestions.push({
+        jobId: j.id,
+        clientName: j.clientName || '#' + (j.jobNumber || j.id.substring(0, 6)),
+        description: j.description || '',
+        beforeUrl: earliest.p.url,
+        afterUrl: latest.p.url,
+        gapHours: Math.round(gapMin / 60 * 10) / 10
+      });
+    });
+
+    if (!suggestions.length) {
+      UI.showModal('🤖 Auto-pair suggestions', '<div style="text-align:center;padding:24px;">'
+        + '<div style="font-size:42px;margin-bottom:10px;">📷</div>'
+        + '<div style="font-size:14px;color:var(--text-light);">No new pairs to suggest.</div>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-top:6px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.5;">Either every job already has a pair, or no job has 2+ photos taken 30+ min apart.</div>'
+        + '</div>', {
+        footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+      });
+      return;
+    }
+
+    // Build the suggestion list with checkboxes
+    var rows = suggestions.map(function(s, idx) {
+      return '<label style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;">'
+        + '<input type="checkbox" class="ba-suggest-check" data-idx="' + idx + '" checked style="width:18px;height:18px;flex-shrink:0;">'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+        +   '<img src="' + s.beforeUrl + '" style="width:70px;height:50px;object-fit:cover;border-radius:4px;border:2px solid #c2410c;" title="Before">'
+        +   '<img src="' + s.afterUrl + '" style="width:70px;height:50px;object-fit:cover;border-radius:4px;border:2px solid #15803d;" title="After">'
+        + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(s.clientName) + '</div>'
+        +   '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(s.description) + '</div>'
+        +   '<div style="font-size:11px;color:var(--text-light);">' + s.gapHours + 'h apart</div>'
+        + '</div>'
+        + '</label>';
+    }).join('');
+
+    BeforeAfter._pendingAutoSuggestions = suggestions;
+    var body = '<div style="font-size:13px;color:var(--text-light);margin-bottom:12px;">Found ' + suggestions.length + ' job' + (suggestions.length === 1 ? '' : 's') + ' with photos taken 30+ min apart and no existing pair. Uncheck any you don\'t want to save.</div>'
+      + rows;
+    UI.showModal('🤖 Auto-pair suggestions', body, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="BeforeAfter._saveAutoSuggestions()">Save selected pairs</button>'
+    });
+  },
+
+  _saveAutoSuggestions: function() {
+    var checks = document.querySelectorAll('.ba-suggest-check');
+    var selected = Array.from(checks).filter(function(c) { return c.checked; });
+    var suggestions = BeforeAfter._pendingAutoSuggestions || [];
+    if (!selected.length) { UI.toast('Nothing selected', 'error'); return; }
+    var pairs = BeforeAfter.getAll();
+    var newPairs = 0;
+    selected.forEach(function(c) {
+      var idx = parseInt(c.getAttribute('data-idx'), 10);
+      var s = suggestions[idx];
+      if (!s) return;
+      var pair = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 6),
+        jobId: s.jobId,
+        clientName: s.clientName,
+        beforeImg: s.beforeUrl,
+        afterImg: s.afterUrl,
+        caption: s.description || '',
+        tags: [],
+        createdAt: new Date().toISOString(),
+        source: 'auto-pair'
+      };
+      pairs.push(pair);
+      newPairs++;
+    });
+    BeforeAfter._save(pairs);
+    UI.closeModal();
+    UI.toast('✓ Saved ' + newPairs + ' before/after pair' + (newPairs === 1 ? '' : 's'));
+    loadPage('beforeafter');
   }
 };
