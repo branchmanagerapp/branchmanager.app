@@ -78,7 +78,33 @@ var PDF = {
     if (!q) { UI.toast('Quote not found', 'error'); return; }
     var client = q.clientId ? DB.clients.getById(q.clientId) : null;
 
-    var html = '<!DOCTYPE html><html><head><title>Quote #' + q.quoteNumber + '</title>' + PDF._style() + '</head><body>';
+    // v787: stamp a diagonal "DECLINED" / "EXPIRED" watermark on quotes
+    // that should not be confused for live offers. Catches PDFs found
+    // on a phone weeks later being mistaken for current proposals.
+    var stampLabel = null, stampColor = null;
+    if (q.status === 'declined') {
+      stampLabel = 'DECLINED'; stampColor = '#dc2626';
+    } else if (q.status === 'converted') {
+      stampLabel = 'CONVERTED'; stampColor = '#15803d';
+    } else if (q.expiresAt && new Date(q.expiresAt).getTime() < Date.now()) {
+      stampLabel = 'EXPIRED'; stampColor = '#7f1d1d';
+    } else if (q.status === 'draft') {
+      stampLabel = 'DRAFT'; stampColor = '#6b7280';
+    }
+    var watermarkCss = stampLabel
+      ? '<style>'
+        + 'body{position:relative;}'
+        + 'body::before{content:"' + stampLabel + '";position:fixed;top:50%;left:50%;'
+        + 'transform:translate(-50%,-50%) rotate(-32deg);'
+        + 'font-size:160px;font-weight:900;color:' + stampColor + ';'
+        + 'opacity:0.13;letter-spacing:8px;pointer-events:none;z-index:9999;'
+        + 'font-family:"Helvetica Neue",Arial,sans-serif;white-space:nowrap;'
+        + '-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+        + '@media print{body::before{opacity:0.16;}}'
+        + '</style>'
+      : '';
+
+    var html = '<!DOCTYPE html><html><head><title>Quote #' + q.quoteNumber + (stampLabel ? ' [' + stampLabel + ']' : '') + '</title>' + PDF._style() + watermarkCss + '</head><body>';
     html += '<div class="header">' + PDF._companyHeader()
       + '<div class="doc-info"><h2>QUOTE</h2><p>#' + q.quoteNumber + '</p><p>' + UI.dateShort((q.createdAt || '').split('T')[0]) + '</p>'
       + '<p><span class="badge badge-' + q.status + '">' + (q.status || 'draft').toUpperCase() + '</span></p></div></div>';
@@ -154,7 +180,33 @@ var PDF = {
     if (!inv) { UI.toast('Invoice not found', 'error'); return; }
     var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
 
-    var html = '<!DOCTYPE html><html><head><title>Invoice #' + inv.invoiceNumber + '</title>' + PDF._style() + '</head><body>';
+    // v787: invoice watermark — PAID / VOID / DRAFT stamped diagonally.
+    // Paid invoices re-sent (e.g. for tax records) shouldn't look unpaid;
+    // voided invoices shouldn't get paid by accident.
+    var invStamp = null, invStampColor = null;
+    if (inv.status === 'paid' || (typeof inv.balance === 'number' && inv.balance <= 0 && inv.total > 0)) {
+      invStamp = 'PAID'; invStampColor = '#15803d';
+    } else if (inv.status === 'void' || inv.status === 'cancelled') {
+      invStamp = 'VOID'; invStampColor = '#7f1d1d';
+    } else if (inv.status === 'draft') {
+      invStamp = 'DRAFT'; invStampColor = '#6b7280';
+    } else if (inv.dueDate && new Date(inv.dueDate).getTime() < Date.now() - 30 * 86400000) {
+      invStamp = 'OVERDUE'; invStampColor = '#c2410c';
+    }
+    var invWatermark = invStamp
+      ? '<style>'
+        + 'body{position:relative;}'
+        + 'body::before{content:"' + invStamp + '";position:fixed;top:50%;left:50%;'
+        + 'transform:translate(-50%,-50%) rotate(-32deg);'
+        + 'font-size:170px;font-weight:900;color:' + invStampColor + ';'
+        + 'opacity:0.13;letter-spacing:8px;pointer-events:none;z-index:9999;'
+        + 'font-family:"Helvetica Neue",Arial,sans-serif;white-space:nowrap;'
+        + '-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+        + '@media print{body::before{opacity:0.16;}}'
+        + '</style>'
+      : '';
+
+    var html = '<!DOCTYPE html><html><head><title>Invoice #' + inv.invoiceNumber + (invStamp ? ' [' + invStamp + ']' : '') + '</title>' + PDF._style() + invWatermark + '</head><body>';
     html += '<div class="header">' + PDF._companyHeader()
       + '<div class="doc-info"><h2>INVOICE</h2><p>#' + inv.invoiceNumber + '</p><p>Due: ' + UI.dateShort(inv.dueDate) + '</p>'
       + '<p><span class="badge badge-' + inv.status + '">' + (inv.status || 'draft').toUpperCase() + '</span></p></div></div>';
