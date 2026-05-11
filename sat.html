@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How did we do?</title>
+<script src="config.js"></script>
+<script src="tenant-slug-bootstrap.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    margin: 0; padding: 0;
+    background: linear-gradient(135deg, #065f46 0%, #16a34a 100%);
+    min-height: 100vh; color: #1a1a1a;
+  }
+  .container {
+    max-width: 480px; margin: 0 auto; padding: 24px 18px;
+  }
+  .card {
+    background: #fff; border-radius: 16px; padding: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .brand img { width: 36px; height: 36px; border-radius: 8px; }
+  .brand-name { font-size: 14px; font-weight: 700; color: #065f46; letter-spacing: -.01em; }
+  h1 { font-size: 22px; margin: 16px 0 6px; line-height: 1.25; }
+  .sub { color: #555; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
+  .question {
+    font-size: 15px; font-weight: 700; margin-bottom: 6px;
+  }
+  .scale {
+    display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px;
+    margin: 14px 0 6px;
+  }
+  .scale button {
+    aspect-ratio: 1; border: 1px solid #d1d5db;
+    background: #fff; border-radius: 6px; font-size: 13px;
+    font-weight: 700; cursor: pointer; color: #374151;
+    transition: all .15s;
+  }
+  .scale button:hover { background: #f3f4f6; transform: scale(1.05); }
+  .scale button.selected {
+    background: #16a34a; color: #fff; border-color: #15803d;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, .3);
+  }
+  .scale-labels {
+    display: flex; justify-content: space-between; font-size: 11px;
+    color: #6b7280; margin-bottom: 18px;
+  }
+  textarea {
+    width: 100%; padding: 12px; font-size: 14px;
+    border: 1px solid #d1d5db; border-radius: 8px;
+    resize: vertical; min-height: 80px;
+    font-family: inherit; box-sizing: border-box;
+  }
+  .btn-submit {
+    width: 100%; background: #065f46; color: #fff;
+    padding: 14px; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    margin-top: 16px;
+  }
+  .btn-submit:disabled {
+    background: #ccc; cursor: not-allowed;
+  }
+  .done {
+    text-align: center; padding: 24px 0;
+  }
+  .done .check {
+    font-size: 56px; line-height: 1;
+  }
+  .footer-note {
+    text-align: center; color: rgba(255,255,255,0.85);
+    font-size: 12px; margin-top: 18px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="card" class="card">
+    <div class="brand">
+      <img id="logo" src="icons/icon-192.png" alt="logo" onerror="this.style.display='none'">
+      <span class="brand-name" data-bind="companyName">Branch Manager</span>
+    </div>
+    <h1>How was the work?</h1>
+    <div class="sub" id="job-context">Your feedback helps us improve.</div>
+
+    <div class="question">How likely are you to recommend <span data-bind="companyName">us</span> to a friend or neighbor?</div>
+    <div class="scale" id="scale"></div>
+    <div class="scale-labels"><span>Not at all likely</span><span>Extremely likely</span></div>
+
+    <div style="margin-top:4px;">
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Anything you'd like to share? (optional)</label>
+      <textarea id="verbatim" placeholder="What did we do well? What could we do better?"></textarea>
+    </div>
+
+    <button id="submit" class="btn-submit" disabled onclick="submit()">Send feedback</button>
+  </div>
+  <div class="footer-note">Powered by <span data-bind="companyName">Branch Manager</span></div>
+</div>
+
+<script>
+  var params = new URLSearchParams(location.search);
+  var jobId = params.get('job') || '';
+  var token = params.get('token') || '';
+  var selectedScore = null;
+
+  // Build the 0-10 scale
+  var scale = document.getElementById('scale');
+  for (var i = 0; i <= 10; i++) {
+    var btn = document.createElement('button');
+    btn.textContent = i;
+    btn.dataset.score = i;
+    btn.onclick = (function(n, el) { return function() { pick(n, el); }; })(i, btn);
+    scale.appendChild(btn);
+  }
+
+  function pick(n, el) {
+    selectedScore = n;
+    document.querySelectorAll('#scale button').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
+    document.getElementById('submit').disabled = false;
+  }
+
+  function submit() {
+    if (selectedScore == null) return;
+    var btn = document.getElementById('submit');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    var verbatim = (document.getElementById('verbatim').value || '').trim();
+    var url = (window.BM_CONFIG && BM_CONFIG.supabaseUrl ? BM_CONFIG.supabaseUrl : 'https://ltpivkqahvplapyagljt.supabase.co')
+      + '/functions/v1/nps-submit';
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId: jobId, token: token, score: selectedScore, verbatim: verbatim })
+    })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(e){ throw new Error(e.error || 'HTTP ' + r.status); });
+      return r.json();
+    })
+    .then(function() {
+      document.getElementById('card').innerHTML = '<div class="done">'
+        + '<div class="check">' + (selectedScore >= 9 ? '🎉' : selectedScore >= 7 ? '🙏' : '🙏') + '</div>'
+        + '<h1 style="margin-top:14px;">Thank you!</h1>'
+        + '<div class="sub" style="margin-bottom:0;">'
+        + (selectedScore >= 9
+            ? 'So glad you\'re happy with the work. Mind leaving a Google review? It really helps small businesses.'
+            : selectedScore >= 7
+              ? 'Thanks for the feedback. We\'ll keep working to earn a 10 next time.'
+              : 'Thanks for telling us. We\'ll reach out to make this right.')
+        + '</div>'
+        + '</div>';
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Send feedback';
+      alert('Could not submit: ' + err.message);
+    });
+  }
+
+  // Lightweight context fill from URL
+  var jobLabel = params.get('label');
+  if (jobLabel) {
+    document.getElementById('job-context').textContent = jobLabel + ' — your feedback helps us improve.';
+  }
+</script>
+</body>
+</html>

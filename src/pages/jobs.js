@@ -1253,6 +1253,8 @@ var JobsPage = {
       + (j.clientPhone ? '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px;" onclick="if(typeof Dialpad!==\'undefined\'){var fn=\'' + UI.esc((j.clientName||'').split(' ')[0]||'there') + '\';var msg=\'Hi \'+fn+\', this is Doug from \'+JobsPage._co().name+\'.' + (j.scheduledDate ? ' Your job is scheduled for ' + UI.dateShort(j.scheduledDate) + '.' : '') + ' Let us know if you have any questions! \'+JobsPage._co().phone;Dialpad.showTextModal(\'' + (j.clientPhone||'').replace(/\D/g,'') + '\',msg);}">📱 Text Client</button>' : '')
       + (j.property ? '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(j.property) + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px;">🗺 Navigate</a>' : '')
       + '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px;" onclick="JobsPage._showPropertyMap(\'' + id + '\')">📐 Equipment Layout</button>'
+      // v802: NPS survey link — only after the job is completed
+      + (j.status === 'completed' ? '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:6px;font-size:12px;" onclick="JobsPage._copyNPSLink(\'' + id + '\')">📊 Copy NPS survey link</button>' : '')
       + '</div>'
 
       // Activity timeline
@@ -1302,6 +1304,41 @@ var JobsPage = {
     if (v) v.style.display = 'block';
     if (e) e.style.display = 'none';
   },
+  // v802: compute the NPS survey token (matches edge fn's
+  // sha256(jobId + ":" + NPS_TOKEN_SALT).slice(0,12)) and copy a
+  // shareable sat.html?job=ID&token=T&label=... URL to the clipboard.
+  // Default salt must match the edge fn's default — Doug can override
+  // both via the Supabase secret when ready.
+  _NPS_SALT: 'default-bm-salt-2026',
+  _copyNPSLink: function(jobId) {
+    var j = DB.jobs.getById(jobId);
+    if (!j) { UI.toast('Job not found', 'error'); return; }
+    var text = jobId + ':' + JobsPage._NPS_SALT;
+    var encoder = new TextEncoder();
+    crypto.subtle.digest('SHA-256', encoder.encode(text)).then(function(buf) {
+      var hex = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      var token = hex.slice(0, 12);
+      var labelStr = (j.clientName || 'Job') + (j.description ? ' — ' + j.description.slice(0, 40) : '');
+      var url = 'https://branchmanager.app/sat.html?job=' + encodeURIComponent(jobId) + '&token=' + token + '&label=' + encodeURIComponent(labelStr);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+          UI.toast('📋 NPS survey link copied — paste into a text or email to the client');
+        });
+      } else {
+        // Fallback: show in a modal so user can copy manually
+        UI.showModal('NPS survey link', '<div style="font-size:13px;line-height:1.6;">'
+          + '<div style="color:var(--text-light);margin-bottom:8px;">Copy this link and send it to the client. They can rate the work 0–10 + leave a comment.</div>'
+          + '<input type="text" value="' + UI.esc(url) + '" readonly onclick="this.select();document.execCommand(\'copy\');" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:monospace;font-size:11px;">'
+          + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">Tap the field to select &amp; copy.</div>'
+          + '</div>', {
+          footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+        });
+      }
+    }).catch(function(err) {
+      UI.toast('Token generation failed: ' + err.message, 'error');
+    });
+  },
+
   _saveNote: function(jobId) {
     var ta = document.getElementById('job-note-ta-' + jobId);
     if (!ta) return;
