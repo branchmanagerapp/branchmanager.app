@@ -421,6 +421,82 @@ var JobsPage = {
   // vs revenue. Shows on every job detail. Reuses
   // JobCosting.getJobStats so the math stays consistent with the
   // Reports → Job Costing tab.
+  // v774: scan the job's line items for material rows whose unit cost has
+  // risen materially since the quote was sent. Uses v771 Materials price
+  // history. Returns an array of { name, oldRate, newRate, deltaPct } —
+  // empty when nothing's drifted enough to care about.
+  _materialPriceDrift: function(j) {
+    if (!Array.isArray(j.lineItems) || !j.lineItems.length) return [];
+    if (typeof Materials === 'undefined' || !Materials._getCatalog || !Materials._getPriceHistory) return [];
+    // Use the job's createdAt as the reference timestamp (when it was quoted)
+    var ref = j.createdAt ? new Date(j.createdAt).getTime() : null;
+    if (!ref) return [];
+    var catalog = Materials._getCatalog();
+    var byName = {};
+    catalog.forEach(function(m) { byName[(m.name || '').toLowerCase()] = m; });
+    var drifts = [];
+    j.lineItems.forEach(function(li) {
+      if (!li || (li.kind !== 'material' && li.type !== 'material')) return;
+      var label = (li.service || li.description || '').toLowerCase();
+      if (!label) return;
+      // Match catalog entry by name substring (some line items append units)
+      var mat = byName[label] || Object.values(byName).find(function(m) {
+        var n = (m.name || '').toLowerCase();
+        return n && (label.indexOf(n) >= 0 || n.indexOf(label) >= 0);
+      });
+      if (!mat) return;
+      // Find the price at-or-before the job's createdAt
+      var hist = Materials._getPriceHistory(mat.id);
+      if (!hist || hist.length < 1) return;
+      var thenPrice = null;
+      for (var i = 0; i < hist.length; i++) {
+        var ts = new Date(hist[i].changedAt).getTime();
+        if (ts <= ref) thenPrice = hist[i].to;
+        else break;
+      }
+      if (thenPrice == null) thenPrice = hist[0].to; // job pre-dates history; use earliest
+      var nowPrice = Number(mat.unitCost) || 0;
+      if (thenPrice <= 0 || nowPrice <= 0) return;
+      var deltaPct = Math.round(((nowPrice - thenPrice) / thenPrice) * 1000) / 10;
+      if (deltaPct >= 10) {
+        drifts.push({
+          name: mat.name,
+          oldRate: thenPrice,
+          newRate: nowPrice,
+          deltaPct: deltaPct,
+          qty: Number(li.qty) || 1
+        });
+      }
+    });
+    return drifts;
+  },
+
+  _renderMarginErosionAlert: function(j) {
+    // Only show on open jobs — once invoiced, the price is locked.
+    if (!j || j.status === 'invoiced' || j.status === 'cancelled') return '';
+    var drifts = JobsPage._materialPriceDrift(j);
+    if (!drifts.length) return '';
+    var maxDelta = drifts.reduce(function(m, d){ return d.deltaPct > m ? d.deltaPct : m; }, 0);
+    var costImpact = drifts.reduce(function(s, d){ return s + (d.newRate - d.oldRate) * d.qty; }, 0);
+    var rows = drifts.map(function(d) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;color:#92400e;">'
+        + '<span><b>' + UI.esc(d.name) + '</b> (' + d.qty + ')</span>'
+        + '<span><span style="color:var(--text-light);">' + UI.money(d.oldRate) + '</span> → <b>' + UI.money(d.newRate) + '</b> <span style="background:#c2410c15;color:#c2410c;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-left:4px;">↑ +' + d.deltaPct + '%</span></span>'
+        + '</div>';
+    }).join('');
+    return '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:14px;">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">'
+      +   '<div style="font-size:20px;">⚠</div>'
+      +   '<div style="flex:1;min-width:200px;">'
+      +     '<div style="font-size:13px;font-weight:700;color:#92400e;">Material costs have risen since this job was quoted</div>'
+      +     '<div style="font-size:12px;color:#92400e;margin-top:2px;">' + drifts.length + ' line item' + (drifts.length === 1 ? '' : 's') + ' · up to <b>+' + maxDelta + '%</b> · approx <b>+' + UI.money(costImpact) + '</b> in hidden cost vs the quote.</div>'
+      +   '</div>'
+      +   (j.quoteId ? '<button onclick="QuotesPage.showDetail(\'' + j.quoteId + '\')" style="font-size:12px;font-weight:700;padding:6px 12px;background:#92400e;color:#fff;border:none;border-radius:6px;cursor:pointer;">Open quote → re-price</button>' : '')
+      + '</div>'
+      + '<div style="padding-top:8px;border-top:1px dashed #fde68a;">' + rows + '</div>'
+      + '</div>';
+  },
+
   _renderProfitCard: function(j, timeEntries) {
     if (typeof JobCosting === 'undefined' || !JobCosting.getJobStats) return '';
     var s = JobCosting.getJobStats(j, timeEntries);
@@ -1043,6 +1119,11 @@ var JobsPage = {
         + sb[1] + '</button>';
     });
     html += '</div></div>'
+
+      // v774: Margin-erosion alert — only renders when materials on the
+      // job have risen >=10% since the quote was sent. Sits above the
+      // profit card so the action is visible before the math.
+      + JobsPage._renderMarginErosionAlert(j)
 
       // v768: Per-job profitability card — labor (time × rate) + expenses
       // + materials vs revenue. Visible on every job detail.

@@ -27,6 +27,12 @@ verify_jwt = false
 [functions.bouncie-oauth-callback]
 verify_jwt = false
 
+# Public read-only — slug → tenant id/name/logo for clients.branchmanager.app
+# tenant-branded URLs. No PII beyond what's already public on the
+# marketing site.
+[functions.tenant-by-slug]
+verify_jwt = false
+
 # Cron-triggered (pg_cron net.http_post) — same pattern as marketing-automation.
 # Function is read-only (pulls positions from Bouncie API, inserts to
 # vehicle_positions) and has no spam vector, so safe to expose without JWT.

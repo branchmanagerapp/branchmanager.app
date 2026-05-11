@@ -357,7 +357,12 @@ var Payments = {
         // Amount + receipt link (right-aligned)
         + '<div style="text-align:right;">'
         + '<div style="font-weight:700;font-size:16px;color:var(--green-dark);">+' + UI.money(p.amount) + '</div>'
-        + '<a href="' + mailtoHref + '" title="Send Receipt" style="font-size:12px;color:var(--text-light);text-decoration:none;">✉️ Receipt</a>'
+        + '<div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-top:2px;">'
+        +   (p.receipt_url || p.receiptUrl
+              ? '<a href="' + UI.esc(p.receipt_url || p.receiptUrl) + '" target="_blank" rel="noopener noreferrer" title="View attached receipt" style="font-size:12px;color:var(--green-dark);text-decoration:none;font-weight:600;">📎 Receipt</a>'
+              : '<button onclick="Payments._uploadReceipt(\'' + (p.id || '') + '\')" title="Attach proof of payment" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;color:var(--text-light);">📎 Attach</button>')
+        +   '<a href="' + mailtoHref + '" title="Email receipt" style="font-size:12px;color:var(--text-light);text-decoration:none;">✉️</a>'
+        + '</div>'
         + '</div>'
 
         + '</div>';
@@ -547,5 +552,48 @@ var Payments = {
     });
 
     UI.toast('Deposit collected: ' + UI.money(depositAmount));
+  },
+
+  // v774: attach a proof-of-payment file (PDF/JPEG) to a payment row.
+  // File lands in Storage under payment-receipts/<payment_id>/<…>;
+  // the public URL is stamped on payments.receipt_url so it's clickable
+  // from the payments list AND from the invoice detail.
+  _uploadReceipt: function(paymentId) {
+    if (!paymentId) { UI.toast('Missing payment id', 'error'); return; }
+    var html = '<div style="font-size:13px;line-height:1.6;margin-bottom:12px;">'
+      + '<p>Attach a proof-of-payment file (PDF, image, or bank screenshot). The link will show on the payment row and on the invoice detail.</p>'
+      + '<input type="file" id="rcpt-file" accept=".pdf,image/*,.png,.jpg,.jpeg" '
+      +   'onchange="Payments._doUploadReceipt(\'' + paymentId + '\', this.files[0])" '
+      +   'style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:8px;">'
+      + '<div id="rcpt-status" style="margin-top:10px;font-size:12px;min-height:16px;"></div>'
+      + '</div>';
+    UI.showModal('Attach receipt', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+    });
+  },
+
+  _doUploadReceipt: async function(paymentId, file) {
+    if (!file) return;
+    var statusEl = document.getElementById('rcpt-status');
+    if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '…';
+    try {
+      if (typeof BMUpload === 'undefined' || !BMUpload.uploadFile) throw new Error('Upload helper not loaded');
+      var up = await BMUpload.uploadFile(file, 'payment-receipts/' + paymentId);
+      var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+      if (!sb) throw new Error('Supabase not connected');
+      var r = await sb.from('payments').update({
+        receipt_url: up.url,
+        receipt_uploaded_at: new Date().toISOString()
+      }).eq('id', paymentId);
+      if (r.error) throw new Error(r.error.message);
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--green-dark);">✓ Attached</span>';
+      UI.toast('Receipt attached');
+      setTimeout(function() {
+        UI.closeModal();
+        if (window._currentPage === 'reports' || window._currentPage === 'invoices' || window._currentPage === 'payments') loadPage(window._currentPage);
+      }, 600);
+    } catch (e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#c62828;">Upload failed: ' + UI.esc(e.message || 'unknown') + '</span>';
+    }
   }
 };

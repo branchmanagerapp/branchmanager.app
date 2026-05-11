@@ -104,7 +104,45 @@ var ClientsPage = {
       if (_ca && _ca.getFullYear() === curYear) ytdClients++;
     }
 
-    var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
+    // v774: Outreach-due toolbar entry — quick link to the stale-clients
+    // batch page. Only renders the count badge after async compute, but
+    // the button itself always shows so the entry point is discoverable.
+    var html = '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'
+      + '<button onclick="loadPage(\'staleclients\')" style="font-size:12px;padding:6px 12px;background:var(--white);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);">📣 Outreach due <span id="staleclients-count-badge" style="font-size:11px;color:var(--text-light);"></span></button>'
+      + '</div>';
+    // Async-fill the badge so it isn't a stale "0" on first paint.
+    setTimeout(function() {
+      try {
+        if (typeof StaleClients !== 'undefined' && StaleClients.render && typeof ClientsPage._topQuartileRevenue === 'function') {
+          // Reuse the same logic — count rows that would land on the page.
+          var threshold = ClientsPage._topQuartileRevenue();
+          if (threshold <= 0) return;
+          var rev = {}, touch = {};
+          DB.invoices.getAll().forEach(function(i){ if (i.status !== 'paid') return; var k = i.clientId || (i.clientName || '').toLowerCase(); if (k) rev[k] = (rev[k]||0) + (Number(i.total)||0); });
+          var bump = function(k, d){ if (!k || !d) return; var t = new Date(d).getTime(); if (isNaN(t)) return; if (!touch[k] || t > touch[k]) touch[k] = t; };
+          DB.jobs.getAll().forEach(function(j){ bump(j.clientId || (j.clientName || '').toLowerCase(), j.scheduledDate || j.createdAt); });
+          DB.quotes.getAll().forEach(function(q){ bump(q.clientId || (q.clientName || '').toLowerCase(), q.sentAt || q.createdAt); });
+          DB.invoices.getAll().forEach(function(i){ bump(i.clientId || (i.clientName || '').toLowerCase(), i.paidDate || i.createdAt); });
+          var snoozes = {}; try { snoozes = JSON.parse(localStorage.getItem('bm-outreach-snooze') || '{}'); } catch(e){}
+          var now = Date.now();
+          var count = DB.clients.getAll().filter(function(c) {
+            if (!c.id || c.status === 'archived' || c.status === 'inactive') return false;
+            if (snoozes[c.id] && Number(snoozes[c.id]) > now) return false;
+            var r = rev[c.id] || rev[(c.name||'').toLowerCase()] || 0;
+            if (r < threshold) return false;
+            var last = touch[c.id] || touch[(c.name||'').toLowerCase()];
+            if (!last) return false;
+            return Math.floor((now - last) / 86400000) >= 90;
+          }).length;
+          var el = document.getElementById('staleclients-count-badge');
+          if (el) el.innerHTML = count > 0
+            ? '<span style="display:inline-block;margin-left:4px;padding:1px 7px;border-radius:9px;background:#fef3c7;color:#92400e;font-weight:700;">' + count + '</span>'
+            : '';
+        }
+      } catch(e) {}
+    }, 60);
+
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
       // Overview — colored-dot mini-rows that filter the list
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       +   '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">Overview</div>'

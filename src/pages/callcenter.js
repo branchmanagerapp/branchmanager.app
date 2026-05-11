@@ -2,6 +2,20 @@
  * Branch Manager — Call Center
  * Full-page layout matching Requests. Dial pad lives in a modal.
  */
+// v774: AI-classified intent pill labels. Lives outside the module so
+// CallCenter._intentBadges can reference it as a plain constant.
+var AI_INTENT_PILLS = {
+  job_inquiry:      { icon: '🌳', label: 'Job inquiry',      color: '#16a34a' },
+  price_question:   { icon: '💰', label: 'Asks about price', color: '#92400e' },
+  schedule_request: { icon: '📅', label: 'Scheduling',       color: '#1d4ed8' },
+  urgent_hazard:    { icon: '⚠',  label: 'Urgent / hazard',  color: '#c2410c' },
+  confirmation:     { icon: '✅', label: 'Confirmation',     color: '#16a34a' },
+  cancellation:     { icon: '✗',  label: 'Cancellation',     color: '#dc2626' },
+  complaint:        { icon: '⚠',  label: 'Complaint',        color: '#c2410c' },
+  spam:             { icon: '🛑', label: 'Spam',             color: '#991b1b' },
+  other:            { icon: '·',  label: 'Other',            color: '#525252' }
+};
+
 var CallCenter = {
   _activeTab: 'missed',  // 'missed' | 'threads' | 'activity'
   _activeThread: null,
@@ -276,6 +290,16 @@ var CallCenter = {
         return s !== 'missed' && s !== 'no-answer' && s !== 'no_answer' && s !== 'hangup';
       });
 
+      // v774: kick a Claude classification pass for rows still lacking
+      // metadata.ai_intent. Best-effort, throttled to one pass per
+      // Triage render so we don't burn tokens on every keystroke.
+      if (!CallCenter._classifyTimer) {
+        CallCenter._classifyTimer = setTimeout(function() {
+          CallCenter._classifyTimer = null;
+          CallCenter._classifyUnclassified(rows);
+        }, 1500);
+      }
+
       var clients = (typeof ClientsPage !== 'undefined' && ClientsPage._cache) ? ClientsPage._cache : [];
       var clientMap = {};
       clients.forEach(function(c) { if (c.id) clientMap[c.id] = c; });
@@ -386,28 +410,98 @@ var CallCenter = {
 
   // v767: Intent badges — pure rule-based scan of the SMS/voicemail
   // body so Doug can triage faster. No AI cost, runs on every render.
-  // Badge meanings:
-  //   💰 price/quote — body mentions $, price, cost, quote, estimate
-  //   📅 schedule    — body asks about scheduling, time, date, when
-  //   ❓ question    — body ends with ? (likely a real question)
-  //   🛑 STOP        — TCPA opt-out keyword
-  //   ⚠ urgent      — body mentions emergency, hazard, asap, today
-  //   ✅ confirm    — yes/confirm/approved (already auto-routed but
-  //                   surfaces if the auto-route didn't match)
+  // v774: AI-classified intent overlay — when comm.metadata.ai_intent
+  // is present (set by background Claude classifier below), render it
+  // as a more confident primary pill while keeping the rule-based set
+  // as a fallback / supplement.
   _intentBadges: function(c) {
     var body = String(c.body || '').toLowerCase();
     if (!body) return '';
     var badges = [];
-    if (/\b(stop|stopall|unsubscribe|quit|cancel)\b/.test(body)) badges.push(['🛑', 'STOP — TCPA opt-out', '#991b1b']);
-    if (/\b(emergency|hazard|asap|urgent|today|right now|fallen|down on|on my house|on my car)\b/.test(body)) badges.push(['⚠', 'Urgent', '#c2410c']);
-    if (/(\$\d|price|cost|estimate|quote|how much)/.test(body)) badges.push(['💰', 'Asks about price', '#92400e']);
-    if (/\b(reschedule|schedul|when can|what time|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|am|pm|appointment)\b/.test(body)) badges.push(['📅', 'Scheduling', '#1d4ed8']);
-    if (/\b(yes|yep|confirm|approved|sounds good|go ahead|all set)\b/.test(body) && !c.metadata?.suggested_action) badges.push(['✅', 'Confirmation-like reply', '#16a34a']);
-    if (/\?\s*$/.test(body)) badges.push(['❓', 'Open question', '#525252']);
+    // AI overlay first (highest signal)
+    var aiIntent = c.metadata && c.metadata.ai_intent;
+    if (aiIntent && AI_INTENT_PILLS[aiIntent]) {
+      var p = AI_INTENT_PILLS[aiIntent];
+      badges.push([p.icon, p.label + ' (AI)', p.color]);
+    }
+    // Rule-based — always run, but skip duplicates the AI already covers.
+    var aiCovers = {
+      stop: ['🛑'], urgent: ['⚠'], price: ['💰'], schedule: ['📅'],
+      confirm: ['✅'], spam: ['🛑'], complaint: ['⚠']
+    };
+    var skipIcons = aiCovers[aiIntent] || [];
+    function pushIfNew(icon, label, color) {
+      if (skipIcons.indexOf(icon) >= 0) return;
+      badges.push([icon, label, color]);
+    }
+    if (/\b(stop|stopall|unsubscribe|quit|cancel)\b/.test(body)) pushIfNew('🛑', 'STOP — TCPA opt-out', '#991b1b');
+    if (/\b(emergency|hazard|asap|urgent|today|right now|fallen|down on|on my house|on my car)\b/.test(body)) pushIfNew('⚠', 'Urgent', '#c2410c');
+    if (/(\$\d|price|cost|estimate|quote|how much)/.test(body)) pushIfNew('💰', 'Asks about price', '#92400e');
+    if (/\b(reschedule|schedul|when can|what time|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|am|pm|appointment)\b/.test(body)) pushIfNew('📅', 'Scheduling', '#1d4ed8');
+    if (/\b(yes|yep|confirm|approved|sounds good|go ahead|all set)\b/.test(body) && !c.metadata?.suggested_action) pushIfNew('✅', 'Confirmation-like reply', '#16a34a');
+    if (/\?\s*$/.test(body)) pushIfNew('❓', 'Open question', '#525252');
     if (!badges.length) return '';
     return '<div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">' + badges.map(function(b) {
       return '<span title="' + b[1] + '" style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + b[2] + '20;color:' + b[2] + ';border:1px solid ' + b[2] + '40;font-weight:600;">' + b[0] + ' ' + b[1] + '</span>';
     }).join('') + '</div>';
+  },
+
+  // v774: kick a Claude classification pass for inbound SMS rows that
+  // haven't been classified yet. Runs once per visit to the Triage tab,
+  // batched up to 5 unclassified rows per call. Stamps the result on
+  // communications.metadata.ai_intent so it persists.
+  _classifyUnclassified: function(rows) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var todo = rows.filter(function(c) {
+      if (c.channel !== 'sms' && c.channel !== 'voicemail') return false;
+      if (!c.body || c.body.length < 5) return false;
+      var m = c.metadata || {};
+      if (m.ai_intent) return false;
+      return true;
+    }).slice(0, 5);
+    if (!todo.length) return;
+    // Build a single batched prompt to keep token cost low.
+    var bodies = todo.map(function(c, i) {
+      return '[' + (i + 1) + '] ' + (c.body || '').replace(/\s+/g, ' ').slice(0, 240);
+    }).join('\n');
+    var prompt = 'Classify each inbound message from a tree-service customer with ONE of these intents:\n'
+      + 'job_inquiry · price_question · schedule_request · urgent_hazard · confirmation · cancellation · complaint · spam · other\n\n'
+      + 'Messages:\n' + bodies + '\n\n'
+      + 'Reply with ONLY a JSON array of intents in order, no prose. Example: ["job_inquiry","price_question","spam"]';
+    var apiKey = (typeof window !== 'undefined' && window.bmAIKey) ? window.bmAIKey() : null;
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: apiKey,
+        model: 'claude-haiku-4-5',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    }).then(function(r) { return r.json(); }).then(function(res) {
+      var text = '';
+      if (res.content && res.content[0] && res.content[0].text) text = res.content[0].text.trim();
+      else if (res.choices && res.choices[0]) text = (res.choices[0].message || res.choices[0]).content || '';
+      text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      var arr;
+      try { arr = JSON.parse(text); } catch(e) { return; }
+      if (!Array.isArray(arr)) return;
+      // Persist each classification + update local cache so the UI re-renders
+      var updates = [];
+      arr.forEach(function(intent, i) {
+        var c = todo[i];
+        if (!c || typeof intent !== 'string') return;
+        var nextMeta = Object.assign({}, c.metadata || {}, { ai_intent: intent, ai_intent_at: new Date().toISOString() });
+        c.metadata = nextMeta;
+        updates.push(sb.from('communications').update({ metadata: nextMeta }).eq('id', c.id));
+      });
+      if (updates.length) {
+        Promise.all(updates).then(function() {
+          if (window._currentPage === 'callcenter' || window._currentPage === 'receptionist') CallCenter._loadMissed();
+        });
+      }
+    }).catch(function() { /* swallow — classification is best-effort */ });
   },
 
   // v759: Qualify a raw inbound row → promote to Requests with a real
