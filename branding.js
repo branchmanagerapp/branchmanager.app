@@ -116,6 +116,9 @@
     t.address_short = t.city + ', ' + t.state;
     // website_display: hostname only (no protocol/path) for inline display in legal text
     t.website_display = String(t.website || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    // phone_digits: bare digits only, safe to drop into tel:/sms: href attributes.
+    // {{phone}} keeps the formatted "(914) 391-5233" for display.
+    t.phone_digits = String(t.phone || '').replace(/\D/g, '');
 
     return t;
   }

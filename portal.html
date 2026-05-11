@@ -51,11 +51,14 @@
     .summary-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #e8e8e8;border-radius:10px;overflow:hidden;margin-bottom:16px;background:#fff}
     .summary-cell{padding:14px 16px}
     .summary-cell:not(:last-child){border-right:1px solid #e8e8e8}
-    .summary-label{font-size:12px;color:#888}
-    .summary-val{font-size:22px;font-weight:700;margin-top:4px}
-    .tab-bar{display:flex;gap:0;border-bottom:2px solid #e8e8e8;margin-bottom:16px}
-    .tab-btn{padding:10px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
-    .tab-btn.active{color:#1a3c12;border-bottom-color:#1a3c12}
+    .summary-label{font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+    .summary-val{font-size:24px;font-weight:800;margin-top:4px;letter-spacing:-.01em}
+    /* v738: tab bar restyled — pill-style active state instead of underline,
+       sticky top under the header, matches Jobber + main BM Schedule pills. */
+    .tab-bar{display:flex;gap:4px;padding:4px;background:#fff;border:1px solid #e8e8e8;border-radius:10px;margin-bottom:16px;position:sticky;top:8px;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .tab-btn{flex:0 0 auto;padding:9px 14px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#64748b;border-radius:6px;transition:background .12s,color .12s;white-space:nowrap}
+    .tab-btn:hover{background:rgba(26,60,18,.06);color:#1a3c12}
+    .tab-btn.active{background:#1a3c12;color:#fff}
     .footer{text-align:center;font-size:12px;color:#999;padding:8px 0 24px}
     .footer a{color:#1a3c12;text-decoration:none}
     @media(max-width:480px){.page{padding:12px}.photos-grid{grid-template-columns:repeat(2,1fr)}.summary-bar{grid-template-columns:1fr}}
@@ -120,20 +123,23 @@ function clearToken() {
 
 // ── Login flow ────────────────────────────────────────────────────────────────
 function showLogin() {
+  // v738: login screen leads with tenant logo (falls back to inline tree
+  // emoji block if the logo_url fails). Email field clearly labeled.
   document.getElementById('root').innerHTML =
     '<div style="margin-top:40px;">'
     + '<div style="text-align:center;margin-bottom:24px;">'
-    + '<div style="background:#1a3c12;color:#fff;width:64px;height:64px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;">🌳</div>'
+    + '<img src="{{logo_url}}" alt="{{business_short_name}}" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px;object-fit:cover;" onerror="this.outerHTML=\'<div style=\\\'background:#1a3c12;color:#fff;width:72px;height:72px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px;\\\'>🌳</div>\'">'
     + '<h1 style="font-size:22px;font-weight:700;">{{business_short_name}}</h1>'
     + '<p style="font-size:13px;color:#888;margin-top:4px;">Customer Portal</p>'
     + '</div>'
     + '<div class="login-card">'
-    + '<p style="font-size:14px;color:#444;line-height:1.6;margin-bottom:20px;">Enter the email address on your account and we\'ll send you a secure login link.</p>'
-    + '<input type="email" id="login-email" placeholder="your@email.com" onkeydown="if(event.key===\'Enter\')sendLink()">'
-    + '<button class="btn btn-primary" style="width:100%;padding:13px;" onclick="sendLink()">Send My Link</button>'
+    + '<p style="font-size:14px;color:#444;line-height:1.6;margin-bottom:20px;">Enter the email address on your account and we\'ll send you a secure login link. Good for 7 days, just for you.</p>'
+    + '<input type="email" id="login-email" placeholder="your@email.com" autocomplete="email" onkeydown="if(event.key===\'Enter\')sendLink()">'
+    + '<button class="btn btn-primary" style="width:100%;padding:13px;" onclick="sendLink()">Send my link</button>'
     + '<div class="error-msg" id="login-err"></div>'
     + '<div class="sent-msg" id="login-sent">If your email is on file with us, a secure portal link is on its way (valid 7 days). Check spam if it doesn\'t arrive within a minute.</div>'
     + '</div>'
+    + '<p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:20px;">Need help? Call <a href="tel:{{phone_digits}}" style="color:#1a3c12;text-decoration:none;font-weight:600;">{{phone}}</a></p>'
     + '</div>';
   setTimeout(function(){ var el=document.getElementById('login-email'); if(el) el.focus(); }, 100);
 }
@@ -203,10 +209,18 @@ function renderDashboard() {
 
   var html = '';
 
-  // Header
+  // v738: header now leads with tenant logo + business short name,
+  // shows the logged-in client as a sub-line. Branding tokens
+  // ({{logo_url}}, {{business_short_name}}) resolved by branding.js
+  // via the MutationObserver after this string is inserted.
   html += '<div class="header">'
-    + '<div class="header-left"><h1>🌳 ' + esc(c.name || 'My Portal') + '</h1>'
-    + '<p>' + esc(c.email || '') + '</p></div>'
+    + '<div class="header-left" style="display:flex;align-items:center;gap:12px;min-width:0;">'
+    +   '<img src="{{logo_url}}" alt="" style="width:42px;height:42px;border-radius:9px;flex-shrink:0;background:rgba(255,255,255,.1);" onerror="this.style.display=\'none\'">'
+    +   '<div style="min-width:0;">'
+    +     '<h1 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{business_short_name}}</h1>'
+    +     '<p>Signed in as ' + esc(c.name || c.email || 'guest') + '</p>'
+    +   '</div>'
+    + '</div>'
     + '<button class="btn-logout" onclick="logout()">Log out</button>'
     + '</div>';
 
@@ -228,19 +242,21 @@ function renderDashboard() {
 
   html += '<div class="tab-bar">';
   tabs.forEach(function(t) {
-    html += '<button class="tab-btn' + (t.id===_tab?' active':'') + '" onclick="switchTab(\''+t.id+'\')">' + t.label + '</button>';
+    html += '<button class="tab-btn' + (t.id===_tab?' active':'') + '" data-tab="' + t.id + '" onclick="switchTab(\''+t.id+'\')">' + t.label + '</button>';
   });
   html += '</div>';
 
   // Tab content
   html += '<div id="portal-tab-content">' + renderTab(_tab, d) + '</div>';
 
-  // Contact card
+  // Contact card — v738: tenant-driven phone via {{phone_digits}} token
+  // (resolved by branding.js MutationObserver). Number on the buttons
+  // shows the formatted version for credibility ("(914) 391-5233").
   html += '<div class="card" style="margin-top:4px;">'
-    + '<h3>📞 Contact Us</h3>'
+    + '<h3>📞 Contact {{business_short_name}}</h3>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
-    + '<a href="tel:9143915233" class="btn btn-outline" style="width:100%;justify-content:center;">Call Us</a>'
-    + '<a href="sms:9143915233" class="btn btn-outline" style="width:100%;justify-content:center;">Text Us</a>'
+    + '<a href="tel:{{phone_digits}}" class="btn btn-outline" style="width:100%;justify-content:center;">📞 Call {{phone}}</a>'
+    + '<a href="sms:{{phone_digits}}" class="btn btn-outline" style="width:100%;justify-content:center;">💬 Text us</a>'
     + '</div>'
     + '</div>';
 
@@ -249,10 +265,11 @@ function renderDashboard() {
 
 function switchTab(tab) {
   _tab = tab;
-  var tabBtns = document.querySelectorAll('.tab-btn');
-  tabBtns.forEach(function(b){ b.classList.toggle('active', b.textContent.startsWith(tab.charAt(0).toUpperCase())||b.onclick&&b.onclick.toString().indexOf(tab)>-1); });
-  // Re-render active states properly
-  tabBtns.forEach(function(b){ b.className = 'tab-btn' + (b.getAttribute('onclick').indexOf("'"+tab+"'")>-1?' active':''); });
+  // v738: clean active-state swap via data-tab attribute. Replaces the
+  // earlier fragile dual-pass that read button text + onclick strings.
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+  });
   var content = document.getElementById('portal-tab-content');
   if (content) content.innerHTML = renderTab(tab, _data);
 }
