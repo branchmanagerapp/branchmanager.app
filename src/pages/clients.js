@@ -979,6 +979,12 @@ var ClientsPage = {
       +   (c.email ? '<button class="btn" style="background:#7c3aed;color:#fff;font-size:13px;padding:10px;" onclick="ClientsPage._sendPortalInvite(\'' + id + '\')">🔗 Portal Invite</button>' : '')
       + '</div>'
 
+      // v773: Outreach-due banner — appears when this client is in the
+      // top-quartile of lifetime revenue AND hasn't been contacted in
+      // 90+ days. Renders above the KPIs so it's the first thing Doug
+      // sees on a stale high-value account.
+      + ClientsPage._renderOutreachBanner(c, id, clientJobs, clientQuotes, clientInvoices)
+
       // ── 3 KPIs ──
       + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;">'
       +   '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;">'
@@ -1575,6 +1581,133 @@ var ClientsPage = {
       status.textContent = 'Saved';
       setTimeout(function(){ if (status.textContent === 'Saved') status.textContent = ''; }, 1500);
     }
+  },
+
+  // v773: Outreach-due banner. Top-quartile-by-lifetime-revenue client
+  // who hasn't been contacted in 90+ days = warm-up opportunity.
+  // Renders nothing if the client is below the threshold, recently
+  // contacted, or the user snoozed the banner.
+  _renderOutreachBanner: function(c, id, clientJobs, clientQuotes, clientInvoices) {
+    // Snooze check (per-client, 30-day TTL)
+    try {
+      var snoozes = JSON.parse(localStorage.getItem('bm-outreach-snooze') || '{}');
+      var until = snoozes[id];
+      if (until && Number(until) > Date.now()) return '';
+    } catch(e) {}
+
+    // Days since any touch — comm, quote, job, invoice
+    var nowMs = Date.now();
+    var lastTouches = [];
+    if (typeof CommsLog !== 'undefined' && CommsLog.getAll) {
+      var comms = CommsLog.getAll(id);
+      if (comms && comms.length) lastTouches.push(comms[0].date);
+    }
+    clientJobs.forEach(function(j){ lastTouches.push(j.scheduledDate || j.createdAt); });
+    clientQuotes.forEach(function(q){ lastTouches.push(q.sentAt || q.createdAt); });
+    clientInvoices.forEach(function(i){ lastTouches.push(i.paidDate || i.createdAt); });
+    lastTouches = lastTouches.filter(Boolean).map(function(d){ return new Date(d).getTime(); }).filter(function(t){ return !isNaN(t); });
+    var lastTouchMs = lastTouches.length ? Math.max.apply(null, lastTouches) : null;
+    if (!lastTouchMs) return ''; // never contacted — different problem, skip
+    var daysSinceTouch = Math.floor((nowMs - lastTouchMs) / 86400000);
+    if (daysSinceTouch < 90) return ''; // not stale enough
+
+    // Top-quartile lifetime revenue threshold across all clients with
+    // any paid invoice. Cached so we don't recompute on every render.
+    var threshold = ClientsPage._topQuartileRevenue();
+    var myRevenue = clientInvoices.filter(function(i){ return i.status === 'paid'; }).reduce(function(s,i){ return s + (Number(i.total)||0); }, 0);
+    if (threshold <= 0 || myRevenue < threshold) return ''; // not high-value
+
+    // Format the dormancy period
+    var dormLabel;
+    if (daysSinceTouch < 180) dormLabel = Math.round(daysSinceTouch / 30) + ' months';
+    else if (daysSinceTouch < 365) dormLabel = Math.round(daysSinceTouch / 30) + ' months';
+    else dormLabel = (daysSinceTouch / 365).toFixed(1) + ' years';
+
+    var firstName = (c.name || '').split(' ')[0] || 'there';
+    var hasPhone = !!(c.phone && c.phone.replace(/\D/g,'').length >= 10);
+    var hasEmail = !!(c.email && c.email.indexOf('@') > 0);
+
+    return '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
+      + '<div style="font-size:24px;flex-shrink:0;">📣</div>'
+      + '<div style="flex:1;min-width:220px;">'
+      +   '<div style="font-size:13px;font-weight:700;color:#92400e;">Outreach due — top-25% client, ' + dormLabel + ' quiet</div>'
+      +   '<div style="font-size:12px;color:#92400e;margin-top:2px;">' + UI.esc(firstName) + ' is in your top revenue quartile (' + UI.moneyInt(myRevenue) + ' lifetime) but hasn\'t heard from you in ' + daysSinceTouch + ' days. Worth a check-in before tree-season decisions get made.</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+      +   (hasPhone ? '<button onclick="ClientsPage._sendOutreachSMS(\'' + id + '\')" style="font-size:12px;font-weight:700;padding:8px 14px;background:#92400e;color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;">📲 Send check-in SMS</button>' : '')
+      +   (hasEmail ? '<button onclick="ClientsPage._sendOutreachEmail(\'' + id + '\')" style="font-size:12px;font-weight:700;padding:8px 14px;background:rgba(255,255,255,.7);color:#92400e;border:1px solid #fde68a;border-radius:6px;cursor:pointer;white-space:nowrap;">✉️ Email</button>' : '')
+      +   '<button onclick="ClientsPage._snoozeOutreach(\'' + id + '\')" style="font-size:12px;padding:8px 12px;background:none;color:#92400e;border:1px solid #fde68a;border-radius:6px;cursor:pointer;white-space:nowrap;">Snooze 30d</button>'
+      + '</div>'
+      + '</div>';
+  },
+
+  // Cached top-quartile lifetime-revenue threshold. Recomputed at most
+  // once per page render via the _quartileCacheKey timestamp.
+  _topQuartileRevenue: function() {
+    var now = Date.now();
+    if (ClientsPage._quartileCache && (now - ClientsPage._quartileCache.ts) < 60000) {
+      return ClientsPage._quartileCache.val;
+    }
+    var revenues = {};
+    DB.invoices.getAll().forEach(function(i) {
+      if (i.status !== 'paid') return;
+      var key = i.clientId || (i.clientName || '').toLowerCase();
+      if (!key) return;
+      revenues[key] = (revenues[key] || 0) + (Number(i.total) || 0);
+    });
+    var sorted = Object.values(revenues).filter(function(v){ return v > 0; }).sort(function(a,b){ return a - b; });
+    if (sorted.length < 4) {
+      ClientsPage._quartileCache = { ts: now, val: 0 };
+      return 0;
+    }
+    // 75th percentile
+    var idx = Math.floor(sorted.length * 0.75);
+    var val = sorted[idx];
+    ClientsPage._quartileCache = { ts: now, val: val };
+    return val;
+  },
+
+  _sendOutreachSMS: function(id) {
+    var c = DB.clients.getById(id);
+    if (!c) return;
+    var phone = (c.phone || '').replace(/\D/g, '');
+    if (phone.length < 10) { UI.toast('No phone on file', 'error'); return; }
+    var firstName = (c.name || '').split(' ')[0] || 'there';
+    var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || 'us';
+    var msg = 'Hi ' + firstName + ', it\'s ' + coName + ' — just checking in. It\'s been a while since we worked on your trees. With spring coming, want me to swing by for a free walk-around? No obligation. Reply YES and I\'ll text some times.';
+    if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
+      Dialpad.sendSMS(c.phone, msg, id);
+      UI.toast('Check-in sent to ' + firstName);
+    } else {
+      window.open('sms:' + phone + '?&body=' + encodeURIComponent(msg));
+    }
+    // Snooze for 60d so we don't ping again until they've had time to respond.
+    ClientsPage._snoozeOutreach(id, 60, true);
+  },
+
+  _sendOutreachEmail: function(id) {
+    var c = DB.clients.getById(id);
+    if (!c || !c.email) return;
+    var firstName = (c.name || '').split(' ')[0] || 'there';
+    var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || 'us';
+    var subject = 'Checking in — ' + coName;
+    var body = 'Hi ' + firstName + ',\n\nIt\'s been a while since we last worked on your trees. With spring coming up, I wanted to see if you\'d like me to swing by for a free walk-around — no obligation.\n\nIf it\'s a good time, just hit reply with a day or two that works.\n\nThanks,\n' + coName;
+    window.location.href = 'mailto:' + encodeURIComponent(c.email)
+      + '?subject=' + encodeURIComponent(subject)
+      + '&body=' + encodeURIComponent(body);
+    ClientsPage._snoozeOutreach(id, 60, true);
+  },
+
+  _snoozeOutreach: function(id, days, silent) {
+    var d = days || 30;
+    try {
+      var snoozes = JSON.parse(localStorage.getItem('bm-outreach-snooze') || '{}');
+      snoozes[id] = Date.now() + d * 86400000;
+      localStorage.setItem('bm-outreach-snooze', JSON.stringify(snoozes));
+    } catch(e) {}
+    if (!silent) UI.toast('Snoozed ' + d + ' days');
+    // Re-render so the banner disappears immediately.
+    if (window._currentPage === 'clients' || window._currentPage === 'client') loadPage(window._currentPage);
   },
 
   // v772: per-client lifetime-value snapshot. Shown on Client detail
