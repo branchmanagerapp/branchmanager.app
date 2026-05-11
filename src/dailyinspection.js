@@ -344,9 +344,16 @@ var DailyInspection = {
       +   '<div style="font-weight:700;font-size:15px;">' + v.icon + ' ' + v.label + '</div>'
       +   '<button onclick="document.getElementById(\'insp-active\').innerHTML=\'\';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-light);">×</button>'
       + '</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
       +   '<input type="text" id="insp-driver" placeholder="Driver name" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
       +   '<input type="text" id="insp-plate" placeholder="Plate / unit #" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      + '</div>'
+      // v783: odometer entry + Bouncie cross-check. The hint span async-fills
+      // with latest Bouncie odo + reading age when available. On Complete,
+      // any |entered − bouncie| > 50mi gets noted on the record.
+      + '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center;">'
+      +   '<input type="number" id="insp-odo" placeholder="Odometer (miles)" min="0" step="1" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;" oninput="DailyInspection._checkOdoDrift()">'
+      +   '<span id="insp-odo-hint" style="font-size:11px;color:var(--text-light);white-space:nowrap;">📡 checking Bouncie…</span>'
       + '</div>'
       + '<input type="text" id="insp-notes" placeholder="Defects / notes (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-bottom:10px;">';
 
@@ -373,6 +380,83 @@ var DailyInspection = {
     var d = document.getElementById('insp-driver');
     if (d && !d.value && user) d.value = user;
     document.getElementById('insp-active').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // v783: async Bouncie odo fetch + pre-fill hint
+    DailyInspection._fetchLatestBouncieOdo(vehId).then(function(odo) {
+      DailyInspection._lastBouncieOdo = odo;
+      var hintEl = document.getElementById('insp-odo-hint');
+      var inputEl = document.getElementById('insp-odo');
+      if (!hintEl || !inputEl) return;
+      if (!odo) {
+        hintEl.textContent = '— Bouncie idle';
+        return;
+      }
+      var ageHrs = (Date.now() - odo.ts) / 3600000;
+      var ageLabel = ageHrs < 1 ? Math.round(ageHrs * 60) + 'm ago'
+                   : ageHrs < 48 ? Math.round(ageHrs) + 'h ago'
+                   : Math.round(ageHrs / 24) + 'd ago';
+      hintEl.innerHTML = '<span style="color:#0d9488;">📡 ' + Math.round(odo.miles).toLocaleString() + ' mi · ' + ageLabel + '</span>'
+        + ' <a onclick="event.preventDefault();document.getElementById(\'insp-odo\').value=' + Math.round(odo.miles) + ';DailyInspection._checkOdoDrift();" href="#" style="color:var(--accent);font-weight:600;margin-left:4px;">use</a>';
+      // If empty, soft pre-fill (don't overwrite user typing)
+      if (!inputEl.value) inputEl.value = Math.round(odo.miles);
+      DailyInspection._checkOdoDrift();
+    }).catch(function(e) {
+      console.debug('[Inspect] Bouncie odo fetch skip', e);
+      var hintEl = document.getElementById('insp-odo-hint');
+      if (hintEl) hintEl.textContent = '';
+    });
+  },
+
+  // v783: best-effort fetch of the latest Bouncie odometer for this vehicle.
+  // Picks the most recent vehicle_positions row with odometer set in the
+  // last 7 days. For multi-truck fleets without Bouncie↔DailyInspection
+  // label mapping, returns the single most-recent reading across all rows
+  // (single-truck shops = unambiguous; multi-truck shops should map via
+  // Fleet page once that wiring lands).
+  _fetchLatestBouncieOdo: function(vehId) {
+    return new Promise(function(resolve, reject) {
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) {
+        return reject(new Error('Supabase not ready'));
+      }
+      var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      SupabaseDB.client
+        .from('vehicle_positions')
+        .select('ts,odometer,vehicle_id')
+        .gte('ts', weekAgo)
+        .not('odometer', 'is', null)
+        .order('ts', { ascending: false })
+        .limit(1)
+        .then(function(res) {
+          if (res.error) return reject(res.error);
+          var row = res.data && res.data[0];
+          if (!row || !row.odometer) return resolve(null);
+          resolve({
+            miles: Number(row.odometer),
+            ts: new Date(row.ts).getTime(),
+            vehicleId: row.vehicle_id
+          });
+        }, reject);
+    });
+  },
+
+  // v783: live drift indicator under the odo input. Anything > 50mi off the
+  // Bouncie reading gets a warning pill (catches transposed digits / wrong
+  // truck submitted). Hint slot is also where the "use" link lives so we
+  // need to preserve the original hint when there's no drift to show.
+  _checkOdoDrift: function() {
+    var inputEl = document.getElementById('insp-odo');
+    var hintEl = document.getElementById('insp-odo-hint');
+    if (!inputEl || !hintEl) return;
+    var bouncie = DailyInspection._lastBouncieOdo;
+    if (!bouncie || !inputEl.value) return;
+    var entered = parseFloat(inputEl.value);
+    if (isNaN(entered) || entered <= 0) return;
+    var diff = entered - bouncie.miles;
+    var absDiff = Math.abs(diff);
+    if (absDiff <= 50) return;
+    // Drift > 50mi → flag it
+    var color = absDiff > 200 ? '#991b1b' : '#c2410c';
+    var arrow = diff > 0 ? '↑' : '↓';
+    hintEl.innerHTML = '<span style="color:' + color + ';font-weight:700;">⚠ ' + arrow + ' ' + Math.round(absDiff) + ' mi vs Bouncie ' + Math.round(bouncie.miles).toLocaleString() + '</span>';
   },
 
   _checkAll: function() {
@@ -399,6 +483,17 @@ var DailyInspection = {
     var plate = (document.getElementById('insp-plate') || {}).value || '';
     var notes = (document.getElementById('insp-notes') || {}).value || '';
     if (!driver) { alert('Enter driver name'); return; }
+    // v783: capture odometer + flag drift > 50mi from Bouncie reading
+    var odoVal = parseFloat((document.getElementById('insp-odo') || {}).value || '');
+    var odometer = (!isNaN(odoVal) && odoVal > 0) ? Math.round(odoVal) : null;
+    var bouncieOdo = DailyInspection._lastBouncieOdo;
+    var odoDrift = null;
+    if (odometer && bouncieOdo) {
+      var diff = odometer - bouncieOdo.miles;
+      if (Math.abs(diff) > 50) {
+        odoDrift = { entered: odometer, bouncie: Math.round(bouncieOdo.miles), diff: Math.round(diff) };
+      }
+    }
 
     var today = new Date().toISOString().split('T')[0];
     var record = {
@@ -407,6 +502,8 @@ var DailyInspection = {
       vehicle: plate || v.id,
       vehicleId: v.id,
       vehicleLabel: v.label,
+      odometer: odometer,
+      odoDrift: odoDrift,
       checked: done,
       total: checks.length,
       pass: done === checks.length,
@@ -421,7 +518,9 @@ var DailyInspection = {
     if (history.length > 200) history = history.slice(0, 200);
     localStorage.setItem('bm-inspection-history', JSON.stringify(history));
 
-    UI.toast((record.pass ? '✓ ' : '⚠️ ') + v.label + ' — ' + (record.pass ? 'all clear' : done + '/' + checks.length + ' passed'));
+    var toastSuffix = '';
+    if (odoDrift) toastSuffix = ' · ⚠ odo ' + (odoDrift.diff > 0 ? '+' : '') + odoDrift.diff + 'mi vs Bouncie';
+    UI.toast((record.pass ? '✓ ' : '⚠️ ') + v.label + ' — ' + (record.pass ? 'all clear' : done + '/' + checks.length + ' passed') + toastSuffix);
     if (typeof loadPage === 'function' && window._currentPage === 'pretrip') loadPage('pretrip');
   },
 
