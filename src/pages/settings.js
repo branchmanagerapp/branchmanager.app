@@ -1087,6 +1087,7 @@ var SettingsPage = {
       + '<div style="padding:0 20px 16px;border-top:1px solid var(--border);margin-top:0;">';
 
     // Email (Resend) — server-keyed, no client config. v372 migrated off SendGrid.
+    html += '<div id="bm-resend-card">';
     html += apiKeyHeader({
         ok: true,
         title: 'Resend Email',
@@ -1100,6 +1101,7 @@ var SettingsPage = {
       + '</div>'
       + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">From: <code>onboarding@resend.dev</code> until DNS verification on peekskilltree.com is complete. To switch to <code>info@peekskilltree.com</code>, add Resend\'s DKIM/SPF records in the Wix DNS panel and ping me.</p>'
       + '</div>';
+    html += '</div>'; // /#bm-resend-card
 
     // AI Assistant
     var aiKey = localStorage.getItem('bm-claude-key') || '';

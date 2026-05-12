@@ -12,6 +12,31 @@
  * v769.
  */
 var TenantSetup = {
+  // v812: jumpToSettings(tab, fieldId) drives loadPage→switchTab→open <details>→
+  // scroll + focus the input. Plain loadPage('settings') was a no-op when the
+  // user was already on the Settings page (Setup checklist lives there), so
+  // "Set up →" buttons silently did nothing.
+  _jumpToSettings: function(tab, fieldId) {
+    var doJump = function() {
+      try { if (typeof SettingsPage !== 'undefined' && SettingsPage._switchTab && tab) SettingsPage._switchTab(tab); } catch(e) {}
+      if (!fieldId) return;
+      setTimeout(function() {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        var d = el.closest('details'); if (d && !d.open) d.open = true;
+        var card = el.closest('.collapsible-card, [data-collapsible]'); if (card && card.classList) card.classList.add('open');
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (el.focus) try { el.focus({ preventScroll: true }); } catch(e) { el.focus(); }
+        try { el.style.outline = '3px solid var(--green-dark)'; el.style.outlineOffset = '2px'; setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 1500); } catch(e) {}
+      }, 250);
+    };
+    if (location.hash !== '#settings') {
+      loadPage('settings');
+      setTimeout(doJump, 350);
+    } else {
+      doJump();
+    }
+  },
   // Each entry: probe() → boolean, action() → navigate.
   // criticality: 1 = required, 2 = revenue path, 3 = comms, 4 = nice-to-have
   ITEMS: [
@@ -23,7 +48,7 @@ var TenantSetup = {
       probe: function() {
         try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')); } catch(e) { return false; }
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('business', 'co-name'); }
     },
     {
       key: 'company_phone',
@@ -33,7 +58,7 @@ var TenantSetup = {
       probe: function() {
         try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('phone')); } catch(e) { return false; }
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('business', 'co-phone'); }
     },
     {
       key: 'company_email',
@@ -43,7 +68,7 @@ var TenantSetup = {
       probe: function() {
         try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('email')); } catch(e) { return false; }
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('business', 'co-email'); }
     },
     {
       key: 'logo',
@@ -53,7 +78,7 @@ var TenantSetup = {
       probe: function() {
         try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('logo_url')); } catch(e) { return false; }
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('business', 'co-logo'); }
     },
     {
       key: 'tax_rate',
@@ -66,7 +91,7 @@ var TenantSetup = {
           return !isNaN(v) && v > 0;
         } catch(e) { return false; }
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('business', 'co-tax-rate'); }
     },
     {
       key: 'team_member',
@@ -96,7 +121,7 @@ var TenantSetup = {
         // Server-side key check is on the tenants.config — async, skipped here.
         return false;
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('advanced', 'stripe-base-link'); }
     },
     {
       key: 'dialpad',
@@ -117,7 +142,7 @@ var TenantSetup = {
         // Best-effort: presence of a custom from-address in localStorage.
         try { return !!(localStorage.getItem('bm-resend-verified') === '1'); } catch(e) { return false; }
       },
-      action: function() { loadPage('settings'); }
+      action: function() { TenantSetup._jumpToSettings('advanced', 'bm-resend-card'); }
     },
     {
       key: 'ai_receptionist',
