@@ -1,5 +1,5 @@
 {
-  "version": 812,
-  "released": "2026-05-12",
-  "notes": "v698: weather 24h toggle"
+  "version": 813,
+  "released": "2026-05-14",
+  "notes": "Add Pipeline to mobile bottom nav (replaces Search; search still in topbar)"
 }

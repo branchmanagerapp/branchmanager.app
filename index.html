@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 812; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 813; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v812.min.js"></script>
+<script defer src="dist/bm.bundle.v813.min.js"></script>
 
 
 
@@ -3168,8 +3168,8 @@ window.addEventListener('popstate', function(e) {
 <nav id="bottom-nav">
   <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>
   <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Today</span></button>
+  <button data-bottom-page="pipeline" onclick="loadPage('pipeline')"><i data-lucide="kanban-square"></i><span>Pipeline</span></button>
   <button data-bottom-page="clients" onclick="loadPage('clients')"><i data-lucide="users"></i><span>Clients</span></button>
-  <button data-bottom-page="search" onclick="loadPage('search')"><i data-lucide="search"></i><span>Search</span></button>
   <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
 </nav>
 
