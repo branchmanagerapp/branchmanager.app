@@ -1,5 +1,5 @@
 {
-  "version": 813,
+  "version": 814,
   "released": "2026-05-14",
-  "notes": "Add Pipeline to mobile bottom nav (replaces Search; search still in topbar)"
+  "notes": "Stump-grinding rate sheet + live calculator added to Calculators hub"
 }
