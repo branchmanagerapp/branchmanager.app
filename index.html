@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 814; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 815; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v814.min.js"></script>
+<script defer src="dist/bm.bundle.v815.min.js"></script>
 
 
 
@@ -1668,38 +1668,47 @@ var pageRenderers = {
       + '<div class="stat-card" style="cursor:pointer;" onclick="loadPage(\'treemeasure\')">'
       + '<div class="stat-label">🌲 Tree Measure</div><div class="stat-value" style="font-size:18px;">Height & DBH</div><div class="stat-sub">Phone angle for height, tape for DBH → instant estimate</div></div>'
       + '<div class="stat-card" style="cursor:pointer;" onclick="document.getElementById(\'stump-calc-card\').scrollIntoView({behavior:\'smooth\',block:\'start\'});">'
-      + '<div class="stat-label">🪵 Stump Grinding</div><div class="stat-value" style="font-size:18px;">$12/in · tier ×</div><div class="stat-sub">0–3" 1× · 3–6" 2× · 6+" 3× · tap for live calc</div></div>'
+      + '<div class="stat-label">🪵 Stump Grinding</div><div class="stat-value" style="font-size:18px;">$12/in · depth ×</div><div class="stat-sub">basic 1× · 3–6" deep 2× · 6+" deep 3× · tap for calc</div></div>'
       + '<a href="sub.html" target="_blank" class="stat-card" style="text-decoration:none;cursor:pointer;">'
       + '<div class="stat-label">💰 Full Rate Sheet</div><div class="stat-value" style="font-size:18px;">Detailed Rates</div><div class="stat-sub">All rates, tiers, industry comparison</div></a>'
       + '</div>'
       + '<div id="stump-calc-card" style="margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--white);padding:18px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
       + '<strong style="font-size:16px;">Stump grinding · rate sheet</strong>'
-      + '<span style="font-size:12px;color:var(--text-light);">$12/inch base, tier multipliers</span></div>'
-      + '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 14px;">'
+      + '<span style="font-size:12px;color:var(--text-light);">$12/inch of diameter × depth multiplier</span></div>'
+      + '<p style="font-size:12px;color:var(--text-light);margin:6px 0 10px;">Base = $12 × stump diameter (inches). Multiplier comes from how deep below grade the customer wants the grind. Most jobs are basic depth (mow-over).</p>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:0 0 14px;">'
       + '<thead><tr style="background:var(--green-dark);color:#fff;text-align:left;">'
-      + '<th style="padding:8px 10px;font-weight:600;">Diameter</th>'
-      + '<th style="padding:8px 10px;font-weight:600;">Tier</th>'
-      + '<th style="padding:8px 10px;font-weight:600;text-align:right;">$/in</th>'
-      + '<th style="padding:8px 10px;font-weight:600;text-align:right;">3"</th>'
+      + '<th style="padding:8px 10px;font-weight:600;">Depth (below grade)</th>'
+      + '<th style="padding:8px 10px;font-weight:600;">Use case</th>'
+      + '<th style="padding:8px 10px;font-weight:600;text-align:right;">Mult</th>'
+      + '<th style="padding:8px 10px;font-weight:600;text-align:right;">$/inch</th>'
       + '<th style="padding:8px 10px;font-weight:600;text-align:right;">5"</th>'
       + '<th style="padding:8px 10px;font-weight:600;text-align:right;">10"</th>'
       + '</tr></thead><tbody>'
-      + '<tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;">0–3"</td><td style="padding:8px 10px;">1×</td><td style="padding:8px 10px;text-align:right;font-weight:600;">$12</td><td style="padding:8px 10px;text-align:right;">$36</td><td style="padding:8px 10px;text-align:right;color:var(--text-light);">—</td><td style="padding:8px 10px;text-align:right;color:var(--text-light);">—</td></tr>'
-      + '<tr style="border-bottom:1px solid var(--border);background:#f7faf7;"><td style="padding:8px 10px;">3–6"</td><td style="padding:8px 10px;">2×</td><td style="padding:8px 10px;text-align:right;font-weight:600;">$24</td><td style="padding:8px 10px;text-align:right;color:var(--text-light);">—</td><td style="padding:8px 10px;text-align:right;">$120</td><td style="padding:8px 10px;text-align:right;color:var(--text-light);">—</td></tr>'
-      + '<tr><td style="padding:8px 10px;">6"+</td><td style="padding:8px 10px;">3×</td><td style="padding:8px 10px;text-align:right;font-weight:600;">$36</td><td style="padding:8px 10px;text-align:right;color:var(--text-light);">—</td><td style="padding:8px 10px;text-align:right;color:var(--text-light);">—</td><td style="padding:8px 10px;text-align:right;">$360</td></tr>'
+      + '<tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;">0–3" (basic)</td><td style="padding:8px 10px;color:var(--text-light);font-size:12px;">mow-over · stump gone visually</td><td style="padding:8px 10px;text-align:right;">1×</td><td style="padding:8px 10px;text-align:right;font-weight:600;">$12</td><td style="padding:8px 10px;text-align:right;">$60</td><td style="padding:8px 10px;text-align:right;">$120</td></tr>'
+      + '<tr style="border-bottom:1px solid var(--border);background:#f7faf7;"><td style="padding:8px 10px;">3–6"</td><td style="padding:8px 10px;color:var(--text-light);font-size:12px;">new lawn / garden bed</td><td style="padding:8px 10px;text-align:right;">2×</td><td style="padding:8px 10px;text-align:right;font-weight:600;">$24</td><td style="padding:8px 10px;text-align:right;">$120</td><td style="padding:8px 10px;text-align:right;">$240</td></tr>'
+      + '<tr><td style="padding:8px 10px;">6"+ deep</td><td style="padding:8px 10px;color:var(--text-light);font-size:12px;">construction · replant a tree</td><td style="padding:8px 10px;text-align:right;">3×</td><td style="padding:8px 10px;text-align:right;font-weight:600;">$36</td><td style="padding:8px 10px;text-align:right;">$180</td><td style="padding:8px 10px;text-align:right;">$360</td></tr>'
       + '</tbody></table>'
       + '<div style="background:linear-gradient(180deg,#f7faf7,#fff);border:2px solid var(--green-dark);border-radius:10px;padding:14px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-      + '<strong>Live calculator</strong><span id="bm-stump-tier" style="font-size:12px;color:var(--text-light);">3–6 inches · 2×</span></div>'
+      + '<strong style="display:block;margin-bottom:4px;">Live quote calculator</strong>'
+      + '<p style="margin:0 0 10px;font-size:12px;color:var(--text-light);">Enter the stump diameter and pick the grind depth.</p>'
+      + '<label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">Stump diameter (widest point)</label>'
       + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
       + '<input type="range" id="bm-stump-d" min="1" max="36" step="1" value="6" style="flex:1;min-width:180px;accent-color:var(--green-dark);" oninput="BM_stumpUpdate()" />'
       + '<div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:5px 8px;">'
-      + '<input type="number" id="bm-stump-d-num" min="1" max="120" step="1" value="6" style="width:60px;border:0;outline:0;font-size:16px;font-weight:600;text-align:right;color:var(--green-dark);" oninput="BM_stumpUpdate()" />'
+      + '<input type="number" id="bm-stump-d-num" min="0" max="120" step="1" value="6" placeholder="0" style="width:60px;border:0;outline:0;font-size:16px;font-weight:600;text-align:right;color:var(--green-dark);" oninput="BM_stumpUpdate()" />'
       + '<span style="font-size:13px;color:var(--text-light);">inches</span></div></div>'
-      + '<div style="margin-top:12px;padding:10px 12px;background:var(--green-dark);color:#fff;border-radius:8px;display:flex;justify-content:space-between;align-items:baseline;">'
-      + '<span style="font-size:13px;opacity:.9;">Single-stump quote</span>'
-      + '<span id="bm-stump-total" style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;">$144</span></div>'
+      + '<label style="display:block;font-size:12px;font-weight:600;margin:12px 0 4px;">Grind depth</label>'
+      + '<div id="bm-depth-btns" style="display:flex;flex-wrap:wrap;gap:6px;">'
+      + '<button type="button" data-mult="1" onclick="BM_setStumpDepth(1)" style="flex:1;min-width:120px;padding:9px 10px;border-radius:8px;border:2px solid var(--green-dark);background:var(--green-dark);color:#fff;cursor:pointer;font-size:12px;font-weight:600;">Basic 0–3"</button>'
+      + '<button type="button" data-mult="2" onclick="BM_setStumpDepth(2)" style="flex:1;min-width:120px;padding:9px 10px;border-radius:8px;border:2px solid var(--border);background:#fff;cursor:pointer;font-size:12px;">3–6" · 2×</button>'
+      + '<button type="button" data-mult="3" onclick="BM_setStumpDepth(3)" style="flex:1;min-width:120px;padding:9px 10px;border-radius:8px;border:2px solid var(--border);background:#fff;cursor:pointer;font-size:12px;">6"+ · 3×</button>'
+      + '</div>'
+      + '<div id="bm-stump-needs" style="margin-top:12px;padding:10px 12px;background:#fff8e7;border-left:3px solid #d4a017;border-radius:4px;font-size:13px;display:none;">Enter the stump diameter to see the quote.</div>'
+      + '<div id="bm-stump-result" style="margin-top:12px;padding:10px 12px;background:var(--green-dark);color:#fff;border-radius:8px;display:flex;justify-content:space-between;align-items:baseline;">'
+      + '<span id="bm-stump-formula" style="font-size:13px;opacity:.9;">6" × $12 · basic depth</span>'
+      + '<span id="bm-stump-total" style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;">$72</span></div>'
       + '<p style="margin:8px 0 0;font-size:12px;color:var(--text-light);">3+ stumps on one property: typical 15–25% volume discount. Backyard-only / fence pulls / hardwood = field adjustment. Always quote in writing.</p>'
       + '</div>'
       + '</div>';
@@ -1757,24 +1766,44 @@ function BM_contextCreate() {
   QuickCreate.show();
 }
 
-// v813: stump-grinding live calculator (called inline from the calculators page)
-// Rate: $12/inch at widest point; tier multipliers 0–3" 1× / 3–6" 2× / 6+" 3×.
+// v814: stump-grinding live calculator (called inline from the calculators page)
+// Rate: $12 × stump diameter (inches at widest point) × depth multiplier.
+// Depth tiers: 0–3" basic = 1× | 3–6" = 2× | 6"+ = 3×.
+// Diameter is required — without it, no quote can be produced.
+window._bmStumpDepthMult = 1;
+window.BM_setStumpDepth = function(m) {
+  window._bmStumpDepthMult = m;
+  var btns = document.querySelectorAll('#bm-depth-btns button[data-mult]');
+  btns.forEach(function(b) {
+    var on = Number(b.dataset.mult) === m;
+    b.style.background  = on ? 'var(--green-dark)' : '#fff';
+    b.style.color       = on ? '#fff' : '';
+    b.style.borderColor = on ? 'var(--green-dark)' : 'var(--border)';
+    b.style.fontWeight  = on ? '600' : '';
+  });
+  window.BM_stumpUpdate();
+};
 window.BM_stumpUpdate = function() {
   var dn = document.getElementById('bm-stump-d-num');
   var sl = document.getElementById('bm-stump-d');
   if (!dn || !sl) return;  // not on calculators page
-  var d = parseInt(dn.value || sl.value || 0, 10);
+  var raw = dn.value;
+  var d = parseInt(raw, 10);
   if (isNaN(d) || d < 0) d = 0;
-  if (d <= 36) sl.value = d;
-  dn.value = d;
-  var mult = 1, label = 'base · 1×';
-  if (d > 6) { mult = 3; label = '6+ inches · 3×'; }
-  else if (d > 3) { mult = 2; label = '3–6 inches · 2×'; }
-  var price = d * 12 * mult;
-  var tEl = document.getElementById('bm-stump-tier');
-  var totalEl = document.getElementById('bm-stump-total');
-  if (tEl) tEl.textContent = label;
-  if (totalEl) totalEl.textContent = '$' + price.toLocaleString();
+  if (d > 0 && d <= 36) sl.value = d;
+  if (raw !== '' || d > 0) dn.value = d;
+  var mult = window._bmStumpDepthMult || 1;
+  var rate = 12 * mult;
+  var price = d * rate;
+  var depthLabel = mult === 1 ? 'basic depth' : mult === 2 ? '3–6" deep · 2×' : '6"+ deep · 3×';
+  var formulaEl = document.getElementById('bm-stump-formula');
+  var totalEl   = document.getElementById('bm-stump-total');
+  var needsEl   = document.getElementById('bm-stump-needs');
+  var resultEl  = document.getElementById('bm-stump-result');
+  if (formulaEl) formulaEl.textContent = (d > 0 ? d + '" × $' + rate : 'enter diameter') + ' · ' + depthLabel;
+  if (totalEl)   totalEl.textContent   = d > 0 ? '$' + price.toLocaleString() : '—';
+  if (needsEl)   needsEl.style.display = d > 0 ? 'none' : '';
+  if (resultEl)  resultEl.style.display = d > 0 ? 'flex' : 'none';
 };
 
 function loadPage(page, opts) {

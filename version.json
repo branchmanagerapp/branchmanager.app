@@ -1,5 +1,5 @@
 {
-  "version": 814,
+  "version": 815,
   "released": "2026-05-14",
-  "notes": "Stump-grinding rate sheet + live calculator added to Calculators hub"
+  "notes": "Stump-grinding rates: depth tiers the multiplier, diameter required"
 }
