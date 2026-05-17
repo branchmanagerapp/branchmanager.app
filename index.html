@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 819; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 820; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v819.min.js"></script>
+<script defer src="dist/bm.bundle.v820.min.js"></script>
 
 
 
@@ -2327,10 +2327,12 @@ if (checkAuth()) {
       var chip = document.getElementById('bm-trial-chip');
       if (!chip || !Subscription.isTrial) return;
       var d = Subscription.daysLeftInTrial();
-      if (Subscription.isTrial() && d != null && d <= 7) {
+      if (Subscription.isTrial() && d != null && d > 0 && d <= 7) {
+        // Free-for-now posture: show a calm countdown only while days remain.
+        // No alarming "expired" state — billing is intentionally off, the app
+        // keeps working indefinitely, so an expiry warning would be misleading.
         chip.style.display = 'inline-flex';
-        chip.textContent = d === 0 ? '⚠ Trial expired' : '⏳ Trial · ' + d + 'd left';
-        if (d === 0) { chip.style.background = '#ffebee'; chip.style.color = '#c62828'; chip.style.borderColor = '#ef9a9a'; }
+        chip.textContent = '⏳ Trial · ' + d + 'd left';
       } else {
         chip.style.display = 'none';
       }

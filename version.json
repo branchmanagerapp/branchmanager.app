@@ -1,5 +1,5 @@
 {
-  "version": 819,
+  "version": 820,
   "released": "2026-05-17",
-  "notes": "Wire orphaned marketing page into funnel: login → landing-tree pricing → tiered signup"
+  "notes": "Free-for-now: trial chip shows calm countdown only, no alarming expired state"
 }
