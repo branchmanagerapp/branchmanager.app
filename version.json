@@ -1,5 +1,5 @@
 {
-  "version": 815,
-  "released": "2026-05-14",
-  "notes": "Stump-grinding rates: depth tiers the multiplier, diameter required"
+  "version": 816,
+  "released": "2026-05-17",
+  "notes": "White-label: operator app loads logged-in tenant's branding from tenants.config"
 }

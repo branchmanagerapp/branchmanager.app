@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 815; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 816; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v815.min.js"></script>
+<script defer src="dist/bm.bundle.v816.min.js"></script>
 
 
 
@@ -2276,6 +2276,21 @@ if (checkAuth()) {
     ? hashPage
     : ((savedPage && pageRenderers[savedPage]) ? savedPage : defaultPage);
   loadPage(targetPage);
+
+  // v816 white-label: load the logged-in tenant's branding into CompanyInfo,
+  // non-blocking. localStorage-cached, so only the first login per device
+  // shows a brief default-brand flash; every load after is branded instantly.
+  // If it actually applied a tenant (returns true) and we're still on the
+  // first-rendered page, re-render so branded values show immediately.
+  try {
+    if (typeof CompanyInfo !== 'undefined' && CompanyInfo.loadTenantFromSession) {
+      CompanyInfo.loadTenantFromSession().then(function(applied) {
+        if (applied && typeof loadPage === 'function' && window._currentPage) {
+          loadPage(window._currentPage);
+        }
+      });
+    }
+  } catch (e) { /* never block boot on branding */ }
 
   // v675: handle Stripe Checkout redirect back to BM. subscription-create-
   // checkout sets success_url with ?subscription=success. Toast the user,

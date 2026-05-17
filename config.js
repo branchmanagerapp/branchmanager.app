@@ -136,3 +136,67 @@ var CompanyInfo = (function() {
     }
   };
 })();
+
+/**
+ * White-label: load the LOGGED-IN tenant's branding into CompanyInfo.
+ *
+ * The operator app authenticates with a Supabase session whose JWT carries
+ * tenant_id (custom_access_token_hook). tenants.config holds the full brand
+ * record. This mirrors the proven tenant-slug-bootstrap.js pattern (used for
+ * public pay/approve/portal pages) but keyed off the session instead of a URL
+ * slug: it writes bm-co-* localStorage + patches BM_CONFIG, so CompanyInfo
+ * (localStorage-first) re-skins the entire app for that tenant.
+ *
+ * Safe + additive: any error / no session / no tenant / no config => no-op,
+ * app keeps its existing BM_CONFIG defaults (zero regression). Only writes
+ * keys that are present and non-empty (never blanks a fallback). Idempotent.
+ */
+CompanyInfo.loadTenantFromSession = (function() {
+  var done = false;
+  return function() {
+    if (done) return Promise.resolve(false);
+    done = true;
+    try {
+      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return Promise.resolve(false);
+      return SupabaseDB.client
+        .from('tenants').select('id,name,config').limit(1)
+        .then(function(res) {
+          var t = res && res.data && res.data[0];
+          if (!t) return false;
+          var c = t.config || {};
+          function L(lsKey, val) { if (val) { try { localStorage.setItem(lsKey, String(val)); } catch(e) {} } }
+          function B(bmKey, val) { if (val && typeof BM_CONFIG !== 'undefined') BM_CONFIG[bmKey] = val; }
+          var nm = c.company_name || t.name;
+          L('bm-co-name', nm);            B('companyName', nm);
+          L('bm-co-email', c.company_email || c.from_email);  B('email', c.company_email || c.from_email);
+          L('bm-co-website', c.company_website);
+          if (c.company_website) { B('website', c.company_website); B('websiteUrl', c.company_website.indexOf('http')===0 ? c.company_website : ('https://'+c.company_website)); }
+          if (c.company_phone) {
+            L('bm-co-phone', c.company_phone);
+            B('phone', c.company_phone);
+            var dg = String(c.company_phone).replace(/\D/g,'');
+            B('phoneDigits', dg); B('phoneTel', '+' + dg.replace(/^1?/, '1'));
+          }
+          L('bm-co-logo', c.logo_url);    B('logoUrl', c.logo_url);
+          var addr = [c.address_line1, c.address_line2, [c.city, c.state, c.zip].filter(Boolean).join(', ')].filter(Boolean).join(', ');
+          L('bm-co-address', addr || null); B('address', addr || undefined);
+          if (c.city || c.state) B('city', [c.city, c.state].filter(Boolean).join(', '));
+          L('bm-co-brand-color', c.brand_color);
+          L('bm-co-licenses', c.wc_number);
+          L('bm-co-license-text', c.license_text);
+          L('bm-co-review', c.google_review_url); B('googleReviewUrl', c.google_review_url);
+          L('bm-co-facebook', c.facebook_url);
+          L('bm-co-instagram', c.instagram_url);
+          L('bm-co-yelp', (c.social_links && c.social_links.yelp) || null);
+          L('bm-tax-rate', c.tax_rate != null ? c.tax_rate : null);
+          L('bm-co-owner-name', c.owner_name); B('ownerName', c.owner_name);
+          L('bm-co-legal-name', c.legal_name);
+          L('bm-co-short-name', c.business_short_name);
+          try { if (t.id) localStorage.setItem('bm-tenant-id', t.id); } catch(e) {}
+          window.bmResolvedTenant = t;
+          return true;
+        })
+        .catch(function() { return false; });
+    } catch (e) { return Promise.resolve(false); }
+  };
+})();
