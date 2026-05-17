@@ -78,7 +78,7 @@ var Auth = {
       + '<button type="submit" id="auth-submit" style="width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;">Sign In</button>'
       + '<div id="auth-error" style="display:none;margin-top:12px;padding:10px;background:#fde8e8;border-radius:8px;font-size:13px;color:#c0392b;text-align:center;"></div>'
       + '</form>'
-      + '<div style="margin-top:24px;text-align:center;font-size:12px;color:var(--text-light);">New tree-service company? <a href="?signup=solo" style="color:var(--green-dark);font-weight:600;">Start a free 14-day trial</a></div>'
+      + '<div style="margin-top:24px;text-align:center;font-size:12px;color:var(--text-light);">New tree-service company? <a href="landing-tree.html" style="color:var(--green-dark);font-weight:600;">See plans &amp; start a free 14-day trial</a></div>'
       + '</div></div>';
   },
 

@@ -1,5 +1,5 @@
 {
-  "version": 818,
+  "version": 819,
   "released": "2026-05-17",
-  "notes": "Self-serve white-label signup: ?signup=tier → create account → auto-provision tenant"
+  "notes": "Wire orphaned marketing page into funnel: login → landing-tree pricing → tiered signup"
 }
