@@ -1,5 +1,5 @@
 {
-  "version": 816,
+  "version": 817,
   "released": "2026-05-17",
-  "notes": "White-label: operator app loads logged-in tenant's branding from tenants.config"
+  "notes": "White-label fix: scope tenant-config load via user_tenants (not tenants.limit(1))"
 }

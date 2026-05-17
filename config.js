@@ -158,10 +158,15 @@ CompanyInfo.loadTenantFromSession = (function() {
     done = true;
     try {
       if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return Promise.resolve(false);
+      // Scope via user_tenants (RLS returns ONLY the caller's mapping rows) so
+      // we get THE caller's tenant deterministically. A bare tenants.limit(1)
+      // is wrong: public_read_tenants_for_branding exposes every tenant row,
+      // so limit(1) could brand the app as some other tenant (e.g. "Demo").
       return SupabaseDB.client
-        .from('tenants').select('id,name,config').limit(1)
+        .from('user_tenants').select('tenant_id,tenants(id,name,config)').limit(1)
         .then(function(res) {
-          var t = res && res.data && res.data[0];
+          var row = res && res.data && res.data[0];
+          var t = row && row.tenants;
           if (!t) return false;
           var c = t.config || {};
           function L(lsKey, val) { if (val) { try { localStorage.setItem(lsKey, String(val)); } catch(e) {} } }
