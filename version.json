@@ -1,5 +1,5 @@
 {
-  "version": 817,
+  "version": 818,
   "released": "2026-05-17",
-  "notes": "White-label fix: scope tenant-config load via user_tenants (not tenants.limit(1))"
+  "notes": "Self-serve white-label signup: ?signup=tier → create account → auto-provision tenant"
 }

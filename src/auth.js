@@ -78,8 +78,92 @@ var Auth = {
       + '<button type="submit" id="auth-submit" style="width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;">Sign In</button>'
       + '<div id="auth-error" style="display:none;margin-top:12px;padding:10px;background:#fde8e8;border-radius:8px;font-size:13px;color:#c0392b;text-align:center;"></div>'
       + '</form>'
-      + '<div style="margin-top:24px;text-align:center;font-size:12px;color:var(--text-light);">Contact your administrator for login credentials.</div>'
+      + '<div style="margin-top:24px;text-align:center;font-size:12px;color:var(--text-light);">New tree-service company? <a href="?signup=solo" style="color:var(--green-dark);font-weight:600;">Start a free 14-day trial</a></div>'
       + '</div></div>';
+  },
+
+  // Self-serve signup — a new company gets its own isolated tenant.
+  // handle_new_user() auto-provisions tenant+owner from email/business_name;
+  // the access-token hook then stamps tenant_id+role onto the session.
+  renderSignup: function() {
+    var tier = (new URLSearchParams(location.search).get('signup') || 'solo').toLowerCase();
+    if (['solo','crew','pro'].indexOf(tier) === -1) tier = 'solo';
+    var pretty = { solo:'Solo · $39/mo', crew:'Crew · $89/mo', pro:'Pro · $149/mo' }[tier];
+    return '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px;">'
+      + '<div style="background:var(--white);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.08);max-width:420px;width:100%;padding:40px;">'
+      + '<div style="text-align:center;margin-bottom:28px;">'
+      + '<img src="icons/login-logo.png" alt="Branch Manager" style="width:96px;height:96px;margin-bottom:8px;border-radius:16px;">'
+      + '<h1 style="font-size:22px;color:var(--green-dark);margin-bottom:4px;">Start your free trial</h1>'
+      + '<p style="font-size:13px;color:var(--text-light);">' + pretty + ' · 14 days free · no card required</p>'
+      + '</div>'
+      + '<form onsubmit="Auth.signup(event)">'
+      + '<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Company name</label>'
+      + '<input type="text" id="su-company" required placeholder="Acme Tree Service" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:15px;" autofocus></div>'
+      + '<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Work email</label>'
+      + '<input type="email" id="su-email" required placeholder="you@yourcompany.com" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:15px;"></div>'
+      + '<div style="margin-bottom:16px;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Password</label>'
+      + '<input type="password" id="su-password" required minlength="8" placeholder="At least 8 characters" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-size:15px;"></div>'
+      + '<button type="submit" id="su-submit" style="width:100%;padding:14px;background:var(--green-dark);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;">Create account &amp; start trial</button>'
+      + '<div id="su-error" style="display:none;margin-top:12px;padding:10px;background:#fde8e8;border-radius:8px;font-size:13px;color:#c0392b;text-align:center;"></div>'
+      + '<div id="su-ok" style="display:none;margin-top:12px;padding:10px;background:#e8f5e9;border-radius:8px;font-size:13px;color:#1b5e20;text-align:center;"></div>'
+      + '</form>'
+      + '<div style="margin-top:22px;text-align:center;font-size:12px;color:var(--text-light);">Already have an account? <a href="' + location.pathname + '" style="color:var(--green-dark);font-weight:600;">Sign in</a></div>'
+      + '</div></div>';
+  },
+
+  signup: async function(event) {
+    event.preventDefault();
+    var co = document.getElementById('su-company').value.trim();
+    var email = document.getElementById('su-email').value.trim();
+    var pw = document.getElementById('su-password').value;
+    var tier = (new URLSearchParams(location.search).get('signup') || 'solo').toLowerCase();
+    if (['solo','crew','pro'].indexOf(tier) === -1) tier = 'solo';
+    var btn = document.getElementById('su-submit');
+    var errEl = document.getElementById('su-error');
+    var okEl = document.getElementById('su-ok');
+    errEl.style.display = 'none'; okEl.style.display = 'none';
+    btn.textContent = 'Creating your workspace…'; btn.disabled = true;
+    function fail(msg) { errEl.textContent = msg; errEl.style.display = 'block'; btn.textContent = 'Create account & start trial'; btn.disabled = false; }
+
+    if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.ready && SupabaseDB.client)) {
+      return fail('Signup is temporarily unavailable. Please try again shortly.');
+    }
+    try {
+      var res = await SupabaseDB.client.auth.signUp({
+        email: email, password: pw,
+        options: { data: { business_name: co, signup_tier: tier } }
+      });
+      if (res.error) {
+        var m = (res.error.message || '').toLowerCase();
+        if (m.indexOf('already') !== -1 || m.indexOf('registered') !== -1)
+          return fail('That email already has an account. Use the Sign in link below.');
+        return fail(res.error.message || 'Could not create account.');
+      }
+      var data = res.data;
+      // handle_new_user() has now auto-provisioned this company's tenant + owner row.
+      if (!data.session) {
+        var r2 = await SupabaseDB.client.auth.signInWithPassword({ email: email, password: pw });
+        if (r2.error) {
+          okEl.innerHTML = 'Account created. Check <strong>' + email + '</strong> to confirm your email, then sign in.';
+          okEl.style.display = 'block'; btn.style.display = 'none';
+          return;
+        }
+        data = r2.data;
+      }
+      Auth.user = { email: data.user.email, id: data.user.id, role: 'owner', name: co || 'Owner' };
+      Auth.role = 'owner';
+      localStorage.setItem('bm-session', JSON.stringify(Auth.user));
+      try { localStorage.setItem('bm-co-name', co); } catch (e) {}
+      try {
+        if (typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
+          var now = new Date(), ends = new Date(now.getTime() + 14 * 86400000);
+          Subscription.setStateLocal({ tier: tier, status: 'trial', trial_started_at: now.toISOString(), trial_ends_at: ends.toISOString() });
+        }
+      } catch (e) {}
+      window.location.href = window.location.pathname;  // clean URL → reload into their branded BM
+    } catch (e) {
+      fail('Unexpected error: ' + (e && e.message ? e.message : e));
+    }
   },
 
   login: async function(event) {
