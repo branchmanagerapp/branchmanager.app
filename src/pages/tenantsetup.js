@@ -341,7 +341,10 @@ var TenantSetup = {
                 ? '<button onclick="TenantSetup.unskip(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:5px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text-light);">Undo</button>'
                 : '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap;">'
                   + '<button onclick="TenantSetup._fire(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:5px;font-weight:600;cursor:pointer;">Set up →</button>'
-                  + '<button onclick="TenantSetup.skip(\'' + r.key + '\')" style="font-size:11px;padding:4px 8px;background:none;border:none;color:var(--text-light);text-decoration:underline;cursor:pointer;">Skip</button>'
+                  // Skip only on non-required items (revenue/comms/optional —
+                  // e.g. Stripe, Dialpad, Bouncie). The "Required to operate"
+                  // basics can't be skipped — they genuinely must be set.
+                  + (crit !== 1 ? '<button onclick="TenantSetup.skip(\'' + r.key + '\')" style="font-size:11px;padding:4px 8px;background:none;border:none;color:var(--text-light);text-decoration:underline;cursor:pointer;">Skip</button>' : '')
                   + '</div>')
           + '</div>';
       });

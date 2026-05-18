@@ -1,5 +1,5 @@
 {
-  "version": 829,
+  "version": 830,
   "released": "2026-05-18",
-  "notes": "onboarding: per-item Skip (with Undo) on the setup checklist — skipped items stop counting toward critical-left and stop nagging, stay listed with Undo; subtitle shows skipped count"
+  "notes": "onboarding: Skip restricted to non-required items (revenue/comms/optional like Bouncie/Dialpad/Stripe) — Required-to-operate basics can't be skipped"
 }
