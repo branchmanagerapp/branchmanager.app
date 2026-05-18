@@ -15,6 +15,19 @@ var ReviewsPage = {
     };
   },
 
+  // Trust-line for customer-facing review pages. White-label safe: locale
+  // comes from the TENANT's own saved address only (never BM_CONFIG —
+  // that's SNT's Peekskill addr baked into the shared bundle, identical
+  // for every tenant). No tenant address => generic credential only, so
+  // a friend's customers never see "Peekskill, NY".
+  _loc: function() {
+    var a = '';
+    try { a = String(localStorage.getItem('bm-co-address') || ''); } catch (e) {}
+    var m = a.replace(/\s*\d{5}(-\d{4})?\s*$/, '').match(/([A-Za-z.\s]+,\s*[A-Za-z]{2,})\s*$/);
+    var city = m ? m[1].trim().replace(/\s+/g, ' ') : '';
+    return city ? (city + ' · Licensed & Insured') : 'Licensed & Insured';
+  },
+
   getRequests: function() { return JSON.parse(localStorage.getItem('bm-review-requests') || '[]'); },
   saveRequests: function(arr) { localStorage.setItem('bm-review-requests', JSON.stringify(arr)); },
   getLoggedReviews: function() { return JSON.parse(localStorage.getItem('bm-logged-reviews') || '[]'); },
@@ -43,7 +56,7 @@ var ReviewsPage = {
       + '</div>'
       + '<div style="flex:1;min-width:200px;">'
       + '<h2 style="font-size:20px;font-weight:700;margin:0 0 6px;">' + ReviewsPage._co().name + '</h2>'
-      + '<p style="font-size:14px;opacity:.8;margin:0 0 16px;">Peekskill, NY · Licensed & Insured</p>'
+      + '<p style="font-size:14px;opacity:.8;margin:0 0 16px;">' + ReviewsPage._loc() + '</p>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       + '<a href="' + self.GOOGLE_REVIEW_URL + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⭐ View on Google</a>'
       + '<button onclick="ReviewsPage.copyLink()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📋 Copy Review Link</button>'

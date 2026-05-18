@@ -14,6 +14,18 @@ var ReviewTools = {
     };
   },
 
+  // Trust-line for customer-facing review collateral (printable card +
+  // QR poster). White-label safe: locale from the TENANT's own saved
+  // address only (never BM_CONFIG = SNT's Peekskill addr in the shared
+  // bundle). No tenant address => generic credential only.
+  _loc: function() {
+    var a = '';
+    try { a = String(localStorage.getItem('bm-co-address') || ''); } catch (e) {}
+    var m = a.replace(/\s*\d{5}(-\d{4})?\s*$/, '').match(/([A-Za-z.\s]+,\s*[A-Za-z]{2,})\s*$/);
+    var city = m ? m[1].trim().replace(/\s+/g, ' ') : '';
+    return city ? ('Licensed & Insured — ' + city) : 'Licensed & Insured';
+  },
+
   render: function() {
     var html = '<div class="section-header"><h2>⭐ Review Tools</h2></div>';
 
@@ -102,7 +114,7 @@ var ReviewTools = {
       + '</style></head><body><div class="card">'
       + '<div style="font-size:28px;">🌳</div>'
       + '<h2 style="color:#1a3c12;font-size:16px;margin:8px 0 4px;">' + ReviewTools._co().name + '</h2>'
-      + '<p style="font-size:11px;color:#666;margin:0 0 16px;">Licensed & Insured — Peekskill, NY</p>'
+      + '<p style="font-size:11px;color:#666;margin:0 0 16px;">' + ReviewTools._loc() + '</p>'
       + '<p style="font-size:13px;font-weight:600;margin:0 0 12px;">Enjoyed our work? We\'d love a review!</p>'
       + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(ReviewTools.GOOGLE_REVIEW_URL) + '" style="width:150px;height:150px;">'
       + '<p style="font-size:10px;color:#666;margin:8px 0 0;">Scan to leave a Google review</p>'
@@ -182,7 +194,7 @@ var ReviewTools = {
       + '<h1 style="font-size:24px;margin:0 0 8px;">' + ReviewTools._co().name + '</h1>'
       + '<div style="font-size:28px;color:#fbbf24;margin-bottom:8px;">★★★★★</div>'
       + '<p style="font-size:14px;opacity:.8;margin:0;">100+ Five Star Reviews on Google</p>'
-      + '<p style="font-size:13px;opacity:.6;margin:8px 0 0;">Licensed & Insured — Peekskill, NY</p>'
+      + '<p style="font-size:13px;opacity:.6;margin:8px 0 0;">' + ReviewTools._loc() + '</p>'
       + '</div>'
       + '<div style="text-align:center;">'
       + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=255-255-255&bgcolor=0-0-0-0&data=' + encodeURIComponent(ReviewTools.GOOGLE_REVIEW_URL) + '" style="width:140px;height:140px;border-radius:8px;">'
