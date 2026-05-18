@@ -154,8 +154,25 @@ var Auth = {
       Auth.role = 'owner';
       localStorage.setItem('bm-session', JSON.stringify(Auth.user));
       try { localStorage.setItem('bm-co-name', co); } catch (e) {}
+      // Free/comp code (?code=...): server validates against COMP_CODES and
+      // stamps this tenant comped-Pro. Best-effort — never block signup if the
+      // code is missing/invalid; they just get the normal free trial instead.
+      var _code = (new URLSearchParams(location.search).get('code') || '').trim();
+      if (_code && data && data.session && data.session.access_token) {
+        try {
+          var _cr = await fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/redeem-comp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.session.access_token },
+            body: JSON.stringify({ code: _code })
+          });
+          var _cj = await _cr.json();
+          if (_cj && _cj.ok && typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
+            Subscription.setStateLocal({ tier: 'pro', status: 'active', comped: true });
+          }
+        } catch (e) { /* non-blocking */ }
+      }
       try {
-        if (typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
+        if (!_code && typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
           var now = new Date(), ends = new Date(now.getTime() + 14 * 86400000);
           Subscription.setStateLocal({ tier: tier, status: 'trial', trial_started_at: now.toISOString(), trial_ends_at: ends.toISOString() });
         }

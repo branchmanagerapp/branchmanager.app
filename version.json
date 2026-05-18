@@ -1,5 +1,5 @@
 {
-  "version": 822,
-  "released": "2026-05-17",
-  "notes": "Remove Jobber from shipped pages; delete orphaned compare/import-jobber pages"
+  "version": 823,
+  "released": "2026-05-18",
+  "notes": "Free friend comp code: ?code=FRIENDS2026 → server-validated comped-Pro tenant"
 }
