@@ -18,6 +18,23 @@ var Weather = {
     return localStorage.getItem('bm-weather-enabled') === 'true';
   },
 
+  // White-label: location comes from the tenant's own geocoded address
+  // (CompanyGeo), never SNT's hardcoded Peekskill coords.
+  _geo: function() {
+    try { return (typeof CompanyGeo !== 'undefined' && CompanyGeo.cached()) || null; }
+    catch (e) { return null; }
+  },
+  _locLabel: function() {
+    var g = Weather._geo();
+    return (g && g.label) ? g.label : '';
+  },
+  _promptHtml: function() {
+    return '<div style="font-size:12px;color:#8a6d00;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;">'
+      + 'Set your <strong>business address</strong> in Settings to see your local forecast.'
+      + ' <button onclick="try{TenantSetup._jumpToSettings(\'business\',\'co-address\')}catch(e){}" style="margin-left:6px;background:var(--green-dark);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Set address</button>'
+      + '</div>';
+  },
+
   toggle: function() {
     var enabled = !Weather.isEnabled();
     localStorage.setItem('bm-weather-enabled', enabled ? 'true' : 'false');
@@ -70,7 +87,7 @@ var Weather = {
     var expanded = Weather._expanded;
     var html = '<div id="weather-widget" style="background:var(--white);border-radius:12px;padding:' + (enabled ? '16px' : '12px 16px') + ';border:1px solid var(--border);margin-bottom:16px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;' + (enabled ? 'margin-bottom:8px;' : '') + '">'
-      + '<h4 style="font-size:14px;margin:0;">🌤 Weather — Peekskill, NY</h4>'
+      + '<h4 style="font-size:14px;margin:0;">🌤 Weather' + (Weather._locLabel() ? ' — ' + Weather._locLabel() : '') + '</h4>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
       + (enabled ? '<button id="weather-expand-btn" onclick="Weather.toggleExpand()" style="background:none;border:1px solid var(--border);padding:4px 10px;font-size:11px;font-weight:600;color:var(--text-light);border-radius:6px;cursor:pointer;">' + (expanded ? 'Hide hourly ▴' : 'Show hourly ▾') + '</button>' : '')
       + '<button onclick="Weather.toggle()" title="Enable weather widget" style="position:relative;width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;background:' + (enabled ? 'var(--accent)' : '#ccc') + ';transition:background .2s;">'
@@ -113,11 +130,29 @@ var Weather = {
     // infinite loops if fetch keeps populating an unstable cache.
     var firstFetch = !Weather.cache;
 
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + Weather.LAT + '&longitude=' + Weather.LON
+    // White-label: require the tenant's own geocoded location. Never fetch
+    // (or display) SNT's Peekskill weather for another tenant.
+    var _g = Weather._geo();
+    if (!_g) {
+      var _elp = document.getElementById('weather-data') || document.getElementById('weather-page-content');
+      if (_elp) _elp.innerHTML = Weather._promptHtml();
+      if (typeof CompanyGeo !== 'undefined') {
+        CompanyGeo.resolve().then(function(g) {
+          if (g) { Weather.cache = null; Weather.fetch(); }
+          else {
+            var e2 = document.getElementById('weather-data') || document.getElementById('weather-page-content');
+            if (e2) e2.innerHTML = Weather._promptHtml();
+          }
+        });
+      }
+      return;
+    }
+
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + _g.lat + '&longitude=' + _g.lon
       + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m'
       + '&hourly=temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m'
       + '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode,wind_speed_10m_max'
-      + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/New_York&forecast_days=7';
+      + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=7';
 
     fetch(url).then(function(r) { return r.json(); }).then(function(data) {
       Weather.cache = data;
@@ -239,7 +274,7 @@ var Weather = {
       + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">'
       + '<span style="font-size:22px;">🌤</span>'
       + '<div><h2 style="margin:0;font-size:20px;font-weight:700;">Weather</h2>'
-      + '<div style="font-size:12px;color:var(--text-light);">Peekskill, NY — powered by Open-Meteo</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">' + (Weather._locLabel() ? Weather._locLabel() + ' — ' : '') + 'powered by Open-Meteo</div>'
       + '</div>'
       + '</div>'
       + '<div id="weather-page-content" style="font-size:13px;color:var(--text-light);">Loading…</div>'
@@ -256,6 +291,13 @@ var Weather = {
   _renderInto: function(el, compact) {
     if (!el) return;
     if (!Weather.cache) {
+      if (!Weather._geo()) {
+        // No tenant location — show the set-address prompt, kick a
+        // background resolve, and stop (no SNT fallback, no retry spin).
+        el.innerHTML = Weather._promptHtml();
+        Weather.fetch();
+        return;
+      }
       Weather.fetch();
       setTimeout(function() { Weather._renderInto(el, compact); }, 2500);
       return;
@@ -424,6 +466,11 @@ var Weather = {
   showModal: function() {
     var data = Weather.cache;
     if (!data) {
+      if (!Weather._geo()) {
+        UI.showModal('🌤️ Weather', Weather._promptHtml());
+        Weather.fetch();
+        return;
+      }
       Weather.fetch();
       setTimeout(function() { if (Weather.cache) Weather.showModal(); }, 2500);
       return;
@@ -515,7 +562,7 @@ var Weather = {
       }
     }
 
-    UI.showModal('🌤️ Peekskill, NY — Weather', html);
+    UI.showModal('🌤️ ' + (Weather._locLabel() ? Weather._locLabel() + ' — ' : '') + 'Weather', html);
   },
 
   _icon: function(code) {

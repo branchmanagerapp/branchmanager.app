@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 827; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 828; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -148,7 +148,7 @@
   img-src     'self' data: blob: https: https://*.supabase.co;
   connect-src 'self' https://*.supabase.co wss://*.supabase.co
               https://api.anthropic.com https://api.stripe.com
-              https://api.open-meteo.com https://api.qrserver.com
+              https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.qrserver.com
               https://epqs.nationalmap.gov https://nominatim.openstreetmap.org
               https://my-api.plantnet.org https://dialpad.com
               https://server.arcgisonline.com https://s3.amazonaws.com
@@ -1119,7 +1119,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v827.min.js"></script>
+<script defer src="dist/bm.bundle.v828.min.js"></script>
 
 
 

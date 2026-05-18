@@ -28,7 +28,17 @@ var _townCoords = {
   'Verplanck': [41.2534, -73.9578]
 };
 
-var _hqCoords = [41.2901, -73.9212]; // 1 Highland Industrial Park, Peekskill
+// White-label: HQ = the tenant's OWN geocoded business address
+// (CompanyGeo). _hq() returns [lat,lng] or null when no tenant address —
+// callers degrade (route math runs job-relative, map skips the HQ pin)
+// instead of anchoring on SNT's Peekskill yard.
+function _hq() {
+  try {
+    var g = (typeof CompanyGeo !== 'undefined' && CompanyGeo.cached()) || null;
+    if (!g) { if (typeof CompanyGeo !== 'undefined') CompanyGeo.resolve(); return null; }
+    return [g.lat, g.lon];
+  } catch (e) { return null; }
+}
 
 var DispatchPage = {
 
@@ -56,8 +66,9 @@ var DispatchPage = {
         return _townCoords[towns[i]];
       }
     }
-    // Default to HQ if no match
-    return _hqCoords;
+    // No coord match — fall back to HQ if the tenant set one, else null
+    // (callers skip null rather than use SNT's yard).
+    return _hq();
   },
 
   // Estimate job duration in hours based on total
@@ -96,12 +107,16 @@ var DispatchPage = {
     if (!jobs.length) return stats;
 
     var currentTime = 7.0; // 7:00 AM in decimal hours
-    var prevCoords = _hqCoords;
+    var _hqC = _hq();
+    var prevCoords = _hqC; // may be null when no tenant address
     var totalDist = 0;
 
     for (var i = 0; i < jobs.length; i++) {
       var jobCoords = this._getJobCoords(jobs[i]);
-      var dist = this._haversine(prevCoords, jobCoords);
+      // No HQ and no prior point yet → anchor on the first job so the
+      // route is measured job-relative (never SNT's yard).
+      if (!prevCoords) prevCoords = jobCoords;
+      var dist = (prevCoords && jobCoords) ? this._haversine(prevCoords, jobCoords) : 0;
 
       // Road distance is roughly 1.3x straight-line distance
       var roadDist = dist * 1.3;
@@ -123,8 +138,8 @@ var DispatchPage = {
       prevCoords = jobCoords;
     }
 
-    // Add return trip distance
-    var returnDist = this._haversine(prevCoords, _hqCoords) * 1.3;
+    // Add return trip distance (only if there is a real HQ to return to)
+    var returnDist = (_hqC && prevCoords) ? this._haversine(prevCoords, _hqC) * 1.3 : 0;
     totalDist += returnDist;
 
     stats.totalMiles = Math.round(totalDist * 10) / 10;
@@ -150,7 +165,9 @@ var DispatchPage = {
     var self = DispatchPage;
     var unvisited = jobs.slice();
     var ordered = [];
-    var currentCoords = _hqCoords;
+    // Start at HQ if the tenant set an address, else anchor on the first
+    // job's coords (job-relative ordering — never SNT's yard).
+    var currentCoords = _hq() || self._getJobCoords(unvisited[0]);
 
     while (unvisited.length > 0) {
       var nearestIdx = 0;
@@ -158,7 +175,7 @@ var DispatchPage = {
 
       for (var i = 0; i < unvisited.length; i++) {
         var coords = self._getJobCoords(unvisited[i]);
-        var dist = self._haversine(currentCoords, coords);
+        var dist = (currentCoords && coords) ? self._haversine(currentCoords, coords) : Infinity;
         if (dist < nearestDist) {
           nearestDist = dist;
           nearestIdx = i;
@@ -167,7 +184,7 @@ var DispatchPage = {
 
       var nearest = unvisited.splice(nearestIdx, 1)[0];
       ordered.push(nearest);
-      currentCoords = self._getJobCoords(nearest);
+      currentCoords = self._getJobCoords(nearest) || currentCoords;
     }
 
     // Update schedule order by setting a routeOrder field
@@ -383,10 +400,14 @@ var DispatchPage = {
       return (a.routeOrder || 999) - (b.routeOrder || 999);
     });
 
-    // Build Google Maps multi-stop URL
-    var origin = encodeURIComponent(BM_CONFIG.address || '1 Highland Industrial Park, Peekskill, NY 10566');
+    // Build Google Maps multi-stop URL. Origin = tenant's OWN address;
+    // if unset, route the waypoints only (no SNT yard as origin/return).
+    var _oAddr = (function(){ try { return CompanyInfo.own('address') || ''; } catch(e) { return ''; } })();
+    var origin = _oAddr ? encodeURIComponent(_oAddr) : '';
     var waypoints = jobs.map(function(j) { return encodeURIComponent(j.property || j.address || ''); }).join('/');
-    var url = 'https://www.google.com/maps/dir/' + origin + '/' + waypoints + '/' + origin;
+    var url = origin
+      ? 'https://www.google.com/maps/dir/' + origin + '/' + waypoints + '/' + origin
+      : 'https://www.google.com/maps/dir/' + waypoints;
     window.open(url, '_blank');
   },
 
@@ -395,10 +416,12 @@ var DispatchPage = {
   // (which is how crews end up under low bridges on the Taconic).
   _buildRouteMessage: function(jobs) {
     var specs = (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.truckSpecs) || {};
-    var origin = BM_CONFIG.address || '';
+    var origin = (function(){ try { return CompanyInfo.own('address') || ''; } catch(e) { return ''; } })();
     var originEnc = encodeURIComponent(origin);
     var waypoints = jobs.map(function(j) { return encodeURIComponent(j.property || j.address || ''); }).join('/');
-    var url = 'https://www.google.com/maps/dir/' + originEnc + '/' + waypoints + '/' + originEnc;
+    var url = origin
+      ? 'https://www.google.com/maps/dir/' + originEnc + '/' + waypoints + '/' + originEnc
+      : 'https://www.google.com/maps/dir/' + waypoints;
 
     var lines = [];
     lines.push('🚛 LOCKED TRUCK ROUTE — ' + new Date().toLocaleDateString());
@@ -496,21 +519,26 @@ var DispatchPage = {
     }
     DispatchPage._waitMs = 0;
 
+    // White-label: center on the tenant's own HQ if geocoded, else a
+    // neutral wide view (bounds.fit reframes to jobs+HQ after load).
+    var _hqC = _hq();
     DispatchPage._map = new maplibregl.Map({
       container: 'dispatch-map',
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center: [-73.9212, 41.2901], // Peekskill
-      zoom: 11
+      center: _hqC ? [_hqC[1], _hqC[0]] : [-98.58, 39.83],
+      zoom: _hqC ? 11 : 3.5
     });
 
     DispatchPage._map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
     DispatchPage._map.on('load', function() {
-      // Add HQ marker
-      new maplibregl.Marker({ color: '#1a3c12' })
-        .setLngLat([-73.9210, 41.2847])
-        .setPopup(new maplibregl.Popup().setHTML('<strong>🏠 HQ</strong><br>1 Highland Industrial Park'))
-        .addTo(DispatchPage._map);
+      // Add HQ marker only when the tenant has set their own address.
+      if (_hqC) {
+        new maplibregl.Marker({ color: '#1a3c12' })
+          .setLngLat([_hqC[1], _hqC[0]])
+          .setPopup(new maplibregl.Popup().setHTML('<strong>🏠 HQ</strong>'))
+          .addTo(DispatchPage._map);
+      }
 
       // Add today's job pins (sync, no network)
       DispatchPage._addJobPins();
@@ -670,7 +698,8 @@ var DispatchPage = {
     });
 
     var bounds = new maplibregl.LngLatBounds();
-    bounds.extend([-73.9210, 41.2847]); // HQ
+    var _hqB = _hq();
+    if (_hqB) bounds.extend([_hqB[1], _hqB[0]]); // tenant HQ only if set
 
     jobs.forEach(function(j, i) {
       var coords = DispatchPage._getJobCoords(j);

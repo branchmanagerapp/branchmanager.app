@@ -151,6 +151,69 @@ var CompanyInfo = (function() {
 })();
 
 /**
+ * CompanyGeo — resolve the TENANT's own business address to coordinates.
+ *
+ * White-label: weather + dispatch HQ + geofence base must follow the
+ * tenant's location, never SNT's. This geocodes CompanyInfo.own('address')
+ * (tenant-owned only — never BM_CONFIG) to a city-level lat/lon via
+ * Open-Meteo's free no-key geocoding API, and caches the result in
+ * localStorage keyed to the exact address string so it is not re-fetched
+ * every render and is invalidated automatically when the address changes.
+ *
+ *   CompanyGeo.cached()  → { lat, lon, label } | null  (sync, render-safe)
+ *   CompanyGeo.resolve() → Promise<same|null>          (fetches if needed)
+ *
+ * null whenever the tenant has not set an address (or geocoding failed) —
+ * callers MUST degrade (prompt to set address), never fall back to SNT.
+ */
+var CompanyGeo = {
+  _LS: 'bm-co-geo',
+  // "123 Main St, Austin, TX 78701" → { name:'Austin', label:'Austin, TX' }
+  _cityOf: function(addr) {
+    addr = String(addr || '').replace(/\s*\d{5}(-\d{4})?\s*$/, '');
+    var m = addr.match(/([A-Za-z.\s]+),\s*([A-Za-z]{2,})\s*$/);
+    if (!m) return null;
+    var city = m[1].trim().replace(/\s+/g, ' ');
+    var st = m[2].trim();
+    return { name: city, label: city + ', ' + st };
+  },
+  cached: function() {
+    var addr = '';
+    try { addr = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('address')) || ''; } catch (e) {}
+    if (!addr) return null;
+    try {
+      var raw = localStorage.getItem(CompanyGeo._LS);
+      if (!raw) return null;
+      var g = JSON.parse(raw);
+      if (g && g.addr === addr && typeof g.lat === 'number' && typeof g.lon === 'number') {
+        return { lat: g.lat, lon: g.lon, label: g.label || '' };
+      }
+    } catch (e) {}
+    return null;
+  },
+  resolve: function() {
+    var addr = '';
+    try { addr = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('address')) || ''; } catch (e) {}
+    if (!addr) return Promise.resolve(null);
+    var hit = CompanyGeo.cached();
+    if (hit) return Promise.resolve(hit);
+    var c = CompanyGeo._cityOf(addr);
+    var q = c ? c.name : addr;
+    var url = 'https://geocoding-api.open-meteo.com/v1/search?name='
+      + encodeURIComponent(q) + '&count=1&language=en&format=json';
+    return fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+      var hitRes = d && d.results && d.results[0];
+      if (!hitRes || typeof hitRes.latitude !== 'number') return null;
+      var label = c ? c.label
+        : (hitRes.name + (hitRes.admin1 ? ', ' + hitRes.admin1 : ''));
+      var rec = { addr: addr, lat: hitRes.latitude, lon: hitRes.longitude, label: label, ts: Date.now() };
+      try { localStorage.setItem(CompanyGeo._LS, JSON.stringify(rec)); } catch (e) {}
+      return { lat: rec.lat, lon: rec.lon, label: rec.label };
+    }).catch(function() { return null; });
+  }
+};
+
+/**
  * White-label: load the LOGGED-IN tenant's branding into CompanyInfo.
  *
  * The operator app authenticates with a Supabase session whose JWT carries

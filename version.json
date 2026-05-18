@@ -1,5 +1,5 @@
 {
-  "version": 827,
+  "version": 828,
   "released": "2026-05-18",
-  "notes": "white-label foundation: CompanyInfo.own() tenant-only resolver; Settings address/review prefill no longer SNT-seeded + help text; onboarding adds Business address + Google review link items; Google-review-URL leak fixed w/ graceful degrade across reviews/reviewtools/emailtemplates/automations/jobs; AI+voicequote prompts + before/after hashtags no longer hardcode Peekskill/SNT"
+  "notes": "white-label geo: CompanyGeo helper geocodes tenant's own address (Open-Meteo, cached); weather widget + dispatch HQ/route/map + geofence base now follow the tenant location, degrade to a set-address prompt when unset (never SNT/Peekskill)"
 }

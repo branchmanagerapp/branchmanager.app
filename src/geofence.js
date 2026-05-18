@@ -8,8 +8,18 @@
  * Uses browser Geolocation API + Notification API
  */
 var Geofence = {
-  // Base location: 1 Highland Industrial Park, Peekskill NY 10566
-  BASE: { lat: 41.2847, lng: -73.9210, radius: 150 }, // 150 meters (~500 ft)
+  // White-label: the clock-in/out base is the TENANT's own geocoded
+  // business address (CompanyGeo) — never SNT's Peekskill yard. null when
+  // the tenant has not set an address → the base geofence is inert
+  // (job-site geofences still work). _base() returns {lat,lng,radius}|null.
+  BASE_RADIUS: 150, // meters (~500 ft)
+  _base: function() {
+    try {
+      var g = (typeof CompanyGeo !== 'undefined' && CompanyGeo.cached()) || null;
+      if (!g) { if (typeof CompanyGeo !== 'undefined') CompanyGeo.resolve(); return null; }
+      return { lat: g.lat, lng: g.lon, radius: Geofence.BASE_RADIUS };
+    } catch (e) { return null; }
+  },
 
   watchId: null,
   isAtBase: false,
@@ -56,10 +66,11 @@ var Geofence = {
     // v799: stash the latest position so late-arrival detector (which runs
     // on a fixed 60s interval, not on every GPS update) can read it.
     Geofence._lastPos = { lat: lat, lng: lng, ts: Date.now() };
-    var distToBase = Geofence._distance(lat, lng, Geofence.BASE.lat, Geofence.BASE.lng);
+    var _base = Geofence._base();
     var wasAtBase = Geofence.isAtBase;
-    Geofence.isAtBase = distToBase <= Geofence.BASE.radius;
+    Geofence.isAtBase = _base ? (Geofence._distance(lat, lng, _base.lat, _base.lng) <= _base.radius) : false;
 
+    if (_base) {
     // ── ARRIVING at base ──
     if (Geofence.isAtBase && !wasAtBase) {
       var clockedIn = localStorage.getItem('bm-clock-in');
@@ -98,6 +109,7 @@ var Geofence = {
         );
       }
     }
+    } // end if(_base) — base geofence inert until tenant sets an address
 
     // ── ARRIVING at job site ──
     var todayJobs = Geofence._getTodayJobs();
