@@ -124,6 +124,19 @@ var CompanyInfo = (function() {
       if (m.bm && typeof BM_CONFIG !== 'undefined' && BM_CONFIG[m.bm]) return BM_CONFIG[m.bm];
       return m.def || '';
     },
+    // own(key) — TENANT-OWNED value only. Reads this tenant's localStorage
+    // and returns '' if unset. Deliberately NEVER falls back to BM_CONFIG
+    // (which ships Second Nature Tree's data baked into the shared bundle —
+    // identical for every tenant, so it is NOT a per-tenant value). Use
+    // this for anything customer-facing or white-label-sensitive (review
+    // links, address-derived locale, AI persona) so a friend's output
+    // never silently inherits SNT's identity. get() keeps the BM_CONFIG
+    // fallback for operator-internal convenience displays.
+    own: function(key) {
+      var m = MAP[key];
+      if (!m || !m.ls) return '';
+      try { return (localStorage.getItem(m.ls) || '').trim(); } catch(e) { return ''; }
+    },
     set: function(key, value) {
       var m = MAP[key];
       if (!m || !m.ls) return false;

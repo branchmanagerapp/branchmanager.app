@@ -3,7 +3,20 @@
  * Google review link, QR codes, review tracking, follow-up
  */
 var ReviewTools = {
-  GOOGLE_REVIEW_URL: 'https://g.page/r/CcVkZHV_EKlEEBM/review',
+  // White-label: tenant's own Google review link only (Settings → Social
+  // & Reviews). Empty when unset; QR/poster/copy all degrade to a setup
+  // prompt so a friend's customers are never routed to another business.
+  GOOGLE_REVIEW_URL: '',
+  _revUrl: function() {
+    try { return (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('googleReviewUrl')) || ''; }
+    catch (e) { return ''; }
+  },
+  _needLinkCard: function(msg) {
+    return '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:20px;margin-bottom:16px;text-align:center;">'
+      + '<div style="font-size:13px;color:#8a6d00;margin-bottom:10px;">' + (msg || 'Add your Google review link to generate this.') + '</div>'
+      + '<button onclick="TenantSetup._jumpToSettings(\'business\',\'sr-review\')" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">⚙ Set Google review link</button>'
+      + '</div>';
+  },
 
   _co: function() {
     return {
@@ -40,7 +53,9 @@ var ReviewTools = {
     html += '<div style="background:var(--white);border-radius:12px;padding:24px;border:1px solid var(--border);margin-bottom:16px;text-align:center;">'
       + '<h3 style="font-size:16px;margin-bottom:16px;">Google Review QR Code</h3>'
       + '<div id="review-qr" style="display:inline-block;padding:16px;background:#fff;border-radius:12px;border:1px solid var(--border);">'
-      + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(ReviewTools.GOOGLE_REVIEW_URL) + '" alt="Review QR Code" style="width:200px;height:200px;">'
+      + (ReviewTools._revUrl()
+          ? '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(ReviewTools._revUrl()) + '" alt="Review QR Code" style="width:200px;height:200px;">'
+          : '<div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;color:#8a6d00;background:#fff8e1;border-radius:8px;padding:12px;">Add your Google review link in Settings to generate your QR code</div>')
       + '</div>'
       + '<div style="margin-top:12px;font-size:14px;font-weight:600;color:var(--green-dark);">Scan to leave a Google review</div>'
       + '<p style="font-size:12px;color:var(--text-light);margin-top:4px;">Print this QR code on business cards, truck magnets, invoices, and leave-behind cards.</p>'
@@ -81,22 +96,36 @@ var ReviewTools = {
       + '<div style="display:grid;gap:8px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;">'
       + '<div><strong style="font-size:13px;">Google</strong><div style="font-size:11px;color:var(--text-light);">Primary — most important</div></div>'
-      + '<button onclick="navigator.clipboard.writeText(\'' + ReviewTools.GOOGLE_REVIEW_URL + '\');UI.toast(\'Copied!\')" style="background:var(--green-dark);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Copy</button></div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;">'
-      + '<div><strong style="font-size:13px;">Yelp</strong><div style="font-size:11px;color:var(--text-light);">yelp.com/biz/second-nature-tree-peekskill</div></div>'
-      + '<button onclick="navigator.clipboard.writeText(\'https://www.yelp.com/biz/second-nature-tree-peekskill\');UI.toast(\'Copied!\')" style="background:var(--green-dark);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Copy</button></div>'
+      + '<button onclick="ReviewTools.copyLink()" style="background:var(--green-dark);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Copy</button></div>'
+      + (function(){ var y = ''; try { y = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('yelpUrl')) || ''; } catch(e) {} return y
+          ? '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border-radius:8px;">'
+            + '<div><strong style="font-size:13px;">Yelp</strong><div style="font-size:11px;color:var(--text-light);">' + UI.esc(y) + '</div></div>'
+            + '<button onclick="navigator.clipboard.writeText(\'' + UI.esc(y) + '\');UI.toast(\'Copied!\')" style="background:var(--green-dark);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Copy</button></div>'
+          : ''; })()
       + '</div></div>';
 
     return html;
   },
 
   copyLink: function() {
-    navigator.clipboard.writeText(ReviewTools.GOOGLE_REVIEW_URL);
+    var u = ReviewTools._revUrl();
+    if (!u) {
+      UI.toast('Add your Google review link in Settings first');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
+    navigator.clipboard.writeText(u);
     UI.toast('Google review link copied! 🔗');
   },
 
   downloadQR: function() {
-    var url = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=png&data=' + encodeURIComponent(ReviewTools.GOOGLE_REVIEW_URL);
+    var u = ReviewTools._revUrl();
+    if (!u) {
+      UI.toast('Add your Google review link in Settings first');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
+    var url = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=png&data=' + encodeURIComponent(u);
     var a = document.createElement('a');
     a.href = url;
     a.download = 'second-nature-google-review-qr.png';
@@ -108,6 +137,11 @@ var ReviewTools = {
   },
 
   printCard: function() {
+    if (!ReviewTools._revUrl()) {
+      UI.toast('Add your Google review link in Settings to print review cards');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
     var html = '<!DOCTYPE html><html><head><title>Review Card</title><style>'
       + 'body{font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff;}'
       + '.card{width:3.5in;padding:24px;text-align:center;border:2px solid #1a3c12;border-radius:12px;}'
@@ -116,7 +150,7 @@ var ReviewTools = {
       + '<h2 style="color:#1a3c12;font-size:16px;margin:8px 0 4px;">' + ReviewTools._co().name + '</h2>'
       + '<p style="font-size:11px;color:#666;margin:0 0 16px;">' + ReviewTools._loc() + '</p>'
       + '<p style="font-size:13px;font-weight:600;margin:0 0 12px;">Enjoyed our work? We\'d love a review!</p>'
-      + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(ReviewTools.GOOGLE_REVIEW_URL) + '" style="width:150px;height:150px;">'
+      + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(ReviewTools._revUrl()) + '" style="width:150px;height:150px;">'
       + '<p style="font-size:10px;color:#666;margin:8px 0 0;">Scan to leave a Google review</p>'
       + '<p style="font-size:10px;color:#999;margin:4px 0 0;">' + ReviewTools._co().phone + ' · ' + ReviewTools._co().website + '</p>'
       + '</div></body></html>';
@@ -129,6 +163,11 @@ var ReviewTools = {
   sendRequest: function(jobId) {
     var job = DB.jobs.getById(jobId);
     if (!job) return;
+    if (!ReviewTools._revUrl()) {
+      UI.toast('Add your Google review link in Settings before sending review requests');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
 
     // Try email template
     if (typeof Email !== 'undefined' && typeof Templates !== 'undefined') {
@@ -154,8 +193,8 @@ var ReviewTools = {
   },
 
   showTemplateEditor: function() {
-    var saved = localStorage.getItem('bm-review-sms-template') || 'Hi {name}! Thanks for choosing ' + ReviewTools._co().name + '. If you were happy with our work, a quick Google review would mean a lot: ' + ReviewTools.GOOGLE_REVIEW_URL;
-    var emailSaved = localStorage.getItem('bm-review-email-template') || 'Hi {name},\n\nThank you for trusting ' + ReviewTools._co().name + ' with your tree care needs. We hope you\'re happy with the results!\n\nWould you mind taking a minute to leave us a Google review? It helps other homeowners find reliable tree service.\n\n' + ReviewTools.GOOGLE_REVIEW_URL + '\n\nThank you!\n— Doug, ' + ReviewTools._co().name;
+    var saved = localStorage.getItem('bm-review-sms-template') || 'Hi {name}! Thanks for choosing ' + ReviewTools._co().name + '. If you were happy with our work, a quick Google review would mean a lot: ' + ReviewTools._revUrl();
+    var emailSaved = localStorage.getItem('bm-review-email-template') || 'Hi {name},\n\nThank you for trusting ' + ReviewTools._co().name + ' with your tree care needs. We hope you\'re happy with the results!\n\nWould you mind taking a minute to leave us a Google review? It helps other homeowners find reliable tree service.\n\n' + ReviewTools._revUrl() + '\n\nThank you!\n— ' + (ReviewTools._co().name || 'the team');
 
     var html = UI.field('SMS Template', '<textarea id="rt-sms-tpl" style="min-height:80px;font-size:13px;">' + UI.esc(saved) + '</textarea>')
       + '<div style="font-size:11px;color:var(--text-light);margin:-8px 0 12px;">Use {name} for client name. Max 160 chars for SMS.</div>'
@@ -185,6 +224,11 @@ var ReviewTools = {
 
   // Generate a review card image for social media
   generateSocialCard: function() {
+    if (!ReviewTools._revUrl()) {
+      UI.toast('Add your Google review link in Settings to generate a social card');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
     var html = '<!DOCTYPE html><html><head><title>Review Card</title><style>'
       + 'body{font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5;}'
       + '.card{width:600px;height:315px;background:linear-gradient(135deg,#1a3c12 0%,#2d5a27 100%);border-radius:16px;color:#fff;display:flex;align-items:center;padding:40px;gap:30px;}'
@@ -197,7 +241,7 @@ var ReviewTools = {
       + '<p style="font-size:13px;opacity:.6;margin:8px 0 0;">' + ReviewTools._loc() + '</p>'
       + '</div>'
       + '<div style="text-align:center;">'
-      + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=255-255-255&bgcolor=0-0-0-0&data=' + encodeURIComponent(ReviewTools.GOOGLE_REVIEW_URL) + '" style="width:140px;height:140px;border-radius:8px;">'
+      + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=255-255-255&bgcolor=0-0-0-0&data=' + encodeURIComponent(ReviewTools._revUrl()) + '" style="width:140px;height:140px;border-radius:8px;">'
       + '<p style="font-size:11px;opacity:.7;margin:8px 0 0;">Scan to review</p>'
       + '</div></div></body></html>';
     var w = window.open('', '_blank');

@@ -534,15 +534,21 @@ var AI = {
     var coName = CompanyInfo.get('name');
     var coPhone = CompanyInfo.get('phone');
     var coEmail = CompanyInfo.get('email');
-    return 'You are AI, an AI assistant built into Branch Manager — a field service management app for ' + coName + ' in Peekskill, NY.\n\n'
+    // White-label: never assert SNT's city / licenses / review counts for
+    // another tenant. Location + licenses + owner come from the tenant's
+    // OWN data; omit the line entirely when unset instead of claiming
+    // Peekskill, NY.
+    var coLoc = (typeof CompanyInfo.own === 'function' ? CompanyInfo.own('address') : '') || '';
+    var coLic = (typeof CompanyInfo.own === 'function' ? CompanyInfo.own('licenses') : '') || '';
+    var coOwner = (typeof CompanyInfo.own === 'function' ? CompanyInfo.own('ownerName') : '') || '';
+    return 'You are AI, an AI assistant built into Branch Manager — a field service management app for ' + coName + (coLoc ? ' (' + coLoc + ')' : '') + '.\n\n'
       + 'BUSINESS CONTEXT:\n'
       + '• Company: ' + coName + '\n'
-      + '• Location: Peekskill, NY (serves Westchester & Putnam counties)\n'
+      + (coLoc ? '• Location: ' + coLoc + '\n' : '')
       + '• Phone: ' + coPhone + ' | Email: ' + coEmail + '\n'
-      + '• Owner: ' + CompanyInfo.get('ownerName') + '\n'
-      + '• Licenses: WC-32079 (Westchester), PC-50644 (Putnam)\n'
-      + '• Services: Tree removal, pruning, stump grinding, cabling, bucket truck work, storm damage, lot clearing, firewood, snow removal\n'
-      + '• Reviews: 5.0★ / 100 Google reviews\n\n'
+      + (coOwner ? '• Owner: ' + coOwner + '\n' : '')
+      + (coLic ? '• Licenses: ' + coLic + '\n' : '')
+      + '• Services: Tree removal, pruning, stump grinding, cabling, bucket truck work, storm damage, lot clearing, firewood, snow removal\n\n'
       + 'LIVE BUSINESS DATA (' + new Date().toLocaleDateString() + '):\n'
       + '• Total clients: ' + clients.length + '\n'
       + '• Total jobs: ' + jobs.length + ' (active: ' + activeJobs.length + ')\n'

@@ -71,6 +71,26 @@ var TenantSetup = {
       action: function() { TenantSetup._jumpToSettings('business', 'co-email'); }
     },
     {
+      key: 'company_address',
+      label: 'Business address',
+      hint: 'Sets your local weather, dispatch routing, sales-tax region, and the locale shown on customer review pages. Without it those default to nothing rather than the wrong place.',
+      criticality: 1,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.own('address')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-address'); }
+    },
+    {
+      key: 'google_review',
+      label: 'Google review link',
+      hint: 'YOUR Google Business review URL. Powers every review request (SMS, email, QR, poster). Until set, review requests stay OFF so your customers are never sent to a different business.',
+      criticality: 2,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.own('googleReviewUrl')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'sr-review'); }
+    },
+    {
       key: 'logo',
       label: 'Logo URL',
       hint: 'Shown on the customer portal, emails, and onboarding pages.',

@@ -246,7 +246,9 @@ var VoiceQuote = {
     var tmRates = {};
     try { tmRates = (typeof QuotesPage !== 'undefined' && QuotesPage.getTMRates) ? QuotesPage.getTMRates() : {}; } catch(e) {}
 
-    var system = 'You are an expert tree service estimator for Second Nature Tree Service (' + (BM_CONFIG.city || 'Peekskill, NY') + '). '
+    var _vqCo = (function(){ try { return CompanyInfo.get('name'); } catch(e) { return ''; } })() || 'a tree service company';
+    var _vqLoc = (function(){ try { return (typeof CompanyInfo.own === 'function' && CompanyInfo.own('address')) || ''; } catch(e) { return ''; } })();
+    var system = 'You are an expert tree service estimator for ' + _vqCo + (_vqLoc ? ' (' + _vqLoc + ')' : '') + '. '
       + 'A field tech has dictated a walkaround. Convert it into a structured quote draft.\n\n'
       + 'Services catalog (use these service names when they match):\n' + (catalogStr || '- Tree Removal\n- Tree Pruning\n- Stump Removal\n- Cabling\n- Chipping Brush') + '\n\n'
       + 'Pricing guidance:\n'

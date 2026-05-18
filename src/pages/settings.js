@@ -299,7 +299,7 @@ var SettingsPage = {
       name: CompanyInfo.get('name'),
       phone: CompanyInfo.get('phone'),
       email: CompanyInfo.get('email'),
-      address: localStorage.getItem('bm-co-address') || (typeof BM_CONFIG !== 'undefined' ? BM_CONFIG.address : ''),
+      address: CompanyInfo.own('address'),
       licenses: CompanyInfo.get('licenses'),
       website: CompanyInfo.get('website'),
       taxRate: localStorage.getItem('bm-tax-rate') || '8.375',
@@ -319,7 +319,7 @@ var SettingsPage = {
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Phone</label><input id="co-phone" value="' + UI.esc(co.phone) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Email</label><input id="co-email" type="email" value="' + UI.esc(co.email) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Website</label><input id="co-website" value="' + UI.esc(co.website) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
-      + '<div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Address</label><input id="co-address" value="' + UI.esc(co.address) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Business Address</label><input id="co-address" value="' + UI.esc(co.address) + '" placeholder="123 Main St, Your City, ST 00000" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"><div style="font-size:11px;color:var(--text-light);margin-top:3px;">Drives your local weather, dispatch routing, sales-tax region, and the locale shown on customer review pages.</div></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Licenses</label><input id="co-licenses" value="' + UI.esc(co.licenses) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div style="grid-column:1/-1;">'
       + '<label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Logo URL <span style="font-weight:400;color:var(--text-light);font-size:11px;">(used on quotes, invoices &amp; emails)</span></label>'
@@ -473,7 +473,7 @@ var SettingsPage = {
 
     // ── Social & Reviews ──
     var sr = {
-      googleReview: CompanyInfo.get('googleReviewUrl'),
+      googleReview: CompanyInfo.own('googleReviewUrl'),
       facebook:     CompanyInfo.get('facebookUrl'),
       instagram:    CompanyInfo.get('instagramUrl'),
       yelp:         CompanyInfo.get('yelpUrl'),
@@ -487,7 +487,7 @@ var SettingsPage = {
       + '<div style="padding:16px 20px;border-top:1px solid var(--border);">'
       + '<p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">These links appear in quote &amp; invoice emails sent to customers.</p>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
-      + '<div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">⭐ Google Review Link</label><input id="sr-review" type="url" value="' + UI.esc(sr.googleReview) + '" placeholder="https://g.page/r/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">⭐ Google Review Link</label><input id="sr-review" type="url" value="' + UI.esc(sr.googleReview) + '" placeholder="https://g.page/r/YOUR-CODE/review" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"><div style="font-size:11px;color:var(--text-light);margin-top:3px;">YOUR Google Business review link. Powers every review request (SMS, email, QR, poster). Until you set this, review requests are disabled so customers are never sent to the wrong business. <a href="https://support.google.com/business/answer/7035772" target="_blank" rel="noopener noreferrer" style="color:var(--green-dark);">How to find it ↗</a></div></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Facebook</label><input id="sr-facebook" type="url" value="' + UI.esc(sr.facebook) + '" placeholder="https://facebook.com/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Instagram</label><input id="sr-instagram" type="url" value="' + UI.esc(sr.instagram) + '" placeholder="https://instagram.com/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Yelp</label><input id="sr-yelp" type="url" value="' + UI.esc(sr.yelp) + '" placeholder="https://yelp.com/biz/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'

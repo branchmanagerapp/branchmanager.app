@@ -515,7 +515,7 @@ var AutomationsPage = {
       if (!email) { skipped++; continue; }
       var firstName = (job.clientName || '').split(' ')[0] || 'there';
       var subject = 'How did we do? — ' + coName;
-      var reviewLink = 'https://g.page/r/CcVkZHV_EKlEEBM/review';
+      var reviewLink = (function(){ try { return CompanyInfo.own('googleReviewUrl') || ''; } catch(e) { return ''; } })();
 
       // v805: build NPS scale buttons (0-10) with tokenized sat.html links
       var token = await AutomationsPage._npsToken(job.id);

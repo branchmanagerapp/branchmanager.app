@@ -1,5 +1,5 @@
 {
-  "version": 826,
+  "version": 827,
   "released": "2026-05-18",
-  "notes": "white-label: customer-facing review pages (reviews + reviewtools) no longer hardcode 'Peekskill, NY' — locale derived from tenant's own saved address, generic if unset; SNT preserved"
+  "notes": "white-label foundation: CompanyInfo.own() tenant-only resolver; Settings address/review prefill no longer SNT-seeded + help text; onboarding adds Business address + Google review link items; Google-review-URL leak fixed w/ graceful degrade across reviews/reviewtools/emailtemplates/automations/jobs; AI+voicequote prompts + before/after hashtags no longer hardcode Peekskill/SNT"
 }

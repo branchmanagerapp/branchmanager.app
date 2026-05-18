@@ -571,9 +571,15 @@ var JobsPage = {
     var phone = j.clientPhone || (client && client.phone) || '';
     var email = j.clientEmail || (client && client.email) || '';
     var firstName = (j.clientName || '').split(' ')[0] || 'there';
-    var reviewLink = 'https://g.page/r/CcVkZHV_EKlEEBM/review';
+    var reviewLink = (function(){ try { return CompanyInfo.own('googleReviewUrl') || ''; } catch(e) { return ''; } })();
+    if (!reviewLink) {
+      UI.toast('Add your Google review link in Settings before requesting reviews');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
+    var _sig = CompanyInfo.get('ownerName') || JobsPage._co().name || 'the team';
 
-    var smsMsg = 'Hi ' + firstName + '! It was great working with you. If you have a moment, we\'d really appreciate a quick Google review — it helps us a lot:\n' + reviewLink + '\nThank you! — Doug, ' + JobsPage._co().name;
+    var smsMsg = 'Hi ' + firstName + '! It was great working with you. If you have a moment, we\'d really appreciate a quick Google review — it helps us a lot:\n' + reviewLink + '\nThank you! — ' + _sig;
     var emailSubject = 'Quick favor — leave us a review?';
     var emailBody = 'Hi ' + firstName + ',\n\nThank you for choosing ' + JobsPage._co().name + '! We hope you\'re happy with the work.\n\nIf you have a moment, a Google review would mean the world to us:\n' + reviewLink + '\n\nIt only takes 30 seconds and helps us reach more homeowners in the area.\n\nThank you!\n— ' + CompanyInfo.get('ownerName') + '\n' + JobsPage._co().name + '\n' + JobsPage._co().phone + ' · ' + JobsPage._co().website;
 

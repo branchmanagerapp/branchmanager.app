@@ -3,8 +3,16 @@
  * legacy system-style review management with rating hero, review cards, request tracking
  */
 var ReviewsPage = {
-  GOOGLE_REVIEW_URL: 'https://g.page/r/CcVkZHV_EKlEEBM/review',
-  GOOGLE_PROFILE_URL: 'https://www.google.com/maps/place/?q=place_id:ChIJy2RkfX9kwokRE2TlZH-VZMc',
+  // White-label: NO hardcoded URL. The tenant's own Google review link
+  // (Settings → Social & Reviews) is the only source. Empty when unset —
+  // every consumer degrades (hides the CTA) so a friend's customers are
+  // NEVER sent to another business's Google listing.
+  GOOGLE_REVIEW_URL: '',
+  GOOGLE_PROFILE_URL: '',
+  _revUrl: function() {
+    try { return (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('googleReviewUrl')) || ''; }
+    catch (e) { return ''; }
+  },
 
   _co: function() {
     return {
@@ -58,8 +66,10 @@ var ReviewsPage = {
       + '<h2 style="font-size:20px;font-weight:700;margin:0 0 6px;">' + ReviewsPage._co().name + '</h2>'
       + '<p style="font-size:14px;opacity:.8;margin:0 0 16px;">' + ReviewsPage._loc() + '</p>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<a href="' + self.GOOGLE_REVIEW_URL + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⭐ View on Google</a>'
-      + '<button onclick="ReviewsPage.copyLink()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📋 Copy Review Link</button>'
+      + (ReviewsPage._revUrl()
+          ? '<a href="' + ReviewsPage._revUrl() + '" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⭐ View on Google</a>'
+            + '<button onclick="ReviewsPage.copyLink()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📋 Copy Review Link</button>'
+          : '<button onclick="TenantSetup._jumpToSettings(\'business\',\'sr-review\')" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">⚙ Add your Google review link to enable requests</button>')
       + '</div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex-shrink:0;">'
       + self._miniStat(pendingRequests.length.toString(), 'Requests Sent', 'rgba(255,255,255,.15)')
@@ -129,7 +139,9 @@ var ReviewsPage = {
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
       + '<div><h3 style="font-size:15px;font-weight:700;margin:0;">Log a Google Review</h3>'
       + '<p style="font-size:12px;color:var(--text-light);margin:2px 0 0;">Record new reviews for your own tracking</p></div>'
-      + '<a href="' + self.GOOGLE_PROFILE_URL + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size:12px;">Open Google Profile ↗</a>'
+      + (ReviewsPage._revUrl()
+          ? '<a href="' + ReviewsPage._revUrl() + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size:12px;">Open Google Profile ↗</a>'
+          : '<button onclick="TenantSetup._jumpToSettings(\'business\',\'sr-review\')" class="btn btn-outline" style="font-size:12px;">⚙ Set Google review link</button>')
       + '</div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;" class="detail-grid">'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Reviewer Name</label>'
@@ -206,8 +218,14 @@ var ReviewsPage = {
   },
 
   copyLink: function() {
+    var u = ReviewsPage._revUrl();
+    if (!u) {
+      UI.toast('Add your Google review link in Settings first');
+      try { TenantSetup._jumpToSettings('business', 'sr-review'); } catch (e) {}
+      return;
+    }
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(ReviewsPage.GOOGLE_REVIEW_URL).then(function() { UI.toast('Review link copied! ✅'); });
+      navigator.clipboard.writeText(u).then(function() { UI.toast('Review link copied! ✅'); });
     } else {
       var input = document.getElementById('review-link');
       if (input) { input.select(); document.execCommand('copy'); }
@@ -282,7 +300,7 @@ var ReviewsPage = {
       + '<div style="font-size:12px;color:var(--text-light);">Automatically send a review request after a job is completed</div></div>'
       + '</label></div>'
       + UI.field('Days after completion', '<input type="number" id="rev-auto-days" value="' + (s.daysAfter || 3) + '" min="1" max="30" style="width:80px;">')
-      + UI.field('Message template', '<textarea id="rev-auto-msg" style="min-height:80px;">' + UI.esc(s.message || 'Hi! Thanks for choosing ' + ReviewsPage._co().name + '. We\'d love your feedback — it helps us serve our community better. Leave us a quick Google review: ' + ReviewsPage.GOOGLE_REVIEW_URL) + '</textarea>');
+      + UI.field('Message template', '<textarea id="rev-auto-msg" style="min-height:80px;">' + UI.esc(s.message || 'Hi! Thanks for choosing ' + ReviewsPage._co().name + '. We\'d love your feedback — it helps us serve our community better. Leave us a quick Google review: ' + ReviewsPage._revUrl()) + '</textarea>');
 
     UI.showModal('Auto Review Settings', html, {
       footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'

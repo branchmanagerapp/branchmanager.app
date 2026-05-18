@@ -712,7 +712,10 @@ var BeforeAfter = {
       text += pair.caption + ' ';
     }
     text += '\n\nBefore & After by ' + BeforeAfter._co().name;
-    text += '\n\n#TreeService #BeforeAndAfter #TreeRemoval #Peekskill #SecondNatureTree';
+    // White-label: brand hashtag derived from the tenant's own company
+    // name (no hardcoded #Peekskill/#SecondNatureTree on a friend's posts).
+    var _coTag = String(BeforeAfter._co().name || '').replace(/[^A-Za-z0-9]+/g, '');
+    text += '\n\n#TreeService #BeforeAndAfter #TreeRemoval' + (_coTag ? ' #' + _coTag : '');
     if (pair.tags && pair.tags.length) {
       pair.tags.forEach(function(tag) {
         var hashtag = '#' + tag.replace(/\s+/g, '');

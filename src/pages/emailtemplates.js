@@ -315,7 +315,7 @@ var EmailTemplates = {
     mergeData.companyPhone = CompanyInfo.get('phone');
     mergeData.companyEmail = CompanyInfo.get('email');
     mergeData.companyWebsite = CompanyInfo.get('website');
-    mergeData.reviewLink = 'https://g.page/r/CcVkZHV_EKlEEBM/review';
+    mergeData.reviewLink = (function(){ try { return CompanyInfo.own('googleReviewUrl') || ''; } catch(e) { return ''; } })();
 
     // Overlay provided data
     var key;
