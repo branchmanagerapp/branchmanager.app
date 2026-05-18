@@ -110,6 +110,30 @@
     const client = clientRes.data && clientRes.data[0];
     if (!inv) { document.body.innerHTML = '<p style="text-align:center;padding:60px;color:#6b7280;">Invoice not found or not yours.</p>'; return; }
 
+    // White-label: this invoice's issuing company = the customer's own
+    // client.tenant_id, never hardcoded SNT. Generic if RLS withholds it
+    // (a customer never sees another business on their invoice).
+    let co = { name: '', addr: '', phone: '', email: '', lic: '', digits: '' };
+    try {
+      const tid = inv.tenant_id || (client && client.tenant_id);
+      if (tid) {
+        const { data: trows } = await sb.from('tenants').select('name,config').eq('id', tid);
+        const t = trows && trows[0];
+        if (t) {
+          const c = t.config || {};
+          co.name = c.company_name || t.name || '';
+          co.addr = [c.address_line1, c.address_line2, [c.city, c.state, c.zip].filter(Boolean).join(', ')].filter(Boolean).join(', ');
+          co.phone = c.company_phone || '';
+          co.digits = String(co.phone).replace(/\D/g, '');
+          co.email = c.company_email || c.from_email || '';
+          co.lic = c.license_text || (c.wc_number ? ('Licensed & Insured · ' + c.wc_number) : '');
+        }
+      }
+    } catch (e) { /* generic */ }
+    const coTitle = co.name || 'Invoice';
+    const coLine2 = [co.addr, [co.phone, co.email].filter(Boolean).join(' · '), co.lic]
+      .filter(Boolean).map(s => esc(s)).join('<br>');
+
     const items = inv.line_items || [];
     const subtotal = inv.subtotal != null ? parseFloat(inv.subtotal) : (inv.total - (inv.tax_amount || 0));
     const totalPaid = payments.reduce((s,p) => s + (parseFloat(p.amount) || 0), 0);
@@ -136,8 +160,8 @@
     const html = '<div class="invoice">'
       + '<div class="header">'
       +   '<div class="brand">'
-      +     '<h1>🌳 Second Nature Tree Service</h1>'
-      +     '<p>1 Highland Industrial Park, Peekskill, NY 10566<br>(914) 391-5233 · info@peekskilltree.com<br>Licensed &amp; Insured · WC-32079 / PC-50644</p>'
+      +     '<h1>🌳 ' + esc(coTitle) + '</h1>'
+      +     (coLine2 ? '<p>' + coLine2 + '</p>' : '')
       +   '</div>'
       +   '<div class="doc-meta">'
       +     '<div class="label">Invoice</div>'
@@ -166,8 +190,8 @@
       + '</div></div>'
       + (payments.length ? '<div style="font-size:11px;color:#6b7280;margin-top:8px;"><strong>Payment history:</strong> '
           + payments.map(p => fmt(p.amount) + ' on ' + dateLong(p.date) + (p.method ? ' (' + esc(p.method) + ')' : '')).join(' · ') + '</div>' : '')
-      + '<div class="footer-note">Thank you for choosing Second Nature Tree Service.<br>'
-      +   'Questions? Reply to your email or call (914) 391-5233.'
+      + '<div class="footer-note">Thank you for choosing ' + esc(co.name || 'us') + '.<br>'
+      +   'Questions? Reply to your email' + (co.digits ? ' or call ' + esc(co.phone) : '') + '.'
       + '</div>'
       + '</div>';
 

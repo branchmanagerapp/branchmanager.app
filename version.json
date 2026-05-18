@@ -1,5 +1,5 @@
 {
-  "version": 831,
+  "version": 832,
   "released": "2026-05-18",
-  "notes": "white-label #6: remove ALL shipped SNT credentials/emails — auth.js hardcoded peekskilltree logins+djb2 hashes gone (Supabase primary unchanged, tenant team-login fallback kept); settings.js shipped default hash removed; settings test-email + weekly-summary + db seed now use tenant email, never SNT"
+  "notes": "white-label portal: customer portal (dashboard/index/invoice-print) + portal.html no longer hardcode Second Nature Tree — resolve issuing company from the customer's own client.tenant_id (tenants.config), generic degrade if RLS withholds, never SNT"
 }

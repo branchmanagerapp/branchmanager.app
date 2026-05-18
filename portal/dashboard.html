@@ -158,13 +158,40 @@
     const { data: clients } = await sb.from('clients').select('*').limit(1);
     const client = clients && clients[0];
 
+    // White-label: resolve THIS customer's tree-service company branding
+    // from their own client.tenant_id (never hardcoded SNT). If RLS
+    // doesn't return it, co stays generic — a customer is never shown
+    // "Second Nature Tree" for a different business.
+    let co = { name: '', phone: '', email: '', loc: '', digits: '' };
+    try {
+      const tid = client && client.tenant_id;
+      if (tid) {
+        const { data: trows } = await sb.from('tenants').select('name,config').eq('id', tid);
+        const t = trows && trows[0];
+        if (t) {
+          const c = t.config || {};
+          co.name = c.company_name || t.name || '';
+          co.phone = c.company_phone || '';
+          co.digits = String(co.phone).replace(/\D/g, '');
+          co.email = c.company_email || c.from_email || '';
+          co.loc = [c.city, c.state].filter(Boolean).join(', ');
+        }
+      }
+    } catch (e) { /* generic fallback */ }
+    const coName = co.name || 'your tree-service company';
+    if (co.name) {
+      const sub = document.getElementById('signed-as');
+      // keep the signed-in email line; surface the company in the brand row
+      const brandEl = document.querySelector('.brand');
+      if (brandEl) brandEl.textContent = '🌳 ' + co.name;
+    }
+
     if (!client) {
       document.getElementById('content').innerHTML =
         '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:24px 20px;text-align:center;">'
         + '<div style="font-size:36px;margin-bottom:10px;">📭</div>'
         + '<h3 style="font-size:16px;margin-bottom:8px;">We don&rsquo;t have an account on file</h3>'
-        + '<p style="color:#6b7280;font-size:13px;line-height:1.6;">The email <strong>' + esc(email) + '</strong> isn&rsquo;t linked to any of our customer records yet. If you&rsquo;ve worked with us before, give us a quick call so we can connect your account.</p>'
-        + '<a href="tel:9143915233" class="btn" style="margin-top:14px;">📞 (914) 391-5233</a>'
+        + '<p style="color:#6b7280;font-size:13px;line-height:1.6;">The email <strong>' + esc(email) + '</strong> isn&rsquo;t linked to any customer records yet. If you&rsquo;ve worked with this company before, reach out to them so they can connect your account.</p>'
         + '</div>';
       return;
     }
@@ -192,7 +219,7 @@
     const firstName = (client.name || '').split(' ')[0] || 'there';
     html += '<div class="greeting">'
       + '<h2>Hi ' + esc(firstName) + ' 🌳</h2>'
-      + '<p>Welcome to your Second Nature Tree account.</p>'
+      + '<p>Welcome to your ' + esc(coName) + ' account.</p>'
       + '</div>'
       + '<div class="stats">'
       +   '<div class="stat"><div class="stat-label">Open Balance</div><div class="stat-val' + (balance > 0 ? ' due' : '') + '">' + fmt(balance) + '</div></div>'
@@ -294,9 +321,14 @@
       html += '</div></div>';
     }
 
+    var _ftBits = [];
+    if (co.name) _ftBits.push(esc(co.name) + (co.loc ? ' &middot; ' + esc(co.loc) : ''));
+    var _ftContact = [];
+    if (co.digits) _ftContact.push('<a href="tel:' + esc(co.digits) + '">📞 ' + esc(co.phone) + '</a>');
+    if (co.email) _ftContact.push('<a href="mailto:' + esc(co.email) + '">✉ ' + esc(co.email) + '</a>');
     html += '<div class="footer">'
-      +   'Second Nature Tree Service &middot; Peekskill, NY<br>'
-      +   '<a href="tel:9143915233">📞 (914) 391-5233</a> &middot; <a href="mailto:info@peekskilltree.com">✉ info@peekskilltree.com</a>'
+      +   (_ftBits.length ? _ftBits.join('') + (_ftContact.length ? '<br>' : '') : '')
+      +   _ftContact.join(' &middot; ')
       + '</div>';
 
     document.getElementById('content').innerHTML = html;
