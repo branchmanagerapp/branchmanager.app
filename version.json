@@ -1,5 +1,5 @@
 {
-  "version": 820,
+  "version": 821,
   "released": "2026-05-17",
-  "notes": "Free-for-now: trial chip shows calm countdown only, no alarming expired state"
+  "notes": "Dead ?welcome= share-link → redirect to working self-serve signup (was: blank RLS-denied app)"
 }

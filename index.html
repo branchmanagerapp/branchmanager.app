@@ -8,26 +8,24 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 820; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 821; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
-  // v642: ?welcome=<tenant_id> — friend opens a share link from
-  // SettingsPage._provisionTenant. Pin them to the new tenant_id, stash
-  // welcome name for a one-time splash, then strip params and continue.
-  // Runs BEFORE the version-check fetch so a fresh visitor gets pinned
-  // even if the SW redirects.
+  // v821: ?welcome=<tenant_id> is DEAD. It came from the old
+  // provision-tenant share-link, which pinned the browser to a tenant via
+  // the anon + X-Tenant-ID path. That path was removed when the data
+  // breach was closed (anon can no longer read any tenant). Pinning a
+  // dead tenant + showing a "your private workspace!" splash now produces
+  // a cheerful but fully RLS-denied/blank app — worse than an error.
+  // Any stale share link is redirected to the working self-serve signup
+  // (v818), which provisions a real isolated, authenticated tenant.
   try {
     var _qs = new URLSearchParams(location.search);
     var _welcomeTid = _qs.get('welcome');
     if (_welcomeTid && /^[0-9a-f-]{36}$/i.test(_welcomeTid)) {
-      localStorage.setItem('bm-tenant-id', _welcomeTid);
-      var _wname = _qs.get('name') || '';
-      if (_wname) localStorage.setItem('bm-welcome-name', _wname);
-      localStorage.setItem('bm-welcome-show', '1');
-      _qs.delete('welcome'); _qs.delete('name');
-      var _newSearch = _qs.toString();
-      history.replaceState({}, '', location.pathname + (_newSearch ? '?' + _newSearch : ''));
+      // Do NOT pin bm-tenant-id and do NOT set the welcome splash.
+      window.location.replace(location.pathname + '?signup=solo');
     }
   } catch(e) {}
 
@@ -1121,7 +1119,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v820.min.js"></script>
+<script defer src="dist/bm.bundle.v821.min.js"></script>
 
 
 
