@@ -572,9 +572,54 @@ var SalesTaxCounter = {
     });
   },
 
+  // Supported sales-tax jurisdictions. Only NY is modeled (quarterly,
+  // Pub-75 cadence — the _filingPeriod math above is NY-specific). This
+  // map exists so the banner is jurisdiction-driven instead of NY strings
+  // baked into the markup; adding a state later = add an entry + its
+  // filing-period math.
+  _JURISDICTIONS: {
+    NY: {
+      label: 'NY Sales Tax',
+      authority: 'NYS',
+      fileUrl: 'https://www.tax.ny.gov/bus/st/stidx.htm',
+      fileLabel: 'File at tax.ny.gov →'
+    }
+  },
+
+  // Which jurisdiction THIS tenant files in — or null (→ no banner).
+  // White-label safe: only TENANT-OWNED data is consulted, never the
+  // app's build-time BM_CONFIG default (that is SNT's NY address baked
+  // into the shared bundle — it is the SAME for every tenant, so it is
+  // NOT a per-tenant signal and must not drive this). Detection order:
+  //   1. explicit setting bm-sales-tax-state ('NY' on, 'none'/'off' off)
+  //   2. infer from the tenant's OWN saved company address
+  //      (", NY" / "New York" / NY ZIP)
+  //   3. otherwise null (default for new / unconfigured / out-of-NY)
+  _jurisdiction: function() {
+    var jx = '';
+    try { jx = (localStorage.getItem('bm-sales-tax-state') || '').trim().toUpperCase(); } catch (e) {}
+    if (jx === 'NONE' || jx === 'OFF') return null;
+    if (jx && SalesTaxCounter._JURISDICTIONS[jx]) return jx;
+    var addr = '';
+    try { addr = String(localStorage.getItem('bm-co-address') || ''); } catch (e) {}
+    if (!addr) return null;
+    if (/(^|[\s,])NY([\s,.]|$)/i.test(addr) || /new york/i.test(addr) || /\b1[0-4]\d{3}\b/.test(addr)) return 'NY';
+    return null;
+  },
+
   // Banner that lives at the top of the Reports catalog AND on the dashboard
   // when filing is approaching.
   renderBanner: function() {
+    // White-label gate: only show for a tenant that actually files in a
+    // supported jurisdiction. Default (new / out-of-NY tenant) = no banner.
+    var jxKey = SalesTaxCounter._jurisdiction();
+    if (!jxKey) return '';
+    var jx = SalesTaxCounter._JURISDICTIONS[jxKey];
+    // First-run / no-revenue: never nag a tenant that has not collected any
+    // sales tax yet ("$0.00 owed" before they've done anything).
+    try {
+      if (SalesTaxCounter._invoiceTaxRows().length === 0) return '';
+    } catch (e) { return ''; }
     var now = new Date();
     var period = SalesTaxCounter._filingPeriod(now);
     if (!period) return '';
@@ -599,12 +644,12 @@ var SalesTaxCounter = {
     var html = '<div style="background:' + bg + ';border:1px solid ' + border + ';color:' + color + ';border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
       + '<div style="font-size:24px;">' + icon + '</div>'
       + '<div style="flex:1;min-width:240px;">'
-      +   '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">NY Sales Tax — ' + period.label + '</div>'
-      +   '<div style="font-size:22px;font-weight:800;margin-top:2px;">' + UI.money(owed) + ' <span style="font-size:13px;font-weight:600;opacity:.8;">collected, owed to NYS</span></div>'
+      +   '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">' + jx.label + ' — ' + period.label + '</div>'
+      +   '<div style="font-size:22px;font-weight:800;margin-top:2px;">' + UI.money(owed) + ' <span style="font-size:13px;font-weight:600;opacity:.8;">collected, owed to ' + jx.authority + '</span></div>'
       +   '<div style="font-size:13px;margin-top:2px;">' + status + '</div>'
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:6px;">'
-      +   '<a href="https://www.tax.ny.gov/bus/st/stidx.htm" target="_blank" rel="noopener noreferrer" style="background:' + color + ';color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">File at tax.ny.gov →</a>'
+      +   '<a href="' + jx.fileUrl + '" target="_blank" rel="noopener noreferrer" style="background:' + color + ';color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">' + jx.fileLabel + '</a>'
       +   '<button onclick="ReportsCatalog.open(\'taxation\')" style="background:rgba(255,255,255,.5);color:' + color + ';border:1px solid ' + border + ';padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Full taxation report</button>'
       + '</div>'
       + '</div>';

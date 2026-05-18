@@ -1,5 +1,5 @@
 {
-  "version": 824,
+  "version": 825,
   "released": "2026-05-18",
-  "notes": "email-confirm-ready: branded confirm email; comp code survives confirmation round-trip (cc= param + pending localStorage); GMB-hash hijack guarded; first-run welcome splash armed for ALL new signups; expired-link login hint"
+  "notes": "white-label: dashboard/reports sales-tax banner is now tenant-aware — suppressed for no-revenue/first-run tenants AND any tenant not filing in a supported jurisdiction (NY inferred from address or bm-sales-tax-state); SNT NY behavior unchanged"
 }
