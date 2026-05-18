@@ -238,18 +238,48 @@ var TenantSetup = {
     loadPage(window._currentPage || 'settings');
   },
 
+  // Per-item skip — a tenant can dismiss any checklist item they don't
+  // need (e.g. no crew, no Stripe). Skipped items stop counting toward
+  // "critical left" and stop nagging, but stay listed with an Undo so
+  // nothing is lost. Persisted in localStorage.
+  _skipped: function() {
+    try { return JSON.parse(localStorage.getItem('bm-setup-skipped') || '[]'); }
+    catch (e) { return []; }
+  },
+  _isSkipped: function(key) {
+    return TenantSetup._skipped().indexOf(key) >= 0;
+  },
+  skip: function(key) {
+    try {
+      var s = TenantSetup._skipped();
+      if (s.indexOf(key) < 0) { s.push(key); localStorage.setItem('bm-setup-skipped', JSON.stringify(s)); }
+    } catch (e) {}
+    loadPage(window._currentPage || 'settings');
+  },
+  unskip: function(key) {
+    try {
+      var s = TenantSetup._skipped().filter(function(k) { return k !== key; });
+      localStorage.setItem('bm-setup-skipped', JSON.stringify(s));
+    } catch (e) {}
+    loadPage(window._currentPage || 'settings');
+  },
+
   // Public — used by Settings render and (optionally) by Dashboard.
   renderChecklist: function() {
     TenantSetup._loadAsyncCache();
+    var _skips = TenantSetup._skipped();
     var results = TenantSetup.ITEMS.map(function(item) {
       var ok = false;
       try { ok = !!item.probe(); } catch(e) { ok = false; }
-      return Object.assign({}, item, { ok: ok });
+      var skipped = !ok && _skips.indexOf(item.key) >= 0;
+      // "resolved" = done OR explicitly skipped — both clear the nag.
+      return Object.assign({}, item, { ok: ok, skipped: skipped, resolved: ok || skipped });
     });
     var totalCritical = results.filter(function(r) { return r.criticality === 1; }).length;
-    var okCritical = results.filter(function(r) { return r.criticality === 1 && r.ok; }).length;
+    var okCritical = results.filter(function(r) { return r.criticality === 1 && r.resolved; }).length;
     var totalAll = results.length;
-    var okAll = results.filter(function(r) { return r.ok; }).length;
+    var okAll = results.filter(function(r) { return r.resolved; }).length;
+    var skippedCount = results.filter(function(r) { return r.skipped; }).length;
     var pct = totalAll > 0 ? Math.round((okAll / totalAll) * 100) : 0;
     var allCriticalDone = okCritical === totalCritical;
     var allDone = okAll === totalAll;
@@ -267,7 +297,7 @@ var TenantSetup = {
       return '<div style="background:' + (allDone ? '#f0fdf4' : '#fffbeb') + ';border:1px solid ' + (allDone ? '#86efac' : '#fde68a') + ';border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
         + '<div style="font-size:20px;">' + (allDone ? '✅' : '🛠️') + '</div>'
         + '<div style="flex:1;min-width:200px;font-size:13px;color:' + (allDone ? '#065f46' : '#92400e') + ';">'
-        +   '<b>Setup checklist</b>: ' + okAll + '/' + totalAll + ' ' + (allDone ? '— everything wired' : '· ' + (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left')
+        +   '<b>Setup checklist</b>: ' + okAll + '/' + totalAll + ' ' + (allDone ? '— everything wired' : '· ' + (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left') + (skippedCount ? ' · ' + skippedCount + ' skipped' : '')
         + '</div>'
         + '<button onclick="TenantSetup.toggle()" style="font-size:12px;padding:5px 12px;background:var(--white);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;">' + (allDone ? 'Show details' : 'Expand') + '</button>'
         + '</div>';
@@ -281,7 +311,7 @@ var TenantSetup = {
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
       +   '<div>'
       +     '<h3 style="margin:0;font-size:15px;">🛠️ Setup checklist</h3>'
-      +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + okAll + '/' + totalAll + ' complete · ' + (allCriticalDone ? 'all critical items done ✓' : (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left') + '</div>'
+      +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + okAll + '/' + totalAll + ' complete · ' + (allCriticalDone ? 'all critical items done ✓' : (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left') + (skippedCount ? ' · ' + skippedCount + ' skipped' : '') + '</div>'
       +   '</div>'
       +   '<button onclick="TenantSetup.toggle()" style="font-size:11px;padding:5px 10px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-light);">Hide</button>'
       + '</div>'
@@ -296,14 +326,23 @@ var TenantSetup = {
       html += '<div style="margin-bottom:10px;">'
         + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:' + GROUP_COLORS[crit] + ';margin-bottom:6px;">' + GROUP_LABELS[crit] + '</div>';
       items.forEach(function(r) {
-        var icon = r.ok ? '✅' : (crit === 1 ? '⛔' : '⚪');
-        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid ' + (r.ok ? 'var(--border)' : '#fef3c7') + ';background:' + (r.ok ? 'var(--bg)' : '#fffbeb') + ';border-radius:8px;margin-bottom:5px;">'
+        var icon = r.ok ? '✅' : (r.skipped ? '⏭️' : (crit === 1 ? '⛔' : '⚪'));
+        var muted = r.ok || r.skipped;
+        var rowBorder = muted ? 'var(--border)' : '#fef3c7';
+        var rowBg = muted ? 'var(--bg)' : '#fffbeb';
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid ' + rowBorder + ';background:' + rowBg + ';border-radius:8px;margin-bottom:5px;">'
           + '<div style="font-size:16px;">' + icon + '</div>'
           + '<div style="flex:1;min-width:0;">'
-          +   '<div style="font-size:13px;font-weight:' + (r.ok ? '500' : '700') + ';color:' + (r.ok ? 'var(--text-light)' : 'var(--text)') + ';' + (r.ok ? 'text-decoration:line-through;' : '') + '">' + r.label + '</div>'
-          +   (r.ok ? '' : '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">' + r.hint + '</div>')
+          +   '<div style="font-size:13px;font-weight:' + (muted ? '500' : '700') + ';color:' + (muted ? 'var(--text-light)' : 'var(--text)') + ';' + (muted ? 'text-decoration:line-through;' : '') + '">' + r.label + (r.skipped ? ' <span style="font-size:10px;font-weight:600;text-decoration:none;color:var(--text-light);">· skipped</span>' : '') + '</div>'
+          +   (muted ? '' : '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">' + r.hint + '</div>')
           + '</div>'
-          + (r.ok ? '' : '<button onclick="TenantSetup._fire(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:5px;font-weight:600;cursor:pointer;white-space:nowrap;">Set up →</button>')
+          + (r.ok ? ''
+              : r.skipped
+                ? '<button onclick="TenantSetup.unskip(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:5px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text-light);">Undo</button>'
+                : '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap;">'
+                  + '<button onclick="TenantSetup._fire(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:5px;font-weight:600;cursor:pointer;">Set up →</button>'
+                  + '<button onclick="TenantSetup.skip(\'' + r.key + '\')" style="font-size:11px;padding:4px 8px;background:none;border:none;color:var(--text-light);text-decoration:underline;cursor:pointer;">Skip</button>'
+                  + '</div>')
           + '</div>';
       });
       html += '</div>';
