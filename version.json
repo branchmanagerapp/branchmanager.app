@@ -1,5 +1,5 @@
 {
-  "version": 821,
+  "version": 822,
   "released": "2026-05-17",
-  "notes": "Dead ?welcome= share-link → redirect to working self-serve signup (was: blank RLS-denied app)"
+  "notes": "Remove Jobber from shipped pages; delete orphaned compare/import-jobber pages"
 }

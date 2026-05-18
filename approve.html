@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quote / Estimate Approval</title>
   <style>
-    /* v635: Jobber-style customer approve page —
+    /* v635: clean customer approve page —
        cleaner whitespace, subtle top accent (no heavy header bar),
        2-card meta layout, sticky bottom CTAs, generous padding.
        JS untouched — every element id and class name preserved. */
@@ -13,7 +13,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f6f7f9; color: #0f172a; min-height: 100vh; padding-bottom: 24px; }
     .page { max-width: 760px; margin: 0 auto; padding: 22px 18px; }
 
-    /* ── Document card — subtle colored top accent (Jobber pattern) ── */
+    /* ── Document card — subtle colored top accent (standard pattern) ── */
     .doc-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,.05); overflow: hidden; margin-bottom: 18px; }
     .doc-accent { height: 4px; background: #1a3c12; }
     .doc-pad { padding: 28px 28px 22px; }
@@ -357,7 +357,7 @@
         ? (function() { var d = Math.ceil((new Date(q.expires_at) - new Date()) / 86400000); return d > 0 ? d + ' days left' : 'Expired'; })()
         : '30 days';
 
-      // v635: Jobber-style 2-card meta + sticky CTA layout. Every element id
+      // v635: clean 2-card meta + sticky CTA layout. Every element id
       // is preserved (sig-section, btn-approve-main, ft-subtotal, ft-tax,
       // ft-total, changes-form, decline-form, etc.) so existing JS keeps working.
       var clientLine = esc(q.client_name || '');

@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 821; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 822; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -314,7 +314,7 @@
   .sidebar.collapsed .create-btn { font-size:0; padding:10px; }
   .sidebar.collapsed .create-btn::before { content:'+'; font-size:18px; font-weight:700; }
   .sidebar-header {
-    /* v679: cleaner, no border-bottom (matches Jobber). Just logo + tight wordmark. */
+    /* v679: cleaner, no border-bottom (matches the reference). Just logo + tight wordmark. */
     padding:16px 14px 14px;
     display:flex; align-items:center; gap:10px; cursor:pointer;
   }
@@ -853,7 +853,7 @@
   .avatar-menu button:hover { background:var(--bg); }
   .avatar-menu hr { border:none; border-top:1px solid var(--border); margin:0; }
 
-  /* ── v727: Activity Feed slide-in panel (Jobber pattern) ── */
+  /* ── v727: Activity Feed slide-in panel (standard pattern) ── */
   .notif-dropdown {
     /* Always present in DOM, translated off-screen until open. Full-height
        right rail, fixed position, transition slides it in/out. */
@@ -929,7 +929,7 @@
     margin-top: 2px;
   }
   .notif-dropdown-body { flex:1; min-width:0; }
-  /* v724: Jobber-style entries — title row (bold + time-right), sub-line, client */
+  /* v724: clean entries — title row (bold + time-right), sub-line, client */
   .notif-row-top {
     display:flex; align-items:baseline; justify-content:space-between; gap:8px;
   }
@@ -1021,7 +1021,7 @@
       <!-- v690: Expenses promoted from buried Reports tab to its own sidebar entry. -->
       <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
 
-      <!-- v679: dropped horizontal divider — cleaner, single nav scroll like Jobber. -->
+      <!-- v679: dropped horizontal divider — cleaner, single nav scroll like leading apps. -->
       <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
       <!-- v384: marketing / campaigns / referrals / reviews / reviewtools merged into SocialBranch (renamed "Marketing" in the sidebar). Deep links #marketing #campaigns #referrals #reviews #reviewtools still resolve to their standalone page modules. -->
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
@@ -1119,7 +1119,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v821.min.js"></script>
+<script defer src="dist/bm.bundle.v822.min.js"></script>
 
 
 
@@ -1427,7 +1427,7 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
 // ── Reports Hub ──
 var ReportsHub = {
   render: function() {
-    // v760: catalog tab leads — Jobber-parity report directory with sales
+    // v760: catalog tab leads — parity report directory with sales
     // tax counter at top. Old tabs kept as deep-dive views.
     var tabs = [
       ['catalog', 'Catalog'],
@@ -2699,7 +2699,7 @@ var NotifCenter = (function() {
     return client ? (client.name || client.firstName + ' ' + (client.lastName || '')) : 'Unknown';
   }
 
-  // v730: per-category visibility (Jobber Customize Feed). Persists to
+  // v730: per-category visibility (Customize Feed). Persists to
   // bm-feed-categories. Default: all enabled. Used to filter what
   // buildNotifications surfaces to the panel.
   var _feedCatDefs = [
@@ -2751,7 +2751,7 @@ var NotifCenter = (function() {
       + '</div>';
   }
 
-  // v724: Activity Feed builder — Jobber-style entries with bold action +
+  // v724: Activity Feed builder — clean entries with bold action +
   // amount, sub-line (ref # · description), client name, timestamp.
   // Each entry now includes `cat` for per-category filtering.
   function buildNotifications() {
@@ -2967,7 +2967,7 @@ var NotifCenter = (function() {
         var safePage = String(item.page || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         var safeRecordId = String(item.recordId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         var safeId = String(item.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        // v724: Jobber-style row — bold title (action + amount), thin
+        // v724: clean row — bold title (action + amount), thin
         // sub-line (ref# + description), even thinner client line, time
         // right-aligned at top.
         var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
