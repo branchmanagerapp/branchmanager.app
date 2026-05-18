@@ -73,15 +73,38 @@ if [ -z "$PG_DUMP" ] || [ ! -s "$OUT/db.sql.gz" ]; then
     echo "   ❌ Could not resolve ANON_KEY. Skipping DB dump."
   else
     mkdir -p "$OUT/tables"
-    TABLES="clients jobs invoices quotes requests deals communications photos services materials team_members vehicles vehicle_positions vehicle_day_assignments payroll_approvals payroll_runs tenants user_tenants time_entries tasks bm_invites tenant_settings"
+    TABLES="clients jobs invoices payments quotes requests deals communications photos services materials team_members vehicles vehicle_positions vehicle_day_assignments payroll_approvals payroll_runs tenants user_tenants time_entries tasks bm_invites tenant_settings"
     for t in $TABLES; do
       curl -s -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
         "https://$PROJECT_REF.supabase.co/rest/v1/$t?select=*" > "$OUT/tables/$t.json" 2>/dev/null
       lines=$(wc -c < "$OUT/tables/$t.json" 2>/dev/null || echo 0)
       printf "   %-30s %s bytes\n" "$t" "$lines"
     done
-    cd "$OUT" && tar -czf tables.tar.gz tables && rm -rf tables
-    echo "   ✅ $(du -h "$OUT/tables.tar.gz" | cut -f1) → $OUT/tables.tar.gz"
+    cd "$OUT" && tar -czf tables.tar.gz tables
+    # ─── Integrity gate ──────────────────────────────────────────────────
+    # Post-RLS-lockdown, the anon/access-token REST read is DENIED for the
+    # per-tenant tables, so this fallback silently writes `[]`. A backup
+    # that reports success while empty is worse than none. Fail LOUD if any
+    # business-critical table came back empty so the false-success can't
+    # mislead. Real data backup then = Supabase server-side daily backups
+    # (full privileges) OR set SUPABASE_DB_PASSWORD for true pg_dump.
+    HOLLOW=""
+    for t in clients invoices payments jobs quotes; do
+      c=$(tr -d ' \n\r\t' < "$OUT/tables/$t.json" 2>/dev/null)
+      if [ "$c" = "[]" ] || [ -z "$c" ]; then HOLLOW="$HOLLOW $t"; fi
+    done
+    rm -rf tables
+    if [ -n "$HOLLOW" ]; then
+      echo ""
+      echo "   ❌ DB DUMP IS HOLLOW — empty tables:$HOLLOW"
+      echo "   ❌ RLS denies the REST fallback key. This snapshot does NOT"
+      echo "      back up business data. Real coverage = Supabase daily"
+      echo "      backups (server-side) or set SUPABASE_DB_PASSWORD for pg_dump."
+      DB_DUMP_OK=0
+    else
+      echo "   ✅ $(du -h "$OUT/tables.tar.gz" | cut -f1) → $OUT/tables.tar.gz"
+      DB_DUMP_OK=1
+    fi
   fi
 fi
 
@@ -99,7 +122,14 @@ zip -rq "$ZIP" . \
 echo "   ✅ $(du -h "$ZIP" | cut -f1) → $ZIP"
 
 echo ""
-echo "🎉 Backup complete:"
+if [ "${DB_DUMP_OK:-1}" = "0" ]; then
+  echo "⚠️  Source snapshot saved, but the DB dump is HOLLOW (see above)."
+  echo "   This is NOT a complete backup. Business data is only protected"
+  echo "   by Supabase server-side daily backups until SUPABASE_DB_PASSWORD"
+  echo "   (or a service-role REST path) is provided for a real pg_dump."
+else
+  echo "🎉 Backup complete:"
+fi
 ls -lh "$OUT"
 echo ""
 echo "Recommended: copy $OUT to external drive or iCloud Drive for off-Mac redundancy."

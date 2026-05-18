@@ -7,7 +7,7 @@ _Last reviewed: May 10 2026, post-v758._
 | Asset | Primary location | Redundancy | Risk |
 |---|---|---|---|
 | **Source code** | `~/Desktop/Tree/branchmanager-app/` | GitHub (`branchmanagerapp/branchmanager.app`), pushed on every bump | ✅ Low. Even if local disk dies, code is safe on GitHub. |
-| **Supabase Postgres** | Supabase project `ltpivkqahvplapyagljt` (Pro plan, us-west-2) | Daily physical backups, 7-day retention (verified via API) | ⚠ Medium. If the project itself gets deleted/locked, the daily backups go with it. No local copy. |
+| **Supabase Postgres** | Supabase project `ltpivkqahvplapyagljt` | Daily **logical** backups, 7-day retention, **PITR OFF** (verified via API 2026-05-18). Co-located with the project. | ⚠ Medium-High. Project deletion/lock = backups gone too. No off-Supabase copy. 24h granularity only. **This is the ONLY real backup of business data** — see note below. |
 | **Supabase Storage** (photos in `job-photos` bucket) | Supabase Storage | None by us. Supabase keeps their own infra-level redundancy but objects are **not** included in the daily Postgres backups. | ⚠ Medium. Object loss = full photo loss. |
 | **Snapshot zip backups** | `~/Desktop/Tree/Backups/` | One zip from May 5 (v598) — stale. | 🔴 High. |
 | **Time Machine** | Not configured | None | 🔴 High. Single-disk-failure away from total loss of anything not on GitHub/Supabase. |
@@ -22,7 +22,16 @@ Run from the repo root. Captures:
 
 Output goes to `~/Desktop/Tree/Backups/YYYY-MM-DD_HHMM/`.
 
-Verified May 10 2026: 22 tables (596 KB compressed) + v758 source zip (15 MB) successfully captured.
+⚠️ **CORRECTION (2026-05-18):** The "22 tables captured" claim was true
+on May 10 but is **no longer true**. The post-breach RLS lockdown denies
+the anon/access-token key the REST fallback uses, so it now writes `[]`
+for every per-tenant table (clients, invoices, payments, jobs, quotes,
+…). `backup.sh` was hardened 2026-05-18 to detect this and FAIL LOUD
+("❌ DB DUMP IS HOLLOW") instead of printing false success. The source
+zip is still real. **Real business-data coverage = Supabase server-side
+daily backups only**, unless `SUPABASE_DB_PASSWORD` is set so the script
+can run a true privileged `pg_dump` (the only way to get a local copy of
+clients/invoices/payments again).
 
 ### 2. Supabase Pro daily backups
 Already running server-side. List via:
