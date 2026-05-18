@@ -150,17 +150,27 @@
 <script src="config.js"></script>
 <script src="tenant-slug-bootstrap.js"></script>
 <script>
-document.title = 'Pay Invoice — ' + BM_CONFIG.companyName;
-document.getElementById('brand-name').textContent = BM_CONFIG.companyName;
-document.getElementById('brand-sub').innerHTML = BM_CONFIG.city + ' &nbsp;&middot;&nbsp; ' + BM_CONFIG.phone;
-(function() {
-  var logo = (typeof CompanyInfo !== 'undefined') ? CompanyInfo.get('logo') : '';
-  if (!logo) { try { logo = localStorage.getItem('bm-co-logo') || ''; } catch(e) {} }
-  if (logo) {
-    var el = document.getElementById('brand-logo');
-    if (el) { el.style.background = 'transparent'; el.innerHTML = '<img src="' + logo.replace(/"/g,'&quot;') + '" style="width:40px;height:40px;object-fit:contain;border-radius:8px;" alt="Logo">'; }
-  }
-})();
+// White-label: do NOT paint Second Nature Tree (BM_CONFIG defaults) on
+// load. Stay neutral until the invoice's real tenant branding resolves
+// (loadTenantConfig → bmApplyBranding → bmPaintBrand), so a friend's
+// customer never sees SNT flash on the payment page.
+function bmPaintBrand() {
+  try {
+    document.title = 'Pay Invoice' + (BM_CONFIG.companyName ? ' — ' + BM_CONFIG.companyName : '');
+    var bn = document.getElementById('brand-name'); if (bn) bn.textContent = BM_CONFIG.companyName || '';
+    var bs = document.getElementById('brand-sub');
+    if (bs) bs.innerHTML = [BM_CONFIG.city, BM_CONFIG.phone].filter(Boolean).join(' &nbsp;&middot;&nbsp; ');
+    var logo = (typeof CompanyInfo !== 'undefined') ? CompanyInfo.get('logo') : '';
+    if (!logo) { try { logo = localStorage.getItem('bm-co-logo') || ''; } catch(e) {} }
+    if (logo) {
+      var el = document.getElementById('brand-logo');
+      if (el) { el.style.background = 'transparent'; el.innerHTML = '<img src="' + logo.replace(/"/g,'&quot;') + '" style="width:40px;height:40px;object-fit:contain;border-radius:8px;" alt="Logo">'; }
+    }
+  } catch (e) {}
+}
+window.bmPaintBrand = bmPaintBrand;
+document.title = 'Pay Invoice';
+(function(){ var n=document.getElementById('brand-name'); if(n) n.textContent=''; var s=document.getElementById('brand-sub'); if(s) s.textContent=''; })();
 </script>
 <script>
 (function() {
@@ -201,8 +211,7 @@ document.getElementById('brand-sub').innerHTML = BM_CONFIG.city + ' &nbsp;&middo
     if (!inv) {
       el.innerHTML = '<div class="inv-card"><div class="state-center state-err">'
         + '<div class="s-icon">🔍</div><h2>Invoice Not Found</h2>'
-        + '<p>This link may have expired or the invoice number is incorrect.<br>Please check your email or contact us.</p>'
-        + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneTel + '" style="color:#1a3c12;font-weight:700;font-size:16px;">📞 ' + esc(BM_CONFIG.phone) + '</a></p>'
+        + '<p>This link may have expired or the invoice number is incorrect.<br>Please reply to your invoice email and we&rsquo;ll help.</p>'
         + '</div></div>';
       return;
     }
@@ -391,7 +400,7 @@ document.getElementById('brand-sub').innerHTML = BM_CONFIG.city + ' &nbsp;&middo
   if (!invId) {
     document.getElementById('pay-content').innerHTML = '<div class="inv-card"><div class="state-center state-err">'
       + '<div class="s-icon">❓</div><h2>No Invoice Specified</h2><p>Please use the link from your invoice email.</p>'
-      + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneTel + '" style="color:#1a3c12;font-weight:700;font-size:16px;">📞 ' + BM_CONFIG.phone + '</a></p>'
+      + '<p style="margin-top:20px;color:#6b7280;font-size:13px;">Reply to your invoice email and we&rsquo;ll sort it out.</p>'
       + '</div></div>';
     return;
   }
@@ -400,16 +409,20 @@ document.getElementById('brand-sub').innerHTML = BM_CONFIG.city + ' &nbsp;&middo
 
   function loadTenantConfig() {
     var inv = state.invoice;
-    if (!inv || !inv.tenant_id) { render(); return; }
-    fetch(SUPABASE_URL + '/rest/v1/tenants?id=eq.' + encodeURIComponent(inv.tenant_id) + '&select=config&limit=1', { headers: hdrs })
+    if (!inv || !inv.tenant_id) { render(); return; } // stay neutral — never SNT
+    fetch(SUPABASE_URL + '/rest/v1/tenants?id=eq.' + encodeURIComponent(inv.tenant_id) + '&select=name,config&limit=1', { headers: hdrs })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data && data[0] && data[0].config && data[0].config.stripe_base_link) {
-          state.tenantBaseLink = data[0].config.stripe_base_link;
+        if (data && data[0]) {
+          if (data[0].config && data[0].config.stripe_base_link) {
+            state.tenantBaseLink = data[0].config.stripe_base_link;
+          }
+          // White-label: rebrand to the invoice's real tenant.
+          if (window.bmApplyBranding) window.bmApplyBranding({ name: data[0].name, config: data[0].config });
         }
       })
       .catch(function() {})
-      .finally(function() { render(); });
+      .finally(function() { if (window.bmPaintBrand) bmPaintBrand(); render(); });
   }
 
   // RLS gateway — was: anon SELECT * exposed every customer's invoice
@@ -419,7 +432,7 @@ document.getElementById('brand-sub').innerHTML = BM_CONFIG.city + ' &nbsp;&middo
   if (!urlToken) {
     document.getElementById('pay-content').innerHTML = '<div class="inv-card"><div class="state-center state-err">'
       + '<div class="s-icon">🔒</div><h2>Link Missing Token</h2><p>This payment link is incomplete. Please use the link from your invoice email.</p>'
-      + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneTel + '" style="color:#1a3c12;font-weight:700;font-size:16px;">📞 ' + BM_CONFIG.phone + '</a></p>'
+      + '<p style="margin-top:20px;color:#6b7280;font-size:13px;">Reply to your invoice email and we&rsquo;ll sort it out.</p>'
       + '</div></div>';
     return;
   }

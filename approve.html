@@ -175,9 +175,12 @@
         });
         var data = await r.json();
         if (!r.ok || !data || !data.ok || !data.quote) {
-          showError(((data && data.error) || 'Quote not found') + '. The link may be expired or incorrect.<br><br>Please contact us and we\'ll resend it.');
+          showError(((data && data.error) || 'Quote not found') + '. The link may be expired or incorrect.<br><br>Please reply to your quote email and we\'ll resend it.');
           return;
         }
+        // White-label: rebrand to THIS quote's tenant before rendering the
+        // document, so a friend's customer never sees Second Nature Tree.
+        try { if (window.bmApplyTenantBranding) await window.bmApplyTenantBranding(data.quote.tenant_id); } catch(e) {}
         renderQuote(data.quote);
       } catch(e) {
         showError('Network error loading quote. Please contact us if this persists.');
@@ -845,12 +848,11 @@
         + '<div style="font-size:40px;margin-bottom:16px;">⚠️</div>'
         + '<h2 style="margin-bottom:8px;">Link Not Found</h2>'
         + '<p style="color:#666;" id="err-msg">' + esc(msg).replace(/&lt;br&gt;/g, '<br>') + '</p>'
-        + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneDigits + '" style="color:#1a3c12;font-weight:700;text-decoration:none;">📞 ' + BM_CONFIG.phone + '</a></p>'
-        + '</div></div>'
-        + '<div class="footer"><a href="' + BM_CONFIG.websiteUrl + '">' + BM_CONFIG.website + '</a></div>';
+        + '<p style="margin-top:20px;color:#6b7280;font-size:13px;">Reply to your quote email and we&rsquo;ll help.</p>'
+        + '</div></div>';
     }
 
-    document.title = 'Quote Approval — ' + BM_CONFIG.companyName;
+    document.title = 'Quote Approval';
     window.addEventListener('load', loadQuote);
 
     function sendPortalLink() {

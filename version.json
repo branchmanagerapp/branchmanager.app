@@ -1,5 +1,5 @@
 {
-  "version": 832,
+  "version": 833,
   "released": "2026-05-18",
-  "notes": "white-label portal: customer portal (dashboard/index/invoice-print) + portal.html no longer hardcode Second Nature Tree — resolve issuing company from the customer's own client.tenant_id (tenants.config), generic degrade if RLS withholds, never SNT"
+  "notes": "white-label pay+approve: shared bmApplyBranding/bmApplyTenantBranding in tenant-slug-bootstrap.js; pay.html neutral-until-resolved + rebrands from invoice tenant; approve.html awaits tenant branding before rendering the quote; pre-resolution error states generic, never SNT"
 }
