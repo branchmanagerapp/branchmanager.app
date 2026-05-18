@@ -117,7 +117,8 @@ var DB = (function() {
         var email = '';
         if (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) email = Auth.user.email;
         if (!email && typeof BM_CONFIG !== 'undefined' && BM_CONFIG.email) email = BM_CONFIG.email;
-        if (!email) email = 'info@peekskilltree.com'; // last-resort seed fallback
+        // White-label: no SNT email fallback — if there's genuinely no
+        // email, the guard below skips rather than leaking peekskilltree.
         if (email) {
           var h2 = { 'apikey': key, 'Authorization': 'Bearer ' + key };
           var r2 = await fetch(url + '/rest/v1/tenants?owner_email=eq.' + encodeURIComponent(email) + '&select=id&limit=1', { headers: h2 });

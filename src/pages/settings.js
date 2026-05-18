@@ -1097,9 +1097,9 @@ var SettingsPage = {
       })
       + '<p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">Outbound email goes through Resend via the <code>send-email</code> Supabase edge function. Free at our volume. Migrated off SendGrid in v372 ahead of trial expiry.</p>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<button onclick="if(typeof Email!==\'undefined\'){Email.send(\'info@peekskilltree.com\',\'Branch Manager Test\',\'Resend is connected and working!\').then(function(){UI.toast(\'Test sent! Check info@peekskilltree.com\');}).catch(function(e){UI.toast(\'Failed: \'+e.message,\'error\');});}else{UI.toast(\'Email module not loaded\',\'error\');}" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Send Test Email</button>'
+      + '<button onclick="(function(){var te=(typeof CompanyInfo!==\'undefined\'&&(CompanyInfo.own(\'email\')||CompanyInfo.get(\'email\')))||\'\';if(!te){UI.toast(\'Set your company email in Settings first\',\'error\');return;}if(typeof Email!==\'undefined\'){Email.send(te,\'Branch Manager Test\',\'Resend is connected and working!\').then(function(){UI.toast(\'Test sent! Check \'+te);}).catch(function(e){UI.toast(\'Failed: \'+e.message,\'error\');});}else{UI.toast(\'Email module not loaded\',\'error\');}})()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Send Test Email</button>'
       + '</div>'
-      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">From: <code>onboarding@resend.dev</code> until DNS verification on peekskilltree.com is complete. To switch to <code>info@peekskilltree.com</code>, add Resend\'s DKIM/SPF records in the Wix DNS panel and ping me.</p>'
+      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Sends to your company email. Verify your own sending domain in Resend (add its DKIM/SPF DNS records) to send from your address instead of the shared sandbox sender.</p>'
       + '</div>';
     html += '</div>'; // /#bm-resend-card
 
@@ -3249,12 +3249,11 @@ var SettingsPage = {
     var hashes = {};
     try { hashes = JSON.parse(localStorage.getItem('bm-auth-hashes') || '{}'); } catch(e) {}
     var storedHash = hashes[email.toLowerCase()];
-    // Default users are a first-install fallback only; real accounts use hashes stored in localStorage.
-    var defaultUsers = {};
-    if (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.email) {
-      defaultUsers[BM_CONFIG.email.toLowerCase()] = '28006cfd';
-    }
-    var expectedHash = storedHash || defaultUsers[email.toLowerCase()];
+    // White-label: no shipped default credential. SNT's djb2 hash for
+    // BM_CONFIG.email used to be baked in here (a per-tenant credential
+    // leak). The real password is enforced by Supabase; the only local
+    // pre-check is a per-user hash the tenant stored themselves.
+    var expectedHash = storedHash;
     if (expectedHash && Auth._hash(current) !== expectedHash) {
       UI.toast('Current password is incorrect', 'error');
       return;

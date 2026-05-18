@@ -844,13 +844,16 @@ var WeeklySummary = {
       + '\n─────────────────────────────\n'
       + 'Branch Manager · branchmanager.app/';
 
-    if (typeof Email !== 'undefined' && Email.isConfigured()) {
-      Email.send(BM_CONFIG.email, subject, body).then(function() {
-        UI.toast('Weekly summary emailed to ' + BM_CONFIG.email + ' ✅');
+    // White-label: send to the TENANT's own company email, never SNT's.
+    var _wsEmail = '';
+    try { _wsEmail = (typeof CompanyInfo !== 'undefined' && (CompanyInfo.own('email') || CompanyInfo.get('email'))) || ''; } catch (e) {}
+    if (typeof Email !== 'undefined' && Email.isConfigured() && _wsEmail) {
+      Email.send(_wsEmail, subject, body).then(function() {
+        UI.toast('Weekly summary emailed to ' + _wsEmail + ' ✅');
       });
     } else {
-      window.open('mailto:info@peekskilltree.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body), '_blank');
-      UI.toast('Opening email client with weekly summary');
+      window.open('mailto:' + encodeURIComponent(_wsEmail) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body), '_blank');
+      UI.toast(_wsEmail ? 'Opening email client with weekly summary' : 'Set your company email in Settings to auto-send');
     }
   }
 };

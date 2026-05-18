@@ -1,5 +1,5 @@
 {
-  "version": 830,
+  "version": 831,
   "released": "2026-05-18",
-  "notes": "onboarding: Skip restricted to non-required items (revenue/comms/optional like Bouncie/Dialpad/Stripe) — Required-to-operate basics can't be skipped"
+  "notes": "white-label #6: remove ALL shipped SNT credentials/emails — auth.js hardcoded peekskilltree logins+djb2 hashes gone (Supabase primary unchanged, tenant team-login fallback kept); settings.js shipped default hash removed; settings test-email + weekly-summary + db seed now use tenant email, never SNT"
 }
