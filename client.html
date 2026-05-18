@@ -58,9 +58,24 @@
 </div>
 
 <script src="config.js"></script>
+<script src="tenant-slug-bootstrap.js"></script>
 <script>
-document.title = 'Client Portal — ' + BM_CONFIG.companyName;
-document.getElementById('portal-footer').innerHTML = '<a href="' + BM_CONFIG.websiteUrl + '">' + BM_CONFIG.website + '</a> &bull; <a href="tel:' + BM_CONFIG.phoneDigits + '">' + BM_CONFIG.phone + '</a> &bull; <a href="mailto:' + BM_CONFIG.email + '">' + BM_CONFIG.email + '</a>';
+// White-label: stay neutral until the client's real tenant resolves
+// (init → bmApplyTenantBranding → bmPaintPortalBrand). Never paint
+// Second Nature Tree (BM_CONFIG defaults) on load.
+document.title = 'Client Portal';
+function bmPaintPortalBrand() {
+  try {
+    document.title = 'Client Portal' + (BM_CONFIG.companyName ? ' — ' + BM_CONFIG.companyName : '');
+    var f = document.getElementById('portal-footer');
+    if (!f) return;
+    var bits = [];
+    if (BM_CONFIG.website) bits.push('<a href="' + BM_CONFIG.websiteUrl + '">' + BM_CONFIG.website + '</a>');
+    if (BM_CONFIG.phoneDigits) bits.push('<a href="tel:' + BM_CONFIG.phoneDigits + '">' + BM_CONFIG.phone + '</a>');
+    if (BM_CONFIG.email) bits.push('<a href="mailto:' + BM_CONFIG.email + '">' + BM_CONFIG.email + '</a>');
+    f.innerHTML = bits.join(' &bull; ');
+  } catch (e) {}
+}
 </script>
 <script>
 var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
@@ -102,9 +117,12 @@ async function init() {
 
     var client = clients && clients[0];
     if (!client) {
-      showError('Client not found. Please contact us directly.');
+      showError('Client not found. Please contact your tree-service company directly.');
       return;
     }
+    // White-label: rebrand to THIS client's tenant before rendering.
+    try { if (window.bmApplyTenantBranding) await window.bmApplyTenantBranding(client.tenant_id); } catch (e) {}
+    bmPaintPortalBrand();
 
     // Fetch any photos tied to this client's quotes or jobs (post-migration table)
     var recordIds = []
@@ -117,7 +135,7 @@ async function init() {
 
     render(client, quotes || [], jobs || [], invoices || [], photos || []);
   } catch (e) {
-    showError('Unable to load portal. Please call us at ' + BM_CONFIG.phone + '.');
+    showError('Unable to load portal. Please reply to your email from the company and we\'ll help.');
   }
 }
 
@@ -275,11 +293,12 @@ function render(client, quotes, jobs, invoices, photos) {
 }
 
 function showError(msg) {
+  // White-label: error states have no resolved tenant — stay generic,
+  // never render Second Nature Tree (BM_CONFIG) name/phone.
   document.getElementById('root').innerHTML = '<div class="card error-card">'
     + '<div class="icon"></div>'
-    + '<h2 style="color:#1a3c12;margin-bottom:8px;">' + BM_CONFIG.companyName + '</h2>'
+    + '<h2 style="color:#1a3c12;margin-bottom:8px;">Client Portal</h2>'
     + '<p style="color:#888;margin-bottom:20px;">' + msg + '</p>'
-    + '<a href="tel:' + BM_CONFIG.phoneDigits + '" class="btn btn-primary" style="display:inline-flex;">' + BM_CONFIG.phone + '</a>'
     + '</div>';
 }
 

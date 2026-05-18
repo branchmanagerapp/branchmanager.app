@@ -1,5 +1,5 @@
 {
-  "version": 833,
+  "version": 834,
   "released": "2026-05-18",
-  "notes": "white-label pay+approve: shared bmApplyBranding/bmApplyTenantBranding in tenant-slug-bootstrap.js; pay.html neutral-until-resolved + rebrands from invoice tenant; approve.html awaits tenant branding before rendering the quote; pre-resolution error states generic, never SNT"
+  "notes": "white-label paid/client/book: paid.html paints from the just-paid tenant's bm-co-* (generic, never SNT); client.html loads the branding helper + rebrands from client.tenant_id + generic showError; book.html (new lead form) generic until a ?tenant_slug resolves a real tenant — no Second Nature Tree on any customer standalone page"
 }

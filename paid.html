@@ -97,7 +97,22 @@
 <script src="tenant-slug-bootstrap.js"></script>
 <script>
 (function() {
-  var C = BM_CONFIG;
+  // White-label: never BM_CONFIG (= Second Nature Tree). The customer
+  // just came from pay.html (same browser), which wrote the paying
+  // company's bm-co-* to localStorage. Build C from that; generic if
+  // absent.
+  var _v = function(k){ try { return (localStorage.getItem(k) || '').trim(); } catch(e) { return ''; } };
+  var _site = _v('bm-co-website');
+  var _ph = _v('bm-co-phone');
+  var C = {
+    companyName: _v('bm-co-name'),
+    phone: _ph,
+    phoneTel: _ph ? ('+' + _ph.replace(/\D/g,'').replace(/^1?/,'1')) : '',
+    googleReviewUrl: _v('bm-co-review'),
+    website: _site,
+    websiteUrl: _site ? (_site.indexOf('http') === 0 ? _site : 'https://' + _site) : '',
+    city: '', tagline: '', licenses: ''
+  };
   document.title = 'Payment Received — ' + C.companyName;
   document.getElementById('val-company').textContent = C.companyName;
   document.getElementById('paid-footer-links').innerHTML =

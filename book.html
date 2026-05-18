@@ -118,14 +118,24 @@
 <script src="tenant-slug-bootstrap.js"></script>
 <script>
 (function() {
-  var C = BM_CONFIG;
-  document.title = 'Request a Free Estimate — ' + C.companyName;
-  document.getElementById('cfg-title').textContent = C.companyName;
-  document.getElementById('cfg-subtitle').textContent = C.city + ' — ' + C.tagline;
-  document.getElementById('cfg-sign-off').textContent = '— ' + C.ownerName.split(' ')[0] + ', ' + C.companyName;
-  document.getElementById('cfg-call-link').innerHTML = '<a href="tel:' + C.phoneDigits + '" style="color:#1a3c12;font-weight:600;">📞 Call ' + C.phone + '</a>';
-  document.getElementById('cfg-info').innerHTML = 'We typically respond within 2 hours during business hours.<br><a href="tel:' + C.phoneDigits + '">' + C.phone + '</a> · <a href="' + C.websiteUrl + '">' + C.website + '</a>';
-  document.getElementById('sms-consent-text').innerHTML = 'By checking this box, I agree to receive account notifications, appointment reminders, and customer care messages via text message from ' + C.companyName + '. You may opt out by replying STOP or request more information by replying HELP. Message frequency varies. Message and data rates may apply. You can review our <a href="privacy.html" target="_blank" style="color:#1a3c12;">Privacy Policy</a> and <a href="terms.html" target="_blank" style="color:#1a3c12;">Terms</a> to see how your data is used.';
+  // White-label: book.html is a NEW lead form — no record, so the only
+  // tenant context is ?tenant_slug (resolved by tenant-slug-bootstrap).
+  // NEVER paint BM_CONFIG (= Second Nature Tree). Stay generic until/
+  // unless a slug resolves a real tenant, then paint that company.
+  function g(id){ return document.getElementById(id); }
+  function paint() {
+    var resolved = !!window.bmResolvedTenant;
+    var C = (resolved && window.BM_CONFIG) ? window.BM_CONFIG : null;
+    var nm = C && C.companyName ? C.companyName : '';
+    document.title = 'Request a Free Estimate' + (nm ? ' — ' + nm : '');
+    if (g('cfg-title')) g('cfg-title').textContent = nm || 'Request a Free Estimate';
+    if (g('cfg-subtitle')) g('cfg-subtitle').textContent = C ? [C.city, C.tagline].filter(Boolean).join(' — ') : 'Fast, friendly, no-obligation quotes';
+    if (g('cfg-sign-off')) g('cfg-sign-off').textContent = nm ? ('— ' + nm) : '';
+    if (g('cfg-call-link')) g('cfg-call-link').innerHTML = (C && C.phoneDigits) ? '<a href="tel:' + C.phoneDigits + '" style="color:#1a3c12;font-weight:600;">📞 Call ' + C.phone + '</a>' : '';
+    if (g('cfg-info')) g('cfg-info').innerHTML = 'We typically respond within 2 hours during business hours.' + (C && (C.phoneDigits || C.website) ? '<br>' : '') + (C && C.phoneDigits ? '<a href="tel:' + C.phoneDigits + '">' + C.phone + '</a>' : '') + (C && C.phoneDigits && C.website ? ' · ' : '') + (C && C.website ? '<a href="' + C.websiteUrl + '">' + C.website + '</a>' : '');
+    if (g('sms-consent-text')) g('sms-consent-text').innerHTML = 'By checking this box, I agree to receive account notifications, appointment reminders, and customer care messages via text message' + (nm ? ' from ' + nm : '') + '. You may opt out by replying STOP or request more information by replying HELP. Message frequency varies. Message and data rates may apply. You can review our <a href="privacy.html" target="_blank" style="color:#1a3c12;">Privacy Policy</a> and <a href="terms.html" target="_blank" style="color:#1a3c12;">Terms</a> to see how your data is used.';
+  }
+  Promise.resolve(window.bmTenantSlugBootstrap).then(paint, paint);
 })();
 </script>
 <script>
