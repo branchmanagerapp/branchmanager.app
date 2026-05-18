@@ -20,9 +20,10 @@ Deno.serve(async (req) => {
 
   const auth = req.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) return J({error:"auth required"},401);
-  const asUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global:{ headers:{ authorization: auth } } });
-  const { data:{ user } } = await asUser.auth.getUser();
-  if (!user) return J({error:"not signed in"},401);
+  const jwt = auth.slice(7).trim();
+  const asUser = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+  const { data:{ user }, error: uErr } = await asUser.auth.getUser(jwt);
+  if (uErr || !user) return J({error:"not signed in",detail:uErr?.message},401);
 
   // tenant from JWT claim (the access-token hook stamps tenant_id); fall back to user_tenants
   const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth:{ persistSession:false } });

@@ -1,5 +1,5 @@
 {
-  "version": 823,
+  "version": 824,
   "released": "2026-05-18",
-  "notes": "Free friend comp code: ?code=FRIENDS2026 → server-validated comped-Pro tenant"
+  "notes": "email-confirm-ready: branded confirm email; comp code survives confirmation round-trip (cc= param + pending localStorage); GMB-hash hijack guarded; first-run welcome splash armed for ALL new signups; expired-link login hint"
 }

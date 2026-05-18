@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 823; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 824; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1119,7 +1119,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v823.min.js"></script>
+<script defer src="dist/bm.bundle.v824.min.js"></script>
 
 
 
@@ -1730,6 +1730,17 @@ function checkAuth() {
     }
     loginDiv.innerHTML = (/[?&]signup=/.test(location.search) && Auth.renderSignup)
       ? Auth.renderSignup() : Auth.renderLogin();
+    // If an email-confirmation return failed (expired/used link), say so
+    // instead of dropping them on a bare login screen with no explanation.
+    try {
+      if (sessionStorage.getItem('bm-confirm-failed') === '1') {
+        sessionStorage.removeItem('bm-confirm-failed');
+        var _cf = document.createElement('div');
+        _cf.style.cssText = 'max-width:420px;margin:14px auto 0;padding:12px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;font-size:13px;color:#8a6d00;text-align:center;';
+        _cf.textContent = 'That confirmation link expired or was already used. Sign in below — or sign up again to get a fresh link.';
+        loginDiv.appendChild(_cf);
+      }
+    } catch (e) {}
     return false;
   }
   var appEl = document.querySelector('.app');
@@ -2239,7 +2250,12 @@ if (checkAuth()) {
   // for page routing (otherwise the token sits in the hash unconsumed and the
   // router falls through to default page).
   try {
-    if (window.location.hash && window.location.hash.indexOf('access_token=') >= 0
+    var _h = window.location.hash || '';
+    // A Supabase email-confirm / magic-link return ALSO carries access_token=
+    // in the hash but with type=signup|magiclink|invite|recovery. That belongs
+    // to handleEmailConfirmReturn, NOT the GMB OAuth handler — don't hijack it.
+    var _isSupaAuth = /[#&]type=(signup|magiclink|invite|recovery)/.test(_h);
+    if (_h && _h.indexOf('access_token=') >= 0 && !_isSupaAuth
         && typeof SettingsPage !== 'undefined' && SettingsPage._gmbCheckCallback) {
       SettingsPage._gmbCheckCallback();
     }
@@ -2357,10 +2373,24 @@ if (checkAuth()) {
 }
 } // end bmInit
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bmInit);
-} else {
+// Boot wrapper: an email-confirmation return must be handled BEFORE the auth
+// gate / page router run. handleEmailConfirmReturn establishes the session
+// from the just-confirmed link, redeems the comp code, arms the welcome
+// splash, then reloads into a clean authenticated boot — in which case we
+// must NOT continue into bmInit (the reload restarts everything).
+async function bmBoot() {
+  try {
+    if (typeof Auth !== 'undefined' && Auth.handleEmailConfirmReturn) {
+      var tookOver = await Auth.handleEmailConfirmReturn();
+      if (tookOver) return;
+    }
+  } catch (e) { console.warn('confirm-return hook failed', e); }
   bmInit();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bmBoot);
+} else {
+  bmBoot();
 }
 
 // ── Service Worker ──

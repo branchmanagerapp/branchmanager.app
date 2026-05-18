@@ -118,6 +118,7 @@ var Auth = {
     var pw = document.getElementById('su-password').value;
     var tier = (new URLSearchParams(location.search).get('signup') || 'solo').toLowerCase();
     if (['solo','crew','pro'].indexOf(tier) === -1) tier = 'solo';
+    var code = (new URLSearchParams(location.search).get('code') || '').trim();
     var btn = document.getElementById('su-submit');
     var errEl = document.getElementById('su-error');
     var okEl = document.getElementById('su-ok');
@@ -128,10 +129,19 @@ var Auth = {
     if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.ready && SupabaseDB.client)) {
       return fail('Signup is temporarily unavailable. Please try again shortly.');
     }
+    // Where the confirmation-email link returns. Carries the comp code as `cc`
+    // (NOT `code` — avoids colliding with Supabase's own auth `code` param) and
+    // the tier, so a comped/trial signup survives the email round-trip even if
+    // the friend opens the email on a different device/browser where
+    // localStorage wouldn't carry. `confirmed=1` is our own marker so the boot
+    // handler knows this load is a confirmation return regardless of auth flow.
+    var redirectTo = location.origin + location.pathname + '?confirmed=1'
+      + (code ? '&cc=' + encodeURIComponent(code) : '')
+      + '&tier=' + encodeURIComponent(tier);
     try {
       var res = await SupabaseDB.client.auth.signUp({
         email: email, password: pw,
-        options: { data: { business_name: co, signup_tier: tier } }
+        options: { data: { business_name: co, signup_tier: tier }, emailRedirectTo: redirectTo }
       });
       if (res.error) {
         var m = (res.error.message || '').toLowerCase();
@@ -140,16 +150,37 @@ var Auth = {
         return fail(res.error.message || 'Could not create account.');
       }
       var data = res.data;
-      // handle_new_user() has now auto-provisioned this company's tenant + owner row.
-      if (!data.session) {
-        var r2 = await SupabaseDB.client.auth.signInWithPassword({ email: email, password: pw });
-        if (r2.error) {
-          okEl.innerHTML = 'Account created. Check <strong>' + email + '</strong> to confirm your email, then sign in.';
-          okEl.style.display = 'block'; btn.style.display = 'none';
-          return;
-        }
-        data = r2.data;
+      // Supabase anti-enumeration: an already-registered email returns a user
+      // with an empty identities array and NO error + NO session. Treat as
+      // "already have an account" instead of a silent dead end.
+      if (data && data.user && Array.isArray(data.user.identities)
+          && data.user.identities.length === 0 && !data.session) {
+        okEl.innerHTML = 'This email already has an account. Confirm it from your inbox, or use the <strong>Sign in</strong> link below.';
+        okEl.style.display = 'block'; btn.style.display = 'none';
+        return;
       }
+      // handle_new_user() has now auto-provisioned this company's tenant + owner.
+      if (!data.session) {
+        // Email confirmation is ON — there is NO session until they click the
+        // link. Do NOT try signInWithPassword (it fails with "Email not
+        // confirmed" and the comp code would be silently lost). Stash the
+        // pending state for the same-browser confirm-return path; the redirect
+        // URL carries it for the cross-device path.
+        try {
+          localStorage.setItem('bm-pending-comp-code', code || '');
+          localStorage.setItem('bm-pending-co-name', co || '');
+          localStorage.setItem('bm-pending-tier', tier);
+        } catch (e) {}
+        okEl.innerHTML = '<div style="font-size:15px;font-weight:800;color:#1b5e20;margin-bottom:6px;">Check your inbox 📬</div>'
+          + 'We sent a confirmation link to <strong>' + email.replace(/[<>"&]/g, '') + '</strong>.<br>'
+          + 'Tap it and you’ll drop straight into your workspace'
+          + (code ? ' — your free access is already applied.' : '.')
+          + '<div style="margin-top:8px;font-size:11px;color:#5a7a5e;">No email after a minute or two? Check spam/junk. The link expires in 1 hour.</div>';
+        okEl.style.display = 'block';
+        btn.style.display = 'none';
+        return;
+      }
+      // Instant path (email confirmation OFF): a session already exists.
       Auth.user = { email: data.user.email, id: data.user.id, role: 'owner', name: co || 'Owner' };
       Auth.role = 'owner';
       localStorage.setItem('bm-session', JSON.stringify(Auth.user));
@@ -157,13 +188,12 @@ var Auth = {
       // Free/comp code (?code=...): server validates against COMP_CODES and
       // stamps this tenant comped-Pro. Best-effort — never block signup if the
       // code is missing/invalid; they just get the normal free trial instead.
-      var _code = (new URLSearchParams(location.search).get('code') || '').trim();
-      if (_code && data && data.session && data.session.access_token) {
+      if (code && data && data.session && data.session.access_token) {
         try {
           var _cr = await fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/redeem-comp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.session.access_token },
-            body: JSON.stringify({ code: _code })
+            body: JSON.stringify({ code: code })
           });
           var _cj = await _cr.json();
           if (_cj && _cj.ok && typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
@@ -172,15 +202,114 @@ var Auth = {
         } catch (e) { /* non-blocking */ }
       }
       try {
-        if (!_code && typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
+        if (!code && typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
           var now = new Date(), ends = new Date(now.getTime() + 14 * 86400000);
           Subscription.setStateLocal({ tier: tier, status: 'trial', trial_started_at: now.toISOString(), trial_ends_at: ends.toISOString() });
         }
       } catch (e) {}
+      // First-run onboarding: arm the welcome splash → setup checklist so a
+      // brand-new tenant gets oriented instead of a cold blank dashboard.
+      try { localStorage.setItem('bm-welcome-show', '1'); localStorage.setItem('bm-welcome-name', co || ''); } catch (e) {}
       window.location.href = window.location.pathname;  // clean URL → reload into their branded BM
     } catch (e) {
       fail('Unexpected error: ' + (e && e.message ? e.message : e));
     }
+  },
+
+  // Called once at boot (from bmBoot, before checkAuth) when the URL looks
+  // like an email-confirmation return. Establishes the local session from the
+  // Supabase session that detectSessionInUrl just parsed, redeems the comp
+  // code, arms the first-run welcome splash, cleans the URL, and reloads into
+  // a normal authenticated boot. Returns true if it has taken over the boot
+  // (caller must NOT continue), false to fall through to normal login.
+  handleEmailConfirmReturn: async function() {
+    var qs = new URLSearchParams(location.search);
+    var isConfirm = qs.get('confirmed') === '1';
+    var hash = location.hash || '';
+    // Implicit-flow auth return also lands tokens in the hash with a type.
+    var hashIsAuth = /[#&](access_token|error_code|error_description)=/.test(hash)
+      && /[#&]type=(signup|magiclink|invite|recovery)/.test(hash);
+    if (!isConfirm && !hashIsAuth) return false;
+
+    // Wait for the Supabase client (it parses the URL session on creation).
+    var tries = 0;
+    while (tries < 50 && !(typeof SupabaseDB !== 'undefined' && SupabaseDB.ready && SupabaseDB.client)) {
+      await new Promise(function(r) { setTimeout(r, 100); });
+      tries++;
+    }
+    if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.client)) return false;
+
+    var sess = null;
+    try {
+      var g = await SupabaseDB.client.auth.getSession();
+      sess = g && g.data && g.data.session;
+      if (!sess) {
+        await new Promise(function(r) { setTimeout(r, 700); });
+        g = await SupabaseDB.client.auth.getSession();
+        sess = g && g.data && g.data.session;
+      }
+    } catch (e) {}
+
+    if (!sess || !sess.user) {
+      // Link expired/invalid — strip our markers + the auth hash and fall
+      // through to the normal login screen with a one-time hint.
+      try { history.replaceState({}, '', location.pathname); } catch (e) {}
+      try { sessionStorage.setItem('bm-confirm-failed', '1'); } catch (e) {}
+      return false;
+    }
+
+    var pendCo = '';
+    try { pendCo = localStorage.getItem('bm-pending-co-name') || ''; } catch (e) {}
+    var coName = pendCo
+      || (sess.user.user_metadata && sess.user.user_metadata.business_name)
+      || 'Owner';
+    Auth.user = { email: sess.user.email, id: sess.user.id, role: 'owner', name: coName };
+    Auth.role = 'owner';
+    try {
+      localStorage.setItem('bm-session', JSON.stringify(Auth.user));
+      if (coName && coName !== 'Owner') localStorage.setItem('bm-co-name', coName);
+    } catch (e) {}
+
+    var code = (qs.get('cc') || '').trim();
+    if (!code) { try { code = localStorage.getItem('bm-pending-comp-code') || ''; } catch (e) {} }
+    var tier = (qs.get('tier') || '').toLowerCase();
+    if (!tier) { try { tier = localStorage.getItem('bm-pending-tier') || 'solo'; } catch (e) {} }
+    if (['solo','crew','pro'].indexOf(tier) === -1) tier = 'solo';
+
+    if (code) {
+      try {
+        var cr = await fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/redeem-comp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sess.access_token },
+          body: JSON.stringify({ code: code })
+        });
+        var cj = await cr.json();
+        if (cj && cj.ok && typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
+          Subscription.setStateLocal({ tier: 'pro', status: 'active', comped: true });
+        }
+      } catch (e) { /* non-blocking */ }
+    } else {
+      try {
+        if (typeof Subscription !== 'undefined' && Subscription.setStateLocal) {
+          var now = new Date(), ends = new Date(now.getTime() + 14 * 86400000);
+          Subscription.setStateLocal({ tier: tier, status: 'trial', trial_started_at: now.toISOString(), trial_ends_at: ends.toISOString() });
+        }
+      } catch (e) {}
+    }
+
+    try {
+      localStorage.setItem('bm-welcome-show', '1');
+      localStorage.setItem('bm-welcome-name', (coName && coName !== 'Owner') ? coName : '');
+      localStorage.removeItem('bm-pending-comp-code');
+      localStorage.removeItem('bm-pending-co-name');
+      localStorage.removeItem('bm-pending-tier');
+    } catch (e) {}
+
+    // Clean the URL (drop ?confirmed/cc/tier + the auth hash) and reload into
+    // a fresh, authenticated boot → dashboard → welcome splash.
+    try { window.location.replace(location.pathname); }
+    catch (e) { window.location.href = location.pathname; }
+    return true;
   },
 
   login: async function(event) {
