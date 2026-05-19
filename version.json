@@ -1,5 +1,5 @@
 {
-  "version": 837,
+  "version": 838,
   "released": "2026-05-19",
-  "notes": "CRITICAL multi-tenant persistence FIX: db.js getTenantId/resolveTenantId authoritatively use signed-in JWT tenant_id claim so non-SNT tenant writes persist (w/ v835/v836). SNT unchanged."
+  "notes": "in-app new-request notifier: realtime postgres_changes INSERT on requests fires browser notification (if permitted) + toast + beep + live-refresh requests/pipeline page if open. Click notification opens BM → Requests. Tenant-scoped via RLS. Mirrors the existing inbound-comm notifier."
 }

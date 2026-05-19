@@ -518,11 +518,88 @@ var SupabaseDB = {
         SupabaseDB._propagateInboundToMessaging(c);
       });
 
+      // New website-form requests — Doug wanted in-app alert (the existing
+      // SMS + team email are out-of-band; if he's actively in BM he should
+      // see new leads land live without refresh). Realtime respects RLS so
+      // each tenant only gets their own inserts.
+      ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' }, function(payload) {
+        var r = payload && payload.new;
+        if (!r) return;
+        SupabaseDB._notifyNewRequest(r);
+      });
+
       ch.subscribe(function(status) {
         if (SupabaseDB._debug) console.debug('[Realtime] channel status:', status);
       });
       SupabaseDB._realtimeChannel = ch;
     } catch (e) { console.warn('[Realtime] failed to subscribe:', e); }
+  },
+
+  // New-request notifier — mirrors _notifyInboundComm. Browser notification
+  // (if granted) + in-app toast + a short beep. Clicking the notification
+  // brings BM forward and opens the Requests page so the lead can be
+  // worked immediately.
+  _notifyNewRequest: function(r) {
+    try {
+      var name = r.client_name || 'New lead';
+      var service = r.title || 'Tree service';
+      var addr = r.property || '';
+      var phone = r.client_phone || r.phone || '';
+      var phoneFmt = phone;
+      if (phone) {
+        var d = String(phone).replace(/\D/g, '');
+        if (d.length === 11 && d[0] === '1') d = d.slice(1);
+        if (d.length === 10) phoneFmt = '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+      }
+      var label = '🌳 New request';
+      var body = name + ' — ' + service + (addr ? '\n📍 ' + addr : '') + (phoneFmt ? '\n📞 ' + phoneFmt : '');
+
+      // 1. Browser Notification (works even when tab is in background)
+      if ('Notification' in window) {
+        if (Notification.permission === 'default' && typeof Notification.requestPermission === 'function') {
+          try { var rp = Notification.requestPermission(); if (rp && typeof rp.catch === 'function') rp.catch(function() {}); } catch (e) {}
+        }
+        if (Notification.permission === 'granted') {
+          try {
+            var n = new Notification(label, {
+              body: body || 'New website lead — tap to open',
+              icon: '/icons/icon-192.png',
+              tag: 'bm-newreq-' + r.id,
+              requireInteraction: true
+            });
+            n.onclick = function() { window.focus(); if (typeof loadPage === 'function') loadPage('requests'); n.close(); };
+          } catch (e) { /* missing icon etc — ignore */ }
+        }
+      }
+
+      // 2. In-app toast (always — even without Notification permission)
+      if (typeof UI !== 'undefined' && UI.toast) {
+        UI.toast(label + ' — ' + name + (service ? ' · ' + service : ''), 'info');
+      }
+
+      // 3. Short beep (audible heads-up; same gentle 880 Hz pattern as comms)
+      try {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) {
+          var ac = new Ctx(); var o = ac.createOscillator(); var g = ac.createGain();
+          o.connect(g); g.connect(ac.destination); o.type = 'sine'; o.frequency.value = 880;
+          g.gain.setValueAtTime(0.0001, ac.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.18, ac.currentTime + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.25);
+          o.start(); o.stop(ac.currentTime + 0.26);
+        }
+      } catch (e) {}
+
+      // 4. If the Requests page is currently open, refresh it so the new
+      // row appears without a manual refresh.
+      try {
+        if (typeof window._currentPage !== 'undefined'
+            && (window._currentPage === 'requests' || window._currentPage === 'pipeline')
+            && typeof loadPage === 'function') {
+          loadPage(window._currentPage);
+        }
+      } catch (e) {}
+    } catch (e) { console.warn('[Realtime] new-request notifier failed:', e); }
   },
 
   // Inbound-comm notifier — called by the communications Realtime subscription.
