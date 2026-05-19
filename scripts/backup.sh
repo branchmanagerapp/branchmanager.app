@@ -21,9 +21,19 @@ DATE="$(date +%Y-%m-%d_%H%M)"
 OUT="$HOME/Desktop/Tree/Backups/$DATE"
 mkdir -p "$OUT"
 
-if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-  echo "❌ SUPABASE_ACCESS_TOKEN not set. Run:"
-  echo "   export SUPABASE_ACCESS_TOKEN=sbp_..."
+# Load backup secrets FIRST (gitignored, outside the repo) so the real
+# pg_dump path can run without any manual env. 2026-05-19 hardening.
+for ENVF in "$HOME/Desktop/Tree/.bm-backup.env" "$REPO/security/.backup.env"; do
+  [ -f "$ENVF" ] && . "$ENVF" && echo "🔑 loaded backup secrets from $ENVF"
+done
+
+# SUPABASE_ACCESS_TOKEN is only needed for the REST fallback + the
+# optional config lookup. With SUPABASE_DB_PASSWORD we do a real
+# pg_dump and don't need it. Only hard-fail if we have NEITHER.
+if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+  echo "❌ Need SUPABASE_DB_PASSWORD (preferred, real pg_dump) or"
+  echo "   SUPABASE_ACCESS_TOKEN (REST fallback). Set one in"
+  echo "   ~/Desktop/Tree/.bm-backup.env"
   exit 1
 fi
 
@@ -45,11 +55,9 @@ done
 
 if [ -n "$PG_DUMP" ]; then
   echo "1/2 — Postgres dump via $PG_DUMP…"
-  # Pull DB password from the project. The supabase CLI stores it, but
-  # we can also use the pooler connection string from project settings.
-  CONN="$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-    "https://api.supabase.com/v1/projects/$PROJECT_REF/config/database" 2>/dev/null | \
-    grep -oE '"db_dns_alias":"[^"]+"' | head -1 | cut -d'"' -f4)"
+  # (Removed an unused db_dns_alias lookup that referenced
+  # SUPABASE_ACCESS_TOKEN and broke under `set -u` when only the DB
+  # password is configured. The pooler URL below is deterministic.)
   if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
     echo "   ⚠ Set SUPABASE_DB_PASSWORD to enable direct pg_dump."
     echo "     Found at Supabase dashboard → Project Settings → Database → Connection string."
@@ -63,6 +71,21 @@ if [ -n "$PG_DUMP" ]; then
     if [ -n "$PG_DUMP" ] && [ -s "$OUT/db.sql" ]; then
       gzip -f "$OUT/db.sql"
       echo "   ✅ $(du -h "$OUT/db.sql.gz" | cut -f1) → $OUT/db.sql.gz"
+      DB_DUMP_OK=1
+      # Encrypt for off-Mac/cloud copies — this is customer PII (names,
+      # addresses, phones, invoices, payments). Plaintext stays local on
+      # the Mac; only the .enc leaves. AES-256, openssl (no deps).
+      if [ -n "${BM_BACKUP_ENC_PASS:-}" ]; then
+        if openssl enc -aes-256-cbc -pbkdf2 -salt \
+             -in "$OUT/db.sql.gz" -out "$OUT/db.sql.gz.enc" \
+             -pass env:BM_BACKUP_ENC_PASS 2>/dev/null; then
+          echo "   🔒 $(du -h "$OUT/db.sql.gz.enc" | cut -f1) → $OUT/db.sql.gz.enc (AES-256, for cloud upload)"
+        else
+          echo "   ⚠ encryption failed — .enc not produced; do NOT upload the plaintext."
+        fi
+      else
+        echo "   ⚠ BM_BACKUP_ENC_PASS not set — skipping encryption; cloud upload disabled."
+      fi
     fi
   fi
 fi

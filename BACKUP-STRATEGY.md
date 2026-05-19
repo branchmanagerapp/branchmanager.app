@@ -22,16 +22,21 @@ Run from the repo root. Captures:
 
 Output goes to `~/Desktop/Tree/Backups/YYYY-MM-DD_HHMM/`.
 
-⚠️ **CORRECTION (2026-05-18):** The "22 tables captured" claim was true
-on May 10 but is **no longer true**. The post-breach RLS lockdown denies
-the anon/access-token key the REST fallback uses, so it now writes `[]`
-for every per-tenant table (clients, invoices, payments, jobs, quotes,
-…). `backup.sh` was hardened 2026-05-18 to detect this and FAIL LOUD
-("❌ DB DUMP IS HOLLOW") instead of printing false success. The source
-zip is still real. **Real business-data coverage = Supabase server-side
-daily backups only**, unless `SUPABASE_DB_PASSWORD` is set so the script
-can run a true privileged `pg_dump` (the only way to get a local copy of
-clients/invoices/payments again).
+⚠️ **2026-05-18 correction → 2026-05-19 RESOLVED.** Post-breach RLS made
+the old REST fallback hollow (`[]` for clients/invoices/payments…).
+**Fixed 2026-05-19:** Supabase DB password was reset via Management API
+(`PATCH /v1/projects/{ref}/database/password`) and stored in
+`~/Desktop/Tree/.bm-backup.env` (chmod 600, **outside the repo**, never
+committed) along with `BM_BACKUP_ENC_PASS`. `backup.sh` now auto-sources
+that env and runs a real `pg_dump` (pooler, libpq pg_dump 18.x) with no
+manual steps, producing `db.sql.gz` (~1.2 MB, 44 tables, real data —
+clients=537/invoices=350/payments=364 verified) PLUS `db.sql.gz.enc`
+(AES-256, openssl, for off-Mac/cloud upload — it's customer PII). The
+hollow-detection still guards the REST fallback path. Verified nothing
+in edge fns/app uses a direct PG connection, so the password reset broke
+nothing (BM = API keys + service-role only). **Coverage now: Supabase
+daily + local Mac (real). STILL TODO: off-Mac second cloud (Cloudflare
+R2 + Backblaze B2 — needs creds) and photo-bucket export.**
 
 ### 2. Supabase Pro daily backups
 Already running server-side. List via:
