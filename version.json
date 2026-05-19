@@ -1,5 +1,5 @@
 {
-  "version": 834,
-  "released": "2026-05-18",
-  "notes": "white-label paid/client/book: paid.html paints from the just-paid tenant's bm-co-* (generic, never SNT); client.html loads the branding helper + rebrands from client.tenant_id + generic showError; book.html (new lead form) generic until a ?tenant_slug resolves a real tenant — no Second Nature Tree on any customer standalone page"
+  "version": 837,
+  "released": "2026-05-19",
+  "notes": "CRITICAL multi-tenant persistence FIX: db.js getTenantId/resolveTenantId authoritatively use signed-in JWT tenant_id claim so non-SNT tenant writes persist (w/ v835/v836). SNT unchanged."
 }

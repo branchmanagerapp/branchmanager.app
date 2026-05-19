@@ -126,13 +126,71 @@ var SupabaseDB = {
       };
       // Expose the resolver so other modules don't need their own copy.
       window.resolveTenantId = resolveTenantHeader;
+      // CRITICAL (2026-05-19): X-Tenant-ID must be resolved PER REQUEST,
+      // not frozen at client-creation. Before, the header was set once at
+      // boot — i.e. before login — so it was always the SNT fallback, and
+      // the DB tenant trigger stamped EVERY tenant's new rows with SNT's
+      // id → RLS rejected non-SNT writes → silent local-only. A custom
+      // fetch re-resolves the header on every call, so once auth stamps
+      // bm-tenant-id (above) each request carries the real signed-in
+      // tenant. SNT unchanged (still resolves 93af4348); logged-out/
+      // public requests still fall back exactly as before.
+      var _bmFetch = function(input, init) {
+        init = init || {};
+        var h;
+        try {
+          h = new Headers(init.headers || {});
+          h.set('X-Tenant-ID', resolveTenantHeader());
+          init.headers = h;
+        } catch (e) { /* leave init as-is on exotic envs */ }
+        return window.fetch(input, init);
+      };
       SupabaseDB.client = window.supabase.createClient(url, key, {
-        global: {
-          headers: { 'X-Tenant-ID': resolveTenantHeader() }
-        }
+        global: { fetch: _bmFetch }
       });
       SupabaseDB.ready = true;
       if (SupabaseDB._debug) console.debug('Supabase connected:', url, 'tenant:', resolveTenantHeader());
+
+      // ── CRITICAL multi-tenant persistence fix (2026-05-19) ──
+      // Before this, resolveTenantHeader() fell back to SNT's
+      // 93af4348 for ANY signed-in user whose bm-tenant-id wasn't set
+      // — so every non-SNT tenant's writes carried the wrong tenant_id,
+      // RLS silently rejected them, and the app kept them local-only
+      // (fake success). SNT only "worked" because its real tenant_id
+      // equals that hardcoded fallback. Fix: stamp bm-tenant-id from
+      // the authenticated JWT's tenant_id claim so rows are written
+      // under the actual signed-in tenant. SNT is unaffected (its JWT
+      // tenant_id IS 93af4348). Only sets when a real claim exists, so
+      // logged-out/public paths keep the legacy fallback unchanged.
+      SupabaseDB._stampTenantFromJWT = function(session) {
+        try {
+          var tok = session && session.access_token;
+          if (!tok) {
+            for (var k in localStorage) {
+              if (/^sb-.*-auth-token$/.test(k)) {
+                try { tok = (JSON.parse(localStorage.getItem(k)) || {}).access_token; } catch (e) {}
+                break;
+              }
+            }
+          }
+          if (!tok) return;
+          var claim = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          var tid = claim && claim.tenant_id;
+          if (tid && /^[0-9a-f-]{36}$/i.test(tid) && localStorage.getItem('bm-tenant-id') !== tid) {
+            localStorage.setItem('bm-tenant-id', tid);
+          }
+        } catch (e) {}
+      };
+      // Synchronous now: covers a returning/persisted session BEFORE
+      // _initialSync (below) or any write happens.
+      SupabaseDB._stampTenantFromJWT(null);
+      // And on every future auth transition (login / token refresh).
+      try {
+        SupabaseDB.client.auth.onAuthStateChange(function(evt, session) {
+          if (evt === 'SIGNED_OUT') { try { localStorage.removeItem('bm-tenant-id'); } catch (e) {} return; }
+          if (session) SupabaseDB._stampTenantFromJWT(session);
+        });
+      } catch (e) {}
 
       // Check if RLS policies are properly configured
       SupabaseDB._checkRLS();

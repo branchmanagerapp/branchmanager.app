@@ -68,7 +68,36 @@ var DB = (function() {
     return localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
   }
 
+  // CRITICAL (2026-05-19): the authoritative tenant for a signed-in user
+  // is the `tenant_id` claim in their Supabase JWT (stamped by the
+  // access-token hook). Reading it directly here — synchronously, from
+  // the persisted session token — fixes the bug where non-SNT tenants'
+  // writes were stamped with the wrong/no tenant_id and silently
+  // RLS-rejected (records looked saved but never reached the DB). SNT
+  // unaffected: its JWT tenant_id IS the legacy 93af4348.
+  function _jwtTenantId() {
+    try {
+      var tok = null, k;
+      for (k in localStorage) {
+        if (/^sb-.*-auth-token$/.test(k)) {
+          try { tok = (JSON.parse(localStorage.getItem(k)) || {}).access_token; } catch (e) {}
+          break;
+        }
+      }
+      if (!tok) return null;
+      var p = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      var tid = p && p.tenant_id;
+      return (tid && /^[0-9a-f-]{36}$/i.test(tid)) ? tid : null;
+    } catch (e) { return null; }
+  }
+
   function getTenantId() {
+    // JWT claim wins — always current, authoritative, no stale cache.
+    var jt = _jwtTenantId();
+    if (jt) {
+      if (_tenantIdCache !== jt) _setTenantId(jt);
+      return jt;
+    }
     if (_tenantIdCache) return _tenantIdCache;
     try {
       var cached = localStorage.getItem('bm-tenant-id');
@@ -84,6 +113,9 @@ var DB = (function() {
   }
 
   function resolveTenantId() {
+    // Authoritative + synchronous: the signed-in user's JWT tenant claim.
+    var jt = _jwtTenantId();
+    if (jt) { if (_tenantIdCache !== jt) _setTenantId(jt); return Promise.resolve(jt); }
     if (_tenantIdCache) return Promise.resolve(_tenantIdCache);
     if (_tenantResolving) return _tenantResolving;
 
