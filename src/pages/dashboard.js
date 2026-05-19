@@ -195,6 +195,51 @@ var DashboardPage = {
       }
     } catch(e) {}
 
+    // v838+: surface unworked website-form requests right on Home so new
+    // leads aren't waiting in the Requests page unseen. Calm green (good
+    // news, not alarming). Whole card is clickable → Requests page.
+    try {
+      var _nrs = (typeof DB !== 'undefined' && DB.requests && DB.requests.getAll)
+        ? DB.requests.getAll().filter(function(r) { return r.status === 'new'; })
+            .sort(function(a, b) { return String(b.createdAt || b.created_at || '').localeCompare(String(a.createdAt || a.created_at || '')); })
+        : [];
+      if (_nrs.length) {
+        var _rel = function(ts) {
+          if (!ts) return '';
+          var s = Math.round((Date.now() - new Date(ts)) / 1000);
+          if (s < 60) return 'just now';
+          if (s < 3600) return Math.round(s / 60) + 'm ago';
+          if (s < 86400) return Math.round(s / 3600) + 'h ago';
+          return Math.round(s / 86400) + 'd ago';
+        };
+        var _esc = function(s) { return String(s || '').replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+        html += '<div onclick="loadPage(\'requests\')" style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:12px;padding:14px 16px;margin-bottom:16px;cursor:pointer;">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">'
+          +   '<div style="font-size:13px;font-weight:800;color:#1b5e20;letter-spacing:.3px;text-transform:uppercase;">🌳 New requests · ' + _nrs.length + ' waiting</div>'
+          +   '<div style="font-size:12px;color:#1b5e20;font-weight:700;">View all →</div>'
+          + '</div>';
+        _nrs.slice(0, 5).forEach(function(r) {
+          var nm = r.clientName || r.client_name || r.name || 'New lead';
+          var svc = r.title || r.service || 'Tree service';
+          var addr = r.property || r.address || '';
+          var ph = r.clientPhone || r.client_phone || r.phone || '';
+          var when = _rel(r.createdAt || r.created_at);
+          html += '<div style="background:#fff;border:1px solid #c8e6c9;border-radius:8px;padding:10px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;">'
+            +   '<div style="min-width:0;flex:1;">'
+            +     '<div style="font-weight:700;color:#1a3c12;">' + _esc(nm) + ' <span style="font-weight:500;color:#5a6b50;">· ' + _esc(svc) + '</span></div>'
+            +     (addr ? '<div style="font-size:11px;color:#5a6b50;margin-top:2px;">📍 ' + _esc(addr) + '</div>' : '')
+            +   '</div>'
+            +   '<div style="font-size:11px;color:#5a6b50;text-align:right;white-space:nowrap;">'
+            +     (ph ? '<div>📞 ' + _esc(ph) + '</div>' : '')
+            +     (when ? '<div style="opacity:.8;margin-top:2px;">' + when + '</div>' : '')
+            +   '</div>'
+            + '</div>';
+        });
+        if (_nrs.length > 5) html += '<div style="font-size:11px;color:#1b5e20;margin-top:6px;text-align:center;font-weight:600;">+ ' + (_nrs.length - 5) + ' more · tap to view all</div>';
+        html += '</div>';
+      }
+    } catch(e) { /* never block dashboard render */ }
+
     // === GREETING (show first on mobile) ===
     var now = new Date();
     var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

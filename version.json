@@ -1,5 +1,5 @@
 {
-  "version": 838,
+  "version": 839,
   "released": "2026-05-19",
-  "notes": "in-app new-request notifier: realtime postgres_changes INSERT on requests fires browser notification (if permitted) + toast + beep + live-refresh requests/pipeline page if open. Click notification opens BM → Requests. Tenant-scoped via RLS. Mirrors the existing inbound-comm notifier."
+  "notes": "dashboard: new-requests card on Home — surfaces unworked website-form leads (status='new') with name/service/address/phone/time, tap-to-open Requests page; only shows when there are any (no clutter)"
 }
