@@ -193,9 +193,28 @@ serve(async (req: Request) => {
       updated_at: nowIso
     });
 
-    // 1. SMS to tenant owner
+    // 1. SMS to tenant owner — destination resolved with same-number
+    // guard. Bug found 2026-05-19: SNT had tenants.config.sms_from_number
+    // = the BM business line (+19143915233), which is ALSO DIALPAD_FROM_
+    // NUMBER → from==to, Dialpad silently dropped every alert. Resolve
+    // destination in this order: OWNER_ALERT_PHONE env, tenants.config.
+    // owner_alert_phone, legacy sms_from_number. Skip the send (and log)
+    // if it would self-text. The legacy field name "sms_from_number" is
+    // misleading — it's used as the destination, not the sender.
+    const ownerAlertPhone = (Deno.env.get('OWNER_ALERT_PHONE') || '')
+      || (b as any).owner_alert_phone
+      || b.sms_from_number
+      || '';
+    const dialpadFromDigits = (Deno.env.get('DIALPAD_FROM_NUMBER') || '').replace(/\D/g, '');
+    const alertDigits = String(ownerAlertPhone).replace(/\D/g, '');
     const smsBody = `🌳 New request!\n${name || '—'} · ${service || 'Tree service'}\n📍 ${address || '—'}\n📞 ${phone || '—'}\nOpen BM: branchmanager.app/`;
-    if (b.sms_from_number) await sendSMS(b.sms_from_number, smsBody);
+    if (!ownerAlertPhone) {
+      console.warn('request-notify: no owner alert phone configured — SMS skipped (set OWNER_ALERT_PHONE env or tenants.config.owner_alert_phone)');
+    } else if (alertDigits && dialpadFromDigits && alertDigits === dialpadFromDigits) {
+      console.warn('request-notify: owner alert phone == DIALPAD_FROM_NUMBER — would self-text, skipping. Set OWNER_ALERT_PHONE to your personal cell.');
+    } else {
+      await sendSMS(ownerAlertPhone, smsBody);
+    }
 
     // 2. Email alert to team
     const teamSubject = `🌳 New request — ${service || 'Service'} — ${name}`;
