@@ -144,6 +144,37 @@ zip -rq "$ZIP" . \
   -x "*.zip"
 echo "   ✅ $(du -h "$ZIP" | cut -f1) → $ZIP"
 
+# ─── 3. Off-Mac second cloud — encrypted dump → private GitHub repo ──────────
+# Different provider from Supabase. Only the AES-256 .enc is pushed; the
+# passphrase lives solely in ~/Desktop/Tree/.bm-backup.env (never here).
+# Token derived from the app repo's remote so it tracks PAT rotations.
+# Best-effort: a push failure never fails the backup (local+Supabase hold).
+if [ -s "$OUT/db.sql.gz.enc" ]; then
+  GHT=$(git -C "$REPO" config --get remote.origin.url 2>/dev/null | sed -E 's#.*x-access-token:([^@]+)@.*#\1#')
+  if [ -n "$GHT" ] && [ "$GHT" != "$(git -C "$REPO" config --get remote.origin.url 2>/dev/null)" ]; then
+    BKREPO="$HOME/Desktop/Tree/.bm-backups-repo"
+    BKURL="https://x-access-token:${GHT}@github.com/branchmanagerapp/bm-backups.git"
+    [ -d "$BKREPO/.git" ] || git clone --depth 1 "$BKURL" "$BKREPO" >/dev/null 2>&1
+    if [ -d "$BKREPO/.git" ]; then
+      git -C "$BKREPO" remote set-url origin "$BKURL" 2>/dev/null
+      git -C "$BKREPO" pull -q --depth 1 origin main 2>/dev/null || true
+      mkdir -p "$BKREPO/backups"
+      cp "$OUT/db.sql.gz.enc" "$BKREPO/backups/db-$DATE.sql.gz.enc"
+      cp "$OUT/db.sql.gz.enc" "$BKREPO/backups/latest.sql.gz.enc"
+      # bound size: keep newest 30 dated dumps
+      ls -1t "$BKREPO/backups"/db-*.sql.gz.enc 2>/dev/null | tail -n +31 | while read -r f; do rm -f "$f"; done
+      git -C "$BKREPO" add -A
+      git -C "$BKREPO" -c user.email=backup@branchmanager.app -c user.name="BM Backup" \
+        commit -q -m "backup $DATE" 2>/dev/null || true
+      if git -C "$BKREPO" push -q origin HEAD:main 2>/dev/null; then
+        echo "   ☁️  encrypted dump → github.com/branchmanagerapp/bm-backups (private)"
+      else
+        echo "   ⚠ GitHub off-Mac push failed — local + Supabase daily still cover you."
+      fi
+    fi
+  fi
+fi
+
 echo ""
 if [ "${DB_DUMP_OK:-1}" = "0" ]; then
   echo "⚠️  Source snapshot saved, but the DB dump is HOLLOW (see above)."
