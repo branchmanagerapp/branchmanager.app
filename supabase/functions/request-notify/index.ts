@@ -193,27 +193,41 @@ serve(async (req: Request) => {
       updated_at: nowIso
     });
 
-    // 1. SMS to tenant owner — destination resolved with same-number
-    // guard. Bug found 2026-05-19: SNT had tenants.config.sms_from_number
-    // = the BM business line (+19143915233), which is ALSO DIALPAD_FROM_
-    // NUMBER → from==to, Dialpad silently dropped every alert. Resolve
-    // destination in this order: OWNER_ALERT_PHONE env, tenants.config.
-    // owner_alert_phone, legacy sms_from_number. Skip the send (and log)
-    // if it would self-text. The legacy field name "sms_from_number" is
-    // misleading — it's used as the destination, not the sender.
-    const ownerAlertPhone = (Deno.env.get('OWNER_ALERT_PHONE') || '')
-      || (b as any).owner_alert_phone
-      || b.sms_from_number
-      || '';
+    // 1. SMS to tenant owner(s). White-label: each tenant configures
+    // their own alert phones in BM Settings → tenants.config.
+    // owner_alert_phones (array, multi-recipient — Doug + Catherine,
+    // partner + dispatch, etc.). Resolution order: OWNER_ALERT_PHONE
+    // env (rare; only as a global override) → tenants.config.
+    // owner_alert_phones (array, preferred) → tenants.config.
+    // owner_alert_phone (singular, back-compat) → legacy sms_from_number.
+    // Then: normalize → dedupe → filter empty → filter same-as-DIALPAD_
+    // FROM_NUMBER (carriers drop same-number SMS, found 2026-05-19).
     const dialpadFromDigits = (Deno.env.get('DIALPAD_FROM_NUMBER') || '').replace(/\D/g, '');
-    const alertDigits = String(ownerAlertPhone).replace(/\D/g, '');
+    const envPhone = (Deno.env.get('OWNER_ALERT_PHONE') || '').trim();
+    const cfgPhones: any = (b as any).owner_alert_phones;
+    const phonesRaw: string[] = [];
+    if (envPhone) phonesRaw.push(envPhone);
+    if (Array.isArray(cfgPhones)) for (const p of cfgPhones) { if (p) phonesRaw.push(String(p)); }
+    else if (typeof cfgPhones === 'string' && cfgPhones) for (const p of cfgPhones.split(/[\n,]+/)) phonesRaw.push(p);
+    if ((b as any).owner_alert_phone) phonesRaw.push(String((b as any).owner_alert_phone));
+    if (b.sms_from_number) phonesRaw.push(b.sms_from_number);
+    const phones = Array.from(new Set(
+      phonesRaw.map((p) => p.trim()).filter(Boolean).map((p) => {
+        const d = p.replace(/\D/g, '');
+        if (d.length === 10) return '+1' + d;
+        if (d.length === 11 && d[0] === '1') return '+' + d;
+        return d ? '+' + d : '';
+      }).filter(Boolean).filter((p) => !dialpadFromDigits || p.replace(/\D/g, '') !== dialpadFromDigits)
+    ));
     const smsBody = `🌳 New request!\n${name || '—'} · ${service || 'Tree service'}\n📍 ${address || '—'}\n📞 ${phone || '—'}\nOpen BM: branchmanager.app/`;
-    if (!ownerAlertPhone) {
-      console.warn('request-notify: no owner alert phone configured — SMS skipped (set OWNER_ALERT_PHONE env or tenants.config.owner_alert_phone)');
-    } else if (alertDigits && dialpadFromDigits && alertDigits === dialpadFromDigits) {
-      console.warn('request-notify: owner alert phone == DIALPAD_FROM_NUMBER — would self-text, skipping. Set OWNER_ALERT_PHONE to your personal cell.');
+    if (!phones.length) {
+      console.warn('request-notify: no eligible alert phones (all empty or matched DIALPAD_FROM_NUMBER) — SMS skipped. Set tenants.config.owner_alert_phones in BM Settings.');
     } else {
-      await sendSMS(ownerAlertPhone, smsBody);
+      for (const to of phones) {
+        try { await sendSMS(to, smsBody); }
+        catch (e) { console.warn('request-notify: sendSMS failed for', to, e); }
+      }
+      console.log('request-notify: SMS sent to', phones.length, 'recipient(s):', phones.join(','));
     }
 
     // 2. Email alert to team

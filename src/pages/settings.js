@@ -2893,9 +2893,17 @@ var SettingsPage = {
         +   f('company_phone', 'Phone', c.company_phone, '(XXX) XXX-XXXX')
         +   f('company_email', 'Email', c.company_email, '', 'email')
         +   f('company_website', 'Website', c.company_website, 'with https://', 'url')
-        +   f('sms_from_number', 'SMS from number', c.sms_from_number, '+1 E.164 format')
+        +   f('sms_from_number', 'SMS from number', c.sms_from_number, 'your Dialpad sending #, +1 E.164')
         + '</div>'
         + '</div>'
+
+        // New-request SMS alerts — one or more cell phones get texted when
+        // a website-form lead comes in. Multi-line so you can add yourself
+        // + partner / dispatch / etc. Must NOT include the SMS from-number
+        // (carriers drop same-number sends; the edge fn will warn).
+        + '<div style="margin-top:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">New-request SMS alerts <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);font-size:11px;">· one phone per line</span></div>'
+        + '<textarea id="wl-owner_alert_phones" rows="3" placeholder="+19146477276&#10;+19786218013" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:ui-monospace,monospace;box-sizing:border-box;resize:vertical;">' + UI.esc((function(){ var v=c.owner_alert_phones; if(Array.isArray(v)) return v.join('\n'); if(typeof v==='string') return v.split(/[\n,]+/).map(function(s){return s.trim();}).filter(Boolean).join('\n'); return c.owner_alert_phone || ''; })()) + '</textarea>'
+        + '<div style="font-size:11px;color:var(--text-light);margin-top:4px;line-height:1.5;">Each phone here gets a text when a new website-form lead comes in. Use +1 E.164 format (e.g. <code>+19146477276</code>). Leave blank to disable.</div>'
         + '<div style="margin-top:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">Address</div>'
         + '<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;">'
         +   f('address_line1', 'Street', c.address_line1)
@@ -3114,6 +3122,23 @@ var SettingsPage = {
     // brand_color from text input (synced with picker)
     var bc = document.getElementById('wl-brand_color_text');
     if (bc && /^#[0-9a-f]{6}$/i.test(bc.value)) patch.brand_color = bc.value;
+
+    // New-request alert phones — textarea, one per line. Normalize to an
+    // array of E.164 strings; also stamp owner_alert_phone (singular) =
+    // first entry, for back-compat with the legacy field.
+    var apt = document.getElementById('wl-owner_alert_phones');
+    if (apt) {
+      var raw = String(apt.value || '');
+      var phones = raw.split(/[\n,]+/).map(function(s){ return s.trim(); }).filter(Boolean).map(function(s){
+        var d = s.replace(/\D/g, '');
+        if (d.length === 10) return '+1' + d;
+        if (d.length === 11 && d[0] === '1') return '+' + d;
+        if (s.indexOf('+') === 0) return '+' + d;
+        return d ? ('+' + d) : '';
+      }).filter(Boolean);
+      patch.owner_alert_phones = phones;
+      patch.owner_alert_phone = phones[0] || '';
+    }
 
     var btn = document.getElementById('wl-save-btn'); if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
     sb.from('tenants').select('config').eq('id', tid).single().then(function(res) {
