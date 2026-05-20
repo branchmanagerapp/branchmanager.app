@@ -385,10 +385,14 @@ var CallCenter = {
         }
 
         // ── Call / SMS / Voicemail row ───────────────────────────
+        // v842: explicit disposition labels for calls — Missed (no answer)
+        // / Answered (with duration) / In progress. Was: blanket "Inbound
+        // call" with no way to tell if it picked up.
         var name = (cl && cl.name) || meta.name || CallCenter._fmtPhone(phone) || 'Unknown';
-        var icon  = isVM ? '📭' : (isSMS ? '💬' : (isMissed ? '📵' : '📞'));
-        var label = isVM ? 'Voicemail' : (isSMS ? 'SMS' : (isMissed ? 'Missed call' : 'Inbound call'));
-        var labelColor = isVM ? '#7b1fa2' : (isSMS ? '#1565c0' : (isMissed ? '#c62828' : '#2e7d32'));
+        var callConnected = c.channel === 'call' && (Number(c.duration_seconds) > 0 || (c.status||'').toLowerCase() === 'connected' || (c.status||'').toLowerCase() === 'active' || (c.status||'').toLowerCase() === 'completed');
+        var icon  = isVM ? '📭' : (isSMS ? '💬' : (isMissed ? '📵' : (callConnected ? '✅' : '📞')));
+        var label = isVM ? 'Voicemail' : (isSMS ? 'SMS' : (isMissed ? 'Missed call' : (callConnected ? 'Answered call' : 'Inbound call')));
+        var labelColor = isVM ? '#7b1fa2' : (isSMS ? '#1565c0' : (isMissed ? '#c62828' : (callConnected ? '#2e7d32' : '#374151')));
         var ts = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : (c.created_at||'').slice(0,16).replace('T',' ');
         var dur = c.duration_seconds ? Math.floor(c.duration_seconds/60) + ':' + String(c.duration_seconds%60).padStart(2,'0') : '';
         var service = meta.service_wanted || '';
@@ -405,7 +409,7 @@ var CallCenter = {
           + '<div style="font-size:12px;color:' + labelColor + ';font-weight:600;margin-top:1px;">'
           + label + (dur ? ' · ' + dur : '') + (phone ? ' · ' + CallCenter._fmtPhone(phone) : '')
           + '</div>'
-          + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c.body.slice(0, 90) + (c.body.length > 90 ? '…' : '') + '</div>' : '')
+          + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (meta.ai_summary ? '🤖 ' : '') + c.body.slice(0, 90) + (c.body.length > 90 ? '…' : '') + '</div>' : '')
           + (service ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">Wants: ' + service + '</div>' : '')
           + CallCenter._intentBadges(c)
           + '</div>'

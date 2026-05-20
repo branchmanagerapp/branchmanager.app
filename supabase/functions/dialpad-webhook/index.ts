@@ -178,7 +178,10 @@ Deno.serve(async (req) => {
     body: null,
     recording_url: data.recording_url || null,
     status: data.state || event || (looksLikeSms ? "sms.received" : "unknown"),
-    dialpad_id: String(data.call_id || data.id || data.uuid || `${event}-${Date.now()}`),
+    // v842: include master_call_id / target_call_id so AI recap events
+    // upsert into the same row as the original call instead of creating
+    // a dupe row that the missed-call filter would also block.
+    dialpad_id: String(data.call_id || data.master_call_id || data.target_call_id || data.id || data.uuid || `${event}-${Date.now()}`),
     metadata: payload,
   };
 
@@ -233,6 +236,41 @@ Deno.serve(async (req) => {
     row.type = "call";
     row.channel = "call";
     row.direction = data.direction === "outbound" ? "outbound" : "inbound";
+
+    // v842: Dialpad AI recap + transcript event payloads. They arrive on a
+    // separate webhook event AFTER the call completes (call.recap_summary,
+    // call.transcript_completed, or generic recap.* shape). Pull the AI
+    // summary + transcript text into `body` so the Triage row and detail
+    // modal can display it. We keep raw transcript turns in metadata for
+    // anyone who wants the full back-and-forth.
+    const aiSummary = data.summary || data.ai_summary || data.recap || data.recap_summary || null;
+    const aiTranscript = data.transcript || data.transcription || data.transcript_text || null;
+    const aiActions = data.action_items || data.actions || null;
+    if (aiSummary || aiTranscript) {
+      const summaryText = typeof aiSummary === "string" ? aiSummary : (aiSummary ? JSON.stringify(aiSummary) : "");
+      const transcriptText = typeof aiTranscript === "string"
+        ? aiTranscript
+        : (Array.isArray(aiTranscript)
+            ? aiTranscript.map((t: any) => {
+                const who = t.name || t.speaker || t.party || "";
+                const what = t.content || t.text || t.transcript || "";
+                return who ? `${who}: ${what}` : what;
+              }).filter(Boolean).join("\n")
+            : (aiTranscript ? JSON.stringify(aiTranscript) : ""));
+      const parts: string[] = [];
+      if (summaryText) parts.push("AI summary:\n" + summaryText);
+      if (Array.isArray(aiActions) && aiActions.length) {
+        parts.push("Action items:\n" + aiActions.map((a: any) => "• " + (a.text || a.content || a)).join("\n"));
+      }
+      if (transcriptText) parts.push("Transcript:\n" + transcriptText);
+      row.body = parts.join("\n\n");
+      row.metadata = Object.assign({}, row.metadata, {
+        ai_summary: summaryText || null,
+        ai_transcript: transcriptText || null,
+        ai_actions: aiActions || null,
+        ai_pulled_at: new Date().toISOString(),
+      });
+    }
   }
 
   // Try to auto-link to a client by phone number
@@ -340,7 +378,11 @@ Deno.serve(async (req) => {
   // path is "I see a missed call on my phone, I call them back." Recording
   // them in `communications` just clutters Activity Feed + Leads Center.
   // Voicemails (with transcripts) and real SMS still land here as before.
-  if (row.channel === "call" &&
+  // v842: also skip if this is a missed-call event WITHOUT AI recap content.
+  // Recap/transcript events should always be kept (they imply the call had
+  // substance worth reviewing — and they upsert onto the original row).
+  const hasRecap = row.body || (row.metadata && (row.metadata.ai_summary || row.metadata.ai_transcript));
+  if (row.channel === "call" && !hasRecap &&
       (row.status === "missed" || row.status === "no-answer" || row.status === "hangup")) {
     return new Response(JSON.stringify({ ok: true, skipped: "missed_call" }), {
       status: 200,
