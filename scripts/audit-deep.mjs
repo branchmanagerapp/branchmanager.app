@@ -163,9 +163,16 @@ function auditHardcodedUuids() {
   console.log(`  ${offenders.length === 0 ? "✅" : "❌"} ${lines.length} total references, ${offenders.length} unauthorized`);
 }
 
-// ── 5. End-to-end anon write ─────────────────────────────────────────────────
+// ── 5. End-to-end anon write LOCKDOWN (post-2026-05-17 breach closure) ──────
+// INVERTED: anon writes to clients SHOULD fail post-breach. The test now
+// asserts the lockdown holds — failure to fail (i.e. INSERT succeeded) is
+// the alarm condition, not an HTTP 401. Mirrors the same flip applied to
+// health-audit.mjs cat 4 in commit 5f70684. The May-2 silent-write bug
+// scare is no longer applicable: anon writes are deliberately blocked
+// across all tenant tables except the two whitelisted public exceptions
+// (requests insert, services read).
 async function auditAnonWrite() {
-  console.log("\n┌─ 5. End-to-end anon write through RLS ──────────────");
+  console.log("\n┌─ 5. Anon-write lockdown (post-2026-05-17 cutover) ──");
   if (!ANON_KEY) { fail("anon-write", "Could not extract anon key from src/"); return; }
   const url = `https://${PROJECT_REF}.supabase.co/rest/v1/clients`;
   const headers = {
@@ -175,20 +182,25 @@ async function auditAnonWrite() {
     "Content-Type": "application/json",
     "Prefer": "return=representation",
   };
-  const testName = `AUDIT_${Date.now()}`;
+  const testName = `AUDIT_LOCKDOWN_${Date.now()}`;
   const ins = await fetch(url, {
     method: "POST", headers,
     body: JSON.stringify({ name: testName, phone: "5550000000" }),
     signal: AbortSignal.timeout(10000),
   }).catch(e => ({ ok: false, status: 0, _err: e.message }));
-  if (!ins.ok) {
-    fail("anon-write", `INSERT failed status=${ins.status} (RLS may be blocking — was the May 2 silent-write bug)`);
+  if (ins.ok) {
+    // Anon write SUCCEEDED — that's the breach reopening. Clean up the
+    // test row so the leak doesn't pile up, then alarm.
+    try {
+      const row = (await ins.json())[0];
+      if (row && row.id) {
+        await fetch(`${url}?id=eq.${row.id}`, { method: "DELETE", headers, signal: AbortSignal.timeout(8000) });
+      }
+    } catch (e) { /* best effort */ }
+    fail("anon-write", `Anon INSERT to clients SUCCEEDED — breach has reopened (was supposed to be denied post-2026-05-17)`);
     return;
   }
-  const row = (await ins.json())[0];
-  // Cleanup
-  await fetch(`${url}?id=eq.${row.id}`, { method: "DELETE", headers, signal: AbortSignal.timeout(8000) });
-  console.log(`  ✅ INSERT + DELETE round-trip works (id=${row.id.slice(0, 8)}...)`);
+  console.log(`  ✅ Anon INSERT denied (status=${ins.status}) — lockdown intact`);
 }
 
 // ── 6. verify_jwt consistency ────────────────────────────────────────────────
@@ -321,6 +333,13 @@ function auditCode() {
     for (const m of renderersBlock[1].matchAll(/^\s*([a-z][a-z0-9-]*):\s*function/gmi)) {
       validTargets.add(m[1]);
     }
+  }
+  // Also accept soft-aliases — `if (page === 'X') page = 'Y';` rewrites
+  // before the pageRenderers lookup. Example: `marketing` → `socialbranch`
+  // at index.html:1826. Without this, audit false-positives on every alias.
+  for (const m of indexHtml.matchAll(/if\s*\(\s*page\s*===\s*['"]([a-z0-9_-]+)['"]\s*\)\s*\{\s*[^}]*page\s*=\s*['"]([a-z0-9_-]+)['"]/gi)) {
+    const alias = m[1], target = m[2];
+    if (validTargets.has(target)) validTargets.add(alias);
   }
 
   const grepOut = spawnSync("grep", ["-rn", "-E", "loadPage\\(['\"][a-z]+['\"]\\)", join(ROOT, "src"), join(ROOT, "index.html")], { encoding: "utf8" });

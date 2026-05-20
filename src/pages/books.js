@@ -15,7 +15,13 @@
  *   - edge fns: plaid-link-token, plaid-exchange-token, plaid-sync-transactions
  */
 var BooksPage = (function() {
-  var TENANT_ID = window.resolveTenantId ? window.resolveTenantId() : '93af4348-8bba-4045-ac3e-5e71ec1cc8c5';
+  // v848: TENANT_ID is now a getter (function call), not a module-load
+  // cached constant. The previous version cached at script-load time before
+  // the JWT-first resolver was ready, so any non-SNT tenant froze on SNT's
+  // UUID. Every read path now goes through DB.getTenantId() at runtime.
+  function TENANT_ID() {
+    return (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+  }
 
   var _accounts = null;
   var _txns = null;
@@ -33,9 +39,9 @@ var BooksPage = (function() {
     var since = new Date(Date.now() - rangeDays * 86400000).toISOString().split('T')[0];
 
     return Promise.all([
-      sb.from('bank_accounts').select('*').eq('tenant_id', TENANT_ID).eq('active', true).order('created_at'),
-      sb.from('bank_transactions').select('*').eq('tenant_id', TENANT_ID).gte('posted_date', since).order('posted_date', { ascending: false }).limit(500),
-      sb.from('chart_of_accounts').select('*').eq('tenant_id', TENANT_ID).eq('active', true).order('sort_order')
+      sb.from('bank_accounts').select('*').eq('tenant_id', TENANT_ID()).eq('active', true).order('created_at'),
+      sb.from('bank_transactions').select('*').eq('tenant_id', TENANT_ID()).gte('posted_date', since).order('posted_date', { ascending: false }).limit(500),
+      sb.from('chart_of_accounts').select('*').eq('tenant_id', TENANT_ID()).eq('active', true).order('sort_order')
     ]).then(function(results) {
       _accounts = (results[0] && results[0].data) || [];
       _txns = (results[1] && results[1].data) || [];
@@ -197,7 +203,7 @@ var BooksPage = (function() {
     fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/plaid-link-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: TENANT_ID })
+      body: JSON.stringify({ tenant_id: TENANT_ID() })
     }).then(function(r) { return r.json(); }).then(function(data) {
       if (data.error) { UI.toast('Plaid: ' + data.error, 'error'); return; }
       var handler = Plaid.create({
@@ -207,7 +213,7 @@ var BooksPage = (function() {
           fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/plaid-exchange-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenant_id: TENANT_ID, public_token: public_token, metadata: metadata })
+            body: JSON.stringify({ tenant_id: TENANT_ID(), public_token: public_token, metadata: metadata })
           }).then(function(r) { return r.json(); }).then(function(out) {
             if (out.error) { UI.toast('Exchange failed: ' + out.error, 'error'); return; }
             UI.toast('Bank connected (' + (out.accounts || []).length + ' account' + ((out.accounts||[]).length===1?'':'s') + '). Backfilling 2 years of transactions in the background.', 'success');
@@ -231,7 +237,7 @@ var BooksPage = (function() {
     fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/plaid-sync-transactions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: TENANT_ID })
+      body: JSON.stringify({ tenant_id: TENANT_ID() })
     }).then(function(r) { return r.json(); }).then(function(out) {
       if (out.error) { UI.toast('Sync failed: ' + out.error, 'error'); return; }
       UI.toast('Synced ' + (out.synced || 0) + ' transaction' + ((out.synced||0)===1?'':'s'), 'success');

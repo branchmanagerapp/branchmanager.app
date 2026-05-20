@@ -294,7 +294,11 @@ var InsurancePage = {
           }
         });
     } else {
-      row.tenant_id = window.resolveTenantId ? window.resolveTenantId() : '93af4348-8bba-4045-ac3e-5e71ec1cc8c5';
+      // v848: use the canonical JWT-first resolver in db.js. The hardcoded
+      // SNT UUID fallback could silently insert into the wrong tenant for
+      // any non-SNT login.
+      row.tenant_id = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+      if (!row.tenant_id) { UI.toast('No tenant context — cannot save', 'error'); return; }
       bmSafeCall(SupabaseDB.client.from('compliance_documents').insert(row), 'add compliance')
         .then(function(res) {
           if (!res.error) {

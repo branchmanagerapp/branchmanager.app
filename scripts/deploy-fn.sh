@@ -32,6 +32,8 @@ fi
 PUBLIC_FNS=(
   dialpad-webhook
   bouncie-webhook
+  bouncie-oauth-callback
+  bouncie-rest-sync
   stripe-webhook
   resend-webhook
   request-notify
@@ -42,6 +44,16 @@ PUBLIC_FNS=(
   portal-auth
   portal-session
   portal-update
+  portal-pay-all
+  tenant-by-slug
+  bm-receptionist
+  render-marketing-site
+  send-email
+  subscription-create-checkout
+  plaid-link-token
+  plaid-exchange-token
+  plaid-webhook
+  plaid-sync-transactions
 )
 
 FN="${1:-}"
