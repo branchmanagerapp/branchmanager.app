@@ -11,9 +11,15 @@ source-of-truth until end-of-month cutover. Jobber wins all conflicts.
 4. Drop the 5 emailed CSVs on `~/Desktop/`
 5. For Transactions: scrape via Chrome MCP → `~/Desktop/jobber-transactions-YYYY-MM-DD.json`
    (the Reports CSV for transactions is summary-only, not row-level)
-6. Run: `python3 scripts/jobber-parity-2026-05-08/apply.py --apply`
+6. Refresh BM cache: `python3 scripts/jobber-parity-2026-05-08/pull_bm_cache.py`
+7. Dry-run: `python3 scripts/jobber-parity-2026-05-08/apply.py`
+8. Apply:   `python3 scripts/jobber-parity-2026-05-08/apply.py --apply`
 
-Defaults to dry-run; pass `--apply` to actually write.
+v847: filenames are auto-discovered (newest `<Type>_Report_1_of_1_YYYY-MM-DD.csv`
+in ~/Desktop), so step 8 doesn't need editing every day. The discovered
+date stamps the PARITY_TAG too. Step 6 must be re-run on every sync —
+the cache JSONs in this folder are point-in-time snapshots and would
+otherwise grow stale.
 
 ## What apply.py does
 

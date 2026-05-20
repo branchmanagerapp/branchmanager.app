@@ -13,7 +13,7 @@ NOT applied (held for review):
   • 105 BM-only jobs (mostly recurring-scope mismatch)
   • 6 BM-only clients (BM-side intake leads)
 """
-import csv, json, os, sys, urllib.request, urllib.parse
+import csv, json, os, sys, glob, re, urllib.request, urllib.parse
 from datetime import datetime
 
 DESK = '/Users/dougbrown/Desktop'
@@ -22,8 +22,37 @@ TENANT_ID = '93af4348-8bba-4045-ac3e-5e71ec1cc8c5'
 SUPA_URL = 'https://ltpivkqahvplapyagljt.supabase.co'
 SK = open('/tmp/.bm-svc-key').read().strip()
 HEADERS = {'apikey': SK, 'Authorization': f'Bearer {SK}', 'Content-Type': 'application/json', 'Prefer': 'return=representation'}
-PARITY_TAG = 'Mirrored from Jobber 2026-05-08 parity sync'
-TODAY = '2026-05-08'
+
+# v847: auto-discover the most-recent Jobber export per report type, so
+# the script doesn't break every time Doug pulls a fresh batch. Jobber
+# names exports `<Type>_Report_1_of_1_YYYY-MM-DD.csv`. We pick the
+# newest matching file per category and use its date for the parity tag.
+def _newest(pattern):
+    matches = sorted(glob.glob(os.path.join(DESK, pattern)))
+    return matches[-1] if matches else None
+
+JOBBER_FILES = {
+    'invoices': _newest('Invoices_Report_1_of_1_*.csv'),
+    'clients':  _newest('Clients_Report_1_of_1_*.csv'),
+    'quotes':   _newest('Quotes_Report_1_of_1_*.csv'),
+    'jobs':     _newest('One-off jobs_Report_1_of_1_*.csv'),
+}
+missing = [k for k, v in JOBBER_FILES.items() if not v]
+if missing:
+    print(f"ERROR: missing Jobber export(s) on Desktop: {', '.join(missing)}")
+    print("Each must match `<Type>_Report_1_of_1_YYYY-MM-DD.csv`.")
+    print("Export from Jobber → Reports → (Invoices / Clients / Quotes / One-off jobs)")
+    print("→ choose 'All Columns' → email yourself the CSV → save to ~/Desktop/")
+    sys.exit(2)
+
+# Pull date from the invoices filename (all four should match)
+_m = re.search(r'(\d{4}-\d{2}-\d{2})', JOBBER_FILES['invoices'])
+TODAY = _m.group(1) if _m else datetime.now().strftime('%Y-%m-%d')
+PARITY_TAG = f'Mirrored from Jobber {TODAY} parity sync'
+print(f"Jobber export date: {TODAY}")
+for k, v in JOBBER_FILES.items():
+    print(f"  {k:9s} → {os.path.basename(v)}")
+print()
 
 DRY = '--apply' not in sys.argv
 print(f"Mode: {'APPLY (writes will happen)' if not DRY else 'DRY-RUN (no writes)'}")
@@ -113,7 +142,7 @@ print("="*70)
 print("STEP 2 — UPDATE invoices (totals/balances from Jobber)")
 print("="*70)
 
-J_INV = list(csv.DictReader(open(f'{DESK}/Invoices_Report_1_of_1_2026-05-08.csv')))
+J_INV = list(csv.DictReader(open(JOBBER_FILES['invoices'])))
 BM_INV = json.load(open(f'{CACHE}/bm-invoices.json'))
 bm_by_num = {int(i['invoice_number']): i for i in BM_INV if i.get('invoice_number')}
 
@@ -176,7 +205,7 @@ print()
 print("="*70)
 print("STEP 3 — INSERT clients (10 Jobber-only)")
 print("="*70)
-JC = list(csv.DictReader(open(f'{DESK}/Clients_Report_1_of_1_2026-05-08.csv')))
+JC = list(csv.DictReader(open(JOBBER_FILES['clients'])))
 BMC = json.load(open(f'{CACHE}/bm-clients.json'))
 
 def np(p): return ''.join(c for c in (p or '') if c.isdigit())[-10:]
@@ -258,7 +287,7 @@ print()
 print("="*70)
 print("STEP 4 — INSERT quotes (64 Jobber-only)")
 print("="*70)
-JQ = list(csv.DictReader(open(f'{DESK}/Quotes_Report_1_of_1_2026-05-08.csv')))
+JQ = list(csv.DictReader(open(JOBBER_FILES['quotes'])))
 BMQ = json.load(open(f'{CACHE}/bm-quotes.json'))
 bm_q_nums = {int(q['quote_number']) for q in BMQ if q.get('quote_number')}
 
@@ -313,7 +342,7 @@ print()
 print("="*70)
 print("STEP 5 — INSERT jobs (18 Jobber-only)")
 print("="*70)
-JJ = list(csv.DictReader(open(f'{DESK}/One-off jobs_Report_1_of_1_2026-05-08.csv')))
+JJ = list(csv.DictReader(open(JOBBER_FILES['jobs'])))
 BMJ = json.load(open(f'{CACHE}/bm-jobs.json'))
 bm_j_nums = {int(j['job_number']) for j in BMJ if j.get('job_number')}
 
