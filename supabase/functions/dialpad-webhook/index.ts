@@ -63,6 +63,81 @@ async function findClientByPhone(phone: string): Promise<string | null> {
   return data && data.length ? data[0].id : null;
 }
 
+// v844: richer caller resolution. Tries clients first, then requests
+// (a form submission or prior auto-created call), then prior
+// communications for any name we may have learned earlier. Returns the
+// best info we can find so the Triage row shows more than "Unknown".
+// `source` is the table we matched in; null if nothing found.
+async function resolveCallerInfo(phone: string, tenantId: string | null): Promise<{
+  client_id: string | null;
+  name: string | null;
+  address: string | null;
+  email: string | null;
+  source: string | null;
+}> {
+  const empty = { client_id: null, name: null, address: null, email: null, source: null };
+  const p = normPhone(phone);
+  if (p.length < 7) return empty;
+
+  // 1. clients table (full match — last 10 digits)
+  const { data: clients } = await sb
+    .from("clients")
+    .select("id, name, phone, email, address")
+    .ilike("phone", `%${p}%`)
+    .limit(1);
+  if (clients && clients.length) {
+    const c = clients[0];
+    return { client_id: c.id, name: c.name || null, address: c.address || null, email: c.email || null, source: "clients" };
+  }
+
+  // 2. requests table — any prior request from this phone (most-recent first)
+  let reqQ = sb
+    .from("requests")
+    .select("id, client_id, client_name, client_phone, client_email, address, property, created_at")
+    .ilike("client_phone", `%${p}%`)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (tenantId) reqQ = reqQ.eq("tenant_id", tenantId);
+  const { data: reqs } = await reqQ;
+  if (reqs && reqs.length) {
+    const r = reqs[0];
+    return {
+      client_id: r.client_id || null,
+      name: r.client_name || null,
+      address: r.address || r.property || null,
+      email: r.client_email || null,
+      source: "requests",
+    };
+  }
+
+  // 3. communications table — any prior inbound w/ a name in metadata
+  let commsQ = sb
+    .from("communications")
+    .select("client_id, metadata, created_at")
+    .ilike("from_number", `%${p}%`)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (tenantId) commsQ = commsQ.eq("tenant_id", tenantId);
+  const { data: comms } = await commsQ;
+  if (comms && comms.length) {
+    for (const c of comms) {
+      const m = (c.metadata && typeof c.metadata === "object") ? c.metadata as Record<string, unknown> : {};
+      const name = (m.caller_id_name || m.name || m.contact_name) as string | undefined;
+      if (c.client_id || name) {
+        return {
+          client_id: c.client_id || null,
+          name: name || null,
+          address: null,
+          email: null,
+          source: "communications",
+        };
+      }
+    }
+  }
+
+  return empty;
+}
+
 // Decode + verify a Dialpad webhook JWT (HS256). Returns the decoded payload
 // or null if the body isn't a JWT or the signature fails. When WEBHOOK_SECRET
 // is empty, signature isn't checked but the JWT is still decoded so we can
@@ -273,10 +348,31 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Try to auto-link to a client by phone number
+  // v844: capture Dialpad's caller-ID-name fields on EVERY row (was only
+  // used inside auto-create paths). Browser triage falls back to this when
+  // we can't match a client.
+  const cnamName = data.from_name || data.contact_name || data.caller_name || data.external_name || null;
+  if (cnamName) {
+    row.metadata = Object.assign({}, row.metadata, { caller_id_name: cnamName });
+  }
+
+  // Try to auto-link to a client by phone number — and stamp richer
+  // resolution info (name/address/source) if we found it in another table.
   const lookupPhone = row.direction === "inbound" ? row.from_number : row.to_number;
   if (lookupPhone) {
-    row.client_id = await findClientByPhone(lookupPhone);
+    const info = await resolveCallerInfo(lookupPhone, TENANT_ID);
+    row.client_id = info.client_id;
+    if (info.source) {
+      row.metadata = Object.assign({}, row.metadata, {
+        caller_resolution: {
+          source: info.source,
+          name: info.name,
+          address: info.address,
+          email: info.email,
+          resolved_at: new Date().toISOString(),
+        }
+      });
+    }
   }
 
   // ── TCPA opt-out keyword handling for inbound SMS.

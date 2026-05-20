@@ -388,12 +388,40 @@ var CallCenter = {
         // v842: explicit disposition labels for calls — Missed (no answer)
         // / Answered (with duration) / In progress. Was: blanket "Inbound
         // call" with no way to tell if it picked up.
-        var name = (cl && cl.name) || meta.name || CallCenter._fmtPhone(phone) || 'Unknown';
+        // v844: caller-name resolution order — linked client → request-form
+        // name → past-comm name → carrier CNAM → formatted phone → "Unknown".
+        // Also tags the row with the resolution source so Doug can tell at
+        // a glance where the name came from (◎ for client, ✎ for request,
+        // 🆔 for CNAM).
+        var resolved = (meta.caller_resolution && typeof meta.caller_resolution === 'object') ? meta.caller_resolution : null;
+        var resolvedName = resolved && resolved.name;
+        var resolvedAddr = resolved && resolved.address;
+        var cnamName = meta.caller_id_name || null;
+        var name = (cl && cl.name) || meta.name || resolvedName || cnamName || CallCenter._fmtPhone(phone) || 'Unknown';
+        var sourceBadge = '';
+        if (cl) sourceBadge = '<span title="Linked to client" style="font-size:9px;color:#1565c0;margin-left:5px;">◎ client</span>';
+        else if (resolved && resolved.source === 'requests') sourceBadge = '<span title="Matched from a past request form" style="font-size:9px;color:#7b1fa2;margin-left:5px;">✎ from request</span>';
+        else if (resolved && resolved.source === 'communications') sourceBadge = '<span title="Name learned from prior calls/texts" style="font-size:9px;color:#6a1b9a;margin-left:5px;">🕘 prior</span>';
+        else if (cnamName && name === cnamName) sourceBadge = '<span title="Caller ID (carrier-supplied)" style="font-size:9px;color:#374151;margin-left:5px;">🆔 caller-id</span>';
         var callConnected = c.channel === 'call' && (Number(c.duration_seconds) > 0 || (c.status||'').toLowerCase() === 'connected' || (c.status||'').toLowerCase() === 'active' || (c.status||'').toLowerCase() === 'completed');
         var icon  = isVM ? '📭' : (isSMS ? '💬' : (isMissed ? '📵' : (callConnected ? '✅' : '📞')));
         var label = isVM ? 'Voicemail' : (isSMS ? 'SMS' : (isMissed ? 'Missed call' : (callConnected ? 'Answered call' : 'Inbound call')));
         var labelColor = isVM ? '#7b1fa2' : (isSMS ? '#1565c0' : (isMissed ? '#c62828' : (callConnected ? '#2e7d32' : '#374151')));
-        var ts = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : (c.created_at||'').slice(0,16).replace('T',' ');
+        // v844: show clock time alongside relative time — "2:14 PM · 3h ago"
+        // so Doug can tell at a glance when a call landed without doing
+        // mental arithmetic. Same-day shows time-of-day; older shows the date.
+        var tsRel = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : '';
+        var tsAbs = '';
+        try {
+          var _d = new Date(c.created_at);
+          if (!isNaN(_d.getTime())) {
+            var sameDay = (new Date().toDateString() === _d.toDateString());
+            tsAbs = sameDay
+              ? _d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              : _d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + _d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          }
+        } catch (e) {}
+        var ts = tsAbs ? (tsAbs + (tsRel ? '<br><span style="opacity:.7;">' + tsRel + '</span>' : '')) : tsRel;
         var dur = c.duration_seconds ? Math.floor(c.duration_seconds/60) + ':' + String(c.duration_seconds%60).padStart(2,'0') : '';
         var service = meta.service_wanted || '';
         var safePhone = digits.replace(/'/g,"\\'");
@@ -405,10 +433,11 @@ var CallCenter = {
           + '<label style="display:flex;align-items:center;flex-shrink:0;cursor:pointer;"><input type="checkbox" class="cc-check" value="' + UI.esc(c.id) + '" onchange="CallCenter._updateBulk()" style="width:16px;height:16px;cursor:pointer;"></label>'
           + '<div style="flex-shrink:0;width:32px;height:32px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">' + icon + '</div>'
           + '<div style="flex:1;min-width:0;">'
-          + '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</div>'
+          + '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + sourceBadge + '</div>'
           + '<div style="font-size:12px;color:' + labelColor + ';font-weight:600;margin-top:1px;">'
           + label + (dur ? ' · ' + dur : '') + (phone ? ' · ' + CallCenter._fmtPhone(phone) : '')
           + '</div>'
+          + (resolvedAddr ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(resolvedAddr) + '</div>' : '')
           + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (meta.ai_summary ? '🤖 ' : '') + c.body.slice(0, 90) + (c.body.length > 90 ? '…' : '') + '</div>' : '')
           + (service ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">Wants: ' + service + '</div>' : '')
           + CallCenter._intentBadges(c)
