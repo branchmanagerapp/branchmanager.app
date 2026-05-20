@@ -169,27 +169,48 @@ var ReviewTools = {
       return;
     }
 
-    // Try email template
-    if (typeof Email !== 'undefined' && typeof Templates !== 'undefined') {
-      Email.sendTemplate('review_request_email', {
-        name: job.clientName,
-        address: job.property || '',
-        email: job.clientEmail || '',
-        id: job.clientId
-      });
+    // v842 — HARD RULE compliance (May 19 2026): no longer fires the
+    // email directly. Stages a marketing_drafts row (status='pending')
+    // so Doug reviews + approves on Home before it sends. Per the May 19
+    // expansion ("checkover method in app before emails can be sent"),
+    // an AI-templated review request must pass through the queue even if
+    // it's per-job button-driven.
+    if (!job.clientEmail) {
+      UI.toast('No email on file for ' + job.clientName + ' — review request needs an email');
+      return;
     }
-
-    // Also log to ReviewsPage requests
-    if (typeof ReviewsPage !== 'undefined') {
-      var requests = ReviewsPage.getRequests();
-      requests.push({ jobId: job.id, jobNumber: job.jobNumber, clientName: job.clientName, sentAt: new Date().toISOString(), source: 'review-tools' });
-      ReviewsPage.saveRequests(requests);
+    if (typeof Drafts === 'undefined' || !Drafts.queue) {
+      UI.toast('Drafts module not loaded — cannot stage', 'error');
+      return;
     }
-
-    // Mark as sent
-    localStorage.setItem('bm-review-sent-' + jobId, new Date().toISOString());
-    UI.toast('Review request sent to ' + job.clientName);
-    loadPage('reviewtools');
+    var coName = ReviewTools._co().name || 'us';
+    var revUrl = ReviewTools._revUrl();
+    var emailTpl = localStorage.getItem('bm-review-email-template')
+      || ('Hi {name},\n\nThank you for trusting ' + coName + ' with your tree care needs. We hope you\'re happy with the results!\n\nWould you mind taking a minute to leave us a Google review? It helps other homeowners find reliable tree service.\n\n' + revUrl + '\n\nThank you!\n— ' + coName);
+    var firstName = (job.clientName || '').split(' ')[0] || 'there';
+    var body = emailTpl.replace(/\{name\}/g, firstName).replace(/\{service\}/g, job.service || 'tree service');
+    Drafts.queueWithToast({
+      trigger: 'review_request',
+      client_id: job.clientId || null,
+      client_name: job.clientName || null,
+      to_email: job.clientEmail,
+      channel: 'email',
+      subject: 'A quick review request from ' + coName,
+      body_text: body,
+      source_record_type: 'job',
+      source_record_id: job.id,
+      dedup_key: 'review_request:job:' + job.id
+    }).then(function(res) {
+      if (!res.ok) return;
+      // Log to ReviewsPage requests (now reflects "staged" not "sent")
+      if (typeof ReviewsPage !== 'undefined') {
+        var requests = ReviewsPage.getRequests();
+        requests.push({ jobId: job.id, jobNumber: job.jobNumber, clientName: job.clientName, stagedAt: new Date().toISOString(), source: 'review-tools' });
+        ReviewsPage.saveRequests(requests);
+      }
+      localStorage.setItem('bm-review-staged-' + jobId, new Date().toISOString());
+      loadPage('reviewtools');
+    });
   },
 
   showTemplateEditor: function() {

@@ -280,29 +280,45 @@ var StaleClients = {
       return p.length >= 10;
     });
     if (!sendList.length) { UI.toast('No eligible recipients', 'error'); return; }
-    if (!confirm('Send a personalized check-in SMS to ' + sendList.length + ' top-25% client' + (sendList.length === 1 ? '' : 's') + ' who\'ve been quiet 90+ days?\n\nReal SMS to real customers — no un-send. Each gets a 60-day snooze afterward so we don\'t ping them again.')) return;
-    var sent = 0, i = 0;
-    function next() {
-      if (i >= sendList.length) {
-        UI.toast('Sent ' + sent + ' check-in SMS');
-        loadPage('staleclients');
-        return;
-      }
-      var c = sendList[i++];
+    // v842 — HARD RULE compliance (May 19 2026): no longer fires SMS
+    // directly. Stages each message as a marketing_drafts row (status=
+    // 'pending') so Doug can review + approve each one (or "Send All")
+    // from the Approve Comms card on Home. Per the May 19 expansion:
+    // "any emails need to be set up through BM and if Claude works inside
+    // BM, there should be a checkover method in app to be done by user
+    // before emails can be sent" — applies equally to bulk SMS outreach.
+    // The 60-day snooze still happens immediately so the same client
+    // doesn't pile up across multiple staging passes.
+    if (!confirm('Stage a personalized check-in SMS to ' + sendList.length + ' top-25% client' + (sendList.length === 1 ? '' : 's') + ' who\'ve been quiet 90+ days?\n\nDrafts queue in Approve Comms on Home for you to review + send. Nothing leaves BM until you tap Approve on each one.')) return;
+    var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || 'us';
+    var drafts = sendList.map(function(c) {
       var firstName = (c.name || '').split(' ')[0] || 'there';
-      var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || 'us';
       var msg = 'Hi ' + firstName + ', it\'s ' + coName + ' — just checking in. It\'s been a while since we worked on your trees. With spring coming, want me to swing by for a free walk-around? No obligation. Reply YES and I\'ll text some times.';
-      if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
-        Dialpad.sendSMS(c.phone, msg, c.id);
-      }
-      if (typeof ClientsPage !== 'undefined' && ClientsPage._snoozeOutreach) {
-        ClientsPage._snoozeOutreach(c.id, 60, true);
-      }
-      sent++;
-      // 1s stagger so we don't slam Dialpad
-      setTimeout(next, 1000);
+      return {
+        trigger: 'stale_client_outreach_90d',
+        client_id: c.id,
+        client_name: c.name || null,
+        to_phone: c.phone,
+        channel: 'sms',
+        body_text: msg,
+        source_record_type: 'client',
+        source_record_id: c.id,
+        dedup_key: 'stale_client_outreach_90d:' + c.id
+      };
+    });
+    if (typeof Drafts === 'undefined' || !Drafts.queueMany) {
+      UI.toast('Drafts module not loaded — cannot stage', 'error');
+      return;
     }
-    next();
+    Drafts.queueMany(drafts).then(function() {
+      // Snooze each so the same client doesn't show up next pass
+      sendList.forEach(function(c) {
+        if (typeof ClientsPage !== 'undefined' && ClientsPage._snoozeOutreach) {
+          try { ClientsPage._snoozeOutreach(c.id, 60, true); } catch(e){}
+        }
+      });
+      loadPage('staleclients');
+    });
   },
 
   _unsnooze: function(clientId) {

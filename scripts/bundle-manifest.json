@@ -42,6 +42,7 @@
     "src/pages/fleet.js",
     "src/dialpad.js",
     "src/email.js",
+    "src/drafts.js",
     "src/pages/reports.js",
     "src/pages/reportscatalog.js",
     "src/pages/expiringdocs.js",
