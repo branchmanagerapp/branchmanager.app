@@ -77,6 +77,54 @@ var CloudSync = {
             console.debug('CloudSync: dropped ' + (beforeFilter - converted.length) + ' tombstoned ' + table + ' rows');
           }
 
+          // v849: last-write-wins MERGE instead of blind overwrite. The old
+          // path (just localStorage.setItem with cloud data) caused field-
+          // level edits to resurrect from stale cloud rows. Doug's report:
+          // "I deleted some on the calendar and moved them and then think
+          // they showed back up." That's a visit-array edit on a job — the
+          // job row itself isn't deleted (so tombstones don't help), but
+          // cloud's pre-edit version overwrites the local post-edit version
+          // on the next realtime tick.
+          //
+          // Rule: if local has a row with the same id AND local.updatedAt
+          // is newer than cloud.updated_at, KEEP LOCAL (it's a pending
+          // upload). Also keep any local rows that cloud doesn't have yet
+          // (unless tombstoned — those legitimately got deleted locally
+          // and shouldn't be re-uploaded).
+          var localExisting = [];
+          try { localExisting = JSON.parse(localStorage.getItem(localKey) || '[]'); } catch (e) { localExisting = []; }
+          var cloudById = {};
+          converted.forEach(function(c) { if (c.id) cloudById[c.id] = c; });
+          var localById = {};
+          localExisting.forEach(function(l) { if (l && l.id) localById[l.id] = l; });
+
+          var merged = [];
+          var kept = 0, replaced = 0, addedLocal = 0;
+          // For each cloud row, decide cloud-wins or local-wins by timestamp
+          converted.forEach(function(c) {
+            var l = localById[c.id];
+            if (l) {
+              var lTs = Date.parse(l.updatedAt || l.updated_at || 0) || 0;
+              var cTs = Date.parse(c.updatedAt || c.updated_at || 0) || 0;
+              if (lTs > cTs) { merged.push(l); kept++; }
+              else { merged.push(c); replaced++; }
+            } else {
+              merged.push(c);
+            }
+          });
+          // Add local-only rows that AREN'T tombstoned (pending uploads)
+          localExisting.forEach(function(l) {
+            if (!l || !l.id) return;
+            if (cloudById[l.id]) return; // already handled above
+            if (tomb[l.id]) return;       // legitimately deleted, don't resurrect
+            merged.push(l);
+            addedLocal++;
+          });
+          if ((kept + addedLocal) > 0 && typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) {
+            console.debug('CloudSync ' + table + ': cloud=' + converted.length + ', kept-local=' + kept + ', cloud-replaced=' + replaced + ', local-only=' + addedLocal);
+          }
+          converted = merged;
+
           localStorage.setItem(localKey, JSON.stringify(converted));
           totalRows += converted.length;
           if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: loaded ' + converted.length + ' ' + table);
