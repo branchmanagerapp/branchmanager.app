@@ -100,6 +100,11 @@ var CompanyInfo = (function() {
     instagramUrl:    { ls: 'bm-co-instagram',  bm: null },
     yelpUrl:         { ls: 'bm-co-yelp',       bm: null },
     nextdoorUrl:     { ls: 'bm-co-nextdoor',   bm: null },
+    xUrl:            { ls: 'bm-co-x',          bm: null },
+    youtubeUrl:      { ls: 'bm-co-youtube',    bm: null },
+    linkedinUrl:     { ls: 'bm-co-linkedin',   bm: null },
+    tiktokUrl:       { ls: 'bm-co-tiktok',     bm: null },
+    gbpUrl:          { ls: 'bm-co-gbp',        bm: null },
     taxRate:         { ls: 'bm-tax-rate',       bm: null, def: '8.375' },
     ownerName:       { ls: 'bm-co-owner-name',  bm: 'ownerName' },
     legalName:       { ls: 'bm-co-legal-name',  bm: null, def: 'Second Nature Tree Service LLC' },
@@ -266,9 +271,20 @@ CompanyInfo.loadTenantFromSession = (function() {
           L('bm-co-licenses', c.wc_number);
           L('bm-co-license-text', c.license_text);
           L('bm-co-review', c.google_review_url); B('googleReviewUrl', c.google_review_url);
-          L('bm-co-facebook', c.facebook_url);
-          L('bm-co-instagram', c.instagram_url);
-          L('bm-co-yelp', (c.social_links && c.social_links.yelp) || null);
+          // v846: socials cloud-persist. Each platform reads from
+          // config.{platform}_url FIRST (canonical) then falls back to
+          // config.social_links[platform] (legacy nested shape). Settings
+          // page writes back to the canonical {platform}_url keys.
+          var sl = c.social_links || {};
+          L('bm-co-facebook', c.facebook_url || sl.facebook || null);
+          L('bm-co-instagram', c.instagram_url || sl.instagram || null);
+          L('bm-co-yelp', c.yelp_url || sl.yelp || null);
+          L('bm-co-nextdoor', c.nextdoor_url || sl.nextdoor || null);
+          L('bm-co-x', c.x_url || c.twitter_url || sl.x || sl.twitter || null);
+          L('bm-co-youtube', c.youtube_url || sl.youtube || null);
+          L('bm-co-linkedin', c.linkedin_url || sl.linkedin || null);
+          L('bm-co-tiktok', c.tiktok_url || sl.tiktok || null);
+          L('bm-co-gbp', c.gbp_url || c.google_business_profile_url || sl.gbp || null);
           L('bm-tax-rate', c.tax_rate != null ? c.tax_rate : null);
           L('bm-co-owner-name', c.owner_name); B('ownerName', c.owner_name);
           L('bm-co-legal-name', c.legal_name);

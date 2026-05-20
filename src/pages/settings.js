@@ -472,12 +472,20 @@ var SettingsPage = {
       + '</div></details>';
 
     // ── Social & Reviews ──
+    // v846: socials are now cloud-persisted (tenants.config.{platform}_url)
+    // so they sync across devices + power the SocialBranch composer. The
+    // .own() reader returns this tenant's value only (never SNT's fallback).
     var sr = {
       googleReview: CompanyInfo.own('googleReviewUrl'),
-      facebook:     CompanyInfo.get('facebookUrl'),
-      instagram:    CompanyInfo.get('instagramUrl'),
-      yelp:         CompanyInfo.get('yelpUrl'),
-      nextdoor:     CompanyInfo.get('nextdoorUrl')
+      facebook:     CompanyInfo.own('facebookUrl'),
+      instagram:    CompanyInfo.own('instagramUrl'),
+      yelp:         CompanyInfo.own('yelpUrl'),
+      nextdoor:     CompanyInfo.own('nextdoorUrl'),
+      x:            CompanyInfo.own('xUrl'),
+      youtube:      CompanyInfo.own('youtubeUrl'),
+      linkedin:     CompanyInfo.own('linkedinUrl'),
+      tiktok:       CompanyInfo.own('tiktokUrl'),
+      gbp:          CompanyInfo.own('gbpUrl')
     };
     html += '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">'
       + '<summary style="padding:14px 18px;cursor:pointer;font-size:15px;font-weight:700;color:var(--text);list-style:none;display:flex;justify-content:space-between;align-items:center;">'
@@ -492,8 +500,14 @@ var SettingsPage = {
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Instagram</label><input id="sr-instagram" type="url" value="' + UI.esc(sr.instagram) + '" placeholder="https://instagram.com/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Yelp</label><input id="sr-yelp" type="url" value="' + UI.esc(sr.yelp) + '" placeholder="https://yelp.com/biz/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Nextdoor</label><input id="sr-nextdoor" type="url" value="' + UI.esc(sr.nextdoor) + '" placeholder="https://nextdoor.com/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">X (Twitter)</label><input id="sr-x" type="url" value="' + UI.esc(sr.x) + '" placeholder="https://x.com/yourhandle" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">YouTube</label><input id="sr-youtube" type="url" value="' + UI.esc(sr.youtube) + '" placeholder="https://youtube.com/@channel" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">LinkedIn</label><input id="sr-linkedin" type="url" value="' + UI.esc(sr.linkedin) + '" placeholder="https://linkedin.com/company/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">TikTok</label><input id="sr-tiktok" type="url" value="' + UI.esc(sr.tiktok) + '" placeholder="https://tiktok.com/@handle" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">📍 Google Business Profile</label><input id="sr-gbp" type="url" value="' + UI.esc(sr.gbp) + '" placeholder="https://maps.app.goo.gl/... or https://g.page/..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '</div>'
       + '<div style="margin-top:14px;text-align:right;"><button onclick="SettingsPage.saveSocialLinks()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">Save</button></div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.5;">Saved to your tenant config in the cloud — synced across devices and used by SocialBranch when composing cross-platform posts.</div>'
       + '</div></details>';
 
     // ── Work Settings ──
@@ -3167,12 +3181,42 @@ var SettingsPage = {
   },
 
   saveSocialLinks: function() {
-    var map = { review: 'bm-co-review', facebook: 'bm-co-facebook', instagram: 'bm-co-instagram', yelp: 'bm-co-yelp', nextdoor: 'bm-co-nextdoor' };
-    Object.keys(map).forEach(function(k) {
-      var el = document.getElementById('sr-' + k);
-      if (el) localStorage.setItem(map[k], el.value.trim());
+    // v846: cloud-persist all social URLs to tenants.config so they sync
+    // across devices + power the SocialBranch composer. Mirrors the v840
+    // SMS-alerts pattern: select existing config → merge patch → update.
+    // localStorage write-through is preserved for synchronous CompanyInfo
+    // readers (CompanyInfo.own / .get).
+    var fields = [
+      { id: 'review',    ls: 'bm-co-review',    cfg: 'google_review_url' },
+      { id: 'facebook',  ls: 'bm-co-facebook',  cfg: 'facebook_url' },
+      { id: 'instagram', ls: 'bm-co-instagram', cfg: 'instagram_url' },
+      { id: 'yelp',      ls: 'bm-co-yelp',      cfg: 'yelp_url' },
+      { id: 'nextdoor',  ls: 'bm-co-nextdoor',  cfg: 'nextdoor_url' },
+      { id: 'x',         ls: 'bm-co-x',         cfg: 'x_url' },
+      { id: 'youtube',   ls: 'bm-co-youtube',   cfg: 'youtube_url' },
+      { id: 'linkedin',  ls: 'bm-co-linkedin',  cfg: 'linkedin_url' },
+      { id: 'tiktok',    ls: 'bm-co-tiktok',    cfg: 'tiktok_url' },
+      { id: 'gbp',       ls: 'bm-co-gbp',       cfg: 'gbp_url' }
+    ];
+    var patch = {};
+    fields.forEach(function(f) {
+      var el = document.getElementById('sr-' + f.id);
+      if (!el) return;
+      var v = String(el.value || '').trim();
+      patch[f.cfg] = v;
+      try { localStorage.setItem(f.ls, v); } catch(e) {}
     });
-    UI.toast('Social links saved ✅');
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = (DB && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!sb || !tid) { UI.toast('Saved locally — sign in to sync to cloud', 'success'); return; }
+    sb.from('tenants').select('config').eq('id', tid).single().then(function(res) {
+      if (res.error) { UI.toast('Local save OK; cloud load failed: ' + res.error.message, 'error'); return; }
+      var merged = Object.assign({}, res.data.config || {}, patch);
+      sb.from('tenants').update({ config: merged }).eq('id', tid).then(function(r2) {
+        if (r2.error) UI.toast('Local save OK; cloud save failed: ' + r2.error.message, 'error');
+        else UI.toast('Social links saved ✅ (synced to cloud)');
+      });
+    });
   },
 
   addService: function() {
