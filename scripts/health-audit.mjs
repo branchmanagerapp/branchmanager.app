@@ -94,14 +94,24 @@ const fail = (msg) => { console.log('  ❌ ' + msg); issues.push(msg); };
   for (const r of dupes) { if (r.d > 0) fail(`${r.k}: ${r.d} dupes`); dTotal += r.d; }
   if (!dTotal) ok('no duplicate keys across 5 unique fields');
 
-  console.log('\n┌─ 4. RLS anon-write coverage ───────────────────────────');
-  const policies = await sql(`select tablename, count(*) filter (where policyname like 'snt_anon_%' and 'anon' = any(roles)) as anon_policies from pg_policies where schemaname='public' and tablename = any(array[${TENANT_TABLES.map(t => `'${t}'`).join(',')}]) group by tablename`);
-  const policyMap = {};
-  for (const r of policies) policyMap[r.tablename] = r.anon_policies;
-  for (const t of TENANT_TABLES) {
-    if ((policyMap[t] || 0) < 4) fail(`${t}: only ${policyMap[t] || 0}/4 snt_anon policies`);
+  console.log('\n┌─ 4. RLS anon-write lockdown (post-2026-05-17 cutover) ──');
+  // INVERTED post-breach: snt_anon policies were the breach we closed
+  // on May 17 2026. Audit now FAILS if ANY anon-role policy reappears
+  // on a tenant table — EXCEPT for these intentional public-facing
+  // exceptions (verified 2026-05-19 still present + scoped):
+  //   requests.Anon insert requests   — public form submit (book.html)
+  //   services.anon_read_services     — public price list read
+  const ALLOWED_ANON = new Set([
+    'requests:Anon insert requests',
+    'services:anon_read_services',
+  ]);
+  const anonPolicies = await sql(`select tablename, policyname from pg_policies where schemaname='public' and 'anon' = any(roles) and tablename = any(array[${TENANT_TABLES.map(t => `'${t}'`).join(',')}])`);
+  const unexpected = anonPolicies.filter(r => !ALLOWED_ANON.has(`${r.tablename}:${r.policyname}`));
+  if (unexpected.length === 0) {
+    ok(`no unexpected anon policies (${anonPolicies.length} known-good public exception${anonPolicies.length === 1 ? '' : 's'})`);
+  } else {
+    for (const r of unexpected) fail(`${r.tablename}.${r.policyname}: unexpected anon policy — breach may have reopened`);
   }
-  if (!issues.some(i => i.includes('snt_anon'))) ok('all 24 tables have full select+insert+update+delete anon policies');
 
   console.log('\n┌─ 5. tenant_id default check ───────────────────────────');
   const defs = await sql(`select table_name, column_default from information_schema.columns where column_name='tenant_id' and table_schema='public' and table_name = any(array[${TENANT_TABLES.map(t => `'${t}'`).join(',')}])`);
