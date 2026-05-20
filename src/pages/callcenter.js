@@ -304,6 +304,34 @@ var CallCenter = {
       var clientMap = {};
       clients.forEach(function(c) { if (c.id) clientMap[c.id] = c; });
 
+      // v844: client-side re-link pass — rows whose client_id is null but
+      // whose from_number now matches a known client get auto-linked here
+      // (and persisted back to communications.client_id, best-effort). This
+      // catches the common case of a call coming in BEFORE the client was
+      // added in BM, leaving an "Unknown" row that's actually a real client.
+      try {
+        if (!CallCenter._relinkTimer) {
+          CallCenter._relinkTimer = setTimeout(function() {
+            CallCenter._relinkTimer = null;
+            var phoneToClient = {};
+            clients.forEach(function(cli) {
+              var p = String(cli.phone || '').replace(/\D/g, '').slice(-10);
+              if (p && !phoneToClient[p]) phoneToClient[p] = cli;
+            });
+            var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+            rows.forEach(function(c) {
+              if (c.client_id) return;
+              var fp = String(c.from_number || '').replace(/\D/g, '').slice(-10);
+              if (!fp) return;
+              var hit = phoneToClient[fp];
+              if (!hit) return;
+              c.client_id = hit.id; // local cache fix so the next render picks it up
+              if (sb) sb.from('communications').update({ client_id: hit.id }).eq('id', c.id).then(function(){});
+            });
+          }, 600);
+        }
+      } catch(e) { /* never block triage render */ }
+
       // ── Header banner: explain the qualify-then-promote model ──
       var handledCount = allRows.length - rows.length;
       var bannerHtml = '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
