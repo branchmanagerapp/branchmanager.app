@@ -240,6 +240,71 @@ var DashboardPage = {
       }
     } catch(e) { /* never block dashboard render */ }
 
+    // v841: Approve Comms reminder card — async-fed from marketing_drafts
+    // table. Placeholder div renders synchronously; fetch fires on next tick
+    // and swaps in real content if pending drafts exist. NEVER auto-renders
+    // anything if there are zero pending (silent when empty). Tapping the
+    // card opens MarketingPage (which embeds the existing Drafts to Review
+    // UI at the top of its Lead Sources panel). Per hard rule: nothing
+    // leaves BM without Doug clicking Send on each draft.
+    html += '<div id="bm-approve-comms-card" style="display:none;"></div>';
+    setTimeout(function() {
+      try {
+        var card = document.getElementById('bm-approve-comms-card');
+        if (!card) return;
+        var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+        var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+        if (!sb || !tid) return;
+        sb.from('marketing_drafts')
+          .select('id,trigger,client_name,to_email,to_phone,channel,subject,created_at')
+          .eq('tenant_id', tid)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .then(function(r) {
+            var drafts = (r && r.data) || [];
+            if (!drafts.length) { card.style.display = 'none'; return; }
+            var TLBL = {
+              review_request:    { icon: '⭐', label: 'Review request' },
+              quote_followup_7d: { icon: '💬', label: 'Quote follow-up' },
+              upsell_30d:        { icon: '🌳', label: 'Upsell' },
+              appt_reminder:     { icon: '⏰', label: 'Appt reminder' }
+            };
+            var _esc = function(s) { return String(s || '').replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+            var _rel = function(ts) {
+              if (!ts) return '';
+              var s = Math.round((Date.now() - new Date(ts)) / 1000);
+              if (s < 60) return 'just now';
+              if (s < 3600) return Math.round(s / 60) + 'm ago';
+              if (s < 86400) return Math.round(s / 3600) + 'h ago';
+              return Math.round(s / 86400) + 'd ago';
+            };
+            var inner = '<div onclick="loadPage(\'marketing\')" style="background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:14px 16px;margin-bottom:16px;cursor:pointer;">'
+              + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">'
+              +   '<div style="font-size:13px;font-weight:800;color:#7e2d10;letter-spacing:.3px;text-transform:uppercase;">📋 Approve comms · ' + drafts.length + ' waiting</div>'
+              +   '<div style="font-size:12px;color:#7e2d10;font-weight:700;">Review →</div>'
+              + '</div>'
+              + '<div style="font-size:11px;color:#7e2d10;opacity:.85;margin-bottom:8px;">AI staged these for customers. Nothing sends until you approve.</div>';
+            drafts.slice(0, 5).forEach(function(d) {
+              var meta = TLBL[d.trigger] || { icon: '✉', label: d.trigger || 'Draft' };
+              var who = d.client_name || d.to_email || d.to_phone || 'unknown';
+              var subj = d.subject || (d.channel === 'sms' ? '(SMS)' : '(no subject)');
+              var when = _rel(d.created_at);
+              inner += '<div style="background:#fff;border:1px solid #ffe0b2;border-radius:8px;padding:10px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;">'
+                +   '<div style="min-width:0;flex:1;">'
+                +     '<div style="font-weight:700;color:#3e1a0a;">' + meta.icon + ' ' + _esc(meta.label) + ' <span style="font-weight:500;color:#7e6055;">· ' + _esc(who) + '</span></div>'
+                +     '<div style="font-size:11px;color:#7e6055;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(subj) + '</div>'
+                +   '</div>'
+                +   '<div style="font-size:11px;color:#7e6055;text-align:right;white-space:nowrap;">' + when + '</div>'
+                + '</div>';
+            });
+            if (drafts.length > 5) inner += '<div style="font-size:11px;color:#7e2d10;margin-top:6px;text-align:center;font-weight:600;">+ ' + (drafts.length - 5) + ' more · tap to review all</div>';
+            inner += '</div>';
+            card.innerHTML = inner;
+            card.style.display = 'block';
+          });
+      } catch(e) { /* never block dashboard render */ }
+    }, 50);
+
     // === GREETING (show first on mobile) ===
     var now = new Date();
     var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
