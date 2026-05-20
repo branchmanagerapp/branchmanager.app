@@ -26,6 +26,19 @@ const ROOT = join(__dirname, "..");
 const PROJECT_REF = "ltpivkqahvplapyagljt";
 const SNT_UUID = "93af4348-8bba-4045-ac3e-5e71ec1cc8c5";
 
+// v848: any bare fetch() with AbortSignal.timeout() that doesn't have a
+// .catch() will throw unhandled when post-breach RLS makes the query slow.
+// Catch both forms (unhandledRejection AND uncaughtException) so a single
+// slow probe doesn't kill the whole 17-cat run.
+process.on("unhandledRejection", (e) => {
+  const name = (e && e.name) || "UnhandledRejection";
+  console.log(`  ⚠ ${name} caught at process level — continuing`);
+});
+process.on("uncaughtException", (e) => {
+  const name = (e && e.name) || "UncaughtException";
+  console.log(`  ⚠ ${name} caught at process level — continuing`);
+});
+
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 if (!ACCESS_TOKEN) {
   console.error("ERROR: SUPABASE_ACCESS_TOKEN env var required.");
@@ -241,22 +254,27 @@ async function auditStale() {
   if (!ANON_KEY) return;
   const headers = { "apikey": ANON_KEY, "Authorization": `Bearer ${ANON_KEY}`, "X-Tenant-ID": SNT_UUID, "Prefer": "count=exact" };
 
+  // v848: each fetch wrapped — without .catch, an AbortError throws as
+  // unhandled rejection and crashes the whole audit script (cat 7 was
+  // taking down 8-17 every night).
+  async function staleCount(url) {
+    try {
+      const r = await fetch(url, { method: "HEAD", headers, signal: AbortSignal.timeout(8000) });
+      const cr = r.headers.get("content-range") || "";
+      return parseInt(cr.split("/")[1] || "0", 10);
+    } catch (e) {
+      console.log(`  ⚠ probe timeout: ${e.name} — skipped`);
+      return -1;
+    }
+  }
   // Quotes "sent" >90d — should be archived/expired
   const since90 = new Date(Date.now() - 90 * 86400 * 1000).toISOString();
-  const r1 = await fetch(`https://${PROJECT_REF}.supabase.co/rest/v1/quotes?status=eq.sent&sent_at=lt.${since90}&select=id`, {
-    method: "HEAD", headers, signal: AbortSignal.timeout(8000),
-  });
-  const cr1 = r1.headers.get("content-range") || "";
-  const stale1 = parseInt(cr1.split("/")[1] || "0", 10);
+  const stale1 = await staleCount(`https://${PROJECT_REF}.supabase.co/rest/v1/quotes?status=eq.sent&sent_at=lt.${since90}&select=id`);
   if (stale1 > 0) fail("stale-quotes", `${stale1} quotes still in 'sent' status with sent_at >90d ago — bulk-archive candidates`);
 
   // Invoices unpaid >180d — likely write-off candidates
   const since180 = new Date(Date.now() - 180 * 86400 * 1000).toISOString();
-  const r2 = await fetch(`https://${PROJECT_REF}.supabase.co/rest/v1/invoices?status=eq.unpaid&created_at=lt.${since180}&select=id`, {
-    method: "HEAD", headers, signal: AbortSignal.timeout(8000),
-  });
-  const cr2 = r2.headers.get("content-range") || "";
-  const stale2 = parseInt(cr2.split("/")[1] || "0", 10);
+  const stale2 = await staleCount(`https://${PROJECT_REF}.supabase.co/rest/v1/invoices?status=eq.unpaid&created_at=lt.${since180}&select=id`);
   if (stale2 > 0) fail("stale-invoices", `${stale2} invoices unpaid for >180d — write-off review needed`);
 
   console.log(`  ${stale1} stale-sent quotes, ${stale2} unpaid invoices >180d`);
@@ -268,11 +286,17 @@ async function auditEmail() {
   if (!ANON_KEY) return;
   const headers = { "apikey": ANON_KEY, "Authorization": `Bearer ${ANON_KEY}`, "X-Tenant-ID": SNT_UUID, "Prefer": "count=exact" };
 
+  // v848: all anon-key fetches now wrapped — post-breach RLS makes some
+  // queries slow enough to trip the 8s timeout, and an unhandled AbortError
+  // was crashing the whole audit at cat 8 every night.
   // Bouncing clients
-  const r1 = await fetch(`https://${PROJECT_REF}.supabase.co/rest/v1/clients?email_status=eq.bounced&select=id,email,name`, {
-    headers, signal: AbortSignal.timeout(8000),
-  });
-  const bouncers = await r1.json().catch(() => []);
+  let bouncers = [];
+  try {
+    const r1 = await fetch(`https://${PROJECT_REF}.supabase.co/rest/v1/clients?email_status=eq.bounced&select=id,email,name`, {
+      headers, signal: AbortSignal.timeout(8000),
+    });
+    bouncers = await r1.json().catch(() => []);
+  } catch (e) { console.log(`  ⚠ bouncers probe ${e.name} — skipped`); }
   if (bouncers.length > 0) {
     console.log(`  ⚠️  ${bouncers.length} bouncing email customers:`);
     bouncers.slice(0, 5).forEach(b => console.log(`     ${b.email} (${b.name})`));
@@ -283,11 +307,14 @@ async function auditEmail() {
 
   // Bounce events last 7d
   const since7 = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
-  const r2 = await fetch(`https://${PROJECT_REF}.supabase.co/rest/v1/communications?channel=eq.email&status=eq.hard_bounce&created_at=gte.${since7}&select=id`, {
-    method: "HEAD", headers, signal: AbortSignal.timeout(8000),
-  });
-  const cr2 = r2.headers.get("content-range") || "";
-  const recent = parseInt(cr2.split("/")[1] || "0", 10);
+  let recent = 0;
+  try {
+    const r2 = await fetch(`https://${PROJECT_REF}.supabase.co/rest/v1/communications?channel=eq.email&status=eq.hard_bounce&created_at=gte.${since7}&select=id`, {
+      method: "HEAD", headers, signal: AbortSignal.timeout(8000),
+    });
+    const cr2 = r2.headers.get("content-range") || "";
+    recent = parseInt(cr2.split("/")[1] || "0", 10);
+  } catch (e) { console.log(`  ⚠ bounce-events probe ${e.name} — skipped`); }
   if (recent > 0) console.log(`  ⚠️  ${recent} hard-bounce events in last 7d`);
 }
 
@@ -683,23 +710,32 @@ console.log("─".repeat(60));
 console.log("  BM Deep Audit — every check that would have caught a real bug");
 console.log("─".repeat(60));
 
-await auditPublicFns();
-auditBundle();
-auditCSP();
-auditHardcodedUuids();
-await auditAnonWrite();
-await auditVerifyJwt();
-await auditStale();
-await auditEmail();
-await auditSpeed();
-auditCode();
-await auditSecurityHeaders();
-await auditCron();
-auditSW();
-await auditRealtime();
-await auditAuthConsistency();
-auditPageRender();
-auditUI();
+// v848: wrap each cat so a single timeout/exception doesn't crash the
+// whole 17-cat run before we get to summary + tracking-issue file step.
+async function safe(name, fn) {
+  try { await fn(); }
+  catch (e) {
+    const eName = (e && e.name) || "Error";
+    console.log(`  ⚠ cat "${name}" threw ${eName} — skipped`);
+  }
+}
+await safe("public-fns", auditPublicFns);
+await safe("bundle", auditBundle);
+await safe("csp", auditCSP);
+await safe("hardcoded-uuids", auditHardcodedUuids);
+await safe("anon-write", auditAnonWrite);
+await safe("verify-jwt", auditVerifyJwt);
+await safe("stale", auditStale);
+await safe("email", auditEmail);
+await safe("speed", auditSpeed);
+await safe("code", auditCode);
+await safe("security-headers", auditSecurityHeaders);
+await safe("cron", auditCron);
+await safe("sw", auditSW);
+await safe("realtime", auditRealtime);
+await safe("auth-consistency", auditAuthConsistency);
+await safe("page-render", auditPageRender);
+await safe("ui", auditUI);
 
 console.log("\n" + "─".repeat(60));
 if (issues.length === 0) {
