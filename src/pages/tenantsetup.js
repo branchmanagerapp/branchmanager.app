@@ -295,10 +295,23 @@ var TenantSetup = {
       TenantSetup._cache.vehicleCount = 0;
       return;
     }
-    // Bouncie OAuth status
+    // Bouncie OAuth status + Stripe base link sync. v853a: tenants.config
+    // is the source of truth for the Payment Link (pay.html reads it anon,
+    // no localStorage). If the link is set server-side but not locally,
+    // pull it into localStorage so the Setup checklist + Stripe.getBaseLink
+    // both see it.
     sb.from('tenants').select('config').eq('id', tenantId).maybeSingle().then(function(r) {
-      var cfg = r && r.data && r.data.config && r.data.config.bouncie;
-      TenantSetup._cache.bouncie = !!(cfg && cfg.access_token);
+      var cfg = r && r.data && r.data.config;
+      TenantSetup._cache.bouncie = !!(cfg && cfg.bouncie && cfg.bouncie.access_token);
+      try {
+        var serverLink = (cfg && (cfg.stripe_base_link || (cfg.stripe && cfg.stripe.base_link))) || '';
+        var localLink = (localStorage.getItem('bm-stripe-base-link') || '').trim();
+        if (serverLink && !localLink) {
+          localStorage.setItem('bm-stripe-base-link', serverLink);
+          if (window._currentPage === 'settings') loadPage('settings');
+          return;
+        }
+      } catch(e) {}
       if (window._currentPage === 'settings') loadPage('settings');
     });
     // Vehicle count
