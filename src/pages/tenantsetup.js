@@ -23,7 +23,15 @@ var TenantSetup = {
       setTimeout(function() {
         var el = document.getElementById(fieldId);
         if (!el) return;
-        var d = el.closest('details'); if (d && !d.open) d.open = true;
+        // Settings nests <details> two-deep (meta-group → card). Walk every
+        // <details> ancestor and open it — opening only the nearest one
+        // (v812) left outer groups closed, so the field stayed invisible
+        // and the "Set up →" button looked like a no-op.
+        var p = el.parentNode;
+        while (p && p !== document) {
+          if (p.tagName === 'DETAILS' && !p.open) p.open = true;
+          p = p.parentNode;
+        }
         var card = el.closest('.collapsible-card, [data-collapsible]'); if (card && card.classList) card.classList.add('open');
         el.scrollIntoView({ block: 'center', behavior: 'smooth' });
         if (el.focus) try { el.focus({ preventScroll: true }); } catch(e) { el.focus(); }
