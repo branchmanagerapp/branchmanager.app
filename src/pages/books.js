@@ -81,6 +81,7 @@ var BooksPage = (function() {
       + '</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       +   (accounts.length > 0 ? '<button onclick="BooksPage.syncNow()" class="btn btn-outline" style="font-size:13px;">Sync now</button>' : '')
+      +   '<button onclick="BooksPage.openCsvImport()" class="btn btn-outline" style="font-size:13px;">📥 Import CSV</button>'
       +   '<button onclick="BooksPage.connectBank()" class="btn btn-primary" style="font-size:13px;">+ Connect bank</button>'
       + '</div>'
       + '</div>';
@@ -89,8 +90,12 @@ var BooksPage = (function() {
     if (accounts.length === 0) {
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;">'
         + '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">No bank accounts connected yet</div>'
-        + '<div style="font-size:13px;color:var(--text-light);max-width:480px;margin:0 auto 18px;line-height:1.55;">Connect a bank to auto-import transactions, categorize them, and generate P&amp;L reports without manual entry. Plaid handles the OAuth — your bank credentials never touch Branch Manager.</div>'
-        + '<button onclick="BooksPage.connectBank()" class="btn btn-primary">Connect first bank</button>'
+        + '<div style="font-size:13px;color:var(--text-light);max-width:480px;margin:0 auto 18px;line-height:1.55;">Two ways to get transactions into Books:</div>'
+        + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">'
+        +   '<button onclick="BooksPage.openCsvImport()" class="btn btn-primary" style="font-size:14px;padding:12px 22px;">📥 Import CSV (free, manual)</button>'
+        +   '<button onclick="BooksPage.connectBank()" class="btn btn-outline" style="font-size:14px;padding:12px 22px;">🔗 Connect via Plaid (auto, $)</button>'
+        + '</div>'
+        + '<div style="font-size:11px;color:var(--text-light);max-width:480px;margin:0 auto;line-height:1.55;">CSV: download your monthly statement, drop it in BM. Free, works with every bank. Plaid: auto-syncs every 4h, requires Plaid signup + pricing call.</div>'
         + '</div>';
       html += _renderSetupHint();
       html += '</div>';
@@ -260,13 +265,365 @@ var BooksPage = (function() {
     });
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // CSV import (v855)
+  //
+  // Plaid pricing is "contact sales" — opaque + likely overkill for 1-3
+  // bank accounts. CSV import works against every bank that exports
+  // a statement CSV (essentially all of them). Doug downloads a monthly
+  // CSV, drops it into BM, and we parse + auto-categorize against COA.
+  //
+  // Flow:
+  //   1. Open the CSV import modal (BooksPage.openCsvImport)
+  //   2. Pick an existing bank_accounts row (or create one inline by
+  //      typing name + last_4)
+  //   3. Drop / pick a CSV file
+  //   4. We auto-detect the column shape (Chase / BoA / Citi / generic)
+  //   5. Preview rows + auto-suggested categories
+  //   6. Click "Import N rows" → insert into bank_transactions with
+  //      source='csv' + external_id=<hash> so re-importing a CSV that
+  //      overlaps a previous one doesn't dupe.
+  // ──────────────────────────────────────────────────────────────────
+
+  var _csvState = {
+    accountId: '',  // existing bank_accounts.id, or '' for new
+    newName: '',
+    newLast4: '',
+    rows: [],       // parsed rows: { date, amount, description, suggestedCat }
+    rawFilename: '',
+    columnMap: null // detected mapping
+  };
+
+  // Keyword → COA code rules. Order matters — first match wins. Keywords
+  // are case-insensitive substring matches against description+merchant.
+  var CATEGORY_RULES = [
+    // Revenue (positive amounts that look like deposits)
+    [/stripe.*payout|stripe.*transfer/i,          '4000'],  // Service Revenue (Stripe payout)
+    [/zelle|venmo|cashapp|deposit|ach credit|incoming/i, '4000'],
+    // Materials
+    [/home depot|lowes|lowe'?s|harbor freight|tractor supply|northern tool|arborwell|treestuff|sherrill/i, '5200'],
+    // Fuel
+    [/shell|exxon|mobil|sunoco|gulf|chevron|bp\s|citgo|valero|speedway|wawa|7-?eleven|costco gas|fuel/i, '6200'],
+    // Equipment Rental / Repair / Purchases
+    [/stihl|husqvarna|equipment|saw|chainsaw|chipper|grinder/i, '6400'],
+    // Vehicle
+    [/auto.*part|napa|advance auto|autozone|pep boys|jiffy lube|midas|firestone|goodyear|mavis tire/i, '6220'],
+    [/progressive.*auto|geico.*auto|state farm|allstate.*auto|nyaip|commercial auto/i, '6210'],
+    // Insurance
+    [/nysif|workers.?comp|state insurance fund/i, '6310'],
+    [/general liability|umbrella|hartford|liberty mutual|nationwide/i, '6300'],
+    // Dump / debris
+    [/anthon|transfer station|landfill|dump|recycl|debris/i, '5400'],
+    // Subcontractor
+    [/subcontractor|1099|labor.*contract/i, '5100'],
+    // Payroll
+    [/gusto|adp|paychex|quickbooks payroll/i, '6100'],
+    // Phone / Internet
+    [/at&t|verizon|t-?mobile|sprint|spectrum|optimum|comcast|cablevision|xfinity/i, '6510'],
+    // Office / Software
+    [/dropbox|google|microsoft|github|notion|figma|adobe|zoom|slack|supabase|cloudflare|sentry|claude|anthropic/i, '6500'],
+    // Marketing
+    [/facebook|meta\s|google ads|yelp|nextdoor|mailchimp|constant contact/i, '6600'],
+    // Permits / Legal
+    [/permit|tcia|isa|arborist|department of state|secretary of state/i, '6700'],
+    [/attorney|legal|law office|cpa\s|tax preparer/i, '6710'],
+    // Travel / Meals
+    [/uber|lyft|airbnb|delta|jetblue|united.*air|american.*air|marriott|hilton|hyatt/i, '6800'],
+    [/restaurant|diner|pizza|cafe|coffee|starbucks|dunkin|chipotle/i, '6810'],
+    // Stripe fees + Bank fees
+    [/stripe.*fee|stripe.*processing/i, '6910'],
+    [/overdraft|nsf|monthly fee|service charge|atm fee|wire fee|maintenance fee/i, '6900'],
+    // Owner draw / transfers
+    [/owner draw|distribution to|payment to doug|payment to brown/i, '7000'],
+    [/transfer to|transfer from|online transfer|book transfer/i, '7100']
+  ];
+
+  function _suggestCategory(description, merchant, amount) {
+    var hay = ((description || '') + ' ' + (merchant || '')).trim();
+    if (!hay) return '6999';
+    for (var i = 0; i < CATEGORY_RULES.length; i++) {
+      if (CATEGORY_RULES[i][0].test(hay)) return CATEGORY_RULES[i][1];
+    }
+    // Fallback: positive = revenue, negative = uncategorized expense
+    if (Number(amount) > 0) return '4000';
+    return '6999';
+  }
+
+  // Tolerant CSV row parser — handles quoted fields containing commas,
+  // double-quote escaping ("" → "), and CRLF / LF line endings.
+  function _parseCsv(text) {
+    var rows = [];
+    var cur = [], field = '', inQuotes = false;
+    text = text.replace(/^﻿/, ''); // strip BOM
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else { inQuotes = false; }
+        } else { field += ch; }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === ',') { cur.push(field); field = ''; }
+        else if (ch === '\r') { /* skip */ }
+        else if (ch === '\n') { cur.push(field); rows.push(cur); cur = []; field = ''; }
+        else { field += ch; }
+      }
+    }
+    if (field !== '' || cur.length) { cur.push(field); rows.push(cur); }
+    return rows.filter(function(r) { return r.length && r.some(function(c){ return c && c.trim(); }); });
+  }
+
+  // Find column indices for date / amount / description in a header row.
+  // Returns { dateIdx, descIdx, amountIdx, debitIdx, creditIdx } — amountIdx
+  // is set if one signed Amount column; debit/credit if two columns.
+  function _detectColumns(headerRow) {
+    var lower = headerRow.map(function(h) { return (h || '').toLowerCase().trim(); });
+    function find(re) { for (var i = 0; i < lower.length; i++) if (re.test(lower[i])) return i; return -1; }
+    return {
+      dateIdx:    find(/^(post|posting|trans|transaction|date|posted date|trans\s*date)/),
+      descIdx:    find(/^(desc|description|memo|payee|details|name|narrative)/),
+      amountIdx:  find(/^(amount|amt)$/),
+      debitIdx:   find(/^(debit|withdrawal|out|withdrawals)/),
+      creditIdx:  find(/^(credit|deposit|in|deposits|payments)/)
+    };
+  }
+
+  function _parseAmount(s) {
+    if (s == null || s === '') return null;
+    // Strip $, commas, parens (which Excel uses for negative)
+    var t = String(s).trim();
+    var negParen = /^\(.*\)$/.test(t);
+    t = t.replace(/[\$,]/g, '').replace(/^\((.*)\)$/, '$1').trim();
+    if (t === '' || t === '-') return null;
+    var v = parseFloat(t);
+    if (isNaN(v)) return null;
+    return negParen ? -Math.abs(v) : v;
+  }
+
+  function _parseDate(s) {
+    if (!s) return null;
+    var t = String(s).trim();
+    // MM/DD/YYYY or MM/DD/YY
+    var m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) {
+      var yr = parseInt(m[3], 10); if (yr < 100) yr += 2000;
+      return yr + '-' + String(parseInt(m[1], 10)).padStart(2, '0') + '-' + String(parseInt(m[2], 10)).padStart(2, '0');
+    }
+    // YYYY-MM-DD
+    m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+    // Fallback: Date.parse
+    var d = new Date(t);
+    if (!isNaN(d.getTime())) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    return null;
+  }
+
+  // SHA-256 hex of a string — used as external_id to dedupe re-imports.
+  async function _hashRow(s) {
+    var enc = new TextEncoder();
+    var buf = await crypto.subtle.digest('SHA-256', enc.encode(s));
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('').slice(0, 32);
+  }
+
+  function openCsvImport() {
+    _csvState.rows = []; _csvState.columnMap = null; _csvState.rawFilename = '';
+    _csvState.accountId = (_accounts && _accounts[0] && _accounts[0].id) || '';
+    _csvState.newName = ''; _csvState.newLast4 = '';
+    _renderCsvModal();
+  }
+
+  function _renderCsvModal() {
+    if (!window.UI || !UI.openModal) { alert('UI module not ready'); return; }
+    var accts = _accounts || [];
+    var html = '<div style="padding:20px;max-width:720px;">'
+      + '<h2 style="margin:0 0 6px;font-size:20px;font-weight:800;">📥 Import bank CSV</h2>'
+      + '<div style="font-size:13px;color:var(--text-light);margin-bottom:14px;line-height:1.5;">Download a CSV from your bank\'s online portal (Chase, BoA, Citi, etc.) and drop it here. Columns auto-detected. Re-importing an overlapping CSV is safe — rows are deduped by content hash.</div>'
+
+      // Step 1 — pick account
+      + '<div style="margin-bottom:14px;">'
+      +   '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Step 1 · Which account</label>';
+    if (accts.length) {
+      html += '<select id="csv-account" onchange="BooksPage._csvSetAccount(this.value)" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#fff;">';
+      accts.forEach(function(a) {
+        html += '<option value="' + a.id + '"' + (_csvState.accountId === a.id ? ' selected' : '') + '>' + _esc(a.name) + (a.last_4 ? ' ··' + _esc(a.last_4) : '') + '</option>';
+      });
+      html += '<option value="">+ New account…</option>';
+      html += '</select>';
+    } else {
+      _csvState.accountId = '';
+    }
+    if (_csvState.accountId === '') {
+      html += '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px;">'
+        + '<input type="text" placeholder="Account name (e.g. Chase Business Checking)" value="' + _esc(_csvState.newName) + '" oninput="BooksPage._csvSetField(\'newName\', this.value)" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;">'
+        + '<input type="text" placeholder="Last 4" maxlength="4" value="' + _esc(_csvState.newLast4) + '" oninput="BooksPage._csvSetField(\'newLast4\', this.value)" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;">'
+        + '</div>';
+    }
+    html += '</div>';
+
+    // Step 2 — file
+    html += '<div style="margin-bottom:14px;">'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Step 2 · Drop your CSV</label>'
+      + '<label for="csv-file" style="display:block;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:var(--bg);">'
+      +   '<div style="font-size:30px;margin-bottom:4px;">📄</div>'
+      +   '<div style="font-size:13px;font-weight:600;color:var(--text);">' + (_csvState.rawFilename || 'Click to pick a CSV file') + '</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Chase / BoA / Citi / Wells Fargo / generic supported</div>'
+      + '</label>'
+      + '<input id="csv-file" type="file" accept=".csv,text/csv,text/plain" style="display:none;" onchange="BooksPage._csvOnFile(this.files && this.files[0])">'
+      + '</div>';
+
+    // Step 3 — preview
+    if (_csvState.rows.length) {
+      html += '<div style="margin-bottom:14px;">'
+        + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Step 3 · Preview ('+ _csvState.rows.length +' rows)</label>'
+        + '<div style="max-height:240px;overflow:auto;border:1px solid var(--border);border-radius:8px;">'
+        + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead style="background:var(--bg);position:sticky;top:0;">'
+        +   '<tr><th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);">Date</th>'
+        +       '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);">Description</th>'
+        +       '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);">Amount</th>'
+        +       '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);">Category</th></tr>'
+        + '</thead><tbody>';
+      _csvState.rows.slice(0, 50).forEach(function(r) {
+        var c = (_chart || []).find(function(x) { return x.code === r.suggestedCat; });
+        html += '<tr>'
+          + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);color:var(--text-light);">' + _esc(r.date) + '</td>'
+          + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);">' + _esc((r.description||'').slice(0, 60)) + '</td>'
+          + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);text-align:right;font-weight:700;color:' + (r.amount > 0 ? 'var(--green-dark)' : 'var(--text)') + ';">' + _money(r.amount) + '</td>'
+          + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);color:var(--text-light);">' + _esc((c ? c.code + ' ' + c.name : r.suggestedCat)) + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div>';
+      if (_csvState.rows.length > 50) {
+        html += '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">… showing first 50. Full ' + _csvState.rows.length + ' will be imported.</div>';
+      }
+      html += '</div>';
+    }
+
+    // Actions
+    var canImport = _csvState.rows.length && (_csvState.accountId || (_csvState.newName.trim() && _csvState.newLast4.trim()));
+    html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">'
+      + '<button onclick="UI.closeModal()" class="btn btn-outline">Cancel</button>'
+      + '<button onclick="BooksPage._csvImport()" ' + (canImport ? '' : 'disabled') + ' style="background:' + (canImport ? 'var(--green-dark)' : 'var(--text-light)') + ';color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:' + (canImport ? 'pointer' : 'not-allowed') + ';">Import ' + (_csvState.rows.length || '') + ' rows</button>'
+      + '</div>';
+    html += '</div>';
+    UI.openModal(html, { wide: true });
+  }
+
+  function _csvSetAccount(v) { _csvState.accountId = v; _renderCsvModal(); }
+  function _csvSetField(k, v) { _csvState[k] = v; }
+
+  function _csvOnFile(file) {
+    if (!file) return;
+    _csvState.rawFilename = file.name;
+    var rd = new FileReader();
+    rd.onload = function(ev) {
+      try {
+        var text = ev.target.result || '';
+        var parsed = _parseCsv(text);
+        if (parsed.length < 2) { UI.toast('CSV has no rows', 'error'); return; }
+        var hdr = parsed[0];
+        var cols = _detectColumns(hdr);
+        if (cols.dateIdx < 0 || cols.descIdx < 0 || (cols.amountIdx < 0 && cols.debitIdx < 0 && cols.creditIdx < 0)) {
+          UI.toast('Couldn\'t detect Date / Description / Amount columns. Sniffed: ' + hdr.join(' | '), 'error');
+          return;
+        }
+        _csvState.columnMap = cols;
+        var out = [];
+        for (var i = 1; i < parsed.length; i++) {
+          var row = parsed[i];
+          var date = _parseDate(row[cols.dateIdx]);
+          var desc = (row[cols.descIdx] || '').trim();
+          var amt = null;
+          if (cols.amountIdx >= 0) {
+            amt = _parseAmount(row[cols.amountIdx]);
+          } else {
+            var debit = _parseAmount(row[cols.debitIdx]);
+            var credit = _parseAmount(row[cols.creditIdx]);
+            if (credit) amt = Math.abs(credit);
+            else if (debit) amt = -Math.abs(debit);
+          }
+          if (date == null || amt == null) continue;
+          out.push({
+            date: date, amount: amt, description: desc,
+            suggestedCat: _suggestCategory(desc, '', amt),
+            raw: row.join('|')
+          });
+        }
+        if (!out.length) { UI.toast('Parsed 0 valid rows. Check the file.', 'error'); return; }
+        _csvState.rows = out;
+        _renderCsvModal();
+      } catch (e) {
+        console.error('csv parse failed:', e);
+        UI.toast('Parse error: ' + (e.message || 'unknown'), 'error');
+      }
+    };
+    rd.readAsText(file);
+  }
+
+  async function _csvImport() {
+    var sb = _supabase(); if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    var tenantId = TENANT_ID(); if (!tenantId) { UI.toast('No tenant context', 'error'); return; }
+
+    // Resolve or create the account
+    var acctId = _csvState.accountId;
+    if (!acctId) {
+      var newAcct = {
+        tenant_id: tenantId,
+        name: _csvState.newName.trim(),
+        last_4: _csvState.newLast4.trim(),
+        account_type: 'checking',
+        active: true
+      };
+      var ins = await sb.from('bank_accounts').insert(newAcct).select('id').single();
+      if (ins.error) { UI.toast('Account create failed: ' + ins.error.message, 'error'); return; }
+      acctId = ins.data.id;
+    }
+
+    UI.toast('Hashing + uploading ' + _csvState.rows.length + ' rows…');
+
+    // Hash each row → external_id for dedupe. Stable across re-imports.
+    var bulk = [];
+    for (var i = 0; i < _csvState.rows.length; i++) {
+      var r = _csvState.rows[i];
+      var eid = await _hashRow(acctId + '|' + r.date + '|' + r.amount + '|' + (r.description || ''));
+      bulk.push({
+        tenant_id: tenantId,
+        account_id: acctId,
+        posted_date: r.date,
+        amount: r.amount,
+        description: r.description,
+        category: r.suggestedCat || null,
+        source: 'csv',
+        external_id: eid,
+        pending: false,
+        reconciled: false
+      });
+    }
+
+    // upsert on external_id so re-imports don't dupe
+    var up = await sb.from('bank_transactions').upsert(bulk, { onConflict: 'external_id', ignoreDuplicates: false });
+    if (up.error) { UI.toast('Import failed: ' + up.error.message, 'error'); return; }
+    UI.toast(_csvState.rows.length + ' transactions imported ✅');
+    UI.closeModal();
+    _accounts = null; _txns = null;
+    _fetchAll().then(function() { loadPage('reports'); });
+  }
+
   return {
     render: render,
     connectBank: connectBank,
     syncNow: syncNow,
+    openCsvImport: openCsvImport,
     _setRange: _setRange,
     _setAccount: _setAccount,
     _setSearch: _setSearch,
-    _setCategory: _setCategory
+    _setCategory: _setCategory,
+    _csvSetAccount: _csvSetAccount,
+    _csvSetField: _csvSetField,
+    _csvOnFile: _csvOnFile,
+    _csvImport: _csvImport
   };
 })();
