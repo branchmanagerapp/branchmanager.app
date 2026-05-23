@@ -143,12 +143,55 @@ serve(async (req) => {
     return c;
   }
 
-  const startDate = fullBackfill
-    ? new Date(Date.now() - 730 * 86400000).toISOString().split('T')[0] // 2 years
-    : new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]; // 30 days
-  const endDate = new Date().toISOString().split('T')[0];
+  // v858: migrated from /transactions/get (date-window paging) to
+  // /transactions/sync (cursor-based). Benefits:
+  //  - Plaid returns ONLY what's new/modified/removed since last cursor.
+  //    No re-fetching the same 30-day window every 4h on the cron.
+  //  - Handles deletions correctly (Plaid sends `removed` for transactions
+  //    the institution invalidated post-clearing).
+  //  - Recommended by Plaid for any production usage.
+  //  - First call with empty cursor returns historical backfill in chunks
+  //    (has_more=true repeats until all history pulled).
+  //
+  // Cursor per item is persisted in tenants.config.plaid.cursors[item_id]
+  // so we don't need a new schema. fullBackfill flag now means "wipe the
+  // stored cursor before syncing" — forces Plaid to re-send all history.
 
-  const result: Record<string, number> = {};
+  // Helper — read/write tenant.config.plaid.cursors safely.
+  async function getCursor(tid: string, iid: string): Promise<string | null> {
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tid}&select=config`, {
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+      if (!r.ok) return null;
+      const rows = await r.json();
+      const c = rows && rows[0] && rows[0].config && rows[0].config.plaid && rows[0].config.plaid.cursors;
+      return (c && c[iid]) || null;
+    } catch { return null; }
+  }
+  async function setCursor(tid: string, iid: string, cursor: string) {
+    try {
+      // Merge into tenants.config.plaid.cursors via SQL jsonb_set
+      // (postgrest can't do nested jsonb merge directly, so we read+write).
+      const getR = await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tid}&select=config`, {
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+      const rows = await getR.json();
+      const cfg = (rows && rows[0] && rows[0].config) || {};
+      cfg.plaid = cfg.plaid || {};
+      cfg.plaid.cursors = cfg.plaid.cursors || {};
+      cfg.plaid.cursors[iid] = cursor;
+      await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tid}`, {
+        method: 'PATCH',
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ config: cfg }),
+      });
+    } catch (e) {
+      console.warn(`Failed to persist cursor for item ${iid}:`, (e as Error).message);
+    }
+  }
+
+  const result: Record<string, { added: number, modified: number, removed: number }> = {};
   let totalSynced = 0;
 
   for (const [iid, { access, tenant, accounts: accs }] of Object.entries(byItem)) {
@@ -158,24 +201,25 @@ serve(async (req) => {
         console.warn(`Skipping item ${iid} — no Plaid creds for tenant ${tenant}`);
         continue;
       }
-      // Use legacy /transactions/get for simplicity. /transactions/sync is
-      // cleaner with cursors but adds bookkeeping; revisit in Phase 2.
-      let offset = 0;
-      const pageSize = 500;
       const aIdByPlaidId: Record<string, { id: string, tenant_id: string }> = {};
       for (const a of accs) aIdByPlaidId[a.plaid_account_id] = { id: a.id, tenant_id: a.tenant_id };
 
-      while (true) {
-        const resp = await plaid(creds, '/transactions/get', {
-          access_token: access,
-          start_date: startDate,
-          end_date: endDate,
-          options: { count: pageSize, offset },
-        });
-        const txns = resp.transactions || [];
-        if (!txns.length) break;
+      let cursor: string | null = fullBackfill ? null : await getCursor(tenant, iid);
+      const itemResult = { added: 0, modified: 0, removed: 0 };
+      let hasMore = true;
+      let pageGuard = 0;
 
-        const rows = txns.map((t: any) => {
+      while (hasMore && pageGuard < 50) {
+        pageGuard++;
+        const reqBody: any = { access_token: access, count: 500 };
+        if (cursor) reqBody.cursor = cursor;
+        const resp = await plaid(creds, '/transactions/sync', reqBody);
+
+        const added: any[] = resp.added || [];
+        const modified: any[] = resp.modified || [];
+        const removed: any[] = resp.removed || [];
+
+        function rowFor(t: any) {
           const accMatch = aIdByPlaidId[t.account_id];
           if (!accMatch) return null;
           // Plaid amounts: outflow = positive, inflow = negative. We invert
@@ -195,27 +239,43 @@ serve(async (req) => {
             external_id: t.transaction_id,
             raw: t,
           };
-        }).filter(Boolean);
-
-        if (rows.length) {
-          // Upsert via Prefer: resolution=merge-duplicates on the unique
-          // (account_id, external_id) constraint.
-          await supa('POST', 'bank_transactions?on_conflict=account_id,external_id', rows);
-          totalSynced += rows.length;
-          result[iid] = (result[iid] || 0) + rows.length;
         }
 
-        if (txns.length < pageSize) break;
-        offset += pageSize;
-        if (offset >= 10000) break; // safety cap
+        const upsertRows = [...added.map(rowFor), ...modified.map(rowFor)].filter(Boolean);
+        if (upsertRows.length) {
+          await supa('POST', 'bank_transactions?on_conflict=account_id,external_id', upsertRows);
+          itemResult.added += added.length;
+          itemResult.modified += modified.length;
+          totalSynced += upsertRows.length;
+        }
+
+        if (removed.length) {
+          // Plaid removed entries — { transaction_id } only. Delete by
+          // external_id within this tenant scope.
+          const ids = removed.map((r: any) => r.transaction_id).filter(Boolean);
+          for (const rid of ids) {
+            await fetch(
+              `${SUPA_URL}/rest/v1/bank_transactions?external_id=eq.${encodeURIComponent(rid)}&tenant_id=eq.${tenant}`,
+              { method: 'DELETE', headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Prefer: 'return=minimal' } }
+            );
+          }
+          itemResult.removed += removed.length;
+        }
+
+        cursor = resp.next_cursor;
+        hasMore = !!resp.has_more;
       }
+
+      // Persist final cursor so subsequent syncs only pull deltas.
+      if (cursor) await setCursor(tenant, iid, cursor);
+      result[iid] = itemResult;
     } catch (e) {
       console.error(`Sync failed for item ${iid}:`, (e as Error).message);
-      result[iid] = -1;
+      result[iid] = { added: -1, modified: 0, removed: 0 };
     }
   }
 
-  return new Response(JSON.stringify({ synced: totalSynced, by_item: result }), {
+  return new Response(JSON.stringify({ synced: totalSynced, by_item: result, mode: '/transactions/sync (cursor)' }), {
     headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 });
