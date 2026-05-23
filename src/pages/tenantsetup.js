@@ -246,6 +246,22 @@ var TenantSetup = {
     loadPage(window._currentPage || 'settings');
   },
 
+  // Re-arm the v642 welcome splash + un-collapse the checklist + reload.
+  // Triggered by the "↻ Restart tour" button on the collapsed bar. Useful
+  // for a friend who dismissed welcome accidentally, and for Doug demoing
+  // the onboarding flow.
+  restartTour: function() {
+    try {
+      var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || '';
+      localStorage.setItem('bm-welcome-show', '1');
+      localStorage.setItem('bm-welcome-name', coName);
+      localStorage.setItem('bm-setup-collapsed', '0');
+    } catch(e) {}
+    // Full reload — the welcome splash binds on DOMContentLoaded, so
+    // toggling the localStorage flag isn't enough.
+    location.reload();
+  },
+
   // Per-item skip — a tenant can dismiss any checklist item they don't
   // need (e.g. no crew, no Stripe). Skipped items stop counting toward
   // "critical left" and stop nagging, but stay listed with an Undo so
@@ -307,6 +323,7 @@ var TenantSetup = {
         + '<div style="flex:1;min-width:200px;font-size:13px;color:' + (allDone ? '#065f46' : '#92400e') + ';">'
         +   '<b>Setup checklist</b>: ' + okAll + '/' + totalAll + ' ' + (allDone ? '— everything wired' : '· ' + (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left') + (skippedCount ? ' · ' + skippedCount + ' skipped' : '')
         + '</div>'
+        + '<button onclick="TenantSetup.restartTour()" style="font-size:12px;padding:5px 12px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;color:var(--text-light);" title="Re-show the welcome splash + expand the checklist">↻ Restart tour</button>'
         + '<button onclick="TenantSetup.toggle()" style="font-size:12px;padding:5px 12px;background:var(--white);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;">' + (allDone ? 'Show details' : 'Expand') + '</button>'
         + '</div>';
     }
