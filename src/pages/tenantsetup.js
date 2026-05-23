@@ -212,7 +212,56 @@ var TenantSetup = {
   _cache: { bouncie: null, vehicleCount: null },
   _loaded: false,
 
+  // Tenant ID for Second Nature Tree Service — the "original" tenant whose
+  // canonical business data ships baked into BM_CONFIG. When the current
+  // session belongs to this tenant, we auto-seed empty bm-co-* fields from
+  // BM_CONFIG (idempotent — only writes blanks). Friends' tenants are
+  // skipped so they never inherit SNT identity.
+  _SNT_TENANT_ID: '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+
+  // v851: auto-seed Doug's empty Setup fields from BM_CONFIG so he doesn't
+  // have to retype values he already canonicalized in the bundle. Tenant-
+  // gated — only fires for SNT_TENANT_ID. Idempotent — each field is only
+  // written if currently empty. Runs once per Settings render.
+  _autoSeedFromConfig: function() {
+    try {
+      if (TenantSetup._seeded) return;
+      var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+      if (tenantId !== TenantSetup._SNT_TENANT_ID) return;
+      if (typeof BM_CONFIG === 'undefined') return;
+      var SEED = [
+        ['bm-co-name',     BM_CONFIG.companyName],
+        ['bm-co-phone',    BM_CONFIG.phone],
+        ['bm-co-email',    BM_CONFIG.email],
+        ['bm-co-website',  BM_CONFIG.website],
+        ['bm-co-address',  BM_CONFIG.address],
+        ['bm-co-licenses', BM_CONFIG.licenses],
+        ['bm-co-review',   BM_CONFIG.googleReviewUrl],
+        ['bm-tax-rate',    '8.375']
+      ];
+      var wrote = 0;
+      SEED.forEach(function(p) {
+        var k = p[0], v = p[1];
+        if (!v) return;
+        var cur = (localStorage.getItem(k) || '').trim();
+        if (cur) return;
+        localStorage.setItem(k, String(v));
+        wrote++;
+      });
+      TenantSetup._seeded = true;
+      if (wrote && window._currentPage === 'settings') {
+        // Re-render so the newly-seeded values appear in the inputs +
+        // the checklist flips the seeded items green.
+        setTimeout(function() { try { loadPage('settings'); } catch(e){} }, 50);
+      }
+    } catch(e) { /* never block Settings render */ }
+  },
+
   _loadAsyncCache: function() {
+    // v851: auto-seed BM_CONFIG → localStorage for the SNT tenant. Runs
+    // before the async probes so the synchronous probes that follow get
+    // the freshly-written values.
+    TenantSetup._autoSeedFromConfig();
     if (TenantSetup._loaded) return;
     TenantSetup._loaded = true;
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
