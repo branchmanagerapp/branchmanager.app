@@ -718,13 +718,13 @@ var BooksPage = (function() {
 
     // Step 2 — file
     html += '<div style="margin-bottom:14px;">'
-      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Step 2 · Drop your CSV</label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Step 2 · Drop your CSV or PDF statement</label>'
       + '<label for="csv-file" style="display:block;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:var(--bg);">'
       +   '<div style="font-size:30px;margin-bottom:4px;">📄</div>'
-      +   '<div style="font-size:13px;font-weight:600;color:var(--text);">' + (_csvState.rawFilename || 'Click to pick a CSV file') + '</div>'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Chase / BoA / Citi / Wells Fargo / generic supported</div>'
+      +   '<div style="font-size:13px;font-weight:600;color:var(--text);">' + (_csvState.rawFilename || 'Click to pick a CSV or PDF file') + '</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">CSV: M&amp;T / Chase / BoA / Citi / Wells Fargo · PDF: any monthly statement (Claude Vision extracts)</div>'
       + '</label>'
-      + '<input id="csv-file" type="file" accept=".csv,text/csv,text/plain" style="display:none;" onchange="BooksPage._csvOnFile(this.files && this.files[0])">'
+      + '<input id="csv-file" type="file" accept=".csv,text/csv,text/plain,.pdf,application/pdf" style="display:none;" onchange="BooksPage._csvOnFile(this.files && this.files[0])">'
       + '</div>';
 
     // Step 3 — preview
@@ -771,6 +771,15 @@ var BooksPage = (function() {
   function _csvOnFile(file) {
     if (!file) return;
     _csvState.rawFilename = file.name;
+
+    // v860a: PDF support via Claude Vision (ai-chat edge fn).
+    // Banks only offer CSV for last ~13 months; older history is PDF-only.
+    // We base64 the PDF, ship it to ai-chat as a `document` content block,
+    // Claude returns a JSON transactions[] array, we convert to the same
+    // shape as CSV rows and continue the existing dedupe/upsert flow.
+    var isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+    if (isPdf) { _extractPdfStatement(file); return; }
+
     var rd = new FileReader();
     rd.onload = function(ev) {
       try {
@@ -814,6 +823,80 @@ var BooksPage = (function() {
       }
     };
     rd.readAsText(file);
+  }
+
+  // Extract transactions from a PDF bank statement via Claude Vision
+  // (ai-chat edge fn → Anthropic API). PDF is base64-encoded and sent as
+  // a `document` content block; Claude reads the embedded tables + OCR's
+  // any scanned pages and returns structured JSON. Works on any bank
+  // statement format — M&T, Chase, BoA, Wells Fargo, paper scans etc.
+  async function _extractPdfStatement(file) {
+    if (file.size > 30 * 1024 * 1024) { UI.toast('PDF too large (max 30 MB).', 'error'); return; }
+    UI.toast('📄 Extracting transactions from PDF (15-40 sec)…');
+
+    var dataUrl = await new Promise(function(resolve, reject) {
+      var rd = new FileReader();
+      rd.onload = function(e) { resolve(e.target.result); };
+      rd.onerror = reject;
+      rd.readAsDataURL(file);
+    });
+    var b64 = dataUrl.split(',')[1];
+
+    var prompt = 'This is a bank statement PDF. Extract EVERY transaction line in the activity / transactions section into a strict JSON array (no prose, no markdown fences). Each row must have these keys:\n'
+      + '  - "date" (YYYY-MM-DD; statement year is in the header — if a row only shows MM/DD, use the statement year)\n'
+      + '  - "description" (the transaction description / payee / memo, trimmed; combine multi-line continuations)\n'
+      + '  - "amount" (signed number; POSITIVE for deposits/credits/incoming, NEGATIVE for withdrawals/debits/checks/fees/outgoing)\n'
+      + '\n'
+      + 'Skip header/footer rows, balance summaries, totals, page numbers, and any non-transaction line. Skip lines like "Beginning Balance", "Ending Balance", "Total Deposits", "Total Withdrawals". Include checks, ACH transfers, debit-card purchases, fees, interest, deposits, and credits. Preserve original description spelling.\n'
+      + '\nReturn ONLY the JSON array. Example shape:\n'
+      + '[{"date":"2024-08-15","description":"DEPOSIT FROM STRIPE PAYOUT","amount":1450.00},{"date":"2024-08-16","description":"HOME DEPOT #4023","amount":-89.45}]';
+
+    var sbUrl = (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_URL) ? SupabaseDB.DEFAULT_URL : 'https://ltpivkqahvplapyagljt.supabase.co';
+    var sbKey = (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_KEY) ? SupabaseDB.DEFAULT_KEY : '';
+    try {
+      var r = await fetch(sbUrl + '/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sbKey, 'apikey': sbKey },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8000,
+          system: 'You are an expert at reading bank statements. Always return ONLY a single JSON array, never prose, never markdown code fences. If a field is unclear, omit the row entirely rather than guessing.',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      });
+      var data = await r.json();
+      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+      var raw = (data.content && data.content[0] && data.content[0].text) || '';
+      raw = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      var arr; try { arr = JSON.parse(raw); } catch(e) { throw new Error('AI returned non-JSON: ' + raw.slice(0, 160)); }
+      if (!Array.isArray(arr)) throw new Error('AI returned non-array: ' + raw.slice(0, 160));
+
+      var out = arr.map(function(t) {
+        var date = _parseDate(t.date) || (t.date && /^\d{4}-\d{2}-\d{2}$/.test(t.date) ? t.date : null);
+        var amt = (typeof t.amount === 'number') ? t.amount : _parseAmount(String(t.amount || ''));
+        var desc = (t.description || '').toString().trim();
+        if (date == null || amt == null || !desc) return null;
+        return {
+          date: date, amount: amt, description: desc,
+          suggestedCat: _suggestCategory(desc, '', amt),
+          raw: 'pdf:' + file.name
+        };
+      }).filter(Boolean);
+
+      if (!out.length) { UI.toast('Vision extracted 0 valid transactions. PDF may be corrupted or non-statement.', 'error'); return; }
+      _csvState.rows = out;
+      _renderCsvModal();
+      UI.toast('✅ ' + out.length + ' transactions extracted — review + Import');
+    } catch (e) {
+      console.error('pdf extract failed:', e);
+      UI.toast('Vision extract failed: ' + (e.message || 'unknown'), 'error');
+    }
   }
 
   async function _csvImport() {
