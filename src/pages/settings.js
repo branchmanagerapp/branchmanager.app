@@ -322,12 +322,14 @@ var SettingsPage = {
       + '<div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Business Address</label><input id="co-address" value="' + UI.esc(co.address) + '" placeholder="123 Main St, Your City, ST 00000" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"><div style="font-size:11px;color:var(--text-light);margin-top:3px;">Drives your local weather, dispatch routing, sales-tax region, and the locale shown on customer review pages.</div></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Licenses</label><input id="co-licenses" value="' + UI.esc(co.licenses) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
       + '<div style="grid-column:1/-1;">'
-      + '<label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Logo URL <span style="font-weight:400;color:var(--text-light);font-size:11px;">(used on quotes, invoices &amp; emails)</span></label>'
+      + '<label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Logo <span style="font-weight:400;color:var(--text-light);font-size:11px;">(used on quotes, invoices &amp; emails)</span></label>'
       + '<div style="display:flex;gap:10px;align-items:center;">'
-      + '<input id="co-logo" type="url" value="' + UI.esc(co.logo) + '" placeholder="https://..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;" oninput="SettingsPage._previewLogo(this.value)">'
+      + '<input id="co-logo" type="url" value="' + UI.esc(co.logo) + '" placeholder="Paste image URL or click Upload →" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;" oninput="SettingsPage._previewLogo(this.value)">'
+      + '<label for="co-logo-file" id="co-logo-upload-btn" style="background:var(--green-dark);color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📤 Upload</label>'
+      + '<input id="co-logo-file" type="file" accept="image/*" style="display:none;" onchange="SettingsPage._uploadLogoFile(this.files&&this.files[0])">'
       + (co.logo ? '<img id="co-logo-preview" src="' + UI.esc(co.logo) + '" style="width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#f9fafb;" onerror="this.style.display=\'none\'">' : '<div id="co-logo-preview" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:#f9fafb;display:flex;align-items:center;justify-content:center;font-size:20px;">🌳</div>')
       + '</div>'
-      + '<div style="font-size:11px;color:var(--text-light);margin-top:3px;">Paste a hosted image URL (Dropbox, Google Drive public link, Imgur, etc.)</div>'
+      + '<div id="co-logo-status" style="font-size:11px;color:var(--text-light);margin-top:3px;">Pick a PNG/JPG/SVG from your computer, or paste a hosted URL.</div>'
       + '</div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Default Tax Rate (%)</label>'
       + '<input id="co-tax-rate" type="number" value="' + co.taxRate + '" step="0.001" min="0" max="100" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;">'
@@ -2732,6 +2734,42 @@ var SettingsPage = {
     if (!el) return;
     if (!url) { el.outerHTML = '<div id="co-logo-preview" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:#f9fafb;display:flex;align-items:center;justify-content:center;font-size:20px;">🌳</div>'; return; }
     el.outerHTML = '<img id="co-logo-preview" src="' + url.replace(/"/g,'&quot;') + '" style="width:40px;height:40px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#f9fafb;" onerror="this.style.display=\'none\'">';
+  },
+
+  // Logo file upload — pick from disk, push to Supabase Storage, paste the
+  // public URL into the co-logo input, auto-save. Avoids the friction of
+  // "paste a hosted URL" when the user just has the file locally.
+  _uploadLogoFile: async function(file) {
+    if (!file) return;
+    var status = document.getElementById('co-logo-status');
+    var setStatus = function(t, color) { if (status) { status.textContent = t; status.style.color = color || 'var(--text-light)'; } };
+    if (!/^image\//.test(file.type)) { setStatus('Pick an image file (PNG / JPG / SVG / WebP).', '#b91c1c'); return; }
+    if (file.size > 5 * 1024 * 1024) { setStatus('Image too large (max 5 MB).', '#b91c1c'); return; }
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) {
+      setStatus('Supabase not connected — paste a hosted URL instead.', '#b91c1c'); return;
+    }
+    setStatus('📤 Uploading…', '#1e40af');
+    try {
+      var BUCKET = (typeof Photos !== 'undefined' && Photos.BUCKET) ? Photos.BUCKET : 'job-photos';
+      var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : 'unknown';
+      var ext = (file.name.match(/\.([a-zA-Z0-9]+)$/) || [, 'png'])[1].toLowerCase();
+      var safeExt = ['png','jpg','jpeg','gif','webp','svg'].indexOf(ext) >= 0 ? ext : 'png';
+      var path = 'branding/' + tenantId + '/logo_' + Date.now() + '.' + safeExt;
+      var up = await SupabaseDB.client.storage.from(BUCKET).upload(path, file, { contentType: file.type || 'image/png', upsert: false });
+      if (up.error) throw up.error;
+      var pub = SupabaseDB.client.storage.from(BUCKET).getPublicUrl(path);
+      var url = pub && pub.data && pub.data.publicUrl;
+      if (!url) throw new Error('No public URL returned');
+      var urlEl = document.getElementById('co-logo');
+      if (urlEl) urlEl.value = url;
+      SettingsPage._previewLogo(url);
+      try { localStorage.setItem('bm-co-logo', url); } catch(e) {}
+      setStatus('✅ Logo uploaded — click Save to persist.', 'var(--green-dark)');
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('Logo uploaded ✅');
+    } catch (e) {
+      console.error('logo upload failed:', e);
+      setStatus('Upload failed: ' + (e.message || 'unknown error') + ' — paste a hosted URL instead.', '#b91c1c');
+    }
   },
 
   // ── BM Invites (owner-only) ────────────────────────────────────────────────
