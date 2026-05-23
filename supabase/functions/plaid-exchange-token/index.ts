@@ -17,6 +17,7 @@
  * Deploy: supabase functions deploy plaid-exchange-token --no-verify-jwt
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { resolvePlaidCreds, type PlaidCreds } from '../_shared/plaid.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -24,10 +25,6 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const PLAID_CLIENT_ID = Deno.env.get('PLAID_CLIENT_ID') || '';
-const PLAID_SECRET = Deno.env.get('PLAID_SECRET') || '';
-const PLAID_ENV = (Deno.env.get('PLAID_ENV') || 'sandbox').toLowerCase();
-const PLAID_BASE = `https://${PLAID_ENV}.plaid.com`;
 const SUPA_URL = Deno.env.get('SUPABASE_URL') || 'https://ltpivkqahvplapyagljt.supabase.co';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
@@ -35,11 +32,11 @@ function err(m: string, status = 400) {
   return new Response(JSON.stringify({ error: m }), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 }
 
-async function plaid(path: string, body: any) {
-  const r = await fetch(`${PLAID_BASE}${path}`, {
+async function plaid(creds: PlaidCreds, path: string, body: any) {
+  const r = await fetch(`${creds.base}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: PLAID_CLIENT_ID, secret: PLAID_SECRET, ...body }),
+    body: JSON.stringify({ client_id: creds.client_id, secret: creds.secret, ...body }),
   });
   const data = await r.json();
   if (!r.ok || data.error_code) throw new Error(data.error_message || data.display_message || 'plaid error');
@@ -64,7 +61,6 @@ async function supa(method: string, path: string, body?: any) {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return err('POST only', 405);
-  if (!PLAID_CLIENT_ID || !PLAID_SECRET) return err('Plaid credentials not configured', 500);
 
   let body: any = {};
   try { body = await req.json(); } catch { return err('Invalid JSON body'); }
@@ -75,9 +71,12 @@ serve(async (req) => {
   if (!tenantId || !/^[0-9a-f-]{36}$/i.test(tenantId)) return err('Missing or invalid tenant_id');
   if (!publicToken) return err('Missing public_token');
 
+  const creds = await resolvePlaidCreds(tenantId);
+  if (!creds) return err('Plaid credentials not configured for this tenant', 500);
+
   try {
     // 1. Exchange public_token for access_token + item_id
-    const ex = await plaid('/item/public_token/exchange', { public_token: publicToken });
+    const ex = await plaid(creds, '/item/public_token/exchange', { public_token: publicToken });
     const accessToken = ex.access_token;
     const itemId = ex.item_id;
 

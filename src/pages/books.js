@@ -93,9 +93,11 @@ var BooksPage = (function() {
         + '<div style="font-size:13px;color:var(--text-light);max-width:480px;margin:0 auto 18px;line-height:1.55;">Two ways to get transactions into Books:</div>'
         + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">'
         +   '<button onclick="BooksPage.openCsvImport()" class="btn btn-primary" style="font-size:14px;padding:12px 22px;">📥 Import CSV (free, manual)</button>'
-        +   '<button onclick="BooksPage.connectBank()" class="btn btn-outline" style="font-size:14px;padding:12px 22px;">🔗 Connect via Plaid (auto, $)</button>'
+        +   (localStorage.getItem('bm-plaid-saved') === '1'
+              ? '<button onclick="BooksPage.connectBank()" class="btn btn-outline" style="font-size:14px;padding:12px 22px;">🔗 Connect via Plaid (auto)</button>'
+              : '<button onclick="loadPage(\'settings\');setTimeout(function(){try{SettingsPage._switchTab(\'advanced\');document.getElementById(\'plaid-client-id\').scrollIntoView({block:\'center\',behavior:\'smooth\'});}catch(e){}},200);" class="btn btn-outline" style="font-size:14px;padding:12px 22px;">⚙️ Set up Plaid in Settings →</button>')
         + '</div>'
-        + '<div style="font-size:11px;color:var(--text-light);max-width:480px;margin:0 auto;line-height:1.55;">CSV: download your monthly statement, drop it in BM. Free, works with every bank. Plaid: auto-syncs every 4h, requires Plaid signup + pricing call.</div>'
+        + '<div style="font-size:11px;color:var(--text-light);max-width:480px;margin:0 auto;line-height:1.55;">CSV: download your monthly statement, drop it in BM. Free, works with every bank. Plaid: auto-syncs every 4h, requires Plaid signup + pricing call. Wire keys in Settings → Advanced → Plaid (Bank Sync).</div>'
         + '</div>';
       html += _renderSetupHint();
       html += '</div>';
@@ -187,13 +189,13 @@ var BooksPage = (function() {
 
   function _renderSetupHint() {
     return '<div style="margin-top:16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:18px;font-size:13px;color:#7c2d12;line-height:1.6;">'
-      + '<div style="font-weight:700;color:#9a3412;margin-bottom:6px;">First-time setup (one-time):</div>'
+      + '<div style="font-weight:700;color:#9a3412;margin-bottom:6px;">Plaid setup (one-time, ~3 minutes):</div>'
       + '<ol style="padding-left:22px;">'
       +   '<li>Sign up at <a href="https://dashboard.plaid.com/signup" target="_blank" rel="noopener" style="color:var(--green-dark);text-decoration:underline;">dashboard.plaid.com</a> (free Sandbox + Development tiers).</li>'
       +   '<li>Grab your <strong>Client ID</strong> + <strong>Sandbox Secret</strong> from Team Settings → Keys.</li>'
-      +   '<li>Run in terminal: <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;">SUPABASE_ACCESS_TOKEN=… supabase secrets set PLAID_CLIENT_ID=xxx PLAID_SECRET=yyy PLAID_ENV=sandbox --project-ref ltpivkqahvplapyagljt</code></li>'
-      +   '<li>Set webhook URL in Plaid dashboard → Team Settings → API: <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;">https://ltpivkqahvplapyagljt.supabase.co/functions/v1/plaid-webhook</code></li>'
-      +   '<li>Click "Connect bank" above. Plaid Link will open. Sandbox lets you log in as user_good / pass_good with any bank.</li>'
+      +   '<li>Paste them in <a onclick="loadPage(\'settings\');setTimeout(function(){try{SettingsPage._switchTab(\'advanced\');document.getElementById(\'plaid-client-id\').scrollIntoView({block:\'center\',behavior:\'smooth\'});}catch(e){}},200);" style="color:var(--green-dark);text-decoration:underline;cursor:pointer;">Settings → Advanced → Plaid (Bank Sync)</a> — BM verifies the keys with Plaid before saving.</li>'
+      +   '<li>(Optional) Set webhook URL in Plaid dashboard → Team Settings → API: <code style="background:#fff;padding:2px 6px;border-radius:4px;font-family:monospace;">https://ltpivkqahvplapyagljt.supabase.co/functions/v1/plaid-webhook</code> — enables auto-sync as transactions post.</li>'
+      +   '<li>Come back here, click "Connect bank". Sandbox lets you log in as <code>user_good / pass_good</code>.</li>'
       + '</ol>'
       + '</div>';
   }

@@ -1253,6 +1253,36 @@ var SettingsPage = {
       + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Sign up at <a href="https://gusto.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">gusto.com</a> ($40/mo + $6/employee). API token is optional — BM Payroll page exports CSV you upload to Gusto manually each pay period. Get token from Gusto Dev Portal.</p>'
       + '</div>';
 
+    // ── Plaid (Banking) — v856 ──
+    // Keys live in tenants.config.plaid (per-tenant, server-side). The
+    // localStorage flag is just a UI hint that we've saved keys before;
+    // actual creds are read server-side via _shared/plaid.ts.
+    var _plaidSaved = localStorage.getItem('bm-plaid-saved') === '1';
+    var _plaidEnv = localStorage.getItem('bm-plaid-env') || 'sandbox';
+    html += apiKeyHeader({
+        ok: _plaidSaved,
+        title: 'Plaid (Bank Sync)',
+        emoji: '🏦',
+        iconBg: '#0f172a',
+        okText: '✅ Keys saved — Connect a bank from Reports → Books',
+        warnText: '⚠️ Not connected — paste your Plaid Client ID + Secret below'
+      })
+      + '<div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:8px;margin-bottom:8px;">'
+      +   '<input type="text" id="plaid-client-id" placeholder="Client ID (61abc1234567890123...)" autocomplete="off" style="padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:monospace;">'
+      +   '<input type="password" id="plaid-secret" placeholder="Secret (xxxxxxxxxxxxxxxx...)" autocomplete="off" style="padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:monospace;">'
+      +   '<select id="plaid-env" style="padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      +     ['sandbox','development','production'].map(function(e){return '<option value="'+e+'"'+(e===_plaidEnv?' selected':'')+'>'+e+'</option>';}).join('')
+      +   '</select>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +   '<button onclick="SettingsPage._savePlaidKeys()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Save & verify</button>'
+      +   '<button onclick="loadPage(\'reports\');window._reportsTab=\'books\';setTimeout(function(){loadPage(\'reports\');},50);" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Open Books →</button>'
+      +   (_plaidSaved ? '<button onclick="SettingsPage._clearPlaidKeys()" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Clear keys</button>' : '')
+      + '</div>'
+      + '<div id="plaid-save-status" style="font-size:12px;color:var(--text-light);margin-top:8px;min-height:16px;"></div>'
+      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.5;">Sign up at <a href="https://dashboard.plaid.com/signup" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">dashboard.plaid.com</a> (free Sandbox). Grab <strong>Client ID</strong> + <strong>Secret</strong> from Team Settings → Keys. Pick <code>sandbox</code> to test (use <code>user_good / pass_good</code> in Plaid Link), or <code>production</code> for real bank connections (~$0.30/account/mo per Plaid sales).</p>'
+      + '</div>';
+
     // ── PlantNet / AI Tree ID — API key, lives with other integrations ──
     var _pnKey = localStorage.getItem('bm-plantnet-key') || '';
     var _pnOk = _pnKey.length > 10;
@@ -2332,6 +2362,72 @@ var SettingsPage = {
     var el = document.getElementById('expenses-sql-block');
     var sql = el ? el.textContent : '';
     navigator.clipboard.writeText(sql).then(function() { UI.toast('Expenses SQL copied — paste into Supabase SQL Editor!'); });
+  },
+
+  // v856 — Save Plaid keys to tenants.config.plaid via plaid-save-keys
+  // edge fn. The fn owner-gates the caller, smoke-tests the keys against
+  // Plaid /institutions/get_by_id, then writes config jsonb. On success
+  // we flip the local bm-plaid-saved flag for the UI status pill.
+  _savePlaidKeys: async function() {
+    var status = document.getElementById('plaid-save-status');
+    var setStatus = function(t, color) { if (status) { status.textContent = t; status.style.color = color || 'var(--text-light)'; } };
+    var clientId = (document.getElementById('plaid-client-id') || {}).value || '';
+    var secret = (document.getElementById('plaid-secret') || {}).value || '';
+    var env = (document.getElementById('plaid-env') || {}).value || 'sandbox';
+    clientId = clientId.trim(); secret = secret.trim();
+    if (!clientId || !secret) { setStatus('⚠️ Both Client ID and Secret required.', '#b91c1c'); return; }
+
+    setStatus('🔌 Verifying with Plaid…', '#1e40af');
+    try {
+      var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+      var sess = sb ? await sb.auth.getSession() : null;
+      var jwt = sess && sess.data && sess.data.session && sess.data.session.access_token;
+      if (!jwt) { setStatus('Not signed in — log in again and retry.', '#b91c1c'); return; }
+      var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+      if (!tenantId) { setStatus('No tenant context — refresh and retry.', '#b91c1c'); return; }
+      var sbUrl = (SupabaseDB && SupabaseDB.DEFAULT_URL) || 'https://ltpivkqahvplapyagljt.supabase.co';
+      var r = await fetch(sbUrl + '/functions/v1/plaid-save-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+        body: JSON.stringify({ tenantId: tenantId, clientId: clientId, secret: secret, env: env })
+      });
+      var data = await r.json();
+      if (!r.ok || !data.ok) { setStatus('❌ ' + (data.error || 'Save failed'), '#b91c1c'); return; }
+      try {
+        localStorage.setItem('bm-plaid-saved', '1');
+        localStorage.setItem('bm-plaid-env', env);
+      } catch(e) {}
+      setStatus('✅ ' + (data.testedMsg || 'Saved') + ' — env: ' + (data.env || env), 'var(--green-dark)');
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('Plaid keys saved ✅');
+      setTimeout(function() { try { loadPage('settings'); } catch(e){} }, 1200);
+    } catch (e) {
+      setStatus('Network: ' + (e.message || 'unknown'), '#b91c1c');
+    }
+  },
+
+  _clearPlaidKeys: async function() {
+    if (!confirm('Clear Plaid keys for this tenant? Existing bank connections keep working until you re-connect them.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var sess = sb ? await sb.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session && sess.data.session.access_token;
+    if (!jwt) { UI.toast('Not signed in', 'error'); return; }
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!tenantId) return;
+    var sbUrl = (SupabaseDB && SupabaseDB.DEFAULT_URL) || 'https://ltpivkqahvplapyagljt.supabase.co';
+    try {
+      var r = await fetch(sbUrl + '/functions/v1/plaid-save-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+        body: JSON.stringify({ tenantId: tenantId, clientId: '', secret: '', env: 'sandbox' })
+      });
+      var data = await r.json();
+      if (!r.ok || !data.ok) { UI.toast(data.error || 'Clear failed', 'error'); return; }
+      try { localStorage.removeItem('bm-plaid-saved'); } catch(e) {}
+      UI.toast('Plaid keys cleared');
+      loadPage('settings');
+    } catch (e) {
+      UI.toast('Network: ' + e.message, 'error');
+    }
   },
 
   _testDialpad: function() {

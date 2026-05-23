@@ -29,10 +29,11 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const PLAID_CLIENT_ID = Deno.env.get('PLAID_CLIENT_ID') || '';
-const PLAID_SECRET = Deno.env.get('PLAID_SECRET') || '';
-const PLAID_ENV = (Deno.env.get('PLAID_ENV') || 'sandbox').toLowerCase();
-const PLAID_BASE = `https://${PLAID_ENV}.plaid.com`;
+// v856: per-tenant Plaid creds via _shared/plaid.ts. Each tenant in
+// the same sync run gets their own creds — necessary because the cron
+// runs the fn with no tenant_id and we iterate every tenant's items.
+import { resolvePlaidCreds, type PlaidCreds } from '../_shared/plaid.ts';
+
 const SUPA_URL = Deno.env.get('SUPABASE_URL') || 'https://ltpivkqahvplapyagljt.supabase.co';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
@@ -40,11 +41,11 @@ function err(m: string, status = 400) {
   return new Response(JSON.stringify({ error: m }), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 }
 
-async function plaid(path: string, body: any) {
-  const r = await fetch(`${PLAID_BASE}${path}`, {
+async function plaid(creds: PlaidCreds, path: string, body: any) {
+  const r = await fetch(`${creds.base}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: PLAID_CLIENT_ID, secret: PLAID_SECRET, ...body }),
+    body: JSON.stringify({ client_id: creds.client_id, secret: creds.secret, ...body }),
   });
   const data = await r.json();
   if (!r.ok || data.error_code) throw new Error(data.error_message || data.display_message || 'plaid error');
@@ -104,7 +105,6 @@ function autoCategorize(plaidCategories: string[] | null, name: string, amount: 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return err('POST only', 405);
-  if (!PLAID_CLIENT_ID || !PLAID_SECRET) return err('Plaid credentials not configured', 500);
 
   let body: any = {};
   try { body = await req.json(); } catch { /* allow empty for cron */ }
@@ -124,12 +124,23 @@ serve(async (req) => {
     return err(`Failed to load accounts: ${(e as Error).message}`, 500);
   }
 
-  // Group by item_id to deduplicate Plaid calls
-  const byItem: Record<string, { access: string, accounts: any[] }> = {};
+  // Group by item_id to deduplicate Plaid calls. Track tenant per item
+  // so we can resolve the right creds.
+  const byItem: Record<string, { access: string, tenant: string, accounts: any[] }> = {};
   for (const a of accounts) {
     if (!a.plaid_item_id || !a.plaid_access_token) continue;
-    if (!byItem[a.plaid_item_id]) byItem[a.plaid_item_id] = { access: a.plaid_access_token, accounts: [] };
+    if (!byItem[a.plaid_item_id]) byItem[a.plaid_item_id] = { access: a.plaid_access_token, tenant: a.tenant_id, accounts: [] };
     byItem[a.plaid_item_id].accounts.push(a);
+  }
+
+  // Cache tenant→creds to avoid N tenant-lookup queries when one tenant
+  // has many items.
+  const credsCache: Record<string, PlaidCreds | null> = {};
+  async function credsFor(tid: string): Promise<PlaidCreds | null> {
+    if (credsCache[tid] !== undefined) return credsCache[tid];
+    const c = await resolvePlaidCreds(tid);
+    credsCache[tid] = c;
+    return c;
   }
 
   const startDate = fullBackfill
@@ -140,8 +151,13 @@ serve(async (req) => {
   const result: Record<string, number> = {};
   let totalSynced = 0;
 
-  for (const [iid, { access, accounts: accs }] of Object.entries(byItem)) {
+  for (const [iid, { access, tenant, accounts: accs }] of Object.entries(byItem)) {
     try {
+      const creds = await credsFor(tenant);
+      if (!creds) {
+        console.warn(`Skipping item ${iid} — no Plaid creds for tenant ${tenant}`);
+        continue;
+      }
       // Use legacy /transactions/get for simplicity. /transactions/sync is
       // cleaner with cursors but adds bookkeeping; revisit in Phase 2.
       let offset = 0;
@@ -150,7 +166,7 @@ serve(async (req) => {
       for (const a of accs) aIdByPlaidId[a.plaid_account_id] = { id: a.id, tenant_id: a.tenant_id };
 
       while (true) {
-        const resp = await plaid('/transactions/get', {
+        const resp = await plaid(creds, '/transactions/get', {
           access_token: access,
           start_date: startDate,
           end_date: endDate,

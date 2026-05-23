@@ -17,17 +17,13 @@
  * Deploy: supabase functions deploy plaid-link-token --no-verify-jwt
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { resolvePlaidCreds } from '../_shared/plaid.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, content-type, x-tenant-id',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
-const PLAID_CLIENT_ID = Deno.env.get('PLAID_CLIENT_ID') || '';
-const PLAID_SECRET = Deno.env.get('PLAID_SECRET') || '';
-const PLAID_ENV = (Deno.env.get('PLAID_ENV') || 'sandbox').toLowerCase();
-const PLAID_BASE = `https://${PLAID_ENV}.plaid.com`;
 
 function err(message: string, status = 400) {
   return new Response(JSON.stringify({ error: message }), {
@@ -40,23 +36,26 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return err('POST only', 405);
 
-  if (!PLAID_CLIENT_ID || !PLAID_SECRET) {
-    return err(
-      'Plaid credentials not configured. Set PLAID_CLIENT_ID + PLAID_SECRET via supabase secrets, then redeploy.',
-      500,
-    );
-  }
-
   let body: { tenant_id?: string } = {};
   try { body = await req.json(); } catch { /* empty body OK */ }
   const tenantId = String(body.tenant_id || req.headers.get('x-tenant-id') || '').trim();
   if (!tenantId || !/^[0-9a-f-]{36}$/i.test(tenantId)) return err('Missing or invalid tenant_id');
 
+  // v856: resolve creds per-tenant first, env fallback. Lets each tenant
+  // wire their own Plaid keys via Settings without an operator redeploy.
+  const creds = await resolvePlaidCreds(tenantId);
+  if (!creds) {
+    return err(
+      'Plaid credentials not configured. Set them in Settings → Advanced → Plaid, or via supabase secrets PLAID_CLIENT_ID + PLAID_SECRET.',
+      500,
+    );
+  }
+
   // Build the Link token request. Tree-service ops only need
   // 'transactions' product. Add 'auth' if Doug ever wants ACH-out.
   const payload = {
-    client_id: PLAID_CLIENT_ID,
-    secret: PLAID_SECRET,
+    client_id: creds.client_id,
+    secret: creds.secret,
     client_name: 'Branch Manager',
     products: ['transactions'],
     country_codes: ['US'],
@@ -66,7 +65,7 @@ serve(async (req) => {
   };
 
   try {
-    const r = await fetch(`${PLAID_BASE}/link/token/create`, {
+    const r = await fetch(`${creds.base}/link/token/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -76,7 +75,7 @@ serve(async (req) => {
       return err(`Plaid error: ${data.error_message || data.display_message || 'unknown'}`, r.status);
     }
     return new Response(
-      JSON.stringify({ link_token: data.link_token, expiration: data.expiration }),
+      JSON.stringify({ link_token: data.link_token, expiration: data.expiration, env: creds.env, source: creds.source }),
       { headers: { ...CORS, 'Content-Type': 'application/json' } },
     );
   } catch (e) {
