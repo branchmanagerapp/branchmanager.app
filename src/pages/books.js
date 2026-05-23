@@ -81,6 +81,7 @@ var BooksPage = (function() {
       + '</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       +   (accounts.length > 0 ? '<button onclick="BooksPage.syncNow()" class="btn btn-outline" style="font-size:13px;">Sync now</button>' : '')
+      +   (txns.length > 0 ? '<button onclick="BooksPage.reconcileAll()" class="btn btn-outline" style="font-size:13px;">🔗 Reconcile</button>' : '')
       +   '<button onclick="BooksPage.openCsvImport()" class="btn btn-outline" style="font-size:13px;">📥 Import CSV</button>'
       +   '<button onclick="BooksPage.connectBank()" class="btn btn-primary" style="font-size:13px;">+ Connect bank</button>'
       + '</div>'
@@ -155,10 +156,16 @@ var BooksPage = (function() {
         + '</div>';
     }
 
+    // v859: reconciliation summary alongside P&L. Counts how many bank
+    // transactions are linked to BM payments/expenses vs unmatched.
+    var reconciled = txns.filter(function(t) { return t.reconciled && t.matched_to_id; }).length;
+    var unmatched = txns.length - reconciled;
+    var reconcilePct = txns.length > 0 ? Math.round(reconciled / txns.length * 100) : 0;
+
     html += '<div style="margin-bottom:18px;">'
       + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;">'
       +   '<h3 style="margin:0;font-size:15px;">Profit & Loss · last ' + _esc(rangeLabel) + '</h3>'
-      +   '<div style="font-size:11px;color:var(--text-light);">excludes 7xxx transfers & owner draws</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);">excludes 7xxx transfers & owner draws · ' + reconciled + '/' + txns.length + ' reconciled (' + reconcilePct + '%)' + (unmatched > 0 ? ' · <a onclick="BooksPage.reconcileAll()" style="color:var(--green-dark);cursor:pointer;text-decoration:underline;">match now →</a>' : '') + '</div>'
       + '</div>'
       + '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">'
       +   _plCard('Revenue (4xxx)', pl.revenue, 'var(--green-dark)')
@@ -235,9 +242,13 @@ var BooksPage = (function() {
         var amtColor = amt > 0 ? 'var(--green-dark)' : 'var(--text)';
         var c = chartByCode[t.category];
         var pending = t.pending ? '<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px;">PENDING</span>' : '';
+        // v859: matched chip — green when reconciled, hover shows what it's linked to
+        var matched = t.reconciled && t.matched_to_id
+          ? '<span title="Linked to ' + _esc(t.matched_to_kind || 'record') + ' ' + _esc(t.matched_to_id).slice(0,8) + '…" style="background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px;">✓ ' + _esc((t.matched_to_kind || '').slice(0,3).toUpperCase()) + '</span>'
+          : '';
         html += '<div style="display:grid;grid-template-columns:90px 1fr 200px 110px;gap:12px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;align-items:center;">'
           +   '<div style="color:var(--text-light);font-size:12px;">' + _date(t.posted_date) + '</div>'
-          +   '<div><strong>' + _esc(t.description) + '</strong>' + pending
+          +   '<div><strong>' + _esc(t.description) + '</strong>' + pending + matched
           +     (t.merchant_name && t.merchant_name !== t.description ? '<div style="font-size:11px;color:var(--text-light);">' + _esc(t.merchant_name) + '</div>' : '')
           +   '</div>'
           +   '<div>'
@@ -337,6 +348,98 @@ var BooksPage = (function() {
         if (t) t.category = code || null;
       }
     });
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Reconciliation (v859) — match unreconciled bank_transactions to BM
+  // payments + expenses by amount + posted_date proximity. Auto-confirms
+  // unique matches; leaves ambiguous (multi-match) or no-match alone for
+  // manual review.
+  //
+  // Matching rules:
+  //   - Positive bank_transaction (deposit) → BM payments
+  //     · amount = payment.amount ± $0.01
+  //     · |bank.posted_date - payment.payout_date or payment.date| ≤ 3 days
+  //   - Negative bank_transaction (withdrawal) → DB.expenses
+  //     · amount magnitude = expense.amount ± $0.01
+  //     · |bank.posted_date - expense.date| ≤ 3 days
+  //
+  // Updates bank_transactions.matched_to_kind ('payment'|'expense'|'invoice'),
+  // matched_to_id, reconciled=true. Won't overwrite an already-matched row.
+  //
+  // Per the v848-v858 work, the algorithm runs entirely in the BM client
+  // — no edge fn needed. Service role isn't required since the user's
+  // JWT already permits read/write on tenant-scoped rows via RLS.
+  // ──────────────────────────────────────────────────────────────────
+  async function reconcileAll() {
+    var sb = _supabase(); if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    var tenantId = TENANT_ID(); if (!tenantId) { UI.toast('No tenant', 'error'); return; }
+
+    UI.toast('🔗 Reconciling…');
+    try {
+      var since = new Date(Date.now() - parseInt(_filter.range, 10) * 86400000).toISOString().split('T')[0];
+      var bankRes = await sb.from('bank_transactions').select('*')
+        .eq('tenant_id', tenantId).gte('posted_date', since)
+        .or('reconciled.is.false,reconciled.is.null');
+      var bankRows = (bankRes.data || []).filter(function(r) { return !r.matched_to_id; });
+
+      var bmPayments = (typeof DB !== 'undefined' && DB.payments && DB.payments.getAll) ? DB.payments.getAll() : [];
+      var bmExpenses = (typeof DB !== 'undefined' && DB.expenses && DB.expenses.getAll) ? DB.expenses.getAll() : [];
+
+      function daysBetween(a, b) { return Math.abs((new Date(a) - new Date(b)) / 86400000); }
+
+      var updates = [];
+      var stats = { matchedPayments: 0, matchedExpenses: 0, ambiguous: 0, unmatched: 0 };
+
+      bankRows.forEach(function(b) {
+        var amt = Number(b.amount) || 0;
+        if (amt === 0) { stats.unmatched++; return; }
+        var pool = amt > 0 ? bmPayments : bmExpenses;
+        var targetAmt = Math.abs(amt);
+        var matches = pool.filter(function(p) {
+          var pAmt = Math.abs(Number(p.amount) || 0);
+          if (Math.abs(pAmt - targetAmt) > 0.01) return false;
+          var pDate = amt > 0 ? (p.payout_date || p.date) : (p.date || p.createdAt);
+          if (!pDate) return false;
+          return daysBetween(b.posted_date, pDate) <= 3;
+        });
+        if (matches.length === 1) {
+          updates.push({
+            id: b.id,
+            kind: amt > 0 ? 'payment' : 'expense',
+            matchId: matches[0].id
+          });
+          if (amt > 0) stats.matchedPayments++; else stats.matchedExpenses++;
+        } else if (matches.length > 1) {
+          stats.ambiguous++;
+        } else {
+          stats.unmatched++;
+        }
+      });
+
+      // Batch update — one PATCH per row (Supabase JS doesn't support bulk-update).
+      for (var i = 0; i < updates.length; i++) {
+        var u = updates[i];
+        await sb.from('bank_transactions').update({
+          matched_to_id: u.matchId,
+          matched_to_kind: u.kind,
+          reconciled: true
+        }).eq('id', u.id);
+      }
+
+      var msg = '✅ ' + (stats.matchedPayments + stats.matchedExpenses) + ' matched ('
+        + stats.matchedPayments + ' payments, ' + stats.matchedExpenses + ' expenses)'
+        + (stats.ambiguous ? ' · ' + stats.ambiguous + ' ambiguous' : '')
+        + (stats.unmatched ? ' · ' + stats.unmatched + ' unmatched' : '');
+      UI.toast(msg);
+
+      // Force re-fetch + re-render
+      _accounts = null; _txns = null;
+      _fetchAll().then(function() { loadPage('reports'); });
+    } catch (e) {
+      console.error('reconcileAll failed:', e);
+      UI.toast('Reconcile failed: ' + (e.message || 'unknown'), 'error');
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -707,6 +810,7 @@ var BooksPage = (function() {
     connectBank: connectBank,
     syncNow: syncNow,
     openCsvImport: openCsvImport,
+    reconcileAll: reconcileAll,
     _setRange: _setRange,
     _setAccount: _setAccount,
     _setSearch: _setSearch,
