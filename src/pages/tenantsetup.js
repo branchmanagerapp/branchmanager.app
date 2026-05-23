@@ -242,7 +242,13 @@ var TenantSetup = {
         // since Apr 30 2026 per MEMORY.md). The bm-dialpad-key localStorage
         // entry is just a UI-isConfigured sentinel — dialpad-sms-send doesn't
         // read it. Seed a sentinel so the probe stops nagging.
-        ['bm-dialpad-key', 'server-managed-via-supabase-secret']
+        ['bm-dialpad-key', 'server-managed-via-supabase-secret'],
+        // Resend: RESEND_FROM_EMAIL is set in Supabase secrets (verified via
+        // `supabase secrets list`). Resend would reject sends from an
+        // unverified domain — so peekskilltree.com is verified. The
+        // bm-resend-verified flag is just a UI checkbox that was never
+        // manually ticked; seed it so the probe stops nagging.
+        ['bm-resend-verified', '1']
       ];
       var wrote = 0;
       SEED.forEach(function(p) {
