@@ -237,7 +237,12 @@ var TenantSetup = {
         ['bm-co-address',  BM_CONFIG.address],
         ['bm-co-licenses', BM_CONFIG.licenses],
         ['bm-co-review',   BM_CONFIG.googleReviewUrl],
-        ['bm-tax-rate',    '8.375']
+        ['bm-tax-rate',    '8.375'],
+        // Dialpad: DIALPAD_API_KEY lives in Supabase secrets (server-managed
+        // since Apr 30 2026 per MEMORY.md). The bm-dialpad-key localStorage
+        // entry is just a UI-isConfigured sentinel — dialpad-sms-send doesn't
+        // read it. Seed a sentinel so the probe stops nagging.
+        ['bm-dialpad-key', 'server-managed-via-supabase-secret']
       ];
       var wrote = 0;
       SEED.forEach(function(p) {
@@ -248,6 +253,19 @@ var TenantSetup = {
         localStorage.setItem(k, String(v));
         wrote++;
       });
+
+      // Items Doug doesn't use / hasn't wired and explicitly doesn't want
+      // nagged: AI receptionist (no Twilio), Bouncie (no OAuth yet), vehicle
+      // (no Fleet rows), team_member (sole operator). Pre-skip them so the
+      // checklist auto-collapses once Stripe + logo + resend land.
+      try {
+        var skips = JSON.parse(localStorage.getItem('bm-setup-skipped') || '[]');
+        ['ai_receptionist', 'bouncie', 'vehicle', 'team_member'].forEach(function(k) {
+          if (skips.indexOf(k) < 0) { skips.push(k); wrote++; }
+        });
+        localStorage.setItem('bm-setup-skipped', JSON.stringify(skips));
+      } catch(e) {}
+
       TenantSetup._seeded = true;
       if (wrote && window._currentPage === 'settings') {
         // Re-render so the newly-seeded values appear in the inputs +
