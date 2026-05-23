@@ -71,7 +71,7 @@ const SECURITY_HEADERS = {
     "style-src 'self' 'unsafe-inline' https:; " +
     "img-src 'self' data: blob: https:; " +
     "connect-src 'self' https: wss: blob:; " +
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com; " +
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.plaid.com https://cdn.plaid.com; " +
     "media-src 'self' blob: https:; " +
     "worker-src 'self' blob:; " +
     "object-src 'none'; " +

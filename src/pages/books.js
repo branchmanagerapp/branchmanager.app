@@ -117,8 +117,80 @@ var BooksPage = (function() {
     });
     html += '</div>';
 
-    // Filter row
+    // ──────────────────────────────────────────────────────────────────
+    // P&L Summary (v857) — roll up bank_transactions by COA class.
+    // Excludes 7xxx (Owner Draw, Transfers) so the bottom line reflects
+    // actual operating P&L, not noise from moving money between own
+    // accounts. Inflow positive, outflow negative; we display the inflow
+    // side flipped to "Revenue" (always positive) and outflow side as
+    // absolute-value "Expenses" so the visual reads as a normal P&L.
+    // ──────────────────────────────────────────────────────────────────
+    var chartByCodeForPL = {};
+    chart.forEach(function(c) { chartByCodeForPL[c.code] = c; });
+
+    var pl = { revenue: 0, cogs: 0, opex: 0, byCode: {} };
+    txns.forEach(function(t) {
+      var code = (t.category || '').toString();
+      if (!code) return;
+      var amt = Number(t.amount) || 0;
+      var bucket = code.charAt(0);
+      if (bucket === '7') return; // transfers + owner draws excluded
+      pl.byCode[code] = (pl.byCode[code] || 0) + amt;
+      if (bucket === '4') pl.revenue += amt;
+      else if (bucket === '5') pl.cogs += Math.abs(amt);
+      else if (bucket === '6') pl.opex += Math.abs(amt);
+    });
+    var grossProfit = pl.revenue - pl.cogs;
+    var netProfit = grossProfit - pl.opex;
+    var margin = pl.revenue > 0 ? Math.round((netProfit / pl.revenue) * 100) : 0;
+
     var rangeOpts = [['30','30 days'],['90','90 days'],['180','6 months'],['365','12 months'],['730','24 months']];
+    var rangeLabel = (rangeOpts.find(function(r){return r[0]===_filter.range;})||[,'90 days'])[1];
+
+    function _plCard(label, value, color, hint) {
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">'
+        + '<div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">' + _esc(label) + '</div>'
+        + '<div style="font-size:22px;font-weight:800;color:' + color + ';margin-top:4px;">' + _moneyInt(value) + '</div>'
+        + (hint ? '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + _esc(hint) + '</div>' : '')
+        + '</div>';
+    }
+
+    html += '<div style="margin-bottom:18px;">'
+      + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;">'
+      +   '<h3 style="margin:0;font-size:15px;">Profit & Loss · last ' + _esc(rangeLabel) + '</h3>'
+      +   '<div style="font-size:11px;color:var(--text-light);">excludes 7xxx transfers & owner draws</div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">'
+      +   _plCard('Revenue (4xxx)', pl.revenue, 'var(--green-dark)')
+      +   _plCard('COGS (5xxx)', -pl.cogs, '#b45309', pl.revenue > 0 ? (Math.round(pl.cogs / pl.revenue * 100)) + '% of revenue' : '')
+      +   _plCard('Operating exp (6xxx)', -pl.opex, '#b45309', pl.revenue > 0 ? (Math.round(pl.opex / pl.revenue * 100)) + '% of revenue' : '')
+      +   _plCard(netProfit >= 0 ? 'Net profit' : 'Net loss', netProfit, netProfit >= 0 ? 'var(--green-dark)' : '#b91c1c', (margin >= 0 ? margin : margin) + '% margin')
+      + '</div>'
+      + '</div>';
+
+    // Top categories breakdown — show the 6 largest spending COA codes
+    var byCodeArr = Object.keys(pl.byCode).map(function(code) {
+      return { code: code, total: pl.byCode[code], name: (chartByCodeForPL[code] && chartByCodeForPL[code].name) || code };
+    }).filter(function(r) { return r.code.charAt(0) === '5' || r.code.charAt(0) === '6'; })
+      .sort(function(a, b) { return Math.abs(b.total) - Math.abs(a.total); })
+      .slice(0, 6);
+    if (byCodeArr.length) {
+      var maxAbs = Math.max.apply(null, byCodeArr.map(function(r){return Math.abs(r.total);})) || 1;
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px;">'
+        + '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">Top expense categories</div>';
+      byCodeArr.forEach(function(r) {
+        var pct = Math.round(Math.abs(r.total) / maxAbs * 100);
+        html += '<div style="display:grid;grid-template-columns:60px 1fr 90px;gap:10px;align-items:center;font-size:12px;padding:4px 0;">'
+          + '<div style="font-family:monospace;color:var(--text-light);">' + _esc(r.code) + '</div>'
+          + '<div><div style="font-weight:600;">' + _esc(r.name) + '</div>'
+          +   '<div style="height:4px;border-radius:2px;background:var(--bg);margin-top:3px;"><div style="width:' + pct + '%;height:100%;background:#b45309;border-radius:2px;"></div></div></div>'
+          + '<div style="text-align:right;font-weight:700;">' + _moneyInt(Math.abs(r.total)) + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Filter row
     html += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">'
       + '<select onchange="BooksPage._setRange(this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">'
       +   rangeOpts.map(function(r) { return '<option value="' + r[0] + '"' + (_filter.range === r[0] ? ' selected' : '') + '>' + r[1] + '</option>'; }).join('')
