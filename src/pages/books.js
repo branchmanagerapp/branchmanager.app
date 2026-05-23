@@ -197,6 +197,66 @@ var BooksPage = (function() {
       html += '</div>';
     }
 
+    // ──────────────────────────────────────────────────────────────────
+    // Cash-flow chart (v860) — last 6 months, inflow vs outflow bars side-
+    // by-side per month. Lets Doug spot lean seasons (tree-service winter
+    // dip Jan-Feb) + visualize Stripe payout consistency. Excludes 7xxx
+    // transfers to keep the chart honest.
+    // ──────────────────────────────────────────────────────────────────
+    var nowD = new Date();
+    var months = [];
+    for (var mi = 5; mi >= 0; mi--) {
+      var d = new Date(nowD.getFullYear(), nowD.getMonth() - mi, 1);
+      months.push({
+        key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+        label: d.toLocaleDateString('en-US', { month: 'short' }) + (mi === 0 || d.getMonth() === 0 ? ' ' + String(d.getFullYear()).slice(2) : ''),
+        inflow: 0,
+        outflow: 0
+      });
+    }
+    var monthIdx = {};
+    months.forEach(function(m, i) { monthIdx[m.key] = i; });
+    txns.forEach(function(t) {
+      var code = (t.category || '').toString();
+      if (code.charAt(0) === '7') return; // skip transfers
+      var dt = (t.posted_date || '').slice(0, 7); // YYYY-MM
+      var idx = monthIdx[dt];
+      if (idx == null) return;
+      var amt = Number(t.amount) || 0;
+      if (amt > 0) months[idx].inflow += amt;
+      else months[idx].outflow += Math.abs(amt);
+    });
+    var maxFlow = Math.max.apply(null, months.flatMap(function(m){return [m.inflow, m.outflow];})) || 1;
+
+    var anyFlow = months.some(function(m){return m.inflow > 0 || m.outflow > 0;});
+    if (anyFlow) {
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">'
+        +   '<div style="font-size:13px;font-weight:700;">Cash flow · last 6 months</div>'
+        +   '<div style="font-size:11px;color:var(--text-light);"><span style="display:inline-block;width:8px;height:8px;background:var(--green-dark);border-radius:2px;margin-right:4px;"></span>Inflow &nbsp; <span style="display:inline-block;width:8px;height:8px;background:#b45309;border-radius:2px;margin-right:4px;margin-left:8px;"></span>Outflow</div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;align-items:end;height:120px;padding-bottom:4px;border-bottom:1px solid var(--border);">';
+      months.forEach(function(m) {
+        var inH = Math.round(m.inflow / maxFlow * 100);
+        var outH = Math.round(m.outflow / maxFlow * 100);
+        html += '<div style="display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;">'
+          + '<div style="display:flex;gap:3px;align-items:flex-end;height:100%;width:100%;justify-content:center;">'
+          +   '<div title="In: $' + Math.round(m.inflow).toLocaleString() + '" style="width:14px;height:' + inH + '%;background:var(--green-dark);border-radius:2px 2px 0 0;min-height:1px;"></div>'
+          +   '<div title="Out: $' + Math.round(m.outflow).toLocaleString() + '" style="width:14px;height:' + outH + '%;background:#b45309;border-radius:2px 2px 0 0;min-height:1px;"></div>'
+          + '</div></div>';
+      });
+      html += '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:6px;">';
+      months.forEach(function(m) {
+        var net = m.inflow - m.outflow;
+        html += '<div style="text-align:center;">'
+          + '<div style="font-size:11px;font-weight:700;color:var(--text-light);">' + _esc(m.label) + '</div>'
+          + '<div style="font-size:11px;color:' + (net >= 0 ? 'var(--green-dark)' : '#b91c1c') + ';font-weight:600;">' + (net >= 0 ? '+' : '') + _moneyInt(net) + '</div>'
+          + '</div>';
+      });
+      html += '</div></div>';
+    }
+
     // Filter row
     html += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">'
       + '<select onchange="BooksPage._setRange(this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">'
