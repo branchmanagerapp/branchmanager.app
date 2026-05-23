@@ -451,15 +451,31 @@ var BooksPage = (function() {
   // Find column indices for date / amount / description in a header row.
   // Returns { dateIdx, descIdx, amountIdx, debitIdx, creditIdx } — amountIdx
   // is set if one signed Amount column; debit/credit if two columns.
+  //
+  // Matches must be substring (test on the trimmed header) — Chase uses
+  // "Posting Date"/"Description"/"Amount"; M&T uses "Date"/"Description"/
+  // "Amount Debit"/"Amount Credit"; BoA uses "Date"/"Description"/"Amount"/
+  // "Running Bal."; Citi uses "Status"/"Date"/"Description"/"Debit"/"Credit".
+  // v858: relaxed regexes (no ^ anchor) so M&T's "Amount Debit" matches
+  // debit and "Amount Credit" matches credit; also added priority ordering
+  // when a signed Amount column AND debit/credit columns both exist — Amount
+  // wins since it's already signed (Chase pattern).
   function _detectColumns(headerRow) {
     var lower = headerRow.map(function(h) { return (h || '').toLowerCase().trim(); });
     function find(re) { for (var i = 0; i < lower.length; i++) if (re.test(lower[i])) return i; return -1; }
+    var debitIdx = find(/\b(debit|withdrawal|amount\s*debit|debits|withdrawals|out)\b/);
+    var creditIdx = find(/\b(credit|deposit|amount\s*credit|credits|deposits|payments|in)\b/);
+    var amountIdx = find(/^(amount|amt|transaction\s*amount|trans\s*amount)$/);
+    // Avoid debitIdx === creditIdx (some banks have a single "Amount" col
+    // matching both via the loose regex). If they collide, treat as signed
+    // amount and drop debit/credit.
+    if (debitIdx >= 0 && debitIdx === creditIdx) { amountIdx = debitIdx; debitIdx = -1; creditIdx = -1; }
     return {
-      dateIdx:    find(/^(post|posting|trans|transaction|date|posted date|trans\s*date)/),
-      descIdx:    find(/^(desc|description|memo|payee|details|name|narrative)/),
-      amountIdx:  find(/^(amount|amt)$/),
-      debitIdx:   find(/^(debit|withdrawal|out|withdrawals)/),
-      creditIdx:  find(/^(credit|deposit|in|deposits|payments)/)
+      dateIdx:    find(/\b(post(ed|ing)?\s*date|trans(action)?\s*date|^date$|^date\b)/) ,
+      descIdx:    find(/\b(description|memo|payee|details|narrative|merchant|name)\b/),
+      amountIdx:  amountIdx,
+      debitIdx:   debitIdx,
+      creditIdx:  creditIdx
     };
   }
 
