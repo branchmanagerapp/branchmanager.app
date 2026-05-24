@@ -267,6 +267,63 @@ var BooksPage = (function() {
     }
 
     // ──────────────────────────────────────────────────────────────────
+    // v869: Books Health Score — single A-F grade summarizing accounting
+    // confidence. Inputs: % categorized (1 - 6999_count / total), %
+    // reconciled, tax-return-vs-Books agreement (where filings exist).
+    // ──────────────────────────────────────────────────────────────────
+    var allTxnsAll = _allTxns || [];
+    var catTotalAll = allTxnsAll.length;
+    var uncatAll = allTxnsAll.filter(function(t) { return (t.category || '6999') === '6999'; }).length;
+    var pctCategorized = catTotalAll > 0 ? Math.round((1 - uncatAll / catTotalAll) * 100) : 0;
+    var reconciledAll = allTxnsAll.length; // _allTxns has limited columns; use _txns counts for reconciled
+    // Compute reconciliation % from _txns (range-limited but representative)
+    var rngReconciled = (txns || []).filter(function(t) { return t.reconciled === true; }).length;
+    var pctReconciled = (txns && txns.length > 0) ? Math.round((rngReconciled / txns.length) * 100) : 0;
+    // Tax-return match: average abs(delta/tax) for years with a federal return
+    var taxAgreementScores = [];
+    if (_taxFilings && _allTxns) {
+      var bookByYear2 = {};
+      allTxnsAll.forEach(function(t) {
+        var yr = parseInt((t.posted_date || '').slice(0, 4), 10);
+        if (!yr) return;
+        var cat = (t.category || '').toString();
+        if (cat.charAt(0) === '7') return;
+        var amt = Number(t.amount) || 0;
+        if (!bookByYear2[yr]) bookByYear2[yr] = { rev: 0, exp: 0 };
+        if (cat.charAt(0) === '4') bookByYear2[yr].rev += amt;
+        else if (amt < 0) bookByYear2[yr].exp += -amt;
+      });
+      _taxFilings.filter(function(f) { return (f.form_type || '').indexOf('1120') >= 0 || (f.form_type || '').indexOf('Sch') === 0; }).forEach(function(f) {
+        var b = bookByYear2[f.tax_year]; if (!b) return;
+        var bookNet = b.rev - b.exp;
+        var taxNet = Number(f.net_income) || 0;
+        if (Math.abs(taxNet) > 100) {
+          taxAgreementScores.push(Math.max(0, 100 - Math.abs((bookNet - taxNet) / taxNet) * 100));
+        }
+      });
+    }
+    var avgTaxAgreement = taxAgreementScores.length ? Math.round(taxAgreementScores.reduce(function(s, x) { return s + x; }, 0) / taxAgreementScores.length) : null;
+
+    // Composite score — weighted average. Categorization 40%, reconciliation 30%, tax agreement 30%.
+    var composite;
+    if (avgTaxAgreement != null) {
+      composite = Math.round(pctCategorized * 0.4 + pctReconciled * 0.3 + avgTaxAgreement * 0.3);
+    } else {
+      composite = Math.round(pctCategorized * 0.6 + pctReconciled * 0.4);
+    }
+    var grade = composite >= 90 ? 'A' : composite >= 80 ? 'B' : composite >= 70 ? 'C' : composite >= 60 ? 'D' : 'F';
+    var gradeColor = composite >= 80 ? 'var(--green-dark)' : composite >= 70 ? '#b45309' : '#b91c1c';
+
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+      + '<div style="display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:14px;align-items:center;">'
+      +   '<div style="text-align:center;"><div style="font-size:32px;font-weight:800;color:' + gradeColor + ';line-height:1;">' + grade + '</div><div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + composite + '/100</div></div>'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Categorized</div><div style="font-size:18px;font-weight:700;">' + pctCategorized + '%</div><div style="font-size:11px;color:var(--text-light);">' + (catTotalAll - uncatAll) + ' / ' + catTotalAll + ' rows tagged</div></div>'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Reconciled</div><div style="font-size:18px;font-weight:700;">' + pctReconciled + '%</div><div style="font-size:11px;color:var(--text-light);">' + rngReconciled + ' / ' + (txns ? txns.length : 0) + ' in view</div></div>'
+      +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Tax agreement</div><div style="font-size:18px;font-weight:700;">' + (avgTaxAgreement != null ? avgTaxAgreement + '%' : '—') + '</div><div style="font-size:11px;color:var(--text-light);">' + (taxAgreementScores.length ? taxAgreementScores.length + ' year' + (taxAgreementScores.length === 1 ? '' : 's') + ' compared' : 'no filings on file') + '</div></div>'
+      + '</div>'
+      + '</div>';
+
+    // ──────────────────────────────────────────────────────────────────
     // v867: Tax-Year Reconciliation — side-by-side BM Books P&L vs tax
     // filings for each year. The killer feature for "is my CPA right?".
     // Pulls federal returns (1120-S / Schedule C / 1120) for net income
