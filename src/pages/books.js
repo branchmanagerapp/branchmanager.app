@@ -308,22 +308,64 @@ var BooksPage = (function() {
     }
     var avgTaxAgreement = taxAgreementScores.length ? Math.round(taxAgreementScores.reduce(function(s, x) { return s + x; }, 0) / taxAgreementScores.length) : null;
 
-    // Composite score — weighted average. Categorization 40%, reconciliation 30%, tax agreement 30%.
+    // v871: Sales-tax accuracy — average per-quarter match of BM-invoiced
+    // tax vs filed NY-ST sales-tax-collected. Only counts quarters where
+    // BOTH sides have data (pre-BM filed quarters are excluded so they
+    // don't unfairly tank the score).
+    var stScores = [];
+    var nyStFilingsForScore = (_taxFilings || []).filter(function(f) {
+      return (f.form_type || '').toUpperCase().indexOf('NY-ST') === 0;
+    });
+    if (nyStFilingsForScore.length > 0 && _invoicesQ && _invoicesQ.length > 0) {
+      var invByQ_s = {};
+      _invoicesQ.forEach(function(iv) {
+        var d = iv.issued_date; if (!d) return;
+        var yr = parseInt(d.slice(0, 4), 10), mo = parseInt(d.slice(5, 7), 10);
+        if (!yr || !mo) return;
+        var key = yr + '-Q' + Math.ceil(mo / 3);
+        if (!invByQ_s[key]) invByQ_s[key] = { tax: 0 };
+        invByQ_s[key].tax += Number(iv.tax_amount) || 0;
+      });
+      nyStFilingsForScore.forEach(function(f) {
+        var ex = f.extracted || {};
+        var key = f.tax_year + '-Q' + (ex.quarter || (f.form_type || '').match(/Q(\d)/) || [0, '?'])[1];
+        var filedTax = Number(ex.sales_tax_collected != null ? ex.sales_tax_collected : ex.sales_tax_due) || 0;
+        var bmTax = (invByQ_s[key] || {}).tax || 0;
+        if (filedTax > 0 && bmTax > 0) {
+          var pct = Math.abs((bmTax - filedTax) / filedTax);
+          stScores.push(Math.max(0, 100 - pct * 100));
+        }
+      });
+    }
+    var avgSalesTax = stScores.length ? Math.round(stScores.reduce(function(s, x) { return s + x; }, 0) / stScores.length) : null;
+
+    // Composite score — weighted average.
+    //   With both tax-return AND sales-tax data: cat 35% / recon 25% / tax 25% / sales-tax 15%
+    //   With tax-return only:                    cat 40% / recon 30% / tax 30%
+    //   With sales-tax only:                     cat 45% / recon 30% / sales-tax 25%
+    //   With neither:                            cat 60% / recon 40%
     var composite;
-    if (avgTaxAgreement != null) {
+    if (avgTaxAgreement != null && avgSalesTax != null) {
+      composite = Math.round(pctCategorized * 0.35 + pctReconciled * 0.25 + avgTaxAgreement * 0.25 + avgSalesTax * 0.15);
+    } else if (avgTaxAgreement != null) {
       composite = Math.round(pctCategorized * 0.4 + pctReconciled * 0.3 + avgTaxAgreement * 0.3);
+    } else if (avgSalesTax != null) {
+      composite = Math.round(pctCategorized * 0.45 + pctReconciled * 0.3 + avgSalesTax * 0.25);
     } else {
       composite = Math.round(pctCategorized * 0.6 + pctReconciled * 0.4);
     }
     var grade = composite >= 90 ? 'A' : composite >= 80 ? 'B' : composite >= 70 ? 'C' : composite >= 60 ? 'D' : 'F';
     var gradeColor = composite >= 80 ? 'var(--green-dark)' : composite >= 70 ? '#b45309' : '#b91c1c';
 
+    // 4 or 5 columns depending on whether sales-tax data exists
+    var gridCols = avgSalesTax != null ? '90px 1fr 1fr 1fr 1fr' : '90px 1fr 1fr 1fr';
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
-      + '<div style="display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:14px;align-items:center;">'
+      + '<div style="display:grid;grid-template-columns:' + gridCols + ';gap:14px;align-items:center;">'
       +   '<div style="text-align:center;"><div style="font-size:32px;font-weight:800;color:' + gradeColor + ';line-height:1;">' + grade + '</div><div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + composite + '/100</div></div>'
       +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Categorized</div><div style="font-size:18px;font-weight:700;">' + pctCategorized + '%</div><div style="font-size:11px;color:var(--text-light);">' + (catTotalAll - uncatAll) + ' / ' + catTotalAll + ' rows tagged</div></div>'
       +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Reconciled</div><div style="font-size:18px;font-weight:700;">' + pctReconciled + '%</div><div style="font-size:11px;color:var(--text-light);">' + rngReconciled + ' / ' + (txns ? txns.length : 0) + ' in view</div></div>'
       +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Tax agreement</div><div style="font-size:18px;font-weight:700;">' + (avgTaxAgreement != null ? avgTaxAgreement + '%' : '—') + '</div><div style="font-size:11px;color:var(--text-light);">' + (taxAgreementScores.length ? taxAgreementScores.length + ' year' + (taxAgreementScores.length === 1 ? '' : 's') + ' compared' : 'no filings on file') + '</div></div>'
+      +   (avgSalesTax != null ? '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Sales-tax match</div><div style="font-size:18px;font-weight:700;">' + avgSalesTax + '%</div><div style="font-size:11px;color:var(--text-light);">' + stScores.length + ' qtr' + (stScores.length === 1 ? '' : 's') + ' compared</div></div>' : '')
       + '</div>'
       + '</div>';
 
