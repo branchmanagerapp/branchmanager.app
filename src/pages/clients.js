@@ -193,6 +193,7 @@ var ClientsPage = {
       + '<span style="color:var(--text-light);">🔍</span>'
       + '<input type="text" id="client-search" placeholder="Search clients..." value="' + UI.esc(self._search) + '" oninput="ClientsPage.setSearch(this.value)">'
       + '</div>'
+      + '<button onclick="ClientsPage.openBulkPortalInvites()" style="background:none;border:1px solid var(--border);padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:#7c3aed;white-space:nowrap;" title="Bulk-send portal invites">📨 Portal Invites</button>'
       + '<button onclick="loadPage(\'clientmap\')" style="background:none;border:1px solid var(--border);padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);white-space:nowrap;" title="View client map">📍 Map</button>'
       + '<button onclick="loadPage(\'messaging\')" style="background:none;border:1px solid var(--border);padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--accent);white-space:nowrap;" title="Messages inbox">💬 Messages</button>'
       + '</div></div>';
@@ -1693,6 +1694,191 @@ var ClientsPage = {
   // — same mechanism the portal login page uses, just initiated by Doug. Works
   // because anon role is allowed to fire OTP emails for any address (Supabase
   // Auth handles rate limiting + the existing email template re-skinned for BM).
+  // v870: Bulk portal invites — modal lists every client with an email,
+  // ranked by recent invoice activity. Doug checks rows + clicks Send;
+  // BM POSTs portal-auth fn one at a time with 2-sec delays (Resend
+  // free tier 100/day; we cap at 50 per batch). Per-row status updates
+  // inline so Doug sees each send succeed/fail.
+  //
+  // Per safety rules, no auto-blast — Doug must click Send per batch.
+  openBulkPortalInvites: function() {
+    var clients = (DB.clients && DB.clients.getAll) ? DB.clients.getAll() : [];
+    var withEmail = clients.filter(function(c) { return c && c.email && c.email.indexOf('@') > 0; });
+    if (!withEmail.length) { UI.toast('No clients have emails on file', 'error'); return; }
+
+    // Compute last invoice paid date per client for sorting
+    var lastPaidByClient = {};
+    var totalPaidByClient = {};
+    if (DB.invoices && DB.invoices.getAll) {
+      DB.invoices.getAll().forEach(function(inv) {
+        if (!inv || !inv.clientId) return;
+        if (inv.paidDate) {
+          var d = new Date(inv.paidDate).getTime() || 0;
+          if (!lastPaidByClient[inv.clientId] || d > lastPaidByClient[inv.clientId]) {
+            lastPaidByClient[inv.clientId] = d;
+          }
+        }
+        totalPaidByClient[inv.clientId] = (totalPaidByClient[inv.clientId] || 0) + (inv.amountPaid || 0);
+      });
+    }
+
+    // Sort by last-paid desc, then by total-paid desc
+    var ranked = withEmail.slice().sort(function(a, b) {
+      var la = lastPaidByClient[a.id] || 0, lb = lastPaidByClient[b.id] || 0;
+      if (lb !== la) return lb - la;
+      return (totalPaidByClient[b.id] || 0) - (totalPaidByClient[a.id] || 0);
+    });
+
+    // Skip clients who already received a portal invite in the last 30 days
+    var recentInviteCutoff = Date.now() - 30 * 86400000;
+    function alreadyInvitedRecently(cid) {
+      try {
+        var comms = JSON.parse(localStorage.getItem('bm-comms-' + cid) || '[]');
+        return comms.some(function(c) {
+          return c && c.notes && c.notes.indexOf('Portal sign-in link sent') >= 0
+            && new Date(c.date).getTime() > recentInviteCutoff;
+        });
+      } catch(e) { return false; }
+    }
+    var eligible = ranked.filter(function(c) { return !alreadyInvitedRecently(c.id); });
+
+    var html = '<div style="padding:18px;max-width:720px;">'
+      + '<div style="margin-bottom:14px;">'
+      +   '<h2 style="margin:0;font-size:18px;font-weight:800;">📨 Bulk Portal Invites</h2>'
+      +   '<div style="font-size:12px;color:var(--text-light);margin-top:3px;">' + eligible.length + ' clients eligible · ' + (ranked.length - eligible.length) + ' invited in last 30 days (skipped)</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
+      +   '<button onclick="ClientsPage._bpiSelectN(10)" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Select first 10</button>'
+      +   '<button onclick="ClientsPage._bpiSelectN(25)" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Select first 25</button>'
+      +   '<button onclick="ClientsPage._bpiSelectN(50)" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Select first 50</button>'
+      +   '<button onclick="ClientsPage._bpiSelectAll()" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Select all</button>'
+      +   '<button onclick="ClientsPage._bpiSelectNone()" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Clear</button>'
+      +   '<span style="margin-left:auto;font-size:12px;color:var(--text-light);align-self:center;" id="bpi-selected-count">0 selected</span>'
+      + '</div>'
+      + '<div style="max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:8px;background:#fff;">'
+      + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+      + '<thead style="background:var(--bg);position:sticky;top:0;">'
+      +   '<tr><th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);width:30px;"></th>'
+      +       '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);">Name</th>'
+      +       '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);">Email</th>'
+      +       '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);">Last paid</th>'
+      +       '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);">Total paid</th>'
+      +       '<th style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);">Status</th></tr>'
+      + '</thead><tbody>';
+    eligible.forEach(function(c) {
+      var last = lastPaidByClient[c.id] ? new Date(lastPaidByClient[c.id]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '—';
+      var total = totalPaidByClient[c.id] || 0;
+      html += '<tr>'
+        + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);"><input type="checkbox" class="bpi-row" data-cid="' + c.id + '" onchange="ClientsPage._bpiUpdateCount()"></td>'
+        + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);font-weight:600;">' + UI.esc(c.name || (c.firstName + ' ' + c.lastName).trim()) + '</td>'
+        + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);color:var(--text-light);">' + UI.esc(c.email) + '</td>'
+        + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);text-align:right;color:var(--text-light);">' + last + '</td>'
+        + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);text-align:right;font-weight:600;">$' + Math.round(total).toLocaleString() + '</td>'
+        + '<td style="padding:5px 8px;border-bottom:1px solid var(--bg);text-align:center;" id="bpi-status-' + c.id + '">—</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>'
+      + '<div id="bpi-progress" style="display:none;margin:14px 0;font-size:12px;color:var(--text-light);"></div>'
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">'
+      +   '<button onclick="UI.closeModal()" class="btn btn-outline">Cancel</button>'
+      +   '<button id="bpi-send-btn" onclick="ClientsPage._bpiSendSelected()" class="btn btn-primary" style="background:#7c3aed;">Send to 0 selected</button>'
+      + '</div>'
+      + '</div>';
+    UI.openModal(html, { wide: true });
+  },
+
+  _bpiSelectN: function(n) {
+    var rows = document.querySelectorAll('.bpi-row');
+    for (var i = 0; i < rows.length; i++) rows[i].checked = i < n;
+    ClientsPage._bpiUpdateCount();
+  },
+  _bpiSelectAll: function() {
+    document.querySelectorAll('.bpi-row').forEach(function(r) { r.checked = true; });
+    ClientsPage._bpiUpdateCount();
+  },
+  _bpiSelectNone: function() {
+    document.querySelectorAll('.bpi-row').forEach(function(r) { r.checked = false; });
+    ClientsPage._bpiUpdateCount();
+  },
+  _bpiUpdateCount: function() {
+    var n = document.querySelectorAll('.bpi-row:checked').length;
+    var counter = document.getElementById('bpi-selected-count');
+    if (counter) counter.textContent = n + ' selected';
+    var btn = document.getElementById('bpi-send-btn');
+    if (btn) {
+      btn.textContent = 'Send to ' + n + ' selected';
+      btn.disabled = n === 0;
+      btn.style.opacity = n === 0 ? '0.5' : '1';
+    }
+  },
+
+  _bpiSendSelected: async function() {
+    var selected = Array.from(document.querySelectorAll('.bpi-row:checked')).map(function(el) { return el.getAttribute('data-cid'); });
+    if (!selected.length) return;
+    if (selected.length > 50) {
+      if (!confirm('You\'re about to send ' + selected.length + ' portal invites. Resend free tier caps at ~85/day. Continue?')) return;
+    } else {
+      if (!confirm('Send portal invites to ' + selected.length + ' clients via email? This is irreversible — each will get a magic-link sign-in email.')) return;
+    }
+
+    var btn = document.getElementById('bpi-send-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; btn.style.opacity = '0.7'; }
+    var progress = document.getElementById('bpi-progress');
+    if (progress) progress.style.display = 'block';
+
+    var FN_URL = (window.BM_CONFIG && window.BM_CONFIG.supabaseFunctionsUrl)
+      ? window.BM_CONFIG.supabaseFunctionsUrl
+      : 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1';
+
+    var sent = 0, failed = 0;
+    for (var i = 0; i < selected.length; i++) {
+      var cid = selected[i];
+      var c = DB.clients.getById(cid);
+      var statusEl = document.getElementById('bpi-status-' + cid);
+      if (!c || !c.email) {
+        if (statusEl) statusEl.innerHTML = '<span style="color:#b91c1c;">no email</span>';
+        failed++;
+        continue;
+      }
+      if (statusEl) statusEl.innerHTML = '<span style="color:#1e40af;">sending…</span>';
+      try {
+        var r = await fetch(FN_URL + '/portal-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: c.email })
+        });
+        var data = await r.json();
+        if (!r.ok || data.error) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:#b91c1c;" title="' + UI.esc(data.error || '') + '">⚠</span>';
+          failed++;
+        } else {
+          if (statusEl) statusEl.innerHTML = '<span style="color:var(--green-dark);">✓ sent</span>';
+          sent++;
+          // Log to localStorage comms
+          try {
+            var key = 'bm-comms-' + cid;
+            var all = JSON.parse(localStorage.getItem(key) || '[]');
+            all.unshift({
+              id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+              clientId: cid, type: 'email', direction: 'outbound',
+              notes: 'Portal sign-in link sent (bulk invite to ' + c.email + ')',
+              date: new Date().toISOString(), user: 'Doug'
+            });
+            localStorage.setItem(key, JSON.stringify(all));
+          } catch(e) {}
+        }
+      } catch (e) {
+        if (statusEl) statusEl.innerHTML = '<span style="color:#b91c1c;">network</span>';
+        failed++;
+      }
+      if (progress) progress.textContent = 'Progress: ' + (i + 1) + '/' + selected.length + ' (' + sent + ' sent, ' + failed + ' failed)';
+      // Polite 2-sec delay between sends to avoid Resend rate-limit spikes
+      if (i < selected.length - 1) await new Promise(function(res) { setTimeout(res, 2000); });
+    }
+    if (btn) { btn.textContent = '✓ Done — ' + sent + ' sent'; btn.style.background = sent === selected.length ? 'var(--green-dark)' : '#b45309'; }
+    UI.toast('Portal invites: ' + sent + ' sent, ' + failed + ' failed', sent === selected.length ? 'success' : 'error');
+  },
+
   _sendPortalInvite: function(id) {
     var c = DB.clients.getById(id);
     if (!c || !c.email) { UI.toast('Client has no email on file', 'error'); return; }
