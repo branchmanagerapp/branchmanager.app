@@ -26,6 +26,8 @@ var BooksPage = (function() {
   var _accounts = null;
   var _txns = null;
   var _chart = null;
+  var _taxFilings = null;
+  var _allTxns = null;
   var _filter = { account: 'all', category: 'all', search: '', range: '90' };
 
   function _supabase() {
@@ -41,11 +43,17 @@ var BooksPage = (function() {
     return Promise.all([
       sb.from('bank_accounts').select('*').eq('tenant_id', TENANT_ID()).eq('active', true).order('created_at'),
       sb.from('bank_transactions').select('*').eq('tenant_id', TENANT_ID()).gte('posted_date', since).order('posted_date', { ascending: false }).limit(500),
-      sb.from('chart_of_accounts').select('*').eq('tenant_id', TENANT_ID()).eq('active', true).order('sort_order')
+      sb.from('chart_of_accounts').select('*').eq('tenant_id', TENANT_ID()).eq('active', true).order('sort_order'),
+      // v867: tax filings — for the Tax-Year Reconciliation card
+      sb.from('tax_filings').select('*').eq('tenant_id', TENANT_ID()).order('tax_year').order('form_type'),
+      // v867: year-level rollup for tax-year reconciliation (all-time, lean projection)
+      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).like('source', 'pdf%').limit(10000)
     ]).then(function(results) {
       _accounts = (results[0] && results[0].data) || [];
       _txns = (results[1] && results[1].data) || [];
       _chart = (results[2] && results[2].data) || [];
+      _taxFilings = (results[3] && results[3].data) || [];
+      _allTxns = (results[4] && results[4].data) || [];
     });
   }
 
@@ -255,6 +263,72 @@ var BooksPage = (function() {
           + '</div>';
       });
       html += '</div></div>';
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // v867: Tax-Year Reconciliation — side-by-side BM Books P&L vs tax
+    // filings for each year. The killer feature for "is my CPA right?".
+    // Pulls federal returns (1120-S / Schedule C / 1120) for net income
+    // and revenue. NY-ST quarterly returns are summed for revenue check.
+    // 941 quarterlies are summed for wages-paid check.
+    // ──────────────────────────────────────────────────────────────────
+    var federalReturns = (_taxFilings || []).filter(function(f) {
+      var ft = (f.form_type || '').toLowerCase();
+      return ft.indexOf('1120') >= 0 || ft.indexOf('sch') === 0 || ft.indexOf('1040') >= 0 || ft.indexOf('1065') >= 0;
+    });
+    if (federalReturns.length > 0 && _allTxns) {
+      // Build yearly P&L from ALL transactions (not range-limited)
+      var bookByYear = {};
+      _allTxns.forEach(function(t) {
+        var yr = parseInt((t.posted_date || '').slice(0, 4), 10);
+        if (!yr) return;
+        var cat = (t.category || '').toString();
+        var cls = cat.charAt(0);
+        if (cls === '7') return; // exclude transfers + owner draws from P&L
+        var amt = Number(t.amount) || 0;
+        if (!bookByYear[yr]) bookByYear[yr] = { revenue: 0, expenses: 0 };
+        // Revenue = positive 4xxx + offset revenue reversals (4xxx negative)
+        if (cls === '4') {
+          bookByYear[yr].revenue += amt;
+        } else if (amt < 0) {
+          bookByYear[yr].expenses += -amt;
+        }
+      });
+
+      html += '<details open style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+        + '<summary style="cursor:pointer;font-weight:700;font-size:14px;">📋 Tax-Year Reconciliation — BM Books vs filed returns</summary>'
+        + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;margin-bottom:10px;">Negative deltas = BM Books reports MORE expense / LESS net than tax return. Goal: within ±10% margin.</div>'
+        + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead><tr style="border-bottom:2px solid var(--border);">'
+        +   '<th style="text-align:left;padding:6px 8px;">Year</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Tax Return Net</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">BM Books Net</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Δ</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Tax Revenue</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">BM Revenue</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Form</th>'
+        + '</tr></thead><tbody>';
+      federalReturns.forEach(function(f) {
+        var book = bookByYear[f.tax_year] || { revenue: 0, expenses: 0 };
+        var bookNet = book.revenue - book.expenses;
+        var taxNet = Number(f.net_income) || 0;
+        var taxRev = Number(f.gross_receipts) || 0;
+        var netDelta = bookNet - taxNet;
+        var netPctOk = Math.abs(taxNet) > 0 ? Math.abs(netDelta / taxNet) < 0.15 : Math.abs(netDelta) < 5000;
+        var deltaColor = netPctOk ? 'var(--green-dark)' : '#b91c1c';
+        var deltaIcon = netPctOk ? '✓' : '⚠';
+        html += '<tr style="border-bottom:1px solid var(--bg);">'
+          + '<td style="padding:6px 8px;font-weight:700;">' + f.tax_year + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;">' + _moneyInt(taxNet) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;">' + _moneyInt(bookNet) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700;color:' + deltaColor + ';">' + deltaIcon + ' ' + _moneyInt(netDelta) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;color:var(--text-light);">' + _moneyInt(taxRev) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;color:var(--text-light);">' + _moneyInt(book.revenue) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-size:11px;color:var(--text-light);">' + _esc(f.form_type || '') + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div>'
+        + '</details>';
     }
 
     // v865: Uncategorized review — groups 6999 rows by merchant prefix,
