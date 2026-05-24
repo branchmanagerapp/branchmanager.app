@@ -405,7 +405,7 @@ var VideoQuote = {
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: 'You are an ISA certified arborist. This is frame ' + frameNumber + ' (at ' + Math.round(timeSeconds) + 's) from a property walkthrough video in ZIP ' + zip + '.' + narrationLine + '\n\nIdentify ALL trees visible in this frame. For each tree provide:\n- species: common name\n- dbh: estimated diameter at breast height in inches\n- condition: good, fair, poor, dead, or hazardous\n- service: one of "Tree Removal", "Tree Pruning", "Stump Removal", "Dead Wood Removal", "Crown Reduction", "Cabling", "Hazard Assessment"\n- price: suggested price in dollars (Westchester NY market rates, consider DBH x $100 for removals, radius x $10 for pruning)\n- notes: brief note about access, hazards, equipment needed\n\nRespond with ONLY a JSON array. Example:\n[{"species":"Red Oak","dbh":"24","condition":"fair","service":"Tree Pruning","price":800,"notes":"Near power lines, bucket truck needed"}]\n\nIf no trees are visible, respond with: []' }
+            { type: 'text', text: 'You are an ISA certified arborist. This is frame ' + frameNumber + ' (at ' + Math.round(timeSeconds) + 's) from a property walkthrough video in ZIP ' + zip + '.' + narrationLine + '\n\nIdentify ALL trees visible in this frame. For each tree provide:\n- species: common name\n- dbh: estimated diameter at breast height in inches\n- condition: good, fair, poor, dead, or hazardous\n- service: one of "Tree Removal", "Tree Pruning", "Stump Removal", "Dead Wood Removal", "Crown Reduction", "Cabling", "Hazard Assessment"\n- price: suggested price in dollars (Westchester NY market rates, consider DBH x $100 for removals, radius x $10 for pruning)\n- notes: brief note about access, hazards, equipment needed\n- hazards: array of structural defects ONLY if clearly visible. Pick from ["Deadwood","CodomStem","IncludedBark","Lean","PowerLine","Decay","Cavity","Split","Crack","Rot","Epicormic","RootDamage"]. Empty array if none.\n- urgency: 1-5 where 1=immediate (hazard to person/structure, schedule within 7 days), 2=within 30 days, 3=within 90 days (normal pruning cycle), 4=within 12 months (preventive), 5=monitor only (no action needed)\n- health: 0-100 percentage score of tree vitality (100=perfect, 50=declining, 0=dead)\n\nRespond with ONLY a JSON array. Example:\n[{"species":"Red Oak","dbh":"24","condition":"fair","service":"Tree Pruning","price":800,"notes":"Near power lines, bucket truck needed","hazards":["Deadwood","CodomStem"],"urgency":2,"health":65}]\n\nIf no trees are visible, respond with: []' }
           ]
         }]
       })
@@ -454,13 +454,27 @@ var VideoQuote = {
           if (tree.price > groups[g].price) {
             groups[g].price = tree.price;
           }
+          // v876: merge hazards (union), pick most-urgent urgency, average health
+          if (Array.isArray(tree.hazards)) {
+            tree.hazards.forEach(function(h) {
+              if (groups[g].hazards.indexOf(h) === -1) groups[g].hazards.push(h);
+            });
+          }
+          if (typeof tree.urgency === 'number' && (!groups[g].urgency || tree.urgency < groups[g].urgency)) {
+            groups[g].urgency = tree.urgency;
+          }
+          if (typeof tree.health === 'number') {
+            groups[g]._healthSum = (groups[g]._healthSum || 0) + tree.health;
+            groups[g]._healthN = (groups[g]._healthN || 0) + 1;
+            groups[g].health = Math.round(groups[g]._healthSum / groups[g]._healthN);
+          }
           matched = true;
           break;
         }
       }
 
       if (!matched) {
-        groups.push({
+        var grp = {
           species: tree.species || 'Unknown',
           dbh: tree.dbh || '?',
           condition: tree.condition || 'fair',
@@ -469,10 +483,25 @@ var VideoQuote = {
           notes: tree.notes || '',
           frameThumb: tree.frameThumb,
           frameTime: tree.frameTime,
-          sightings: [tree]
-        });
+          sightings: [tree],
+          hazards: Array.isArray(tree.hazards) ? tree.hazards.slice() : [],
+          urgency: typeof tree.urgency === 'number' ? tree.urgency : null,
+          health: typeof tree.health === 'number' ? tree.health : null
+        };
+        if (typeof tree.health === 'number') {
+          grp._healthSum = tree.health;
+          grp._healthN = 1;
+        }
+        groups.push(grp);
       }
     }
+
+    // Sort by urgency (1=most urgent first), then by price descending
+    groups.sort(function(a, b) {
+      var ua = a.urgency || 99, ub = b.urgency || 99;
+      if (ua !== ub) return ua - ub;
+      return (b.price || 0) - (a.price || 0);
+    });
 
     VideoQuote._deduped = groups;
     VideoQuote._showResults(groups);
@@ -501,8 +530,18 @@ var VideoQuote = {
 
     var html = '';
 
-    // Summary bar
-    html += '<div style="background:var(--green-dark);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">'
+    // v876: roll up hazards + urgency for property-wide assessment
+    var hazardCount = 0, urgentNow = 0, urgent30 = 0, healthSum = 0, healthN = 0;
+    groups.forEach(function(g) {
+      if (Array.isArray(g.hazards)) hazardCount += g.hazards.length;
+      if (g.urgency === 1) urgentNow++;
+      else if (g.urgency === 2) urgent30++;
+      if (typeof g.health === 'number') { healthSum += g.health; healthN++; }
+    });
+    var avgHealth = healthN ? Math.round(healthSum / healthN) : null;
+
+    // Summary bar — now shows property-wide health roll-up
+    html += '<div style="background:var(--green-dark);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">'
       + '<div>'
       + '<div style="font-size:18px;font-weight:800;">' + groups.length + ' Tree' + (groups.length !== 1 ? 's' : '') + ' Identified</div>'
       + '<div style="font-size:13px;opacity:.8;">From ' + VideoQuote._frames.length + ' frames analyzed</div>'
@@ -511,6 +550,25 @@ var VideoQuote = {
       + '<div style="font-size:22px;font-weight:800;">' + UI.money(totalPrice) + '</div>'
       + '<div style="font-size:12px;opacity:.8;">Estimated total</div>'
       + '</div></div>';
+
+    // Property assessment chips (v876)
+    if (avgHealth != null || hazardCount > 0 || urgentNow > 0 || urgent30 > 0) {
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">';
+      if (avgHealth != null) {
+        var hColor = avgHealth >= 80 ? '#2e7d32' : avgHealth >= 60 ? '#e6a817' : avgHealth >= 40 ? '#e65100' : '#c62828';
+        html += '<div style="background:#fff;border:1px solid var(--border);border-left:4px solid ' + hColor + ';padding:8px 14px;border-radius:8px;font-size:12px;"><b style="font-size:14px;color:' + hColor + ';">' + avgHealth + '%</b> avg tree health</div>';
+      }
+      if (urgentNow > 0) {
+        html += '<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;">⚠ ' + urgentNow + ' immediate hazard' + (urgentNow === 1 ? '' : 's') + ' (act within 7 days)</div>';
+      }
+      if (urgent30 > 0) {
+        html += '<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;">⏰ ' + urgent30 + ' within 30 days</div>';
+      }
+      if (hazardCount > 0) {
+        html += '<div style="background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;padding:8px 14px;border-radius:8px;font-size:12px;">🪓 ' + hazardCount + ' structural defect' + (hazardCount === 1 ? '' : 's') + ' flagged</div>';
+      }
+      html += '</div>';
+    }
 
     // Tree cards
     for (var i = 0; i < groups.length; i++) {
@@ -529,18 +587,31 @@ var VideoQuote = {
       }
 
       // Details
+      var urgLabels = { 1: ['IMMEDIATE','#dc2626'], 2: ['30 DAYS','#ea580c'], 3: ['90 DAYS','#ca8a04'], 4: ['12 MO','#65a30d'], 5: ['MONITOR','#6b7280'] };
+      var urg = urgLabels[g.urgency];
       html += '<div style="flex:1;padding:14px 16px;min-width:0;">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
         + '<div style="min-width:0;">'
         + '<div style="font-size:16px;font-weight:800;">🌳 ' + g.species + '</div>'
-        + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">'
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">'
         + '<span style="font-size:12px;background:var(--bg);padding:2px 8px;border-radius:6px;">' + g.dbh + '" DBH</span>'
         + '<span style="font-size:12px;background:' + condColor + '20;color:' + condColor + ';padding:2px 8px;border-radius:6px;font-weight:600;text-transform:capitalize;">' + g.condition + '</span>'
+        + (typeof g.health === 'number' ? '<span style="font-size:12px;background:var(--bg);padding:2px 8px;border-radius:6px;">' + g.health + '% health</span>' : '')
+        + (urg ? '<span style="font-size:11px;background:' + urg[1] + ';color:#fff;padding:2px 8px;border-radius:6px;font-weight:800;letter-spacing:.04em;">' + urg[0] + '</span>' : '')
         + '<span style="font-size:12px;background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:6px;">Seen ' + g.sightings.length + 'x</span>'
         + '</div></div>'
         + '<div style="text-align:right;flex-shrink:0;">'
         + '<div style="font-size:18px;font-weight:800;color:var(--green-dark);">' + UI.money(g.price) + '</div>'
         + '</div></div>';
+
+      // Hazards row (v876)
+      if (Array.isArray(g.hazards) && g.hazards.length > 0) {
+        html += '<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">'
+          + g.hazards.map(function(h) {
+            return '<span style="font-size:11px;background:#fef2f2;color:#7f1d1d;padding:2px 7px;border-radius:999px;font-weight:600;border:1px solid #fecaca;">' + h + '</span>';
+          }).join('')
+          + '</div>';
+      }
 
       // Service + notes
       html += '<div style="margin-top:8px;font-size:13px;">'
