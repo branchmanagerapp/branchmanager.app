@@ -490,6 +490,16 @@ var Photos = {
             date: meta.taken_at,
             label: ''
           });
+          // v874: fire-and-forget AI auto-tag using the stamped blob we
+          // already have in memory. Don't await — upload UI shouldn't block.
+          if (Photos.AI_AUTOTAG) {
+            (function(rt, rid, blob) {
+              var idx = Photos.getPhotos(rt, rid).length - 1;
+              var fr = new FileReader();
+              fr.onload = function(e) { Photos.aiAutoTag(rt, rid, idx, e.target.result); };
+              fr.readAsDataURL(blob);
+            })(recordType, recordId, stamped);
+          }
         } catch (e) {
           console.warn('Supabase upload failed, falling back to local:', e);
           Photos._uploadLocal(file, recordType, recordId);
@@ -532,7 +542,8 @@ var Photos = {
           date: row.taken_at || row.created_at,
           gps_lat: row.gps_lat || null,
           gps_lng: row.gps_lng || null,
-          tags: Array.isArray(row.tags) ? row.tags : (row.label ? row.label.split(',').map(function(s){return s.trim();}).filter(Boolean) : [])
+          tags: Array.isArray(row.tags) ? row.tags : (row.label ? row.label.split(',').map(function(s){return s.trim();}).filter(Boolean) : []),
+          ai_tags: Array.isArray(row.ai_tags) ? row.ai_tags : []
         });
       });
       Object.keys(groups).forEach(function(k) {
@@ -559,6 +570,11 @@ var Photos = {
         gps_lat: gps ? gps.lat : null,
         gps_lng: gps ? gps.lng : null
       });
+      // v874: local-only AI auto-tag too (works offline-pending or pure-local)
+      if (Photos.AI_AUTOTAG && navigator.onLine) {
+        var idx = Photos.getPhotos(recordType, recordId).length - 1;
+        Photos.aiAutoTag(recordType, recordId, idx, dataUrl);
+      }
       // If we have Supabase but it failed (offline), queue for later flush
       if (SupabaseDB && SupabaseDB.ready && !navigator.onLine) {
         Photos._enqueue(recordType, recordId, dataUrl, file.name, gps);
@@ -589,6 +605,129 @@ var Photos = {
   // Standard tags for tree-service work
   STANDARD_TAGS: ['Before', 'After', 'Hazard', 'Damage', 'Equipment', 'Permit', 'Receipt', 'Crew', 'Property'],
 
+  // ============ AI AUTO-TAGGING (v874) ============
+  // CompanyCam parity Phase 1.1. After each upload, fire Claude Vision (Haiku
+  // for cost — ~$0.001/image) and auto-apply tags it identifies with high
+  // confidence. Adds: tree species (Oak/Pine/Maple/etc.), hazards (Deadwood/
+  // CodomStem/IncludedBark/Lean/PowerLine), equipment (Chainsaw/Chipper/
+  // BucketTruck/Stump-Grinder), work phase (Before/During/After), and a few
+  // descriptive tags (Crew/Property/Damage). User can always remove via the
+  // tag chips. Tags get an "✨" prefix in the UI so it's clear AI added them.
+  //
+  // Cost guard: only runs if Photos.AI_AUTOTAG = true (default on, opt-out
+  // via localStorage 'bm-photo-ai-autotag' = '0'). Skips images > 8MB.
+  AI_AUTOTAG: true,
+  AI_TAG_PREFIX: '✨',
+
+  // Standard taxonomy the model maps to — keeps tags tight + filterable.
+  // The model returns short tokens; anything not in this map gets passed
+  // through verbatim but normalized to TitleCase.
+  AI_TAG_NORMALIZATIONS: {
+    'oak':'Oak','pine':'Pine','maple':'Maple','spruce':'Spruce','hemlock':'Hemlock','birch':'Birch','beech':'Beech','ash':'Ash','elm':'Elm','locust':'Locust','willow':'Willow','cherry':'Cherry','cedar':'Cedar','fir':'Fir','poplar':'Poplar','tuliptree':'Tulip Poplar','tulip poplar':'Tulip Poplar','sycamore':'Sycamore','hickory':'Hickory','walnut':'Walnut','dogwood':'Dogwood','magnolia':'Magnolia','catalpa':'Catalpa',
+    'deadwood':'Deadwood','codom':'CodomStem','codomstem':'CodomStem','included':'IncludedBark','includedbark':'IncludedBark','lean':'Lean','powerline':'PowerLine','power line':'PowerLine','decay':'Decay','cavity':'Cavity','split':'Split','crack':'Crack','rot':'Rot','epicormic':'Epicormic',
+    'chainsaw':'Chainsaw','chipper':'Chipper','buckettruck':'BucketTruck','bucket truck':'BucketTruck','stumpgrinder':'StumpGrinder','stump grinder':'StumpGrinder','crane':'Crane','climber':'Climber','rope':'Rope','rigging':'Rigging',
+    'before':'Before','after':'After','during':'During','midjob':'During','progress':'During',
+    'crew':'Crew','property':'Property','damage':'Damage','house':'House','driveway':'Driveway','fence':'Fence','pool':'Pool','sidewalk':'Sidewalk'
+  },
+
+  _normalizeAiTag: function(raw) {
+    if (!raw) return null;
+    var k = String(raw).toLowerCase().trim().replace(/[^a-z0-9 ]/g, '');
+    if (!k) return null;
+    if (Photos.AI_TAG_NORMALIZATIONS[k]) return Photos.AI_TAG_NORMALIZATIONS[k];
+    // Pass through with TitleCase if not in the dictionary
+    return k.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+  },
+
+  // Async — does not block the upload. Adds tags to the existing photo row.
+  aiAutoTag: async function(recordType, recordId, photoIndex, dataUrl) {
+    try {
+      if (localStorage.getItem('bm-photo-ai-autotag') === '0') return;
+      if (!dataUrl || dataUrl.length < 1000) return; // skip if no usable image
+      if (dataUrl.length > 8 * 1024 * 1024 * 1.4) return; // skip > ~8MB (base64 overhead)
+      var base64 = dataUrl.split(',')[1];
+      var mediaType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+      if (!base64) return;
+
+      var prompt = 'You are a certified arborist labeling a job-site photo for a tree-service company. '
+        + 'Identify ONLY what is clearly visible. Do NOT guess. Output a JSON array of 0-6 short tags from this taxonomy:\n'
+        + '• Tree species (if a tree is the subject + clearly ID-able): Oak, Pine, Maple, Spruce, Hemlock, Birch, Beech, Ash, Elm, Locust, Willow, Cherry, Cedar, Fir, Poplar, "Tulip Poplar", Sycamore, Hickory, Walnut, Dogwood, Magnolia, Catalpa\n'
+        + '• Hazards (only if obviously present): Deadwood, CodomStem, IncludedBark, Lean, PowerLine, Decay, Cavity, Split, Crack, Rot, Epicormic\n'
+        + '• Equipment visible: Chainsaw, Chipper, BucketTruck, StumpGrinder, Crane, Climber, Rope, Rigging\n'
+        + '• Work phase: Before (intact tree, work not started), After (tree removed/pruned, cleanup done), During (work in progress, brush on ground)\n'
+        + '• Context: Crew (people working), Property (house/structure dominant), Damage (visible structural damage)\n'
+        + 'Examples: ["Oak","Deadwood","Before"] or ["Chipper","Crew","During"] or ["After","Stump"]. '
+        + 'If the image is blurry, low-light, or unclear — return []. Output ONLY the JSON array, nothing else.';
+
+      var body = {
+        model: 'claude-haiku-4-5',
+        max_tokens: 80,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      };
+      // Use stored key if present (for clients without server-side ANTHROPIC_API_KEY)
+      var aiKey = (window.bmAIKey ? window.bmAIKey() : null) || localStorage.getItem('bm-claude-key');
+      if (aiKey) body.apiKey = aiKey;
+
+      var resp = await fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await resp.json();
+      if (data && data.error) { console.warn('Photos.aiAutoTag error:', data.error); return; }
+      var text = (data.content && data.content[0] && data.content[0].text) || '';
+      var match = text.match(/\[[\s\S]*?\]/);
+      if (!match) return;
+      var raw;
+      try { raw = JSON.parse(match[0]); } catch(e) { return; }
+      if (!Array.isArray(raw) || !raw.length) return;
+
+      // Normalize + dedupe
+      var newTags = [];
+      raw.forEach(function(r) {
+        var n = Photos._normalizeAiTag(r);
+        if (n && newTags.indexOf(n) === -1) newTags.push(n);
+      });
+      if (!newTags.length) return;
+
+      // Merge with whatever tags the photo already has (user might have tapped
+      // chips before AI finished). Track AI-added separately so UI can show "✨".
+      var photos = Photos.getPhotos(recordType, recordId);
+      if (!photos[photoIndex]) return;
+      var existingTags = Photos._getTags(photos[photoIndex]);
+      var addedTags = newTags.filter(function(t) { return existingTags.indexOf(t) === -1; });
+      if (!addedTags.length) return;
+      var merged = existingTags.concat(addedTags);
+
+      // Track which tags came from AI in a separate field so we can render
+      // the ✨ badge + give the user a "remove all AI tags" option.
+      var key = 'bm-photos-' + recordType + '-' + recordId;
+      var stored = JSON.parse(localStorage.getItem(key)) || [];
+      if (!stored[photoIndex]) return;
+      stored[photoIndex].tags = merged;
+      stored[photoIndex].label = merged.join(', ');
+      stored[photoIndex].ai_tags = (stored[photoIndex].ai_tags || []).concat(addedTags);
+      localStorage.setItem(key, JSON.stringify(stored));
+
+      // Sync to cloud
+      if (stored[photoIndex].id && SupabaseDB && SupabaseDB.ready) {
+        SupabaseDB.client.from('photos').update({ tags: merged, label: merged.join(', ') }).eq('id', stored[photoIndex].id).then(function(res) {
+          if (res.error) console.warn('Photos AI tags sync failed:', res.error.message);
+        });
+      }
+      // Quiet toast — don't interrupt if Doug is mid-flow
+      try { UI.toast('✨ AI tagged: ' + addedTags.slice(0,3).join(', ')); } catch(e){}
+    } catch (e) {
+      console.warn('Photos.aiAutoTag exception:', e);
+    }
+  },
+
   viewFull: function(recordType, recordId, index) {
     var photos = Photos.getPhotos(recordType, recordId);
     if (!photos[index]) return;
@@ -612,14 +751,20 @@ var Photos = {
     caption.textContent = capParts.join('  ·  ');
     overlay.appendChild(caption);
 
-    // Tag chip picker
+    // Tag chip picker — standard tags + any AI-applied tags get rendered
     var tagWrap = document.createElement('div');
     tagWrap.style.cssText = 'margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:90vw;';
-    Photos.STANDARD_TAGS.forEach(function(t) {
+    var aiTags = Array.isArray(p.ai_tags) ? p.ai_tags : [];
+    // Union: standard + ai-applied + any custom tags already on the photo
+    var allChipTags = Photos.STANDARD_TAGS.slice();
+    tags.forEach(function(t) { if (allChipTags.indexOf(t) === -1) allChipTags.push(t); });
+    allChipTags.forEach(function(t) {
       var on = tags.indexOf(t) !== -1;
+      var fromAi = on && aiTags.indexOf(t) !== -1;
       var chip = document.createElement('button');
-      chip.textContent = t;
-      chip.style.cssText = 'background:' + (on ? '#2e7d32' : 'rgba(255,255,255,0.15)') + ';color:#fff;border:1px solid ' + (on ? '#2e7d32' : 'rgba(255,255,255,0.3)') + ';padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;';
+      chip.textContent = (fromAi ? Photos.AI_TAG_PREFIX + ' ' : '') + t;
+      chip.title = fromAi ? 'AI-suggested — tap to remove' : '';
+      chip.style.cssText = 'background:' + (on ? (fromAi ? '#7c3aed' : '#2e7d32') : 'rgba(255,255,255,0.15)') + ';color:#fff;border:1px solid ' + (on ? (fromAi ? '#7c3aed' : '#2e7d32') : 'rgba(255,255,255,0.3)') + ';padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;';
       chip.onclick = function() { Photos._toggleTag(recordType, recordId, index, t); };
       tagWrap.appendChild(chip);
     });
@@ -660,7 +805,15 @@ var Photos = {
     photos[index].label = tags.join(', '); // mirror for legacy compat
     localStorage.setItem(key, JSON.stringify(photos));
     if (photos[index].id && SupabaseDB && SupabaseDB.ready) {
-      SupabaseDB.client.from('photos').update({ tags: tags, label: tags.join(', ') }).eq('id', photos[index].id).then(function(res) {
+      var payload = { tags: tags, label: tags.join(', ') };
+      // v874: also sync ai_tags if present (filter out any user-removed AI tags
+      // so the ✨ badge stays accurate after toggling).
+      if (Array.isArray(photos[index].ai_tags)) {
+        payload.ai_tags = photos[index].ai_tags.filter(function(t) { return tags.indexOf(t) !== -1; });
+        photos[index].ai_tags = payload.ai_tags;
+        localStorage.setItem(key, JSON.stringify(photos));
+      }
+      SupabaseDB.client.from('photos').update(payload).eq('id', photos[index].id).then(function(res) {
         if (res.error) console.warn('Photos tags sync failed:', res.error.message);
       });
     }
