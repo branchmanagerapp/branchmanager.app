@@ -788,6 +788,10 @@ var Photos = {
     overlay.appendChild(btnRow);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
+
+    // v875: render comments thread if photo has a cloud id (comments are
+    // cloud-only — no point in local-only threading)
+    if (p && p.id) Photos._renderCommentThread(overlay, p.id);
   },
 
   _getTags: function(p) {
@@ -861,6 +865,125 @@ var Photos = {
       if (btn) btn.onclick = save;
       if (input) input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); save(); } });
     }, 50);
+  },
+
+  // ============ PHOTO COMMENTS (v875) ============
+  // CompanyCam parity Phase 1.2. Each photo can host a threaded conversation —
+  // crew comments on what they're doing, owner reviews + leaves directions,
+  // customer sees the dialog on shared galleries. Stored in photo_comments
+  // table with RLS-locked tenant scoping. Comments cache locally per-photo
+  // so the viewer doesn't refetch every open. Author name comes from the
+  // current operator (BM_CONFIG.operatorName) or "Crew" fallback.
+  _commentCache: {},
+
+  _authorName: function() {
+    try {
+      if (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.operatorName) return BM_CONFIG.operatorName;
+      var s = localStorage.getItem('bm-operator-name');
+      if (s) return s;
+    } catch(e){}
+    return 'Crew';
+  },
+
+  loadComments: async function(photoId) {
+    if (!photoId) return [];
+    if (Photos._commentCache[photoId]) return Photos._commentCache[photoId];
+    if (!SupabaseDB || !SupabaseDB.ready) return [];
+    try {
+      var res = await SupabaseDB.client.from('photo_comments').select('*').eq('photo_id', photoId).order('created_at');
+      if (res.error) { console.warn('Photos.loadComments:', res.error.message); return []; }
+      Photos._commentCache[photoId] = res.data || [];
+      return Photos._commentCache[photoId];
+    } catch (e) { console.warn('Photos.loadComments exc:', e); return []; }
+  },
+
+  addComment: async function(photoId, body, parentId) {
+    if (!photoId || !body || !body.trim()) return;
+    if (!SupabaseDB || !SupabaseDB.ready) { UI.toast('Comments need cloud connection', 'error'); return; }
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!tid) { UI.toast('No tenant context', 'error'); return; }
+    try {
+      var row = {
+        tenant_id: tid,
+        photo_id: photoId,
+        author_name: Photos._authorName(),
+        body: body.trim(),
+        parent_id: parentId || null
+      };
+      var ins = await SupabaseDB.client.from('photo_comments').insert(row).select().single();
+      if (ins.error) { UI.toast('Comment failed: ' + ins.error.message, 'error'); return; }
+      Photos._commentCache[photoId] = (Photos._commentCache[photoId] || []).concat([ins.data]);
+      return ins.data;
+    } catch (e) { UI.toast('Comment failed: ' + e.message, 'error'); console.warn(e); }
+  },
+
+  deleteComment: async function(commentId, photoId) {
+    if (!commentId || !SupabaseDB || !SupabaseDB.ready) return;
+    if (!confirm('Delete this comment?')) return;
+    try {
+      await SupabaseDB.client.from('photo_comments').delete().eq('id', commentId);
+      if (Photos._commentCache[photoId]) {
+        Photos._commentCache[photoId] = Photos._commentCache[photoId].filter(function(c) { return c.id !== commentId; });
+      }
+    } catch(e){}
+  },
+
+  // Render the comments thread inside the photo viewer overlay
+  _renderCommentThread: async function(overlay, photoId) {
+    if (!photoId) return;
+    var section = document.createElement('div');
+    section.id = 'bm-photo-comments-' + photoId;
+    section.style.cssText = 'margin:18px auto 0;max-width:520px;width:100%;color:#fff;text-align:left;background:rgba(255,255,255,0.06);border-radius:12px;padding:14px 16px;';
+    section.innerHTML = '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">💬 Comments</div>'
+      + '<div id="bm-comments-list-' + photoId + '" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;font-size:13px;">Loading…</div>'
+      + '<div style="display:flex;gap:6px;">'
+      +   '<input id="bm-comment-input-' + photoId + '" type="text" placeholder="Add a comment…" autocomplete="off" '
+      +     'style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:8px 10px;font-size:13px;">'
+      +   '<button id="bm-comment-send-' + photoId + '" style="background:#2e7d32;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;">Send</button>'
+      + '</div>';
+    overlay.appendChild(section);
+
+    var list = section.querySelector('#bm-comments-list-' + photoId);
+    var input = section.querySelector('#bm-comment-input-' + photoId);
+    var send = section.querySelector('#bm-comment-send-' + photoId);
+
+    function paint(comments) {
+      if (!comments || !comments.length) {
+        list.innerHTML = '<div style="color:rgba(255,255,255,0.5);font-style:italic;text-align:center;padding:8px 0;">No comments yet — start the thread.</div>';
+        return;
+      }
+      list.innerHTML = comments.map(function(c) {
+        var when = c.created_at ? new Date(c.created_at).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        return '<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-left:2px solid #2e7d32;border-radius:6px;">'
+          + '<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:3px;display:flex;justify-content:space-between;gap:8px;">'
+          +   '<span><b style="color:#fff;">' + (c.author_name || 'Crew').replace(/[<>&]/g, '') + '</b> · ' + when + '</span>'
+          +   '<button data-del-comment="' + c.id + '" style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:11px;padding:0;">delete</button>'
+          + '</div>'
+          + '<div style="color:#fff;white-space:pre-wrap;word-break:break-word;">' + (c.body || '').replace(/[<>&]/g, function(ch){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[ch];}) + '</div>'
+          + '</div>';
+      }).join('');
+      list.querySelectorAll('[data-del-comment]').forEach(function(btn) {
+        btn.onclick = async function() {
+          await Photos.deleteComment(btn.getAttribute('data-del-comment'), photoId);
+          paint(Photos._commentCache[photoId] || []);
+        };
+      });
+    }
+
+    var comments = await Photos.loadComments(photoId);
+    paint(comments);
+
+    async function doSend() {
+      var v = (input.value || '').trim();
+      if (!v) return;
+      input.value = '';
+      send.disabled = true;
+      var added = await Photos.addComment(photoId, v);
+      send.disabled = false;
+      if (added) paint(Photos._commentCache[photoId] || []);
+    }
+    send.onclick = doSend;
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
   },
 
   // ============ BRANCH CAM LIBRARY ============
