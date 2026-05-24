@@ -17,10 +17,24 @@ var VideoQuote = {
   render: function() {
     var html = '<div style="max-width:700px;margin:0 auto;">';
 
+    // v878: "Appending to quote #X" banner when launched via QuotesPage.addWalkthroughTo
+    var targetId = VideoQuote.getTarget && VideoQuote.getTarget();
+    if (targetId && typeof DB !== 'undefined' && DB.quotes) {
+      var tq = DB.quotes.getById(targetId);
+      if (tq) {
+        html += '<div style="background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+          + '<div style="font-size:13px;"><b>📎 Appending to ' + QuotesPage._term(true) + ' #' + (tq.quoteNumber || tq.id) + '</b> · ' + UI.esc(tq.clientName || 'Client') + ' · existing total ' + UI.money(tq.total || 0) + '</div>'
+          + '<button onclick="VideoQuote.setTarget(null); loadPage(\'videoquote\');" style="background:transparent;border:1px solid #065f46;color:#065f46;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">Cancel append</button>'
+          + '</div>';
+      } else {
+        VideoQuote.setTarget(null); // stale target — clear it
+      }
+    }
+
     // Header
     html += '<div style="text-align:center;padding:20px 0;">'
       + '<div style="font-size:48px;margin-bottom:8px;">🎬</div>'
-      + '<h2 style="font-size:22px;margin-bottom:4px;">Video Walkthrough Quote</h2>'
+      + '<h2 style="font-size:22px;margin-bottom:4px;">' + (targetId ? 'Add Walkthrough to Quote' : 'Video Walkthrough Quote') + '</h2>'
       + '<p style="color:var(--text-light);font-size:14px;margin-bottom:4px;">Record a walkthrough of the property — AI identifies every tree and builds your quote</p>'
       + '<span style="background:var(--accent);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;">BETA</span>'
       + '</div>';
@@ -680,6 +694,21 @@ var VideoQuote = {
   },
 
   // ── Create quote from results ──
+  // v878: set a target quote so _createQuote appends to an existing quote
+  // rather than starting a fresh one. Called by QuotesPage.addWalkthroughTo()
+  // before navigating to this page.
+  setTarget: function(quoteId) {
+    VideoQuote._targetQuoteId = quoteId || null;
+    try {
+      if (quoteId) localStorage.setItem('bm-vq-target-quote', quoteId);
+      else localStorage.removeItem('bm-vq-target-quote');
+    } catch(e){}
+  },
+  getTarget: function() {
+    if (VideoQuote._targetQuoteId) return VideoQuote._targetQuoteId;
+    try { return localStorage.getItem('bm-vq-target-quote') || null; } catch(e) { return null; }
+  },
+
   _createQuote: function() {
     var items = [];
     for (var i = 0; i < VideoQuote._deduped.length; i++) {
@@ -692,14 +721,37 @@ var VideoQuote = {
       });
     }
 
-    // Store items for the quote form to pick up. Both videoquote and aitreeid
-    // write here; QuotesPage.showForm reads + clears it (added v547).
+    // v878: if we have a target quote, append the items directly to it
+    // and open that quote's edit form. Otherwise (default) fall through to
+    // the pending-items shim that creates a new quote.
+    var targetId = VideoQuote.getTarget();
+    if (targetId && typeof DB !== 'undefined' && DB.quotes) {
+      var existing = DB.quotes.getById(targetId);
+      if (existing) {
+        var merged = (existing.lineItems || []).filter(function(it) {
+          return it && (it.service || it.description || it.rate);
+        }).concat(items);
+        var subtotal = merged.reduce(function(s, it) { return s + ((Number(it.qty)||1) * (Number(it.rate)||0)); }, 0);
+        var taxRate = Number(existing.taxRate) || 0;
+        existing.lineItems = merged;
+        existing.subtotal = subtotal;
+        existing.taxAmount = subtotal * (taxRate / 100);
+        existing.total = subtotal + existing.taxAmount;
+        existing.updatedAt = new Date().toISOString();
+        DB.quotes.update(existing);
+        VideoQuote.setTarget(null); // clear target so the next walkthrough doesn't append again
+        UI.toast('✓ Added ' + items.length + ' line item' + (items.length === 1 ? '' : 's') + ' to quote #' + (existing.quoteNumber || existing.id));
+        setTimeout(function() {
+          if (typeof QuotesPage !== 'undefined' && QuotesPage.showForm) QuotesPage.showForm(existing.id);
+          else loadPage('quotes');
+        }, 600);
+        return;
+      }
+    }
+
+    // Default: stash for a NEW quote
     localStorage.setItem('bm-ai-pending-items', JSON.stringify(items));
     UI.toast(items.length + ' tree' + (items.length === 1 ? '' : 's') + ' detected — opening quote', 'success');
-
-    // Open the new-quote form directly so the shim consumes the items.
-    // Old behavior loaded the quotes LIST, leaving the items orphaned in
-    // localStorage and forcing the user to manually click "+ New Quote".
     setTimeout(function() {
       if (typeof QuotesPage !== 'undefined' && QuotesPage.showForm) {
         QuotesPage.showForm(null, null);

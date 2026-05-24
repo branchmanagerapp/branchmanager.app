@@ -162,7 +162,7 @@ var QuotesPage = {
           + '</div>';
       } else {
         html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;">'
-          + UI.emptyState('📋', 'No quotes yet', 'Create your first quote.', '+ New Quote', 'QuotesPage.showForm()')
+          + UI.emptyState('📋', 'No quotes yet', 'Create your first quote.', '+ New Quote', 'QuotesPage.showNewQuotePicker()')
           + '</div>';
       }
     } else {
@@ -383,6 +383,40 @@ var QuotesPage = {
     loadPage('quotes');
   },
 
+  // v878: picker modal for "+ New Quote" — Manual vs AI Walkthrough.
+  // Called from the page-registry action and from the Quotes header button.
+  // Tapping "AI Walkthrough" hands off to VideoQuote; "Manual" goes straight
+  // to showForm() as before.
+  showNewQuotePicker: function(clientId, requestId) {
+    var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:8px 0;">'
+      + '<button onclick="UI.closeModal();QuotesPage.showForm(null,' + JSON.stringify(clientId || null) + ',' + JSON.stringify(requestId || null) + ');" style="background:var(--white);border:2px solid var(--border);border-radius:12px;padding:22px 18px;text-align:left;cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'#2e7d32\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+      +   '<div style="font-size:32px;margin-bottom:8px;">📝</div>'
+      +   '<div style="font-size:15px;font-weight:800;color:var(--text);">Build manually</div>'
+      +   '<div style="font-size:12px;color:var(--text-light);margin-top:4px;line-height:1.4;">Type line items, prices, and the work scope. Best when you already know what you\'re quoting.</div>'
+      + '</button>'
+      + '<button onclick="UI.closeModal();loadPage(\'videoquote\');" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:2px solid #2e7d32;border-radius:12px;padding:22px 18px;text-align:left;cursor:pointer;position:relative;">'
+      +   '<div style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.05em;">AI</div>'
+      +   '<div style="font-size:32px;margin-bottom:8px;">🎙️</div>'
+      +   '<div style="font-size:15px;font-weight:800;">From walkthrough</div>'
+      +   '<div style="font-size:12px;opacity:0.85;margin-top:4px;line-height:1.4;">Record/upload a property video. AI extracts every tree, hazard, and urgency — drafts line items for you to review.</div>'
+      + '</button>'
+      + '</div>';
+    UI.showModal('New ' + QuotesPage._term(false).toLowerCase(), html, { keepModal: false });
+  },
+
+  // v878: upload a walkthrough video into an EXISTING quote (appends line
+  // items rather than starting a fresh quote). Sets VideoQuote target state
+  // then navigates to the walkthrough page.
+  addWalkthroughTo: function(quoteId) {
+    if (!quoteId) { UI.toast('Save the quote first', 'error'); return; }
+    if (typeof VideoQuote !== 'undefined' && VideoQuote.setTarget) {
+      VideoQuote.setTarget(quoteId);
+    } else {
+      try { localStorage.setItem('bm-vq-target-quote', quoteId); } catch(e){}
+    }
+    loadPage('videoquote');
+  },
+
   showForm: function(quoteId, clientId, requestId) {
     var q = quoteId ? DB.quotes.getById(quoteId) : {};
     var client = clientId ? DB.clients.getById(clientId) : (q.clientId ? DB.clients.getById(q.clientId) : null);
@@ -549,7 +583,12 @@ var QuotesPage = {
       + '<option value="__custom__">… or custom (manual entry)</option>';
 
     html += '<div id="q-items-section" style="margin:24px 0;display:' + gateDisplay + ';">'
-      + '<div style="font-size:17px;font-weight:700;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px;">Line items</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
+      +   '<div style="font-size:17px;font-weight:700;">Line items</div>'
+      // v878: walkthrough-upload button on existing quotes — appends AI-extracted
+      // line items rather than creating a new quote.
+      +   (q && q.id ? '<button type="button" onclick="QuotesPage.addWalkthroughTo(\'' + q.id + '\')" title="Record/upload a property video — AI extracts trees + adds line items to this quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><span>🎙️</span> Add walkthrough <span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:999px;font-size:9px;letter-spacing:.05em;">AI</span></button>' : '')
+      + '</div>'
       + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;">'
       +   '<select id="q-service-picker" onchange="QuotesPage._addItemFromPicker(this)" style="flex:1;padding:14px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--white);">'
       +     svcOptionsHtml
