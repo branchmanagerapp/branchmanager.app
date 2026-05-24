@@ -211,60 +211,104 @@ var BooksPage = (function() {
     }
 
     // ──────────────────────────────────────────────────────────────────
-    // Cash-flow chart (v860) — last 6 months, inflow vs outflow bars side-
-    // by-side per month. Lets Doug spot lean seasons (tree-service winter
-    // dip Jan-Feb) + visualize Stripe payout consistency. Excludes 7xxx
-    // transfers to keep the chart honest.
+    // Cash-flow chart (v860, extended v873) — last 6/12/24 months OR
+    // all-years annual view, inflow vs outflow bars per period. Lets
+    // Doug spot lean seasons (winter dip Jan-Feb) + visualize Stripe
+    // payout consistency. Excludes 7xxx transfers.
+    // v873: toggle between Months and Years. Years view uses _allTxns
+    // (lean projection of all-time PDF history).
     // ──────────────────────────────────────────────────────────────────
+    var cfMode = _filter.cashflow || '6m'; // 6m / 12m / 24m / years
     var nowD = new Date();
-    var months = [];
-    for (var mi = 5; mi >= 0; mi--) {
-      var d = new Date(nowD.getFullYear(), nowD.getMonth() - mi, 1);
-      months.push({
-        key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
-        label: d.toLocaleDateString('en-US', { month: 'short' }) + (mi === 0 || d.getMonth() === 0 ? ' ' + String(d.getFullYear()).slice(2) : ''),
-        inflow: 0,
-        outflow: 0
+    var periods = []; // {key, label, inflow, outflow}
+    var periodIdx = {};
+    var sourceTxns;
+
+    if (cfMode === 'years') {
+      // All-time year view, sourced from _allTxns (PDF history, all-time)
+      sourceTxns = _allTxns || [];
+      var years = {};
+      sourceTxns.forEach(function(t) {
+        var y = (t.posted_date || '').slice(0, 4);
+        if (!y) return;
+        years[y] = true;
+      });
+      Object.keys(years).sort().forEach(function(y) {
+        periods.push({ key: y, label: y, inflow: 0, outflow: 0 });
+      });
+      periods.forEach(function(p, i) { periodIdx[p.key] = i; });
+      sourceTxns.forEach(function(t) {
+        var code = (t.category || '').toString();
+        if (code.charAt(0) === '7') return;
+        var y = (t.posted_date || '').slice(0, 4);
+        var idx = periodIdx[y];
+        if (idx == null) return;
+        var amt = Number(t.amount) || 0;
+        if (amt > 0) periods[idx].inflow += amt;
+        else periods[idx].outflow += Math.abs(amt);
+      });
+    } else {
+      // N-month view, sourced from txns (range-filtered) for ≤6 months,
+      // else from _allTxns for 12/24 months (range filter caps at 6 mo).
+      var nMonths = cfMode === '24m' ? 24 : (cfMode === '12m' ? 12 : 6);
+      sourceTxns = nMonths > 6 ? (_allTxns || []) : txns;
+      for (var mi = nMonths - 1; mi >= 0; mi--) {
+        var d = new Date(nowD.getFullYear(), nowD.getMonth() - mi, 1);
+        periods.push({
+          key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+          label: d.toLocaleDateString('en-US', { month: 'short' }) + (mi === 0 || d.getMonth() === 0 ? ' ' + String(d.getFullYear()).slice(2) : ''),
+          inflow: 0,
+          outflow: 0
+        });
+      }
+      periods.forEach(function(p, i) { periodIdx[p.key] = i; });
+      sourceTxns.forEach(function(t) {
+        var code = (t.category || '').toString();
+        if (code.charAt(0) === '7') return;
+        var dt = (t.posted_date || '').slice(0, 7); // YYYY-MM
+        var idx = periodIdx[dt];
+        if (idx == null) return;
+        var amt = Number(t.amount) || 0;
+        if (amt > 0) periods[idx].inflow += amt;
+        else periods[idx].outflow += Math.abs(amt);
       });
     }
-    var monthIdx = {};
-    months.forEach(function(m, i) { monthIdx[m.key] = i; });
-    txns.forEach(function(t) {
-      var code = (t.category || '').toString();
-      if (code.charAt(0) === '7') return; // skip transfers
-      var dt = (t.posted_date || '').slice(0, 7); // YYYY-MM
-      var idx = monthIdx[dt];
-      if (idx == null) return;
-      var amt = Number(t.amount) || 0;
-      if (amt > 0) months[idx].inflow += amt;
-      else months[idx].outflow += Math.abs(amt);
-    });
-    var maxFlow = Math.max.apply(null, months.flatMap(function(m){return [m.inflow, m.outflow];})) || 1;
 
-    var anyFlow = months.some(function(m){return m.inflow > 0 || m.outflow > 0;});
+    var maxFlow = Math.max.apply(null, periods.flatMap(function(p){return [p.inflow, p.outflow];})) || 1;
+    var anyFlow = periods.some(function(p){return p.inflow > 0 || p.outflow > 0;});
     if (anyFlow) {
+      var title = cfMode === 'years' ? 'Cash flow · all years' : ('Cash flow · last ' + (cfMode === '24m' ? '24 months' : cfMode === '12m' ? '12 months' : '6 months'));
+      var tabBtn = function(val, label) {
+        var active = cfMode === val;
+        return '<button onclick="BooksPage.setCashflow(\'' + val + '\')" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:' + (active ? 'var(--text)' : 'var(--white)') + ';color:' + (active ? 'var(--white)' : 'var(--text)') + ';cursor:pointer;font-weight:' + (active ? '700' : '500') + ';">' + label + '</button>';
+      };
+      var nCols = periods.length;
+      var colWidth = nCols > 12 ? 1 : (nCols > 6 ? 2 : 4);
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
-        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">'
-        +   '<div style="font-size:13px;font-weight:700;">Cash flow · last 6 months</div>'
-        +   '<div style="font-size:11px;color:var(--text-light);"><span style="display:inline-block;width:8px;height:8px;background:var(--green-dark);border-radius:2px;margin-right:4px;"></span>Inflow &nbsp; <span style="display:inline-block;width:8px;height:8px;background:#b45309;border-radius:2px;margin-right:4px;margin-left:8px;"></span>Outflow</div>'
+        + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
+        +   '<div style="font-size:13px;font-weight:700;">' + _esc(title) + '</div>'
+        +   '<div style="display:flex;gap:4px;align-items:center;">'
+        +     tabBtn('6m', '6 mo') + tabBtn('12m', '12 mo') + tabBtn('24m', '24 mo') + tabBtn('years', 'All yrs')
+        +   '</div>'
         + '</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;align-items:end;height:120px;padding-bottom:4px;border-bottom:1px solid var(--border);">';
-      months.forEach(function(m) {
-        var inH = Math.round(m.inflow / maxFlow * 100);
-        var outH = Math.round(m.outflow / maxFlow * 100);
+        + '<div style="font-size:11px;color:var(--text-light);margin-bottom:8px;text-align:right;"><span style="display:inline-block;width:8px;height:8px;background:var(--green-dark);border-radius:2px;margin-right:4px;"></span>Inflow &nbsp; <span style="display:inline-block;width:8px;height:8px;background:#b45309;border-radius:2px;margin-right:4px;margin-left:8px;"></span>Outflow</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(' + nCols + ',1fr);gap:' + (nCols > 12 ? 4 : 8) + 'px;align-items:end;height:120px;padding-bottom:4px;border-bottom:1px solid var(--border);">';
+      periods.forEach(function(p) {
+        var inH = Math.round(p.inflow / maxFlow * 100);
+        var outH = Math.round(p.outflow / maxFlow * 100);
         html += '<div style="display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;">'
-          + '<div style="display:flex;gap:3px;align-items:flex-end;height:100%;width:100%;justify-content:center;">'
-          +   '<div title="In: $' + Math.round(m.inflow).toLocaleString() + '" style="width:14px;height:' + inH + '%;background:var(--green-dark);border-radius:2px 2px 0 0;min-height:1px;"></div>'
-          +   '<div title="Out: $' + Math.round(m.outflow).toLocaleString() + '" style="width:14px;height:' + outH + '%;background:#b45309;border-radius:2px 2px 0 0;min-height:1px;"></div>'
+          + '<div style="display:flex;gap:2px;align-items:flex-end;height:100%;width:100%;justify-content:center;">'
+          +   '<div title="In: $' + Math.round(p.inflow).toLocaleString() + '" style="width:' + (colWidth * 3) + 'px;height:' + inH + '%;background:var(--green-dark);border-radius:2px 2px 0 0;min-height:1px;"></div>'
+          +   '<div title="Out: $' + Math.round(p.outflow).toLocaleString() + '" style="width:' + (colWidth * 3) + 'px;height:' + outH + '%;background:#b45309;border-radius:2px 2px 0 0;min-height:1px;"></div>'
           + '</div></div>';
       });
       html += '</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:6px;">';
-      months.forEach(function(m) {
-        var net = m.inflow - m.outflow;
+        + '<div style="display:grid;grid-template-columns:repeat(' + nCols + ',1fr);gap:' + (nCols > 12 ? 4 : 8) + 'px;margin-top:6px;">';
+      periods.forEach(function(p) {
+        var net = p.inflow - p.outflow;
         html += '<div style="text-align:center;">'
-          + '<div style="font-size:11px;font-weight:700;color:var(--text-light);">' + _esc(m.label) + '</div>'
-          + '<div style="font-size:11px;color:' + (net >= 0 ? 'var(--green-dark)' : '#b91c1c') + ';font-weight:600;">' + (net >= 0 ? '+' : '') + _moneyInt(net) + '</div>'
+          + '<div style="font-size:' + (nCols > 18 ? 9 : nCols > 10 ? 10 : 11) + 'px;font-weight:700;color:var(--text-light);">' + _esc(p.label) + '</div>'
+          + (nCols <= 18 ? '<div style="font-size:' + (nCols > 12 ? 9 : 10) + 'px;color:' + (net >= 0 ? 'var(--green-dark)' : '#b91c1c') + ';font-weight:600;">' + (net >= 0 ? '+' : '') + _moneyInt(net) + '</div>' : '')
           + '</div>';
       });
       html += '</div></div>';
@@ -1521,12 +1565,18 @@ var BooksPage = (function() {
     _fetchAll().then(function() { loadPage('reports'); });
   }
 
+  function setCashflow(mode) {
+    _filter.cashflow = mode;
+    if (window._currentPage === 'reports') loadPage('reports');
+  }
+
   return {
     render: render,
     connectBank: connectBank,
     syncNow: syncNow,
     openCsvImport: openCsvImport,
     reconcileAll: reconcileAll,
+    setCashflow: setCashflow,
     _setRange: _setRange,
     _setAccount: _setAccount,
     _setSearch: _setSearch,
