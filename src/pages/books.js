@@ -533,43 +533,52 @@ var BooksPage = (function() {
 
   // Keyword → COA code rules. Order matters — first match wins. Keywords
   // are case-insensitive substring matches against description+merchant.
+  // v863: tightened with word boundaries (\b) to prevent false positives.
+  // Bugs that cost a manual SQL re-categorization on May 23 2026:
+  //  - `mobil` matched inside "MOBILE DEPOSIT" → 6200 Fuel (wrong; was Revenue)
+  //  - `nsf` matched inside "TRANSFER" (the "NSF" substring) → 6900 Bank Fees
+  //    on every Jobber/Stripe payout (wrong; was Revenue)
+  // Lesson: ALL keywords ≤ 5 chars that could appear inside English words
+  // need \b. Be explicit. New keywords added to the rules should always
+  // include \b unless they're 6+ chars and rare-in-English.
   var CATEGORY_RULES = [
-    // Revenue (positive amounts that look like deposits)
-    [/stripe.*payout|stripe.*transfer/i,          '4000'],  // Service Revenue (Stripe payout)
-    [/zelle|venmo|cashapp|deposit|ach credit|incoming/i, '4000'],
+    // Revenue (positive amounts that look like deposits) — must run FIRST
+    // so e.g. "stripe transfer" doesn't fall to a 7xxx transfer rule.
+    [/stripe.*payout|stripe.*transfer|stripe.*payment/i, '4000'],
+    [/\bzelle\b|\bvenmo\b|\bcashapp\b|mobile deposit|deposit from|cash deposit|ach credit|incoming wire|jobber.*transfer/i, '4000'],
     // Materials
     [/home depot|lowes|lowe'?s|harbor freight|tractor supply|northern tool|arborwell|treestuff|sherrill/i, '5200'],
-    // Fuel
-    [/shell|exxon|mobil|sunoco|gulf|chevron|bp\s|citgo|valero|speedway|wawa|7-?eleven|costco gas|fuel/i, '6200'],
+    // Fuel — \bmobil\b prevents "MOBILE DEPOSIT" collision; \bgulf\b prevents "engulf"; \bbp\b for BP gas
+    [/\bshell\b|\bexxon\b|\bmobil\b|\bsunoco\b|\bgulf\b|\bchevron\b|\bbp\b|\bcitgo\b|\bvaleros?\b|\bspeedway\b|\bwawa\b|7-?eleven|costco gas|\bfuel\b|cumberland farms/i, '6200'],
     // Equipment Rental / Repair / Purchases
-    [/stihl|husqvarna|equipment|saw|chainsaw|chipper|grinder/i, '6400'],
+    [/\bstihl\b|husqvarna|chainsaw|chipper|grinder/i, '6400'],
     // Vehicle
-    [/auto.*part|napa|advance auto|autozone|pep boys|jiffy lube|midas|firestone|goodyear|mavis tire/i, '6220'],
+    [/auto.*part|\bnapa\b|advance auto|autozone|pep boys|jiffy lube|\bmidas\b|firestone|goodyear|mavis tire/i, '6220'],
     [/progressive.*auto|geico.*auto|state farm|allstate.*auto|nyaip|commercial auto/i, '6210'],
     // Insurance
-    [/nysif|workers.?comp|state insurance fund/i, '6310'],
-    [/general liability|umbrella|hartford|liberty mutual|nationwide/i, '6300'],
-    // Dump / debris
-    [/anthon|transfer station|landfill|dump|recycl|debris/i, '5400'],
+    [/\bnysif\b|workers.?comp|state insurance fund/i, '6310'],
+    [/general liability|\bumbrella\b|hartford|liberty mutual|nationwide/i, '6300'],
+    // Dump / debris — \banthon\b for Anthony's Transfer Station
+    [/\banthon|transfer station|landfill|\bdump\b|recycl|debris/i, '5400'],
     // Subcontractor
-    [/subcontractor|1099|labor.*contract/i, '5100'],
+    [/subcontractor|\b1099\b|labor.*contract/i, '5100'],
     // Payroll
-    [/gusto|adp|paychex|quickbooks payroll/i, '6100'],
-    // Phone / Internet
-    [/at&t|verizon|t-?mobile|sprint|spectrum|optimum|comcast|cablevision|xfinity/i, '6510'],
+    [/\bgusto\b|\badp\b|paychex|quickbooks payroll|eib invoice/i, '6100'],
+    // Phone / Internet — t-mobile match BEFORE generic mobil
+    [/at&t|verizon|t-?mobile|\bsprint\b|spectrum|optimum|\bcomcast\b|cablevision|xfinity/i, '6510'],
     // Office / Software
-    [/dropbox|google|microsoft|github|notion|figma|adobe|zoom|slack|supabase|cloudflare|sentry|claude|anthropic/i, '6500'],
+    [/dropbox|google\s|microsoft|github|notion|figma|adobe|\bzoom\b|\bslack\b|supabase|cloudflare|sentry|claude|anthropic/i, '6500'],
     // Marketing
-    [/facebook|meta\s|google ads|yelp|nextdoor|mailchimp|constant contact/i, '6600'],
+    [/facebook|meta\s|google ads|\byelp\b|nextdoor|mailchimp|constant contact/i, '6600'],
     // Permits / Legal
-    [/permit|tcia|isa|arborist|department of state|secretary of state/i, '6700'],
-    [/attorney|legal|law office|cpa\s|tax preparer/i, '6710'],
-    // Travel / Meals
-    [/uber|lyft|airbnb|delta|jetblue|united.*air|american.*air|marriott|hilton|hyatt/i, '6800'],
-    [/restaurant|diner|pizza|cafe|coffee|starbucks|dunkin|chipotle/i, '6810'],
-    // Stripe fees + Bank fees
+    [/\bpermit\b|\btcia\b|\bisa\b|arborist|department of state|secretary of state/i, '6700'],
+    [/\battorney\b|\blegal\b|law office|\bcpa\b|tax preparer/i, '6710'],
+    // Travel / Meals — \buber\b prevents "uber" inside other strings
+    [/\buber\b|\blyft\b|\bairbnb\b|delta\s|jetblue|united.*air|american.*air|marriott|hilton|hyatt/i, '6800'],
+    [/restaurant|\bdiner\b|\bpizza\b|\bcafe\b|coffee|starbucks|dunkin|chipotle|\bdeli\b|jersey mike|calabria/i, '6810'],
+    // Stripe fees + Bank fees — \bnsf\b prevents matching "TRANSFER" (which contains NSF)
     [/stripe.*fee|stripe.*processing/i, '6910'],
-    [/overdraft|nsf|monthly fee|service charge|atm fee|wire fee|maintenance fee/i, '6900'],
+    [/overdraft|\bnsf\b|monthly fee|service charge|atm fee|wire fee|maintenance fee/i, '6900'],
     // Owner draw / transfers
     [/owner draw|distribution to|payment to doug|payment to brown/i, '7000'],
     [/transfer to|transfer from|online transfer|book transfer/i, '7100']
