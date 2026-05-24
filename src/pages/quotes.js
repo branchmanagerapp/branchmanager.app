@@ -116,15 +116,22 @@ var QuotesPage = {
     var page = self._showAll ? filtered : filtered.slice(self._page * self._perPage, (self._page + 1) * self._perPage);
 
     // ── Header: title + chip filters + search ──
+    // v877: "🎙️ From walkthrough" button — quotes can be built from a
+    // property-video AI walkthrough, not just the manual form. Same dest
+    // as Reports → Tools → Video Walkthrough but reachable from the Quotes
+    // surface where it logically belongs.
     var chipDefs = [['all','All'],['draft','Draft'],['awaiting','Awaiting'],['stale','Stale 7d+'],['changes_requested','Changes Req.'],['approved','Approved'],['converted','Converted']];
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
       + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
       +   '<h3 style="font-size:16px;font-weight:700;margin:0;">Quotes</h3>'
       +   '<span style="font-size:13px;color:var(--text-light);">(' + filtered.length + ')</span>'
       + '</div>'
-      + '<div class="search-box" style="min-width:200px;max-width:280px;">'
-      +   '<span style="color:var(--text-light);">🔍</span>'
-      +   '<input type="text" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="QuotesPage._search=this.value;QuotesPage._page=0;loadPage(\'quotes\')">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      +   '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:var(--white);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ From walkthrough</button>'
+      +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
+      +     '<span style="color:var(--text-light);">🔍</span>'
+      +     '<input type="text" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="QuotesPage._search=this.value;QuotesPage._page=0;loadPage(\'quotes\')">'
+      +   '</div>'
       + '</div></div>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
     for (var ci = 0; ci < chipDefs.length; ci++) {
