@@ -534,6 +534,127 @@ var ClientsPage = {
   },
 
   // Import contact from iPhone — pre-fills the New Client form
+  // v862: Upload a photo/scan of handwritten job-site notes → Claude Vision
+  // extracts client contact info + job description → pre-populates the new
+  // client form. Designed for Doug's actual workflow: jots a name/phone/
+  // address + tree count + price on paper after meeting a customer in the
+  // driveway, snaps a photo on his phone, drops in BM. Saves manual typing.
+  _extractFromNote: function(file) {
+    if (!file) return;
+    var label = document.getElementById('c-handwritten-label');
+    var setStatus = function(t, color) {
+      if (label) { label.textContent = t; label.style.color = color || 'var(--accent)'; }
+    };
+    if (!/^image\//.test(file.type) && !/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+      setStatus('⚠ Pick a photo or PDF', '#b91c1c'); return;
+    }
+    if (file.size > 15 * 1024 * 1024) { setStatus('⚠ File too large (max 15 MB)', '#b91c1c'); return; }
+    setStatus('📤 Reading note…', '#1e40af');
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var dataUrl = ev.target.result;
+      var m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!m) { setStatus('⚠ Could not read file', '#b91c1c'); return; }
+      var mediaType = m[1], b64 = m[2];
+      var isPdf = mediaType === 'application/pdf';
+      setStatus('🤖 Extracting (~15 sec)…', '#1e40af');
+
+      var prompt = 'This is a handwritten note from a tree-service job site (Second Nature Tree Service). Read every line — even messy / partial / abbreviated handwriting. Extract these fields when present:\n\n'
+        + '  - first_name, last_name (or just name if not separable)\n'
+        + '  - company (if mentioned, often "Inc"/"LLC"/"Corp" or business name)\n'
+        + '  - phone (US format; reformat to "(XXX) XXX-XXXX" if needed)\n'
+        + '  - email\n'
+        + '  - address (street + city if available)\n'
+        + '  - job_description (what tree work — "3 large oaks", "stump grind", "trim hedge", etc.)\n'
+        + '  - price_quoted (if a $ amount is visible; number only, no $)\n'
+        + '  - lead_source (how they found you — "neighbor", "Google", "drive-by", etc.)\n'
+        + '  - notes (anything else relevant — gate code, dog warning, schedule preference)\n\n'
+        + 'Omit any field not clearly present (don\'t guess). Return ONLY a single JSON object, no prose, no markdown fences.';
+
+      var sbUrl = (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_URL) ? SupabaseDB.DEFAULT_URL : 'https://ltpivkqahvplapyagljt.supabase.co';
+      var sbKey = (typeof SupabaseDB !== 'undefined' && SupabaseDB.DEFAULT_KEY) ? SupabaseDB.DEFAULT_KEY : '';
+      var content = [];
+      if (isPdf) {
+        content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } });
+      } else {
+        content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } });
+      }
+      content.push({ type: 'text', text: prompt });
+
+      fetch(sbUrl + '/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sbKey, 'apikey': sbKey },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1500,
+          system: 'You read handwritten job-site notes. Always return ONLY a single JSON object, never prose, never markdown code fences. If a field is unclear, OMIT it entirely (do not guess).',
+          messages: [{ role: 'user', content: content }]
+        })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(j) {
+          if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+          var text = (j.content && j.content[0] && j.content[0].text) || '';
+          text = text.replace(/^\s*```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+          var data; try { data = JSON.parse(text); } catch(e) { throw new Error('AI returned non-JSON: ' + text.slice(0, 160)); }
+
+          var fillIfEmpty = function(id, val) {
+            var el = document.getElementById(id); if (!el || val == null || val === '') return false;
+            if (el.value && el.value.trim() !== '') return false;
+            el.value = String(val); return true;
+          };
+          var filled = 0;
+          // Name handling — supports either first/last split or single "name"
+          if (data.first_name) filled += fillIfEmpty('c-first', data.first_name);
+          if (data.last_name) filled += fillIfEmpty('c-last', data.last_name);
+          if (!data.first_name && !data.last_name && data.name) {
+            var parts = String(data.name).trim().split(/\s+/);
+            filled += fillIfEmpty('c-first', parts[0]);
+            if (parts.length > 1) filled += fillIfEmpty('c-last', parts.slice(1).join(' '));
+          }
+          if (data.company) filled += fillIfEmpty('c-company', data.company);
+          if (data.phone) filled += fillIfEmpty('c-phone', data.phone);
+          if (data.email) filled += fillIfEmpty('c-email', data.email);
+          if (data.address) filled += fillIfEmpty('c-address', data.address);
+          if (data.lead_source) {
+            // Map common phrases to dropdown values
+            var src = String(data.lead_source).toLowerCase();
+            var srcMap = [
+              ['google', 'Google'], ['referr', 'Referral'], ['neighbor', 'Referral'], ['word of mouth', 'Referral'],
+              ['repeat', 'Repeat'], ['yard sign', 'Yard sign'], ['truck', 'Yard sign'],
+              ['drive', 'Drive-by'], ['saw us', 'Drive-by'],
+              ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['nextdoor', 'NextDoor'], ['yelp', 'Yelp'],
+              ['angi', 'Angie'], ['thumbtack', 'Thumbtack'], ['phone', 'Phone'], ['call', 'Phone']
+            ];
+            for (var i = 0; i < srcMap.length; i++) {
+              if (src.indexOf(srcMap[i][0]) >= 0) { filled += fillIfEmpty('c-source', srcMap[i][1]); break; }
+            }
+          }
+          // Combine job_description + price + notes into the Internal notes field
+          var notesBits = [];
+          if (data.job_description) notesBits.push('Job: ' + data.job_description);
+          if (data.price_quoted) notesBits.push('Quoted: $' + data.price_quoted);
+          if (data.notes) notesBits.push(data.notes);
+          if (notesBits.length) {
+            var notesEl = document.getElementById('c-notes');
+            if (notesEl) {
+              var existing = notesEl.value || '';
+              notesEl.value = (existing ? existing + '\n\n' : '') + notesBits.join('\n');
+              filled++;
+            }
+          }
+          setStatus('✅ Filled ' + filled + ' field' + (filled === 1 ? '' : 's') + ' — review + save', 'var(--green-dark)');
+          if (typeof UI !== 'undefined' && UI.toast) UI.toast(filled + ' field' + (filled === 1 ? '' : 's') + ' filled from note');
+        })
+        .catch(function(e) {
+          console.error('handwritten note extract failed:', e);
+          setStatus('⚠ ' + (e.message || 'extract failed'), '#b91c1c');
+        });
+    };
+    reader.readAsDataURL(file);
+  },
+
   _importVCard: function() {
     var input = document.createElement('input');
     input.type = 'file';
@@ -686,8 +807,10 @@ var ClientsPage = {
     }
 
     var html = '<form id="client-form" onsubmit="ClientsPage.save(event, \'' + (id || '') + '\')">'
-      // Light-touch vCard import (only on new clients, no longer a heavy box)
-      + (id ? '' : '<div style="margin-bottom:6px;display:flex;align-items:center;justify-content:flex-end;">'
+      // Light-touch vCard import + handwritten-note OCR (new clients only)
+      + (id ? '' : '<div style="margin-bottom:6px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">'
+        + '<label for="c-handwritten-file" id="c-handwritten-label" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;">📝 Upload handwritten note</label>'
+        + '<input id="c-handwritten-file" type="file" accept="image/*,.pdf,application/pdf" style="display:none;" onchange="ClientsPage._extractFromNote(this.files && this.files[0])">'
         + '<button type="button" onclick="ClientsPage._importVCard()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;">📇 Import from iPhone Contacts</button>'
         + '</div>')
 
