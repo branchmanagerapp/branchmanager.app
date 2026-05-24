@@ -257,6 +257,47 @@ var BooksPage = (function() {
       html += '</div></div>';
     }
 
+    // v865: Uncategorized review — groups 6999 rows by merchant prefix,
+    // lets the operator bulk-recategorize one merchant at a time with a
+    // single click. Saves slogging through 388 individual dropdowns.
+    var uncatTxns = txns.filter(function(t) { return (t.category || '6999') === '6999'; });
+    if (uncatTxns.length >= 5) {
+      var groups = {};
+      uncatTxns.forEach(function(t) {
+        // Group by first 30 chars of description, stripped of trailing transaction-id-like numbers
+        var key = (t.description || '').slice(0, 30).replace(/\s+\d{8,}.*$/, '').trim().toUpperCase();
+        if (!key) key = '(no description)';
+        if (!groups[key]) groups[key] = { txns: [], total_abs: 0, total_signed: 0 };
+        groups[key].txns.push(t);
+        groups[key].total_abs += Math.abs(Number(t.amount) || 0);
+        groups[key].total_signed += Number(t.amount) || 0;
+      });
+      var sortedGroups = Object.keys(groups)
+        .map(function(k) { return { key: k, txns: groups[k].txns, total_abs: groups[k].total_abs, total_signed: groups[k].total_signed }; })
+        .sort(function(a, b) { return b.total_abs - a.total_abs; })
+        .slice(0, 15);
+
+      html += '<details style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+        + '<summary style="cursor:pointer;font-weight:700;font-size:14px;color:#92400e;">🔍 Uncategorized review — ' + uncatTxns.length + ' rows · top 15 merchants by spend</summary>'
+        + '<div style="margin-top:12px;font-size:11px;color:var(--text-light);margin-bottom:8px;">Pick a category for the whole merchant group → click Apply. Each row can still be retagged individually below.</div>';
+      sortedGroups.forEach(function(g, idx) {
+        var avgPerTxn = g.total_signed / g.txns.length;
+        var direction = avgPerTxn < 0 ? '↓ outflow' : '↑ inflow';
+        var dirColor = avgPerTxn < 0 ? '#b45309' : 'var(--green-dark)';
+        html += '<div style="display:grid;grid-template-columns:1fr 90px 200px 100px;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;background:#fff;margin-bottom:6px;border:1px solid var(--border);">'
+          + '<div><div style="font-size:12px;font-weight:700;">' + _esc(g.key.slice(0,40)) + '</div>'
+          +     '<div style="font-size:11px;color:var(--text-light);">' + g.txns.length + ' txn' + (g.txns.length===1?'':'s') + ' · ' + direction + '</div></div>'
+          + '<div style="text-align:right;font-weight:700;color:' + dirColor + ';font-size:13px;">' + _moneyInt(g.total_abs) + '</div>'
+          + '<select id="uncat-sel-' + idx + '" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;">'
+          +   '<option value="">— pick category —</option>'
+          +   chart.map(function(co) { return '<option value="' + co.code + '">' + _esc(co.code) + ' · ' + _esc(co.name) + '</option>'; }).join('')
+          + '</select>'
+          + '<button onclick="BooksPage._bulkRecategorize(' + JSON.stringify(g.txns.map(function(t){return t.id;})).replace(/"/g,'&quot;') + ', document.getElementById(\'uncat-sel-' + idx + '\').value)" style="background:var(--green-dark);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Apply</button>'
+          + '</div>';
+      });
+      html += '</details>';
+    }
+
     // Filter row
     html += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">'
       + '<select onchange="BooksPage._setRange(this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">'
@@ -408,6 +449,30 @@ var BooksPage = (function() {
         if (t) t.category = code || null;
       }
     });
+  }
+
+  // v865: bulk-recategorize a list of bank_transaction IDs to one COA code.
+  // Called by the "Apply" buttons in the Uncategorized Review section.
+  async function _bulkRecategorize(ids, code) {
+    if (!code) { UI.toast('Pick a category first', 'error'); return; }
+    if (!Array.isArray(ids) || !ids.length) return;
+    var sb = _supabase(); if (!sb) return;
+    UI.toast('Updating ' + ids.length + ' rows…');
+    try {
+      var r = await sb.from('bank_transactions').update({ category: code }).in('id', ids);
+      if (r.error) { UI.toast('Update failed: ' + r.error.message, 'error'); return; }
+      // Update in-memory + force re-render
+      if (_txns) {
+        ids.forEach(function(id) {
+          var t = _txns.find(function(x) { return x.id === id; });
+          if (t) t.category = code;
+        });
+      }
+      UI.toast('✅ ' + ids.length + ' rows → ' + code);
+      loadPage('reports');
+    } catch (e) {
+      UI.toast('Update error: ' + e.message, 'error');
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -1039,6 +1104,7 @@ var BooksPage = (function() {
     _setAccount: _setAccount,
     _setSearch: _setSearch,
     _setCategory: _setCategory,
+    _bulkRecategorize: _bulkRecategorize,
     _csvSetAccount: _csvSetAccount,
     _csvSetField: _csvSetField,
     _csvOnFile: _csvOnFile,
