@@ -265,7 +265,17 @@ var BooksPage = (function() {
       var groups = {};
       uncatTxns.forEach(function(t) {
         // Group by first 30 chars of description, stripped of trailing transaction-id-like numbers
-        var key = (t.description || '').slice(0, 30).replace(/\s+\d{8,}.*$/, '').trim().toUpperCase();
+        // EXCEPT keep the destination account number when description matches a
+        // "PMT TO <digits>" or similar payment-routing pattern — those need to
+        // be grouped per-destination so Doug can label each CC/vendor separately.
+        var desc = (t.description || '').toUpperCase();
+        var key;
+        var pmtMatch = desc.match(/(WEB PMT TO|PMT TO|TRANSFER TO|ACH TO)\s+(\d{6,})/);
+        if (pmtMatch) {
+          key = pmtMatch[1] + ' ' + pmtMatch[2];  // e.g. "WEB PMT TO 4691021837728882"
+        } else {
+          key = desc.slice(0, 30).replace(/\s+\d{8,}.*$/, '').trim();
+        }
         if (!key) key = '(no description)';
         if (!groups[key]) groups[key] = { txns: [], total_abs: 0, total_signed: 0 };
         groups[key].txns.push(t);
