@@ -28,6 +28,7 @@ var BooksPage = (function() {
   var _chart = null;
   var _taxFilings = null;
   var _allTxns = null;
+  var _invoicesQ = null; // v871: invoices by quarter for sales-tax reconciliation
   var _filter = { account: 'all', category: 'all', search: '', range: '90' };
 
   function _supabase() {
@@ -47,13 +48,16 @@ var BooksPage = (function() {
       // v867: tax filings — for the Tax-Year Reconciliation card
       sb.from('tax_filings').select('*').eq('tenant_id', TENANT_ID()).order('tax_year').order('form_type'),
       // v867: year-level rollup for tax-year reconciliation (all-time, lean projection)
-      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).like('source', 'pdf%').limit(10000)
+      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).like('source', 'pdf%').limit(10000),
+      // v871: invoices for sales-tax reconciliation (per-quarter rollup)
+      sb.from('invoices').select('issued_date,subtotal,tax_amount,total,status').eq('tenant_id', TENANT_ID()).not('issued_date', 'is', null).limit(10000)
     ]).then(function(results) {
       _accounts = (results[0] && results[0].data) || [];
       _txns = (results[1] && results[1].data) || [];
       _chart = (results[2] && results[2].data) || [];
       _taxFilings = (results[3] && results[3].data) || [];
       _allTxns = (results[4] && results[4].data) || [];
+      _invoicesQ = (results[5] && results[5].data) || [];
     });
   }
 
@@ -387,6 +391,141 @@ var BooksPage = (function() {
       });
       html += '</tbody></table></div>'
         + '</details>';
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // v871: NY Sales-Tax Reconciliation — quarter-by-quarter, filed
+    // ST-100 vs BM-invoiced sales + tax. Catches under-collection (BM
+    // billed less than reported to NYS) and under-reporting (BM billed
+    // more than reported). For a tree-service LLC the worst case is
+    // missing tax on a job — that's NYS's $$$ owed.
+    // ──────────────────────────────────────────────────────────────────
+    var nyStFilings = (_taxFilings || []).filter(function(f) {
+      return (f.form_type || '').toUpperCase().indexOf('NY-ST') === 0;
+    });
+    if (nyStFilings.length > 0 || (_invoicesQ && _invoicesQ.length > 0)) {
+      // Bucket invoices by year/quarter key (e.g. "2025-Q1")
+      var invByQ = {};
+      (_invoicesQ || []).forEach(function(iv) {
+        var d = iv.issued_date;
+        if (!d) return;
+        var yr = parseInt(d.slice(0, 4), 10);
+        var mo = parseInt(d.slice(5, 7), 10);
+        if (!yr || !mo) return;
+        var q = Math.ceil(mo / 3);
+        var key = yr + '-Q' + q;
+        if (!invByQ[key]) invByQ[key] = { subtotal: 0, tax: 0, total: 0, n: 0 };
+        invByQ[key].subtotal += Number(iv.subtotal) || 0;
+        invByQ[key].tax += Number(iv.tax_amount) || 0;
+        invByQ[key].total += Number(iv.total) || 0;
+        invByQ[key].n += 1;
+      });
+      // Build merged set of quarter keys: union of filed + invoiced
+      var qKeySet = {};
+      nyStFilings.forEach(function(f) {
+        var key = (f.period || (f.tax_year + '-Q' + (f.form_type || '').replace(/\D/g, '').slice(-1)));
+        // Normalize: "Q1 2025" -> "2025-Q1"
+        var m = String(key).match(/Q(\d)\s*(\d{4})/);
+        if (m) key = m[2] + '-Q' + m[1];
+        else key = f.tax_year + '-Q' + ((f.form_type || '').match(/Q(\d)/) || [0, '?'])[1];
+        qKeySet[key] = true;
+      });
+      Object.keys(invByQ).forEach(function(k) { qKeySet[k] = true; });
+      var qKeys = Object.keys(qKeySet).sort(); // 2025-Q1 sorts naturally
+
+      // Index filings by normalized key for lookup
+      var filedByQ = {};
+      nyStFilings.forEach(function(f) {
+        var ex = f.extracted || {};
+        var key = f.tax_year + '-Q' + (ex.quarter || (f.form_type || '').match(/Q(\d)/) || [0, '?'])[1];
+        if (typeof key !== 'string' || key.indexOf('?') >= 0) {
+          var m2 = String(f.period || '').match(/Q(\d)\s*(\d{4})/);
+          if (m2) key = m2[2] + '-Q' + m2[1];
+        }
+        filedByQ[key] = {
+          gross: Number(ex.gross_sales != null ? ex.gross_sales : f.gross_receipts) || 0,
+          taxable: Number(ex.taxable_sales != null ? ex.taxable_sales : (ex.gross_sales || f.gross_receipts)) || 0,
+          tax: Number(ex.sales_tax_collected != null ? ex.sales_tax_collected : ex.sales_tax_due) || 0,
+          form: f.form_type
+        };
+      });
+
+      // Totals row
+      var tot = { fGross: 0, fTax: 0, bSub: 0, bTax: 0 };
+
+      html += '<details open style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+        + '<summary style="cursor:pointer;font-weight:700;font-size:14px;">🧾 NY Sales-Tax Reconciliation — ST-100 filings vs BM invoices</summary>'
+        + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;margin-bottom:10px;">'
+        +   'Δ negative = BM invoiced LESS than filed (under-collected vs. NYS) · Δ positive = BM invoiced MORE than filed (under-reported to NYS). Goal: ±5%.'
+        + '</div>'
+        + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead><tr style="border-bottom:2px solid var(--border);">'
+        +   '<th style="text-align:left;padding:6px 8px;">Quarter</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Filed gross (NY)</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">BM invoiced</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Δ sales</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Filed tax</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">BM tax</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Δ tax</th>'
+        +   '<th style="text-align:right;padding:6px 8px;font-size:11px;">Invoices</th>'
+        + '</tr></thead><tbody>';
+
+      qKeys.forEach(function(key) {
+        var f = filedByQ[key];
+        var b = invByQ[key];
+        var fGross = f ? f.gross : 0;
+        var fTax = f ? f.tax : 0;
+        var bSub = b ? b.subtotal : 0;
+        var bTax = b ? b.tax : 0;
+        var n = b ? b.n : 0;
+        tot.fGross += fGross; tot.fTax += fTax; tot.bSub += bSub; tot.bTax += bTax;
+        var dSales = bSub - fGross;
+        var dTax = bTax - fTax;
+        // Color: green if within 5% AND filed is non-zero, red if either side is zero, yellow if drift
+        var pctSales = fGross > 0 ? Math.abs(dSales / fGross) : (bSub > 0 ? 1 : 0);
+        var salesOk = fGross > 0 && bSub > 0 && pctSales < 0.05;
+        var salesPartial = (fGross === 0 && bSub > 0) || (bSub === 0 && fGross > 0);
+        var salesColor = salesOk ? 'var(--green-dark)' : (salesPartial ? '#b45309' : '#b91c1c');
+        var salesIcon = salesOk ? '✓' : (salesPartial ? '○' : '⚠');
+        var pctTax = fTax > 0 ? Math.abs(dTax / fTax) : (bTax > 0 ? 1 : 0);
+        var taxOk = fTax > 0 && bTax > 0 && pctTax < 0.05;
+        var taxPartial = (fTax === 0 && bTax > 0) || (bTax === 0 && fTax > 0);
+        var taxColor = taxOk ? 'var(--green-dark)' : (taxPartial ? '#b45309' : '#b91c1c');
+        var taxIcon = taxOk ? '✓' : (taxPartial ? '○' : '⚠');
+        html += '<tr style="border-bottom:1px solid var(--bg);">'
+          + '<td style="padding:6px 8px;font-weight:700;">' + _esc(key) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;">' + (fGross ? _moneyInt(fGross) : '<span style="color:var(--text-light);">—</span>') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;">' + (bSub ? _moneyInt(bSub) : '<span style="color:var(--text-light);">—</span>') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700;color:' + salesColor + ';">' + salesIcon + ' ' + (fGross || bSub ? _moneyInt(dSales) : '—') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;color:var(--text-light);">' + (fTax ? _moneyInt(fTax) : '—') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;color:var(--text-light);">' + (bTax ? _moneyInt(bTax) : '—') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700;color:' + taxColor + ';">' + taxIcon + ' ' + (fTax || bTax ? _moneyInt(dTax) : '—') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-size:11px;color:var(--text-light);">' + (n || '—') + '</td>'
+          + '</tr>';
+      });
+
+      // Totals row
+      html += '<tr style="border-top:2px solid var(--border);background:var(--bg);">'
+        + '<td style="padding:6px 8px;font-weight:800;">All quarters</td>'
+        + '<td style="padding:6px 8px;text-align:right;font-weight:700;">' + _moneyInt(tot.fGross) + '</td>'
+        + '<td style="padding:6px 8px;text-align:right;font-weight:700;">' + _moneyInt(tot.bSub) + '</td>'
+        + '<td style="padding:6px 8px;text-align:right;font-weight:700;">' + _moneyInt(tot.bSub - tot.fGross) + '</td>'
+        + '<td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--text-light);">' + _moneyInt(tot.fTax) + '</td>'
+        + '<td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--text-light);">' + _moneyInt(tot.bTax) + '</td>'
+        + '<td style="padding:6px 8px;text-align:right;font-weight:700;">' + _moneyInt(tot.bTax - tot.fTax) + '</td>'
+        + '<td style="padding:6px 8px;"></td>'
+        + '</tr>';
+
+      html += '</tbody></table></div>';
+      // Footnote if BM has zero invoices for periods that were filed (typical
+      // pre-BM history): explain so the user doesn't see all-red and panic.
+      var preBm = qKeys.filter(function(k) { return filedByQ[k] && !invByQ[k]; });
+      if (preBm.length > 0) {
+        html += '<div style="font-size:11px;color:var(--text-light);margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;">'
+          +   '<b>Note:</b> ' + preBm.length + ' quarter' + (preBm.length === 1 ? '' : 's') + ' filed with NYS pre-dates BM invoicing (' + _esc(preBm.slice(0, 4).join(', ')) + (preBm.length > 4 ? ', …' : '') + '). Those BM-invoiced columns will be $0 until historical invoices are imported — not an under-collection.'
+          + '</div>';
+      }
+      html += '</details>';
     }
 
     // v865: Uncategorized review — groups 6999 rows by merchant prefix,
