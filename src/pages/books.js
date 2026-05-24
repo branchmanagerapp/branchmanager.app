@@ -451,30 +451,102 @@ var BooksPage = (function() {
       var updates = [];
       var stats = { matchedPayments: 0, matchedExpenses: 0, ambiguous: 0, unmatched: 0 };
 
+      // v864: 3-pass matching strategy.
+      // Pass 1: exact amount match (±$0.01) within ±3 days — original behavior
+      // Pass 2: Stripe-fee-aware — bank deposit net = BM payment gross minus
+      //   2.9% + $0.30. Match where expected fee residual < $0.50.
+      // Pass 3: looser tolerance for checks/ACH/Zelle — ±$0.50, ±7 days,
+      //   constrained to payment methods that aren't card.
+      // Pass 4: negative amounts → expenses with ±$0.01 / ±3 days
+      // Each row matched at most once; unique-match rule prevents ambiguous.
+      var bankUsed = {}, payUsed = {};
+
+      function tryMatch(b, candidates, kind) {
+        if (bankUsed[b.id]) return false;
+        var unique = candidates.filter(function(p) { return !payUsed[p.id]; });
+        if (unique.length === 1) {
+          updates.push({ id: b.id, kind: kind, matchId: unique[0].id });
+          bankUsed[b.id] = true;
+          payUsed[unique[0].id] = true;
+          return true;
+        }
+        if (unique.length > 1) stats.ambiguous++;
+        return false;
+      }
+
+      // Pass 1 — exact amount match
       bankRows.forEach(function(b) {
         var amt = Number(b.amount) || 0;
-        if (amt === 0) { stats.unmatched++; return; }
-        var pool = amt > 0 ? bmPayments : bmExpenses;
-        var targetAmt = Math.abs(amt);
-        var matches = pool.filter(function(p) {
+        if (amt === 0 || amt < 0) return;
+        var targetAmt = amt;
+        var matches = bmPayments.filter(function(p) {
           var pAmt = Math.abs(Number(p.amount) || 0);
           if (Math.abs(pAmt - targetAmt) > 0.01) return false;
-          var pDate = amt > 0 ? (p.payout_date || p.date) : (p.date || p.createdAt);
+          var pDate = p.payout_date || p.date;
           if (!pDate) return false;
           return daysBetween(b.posted_date, pDate) <= 3;
         });
-        if (matches.length === 1) {
-          updates.push({
-            id: b.id,
-            kind: amt > 0 ? 'payment' : 'expense',
-            matchId: matches[0].id
-          });
-          if (amt > 0) stats.matchedPayments++; else stats.matchedExpenses++;
-        } else if (matches.length > 1) {
-          stats.ambiguous++;
-        } else {
-          stats.unmatched++;
-        }
+        if (tryMatch(b, matches, 'payment')) stats.matchedPayments++;
+      });
+
+      // Pass 2 — Stripe-fee-aware match (card payments only)
+      bankRows.forEach(function(b) {
+        if (bankUsed[b.id]) return;
+        var amt = Number(b.amount) || 0;
+        if (amt <= 0) return;
+        var matches = bmPayments.filter(function(p) {
+          if (payUsed[p.id]) return false;
+          if ((p.method || '').toLowerCase() !== 'card') return false;
+          var pAmt = Math.abs(Number(p.amount) || 0);
+          var diff = pAmt - amt;  // gross > net by the fee
+          if (diff <= 0.30 || diff > 100) return false;
+          var expectedFee = (pAmt * 0.029) + 0.30;
+          if (Math.abs(diff - expectedFee) > 0.50) return false;
+          var pDate = p.payout_date || p.date;
+          if (!pDate) return false;
+          return daysBetween(b.posted_date, pDate) <= 3;
+        });
+        if (tryMatch(b, matches, 'payment')) stats.matchedPayments++;
+      });
+
+      // Pass 3 — looser check/ACH/Zelle (±$0.50, ±7 days)
+      bankRows.forEach(function(b) {
+        if (bankUsed[b.id]) return;
+        var amt = Number(b.amount) || 0;
+        if (amt <= 0) return;
+        var targetAmt = amt;
+        var matches = bmPayments.filter(function(p) {
+          if (payUsed[p.id]) return false;
+          var method = (p.method || '').toLowerCase();
+          if (['card'].indexOf(method) >= 0) return false; // cards handled in pass 2
+          var pAmt = Math.abs(Number(p.amount) || 0);
+          if (Math.abs(pAmt - targetAmt) > 0.50) return false;
+          var pDate = p.payout_date || p.date;
+          if (!pDate) return false;
+          return daysBetween(b.posted_date, pDate) <= 7;
+        });
+        if (tryMatch(b, matches, 'payment')) stats.matchedPayments++;
+      });
+
+      // Pass 4 — expenses (negative amounts) — ±$0.01, ±3 days
+      bankRows.forEach(function(b) {
+        if (bankUsed[b.id]) return;
+        var amt = Number(b.amount) || 0;
+        if (amt >= 0) { stats.unmatched++; return; }
+        var targetAmt = Math.abs(amt);
+        var matches = bmExpenses.filter(function(p) {
+          var pAmt = Math.abs(Number(p.amount) || 0);
+          if (Math.abs(pAmt - targetAmt) > 0.01) return false;
+          var pDate = p.date || p.createdAt;
+          if (!pDate) return false;
+          return daysBetween(b.posted_date, pDate) <= 3;
+        });
+        if (tryMatch(b, matches, 'expense')) stats.matchedExpenses++;
+      });
+
+      // Count unmatched (positive deposits that fell through all passes)
+      bankRows.forEach(function(b) {
+        if (!bankUsed[b.id] && Number(b.amount) > 0) stats.unmatched++;
       });
 
       // Batch update — one PATCH per row (Supabase JS doesn't support bulk-update).
