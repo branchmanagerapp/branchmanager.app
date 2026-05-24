@@ -90,6 +90,7 @@ var BooksPage = (function() {
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       +   (accounts.length > 0 ? '<button onclick="BooksPage.syncNow()" class="btn btn-outline" style="font-size:13px;">Sync now</button>' : '')
       +   (txns.length > 0 ? '<button onclick="BooksPage.reconcileAll()" class="btn btn-outline" style="font-size:13px;">🔗 Reconcile</button>' : '')
+      +   (txns.length > 0 ? '<button onclick="BooksPage.exportCpaCsv()" class="btn btn-outline" style="font-size:13px;">📤 Export CPA CSV</button>' : '')
       +   '<button onclick="BooksPage.openCsvImport()" class="btn btn-outline" style="font-size:13px;">📥 Import CSV</button>'
       +   '<button onclick="BooksPage.connectBank()" class="btn btn-primary" style="font-size:13px;">+ Connect bank</button>'
       + '</div>'
@@ -580,6 +581,110 @@ var BooksPage = (function() {
   // — no edge fn needed. Service role isn't required since the user's
   // JWT already permits read/write on tenant-scoped rows via RLS.
   // ──────────────────────────────────────────────────────────────────
+  // v868 — CPA-ready CSV export. Prompts for year, pulls all
+  // bank_transactions for that year, groups by COA code, generates a CSV
+  // with: Date, Description, Amount, Category Code, Category Name,
+  // Account, Reconciled flag, Matched-Payment ID. Downloads to user's
+  // Downloads folder via <a download>. Handed to CPA at year-end → they
+  // import into QuickBooks / Drake / Lacerte / ProSeries.
+  async function exportCpaCsv() {
+    var sb = _supabase(); if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    var tenantId = TENANT_ID(); if (!tenantId) return;
+
+    // Year picker — defaults to most recent year with data
+    var allYears = {};
+    (_allTxns || []).forEach(function(t) {
+      var yr = parseInt((t.posted_date || '').slice(0, 4), 10);
+      if (yr) allYears[yr] = true;
+    });
+    var sortedYears = Object.keys(allYears).sort();
+    if (!sortedYears.length) { UI.toast('No transactions to export', 'error'); return; }
+    var defaultYear = sortedYears[sortedYears.length - 1];
+    var year = prompt('Export which tax year as CPA CSV?\n\nYears with data: ' + sortedYears.join(', '), defaultYear);
+    if (!year) return;
+    year = parseInt(year, 10);
+    if (!year || !allYears[year]) { UI.toast('No data for year ' + year, 'error'); return; }
+
+    UI.toast('Building ' + year + ' CSV…');
+
+    // Fetch ALL transactions for that year (not range-limited)
+    var since = year + '-01-01';
+    var until = (year + 1) + '-01-01';
+    var r = await sb.from('bank_transactions').select('*')
+      .eq('tenant_id', tenantId)
+      .gte('posted_date', since)
+      .lt('posted_date', until)
+      .order('posted_date');
+    if (r.error) { UI.toast('Fetch error: ' + r.error.message, 'error'); return; }
+    var rows = r.data || [];
+    if (!rows.length) { UI.toast('Zero rows for ' + year, 'error'); return; }
+
+    // Build COA lookup
+    var coaByCode = {};
+    (_chart || []).forEach(function(c) { coaByCode[c.code] = c; });
+    var acctById = {};
+    (_accounts || []).forEach(function(a) { acctById[a.id] = a; });
+
+    // CSV escape helper
+    function esc(v) {
+      if (v == null) return '';
+      var s = String(v);
+      if (s.indexOf('"') >= 0 || s.indexOf(',') >= 0 || s.indexOf('\n') >= 0) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+    var header = ['Date','Description','Merchant','Amount','COA Code','COA Name','COA Type','Account','Reconciled','Matched Kind','Matched ID','External ID','Source'];
+    var lines = [header.map(esc).join(',')];
+    rows.forEach(function(t) {
+      var coa = coaByCode[t.category] || {};
+      var acct = acctById[t.account_id] || {};
+      lines.push([
+        t.posted_date,
+        t.description,
+        t.merchant_name,
+        Number(t.amount).toFixed(2),
+        t.category || '',
+        coa.name || '',
+        coa.account_type || '',
+        acct.name || '',
+        t.reconciled ? 'Y' : 'N',
+        t.matched_to_kind || '',
+        t.matched_to_id || '',
+        t.external_id || '',
+        t.source || ''
+      ].map(esc).join(','));
+    });
+
+    // Summary block at the bottom — total per COA code (revenue side + expense side separately)
+    var coaTotals = {};
+    rows.forEach(function(t) {
+      var k = t.category || '6999';
+      if (!coaTotals[k]) coaTotals[k] = 0;
+      coaTotals[k] += Number(t.amount) || 0;
+    });
+    lines.push('');
+    lines.push(['','','','SUMMARY BY COA CODE','','','','','','','','',''].map(esc).join(','));
+    lines.push(['COA Code','COA Name','Total','','','','','','','','','',''].map(esc).join(','));
+    Object.keys(coaTotals).sort().forEach(function(k) {
+      var coa = coaByCode[k] || {};
+      lines.push([k, coa.name || '', coaTotals[k].toFixed(2), '', '', '', '', '', '', '', '', '', ''].map(esc).join(','));
+    });
+
+    // Trigger download
+    var csv = lines.join('\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'snt-books-' + year + '-cpa-export.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    UI.toast('✅ ' + rows.length + ' rows exported to Downloads');
+  }
+
   async function reconcileAll() {
     var sb = _supabase(); if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
     var tenantId = TENANT_ID(); if (!tenantId) { UI.toast('No tenant', 'error'); return; }
@@ -1189,6 +1294,7 @@ var BooksPage = (function() {
     _setSearch: _setSearch,
     _setCategory: _setCategory,
     _bulkRecategorize: _bulkRecategorize,
+    exportCpaCsv: exportCpaCsv,
     _csvSetAccount: _csvSetAccount,
     _csvSetField: _csvSetField,
     _csvOnFile: _csvOnFile,
