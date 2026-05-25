@@ -95,7 +95,8 @@ var BooksPage = (function() {
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       +   (accounts.length > 0 ? '<button onclick="BooksPage.syncNow()" class="btn btn-outline" style="font-size:13px;">Sync now</button>' : '')
       +   (txns.length > 0 ? '<button onclick="BooksPage.reconcileAll()" class="btn btn-outline" style="font-size:13px;">🔗 Reconcile</button>' : '')
-      +   (txns.length > 0 ? '<button onclick="BooksPage.exportCpaCsv()" class="btn btn-outline" style="font-size:13px;">📤 Export CPA CSV</button>' : '')
+      +   (txns.length > 0 ? '<button onclick="BooksPage.exportCpaPackage()" class="btn btn-outline" style="font-size:13px;" title="Year-end ZIP for your accountant: P&amp;L + tax recon + sales-tax recon + invoice aging + 941 wages">📦 CPA Package</button>' : '')
+      +   (txns.length > 0 ? '<button onclick="BooksPage.exportCpaCsv()" class="btn btn-outline" style="font-size:13px;">📤 CSV only</button>' : '')
       +   '<button onclick="BooksPage.openCsvImport()" class="btn btn-outline" style="font-size:13px;">📥 Import CSV</button>'
       +   '<button onclick="BooksPage.connectBank()" class="btn btn-primary" style="font-size:13px;">+ Connect bank</button>'
       + '</div>'
@@ -1074,6 +1075,253 @@ var BooksPage = (function() {
     UI.toast('✅ ' + rows.length + ' rows exported to Downloads');
   }
 
+  // v881: Year-end CPA Package — a single ZIP containing every spreadsheet
+  // the accountant typically asks for. Replaces the back-and-forth email
+  // thread where the CPA requests one file, you export, they request another.
+  //
+  // Contents:
+  //   README.txt              — what's in the ZIP + how to read it
+  //   1-bookkeeping.csv       — every categorized transaction (same as CSV-only)
+  //   2-profit-and-loss.csv   — P&L summary by COA code
+  //   3-tax-year-recon.csv    — book P&L vs filed federal return
+  //   4-sales-tax-recon.csv   — NY-ST quarterly filings vs BM invoiced tax
+  //   5-invoice-aging.csv     — outstanding AR by age bucket
+  //   6-wages-941-summary.csv — payroll wages by 941 quarter
+  //
+  // Lazy-loads JSZip from the CDN script tag in index.html.
+  async function exportCpaPackage() {
+    if (typeof JSZip === 'undefined') {
+      UI.toast('Loading ZIP library…');
+      // Wait briefly for the async script tag to land
+      for (var i = 0; i < 40; i++) {
+        if (typeof JSZip !== 'undefined') break;
+        await new Promise(function(r) { setTimeout(r, 100); });
+      }
+      if (typeof JSZip === 'undefined') {
+        UI.toast('ZIP library not available — try again in a moment', 'error');
+        return;
+      }
+    }
+
+    var sb = _supabase(); if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    var tenantId = TENANT_ID(); if (!tenantId) return;
+
+    var allYears = {};
+    (_allTxns || []).forEach(function(t) {
+      var yr = parseInt((t.posted_date || '').slice(0, 4), 10);
+      if (yr) allYears[yr] = true;
+    });
+    var sortedYears = Object.keys(allYears).sort();
+    if (!sortedYears.length) { UI.toast('No transactions yet', 'error'); return; }
+    var defaultYear = sortedYears[sortedYears.length - 1];
+    var year = prompt('Build CPA package for which tax year?\n\nYears with data: ' + sortedYears.join(', '), defaultYear);
+    if (!year) return;
+    year = parseInt(year, 10);
+    if (!year || !allYears[year]) { UI.toast('No data for year ' + year, 'error'); return; }
+
+    UI.toast('Building ' + year + ' CPA package…');
+
+    function esc(v) {
+      if (v == null) return '';
+      var s = String(v);
+      if (s.indexOf('"') >= 0 || s.indexOf(',') >= 0 || s.indexOf('\n') >= 0) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+    function toCsv(rows) { return rows.map(function(row) { return row.map(esc).join(','); }).join('\n'); }
+
+    // Build COA lookup
+    var coaByCode = {};
+    (_chart || []).forEach(function(c) { coaByCode[c.code] = c; });
+    var acctById = {};
+    (_accounts || []).forEach(function(a) { acctById[a.id] = a; });
+
+    // ── 1. Bookkeeping CSV (every transaction in the year) ──
+    var since = year + '-01-01';
+    var until = (year + 1) + '-01-01';
+    var txnRes = await sb.from('bank_transactions').select('*')
+      .eq('tenant_id', tenantId)
+      .gte('posted_date', since).lt('posted_date', until)
+      .order('posted_date');
+    if (txnRes.error) { UI.toast('Fetch error: ' + txnRes.error.message, 'error'); return; }
+    var txnRows = txnRes.data || [];
+
+    var bkRows = [['Date','Description','Merchant','Amount','COA Code','COA Name','COA Type','Account','Reconciled','Matched Kind','Matched ID','External ID','Source']];
+    var coaTotals = {};
+    txnRows.forEach(function(t) {
+      var coa = coaByCode[t.category] || {};
+      var acct = acctById[t.account_id] || {};
+      bkRows.push([
+        t.posted_date, t.description, t.merchant_name, Number(t.amount).toFixed(2),
+        t.category || '', coa.name || '', coa.account_type || '', acct.name || '',
+        t.reconciled ? 'Y' : 'N', t.matched_to_kind || '', t.matched_to_id || '',
+        t.external_id || '', t.source || ''
+      ]);
+      var k = t.category || '6999';
+      coaTotals[k] = (coaTotals[k] || 0) + (Number(t.amount) || 0);
+    });
+
+    // ── 2. P&L Summary ──
+    var revRows = [], expRows = [], xferRows = [];
+    Object.keys(coaTotals).sort().forEach(function(k) {
+      var coa = coaByCode[k] || {};
+      var row = [k, coa.name || '', coaTotals[k].toFixed(2)];
+      var cls = k.charAt(0);
+      if (cls === '4') revRows.push(row);
+      else if (cls === '7') xferRows.push(row);
+      else expRows.push(row);
+    });
+    var revTotal = revRows.reduce(function(s, r) { return s + Number(r[2]); }, 0);
+    var expTotal = expRows.reduce(function(s, r) { return s + Math.abs(Number(r[2])); }, 0);
+    var net = revTotal - expTotal;
+
+    var plRows = [['Section','COA Code','COA Name','Amount']];
+    plRows.push(['REVENUE','','','']);
+    revRows.forEach(function(r) { plRows.push(['Revenue', r[0], r[1], r[2]]); });
+    plRows.push(['','','Revenue Total', revTotal.toFixed(2)]);
+    plRows.push(['','','','']);
+    plRows.push(['EXPENSES','','','']);
+    expRows.forEach(function(r) { plRows.push(['Expense', r[0], r[1], Math.abs(Number(r[2])).toFixed(2)]); });
+    plRows.push(['','','Expense Total', expTotal.toFixed(2)]);
+    plRows.push(['','','','']);
+    plRows.push(['NET INCOME','','', net.toFixed(2)]);
+    if (xferRows.length) {
+      plRows.push(['','','','']);
+      plRows.push(['TRANSFERS / DRAWS (not in P&L)','','','']);
+      xferRows.forEach(function(r) { plRows.push(['Transfer', r[0], r[1], r[2]]); });
+    }
+
+    // ── 3. Tax-Year Reconciliation (book vs filed) ──
+    var trRows = [['Tax Year','Form','Tax Return Net','BM Books Net','Δ Net','Tax Return Revenue','BM Books Revenue','Δ Revenue']];
+    var federalReturns = (_taxFilings || []).filter(function(f) {
+      var ft = (f.form_type || '').toLowerCase();
+      return ft.indexOf('1120') >= 0 || ft.indexOf('sch') === 0 || ft.indexOf('1040') >= 0 || ft.indexOf('1065') >= 0;
+    });
+    var bookByYear = {};
+    (_allTxns || []).forEach(function(t) {
+      var yr = parseInt((t.posted_date || '').slice(0, 4), 10);
+      if (!yr) return;
+      var cat = (t.category || '').toString();
+      if (cat.charAt(0) === '7') return;
+      var amt = Number(t.amount) || 0;
+      if (!bookByYear[yr]) bookByYear[yr] = { rev: 0, exp: 0 };
+      if (cat.charAt(0) === '4') bookByYear[yr].rev += amt;
+      else if (amt < 0) bookByYear[yr].exp += -amt;
+    });
+    federalReturns.forEach(function(f) {
+      var b = bookByYear[f.tax_year] || { rev: 0, exp: 0 };
+      var bookNet = b.rev - b.exp;
+      var taxNet = Number(f.net_income) || 0;
+      var taxRev = Number(f.gross_receipts) || 0;
+      trRows.push([f.tax_year, f.form_type || '', taxNet.toFixed(2), bookNet.toFixed(2), (bookNet - taxNet).toFixed(2), taxRev.toFixed(2), b.rev.toFixed(2), (b.rev - taxRev).toFixed(2)]);
+    });
+    if (federalReturns.length === 0) trRows.push(['(no federal returns imported into tax_filings)','','','','','','','']);
+
+    // ── 4. NY Sales-Tax Reconciliation (quarter by quarter) ──
+    var stRows = [['Quarter','Form','Filed Gross Sales','Filed Taxable Sales','Filed Sales Tax Collected','BM Invoiced Subtotal','BM Invoiced Tax','Δ Sales','Δ Tax']];
+    var nyStFilings = (_taxFilings || []).filter(function(f) { return (f.form_type || '').toUpperCase().indexOf('NY-ST') === 0; });
+    var invByQ = {};
+    (_invoicesQ || []).forEach(function(iv) {
+      var d = iv.issued_date; if (!d) return;
+      var yr = parseInt(d.slice(0, 4), 10), mo = parseInt(d.slice(5, 7), 10);
+      if (!yr || !mo) return;
+      var key = yr + '-Q' + Math.ceil(mo / 3);
+      if (!invByQ[key]) invByQ[key] = { subtotal: 0, tax: 0 };
+      invByQ[key].subtotal += Number(iv.subtotal) || 0;
+      invByQ[key].tax += Number(iv.tax_amount) || 0;
+    });
+    nyStFilings.forEach(function(f) {
+      var ex = f.extracted || {};
+      var key = f.tax_year + '-Q' + (ex.quarter || (f.form_type || '').match(/Q(\d)/) || [0, '?'])[1];
+      var b = invByQ[key] || { subtotal: 0, tax: 0 };
+      var fGross = Number(ex.gross_sales != null ? ex.gross_sales : f.gross_receipts) || 0;
+      var fTaxable = Number(ex.taxable_sales != null ? ex.taxable_sales : fGross) || 0;
+      var fTax = Number(ex.sales_tax_collected != null ? ex.sales_tax_collected : ex.sales_tax_due) || 0;
+      stRows.push([key, f.form_type || '', fGross.toFixed(2), fTaxable.toFixed(2), fTax.toFixed(2), b.subtotal.toFixed(2), b.tax.toFixed(2), (b.subtotal - fGross).toFixed(2), (b.tax - fTax).toFixed(2)]);
+    });
+    if (nyStFilings.length === 0) stRows.push(['(no NY-ST filings imported into tax_filings)','','','','','','','','']);
+
+    // ── 5. Invoice Aging (snapshot as of today, for the year's invoices) ──
+    var todayD = new Date();
+    var arRows = [['Invoice #','Client','Issued Date','Due Date','Total','Balance','Status','Age (days)']];
+    (_invoicesQ || []).filter(function(iv) {
+      var yr = (iv.issued_date || '').slice(0, 4);
+      return yr == year && (iv.status !== 'paid' && iv.status !== 'void') && Number(iv.balance || iv.total || 0) > 0.01;
+    }).sort(function(a, b) {
+      var bA = Number(a.balance || a.total || 0), bB = Number(b.balance || b.total || 0);
+      return bB - bA;
+    }).forEach(function(iv) {
+      var age = iv.issued_date ? Math.floor((todayD - new Date(iv.issued_date)) / 86400000) : '';
+      arRows.push([iv.invoice_number || '', iv.client_name || '', iv.issued_date || '', iv.due_date || '', Number(iv.total || 0).toFixed(2), Number(iv.balance || iv.total || 0).toFixed(2), iv.status || '', age]);
+    });
+    if (arRows.length === 1) arRows.push(['(no outstanding invoices for ' + year + ')','','','','','','','']);
+
+    // ── 6. 941 Quarterly Wages Summary ──
+    var wgRows = [['Tax Year','Quarter','Form','Wages Paid','Source File']];
+    var w941 = (_taxFilings || []).filter(function(f) {
+      return (f.form_type || '').toUpperCase().indexOf('941') === 0 && f.tax_year == year;
+    }).sort(function(a, b) {
+      return (a.form_type || '').localeCompare(b.form_type || '');
+    });
+    w941.forEach(function(f) {
+      var ex = f.extracted || {};
+      var quarter = (f.form_type || '').match(/Q(\d)/);
+      wgRows.push([f.tax_year, quarter ? 'Q' + quarter[1] : '', f.form_type || '', Number(f.wages_paid || ex.wages_paid || 0).toFixed(2), f.source_filename || '']);
+    });
+    if (w941.length === 0) wgRows.push(['(no 941 quarterly filings imported for ' + year + ')','','','','']);
+
+    // ── README ──
+    var brand = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get && CompanyInfo.get('name'))
+      || (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.companyName)
+      || 'Branch Manager';
+    var readme = brand + ' — Year-End CPA Package · Tax Year ' + year + '\n'
+      + 'Generated ' + todayD.toISOString().slice(0, 10) + ' by Branch Manager Books\n\n'
+      + 'Contents:\n'
+      + '  1-bookkeeping.csv        — Every categorized bank transaction in ' + year + '.\n'
+      + '                             Columns: Date, Description, Merchant, Amount, COA Code/Name/Type,\n'
+      + '                             Account, Reconciled (Y/N), Matched Kind/ID, External ID, Source.\n'
+      + '                             ' + txnRows.length + ' rows.\n\n'
+      + '  2-profit-and-loss.csv    — P&L summary by Chart-of-Accounts code.\n'
+      + '                             Revenue: $' + revTotal.toFixed(2) + '\n'
+      + '                             Expenses: $' + expTotal.toFixed(2) + '\n'
+      + '                             Net Income: $' + net.toFixed(2) + '\n'
+      + '                             Transfers/draws (7xxx codes) are listed separately.\n\n'
+      + '  3-tax-year-recon.csv     — Book P&L vs filed federal return for each year on file.\n'
+      + '                             Highlights any delta the CPA should explain.\n\n'
+      + '  4-sales-tax-recon.csv    — NY-ST quarterly filings vs BM-invoiced sales/tax per quarter.\n'
+      + '                             Catches under-collection or under-reporting.\n\n'
+      + '  5-invoice-aging.csv      — Outstanding accounts receivable for ' + year + ' invoices, snapshot as of\n'
+      + '                             ' + todayD.toISOString().slice(0, 10) + '.\n\n'
+      + '  6-wages-941-summary.csv  — Payroll wages by 941 quarter for ' + year + '.\n\n'
+      + 'Notes for the CPA:\n'
+      + '  • Books generated from bank-statement PDFs (Claude Vision-extracted) + Plaid sync where active.\n'
+      + '  • Sales-tax filings (NY-ST) loaded from NYS DTF filing PDFs.\n'
+      + '  • Federal returns imported from 1120-S / 1040 / Schedule C / 1065 PDFs.\n'
+      + '  • Any "uncategorized" (COA code 6999) transactions are surfaced in BM\'s Books page for cleanup.\n'
+      + '  • External IDs are SHA-256 hashes — they uniquely identify each row across re-imports.\n\n'
+      + 'Questions? Contact Doug at info@peekskilltree.com / +1 (914) 391-5233.\n';
+
+    // ── Build the ZIP ──
+    var zip = new JSZip();
+    zip.file('README.txt', readme);
+    zip.file('1-bookkeeping.csv', toCsv(bkRows));
+    zip.file('2-profit-and-loss.csv', toCsv(plRows));
+    zip.file('3-tax-year-recon.csv', toCsv(trRows));
+    zip.file('4-sales-tax-recon.csv', toCsv(stRows));
+    zip.file('5-invoice-aging.csv', toCsv(arRows));
+    zip.file('6-wages-941-summary.csv', toCsv(wgRows));
+
+    var blob = await zip.generateAsync({ type: 'blob' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'snt-cpa-package-' + year + '.zip';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    UI.toast('📦 CPA package downloaded (' + (txnRows.length) + ' txns, ' + revRows.length + ' rev codes, ' + expRows.length + ' exp codes)');
+  }
+
   async function reconcileAll() {
     var sb = _supabase(); if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
     var tenantId = TENANT_ID(); if (!tenantId) { UI.toast('No tenant', 'error'); return; }
@@ -1706,6 +1954,7 @@ var BooksPage = (function() {
     _setCategory: _setCategory,
     _bulkRecategorize: _bulkRecategorize,
     exportCpaCsv: exportCpaCsv,
+    exportCpaPackage: exportCpaPackage,
     _csvSetAccount: _csvSetAccount,
     _csvSetField: _csvSetField,
     _csvOnFile: _csvOnFile,
