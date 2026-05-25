@@ -49,8 +49,9 @@ var BooksPage = (function() {
       sb.from('tax_filings').select('*').eq('tenant_id', TENANT_ID()).order('tax_year').order('form_type'),
       // v867: year-level rollup for tax-year reconciliation (all-time, lean projection)
       sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).like('source', 'pdf%').limit(10000),
-      // v871: invoices for sales-tax reconciliation (per-quarter rollup)
-      sb.from('invoices').select('issued_date,subtotal,tax_amount,total,status').eq('tenant_id', TENANT_ID()).not('issued_date', 'is', null).limit(10000)
+      // v871+v880: invoices for sales-tax reconciliation (per-quarter rollup)
+      // AND outstanding-AR card (needs id, invoice_number, client_name, balance, due_date)
+      sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000)
     ]).then(function(results) {
       _accounts = (results[0] && results[0].data) || [];
       _txns = (results[1] && results[1].data) || [];
@@ -612,6 +613,112 @@ var BooksPage = (function() {
           + '</div>';
       }
       html += '</details>';
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // v880: Outstanding Invoices (AR aging) — surface unpaid > 0 by age
+    // bucket. Direct cash-recovery surface. Drafts get a separate row so
+    // Doug can see invoices that were never sent. Each row gets quick-
+    // action buttons: Open / Send follow-up / Mark paid.
+    // ──────────────────────────────────────────────────────────────────
+    var today = new Date();
+    var ageDays = function(d) {
+      if (!d) return null;
+      var diff = Math.floor((today - new Date(d)) / 86400000);
+      return diff >= 0 ? diff : null;
+    };
+    var outstandingAll = (_invoicesQ || []).filter(function(iv) {
+      var bal = Number(iv.balance);
+      if (isNaN(bal)) bal = Number(iv.total) || 0;
+      return bal > 0.01 && iv.status !== 'paid' && iv.status !== 'void';
+    }).map(function(iv) {
+      var bal = Number(iv.balance);
+      if (isNaN(bal)) bal = Number(iv.total) || 0;
+      return {
+        id: iv.id,
+        num: iv.invoice_number,
+        client: iv.client_name || 'Unknown client',
+        balance: bal,
+        issued: iv.issued_date,
+        due: iv.due_date,
+        status: iv.status,
+        age: ageDays(iv.issued_date)
+      };
+    });
+    outstandingAll.sort(function(a, b) { return b.balance - a.balance; });
+
+    if (outstandingAll.length > 0) {
+      // Bucket: drafts (never sent), current (<30d), warning (30-60d), late (60-90d), critical (90+d)
+      var buckets = {
+        drafts: outstandingAll.filter(function(iv) { return iv.status === 'draft' || iv.age == null; }),
+        current: outstandingAll.filter(function(iv) { return iv.status !== 'draft' && iv.age != null && iv.age < 30; }),
+        warn30: outstandingAll.filter(function(iv) { return iv.status !== 'draft' && iv.age != null && iv.age >= 30 && iv.age < 60; }),
+        late60: outstandingAll.filter(function(iv) { return iv.status !== 'draft' && iv.age != null && iv.age >= 60 && iv.age < 90; }),
+        crit90: outstandingAll.filter(function(iv) { return iv.status !== 'draft' && iv.age != null && iv.age >= 90; })
+      };
+      var totalDue = outstandingAll.reduce(function(s, iv) { return s + iv.balance; }, 0);
+      var sentOnly = outstandingAll.filter(function(iv) { return iv.status !== 'draft' && iv.age != null; });
+      var dso = sentOnly.length ? Math.round(sentOnly.reduce(function(s, iv) { return s + iv.age; }, 0) / sentOnly.length) : 0;
+      var hasAged = buckets.warn30.length + buckets.late60.length + buckets.crit90.length > 0;
+
+      // Bucket chip row
+      var chip = function(label, n, sum, color, bg) {
+        if (n === 0) return '';
+        return '<div style="background:' + bg + ';color:' + color + ';padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:baseline;gap:6px;">'
+          + '<span style="font-size:14px;font-weight:800;">' + n + '</span>' + label
+          + '<span style="opacity:0.7;font-weight:500;font-size:11px;">· ' + _moneyInt(sum) + '</span></div>';
+      };
+      var sumOf = function(arr) { return arr.reduce(function(s, iv) { return s + iv.balance; }, 0); };
+
+      html += '<details ' + (hasAged ? 'open' : '') + ' style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;' + (hasAged ? 'border-left:4px solid #b45309;' : '') + '">'
+        + '<summary style="cursor:pointer;font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">'
+        +   '<span>💰 Outstanding Invoices <span style="color:var(--text-light);font-weight:500;font-size:12px;">· ' + outstandingAll.length + ' unpaid · ' + _moneyInt(totalDue) + ' due</span></span>'
+        +   '<span style="font-size:11px;color:var(--text-light);font-weight:500;">Avg DSO: ' + dso + 'd</span>'
+        + '</summary>'
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;">'
+        +   chip(' drafts (never sent)', buckets.drafts.length, sumOf(buckets.drafts), '#7f1d1d', '#fef2f2')
+        +   chip(' current (<30d)', buckets.current.length, sumOf(buckets.current), '#065f46', '#ecfdf5')
+        +   chip(' 30-60d', buckets.warn30.length, sumOf(buckets.warn30), '#92400e', '#fef3c7')
+        +   chip(' 60-90d', buckets.late60.length, sumOf(buckets.late60), '#9a3412', '#fff7ed')
+        +   chip(' 90+d', buckets.crit90.length, sumOf(buckets.crit90), '#991b1b', '#fef2f2')
+        + '</div>'
+        + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead><tr style="border-bottom:2px solid var(--border);">'
+        +   '<th style="text-align:left;padding:6px 8px;">Inv #</th>'
+        +   '<th style="text-align:left;padding:6px 8px;">Client</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Balance</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Age</th>'
+        +   '<th style="text-align:left;padding:6px 8px;">Status</th>'
+        +   '<th style="text-align:right;padding:6px 8px;">Action</th>'
+        + '</tr></thead><tbody>';
+
+      outstandingAll.slice(0, 30).forEach(function(iv) {
+        var rowColor;
+        if (iv.status === 'draft') rowColor = '#fef2f2';
+        else if (iv.age == null) rowColor = 'var(--white)';
+        else if (iv.age >= 90) rowColor = '#fef2f2';
+        else if (iv.age >= 60) rowColor = '#fff7ed';
+        else if (iv.age >= 30) rowColor = '#fef3c7';
+        else rowColor = 'var(--white)';
+        var ageLabel = iv.status === 'draft' ? '<span style="color:#7f1d1d;font-weight:700;">DRAFT</span>' : (iv.age != null ? iv.age + 'd' : '—');
+        var ageColor = (iv.age != null && iv.age >= 60) ? '#991b1b' : (iv.age != null && iv.age >= 30) ? '#92400e' : 'var(--text)';
+        var actionBtn = iv.status === 'draft'
+          ? '<button onclick="loadPage(\'invoices\');setTimeout(function(){if(typeof InvoicesPage!==\'undefined\'&&InvoicesPage.showForm)InvoicesPage.showForm(\'' + iv.id + '\');},100);" style="background:#7f1d1d;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Open</button>'
+          : '<button onclick="BooksPage.sendInvoiceFollowup(\'' + iv.id + '\')" style="background:#2e7d32;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📬 Follow-up</button>';
+        html += '<tr style="border-bottom:1px solid var(--bg);background:' + rowColor + ';">'
+          + '<td style="padding:6px 8px;font-weight:700;">' + (iv.num != null ? '#' + iv.num : '—') + '</td>'
+          + '<td style="padding:6px 8px;">' + _esc(iv.client) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-weight:700;">' + _moneyInt(iv.balance) + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;color:' + ageColor + ';font-weight:600;">' + ageLabel + '</td>'
+          + '<td style="padding:6px 8px;font-size:11px;color:var(--text-light);text-transform:capitalize;">' + _esc(iv.status || '—') + '</td>'
+          + '<td style="padding:6px 8px;text-align:right;">' + actionBtn + '</td>'
+          + '</tr>';
+      });
+
+      if (outstandingAll.length > 30) {
+        html += '<tr><td colspan="6" style="padding:6px 8px;text-align:center;color:var(--text-light);font-size:11px;font-style:italic;">… ' + (outstandingAll.length - 30) + ' more — open the Invoices page to see all</td></tr>';
+      }
+      html += '</tbody></table></div></details>';
     }
 
     // v865: Uncategorized review — groups 6999 rows by merchant prefix,
@@ -1570,6 +1677,21 @@ var BooksPage = (function() {
     if (window._currentPage === 'reports') loadPage('reports');
   }
 
+  // v880: kick off an invoice follow-up email from the Books AR card.
+  // Delegates to Workflow.sendInvoice which owns the email + payment-link
+  // logic. Falls back to opening the invoice page if Workflow isn't loaded.
+  function sendInvoiceFollowup(invoiceId) {
+    if (!invoiceId) return;
+    if (typeof Workflow !== 'undefined' && typeof Workflow.sendInvoice === 'function') {
+      Workflow.sendInvoice(invoiceId);
+    } else if (typeof InvoicesPage !== 'undefined' && InvoicesPage.showDetail) {
+      loadPage('invoices');
+      setTimeout(function() { InvoicesPage.showDetail(invoiceId); }, 100);
+    } else {
+      loadPage('invoices');
+    }
+  }
+
   return {
     render: render,
     connectBank: connectBank,
@@ -1577,6 +1699,7 @@ var BooksPage = (function() {
     openCsvImport: openCsvImport,
     reconcileAll: reconcileAll,
     setCashflow: setCashflow,
+    sendInvoiceFollowup: sendInvoiceFollowup,
     _setRange: _setRange,
     _setAccount: _setAccount,
     _setSearch: _setSearch,
