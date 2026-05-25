@@ -709,6 +709,58 @@ var VideoQuote = {
     try { return localStorage.getItem('bm-vq-target-quote') || null; } catch(e) { return null; }
   },
 
+  // v883: pick the best frame as the quote's cover photo. Best = frame
+  // with the most tree sightings (most informative shot of the property).
+  // Ties broken by hazard count, then by mid-walkthrough preference.
+  _pickCoverFrame: function() {
+    if (!Array.isArray(VideoQuote._results) || !VideoQuote._results.length) return null;
+    var byTime = {};
+    VideoQuote._results.forEach(function(r) {
+      var k = r.frameTime != null ? Math.round(r.frameTime) : null;
+      if (k == null) return;
+      if (!byTime[k]) byTime[k] = { count: 0, hazards: 0, thumb: r.frameThumb, time: k };
+      byTime[k].count++;
+      if (Array.isArray(r.hazards)) byTime[k].hazards += r.hazards.length;
+    });
+    var times = Object.keys(byTime);
+    if (!times.length) return null;
+    times.sort(function(a, b) {
+      var A = byTime[a], B = byTime[b];
+      if (B.count !== A.count) return B.count - A.count;
+      if (B.hazards !== A.hazards) return B.hazards - A.hazards;
+      // Prefer mid-walkthrough — penalize the first 5s + last 5s
+      var totalDur = VideoQuote._frames.length * 3; // best estimate (3s interval)
+      var aPenalty = (A.time < 5 || A.time > totalDur - 5) ? 1 : 0;
+      var bPenalty = (B.time < 5 || B.time > totalDur - 5) ? 1 : 0;
+      return aPenalty - bPenalty;
+    });
+    return byTime[times[0]] || null;
+  },
+
+  // v883: upload the cover frame to Supabase Storage, persist URL on the
+  // quote record. Fire-and-forget — quote creation doesn't block on this.
+  _attachCoverPhoto: async function(quoteId, dataUrl) {
+    if (!quoteId || !dataUrl) return;
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.ready) return;
+    try {
+      var blob = await (await fetch(dataUrl)).blob();
+      var path = 'quote-covers/' + quoteId + '_' + Date.now() + '.jpg';
+      var up = await SupabaseDB.client.storage.from('job-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+      if (up.error) { console.warn('cover upload failed:', up.error.message); return; }
+      var pub = SupabaseDB.client.storage.from('job-photos').getPublicUrl(path);
+      var url = pub.data && pub.data.publicUrl;
+      if (!url) return;
+      // Persist to DB
+      await SupabaseDB.client.from('quotes').update({ cover_photo_url: url }).eq('id', quoteId);
+      // Also persist to the local DB shim so UI reflects immediately
+      if (typeof DB !== 'undefined' && DB.quotes) {
+        var q = DB.quotes.getById(quoteId);
+        if (q) { q.cover_photo_url = url; DB.quotes.update(q); }
+      }
+      console.log('[VideoQuote] cover photo attached to quote', quoteId, url);
+    } catch (e) { console.warn('cover photo attach failed:', e); }
+  },
+
   _createQuote: function() {
     var items = [];
     for (var i = 0; i < VideoQuote._deduped.length; i++) {
@@ -720,6 +772,9 @@ var VideoQuote = {
         rate: g.price || 0
       });
     }
+
+    // v883: pick the best frame as the cover photo
+    var coverFrame = VideoQuote._pickCoverFrame();
 
     // v878: if we have a target quote, append the items directly to it
     // and open that quote's edit form. Otherwise (default) fall through to
@@ -739,6 +794,10 @@ var VideoQuote = {
         existing.total = subtotal + existing.taxAmount;
         existing.updatedAt = new Date().toISOString();
         DB.quotes.update(existing);
+        // v883: append-mode also gets a cover if the quote didn't have one
+        if (coverFrame && !existing.cover_photo_url) {
+          VideoQuote._attachCoverPhoto(existing.id, coverFrame.thumb);
+        }
         VideoQuote.setTarget(null); // clear target so the next walkthrough doesn't append again
         UI.toast('✓ Added ' + items.length + ' line item' + (items.length === 1 ? '' : 's') + ' to quote #' + (existing.quoteNumber || existing.id));
         setTimeout(function() {
@@ -751,6 +810,14 @@ var VideoQuote = {
 
     // Default: stash for a NEW quote
     localStorage.setItem('bm-ai-pending-items', JSON.stringify(items));
+    // v883: stash the cover frame too — QuotesPage will read + attach after
+    // the quote is created (since we don't have the quote id yet)
+    if (coverFrame) {
+      try { localStorage.setItem('bm-ai-pending-cover', coverFrame.thumb); } catch(e) {
+        // Likely quota-exceeded — the cover is base64 ~100-300kb. Skip.
+        console.warn('cover stash skipped:', e.message);
+      }
+    }
     UI.toast(items.length + ' tree' + (items.length === 1 ? '' : 's') + ' detected — opening quote', 'success');
     setTimeout(function() {
       if (typeof QuotesPage !== 'undefined' && QuotesPage.showForm) {

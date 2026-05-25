@@ -473,7 +473,8 @@ var Photos = {
             storage_path: path,
             name: file.name,
             label: '',
-            taken_at: new Date().toISOString()
+            taken_at: new Date().toISOString(),
+            taken_by: Photos._authorName ? Photos._authorName() : 'Crew' // v882: crew attribution
           };
           if (gps) { meta.gps_lat = gps.lat; meta.gps_lng = gps.lng; }
           var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
@@ -488,7 +489,8 @@ var Photos = {
             storage_path: path,
             name: file.name,
             date: meta.taken_at,
-            label: ''
+            label: '',
+            taken_by: meta.taken_by // v882
           });
           // v874: fire-and-forget AI auto-tag using the stamped blob we
           // already have in memory. Don't await — upload UI shouldn't block.
@@ -543,7 +545,8 @@ var Photos = {
           gps_lat: row.gps_lat || null,
           gps_lng: row.gps_lng || null,
           tags: Array.isArray(row.tags) ? row.tags : (row.label ? row.label.split(',').map(function(s){return s.trim();}).filter(Boolean) : []),
-          ai_tags: Array.isArray(row.ai_tags) ? row.ai_tags : []
+          ai_tags: Array.isArray(row.ai_tags) ? row.ai_tags : [],
+          taken_by: row.taken_by || '' // v882
         });
       });
       Object.keys(groups).forEach(function(k) {
@@ -568,7 +571,8 @@ var Photos = {
         date: new Date().toISOString(),
         label: '',
         gps_lat: gps ? gps.lat : null,
-        gps_lng: gps ? gps.lng : null
+        gps_lng: gps ? gps.lng : null,
+        taken_by: Photos._authorName ? Photos._authorName() : 'Crew' // v882
       });
       // v874: local-only AI auto-tag too (works offline-pending or pure-local)
       if (Photos.AI_AUTOTAG && navigator.onLine) {
@@ -747,6 +751,7 @@ var Photos = {
     caption.style.cssText = 'color:#fff;margin-top:10px;font-size:13px;text-align:center;';
     var capParts = [];
     if (p.date) capParts.push(UI.dateShort(p.date));
+    if (p.taken_by) capParts.push('👤 ' + p.taken_by); // v882: crew attribution
     if (p.gps_lat) capParts.push('📍 ' + p.gps_lat.toFixed(4) + ', ' + p.gps_lng.toFixed(4));
     caption.textContent = capParts.join('  ·  ');
     overlay.appendChild(caption);

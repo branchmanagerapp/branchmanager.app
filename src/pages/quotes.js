@@ -2007,6 +2007,15 @@ var QuotesPage = {
       savedId = newQ.id;
     }
 
+    // v883: pending walkthrough cover photo — attach to the new quote
+    try {
+      var pendingCover = localStorage.getItem('bm-ai-pending-cover');
+      if (pendingCover && savedId && typeof VideoQuote !== 'undefined' && VideoQuote._attachCoverPhoto) {
+        VideoQuote._attachCoverPhoto(savedId, pendingCover);
+        localStorage.removeItem('bm-ai-pending-cover');
+      }
+    } catch(e) {}
+
     QuotesPage._clearAutoSave();
     if (client && client.status === 'lead') DB.clients.update(clientId, { status: 'active' });
     _unsave();
@@ -2091,6 +2100,8 @@ var QuotesPage = {
       +   (q.depositRequired ? '<span style="font-size:12px;color:var(--text-light);">' + (q.depositPaid ? '✅ Deposit paid' : '⚠️ Deposit due: ' + UI.money(q.depositDue)) + '</span>' : '')
       + '</div>'
       + '<div style="height:4px;background:' + statusColor + ';border-radius:2px;margin-bottom:14px;"></div>'
+      // v883: cover photo from AI walkthrough (if attached)
+      + (q.cover_photo_url ? '<div style="margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);max-height:280px;"><img src="' + UI.esc(q.cover_photo_url) + '" alt="Property cover photo" style="width:100%;height:100%;object-fit:cover;display:block;max-height:280px;"></div>' : '')
       + '<h1 style="font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;">' + QuotesPage._term(true) + ' for '
       +   (q.clientId
             ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName || '—') + '</a>'
