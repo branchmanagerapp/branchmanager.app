@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 878; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 879; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1119,7 +1119,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v878.min.js"></script>
+<script defer src="dist/bm.bundle.v879.min.js"></script>
 
 
 
@@ -2178,7 +2178,7 @@ var QuickCreate = {
       + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
       + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();ClientsPage.showForm()"><i data-lucide="user-plus" style="width:20px;height:20px;"></i> New Client</button>'
       + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();RequestsPage.showForm()"><i data-lucide="inbox" style="width:20px;height:20px;"></i> New Request</button>'
-      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();QuotesPage.showForm()"><i data-lucide="file-text" style="width:20px;height:20px;"></i> New Quote</button>'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();QuotesPage.showNewQuotePicker()"><i data-lucide="file-text" style="width:20px;height:20px;"></i> New Quote</button>'
       + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();JobsPage.showForm()"><i data-lucide="wrench" style="width:20px;height:20px;"></i> New Job</button>'
       + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();InvoicesPage.showForm()"><i data-lucide="receipt" style="width:20px;height:20px;"></i> New Invoice</button>'
       + '</div>';
