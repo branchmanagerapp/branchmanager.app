@@ -144,7 +144,7 @@ var BooksPage = (function() {
     var chartByCodeForPL = {};
     chart.forEach(function(c) { chartByCodeForPL[c.code] = c; });
 
-    var pl = { revenue: 0, cogs: 0, opex: 0, byCode: {} };
+    var pl = { revenue: 0, cogs: 0, opex: 0, byCode: {}, ownerFunded: 0, ownerFundedN: 0 };
     txns.forEach(function(t) {
       var code = (t.category || '').toString();
       if (!code) return;
@@ -155,6 +155,8 @@ var BooksPage = (function() {
       if (bucket === '4') pl.revenue += amt;
       else if (bucket === '5') pl.cogs += Math.abs(amt);
       else if (bucket === '6') pl.opex += Math.abs(amt);
+      // v884: track owner-funded expenses separately for CPA reporting
+      if (t.owner_funded && amt < 0) { pl.ownerFunded += Math.abs(amt); pl.ownerFundedN++; }
     });
     var grossProfit = pl.revenue - pl.cogs;
     var netProfit = grossProfit - pl.opex;
@@ -188,6 +190,8 @@ var BooksPage = (function() {
       +   _plCard('Operating exp (6xxx)', -pl.opex, '#b45309', pl.revenue > 0 ? (Math.round(pl.opex / pl.revenue * 100)) + '% of revenue' : '')
       +   _plCard(netProfit >= 0 ? 'Net profit' : 'Net loss', netProfit, netProfit >= 0 ? 'var(--green-dark)' : '#b91c1c', (margin >= 0 ? margin : margin) + '% margin')
       + '</div>'
+      // v884: owner-funded business expenses footer — visible if any exist
+      + (pl.ownerFunded > 0 ? '<div style="margin-top:12px;padding:10px 14px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;font-size:12px;color:#5b21b6;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;"><div>👤 <b>' + _moneyInt(pl.ownerFunded) + '</b> of expenses above were <b>owner-funded</b> (paid from personal cards, not business cash). ' + pl.ownerFundedN + ' transaction' + (pl.ownerFundedN === 1 ? '' : 's') + '.</div><div style="font-size:11px;opacity:0.7;">Treat as capital contribution at year-end</div></div>' : '')
       + '</div>';
 
     // Top categories breakdown — show the 6 largest spending COA codes
@@ -242,6 +246,7 @@ var BooksPage = (function() {
       sourceTxns.forEach(function(t) {
         var code = (t.category || '').toString();
         if (code.charAt(0) === '7') return;
+        if (t.owner_funded) return; // v884: owner-paid didn't move business cash
         var y = (t.posted_date || '').slice(0, 4);
         var idx = periodIdx[y];
         if (idx == null) return;
@@ -267,6 +272,7 @@ var BooksPage = (function() {
       sourceTxns.forEach(function(t) {
         var code = (t.category || '').toString();
         if (code.charAt(0) === '7') return;
+        if (t.owner_funded) return; // v884: owner-paid didn't move business cash
         var dt = (t.posted_date || '').slice(0, 7); // YYYY-MM
         var idx = periodIdx[dt];
         if (idx == null) return;
@@ -822,9 +828,13 @@ var BooksPage = (function() {
         var matched = t.reconciled && t.matched_to_id
           ? '<span title="Linked to ' + _esc(t.matched_to_kind || 'record') + ' ' + _esc(t.matched_to_id).slice(0,8) + '…" style="background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px;">✓ ' + _esc((t.matched_to_kind || '').slice(0,3).toUpperCase()) + '</span>'
           : '';
+        // v884: owner-funded badge — visually distinguish personally-paid biz expenses
+        var ownerBadge = t.owner_funded
+          ? '<span title="Paid from personal funds (owner-funded business expense)" style="background:#faf5ff;color:#7c3aed;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px;border:1px solid #ddd6fe;">👤 OWNER</span>'
+          : '';
         html += '<div style="display:grid;grid-template-columns:90px 1fr 200px 110px;gap:12px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;align-items:center;">'
           +   '<div style="color:var(--text-light);font-size:12px;">' + _date(t.posted_date) + '</div>'
-          +   '<div><strong>' + _esc(t.description) + '</strong>' + pending + matched
+          +   '<div><strong>' + _esc(t.description) + '</strong>' + pending + matched + ownerBadge
           +     (t.merchant_name && t.merchant_name !== t.description ? '<div style="font-size:11px;color:var(--text-light);">' + _esc(t.merchant_name) + '</div>' : '')
           +   '</div>'
           +   '<div>'
@@ -1257,7 +1267,22 @@ var BooksPage = (function() {
     });
     if (arRows.length === 1) arRows.push(['(no outstanding invoices for ' + year + ')','','','','','','','']);
 
-    // ── 6. 941 Quarterly Wages Summary ──
+    // ── 6. Owner-paid business expenses (v884) ──
+    // Charges paid from personal cards (Apple Card, etc.) — real Tree-business
+    // expenses but never moved business cash. CPA needs these for Schedule M-1
+    // (book-to-tax reconciliation) and to record either reimbursement claims or
+    // owner capital contributions.
+    var ofRows = [['Date','Description','COA Code','COA Name','Amount','Source File','Notes']];
+    var ofTotal = 0;
+    txnRows.filter(function(t) { return t.owner_funded; }).forEach(function(t) {
+      var coa = coaByCode[t.category] || {};
+      var amt = Number(t.amount) || 0;
+      ofTotal += Math.abs(amt);
+      ofRows.push([t.posted_date, t.description, t.category || '', coa.name || '', Math.abs(amt).toFixed(2), (t.notes || '').replace(/^apple:/, ''), t.notes || '']);
+    });
+    if (ofTotal === 0) ofRows.push(['(no owner-funded transactions for ' + year + ')','','','','','','']);
+
+    // ── 7. 941 Quarterly Wages Summary ──
     var wgRows = [['Tax Year','Quarter','Form','Wages Paid','Source File']];
     var w941 = (_taxFilings || []).filter(function(f) {
       return (f.form_type || '').toUpperCase().indexOf('941') === 0 && f.tax_year == year;
@@ -1293,7 +1318,12 @@ var BooksPage = (function() {
       + '                             Catches under-collection or under-reporting.\n\n'
       + '  5-invoice-aging.csv      — Outstanding accounts receivable for ' + year + ' invoices, snapshot as of\n'
       + '                             ' + todayD.toISOString().slice(0, 10) + '.\n\n'
-      + '  6-wages-941-summary.csv  — Payroll wages by 941 quarter for ' + year + '.\n\n'
+      + '  6-owner-paid-expenses.csv — Tree-business expenses paid from personal cards.\n'
+      + '                              For ' + year + ': $' + ofTotal.toFixed(2) + ' across ' + (ofRows.length - 1) + ' transactions.\n'
+      + '                              These are included in 1-bookkeeping.csv + 2-profit-and-loss.csv\n'
+      + '                              but reported separately here so the CPA can decide treatment\n'
+      + '                              (capital contribution vs. reimbursement claim). Schedule M-1.\n\n'
+      + '  7-wages-941-summary.csv   — Payroll wages by 941 quarter for ' + year + '.\n\n'
       + 'Notes for the CPA:\n'
       + '  • Books generated from bank-statement PDFs (Claude Vision-extracted) + Plaid sync where active.\n'
       + '  • Sales-tax filings (NY-ST) loaded from NYS DTF filing PDFs.\n'
@@ -1310,7 +1340,8 @@ var BooksPage = (function() {
     zip.file('3-tax-year-recon.csv', toCsv(trRows));
     zip.file('4-sales-tax-recon.csv', toCsv(stRows));
     zip.file('5-invoice-aging.csv', toCsv(arRows));
-    zip.file('6-wages-941-summary.csv', toCsv(wgRows));
+    zip.file('6-owner-paid-expenses.csv', toCsv(ofRows));
+    zip.file('7-wages-941-summary.csv', toCsv(wgRows));
 
     var blob = await zip.generateAsync({ type: 'blob' });
     var url = URL.createObjectURL(blob);
