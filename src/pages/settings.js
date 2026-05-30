@@ -313,6 +313,30 @@ var SettingsPage = {
       + '</summary>'
       + '<div style="padding:16px 20px;border-top:1px solid var(--border);">';
 
+    // v885: Tenant switcher — for owners who belong to multiple tenants
+    // (e.g. Doug owns SNT + 2nd Nature 3 INC / Park). Reads memberships
+    // from user_tenants, sets bm-tenant-id on switch, full-reload so the
+    // Supabase client re-sends x-tenant-id with the new value.
+    html += '<div id="bm-tenant-switcher" style="margin-bottom:14px;"></div>';
+    setTimeout(function() {
+      var el = document.getElementById('bm-tenant-switcher');
+      if (!el || !SupabaseDB || !SupabaseDB.client) return;
+      SupabaseDB.client.from('user_tenants').select('tenant_id,role,tenants(name)').then(function(res) {
+        if (!res.data || res.data.length < 2) return; // hide if only one tenant
+        var active = (typeof window.resolveTenantId === 'function') ? window.resolveTenantId() : localStorage.getItem('bm-tenant-id');
+        var opts = res.data.map(function(r) {
+          var name = (r.tenants && r.tenants.name) || r.tenant_id.slice(0, 8);
+          var sel = r.tenant_id === active ? 'selected' : '';
+          return '<option value="' + r.tenant_id + '" ' + sel + '>' + UI.esc(name) + ' (' + r.role + ')</option>';
+        }).join('');
+        el.innerHTML = '<div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+          + '<div style="font-weight:700;font-size:13px;color:#5b21b6;">🏢 Active business:</div>'
+          + '<select id="bm-tenant-pick" style="flex:1;min-width:200px;padding:7px 10px;border:1px solid #ddd6fe;border-radius:6px;font-size:13px;background:#fff;">' + opts + '</select>'
+          + '<button onclick="SettingsPage._switchTenant(document.getElementById(\'bm-tenant-pick\').value)" style="background:#7c3aed;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Switch</button>'
+          + '</div>';
+      });
+    }, 100);
+
     html += cardOpen('Company Info')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Company Name</label><input id="co-name" value="' + UI.esc(co.name) + '" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;box-sizing:border-box;"></div>'
@@ -3601,6 +3625,26 @@ var SettingsPage = {
     }
     // Re-render so the inputs enable/disable correctly
     setTimeout(function(){ loadPage('settings'); }, 300);
+  },
+
+  // v885: tenant switcher — for owners who belong to multiple tenants.
+  // Sets bm-tenant-id, clears closure caches, full-reload to pick up the
+  // new x-tenant-id header on every Supabase request. Also dumps any
+  // tenant-scoped localStorage that should not bleed across businesses.
+  _switchTenant: function(newTid) {
+    if (!newTid || !/^[0-9a-f-]{36}$/i.test(newTid)) {
+      UI.toast('Invalid tenant id', 'error'); return;
+    }
+    var current = localStorage.getItem('bm-tenant-id');
+    if (current === newTid) { UI.toast('Already active'); return; }
+    try {
+      localStorage.setItem('bm-tenant-id', newTid);
+      // Clear tenant-scoped caches so the next page render queries fresh
+      var toClear = ['bm-co-name', 'bm-co-phone', 'bm-co-email', 'bm-co-address', 'bm-co-zip', 'bm-co-logo-url', 'bm-clients-cache', 'bm-photos-cache', 'bm-zip'];
+      toClear.forEach(function(k) { try { localStorage.removeItem(k); } catch(e){} });
+    } catch (e) { UI.toast('Switch failed: ' + e.message, 'error'); return; }
+    UI.toast('Switching business…');
+    setTimeout(function() { location.reload(); }, 400);
   },
 
   _savePassiveSettings: function() {
