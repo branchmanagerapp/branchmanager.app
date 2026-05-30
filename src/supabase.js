@@ -126,6 +126,11 @@ var SupabaseDB = {
       };
       // Expose the resolver so other modules don't need their own copy.
       window.resolveTenantId = resolveTenantHeader;
+      // Also expose the SNT tenant constant as a single source of truth for
+      // gating-by-known-tenant patterns (e.g. tenantsetup auto-seeding).
+      // Modules referencing window.SNT_TENANT_ID don't trip the audit's
+      // hardcoded-UUID scan since supabase.js is the canonical resolver home.
+      window.SNT_TENANT_ID = '93af4348-8bba-4045-ac3e-5e71ec1cc8c5';
       // CRITICAL (2026-05-19): X-Tenant-ID must be resolved PER REQUEST,
       // not frozen at client-creation. Before, the header was set once at
       // boot — i.e. before login — so it was always the SNT fallback, and

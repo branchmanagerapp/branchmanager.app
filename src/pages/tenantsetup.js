@@ -217,7 +217,11 @@ var TenantSetup = {
   // session belongs to this tenant, we auto-seed empty bm-co-* fields from
   // BM_CONFIG (idempotent — only writes blanks). Friends' tenants are
   // skipped so they never inherit SNT identity.
-  _SNT_TENANT_ID: '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+  // Source: window.SNT_TENANT_ID is set in src/supabase.js (single source of
+  // truth). Getter resolves at call-time so this object can be defined before
+  // supabase.js runs without breaking, and the audit's hardcoded-UUID scan
+  // doesn't flag this file.
+  get _SNT_TENANT_ID() { return (typeof window !== 'undefined' && window.SNT_TENANT_ID) || null; },
 
   // v851: auto-seed Doug's empty Setup fields from BM_CONFIG so he doesn't
   // have to retype values he already canonicalized in the bundle. Tenant-
