@@ -51,7 +51,9 @@ var BooksPage = (function() {
       // v887: was filtered to source like 'pdf%' which excluded Tree CC + Apple Card
       // sources, leaving the Multi-Year P&L card showing checking-only (massive
       // false losses). Now: all transactions from any source.
-      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).limit(20000),
+      // v888: PostgREST defaults to 1000-row pages; .limit() is ignored unless
+      // paired with .range(). Use .range(0, 49999) for the all-time roll-up.
+      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).range(0, 49999),
       // v871+v880: invoices for sales-tax reconciliation (per-quarter rollup)
       // AND outstanding-AR card (needs id, invoice_number, client_name, balance, due_date)
       sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000)
