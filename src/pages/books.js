@@ -48,7 +48,10 @@ var BooksPage = (function() {
       // v867: tax filings — for the Tax-Year Reconciliation card
       sb.from('tax_filings').select('*').eq('tenant_id', TENANT_ID()).order('tax_year').order('form_type'),
       // v867: year-level rollup for tax-year reconciliation (all-time, lean projection)
-      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).like('source', 'pdf%').limit(10000),
+      // v887: was filtered to source like 'pdf%' which excluded Tree CC + Apple Card
+      // sources, leaving the Multi-Year P&L card showing checking-only (massive
+      // false losses). Now: all transactions from any source.
+      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).limit(20000),
       // v871+v880: invoices for sales-tax reconciliation (per-quarter rollup)
       // AND outstanding-AR card (needs id, invoice_number, client_name, balance, due_date)
       sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000)
