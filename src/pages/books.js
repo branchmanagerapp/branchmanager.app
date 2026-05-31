@@ -422,6 +422,61 @@ var BooksPage = (function() {
       + '</div>';
 
     // ──────────────────────────────────────────────────────────────────
+    // v886: Multi-Year P&L — bank-data-based P&L for every year on file.
+    // The straight answer to "what did I make in 2024 vs 2025". Uses _allTxns
+    // (all-time imports, not range-limited). 7xxx and 7300 excluded from P&L
+    // because they're owner activity / debt principal (CPA splits).
+    // ──────────────────────────────────────────────────────────────────
+    if (_allTxns && _allTxns.length) {
+      var plByYear = {};
+      _allTxns.forEach(function(t) {
+        var yr = parseInt((t.posted_date || '').slice(0, 4), 10);
+        if (!yr) return;
+        var cat = (t.category || '').toString();
+        var cls = cat.charAt(0);
+        if (cls === '7') return; // exclude all 7xxx (owner / transfers / debt principal)
+        var amt = Number(t.amount) || 0;
+        if (!plByYear[yr]) plByYear[yr] = { rev: 0, cogs: 0, opex: 0, n: 0 };
+        plByYear[yr].n++;
+        if (cls === '4') plByYear[yr].rev += amt;
+        else if (cls === '5') plByYear[yr].cogs += Math.abs(amt);
+        else if (cls === '6') plByYear[yr].opex += Math.abs(amt);
+      });
+      var plYears = Object.keys(plByYear).map(Number).sort();
+      if (plYears.length >= 1) {
+        html += '<details open style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:18px;">'
+          + '<summary style="cursor:pointer;font-weight:700;font-size:14px;">💵 Multi-Year P&amp;L (bank-data based)</summary>'
+          + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;margin-bottom:10px;">Year-over-year P&amp;L from your bank transactions. 7xxx (owner draws, inter-co transfers, debt principal) excluded so the CPA can layer in depreciation + interest.</div>'
+          + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
+          + '<thead><tr style="border-bottom:2px solid var(--border);text-align:right;">'
+          +   '<th style="text-align:left;padding:6px 8px;">Year</th>'
+          +   '<th style="padding:6px 8px;">Revenue</th>'
+          +   '<th style="padding:6px 8px;">COGS</th>'
+          +   '<th style="padding:6px 8px;">OpEx</th>'
+          +   '<th style="padding:6px 8px;">Net Profit</th>'
+          +   '<th style="padding:6px 8px;">Margin</th>'
+          +   '<th style="padding:6px 8px;">Txns</th>'
+          + '</tr></thead><tbody>';
+        plYears.forEach(function(yr) {
+          var p = plByYear[yr];
+          var net = p.rev - p.cogs - p.opex;
+          var margin = p.rev > 0 ? Math.round(net / p.rev * 100) : 0;
+          var netColor = net > 0 ? 'var(--green-dark)' : (net < 0 ? '#b91c1c' : 'var(--text)');
+          html += '<tr style="border-bottom:1px solid var(--bg);text-align:right;">'
+            +   '<td style="padding:7px 8px;text-align:left;font-weight:700;">' + yr + '</td>'
+            +   '<td style="padding:7px 8px;color:var(--green-dark);">' + _moneyInt(p.rev) + '</td>'
+            +   '<td style="padding:7px 8px;color:#b45309;">' + _moneyInt(-p.cogs) + '</td>'
+            +   '<td style="padding:7px 8px;color:#b45309;">' + _moneyInt(-p.opex) + '</td>'
+            +   '<td style="padding:7px 8px;font-weight:800;color:' + netColor + ';">' + _moneyInt(net) + '</td>'
+            +   '<td style="padding:7px 8px;font-weight:600;color:' + netColor + ';">' + (p.rev > 0 ? margin + '%' : '—') + '</td>'
+            +   '<td style="padding:7px 8px;color:var(--text-light);font-size:11px;">' + p.n + '</td>'
+            + '</tr>';
+        });
+        html += '</tbody></table></div></details>';
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────
     // v867: Tax-Year Reconciliation — side-by-side BM Books P&L vs tax
     // filings for each year. The killer feature for "is my CPA right?".
     // Pulls federal returns (1120-S / Schedule C / 1120) for net income
