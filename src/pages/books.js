@@ -49,11 +49,23 @@ var BooksPage = (function() {
       sb.from('tax_filings').select('*').eq('tenant_id', TENANT_ID()).order('tax_year').order('form_type'),
       // v867: year-level rollup for tax-year reconciliation (all-time, lean projection)
       // v887: was filtered to source like 'pdf%' which excluded Tree CC + Apple Card
-      // sources, leaving the Multi-Year P&L card showing checking-only (massive
-      // false losses). Now: all transactions from any source.
-      // v888: PostgREST defaults to 1000-row pages; .limit() is ignored unless
-      // paired with .range(). Use .range(0, 49999) for the all-time roll-up.
-      sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).range(0, 49999),
+      //       sources → checking-only false losses.
+      // v888: was .range(0, 49999) — PostgREST hard-caps at 1000 per request
+      //       regardless of range. v888 was still missing 70% of data.
+      // v889: paginate in 1000-row chunks and merge.
+      (async function() {
+        var rows = []; var page = 0; var PG = 1000;
+        while (true) {
+          var r = await sb.from('bank_transactions').select('posted_date,amount,category').eq('tenant_id', TENANT_ID()).range(page * PG, (page + 1) * PG - 1);
+          if (r.error) break;
+          var chunk = r.data || [];
+          rows = rows.concat(chunk);
+          if (chunk.length < PG) break;
+          page++;
+          if (page > 50) break; // safety: max 50k rows
+        }
+        return { data: rows };
+      })(),
       // v871+v880: invoices for sales-tax reconciliation (per-quarter rollup)
       // AND outstanding-AR card (needs id, invoice_number, client_name, balance, due_date)
       sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000)
