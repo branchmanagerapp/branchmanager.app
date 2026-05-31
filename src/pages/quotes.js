@@ -179,10 +179,16 @@ var QuotesPage = {
       page.forEach(function(q) {
         var isStale = (q.status === 'sent' || q.status === 'awaiting') && q.createdAt && new Date(q.createdAt) < now7ago;
         var staleDot = isStale ? '<span title="Stale — sent 7+ days ago, needs follow-up" style="display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;margin-right:6px;vertical-align:middle;"></span>' : '';
+        // v? subtitle address: quote.property first, fall back to client.address so every row shows where the work is
+        var _qAddr = q.property || '';
+        if (!_qAddr && q.clientId) {
+          var _c = DB.clients.getById(q.clientId);
+          if (_c && _c.address) _qAddr = _c.address;
+        }
         html += '<tr onclick="QuotesPage.showForm(\'' + q.id + '\')" oncontextmenu="QuotesPage._rowContextMenu(event,\'' + q.id + '\')" style="cursor:pointer;">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="q-check" value="' + q.id + '" onchange="QuotesPage._updateBulk()" style="width:16px;height:16px;"></td>'
           + '<td>' + staleDot + '<strong>' + UI.esc(q.clientName || '—') + '</strong>'
-          +   (q.property ? '<div style="font-size:11px;color:var(--text-light);margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(q.property) + '</div>' : '') + '</td>'
+          +   (_qAddr ? '<div style="font-size:11px;color:var(--text-light);margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(_qAddr) + '</div>' : '') + '</td>'
           + '<td style="text-align:right;font-weight:700;font-size:14px;">' + UI.money(q.total) + '</td>'
           + '<td>' + UI.statusBadge(q.status) + '</td>'
           + '<td style="font-size:13px;color:var(--text-light);">' + UI.dateShort(q.createdAt) + '</td>'
@@ -196,11 +202,17 @@ var QuotesPage = {
       page.forEach(function(q) {
         var isStale = (q.status === 'sent' || q.status === 'awaiting') && q.createdAt && new Date(q.createdAt) < now7ago;
         var staleBar = isStale ? 'border-left:3px solid #f59e0b;' : 'border-left:3px solid transparent;';
+        // address fallback: quote.property first, then client.address so every card shows location
+        var _qAddrM = q.property || '';
+        if (!_qAddrM && q.clientId) {
+          var _cM = DB.clients.getById(q.clientId);
+          if (_cM && _cM.address) _qAddrM = _cM.address;
+        }
         html += '<div data-qid="' + q.id + '" class="quote-card" style="background:var(--white);border:1px solid var(--border);' + staleBar + 'border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04);-webkit-tap-highlight-color:transparent;">'
           + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
           +   '<div style="flex:1;min-width:0;">'
           +     '<div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(q.clientName || '—') + '</div>'
-          +     (q.property ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(q.property) + '</div>' : '')
+          +     (_qAddrM ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(_qAddrM) + '</div>' : '')
           +   '</div>'
           +   '<div style="font-size:17px;font-weight:800;color:var(--text);flex-shrink:0;">' + UI.money(q.total) + '</div>'
           + '</div>'
