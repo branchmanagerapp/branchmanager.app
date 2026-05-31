@@ -355,6 +355,14 @@ var DB = (function() {
     try {
       var table = REMOTE_TABLE[key];
       if (!table || !id) return;
+      // v891.1: same fabricated-data guard as _pushToCloud, applied to updates.
+      // _looksFabricated checks (name, phone) signatures — usually unaffected
+      // by updates, but covers the edge case where a fabricated row gets
+      // renamed/refoned via an update.
+      if (_looksFabricated(table, changes || {})) {
+        console.error('[DB patch BLOCKED] fabricated-data fingerprint in update changes — refusing to push', table, changes);
+        return;
+      }
       if (window._bmSyncLock) {
         setTimeout(function() { _pushUpdateToCloud(key, id, changes, precheckUpdatedAt); }, 500);
         return;
@@ -362,15 +370,16 @@ var DB = (function() {
       var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
       var apiKey = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
       if (!url || !apiKey) return;
-      // Build diff with snake-cased keys. Always include updated_at so cloud's
-      // mtime advances even if no real field changed.
-      var snakeChanges = { updated_at: _now() };
+      // v891.1: build snake-cased diff FIRST, then stamp our fresh updated_at
+      // LAST so it always wins. Previously updated_at was set first and
+      // a caller-supplied updatedAt would overwrite it (the "delete
+      // snakeChanges.updated_at_" line was a typo no-op).
+      var snakeChanges = {};
       Object.keys(changes || {}).forEach(function(k) {
         var sk = k.replace(/([A-Z])/g, '_$1').toLowerCase();
         snakeChanges[sk] = changes[k];
       });
-      // Drop updatedAt camelCase if caller passed it — snake_case wins.
-      delete snakeChanges.updated_at_;
+      snakeChanges.updated_at = _now();  // always wins — fresh mtime guaranteed
       // Build URL with id filter; add updated_at precondition if supplied.
       var qs = 'id=eq.' + encodeURIComponent(id);
       if (precheckUpdatedAt) {
@@ -467,13 +476,21 @@ var DB = (function() {
     var batch = q.slice(0, 20);
     var rest  = q.slice(20);
     Promise.all(batch.map(function(op) {
-      return fetch(url + '/rest/v1/' + op.table + '?on_conflict=id', {
-        method: 'POST',
+      // v891.1: queued updates replay as PATCH-by-id (diff) so the offline
+      // path matches the online path's behavior. Pre-v891.1 the replay did
+      // full-row upsert which would re-introduce the stale-clobber bug for
+      // anything edited while offline.
+      var isUpdate = op.method === 'update';
+      var url2 = isUpdate
+        ? (url + '/rest/v1/' + op.table + '?id=eq.' + encodeURIComponent(op.id))
+        : (url + '/rest/v1/' + op.table + '?on_conflict=id');
+      return fetch(url2, {
+        method: isUpdate ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': apiKey,
           'Authorization': 'Bearer ' + apiKey,
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
+          'Prefer': isUpdate ? 'return=minimal' : 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify(op.payload)
       }).then(function(r) { return { op: op, ok: r.ok, status: r.status }; })
