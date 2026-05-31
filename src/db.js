@@ -415,6 +415,16 @@ var DB = (function() {
           if (Array.isArray(rows) && rows.length === 0 && precheckUpdatedAt) {
             console.debug('[DB cloud patch] precondition failed for', table, id, '— re-pulling');
             _resyncRowFromCloud(key, id).then(function() {
+              // v893: re-apply user's diff on top of the freshly-pulled cloud row so
+              // local matches cloud after retry. Without this, local cache would show
+              // pre-edit state for ~60s until the next CloudSync tick even though
+              // cloud already reflects the user's edit.
+              var all = _get(key);
+              var idx2 = all.findIndex(function(r) { return r.id === id; });
+              if (idx2 >= 0) {
+                Object.assign(all[idx2], changes, { updatedAt: _now() });
+                _set(key, all);
+              }
               // Replay the diff WITHOUT precondition this time so it definitely lands.
               _pushUpdateToCloud(key, id, changes, null);
             });
@@ -1086,6 +1096,13 @@ var DB = (function() {
     importCSV: importCSV,
     seedDemo: seedDemo,
     reconcileOrphans: reconcileOrphans,
+    // v893: expose cache invalidator so the realtime path in supabase.js can
+    // bump our in-memory parse cache after writing directly to localStorage
+    // (otherwise subsequent _get() reads would return the stale cached parse).
+    _bumpCacheVer: function(key) {
+      _cacheVer[key] = (_cacheVer[key] || 0) + 1;
+      delete _parseCache[key];
+    },
     KEYS: KEYS,
     auditLog: {
       getRecent: function(n) { try { var log = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]'); return n ? log.slice(0, n) : log; } catch(e) { return []; } },

@@ -203,35 +203,13 @@ var CloudSync = {
         return result;
       };
 
-      // Wrap update — find record in local cache and update cloud by same ID
-      if (origUpdate) {
-        dbSection.update = function(id, changes) {
-          var result = origUpdate.call(dbSection, id, changes);
-          var cloudChanges = CloudSync._toSnake(changes);
-          cloudChanges.updated_at = new Date().toISOString();
-          var all = JSON.parse(localStorage.getItem(localKey) || '[]');
-          var record = all.find(function(r) { return r.id === id; });
-          if (record && record.id) {
-            sb.from(table).update(cloudChanges).eq('id', record.id).then(function(res) {
-              if (res.error) {
-                console.warn('Cloud update error (' + table + '):', res.error.message);
-                CloudSync._markUnsynced();
-                if (CloudSync._isAuthError(res.error)) {
-                  CloudSync._markCloudSignedOut('Update rejected on ' + table + ' — Supabase session missing.');
-                  if (typeof UI !== 'undefined' && UI.toast) UI.toast('⚠ Cloud update blocked — sign in to sync (' + table + ')', 'error');
-                } else if (typeof UI !== 'undefined' && UI.toast) {
-                  UI.toast('⚠ Cloud update failed (' + table + '): ' + res.error.message.slice(0, 80), 'error');
-                }
-              }
-            }).catch(function(e) {
-              CloudSync._markUnsynced();
-              console.warn('Cloud update network error (' + table + '):', e);
-              if (typeof UI !== 'undefined' && UI.toast) UI.toast('🌐 ' + table + ' update may not have saved (offline)', 'error');
-            });
-          }
-          return result;
-        };
-      }
+      // v893: update wrap REMOVED. db.js's _pushUpdateToCloud now handles
+      // cloud sync correctly for updates — sends only the diff (via PATCH-by-id),
+      // adds the ?updated_at=lte.<preTs> precondition so concurrent server-side
+      // edits aren't clobbered, and queues offline. Keeping the wrap here meant
+      // every update fired TWO PATCHes — the second one without the precondition,
+      // which defeated v891/v892's safety check. Leaving create + remove wraps
+      // intact since those still do work db.js doesn't.
 
       // Wrap remove — delete from cloud when deleted locally
       if (origRemove) {

@@ -502,9 +502,94 @@ var SupabaseDB = {
       var TABLES = ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments'];
       var ch = SupabaseDB.client.channel('bm-live-' + Math.random().toString(36).slice(2, 8));
 
+      // v893: per-row realtime handler. Was: any postgres_changes event
+      // triggered a debounced full CloudSync.init() — slow (re-pulls every
+      // tracked table) and capped UI freshness at 750ms+. Now: for the 5
+      // generic-DB tables (clients/requests/quotes/jobs/invoices), we update
+      // the SINGLE affected row in local cache directly. Other side effects
+      // (payments, dashboard rollups) still ride on the throttled
+      // CloudSync.init() fallback below so anything dependent on a full
+      // refresh still gets one.
+      var LOCAL_KEY_FOR = {
+        clients:  'bm-clients',
+        requests: 'bm-requests',
+        quotes:   'bm-quotes',
+        jobs:     'bm-jobs',
+        invoices: 'bm-invoices'
+      };
+      function _snakeRowToCamel(snake) {
+        var camel = {};
+        Object.keys(snake || {}).forEach(function(k) {
+          var ck = k.replace(/_([a-z])/g, function(_, c) { return c.toUpperCase(); });
+          camel[ck] = snake[k];
+        });
+        // Preserve tenant_id (other code reads this exact snake_case key)
+        if (snake && snake.tenant_id) camel.tenant_id = snake.tenant_id;
+        return camel;
+      }
+      function _applyRealtime(localKey, payload) {
+        try {
+          var evt = (payload && payload.eventType) || (payload && payload.type) || '';
+          var newRow = payload && payload.new;
+          var oldRow = payload && payload.old;
+          var raw = localStorage.getItem(localKey);
+          var all = raw ? JSON.parse(raw) : [];
+          if (evt === 'DELETE') {
+            var delId = (oldRow && oldRow.id) || (newRow && newRow.id);
+            if (!delId) return;
+            // Respect tombstones for delete events that originated locally
+            var tombs = (window._bmTombstones && window._bmTombstones.getForTable)
+              ? window._bmTombstones.getForTable(payload.table || '') : {};
+            if (tombs[delId]) return;
+            all = all.filter(function(r) { return r.id !== delId; });
+            localStorage.setItem(localKey, JSON.stringify(all));
+            // Bump DB cache version so next _get() reads fresh
+            if (typeof DB !== 'undefined' && DB._bumpCacheVer) DB._bumpCacheVer(localKey);
+            return;
+          }
+          if (!newRow || !newRow.id) return;
+          // INSERT or UPDATE — upsert into local cache
+          var camel = _snakeRowToCamel(newRow);
+          var idx = all.findIndex(function(r) { return r.id === newRow.id; });
+          if (idx >= 0) {
+            // Cloud is authoritative for fields we receive. Merge: preserve any
+            // local-only fields not in cloud row (rare; mostly photo blobs).
+            all[idx] = Object.assign({}, all[idx], camel);
+          } else {
+            all.unshift(camel);
+          }
+          localStorage.setItem(localKey, JSON.stringify(all));
+          if (typeof DB !== 'undefined' && DB._bumpCacheVer) DB._bumpCacheVer(localKey);
+        } catch (e) {
+          console.warn('[Realtime] _applyRealtime failed for', localKey, e);
+        }
+      }
+
       TABLES.forEach(function(tbl) {
         ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, function(payload) {
-          // Debounce: re-run CloudSync.init once per 750ms of bursts
+          var localKey = LOCAL_KEY_FOR[tbl];
+          if (localKey) {
+            _applyRealtime(localKey, payload);
+            // Re-render current page so the change shows up immediately if
+            // the user is looking at the affected list/form.
+            try {
+              if (typeof loadPage === 'function' && window._currentPage) {
+                clearTimeout(SupabaseDB._rtRerender);
+                SupabaseDB._rtRerender = setTimeout(function() {
+                  // Don't blow away open forms while the user is editing
+                  var openForm = document.getElementById('inv-form')
+                    || document.getElementById('quote-form')
+                    || document.getElementById('client-form')
+                    || document.getElementById('job-form')
+                    || document.getElementById('req-form');
+                  if (!openForm) loadPage(window._currentPage);
+                }, 250);
+              }
+            } catch (e) {}
+            return;
+          }
+          // Fallback for tables without local-key mapping (e.g. payments) —
+          // throttled full sync.
           clearTimeout(SupabaseDB._rtDebounce);
           SupabaseDB._rtDebounce = setTimeout(function() {
             if (typeof CloudSync !== 'undefined' && !CloudSync.syncing) CloudSync.init();
