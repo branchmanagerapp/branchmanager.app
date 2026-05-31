@@ -192,7 +192,9 @@ var EquipmentPage = {
                   last_inspection: '2025-06-30', inspection_exp: '2026-06-30', inspection_cert: '1120400112', inspection_mileage: 60561,
                   bouncie_installed: true, bouncie_class: 'PASS', notes: 'Diesel emissions inspection required' },
         'eq4':  { year: '2005', make: 'Bandit', model: '200XP', name: '2005 Bandit 200XP Chipper',         serial: '020785' },
-        'eq4c': {                make: 'Bandit', model: '254',   name: 'Bandit 254 Chipper',                serial: '4FMUS151191R001171' }
+        'eq4c': {                make: 'Bandit', model: '254',   name: 'Bandit 254 Chipper',                serial: '4FMUS151191R001171' },
+        // v? trailer is a Bri-Mar 7x12 dump — bought $9k, current market ~$5k
+        'eq10': { make: 'Bri-Mar', model: '7x12 Dump', name: 'Bri-Mar 7x12 Dump Trailer', notes: 'Originally purchased $9,000 · current market ~$5,000' }
       };
       Object.keys(fleet).forEach(function(eid) {
         var item = list.find(function(e) { return e.id === eid; });
@@ -229,7 +231,7 @@ var EquipmentPage = {
       { id: 'eq7', name: 'Climbing Gear Set', category: 'Safety', make: '', model: '', status: 'active', value: 3000, nextService: 'Annual inspection' },
       { id: 'eq8', name: 'Stihl MS 462', category: 'Saws', make: 'Stihl', model: 'MS 462', status: 'active', value: 1100, hours: 0 },
       { id: 'eq9', name: 'Stihl MS 261', category: 'Saws', make: 'Stihl', model: 'MS 261', status: 'active', value: 700, hours: 0 },
-      { id: 'eq10', name: 'Trailer', category: 'Trucks', make: '', model: '', status: 'active', value: 5000 },
+      { id: 'eq10', name: 'Bri-Mar 7x12 Dump Trailer', category: 'Trucks', make: 'Bri-Mar', model: '7x12 Dump', status: 'active', value: 5000, notes: 'Originally purchased $9,000 · current market ~$5,000 (new Bri-Mar 7x12 comp $10,995 at bigetrailersales.com)' },
       { id: 'eq12', name: 'Cub Cadet 54" Mower', category: 'Equipment', make: 'Cub Cadet', model: '54" deck (RZT/GT/ZT)', status: 'active', value: 3500, hours: 0, notes: '54" deck spindle PN 618-04608A · 3 spindles per deck', nextService: 'Inspect spindles + belt' }
     ];
     localStorage.setItem('bm-equipment', JSON.stringify(defaults));
