@@ -304,7 +304,12 @@ var DB = (function() {
         snakeRow[sk] = record[k];
       });
 
-      // Use upsert to handle both insert and update
+      // v891 (2026-05-31): use upsert ONLY on create. Full-row upsert on update
+      // clobbers any field that the local cache is stale on (the Quote #513
+      // "status keeps flipping back to sent" bug — agent flipped cloud to
+      // draft, BM's stale local cache still had sent, autosave pushed the
+      // whole row back including stale status). Updates go through
+      // _pushUpdateToCloud which only sends the changed fields.
       fetch(url + '/rest/v1/' + table + '?on_conflict=id', {
         method: 'POST',
         headers: {
@@ -335,6 +340,119 @@ var DB = (function() {
         _queueAdd({ key: key, table: table, id: record.id, method: method, payload: snakeRow, queuedAt: Date.now(), lastStatus: 0 });
       });
     } catch(e) { console.warn('[DB cloud push] error', e); }
+  }
+
+  // v891 (2026-05-31): diff PATCH for updates so we never clobber cloud
+  // fields the local cache happens to be stale on. Companion to _pushToCloud
+  // which stays as full-row upsert for CREATE only. `changes` = the diff
+  // the caller asked to apply (camelCase); we convert to snake_case and PATCH
+  // just those keys, plus updated_at as a write-wins tiebreaker.
+  // Precondition guard: if precheckUpdatedAt is supplied (the local row's
+  // updated_at BEFORE this edit), we add ?updated_at=lte.<that> to the PATCH
+  // so PostgREST refuses to overwrite a cloud row that has since changed.
+  // 0 rows affected → re-pull and retry with the user's diff on top.
+  function _pushUpdateToCloud(key, id, changes, precheckUpdatedAt) {
+    try {
+      var table = REMOTE_TABLE[key];
+      if (!table || !id) return;
+      if (window._bmSyncLock) {
+        setTimeout(function() { _pushUpdateToCloud(key, id, changes, precheckUpdatedAt); }, 500);
+        return;
+      }
+      var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
+      var apiKey = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+      if (!url || !apiKey) return;
+      // Build diff with snake-cased keys. Always include updated_at so cloud's
+      // mtime advances even if no real field changed.
+      var snakeChanges = { updated_at: _now() };
+      Object.keys(changes || {}).forEach(function(k) {
+        var sk = k.replace(/([A-Z])/g, '_$1').toLowerCase();
+        snakeChanges[sk] = changes[k];
+      });
+      // Drop updatedAt camelCase if caller passed it — snake_case wins.
+      delete snakeChanges.updated_at_;
+      // Build URL with id filter; add updated_at precondition if supplied.
+      var qs = 'id=eq.' + encodeURIComponent(id);
+      if (precheckUpdatedAt) {
+        // PostgREST: updated_at must be <= the local row's pre-edit mtime.
+        // If cloud has moved on (server-side PATCH between local read & this push),
+        // affected rows = 0 and we re-pull.
+        qs += '&updated_at=lte.' + encodeURIComponent(precheckUpdatedAt);
+      }
+      fetch(url + '/rest/v1/' + table + '?' + qs, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey,
+          'Authorization': 'Bearer ' + apiKey,
+          'Prefer': 'return=representation,count=exact'
+        },
+        body: JSON.stringify(snakeChanges)
+      }).then(function(r) {
+        if (!r.ok) {
+          r.text().then(function(t) {
+            console.warn('[DB cloud patch]', table, r.status, t.slice(0, 200));
+            if ((r.status === 401 || r.status === 403) && typeof CloudSync !== 'undefined' && CloudSync._markCloudSignedOut) {
+              CloudSync._markCloudSignedOut('Cloud rejected ' + table + ' patch (' + r.status + ') — re-sign in to sync.');
+            }
+          }).catch(function(){});
+          _queueAdd({ key: key, table: table, id: id, method: 'update', payload: snakeChanges, queuedAt: Date.now(), lastStatus: r.status });
+          return;
+        }
+        return r.json().then(function(rows) {
+          // 0 affected = cloud has moved on past precheckUpdatedAt → re-pull
+          // the row and re-apply this user's diff on top so we don't drop the
+          // user's edit but also don't clobber the concurrent server-side edit.
+          if (Array.isArray(rows) && rows.length === 0 && precheckUpdatedAt) {
+            console.debug('[DB cloud patch] precondition failed for', table, id, '— re-pulling');
+            _resyncRowFromCloud(key, id).then(function() {
+              // Replay the diff WITHOUT precondition this time so it definitely lands.
+              _pushUpdateToCloud(key, id, changes, null);
+            });
+          }
+        }).catch(function(){});
+      }).catch(function(e) {
+        console.warn('[DB cloud patch net]', table, e && e.message);
+        _queueAdd({ key: key, table: table, id: id, method: 'update', payload: snakeChanges, queuedAt: Date.now(), lastStatus: 0 });
+      });
+    } catch(e) { console.warn('[DB cloud patch] error', e); }
+  }
+
+  // Pull a single row from cloud and overwrite the matching local cache entry.
+  // Used by _pushUpdateToCloud when the precondition fails (server-side change won).
+  function _resyncRowFromCloud(key, id) {
+    return new Promise(function(resolve) {
+      try {
+        var table = REMOTE_TABLE[key];
+        if (!table) return resolve();
+        var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
+        var apiKey = localStorage.getItem('bm-supabase-key');
+        if (!url || !apiKey) return resolve();
+        fetch(url + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id) + '&limit=1', {
+          headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + apiKey }
+        }).then(function(r) {
+          if (!r.ok) return resolve();
+          return r.json();
+        }).then(function(rows) {
+          if (!rows || !rows.length) return resolve();
+          // Convert snake_case to camelCase for local storage
+          var snake = rows[0];
+          var camel = {};
+          Object.keys(snake).forEach(function(k) {
+            var ck = k.replace(/_([a-z])/g, function(_, c) { return c.toUpperCase(); });
+            camel[ck] = snake[k];
+          });
+          // Preserve tenant_id alias used elsewhere
+          if (snake.tenant_id) camel.tenant_id = snake.tenant_id;
+          var all = _get(key);
+          var idx = all.findIndex(function(r) { return r.id === id; });
+          if (idx >= 0) all[idx] = camel; else all.unshift(camel);
+          _set(key, all);
+          console.debug('[DB] re-pulled fresh', table, id, 'from cloud');
+          resolve();
+        }).catch(function() { resolve(); });
+      } catch(e) { resolve(); }
+    });
   }
 
   // Replay queued writes against Supabase. Successful writes are dropped
@@ -397,6 +515,11 @@ var DB = (function() {
     var all = _get(key);
     var idx = all.findIndex(function(r) { return r.id === id; });
     if (idx < 0) return null;
+    // v891 (2026-05-31): capture local row's PRE-edit updatedAt so the diff
+    // PATCH can use it as a precondition (?updated_at=lte.<that>) — if cloud
+    // has moved on since we last pulled, we re-sync from cloud and retry the
+    // diff on the fresh row instead of clobbering.
+    var preUpdatedAt = all[idx].updatedAt || all[idx].updated_at || null;
     Object.assign(all[idx], changes, { updatedAt: _now() });
     // Backfill tenant_id on existing records that predate multi-tenancy
     if (!all[idx].tenant_id && !all[idx].tenantId) {
@@ -405,7 +528,10 @@ var DB = (function() {
     }
     _set(key, all);
     _audit('update', key, id, Object.keys(changes).join(','));
-    _pushToCloud(key, all[idx], 'update');
+    // v891: was _pushToCloud(key, all[idx], 'update') — full-row upsert that
+    // clobbered any field local was stale on (Quote #513 status bug). Now
+    // sends just the diff via PATCH-by-id with updated_at precondition.
+    _pushUpdateToCloud(key, id, changes, preUpdatedAt);
     return all[idx];
   }
   // v761: Global tombstones — when you delete a row locally, we record
