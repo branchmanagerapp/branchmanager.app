@@ -169,7 +169,7 @@ var CloudSync = {
       if (!dbSection) return;
 
       var origCreate = dbSection.create;
-      var origUpdate = dbSection.update;
+      // v893: origUpdate no longer needed — update wrap removed (see comment below)
       var origRemove = dbSection.remove;
 
       // Wrap create — pre-assign UUID so local + cloud IDs always match
