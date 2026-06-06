@@ -234,11 +234,24 @@ var CompanyGeo = {
  */
 CompanyInfo.loadTenantFromSession = (function() {
   var done = false;
-  return function() {
+  function ready() {
+    return (typeof SupabaseDB !== 'undefined') && SupabaseDB.client && SupabaseDB.ready;
+  }
+  function delay(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+  // FIX (v901): the prior version set done=true BEFORE checking SupabaseDB
+  // readiness, so a call that fired before SupabaseDB.client/auth was ready
+  // permanently no-op'd — leaving tenant-EXCLUSIVE fields (legal_name,
+  // business_short_name, licenses, socials, owner, tax-rate) unloaded forever.
+  // Only the cloud-synced keys (bm-co-name/phone/email/address) ever appeared,
+  // so SNT silently leaned on bundle defaults. Now: poll for readiness, retry
+  // while auth settles, and mark done ONLY after a successful tenant apply.
+  function run(triesLeft) {
     if (done) return Promise.resolve(false);
-    done = true;
+    if (!ready()) {
+      if (triesLeft <= 0) return Promise.resolve(false);
+      return delay(400).then(function(){ return run(triesLeft - 1); });
+    }
     try {
-      if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return Promise.resolve(false);
       // Scope via user_tenants (RLS returns ONLY the caller's mapping rows) so
       // we get THE caller's tenant deterministically. A bare tenants.limit(1)
       // is wrong: public_read_tenants_for_branding exposes every tenant row,
@@ -248,7 +261,12 @@ CompanyInfo.loadTenantFromSession = (function() {
         .then(function(res) {
           var row = res && res.data && res.data[0];
           var t = row && row.tenants;
-          if (!t) return false;
+          if (!t) {
+            // Client ready but no tenant row yet (auth session still settling) —
+            // retry rather than permanently give up.
+            if (triesLeft <= 0) return false;
+            return delay(400).then(function(){ return run(triesLeft - 1); });
+          }
           var c = t.config || {};
           function L(lsKey, val) { if (val) { try { localStorage.setItem(lsKey, String(val)); } catch(e) {} } }
           function B(bmKey, val) { if (val && typeof BM_CONFIG !== 'undefined') BM_CONFIG[bmKey] = val; }
@@ -291,9 +309,14 @@ CompanyInfo.loadTenantFromSession = (function() {
           L('bm-co-short-name', c.business_short_name);
           try { if (t.id) localStorage.setItem('bm-tenant-id', t.id); } catch(e) {}
           window.bmResolvedTenant = t;
+          done = true;
           return true;
         })
-        .catch(function() { return false; });
+        .catch(function() {
+          if (triesLeft <= 0) return false;
+          return delay(400).then(function(){ return run(triesLeft - 1); });
+        });
     } catch (e) { return Promise.resolve(false); }
-  };
+  }
+  return function() { return run(25); };
 })();
