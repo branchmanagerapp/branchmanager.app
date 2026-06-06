@@ -62,25 +62,29 @@
   // Hardcoded SNT defaults — used if Supabase fetch fails AND no tenant config
   // is reachable, so the page still renders something sensible. Same values
   // currently shipped in the HTML, just as a backup.
+  // NEUTRAL last-resort defaults — used only if tenant resolution fails entirely.
+  // Must NOT contain any real tenant's identity (would leak across white-label
+  // instances). Every real tenant supplies these via tenants.config; SNT's config
+  // was backfilled Jun 6 2026 so its customer pages resolve from config, not here.
   var SNT_DEFAULTS = {
-    business_name: 'Second Nature Tree Service',
-    business_short_name: 'Second Nature Tree',
-    legal_name: 'Second Nature Tree Service LLC',
+    business_name: 'Your Company',
+    business_short_name: '',
+    legal_name: '',
     owner_name: 'Owner',
-    phone: '(914) 391-5233',
-    email: 'info@peekskilltree.com',
-    website: 'https://peekskilltree.com',
-    address_line1: '1 Highland Industrial Park',
+    phone: '',
+    email: '',
+    website: '',
+    address_line1: '',
     address_line2: '',
-    city: 'Peekskill',
-    state: 'NY',
-    state_full: 'New York',
-    zip: '10566',
+    city: '',
+    state: '',
+    state_full: '',
+    zip: '',
     effective_date: 'April 2026',
     license_text: 'Licensed & Fully Insured',
     logo_url: 'https://branchmanager.app/icons/icon-512.png',
     brand_color: '#1a3c12',
-    vertical: 'tree_service'
+    vertical: ''
   };
 
   function buildTokens(tenant) {

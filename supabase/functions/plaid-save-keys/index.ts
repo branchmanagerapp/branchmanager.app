@@ -63,16 +63,21 @@ async function requireOwner(req: Request, tenantId: string): Promise<{ ok: true 
 
 async function testPlaidCreds(clientId: string, secret: string, env: string): Promise<{ ok: boolean; msg: string }> {
   try {
-    const r = await fetch(`https://${env}.plaid.com/institutions/get_by_id`, {
+    // Validate via /institutions/get — works in EVERY environment and only
+    // checks that client_id+secret are valid. (The old test used
+    // /institutions/get_by_id with hardcoded institution_id 'ins_109508',
+    // which is a SANDBOX-only institution → "invalid institution_id provided"
+    // in production, falsely rejecting valid production keys.)
+    const r = await fetch(`https://${env}.plaid.com/institutions/get`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: clientId, secret, institution_id: 'ins_109508', country_codes: ['US'] }),
+      body: JSON.stringify({ client_id: clientId, secret, count: 1, offset: 0, country_codes: ['US'] }),
     });
     const data = await r.json();
     if (!r.ok || data.error_code) {
       return { ok: false, msg: data.error_message || data.display_message || `HTTP ${r.status}` };
     }
-    return { ok: true, msg: `Verified — ${data.institution?.name || 'institution'} reachable` };
+    return { ok: true, msg: `Verified — ${env} credentials accepted` };
   } catch (e) {
     return { ok: false, msg: `Network: ${(e as Error).message}` };
   }
