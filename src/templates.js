@@ -18,7 +18,7 @@ var Templates = {
       name: 'Request Received',
       trigger: 'New request submitted',
       channel: 'sms',
-      body: 'Hi {{name}}, thanks for your request! We got it and will be in touch within 2 hours to schedule your free estimate. — {{ownerName}}, {{companyName}} {{companyPhone}}'
+      body: 'Hi {{name}}, thanks for your request! We got it and will be in touch within 2 hours to schedule your free estimate. — Doug, {{companyName}} {{companyPhone}}'
     },
 
     // ── Quote Sent ──
@@ -33,7 +33,7 @@ var Templates = {
       name: 'Quote Sent',
       trigger: 'Quote sent to client',
       channel: 'sms',
-      body: 'Hi {{name}}, your estimate (#{{quoteNumber}}) for {{amount}} is ready! Reply YES to approve or call {{companyPhone}} with questions. — {{ownerName}}, {{companyName}}'
+      body: 'Hi {{name}}, your estimate (#{{quoteNumber}}) for {{amount}} is ready! Reply YES to approve or call {{companyPhone}} with questions. — Doug, {{companyName}}'
     },
 
     // ── Quote Follow-Up (5 days) ──

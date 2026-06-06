@@ -1402,10 +1402,7 @@ var BooksPage = (function() {
       + '  • Federal returns imported from 1120-S / 1040 / Schedule C / 1065 PDFs.\n'
       + '  • Any "uncategorized" (COA code 6999) transactions are surfaced in BM\'s Books page for cleanup.\n'
       + '  • External IDs are SHA-256 hashes — they uniquely identify each row across re-imports.\n\n'
-      + 'Questions? Contact ' + ((typeof CompanyInfo !== 'undefined' && CompanyInfo.get && (CompanyInfo.get('ownerName') || CompanyInfo.get('name'))) || 'the business owner')
-        + ((typeof CompanyInfo !== 'undefined' && CompanyInfo.get && CompanyInfo.get('email')) ? ' at ' + CompanyInfo.get('email') : '')
-        + ((typeof CompanyInfo !== 'undefined' && CompanyInfo.get && CompanyInfo.get('phone')) ? ' / ' + CompanyInfo.get('phone') : '')
-        + '.\n';
+      + 'Questions? Contact Doug at info@peekskilltree.com / +1 (914) 391-5233.\n';
 
     // ── Build the ZIP ──
     var zip = new JSZip();
