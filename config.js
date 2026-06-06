@@ -5,25 +5,20 @@
  * this object instead of hardcoding company info.  To rebrand, change the
  * values below — every customer-facing page picks them up automatically.
  */
-// White-label base defaults — NEUTRAL, not tenant-specific. Every real tenant
-// (incl. Second Nature Tree) supplies its own identity via tenants.config, which
-// CompanyInfo loads over these. SNT's config was backfilled Jun 6 2026 so it no
-// longer relies on any value here. Keep these generic so an unconfigured tenant
-// never leaks another business's identity.
 var BM_CONFIG = {
-  companyName:     'Your Company',
+  companyName:     'Second Nature Tree Service',
   ownerName:       '',
-  phone:           '',
-  phoneTel:        '',                  // tel: link format
-  phoneDigits:     '',                  // no punctuation, for tel: hrefs
-  email:           '',
-  website:         '',
-  websiteUrl:      '',
-  address:         '',
-  city:            '',
-  licenses:        '',
-  licensesLong:    '',
-  googleReviewUrl: '',
+  phone:           '(914) 391-5233',
+  phoneTel:        '+19143915233',      // tel: link format
+  phoneDigits:     '9143915233',        // no punctuation, for tel: hrefs
+  email:           'info@peekskilltree.com',
+  website:         'peekskilltree.com',
+  websiteUrl:      'https://peekskilltree.com',
+  address:         '1 Highland Industrial Park, Peekskill, NY 10566',
+  city:            'Peekskill, NY',
+  licenses:        'WC-32079 / PC-50644',
+  licensesLong:    'WC-32079 (Westchester), PC-50644 (Putnam)',
+  googleReviewUrl: 'https://g.page/r/CcVkZHV_EKlEEBM/review',
   state:           'New York',
   stateAbbr:       'NY',
   timezone:        'America/New_York',
@@ -112,8 +107,8 @@ var CompanyInfo = (function() {
     gbpUrl:          { ls: 'bm-co-gbp',        bm: null },
     taxRate:         { ls: 'bm-tax-rate',       bm: null, def: '8.375' },
     ownerName:       { ls: 'bm-co-owner-name',  bm: 'ownerName' },
-    legalName:       { ls: 'bm-co-legal-name',  bm: null, def: '' },
-    businessShortName:{ ls: 'bm-co-short-name', bm: null, def: '' },
+    legalName:       { ls: 'bm-co-legal-name',  bm: null, def: 'Second Nature Tree Service LLC' },
+    businessShortName:{ ls: 'bm-co-short-name', bm: null, def: 'Second Nature Tree' },
     licenseText:     { ls: 'bm-co-license-text',bm: null, def: 'Licensed & Fully Insured' },
     brandColor:      { ls: 'bm-co-brand-color', bm: null, def: '#1a3c12' },
     serviceLabel:    { ls: 'bm-co-service-label', bm: null, def: 'service' },
