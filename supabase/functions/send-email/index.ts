@@ -42,6 +42,21 @@ function resolveFrom(callerFrom: string | undefined): { from: string; mode: stri
   return { from: 'Branch Manager <onboarding@resend.dev>', mode: 'sandbox' }
 }
 
+// Pick the Resend account key by the FROM domain. branchmanager.app addresses
+// (incl. send.branchmanager.app) are verified in the SEPARATE "branchmanager"
+// Resend workspace → use RESEND_BM_API_KEY. Everything else (Second Nature /
+// peekskilltree transactional mail) uses the default RESEND_API_KEY. This keeps
+// the two businesses' email 100% separate. If RESEND_BM_API_KEY isn't set, BM
+// sends fall back to the default key (which will fail "domain not verified" —
+// same as before, never worse, and SNT mail is untouched).
+function resolveKey(from: string): { key: string; account: string } {
+  const isBm = /@([a-z0-9-]+\.)*branchmanager\.app\b/i.test(from)
+  const bmKey = Deno.env.get('RESEND_BM_API_KEY') ?? ''
+  const defKey = Deno.env.get('RESEND_API_KEY') ?? ''
+  if (isBm && bmKey) return { key: bmKey, account: 'branchmanager' }
+  return { key: defKey, account: 'default' }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
@@ -60,22 +75,21 @@ serve(async (req) => {
       })
     }
 
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: 'No Resend API key configured (set RESEND_API_KEY secret)' }), {
+    const sender = resolveFrom(from)
+    const { key: ACTIVE_KEY, account: keyAccount } = resolveKey(sender.from)
+    if (!ACTIVE_KEY) {
+      return new Response(JSON.stringify({ error: 'No Resend API key configured (set RESEND_API_KEY, or RESEND_BM_API_KEY for branchmanager.app senders)' }), {
         status: 500,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
     }
-
-    const sender = resolveFrom(from)
     const replyToAddr = replyTo || Deno.env.get('RESEND_REPLY_TO') || 'info@peekskilltree.com'
     const recipients = Array.isArray(to) ? to : [to]
 
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${ACTIVE_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -90,13 +104,13 @@ serve(async (req) => {
 
     if (r.ok) {
       const d = await r.json().catch(() => ({}))
-      return new Response(JSON.stringify({ success: true, status: r.status, id: d?.id, from_mode: sender.mode }), {
+      return new Response(JSON.stringify({ success: true, status: r.status, id: d?.id, from_mode: sender.mode, from_account: keyAccount }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
     }
 
     const errText = await r.text()
-    return new Response(JSON.stringify({ error: 'Resend error', status: r.status, details: errText.slice(0, 500), from_mode: sender.mode, from_attempted: sender.from }), {
+    return new Response(JSON.stringify({ error: 'Resend error', status: r.status, details: errText.slice(0, 500), from_mode: sender.mode, from_account: keyAccount, from_attempted: sender.from }), {
       status: r.status,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     })
