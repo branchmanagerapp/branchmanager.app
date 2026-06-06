@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 898; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 899; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -169,7 +169,7 @@
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Branch Manager</title>
-<meta name="description" content="Second Nature Tree Service — Job Management">
+<meta name="description" content="Branch Manager — Field Service Operations Software">
 <meta name="theme-color" content="#1a8a5c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1001,7 +1001,7 @@
              ships in icons/icon-180/192/etc. and in ios/App/App/Assets. -->
         <img src="icons/icon-192.png" alt="Branch Manager">
       </div>
-      <h1>Branch Manager<span data-bind="companyName">Second Nature Tree Service</span></h1>
+      <h1>Branch Manager<span data-bind="companyName"></span></h1>
     </div>
     <div class="sidebar-nav">
       <button class="nav-item" data-page="dashboard"><span class="icon"><i data-lucide="home" class="li"></i></span> Home</button>
@@ -1099,7 +1099,7 @@
               <button onclick="loadPage('employeecenter')"><i data-lucide="user" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>My Account</button>
               <button onclick="loadPage('settings')"><i data-lucide="settings" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Settings</button>
               <button onclick="loadPage('help')"><i data-lucide="help-circle" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Help & Onboarding</button>
-              <button onclick="window.open('https://peekskilltree.com','_blank')"><i data-lucide="external-link" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>View Website</button>
+              <button onclick="(function(){var w=(window.CompanyInfo&&CompanyInfo.get&&(CompanyInfo.get('websiteUrl')||CompanyInfo.get('website')))||'';if(w){window.open(w.indexOf('http')===0?w:'https://'+w,'_blank');}else if(window.UI&&UI.toast){UI.toast('No website set — add one in Settings');}})()"><i data-lucide="external-link" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>View Website</button>
               <button id="dark-mode-btn" onclick="toggleDarkMode()"><i data-lucide="moon" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Dark Mode <span id="dark-mode-state" style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:600;"></span></button>
               <hr>
               <button onclick="BugReport.open()"><i data-lucide="bug" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Report Bug</button>
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v898.min.js"></script>
+<script defer src="dist/bm.bundle.v899.min.js"></script>
 
 
 
