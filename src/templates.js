@@ -59,14 +59,14 @@ var Templates = {
       name: 'Booking Confirmation',
       trigger: 'Job scheduled',
       channel: 'email',
-      subject: 'Your {{serviceLabel}} is scheduled — {{date}}',
-      body: 'Hi {{name}},\n\nGreat news — your {{serviceLabel}} is confirmed!\n\nJob #{{jobNumber}}\nDate: {{date}}\nLocation: {{address}}\n\nOur crew will arrive between 8-9am. Please make sure we have access to the work area. We\'ll give you a call when we\'re on our way.\n\nIf you need to reschedule, just reply to this email or call {{companyPhone}}.\n\nSee you then!\n{{ownerName}}\n{{companyName}}'
+      subject: 'Your tree service is scheduled — {{date}}',
+      body: 'Hi {{name}},\n\nGreat news — your tree service is confirmed!\n\nJob #{{jobNumber}}\nDate: {{date}}\nLocation: {{address}}\n\nOur crew will arrive between 8-9am. Please make sure we have access to the work area. We\'ll give you a call when we\'re on our way.\n\nIf you need to reschedule, just reply to this email or call {{companyPhone}}.\n\nSee you then!\n{{ownerName}}\n{{companyName}}'
     },
     booking_confirm_sms: {
       name: 'Booking Confirmation',
       trigger: 'Job scheduled',
       channel: 'sms',
-      body: 'Hi {{name}}, your {{serviceLabel}} (Job #{{jobNumber}}) is confirmed for {{date}} at {{address}}. Crew arrives 8-9am. Call {{companyPhone}} to reschedule. — {{companyName}}'
+      body: 'Hi {{name}}, your tree service (Job #{{jobNumber}}) is confirmed for {{date}} at {{address}}. Crew arrives 8-9am. Call {{companyPhone}} to reschedule. — {{companyName}}'
     },
 
     // ── Visit Reminder (1 day before) ──
@@ -74,14 +74,14 @@ var Templates = {
       name: 'Visit Reminder (1 day)',
       trigger: '1 day before scheduled visit',
       channel: 'email',
-      subject: 'Tomorrow: {{ServiceLabel}} at {{address}} — {{date}}',
+      subject: 'Tomorrow: Tree service at {{address}} — {{date}}',
       body: 'Hi {{name}},\n\nQuick reminder — our crew arrives at {{address}} tomorrow.\n\n  Job #{{jobNumber}}\n  Date: {{date}}\n  Arrival window: 8-9 AM\n\nBefore we get there:\n  • Move vehicles, patio furniture, grills, or anything fragile away from the work area\n  • Make sure side gates / driveway are accessible\n  • Pets indoors if possible (saws are loud)\n\nNeed to reschedule? Tap to call: tel:{{companyPhone}}\n\nWe\'ll text you when the crew is on the way.\n\n{{ownerName}}\n{{companyName}}'
     },
     visit_reminder_sms: {
       name: 'Visit Reminder (1 hr)',
       trigger: '1 hour before scheduled visit',
       channel: 'sms',
-      body: 'Hi {{name}}, reminder: our crew is headed to {{address}} shortly for your {{serviceLabel}} (Job #{{jobNumber}}). See you soon! — {{companyName}}'
+      body: 'Hi {{name}}, reminder: our crew is headed to {{address}} shortly for your tree service (Job #{{jobNumber}}). See you soon! — {{companyName}}'
     },
 
     // ── Invoice Sent ──
@@ -169,9 +169,7 @@ var Templates = {
       '{{companyPhone}}': get('phone', BM_CONFIG && BM_CONFIG.phone),
       '{{companyEmail}}': get('email', BM_CONFIG && BM_CONFIG.email),
       '{{companyWebsite}}': get('website', BM_CONFIG && BM_CONFIG.website),
-      '{{ownerName}}': get('ownerName', (BM_CONFIG && BM_CONFIG.ownerName) || ''),
-      '{{serviceLabel}}': get('serviceLabel', 'service'),
-      '{{ServiceLabel}}': (function(){ var s = get('serviceLabel', 'service') || 'service'; return s.charAt(0).toUpperCase() + s.slice(1); })()
+      '{{ownerName}}': get('ownerName', (BM_CONFIG && BM_CONFIG.ownerName) || '')
     };
     Object.keys(vars).forEach(function(key) {
       text = text.split(key).join(vars[key]);

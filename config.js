@@ -111,7 +111,6 @@ var CompanyInfo = (function() {
     businessShortName:{ ls: 'bm-co-short-name', bm: null, def: 'Second Nature Tree' },
     licenseText:     { ls: 'bm-co-license-text',bm: null, def: 'Licensed & Fully Insured' },
     brandColor:      { ls: 'bm-co-brand-color', bm: null, def: '#1a3c12' },
-    serviceLabel:    { ls: 'bm-co-service-label', bm: null, def: 'service' },
     logo:            { ls: 'bm-co-logo',        bm: 'logoUrl' }
   };
 
@@ -269,7 +268,6 @@ CompanyInfo.loadTenantFromSession = (function() {
           L('bm-co-address', addr || null); B('address', addr || undefined);
           if (c.city || c.state) B('city', [c.city, c.state].filter(Boolean).join(', '));
           L('bm-co-brand-color', c.brand_color);
-          L('bm-co-service-label', c.service_label);
           L('bm-co-licenses', c.wc_number);
           L('bm-co-license-text', c.license_text);
           L('bm-co-review', c.google_review_url); B('googleReviewUrl', c.google_review_url);
