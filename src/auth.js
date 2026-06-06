@@ -345,16 +345,13 @@ var Auth = {
     var emailLower = email.toLowerCase();
     var customHashes = {};
     try { customHashes = JSON.parse(localStorage.getItem('bm-auth-hashes') || '{}'); } catch(e) {}
-    // White-label: NO hardcoded company logins. Second Nature Tree's
-    // info@/crew@/doug@peekskilltree.com accounts + their djb2 hashes used
-    // to ship in every tenant's bundle — a per-tenant credential leak and
-    // a security smell. Removed v831. The real login path is Supabase
-    // (handled above); the only local fallback now is in-app-created team
-    // logins (bm-auth-hashes + bm-team below), which are tenant-owned and
-    // contain no SNT data. SNT logs in via Supabase exactly like everyone.
-    var users = {};
-
-    var user = users[emailLower];
+    // White-label: NO hardcoded company logins. The hardcoded SNT
+    // info@/crew@/doug@peekskilltree.com accounts (+ their djb2 hashes that
+    // used to ship in every tenant's bundle — a per-tenant credential leak)
+    // were removed v831. The real login path is Supabase (handled above);
+    // the only local fallback is in-app-created team logins (bm-auth-hashes +
+    // bm-team below), which are tenant-owned and contain no SNT data.
+    var user = null;
 
     // ALSO accept any team member from the Team page whose email has a password hash set.
     // (Owner creates logins via Team → member → "Create Login" — generates a random password,
