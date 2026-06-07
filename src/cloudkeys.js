@@ -21,7 +21,12 @@ var CloudKeys = {
     'bm-receptionist-settings', 'bm-pwa-nav', 'bm-app-nav',
     // Passive tracking + time-tracking roadmap toggles
     'bm-passive-track', 'bm-passive-interval', 'bm-passive-dwell-radius', 'bm-passive-dwell-minutes',
-    'bm-auto-clock-in', 'bm-break-tracking', 'bm-ot-shield', 'bm-ot-threshold', 'bm-who-on-clock-badge'
+    'bm-auto-clock-in', 'bm-break-tracking', 'bm-ot-shield', 'bm-ot-threshold', 'bm-who-on-clock-badge',
+    // Recurring/contract job TEMPLATES (the schedules). Generated jobs already
+    // persist to Supabase via DB.jobs.create; this cloud-syncs the templates
+    // themselves so they survive a cache clear and follow the owner across
+    // devices — required parity for SNT's seasonal/recurring work vs Jobber.
+    'bm-recurring'
   ],
 
   ready: false,
