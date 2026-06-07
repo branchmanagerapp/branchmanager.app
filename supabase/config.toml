@@ -132,3 +132,9 @@ verify_jwt = false
 
 [functions.weekly-pnl-report]
 verify_jwt = false
+
+[functions.jobber-oauth-callback]
+verify_jwt = false
+
+[functions.jobber-sync]
+verify_jwt = false

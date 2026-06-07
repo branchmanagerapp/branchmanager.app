@@ -1277,6 +1277,25 @@ var SettingsPage = {
       + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Sign up at <a href="https://gusto.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">gusto.com</a> ($40/mo + $6/employee). Gusto calculates pay from <strong>hours</strong> — each pay period, open BM\'s <strong>Payroll Summary</strong> and key the Regular/OT hours per employee into your Gusto payroll run. (No live API sync today; this token field is not used yet. The separate "ACH-Ready CSV" is a bank batch file for paying employees directly <em>without</em> a payroll provider.)</p>'
       + '</div>';
 
+    // ── Jobber (revenue auto-pull → Weekly P&L) ──
+    var jobberClientId = (localStorage.getItem('bm-jobber-client-id') || '');
+    var jobberOk = jobberClientId.length > 10;
+    html += apiKeyHeader({
+        ok: jobberOk,
+        title: 'Jobber (Revenue Sync)',
+        emoji: '🧾',
+        iconBg: '#1E874B',
+        okText: '✅ Client ID saved — click Connect to authorize Jobber',
+        warnText: '⚠️ Not connected — add your Jobber app Client ID, then Connect'
+      })
+      + '<div style="margin-bottom:8px;"><input type="text" id="jobber-client-id" value="' + jobberClientId.replace(/"/g, '&quot;') + '" placeholder="Jobber app Client ID (public)" style="width:100%;padding:10px;border:2px solid ' + (jobberOk ? 'var(--green-light)' : 'var(--border)') + ';border-radius:8px;font-size:14px;box-sizing:border-box;"></div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      + '<button onclick="var k=document.getElementById(\'jobber-client-id\').value.trim();if(!k){UI.toast(\'Paste your Jobber Client ID first\',\'error\');return;}localStorage.setItem(\'bm-jobber-client-id\',k);UI.toast(\'Saved ✅\');loadPage(\'settings\');" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Save Client ID</button>'
+      + '<button onclick="(function(){var id=(document.getElementById(\'jobber-client-id\').value||localStorage.getItem(\'bm-jobber-client-id\')||\'\').trim();if(!id){UI.toast(\'Save your Client ID first\',\'error\');return;}var tid=(window.resolveTenantId&&window.resolveTenantId())||localStorage.getItem(\'bm-tenant-id\');if(!tid){UI.toast(\'Tenant unknown\',\'error\');return;}var r=encodeURIComponent(\'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/jobber-oauth-callback\');var u=\'https://api.getjobber.com/api/oauth/authorize?client_id=\'+encodeURIComponent(id)+\'&redirect_uri=\'+r+\'&response_type=code&state=\'+encodeURIComponent(tid);window.open(u,\'_blank\',\'noopener,noreferrer\');})()" style="background:#1E874B;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">🔗 Connect Jobber</button>'
+      + '</div>'
+      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Create a developer app at <a href="https://developer.getjobber.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">developer.getjobber.com</a>, set its redirect URI to <code>https://ltpivkqahvplapyagljt.supabase.co/functions/v1/jobber-oauth-callback</code>, paste the <strong>Client ID</strong> here, and set <code>JOBBER_CLIENT_ID</code> + <code>JOBBER_CLIENT_SECRET</code> in Supabase secrets. Then click Connect to authorize your account — revenue auto-syncs into your Weekly P&amp;L report.</p>'
+      + '</div>';
+
     // ── Plaid (Banking) — v856 ──
     // Keys live in tenants.config.plaid (per-tenant, server-side). The
     // localStorage flag is just a UI hint that we've saved keys before;
