@@ -1274,7 +1274,7 @@ var SettingsPage = {
       + '<button onclick="loadPage(\'payroll\');" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Open Payroll</button>'
       + (gustoOk ? '<button onclick="SettingsPage._removeKey(\'bm-gusto-api-key\',\'Gusto\')" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Remove</button>' : '')
       + '</div>'
-      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Sign up at <a href="https://gusto.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">gusto.com</a> ($40/mo + $6/employee). API token is optional — BM Payroll page exports CSV you upload to Gusto manually each pay period. Get token from Gusto Dev Portal.</p>'
+      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Sign up at <a href="https://gusto.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">gusto.com</a> ($40/mo + $6/employee). Gusto calculates pay from <strong>hours</strong> — each pay period, open BM\'s <strong>Payroll Summary</strong> and key the Regular/OT hours per employee into your Gusto payroll run. (No live API sync today; this token field is not used yet. The separate "ACH-Ready CSV" is a bank batch file for paying employees directly <em>without</em> a payroll provider.)</p>'
       + '</div>';
 
     // ── Plaid (Banking) — v856 ──

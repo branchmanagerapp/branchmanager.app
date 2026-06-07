@@ -375,7 +375,7 @@ var PayrollPage = {
       + '<div style="font-size:28px;">' + (payrollReady ? '✅' : '⏳') + '</div>'
       + '<div><div style="font-weight:700;font-size:14px;color:' + (payrollReady ? '#166534' : '#92400e') + ';">' + (payrollReady ? 'Payroll Ready' : 'Payroll Not Ready') + '</div>'
       + '<div style="font-size:12px;color:' + (payrollReady ? '#166534' : '#92400e') + ';">'
-      + (payrollReady ? 'All hours approved, no warnings. Ready to sync with Gusto.' : (pending > 0 ? pending + ' employee(s) pending approval. ' : '') + (warnings.length > 0 ? warnings.length + ' warning(s) to resolve.' : ''))
+      + (payrollReady ? 'All hours approved, no warnings. Open the Payroll Summary to review hours and run payroll.' : (pending > 0 ? pending + ' employee(s) pending approval. ' : '') + (warnings.length > 0 ? warnings.length + ' warning(s) to resolve.' : ''))
       + '</div></div>'
       + (payrollReady ? '<button onclick="PayrollPage.showPayrollSummary(\'' + weekStart + '\')" class="btn btn-primary" style="margin-left:auto;white-space:nowrap;">💰 Run Payroll</button>' : '')
       + '</div>';
@@ -650,6 +650,11 @@ var PayrollPage = {
       + '<td>' + totalOT.toFixed(1) + '</td><td>' + totalHours.toFixed(1) + '</td><td></td>'
       + '<td>$' + grandTotal.toFixed(2) + '</td><td></td></tr>';
     html += '</tbody></table>';
+
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-light);line-height:1.5;">'
+      + '💡 <strong>To run payroll:</strong> enter each employee\'s <strong>Regular</strong> and <strong>OT</strong> hours above into your payroll provider (e.g. Gusto) — it calculates taxes and pays your team. '
+      + 'The <strong>ACH-Ready CSV</strong> is a separate option: a bank batch file to pay employees directly <em>without</em> a payroll provider. <strong>Mark Paid</strong> records the run here once payment is sent.'
+      + '</div>';
 
     // Last run banner if any payroll_run exists for this week
     html += '<div id="last-run-banner" style="margin-top:12px;"></div>';
