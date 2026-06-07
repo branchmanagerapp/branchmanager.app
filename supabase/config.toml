@@ -129,3 +129,6 @@ verify_jwt = false
 #   ai-chat, send-email, transition-blast, sendjim-send,
 #   stripe-charge, stripe-create-link, save-stripe-secret,
 #   marketing-automation (cron-triggered), dialpad-sms-send
+
+[functions.weekly-pnl-report]
+verify_jwt = false
