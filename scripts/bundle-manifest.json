@@ -32,6 +32,7 @@
     "src/pages/crewview.js",
     "src/pages/employeecenter.js",
     "src/pages/budget.js",
+    "src/pages/breakeven.js",
     "src/pages/equipment.js",
     "src/pages/jobcosting.js",
     "src/pages/dispatch.js",

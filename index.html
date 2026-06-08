@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 905; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 906; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1121,7 +1121,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v905.min.js"></script>
+<script defer src="dist/bm.bundle.v906.min.js"></script>
 
 
 
@@ -1353,6 +1353,7 @@ var pageConfigs = {
   crewview: { title: 'Crew View', action: null },
   employeecenter: { title: 'My Pay & Hours', action: null },
   budget: { title: 'Budget Planner', action: null },
+  breakeven: { title: 'Break-Even / Day Budget', action: null },
   dispatch: { title: 'Dispatch', action: 'Open Route', actionFn: 'DispatchPage.openRoute()' },
   clientmap: { title: 'Client Map', action: null },
   photomap: { title: 'Photo Map', action: null },
@@ -1439,6 +1440,7 @@ var ReportsHub = {
       ['profitloss', 'Profit & Loss'],
       ['expenses', 'Expenses'],
       ['jobcosting', 'Job Costing'],
+      ['breakeven', 'Break-Even'],
       ['budget', 'Budget'],
       ['weeklysummary', 'Weekly Summary'],
       ['export', 'Export']
@@ -1454,6 +1456,7 @@ var ReportsHub = {
       else if (r.tab === 'expenses') body = ExpensesPage.render();
       else if (r.tab === 'jobcosting') body = JobCosting.render();
       else if (r.tab === 'budget') body = BudgetPage.render();
+      else if (r.tab === 'breakeven') body = BreakEvenPage.render();
       else if (r.tab === 'weeklysummary') body = WeeklySummary.render();
       else if (r.tab === 'export') body = ReportsPage.render();
     } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
@@ -1599,6 +1602,7 @@ var pageRenderers = {
   crewview: function() { return CrewView.render(); },
   employeecenter: function() { return EmployeeCenter.render(); },
   budget: function() { return BudgetPage.render(); },
+  breakeven: function() { return BreakEvenPage.render(); },
   dispatch: function() { return DispatchPage.render(); },
   clientmap: function() { return ClientMapPage.render(); },
   photomap: function() { return PhotoMap.render(); },
