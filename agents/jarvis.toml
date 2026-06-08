@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# JARVIS — the router. The only agent that stays resident.
+#
+# Jarvis owns the inbound line and the web-form intake, classifies each contact,
+# and hands off. Week one he knows exactly one route: new-customer intake →
+# Sarah. Everything else parks for a human until Tom / Markus exist.
+#
+# Portability: the SAME file runs on the MacBook Air now and the Mac Mini later.
+# Only [model] changes between machines.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[agent]
+name        = "Jarvis"
+role        = "router"
+description = "Warm front-desk router. Receives the inbound call / web inquiry, decides who handles it, hands off, stays resident."
+resident    = true          # never sleeps — first to pick up
+greeting    = "Thanks for calling Second Nature."
+
+# Local inference. Swap engine/model/endpoint when moving Air → Mini; nothing
+# else in this file changes. Jarvis only needs a small/fast model — he classifies
+# and routes, he doesn't hold the conversation.
+[model]
+engine   = "ollama"         # ollama | mlx | llamacpp — whatever OpenJarvis is wired to locally
+name     = "llama3.1:8b"    # small + fast is fine for routing
+endpoint = "http://127.0.0.1:11434"
+temperature = 0.1           # deterministic routing
+
+# ── Channels Jarvis listens on ──────────────────────────────────────────────
+# Both channels produce the same thing downstream: a Lead. Phone is primary.
+
+[[channel]]
+kind     = "phone"
+primary  = true
+provider = "twilio"         # Twilio Voice: PSTN line + caller ID
+# STT in / TTS out run locally on the agent host (engine configured in OpenJarvis).
+# Caller ID (the From number) is passed straight to Sarah so she can confirm
+# identity instead of asking for the number.
+pass_caller_id = true
+
+[[channel]]
+kind     = "web_form"
+primary  = false
+source   = "peekskilltree.com"   # the secondary intake; submissions arrive as a Lead
+# Web-form leads carry source="Website form" (see sarah.toml lead mapping).
+
+# ── Routing table ───────────────────────────────────────────────────────────
+# Jarvis classifies the contact and routes. One rule for week one.
+
+[[route]]
+intent = "new_customer_intake"
+when   = "Caller is a prospective customer asking about tree work, a quote, an estimate, or scheduling a look — and is not a known existing client mid-job."
+to     = "sarah"
+note   = "Sarah does intake only and then sleeps. Jarvis stays warm for the next call."
+
+# Fallbacks — no agent for these in week one, so park for a human.
+[[route]]
+intent = "existing_customer_service"
+when   = "Caller is an existing client about an in-flight job, invoice, or scheduling change."
+to     = "human"            # Tom will take this later
+note   = "Take a message / transfer to owner. (Future: route to Tom.)"
+
+[[route]]
+intent = "crew_or_dispatch"
+when   = "Caller is a crew member or about field/dispatch logistics."
+to     = "human"            # Markus will take this later
+note   = "Transfer to owner. (Future: route to Markus.)"
+
+[[route]]
+intent = "junk"
+when   = "Robocall, spam, wrong number, or solicitation."
+to     = "drop"
+note   = "End politely. Do not create a lead."
+
+# Default if Jarvis is unsure: treat as a prospective customer and hand to Sarah.
+# Better to capture a lead than lose one.
+[routing]
+default_route = "new_customer_intake"
+
+# ── Agents Jarvis can dispatch to ───────────────────────────────────────────
+[[handoff]]
+agent = "sarah"
+spec  = "sarah/sarah.toml"
+sleeps_after = true         # Sarah wakes for intake, finishes the lead, sleeps

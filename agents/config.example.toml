@@ -1,0 +1,29 @@
+# Copy to config.toml and fill in. config.toml is gitignored — never commit secrets.
+# These are the only things that change between machines or tenants.
+
+[runtime]
+# true = exercise the whole path (dedupe, the exact lead row, the SMS body)
+# WITHOUT writing to the DB or sending texts. Flip to false to go live.
+dry_run = true
+
+[supabase]
+url       = "https://ltpivkqahvplapyagljt.supabase.co"
+# ANON key only — agents authenticate as a tenant user; they never hold service-role.
+anon_key  = "REPLACE_WITH_ANON_KEY"
+
+# Sarah's dedicated tenant user (provision once with provisioning/sarah_agent_user.sql).
+# RLS scopes everything she does to this user's tenant (Second Nature).
+[agent_user]
+email     = "sarah@peekskilltree.com"
+password  = "REPLACE_WITH_AGENT_PASSWORD"
+
+[twilio]
+# One SMS provider for the handoff. Voice (the inbound line) is configured in
+# Jarvis's channel + the Twilio console.
+account_sid = "REPLACE_WITH_TWILIO_SID"
+auth_token  = "REPLACE_WITH_TWILIO_AUTH_TOKEN"
+from_number = "+1XXXXXXXXXX"   # the BM/SNT send-from line
+
+# NOTE: handoff recipients (Doug + Catherine) are NOT set here. They live in
+# tenants.config.owner_alert_phones in BM Settings, read at runtime via RLS, so
+# the same code serves any tenant. Set them in Branch Manager, not in this file.
