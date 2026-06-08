@@ -13,6 +13,8 @@ var BreakEvenPage = {
     workDays: 250,        // original sheet used 300; 250 ≈ realistic
     workWeeks: 44,
     dayRate: 5000,
+    directCostPerDay: 1500,  // crew + fuel + materials/dump for one productive crew-day
+    ownerPay: 60000,         // what Doug wants to take out per year
     overhead: [
       { name: 'Insurance — Workers Comp (Paychex)', amt: 53775, flag: true,  note: 'VERIFY vs NYSIF audit — may bundle payroll' },
       { name: 'Insurance — Liability / Auto (Erie)', amt: 16600, flag: false, note: '' },
@@ -69,6 +71,13 @@ var BreakEvenPage = {
     var rev12 = BreakEvenPage._revenueLast(12);
     var revMo = BreakEvenPage._revenueLast(1);
     var annualFloorVsRev = rev12 - fixed;
+    // ── "Work-less" model: how few days cover the nut + your pay ──
+    // Crew is a per-day direct cost here (only paid on work days), so FIXED =
+    // overhead only (ovTotal), NOT the annualized crew labor.
+    var contrib = (parseFloat(c.dayRate) || 0) - (parseFloat(c.directCostPerDay) || 0); // margin/crew-day
+    var daysFixed = contrib > 0 ? ovTotal / contrib : 0;
+    var daysFixedPay = contrib > 0 ? (ovTotal + (parseFloat(c.ownerPay) || 0)) / contrib : 0;
+    var daysOff = 365 - daysFixedPay;
 
     var I = function(val, onCh, w) {
       return '<input type="number" value="' + (val || 0) + '" onchange="' + onCh + '" style="width:' + (w || 90) + 'px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:13px;text-align:right;">';
@@ -95,6 +104,8 @@ var BreakEvenPage = {
       +   '<label style="font-size:13px;">Work Days / Year<br>' + I(c.workDays, "BreakEvenPage._set('workDays',this.value)") + '</label>'
       +   '<label style="font-size:13px;">Work Weeks / Year<br>' + I(c.workWeeks, "BreakEvenPage._set('workWeeks',this.value)") + '</label>'
       +   '<label style="font-size:13px;">Target Day Rate ($)<br>' + I(c.dayRate, "BreakEvenPage._set('dayRate',this.value)") + '</label>'
+      +   '<label style="font-size:13px;">Direct cost / work day ($)<br>' + I(c.directCostPerDay, "BreakEvenPage._set('directCostPerDay',this.value)") + '</label>'
+      +   '<label style="font-size:13px;">Your pay / year ($)<br>' + I(c.ownerPay, "BreakEvenPage._set('ownerPay',this.value)") + '</label>'
       + '</div>'
       + '<div style="margin-top:10px;font-size:12px;color:var(--text-light);">'
       +   '= <b>' + dpm.toFixed(1) + '</b> days/month &nbsp;·&nbsp; <b>' + dpw.toFixed(1) + '</b> days/week (across 52) &nbsp;·&nbsp; <b>' + dpww.toFixed(1) + '</b> days/working-week (across ' + c.workWeeks + ')'
@@ -106,6 +117,18 @@ var BreakEvenPage = {
       + BreakEvenPage._stat('Min / Work Day', BreakEvenPage._money(perDay), 'var(--card)', 'var(--text)', '')
       + BreakEvenPage._stat('Annual Fixed Floor', BreakEvenPage._money(fixed), 'var(--card)', 'var(--text)', 'overhead + crew')
       + BreakEvenPage._stat('Revenue (last 12mo)', BreakEvenPage._money(rev12), 'var(--card)', (annualFloorVsRev >= 0 ? '#0a7d2c' : '#c0271d'), (annualFloorVsRev >= 0 ? 'covers floor +' + BreakEvenPage._money(annualFloorVsRev) : 'SHORT ' + BreakEvenPage._money(-annualFloorVsRev)))
+      + '</div>';
+
+    // ── WORK-LESS MODEL (days to cover the nut → time off) ──
+    html += '<div style="background:#eef7f0;border:1px solid #bfe3c9;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="font-weight:700;margin-bottom:4px;">🌴 How few days can you work? (the time-off model)</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Each booked crew-day at $' + Math.round(c.dayRate).toLocaleString() + ' nets <b>' + BreakEvenPage._money(contrib) + '</b> toward fixed costs after the $' + Math.round(c.directCostPerDay).toLocaleString() + ' it costs to run that day. So:</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">'
+      +   BreakEvenPage._stat('Days to cover OVERHEAD', Math.ceil(daysFixed) + ' days', '#fff', '#0a7d2c', 'just the fixed nut')
+      +   BreakEvenPage._stat('Days to ALSO pay you ' + BreakEvenPage._money(c.ownerPay), Math.ceil(daysFixedPay) + ' days', '#fff', '#0a7d2c', 'fixed + your pay')
+      +   BreakEvenPage._stat('That leaves you', Math.max(0, Math.floor(daysOff)) + ' days off', '#fff3cd', '#7c5a00', '≈ ' + Math.floor(daysOff / 7) + ' weeks off/yr')
+      + '</div>'
+      + '<div style="font-size:12px;color:#2c5a36;margin-top:10px;line-height:1.5;">Work just <b>' + Math.ceil(daysFixedPay) + ' solid $' + Math.round(c.dayRate).toLocaleString() + ' days a year</b> and the company covers all fixed costs AND pays you ' + BreakEvenPage._money(c.ownerPay) + '. The rest is time off (Catherine’s Prague/Tokyo, your own). The catch isn’t the cost structure — it’s <b>booking + collecting</b> those days. Raise the day rate or cut a fixed line (e.g. kill a dead-machine lease) and the required days drop further.</div>'
       + '</div>';
 
     // ── ANNUAL OVERHEAD ──
