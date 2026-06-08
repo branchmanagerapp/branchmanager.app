@@ -313,6 +313,7 @@ var SchedulePage = {
       +     _viewPill('day', 'Day')
       +     _viewPill('week', 'Week')
       +     _viewPill('month', 'Month')
+      +     _viewPill('year', 'Year')
       +     _viewPill('list', 'List')
       +     _viewPill('map', 'Map')
       +   '</div>'
@@ -346,6 +347,8 @@ var SchedulePage = {
       } else {
         html += calBody;
       }
+    } else if (self.view === 'year') {
+      html += self._renderYear();
     } else {
       html += self._renderMonth();
     }
@@ -431,6 +434,9 @@ var SchedulePage = {
     }
     if (SchedulePage.view === 'month') {
       return months[d.getMonth()] + ' ' + d.getFullYear();
+    }
+    if (SchedulePage.view === 'year') {
+      return String(d.getFullYear());
     }
     var start = new Date(d);
     start.setDate(start.getDate() - start.getDay());
@@ -1077,6 +1083,7 @@ var SchedulePage = {
     var v = SchedulePage.view;
     if (v === 'day' || v === 'list' || v === 'map') { d.setDate(d.getDate() - 1); }
     else if (v === 'week') { d.setDate(d.getDate() - 7); }
+    else if (v === 'year') { d.setFullYear(d.getFullYear() - 1); }
     else { d.setMonth(d.getMonth() - 1); }
     loadPage('schedule');
   },
@@ -1086,6 +1093,7 @@ var SchedulePage = {
     var v = SchedulePage.view;
     if (v === 'day' || v === 'list' || v === 'map') { d.setDate(d.getDate() + 1); }
     else if (v === 'week') { d.setDate(d.getDate() + 7); }
+    else if (v === 'year') { d.setFullYear(d.getFullYear() + 1); }
     else { d.setMonth(d.getMonth() + 1); }
     loadPage('schedule');
   },
@@ -1157,6 +1165,68 @@ var SchedulePage = {
         + '</button>';
     }
     html += '</div>';
+    return html;
+  },
+
+  // Year view — 12-month overview built for the "days worked per year"
+  // planning lens. Each month shows scheduled-job count, distinct work-days,
+  // and scheduled revenue; click a month to open it. Counts come from BM
+  // scheduled jobs (future months fill in as Jobber work is pulled / scheduled).
+  _renderYear: function() {
+    var d = SchedulePage.currentDate;
+    var year = d.getFullYear();
+    var now = new Date();
+    var nowY = now.getFullYear(), nowM = now.getMonth();
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var buckets = [];
+    for (var i = 0; i < 12; i++) buckets.push({ jobs: 0, days: {}, revenue: 0 });
+    var yearDays = {}, yearJobs = 0, yearRev = 0;
+    allJobs.forEach(function(j) {
+      if (!j.scheduledDate) return;
+      var ds = j.scheduledDate.substring(0, 10);
+      if (ds.substring(0, 4) !== String(year)) return;
+      var m = parseInt(ds.substring(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      var rev = parseFloat(j.total) || 0;
+      buckets[m].jobs++; buckets[m].days[ds] = 1; buckets[m].revenue += rev;
+      yearDays[ds] = 1; yearJobs++; yearRev += rev;
+    });
+    var totalWorkDays = Object.keys(yearDays).length;
+
+    function stat(v, l) {
+      return '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">'
+        + '<div style="font-size:22px;font-weight:800;color:var(--green-dark);">' + v + '</div>'
+        + '<div style="font-size:12px;color:var(--text-light);">' + l + '</div></div>';
+    }
+
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">'
+      + stat(totalWorkDays, 'days worked in ' + year)
+      + stat(yearJobs, 'jobs scheduled')
+      + stat((typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(yearRev) : ('$' + Math.round(yearRev)), 'scheduled revenue')
+      + '</div>';
+
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">';
+    for (var mo = 0; mo < 12; mo++) {
+      var b = buckets[mo];
+      var dcount = Object.keys(b.days).length;
+      var isCur = (year === nowY && mo === nowM);
+      var bg = b.jobs === 0 ? 'var(--white)' : 'rgba(46,90,30,' + Math.min(0.08 + b.jobs * 0.05, 0.4) + ')';
+      var revStr = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(b.revenue) : ('$' + Math.round(b.revenue));
+      html += '<div onclick="SchedulePage.currentDate=new Date(' + year + ',' + mo + ',1);SchedulePage.view=\'month\';loadPage(\'schedule\')" '
+        + 'style="cursor:pointer;background:' + bg + ';border:' + (isCur ? '2px solid var(--green-dark)' : '1px solid var(--border)') + ';border-radius:10px;padding:12px;min-height:84px;display:flex;flex-direction:column;justify-content:space-between;">'
+        + '<div style="font-weight:700;font-size:14px;">' + months[mo] + (isCur ? ' <span style="font-size:10px;color:var(--green-dark);">(now)</span>' : '') + '</div>'
+        + (b.jobs > 0
+            ? '<div><div style="font-size:20px;font-weight:800;color:var(--green-dark);">' + b.jobs + '</div>'
+              + '<div style="font-size:11px;color:var(--text-light);">' + dcount + ' day' + (dcount === 1 ? '' : 's') + ' &middot; ' + revStr + '</div></div>'
+            : '<div style="font-size:11px;color:var(--text-light);">no jobs</div>')
+        + '</div>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--text-light);margin-top:10px;">Click a month to open it. Counts are scheduled jobs in Branch Manager — future months fill in as Jobber work is pulled in or jobs get scheduled.</div>';
     return html;
   },
 
