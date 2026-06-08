@@ -249,7 +249,10 @@ Deno.serve(async (req) => {
     }, { onConflict: "call_sid" });
 
     const voice = tenant.config.voice || "Polly.Joanna-Neural";
-    const turnUrl = `${url.origin}${url.pathname}?action=turn`;
+    // Build the turn callback from the PUBLIC function URL, not req.url —
+    // req.url is the function's internal URL (http://…/bm-receptionist, missing
+    // /functions/v1/), which Twilio can't reach → "application error". (2026-06-07)
+    const turnUrl = `${SUPABASE_URL}/functions/v1/bm-receptionist?action=turn`;
     return twimlResponse(`<Response>
       <Say voice="${escapeXml(voice)}">${escapeXml(greeting)}</Say>
       <Gather input="speech" action="${escapeXml(turnUrl)}" method="POST" speechTimeout="auto" speechModel="phone_call" language="en-US">
@@ -296,7 +299,10 @@ Deno.serve(async (req) => {
     await sb.from("receptionist_calls").update({ turns, transcript: turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join("\n") }).eq("call_sid", callSid);
 
     const voice = cfg.voice || "Polly.Joanna-Neural";
-    const turnUrl = `${url.origin}${url.pathname}?action=turn`;
+    // Build the turn callback from the PUBLIC function URL, not req.url —
+    // req.url is the function's internal URL (http://…/bm-receptionist, missing
+    // /functions/v1/), which Twilio can't reach → "application error". (2026-06-07)
+    const turnUrl = `${SUPABASE_URL}/functions/v1/bm-receptionist?action=turn`;
 
     if (!reply.done) {
       return twimlResponse(`<Response>
