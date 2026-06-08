@@ -961,13 +961,14 @@ var RequestsPage = {
 
   _updateBulk: function() {
     var bar = document.getElementById('req-bulk-bar');
-    var count = document.querySelectorAll('.req-check:checked').length;
+    var count = RequestsPage._bulkIds().length;   // unique IDs (each row renders a desktop + mobile checkbox)
     if (!bar) return;
     bar.style.display = count > 0 ? 'flex' : 'none';
     var cntEl = document.getElementById('req-bulk-count');
     if (cntEl) cntEl.textContent = count + ' selected';
   },
-  _bulkIds: function() { return Array.from(document.querySelectorAll('.req-check:checked')).map(function(cb){ return cb.value; }); },
+  // Dedupe: each request renders TWO .req-check boxes (desktop table + mobile card), so unique by value.
+  _bulkIds: function() { return Array.from(new Set(Array.from(document.querySelectorAll('.req-check:checked')).map(function(cb){ return cb.value; }))); },
   _bulkClear: function() { document.querySelectorAll('.req-check:checked').forEach(function(cb){ cb.checked = false; }); RequestsPage._updateBulk(); },
   _bulkDelete: function() {
     var ids = RequestsPage._bulkIds();
