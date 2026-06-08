@@ -53,11 +53,13 @@ var BreakEvenPage = {
   _actualDayStats: function() {
     try {
       var jobs = (typeof DB !== 'undefined' && DB.jobs) ? DB.jobs.getAll() : [];
+      var SNOW = /snow|plow|plough|salt|sand|de-?ic/i;   // exclude snowplow — it's many tiny jobs/day, distorts tree avg
       var vals = [];
       jobs.forEach(function(j) {
         var done = (j.status === 'completed' || j.status === 'invoiced' || j.status === 'paid' || j.completedDate || j.completedAt);
         var v = parseFloat(j.total) || 0;
-        if (done && v > 0) vals.push(v);
+        var txt = String((j.description || '') + ' ' + (j.notes || ''));
+        if (done && v > 0 && !SNOW.test(txt)) vals.push(v);
       });
       if (!vals.length) return null;
       vals.sort(function(a, b) { return a - b; });
@@ -131,7 +133,7 @@ var BreakEvenPage = {
       +   '= <b>' + dpm.toFixed(1) + '</b> days/month &nbsp;·&nbsp; <b>' + dpw.toFixed(1) + '</b> days/week (across 52) &nbsp;·&nbsp; <b>' + dpww.toFixed(1) + '</b> days/working-week (across ' + c.workWeeks + ')'
       + '</div>'
       + (act ? '<div style="margin-top:8px;font-size:12px;padding:8px 10px;background:#fff8e6;border:1px solid #f0d98a;border-radius:8px;">'
-          + '📊 <b>Actual avg per JOB: ' + BreakEvenPage._money(act.avg) + '</b> (median ' + BreakEvenPage._money(act.median) + ', ' + act.jobs + ' jobs). '
+          + '📊 <b>Actual avg per TREE job: ' + BreakEvenPage._money(act.avg) + '</b> (median ' + BreakEvenPage._money(act.median) + ', ' + act.jobs + ' jobs · snowplow excluded). '
           + 'Note: jobs often span multiple days and BM doesn\'t track days-per-job, so a true per-day rate can\'t be computed from data — set the Target Day Rate above to what a crew-day actually bills.</div>' : '')
       + '</div>';
 
