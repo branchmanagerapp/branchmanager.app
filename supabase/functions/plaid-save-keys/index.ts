@@ -19,6 +19,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { writePlaidSecret } from '../_shared/plaid.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -83,15 +84,24 @@ async function testPlaidCreds(clientId: string, secret: string, env: string): Pr
   }
 }
 
-async function mergeIntoConfig(tenantId: string, plaidPatch: any) {
-  // Read existing config so we don't blast out other keys (bouncie, stripe, etc.)
+// SECURITY (2026-06-07): Plaid creds now go to the locked `tenant_secrets`
+// table, NOT tenants.config (which is anon-readable and leaked the secret).
+// We still write a NON-secret marker into config so the Settings UI can show
+// "Plaid connected" + the env without ever exposing the secret.
+async function saveCreds(tenantId: string, clientId: string | null, secret: string | null, env: string | null) {
+  // 1. Secret material → tenant_secrets (owner-only RLS, never anon).
+  await writePlaidSecret(tenantId, { client_id: clientId, secret, env });
+
+  // 2. Non-secret marker → config (safe to be anon-readable).
   const get = await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tenantId}&select=config`, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
   });
   if (!get.ok) throw new Error(`Read tenants: ${get.status}`);
   const rows = await get.json();
   const existing = (rows && rows[0] && rows[0].config) || {};
-  const merged = { ...existing, plaid: { ...(existing.plaid || {}), ...plaidPatch } };
+  // Strip any legacy plaid blob and drop a clean marker.
+  const { plaid: _legacy, ...rest } = existing;
+  const merged = { ...rest, plaid_configured: !!(clientId && secret), plaid_env: (clientId && secret) ? env : null };
 
   const put = await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tenantId}`, {
     method: 'PATCH',
@@ -127,7 +137,7 @@ serve(async (req) => {
   // Allow CLEARING keys by passing empty strings.
   if (!clientId && !secret) {
     try {
-      await mergeIntoConfig(tenantId, { client_id: null, secret: null, env: null });
+      await saveCreds(tenantId, null, null, null);
       return json(200, { ok: true, cleared: true });
     } catch (e) {
       return json(500, { ok: false, error: `Clear failed: ${(e as Error).message}` });
@@ -141,7 +151,7 @@ serve(async (req) => {
   if (!test.ok) return json(400, { ok: false, error: `Plaid rejected the keys: ${test.msg}` });
 
   try {
-    await mergeIntoConfig(tenantId, { client_id: clientId, secret, env });
+    await saveCreds(tenantId, clientId, secret, env);
   } catch (e) {
     return json(500, { ok: false, error: `Save failed: ${(e as Error).message}` });
   }

@@ -32,7 +32,7 @@ const CORS = {
 // v856: per-tenant Plaid creds via _shared/plaid.ts. Each tenant in
 // the same sync run gets their own creds — necessary because the cron
 // runs the fn with no tenant_id and we iterate every tenant's items.
-import { resolvePlaidCreds, type PlaidCreds } from '../_shared/plaid.ts';
+import { resolvePlaidCreds, readPlaidSecret, writePlaidSecret, type PlaidCreds } from '../_shared/plaid.ts';
 
 const SUPA_URL = Deno.env.get('SUPABASE_URL') || 'https://ltpivkqahvplapyagljt.supabase.co';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -153,39 +153,24 @@ serve(async (req) => {
   //  - First call with empty cursor returns historical backfill in chunks
   //    (has_more=true repeats until all history pulled).
   //
-  // Cursor per item is persisted in tenants.config.plaid.cursors[item_id]
-  // so we don't need a new schema. fullBackfill flag now means "wipe the
-  // stored cursor before syncing" — forces Plaid to re-send all history.
+  // Cursor per item is persisted in tenant_secrets (key='plaid').cursors[item_id].
+  // SECURITY (2026-06-07): moved off tenants.config.plaid (anon-readable) into the
+  // locked tenant_secrets store. fullBackfill flag means "wipe the stored cursor
+  // before syncing" — forces Plaid to re-send all history.
 
-  // Helper — read/write tenant.config.plaid.cursors safely.
+  // Helper — read/write the cursors map inside the tenant's plaid secret blob.
   async function getCursor(tid: string, iid: string): Promise<string | null> {
     try {
-      const r = await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tid}&select=config`, {
-        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-      });
-      if (!r.ok) return null;
-      const rows = await r.json();
-      const c = rows && rows[0] && rows[0].config && rows[0].config.plaid && rows[0].config.plaid.cursors;
+      const blob = await readPlaidSecret(tid);
+      const c = blob && blob.cursors;
       return (c && c[iid]) || null;
     } catch { return null; }
   }
   async function setCursor(tid: string, iid: string, cursor: string) {
     try {
-      // Merge into tenants.config.plaid.cursors via SQL jsonb_set
-      // (postgrest can't do nested jsonb merge directly, so we read+write).
-      const getR = await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tid}&select=config`, {
-        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-      });
-      const rows = await getR.json();
-      const cfg = (rows && rows[0] && rows[0].config) || {};
-      cfg.plaid = cfg.plaid || {};
-      cfg.plaid.cursors = cfg.plaid.cursors || {};
-      cfg.plaid.cursors[iid] = cursor;
-      await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${tid}`, {
-        method: 'PATCH',
-        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ config: cfg }),
-      });
+      const blob = (await readPlaidSecret(tid)) || {};
+      const cursors = { ...(blob.cursors || {}), [iid]: cursor };
+      await writePlaidSecret(tid, { cursors });
     } catch (e) {
       console.warn(`Failed to persist cursor for item ${iid}:`, (e as Error).message);
     }
