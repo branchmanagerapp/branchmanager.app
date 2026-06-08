@@ -48,6 +48,24 @@ var BreakEvenPage = {
 
   _money: function(n) { return '$' + Math.round(n || 0).toLocaleString(); },
 
+  // Actual avg revenue per WORK-DAY, computed live from completed jobs.
+  _actualDayStats: function() {
+    try {
+      var jobs = (typeof DB !== 'undefined' && DB.jobs) ? DB.jobs.getAll() : [];
+      var byday = {};
+      jobs.forEach(function(j) {
+        var done = (j.status === 'completed' || j.status === 'invoiced' || j.status === 'paid' || j.completedDate || j.completedAt);
+        var d = String(j.completedDate || j.completedAt || j.scheduledDate || '').slice(0, 10);
+        if (d && done) byday[d] = (byday[d] || 0) + (parseFloat(j.total) || 0);
+      });
+      var vals = Object.keys(byday).map(function(k) { return byday[k]; }).filter(function(v) { return v > 0; });
+      if (!vals.length) return null;
+      vals.sort(function(a, b) { return a - b; });
+      var tot = vals.reduce(function(a, b) { return a + b; }, 0);
+      return { days: vals.length, avg: tot / vals.length, median: vals[Math.floor(vals.length / 2)] };
+    } catch (e) { return null; }
+  },
+
   // Live revenue from invoices
   _revenueLast: function(months) {
     try {
@@ -70,6 +88,7 @@ var BreakEvenPage = {
     var perWeek = fixed / (parseFloat(c.workWeeks) || 1);
     var rev12 = BreakEvenPage._revenueLast(12);
     var revMo = BreakEvenPage._revenueLast(1);
+    var act = BreakEvenPage._actualDayStats();
     var annualFloorVsRev = rev12 - fixed;
     // ── "Work-less" model: how few days cover the nut + your pay ──
     // Crew is a per-day direct cost here (only paid on work days), so FIXED =
@@ -110,7 +129,11 @@ var BreakEvenPage = {
       + '</div>'
       + '<div style="margin-top:10px;font-size:12px;color:var(--text-light);">'
       +   '= <b>' + dpm.toFixed(1) + '</b> days/month &nbsp;·&nbsp; <b>' + dpw.toFixed(1) + '</b> days/week (across 52) &nbsp;·&nbsp; <b>' + dpww.toFixed(1) + '</b> days/working-week (across ' + c.workWeeks + ')'
-      + '</div></div>';
+      + '</div>'
+      + (act ? '<div style="margin-top:8px;font-size:12px;padding:8px 10px;background:#fff8e6;border:1px solid #f0d98a;border-radius:8px;">'
+          + '📊 <b>Your ACTUAL avg from completed jobs: ' + BreakEvenPage._money(act.avg) + '/work-day</b> (median ' + BreakEvenPage._money(act.median) + ', over ' + act.days + ' work-days). '
+          + 'Target above is ' + BreakEvenPage._money(c.dayRate) + ' — the gap is your lever.</div>' : '')
+      + '</div>';
 
     // ── BREAK-EVEN HEADLINE ──
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">'
