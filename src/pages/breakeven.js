@@ -84,12 +84,12 @@ var BreakEvenPage = {
     };
 
     var html = ''
-      + '<div style="max-width:1000px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">'
-      +   '<h2 style="margin:0;font-size:22px;font-weight:700;">⚖️ Break-Even / Day Budget</h2>'
+      + '<div style="max-width:1000px;padding-top:8px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin:0 0 4px;">'
+      +   '<h3 style="margin:0;font-size:16px;font-weight:700;">⚖️ Day Budget</h3>'
       +   '<span style="font-size:12px;color:var(--text-light);">Minimum to keep operating · live revenue from invoices</span>'
       + '</div>'
-      + '<p style="font-size:12px;color:var(--text-light);margin:0 0 16px;">Edit any number below — it saves and recomputes instantly. Yellow = assumption to confirm.</p>';
+      + '<p style="font-size:12px;color:var(--text-light);margin:0 0 14px;">Edit any number below — it saves and recomputes instantly. Yellow = assumption to confirm.</p>';
 
     // ── DRIVERS ──
     var dpm = (parseFloat(c.workDays) || 0) / 12;
