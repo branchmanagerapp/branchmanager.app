@@ -110,6 +110,123 @@ var SchedulePage = {
     return SchedulePage._getReminderIndex()[dateStr] || [];
   },
 
+  // ── Calendar events: time off / personal / notes (cloud-backed, RLS) ──────
+  // These are NON-job calendar items (e.g. "Catherine — Prague", "Braxton —
+  // day-rate job"). Stored in the calendar_events table; loaded once per session
+  // into a date→[events] index and re-rendered when they arrive.
+  _eventsEnabled: function() {
+    return localStorage.getItem('bm-cal-events') !== 'false'; // default ON
+  },
+  _toggleEvents: function() {
+    localStorage.setItem('bm-cal-events', SchedulePage._eventsEnabled() ? 'false' : 'true');
+    loadPage('schedule');
+  },
+  _loadCalEvents: function() {
+    if (window._bmCalEventsLoaded) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) return; // not ready yet — will load on a later render
+    window._bmCalEventsLoaded = true;
+    sb.from('calendar_events').select('*').then(function(res) {
+      var idx = {};
+      (res && res.data ? res.data : []).forEach(function(ev) {
+        var s = (ev.start_date || '').substring(0, 10);
+        if (!s) return;
+        var e = (ev.end_date || s).substring(0, 10);
+        var cur = new Date(s + 'T12:00:00'), end = new Date(e + 'T12:00:00');
+        var guard = 0;
+        while (cur <= end && guard < 400) {
+          var ds = SchedulePage._localDateStr(cur);
+          (idx[ds] = idx[ds] || []).push(ev);
+          cur.setDate(cur.getDate() + 1); guard++;
+        }
+      });
+      window._bmCalEventsIndex = idx;
+      if (typeof loadPage === 'function') loadPage('schedule'); // re-render with events
+    }).catch(function() { /* table may not exist yet — ignore */ });
+  },
+  _getCalEventsForDate: function(dateStr) {
+    return (window._bmCalEventsIndex || {})[dateStr] || [];
+  },
+  _eventColor: function(ev) {
+    if (ev.color) return ev.color;
+    return ev.type === 'time_off' ? '#8e44ad' : ev.type === 'personal' ? '#e07c24' : '#1565c0';
+  },
+  _renderEventPill: function(ev) {
+    var color = SchedulePage._eventColor(ev);
+    var icon = ev.type === 'time_off' ? '🌴' : ev.type === 'personal' ? '👤' : '📌';
+    var label = (ev.person ? ev.person + ' — ' : '') + (ev.title || 'Event');
+    return '<div onclick="event.stopPropagation();SchedulePage.editEvent(\'' + ev.id + '\')" title="' + UI.esc(label) + '" '
+      + 'style="background:' + color + '22;border-left:3px solid ' + color + ';border-radius:4px;padding:1px 4px;margin-bottom:2px;font-size:9px;color:' + color + ';font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+      + icon + ' ' + UI.esc(label) + '</div>';
+  },
+  // Lightweight add/edit modal for a calendar event.
+  addEvent: function(dateStr) {
+    SchedulePage._openEventModal(null, dateStr);
+  },
+  editEvent: function(id) {
+    var ev = null, idx = window._bmCalEventsIndex || {};
+    Object.keys(idx).some(function(k) { return idx[k].some(function(e) { if (e.id === id) { ev = e; return true; } }); });
+    SchedulePage._openEventModal(ev, ev ? ev.start_date : null);
+  },
+  _openEventModal: function(ev, dateStr) {
+    var d = (ev && ev.start_date) ? ev.start_date.substring(0,10) : (dateStr || SchedulePage._localDateStr(SchedulePage.currentDate));
+    var end = (ev && ev.end_date) ? ev.end_date.substring(0,10) : d;
+    var type = ev ? ev.type : 'time_off';
+    function opt(v, l) { return '<option value="' + v + '"' + (type === v ? ' selected' : '') + '>' + l + '</option>'; }
+    var ov = document.createElement('div');
+    ov.id = 'bm-event-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
+      + '<div style="font-weight:800;font-size:16px;margin-bottom:14px;">' + (ev ? 'Edit' : 'Add') + ' calendar item</div>'
+      + '<label style="font-size:12px;font-weight:600;color:#555;">Type</label>'
+      + '<select id="ev-type" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">' + opt('time_off', '🌴 Time off') + opt('personal', '👤 Personal / day-rate') + opt('note', '📌 Note') + '</select>'
+      + '<label style="font-size:12px;font-weight:600;color:#555;">Who (optional)</label>'
+      + '<input id="ev-person" placeholder="Catherine, Braxton, Doug…" value="' + (ev && ev.person ? UI.esc(ev.person) : '') + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">'
+      + '<label style="font-size:12px;font-weight:600;color:#555;">Title</label>'
+      + '<input id="ev-title" placeholder="e.g. Prague trip" value="' + (ev && ev.title ? UI.esc(ev.title) : '') + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">'
+      + '<div style="display:flex;gap:10px;">'
+      +   '<div style="flex:1;"><label style="font-size:12px;font-weight:600;color:#555;">Start</label><input id="ev-start" type="date" value="' + d + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin-top:4px;"></div>'
+      +   '<div style="flex:1;"><label style="font-size:12px;font-weight:600;color:#555;">End</label><input id="ev-end" type="date" value="' + end + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin-top:4px;"></div>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">'
+      +   (ev ? '<button onclick="SchedulePage.deleteEvent(\'' + ev.id + '\')" style="background:none;border:none;color:#c62828;font-weight:700;cursor:pointer;">Delete</button>' : '<span></span>')
+      +   '<div><button onclick="document.getElementById(\'bm-event-modal\').remove()" style="background:#eee;border:none;padding:9px 16px;border-radius:8px;font-weight:600;cursor:pointer;margin-right:8px;">Cancel</button>'
+      +   '<button onclick="SchedulePage.saveEvent(' + (ev ? '\'' + ev.id + '\'' : 'null') + ')" style="background:var(--green-dark);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;">Save</button></div>'
+      + '</div></div>';
+    document.body.appendChild(ov);
+  },
+  saveEvent: function(id) {
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) { UI.toast && UI.toast('Not connected'); return; }
+    var row = {
+      type: document.getElementById('ev-type').value,
+      person: document.getElementById('ev-person').value.trim() || null,
+      title: document.getElementById('ev-title').value.trim() || 'Event',
+      start_date: document.getElementById('ev-start').value,
+      end_date: document.getElementById('ev-end').value || document.getElementById('ev-start').value
+    };
+    if (typeof window.resolveTenantId === 'function') row.tenant_id = window.resolveTenantId();
+    var q = id ? sb.from('calendar_events').update(row).eq('id', id) : sb.from('calendar_events').insert(row);
+    q.then(function(res) {
+      var m = document.getElementById('bm-event-modal'); if (m) m.remove();
+      if (res && res.error) { UI.toast && UI.toast('Save failed: ' + res.error.message); return; }
+      window._bmCalEventsLoaded = false; // force reload
+      SchedulePage._loadCalEvents();
+      UI.toast && UI.toast('Saved');
+    });
+  },
+  deleteEvent: function(id) {
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb || !id) return;
+    sb.from('calendar_events').delete().eq('id', id).then(function() {
+      var m = document.getElementById('bm-event-modal'); if (m) m.remove();
+      window._bmCalEventsLoaded = false;
+      SchedulePage._loadCalEvents();
+      UI.toast && UI.toast('Deleted');
+    });
+  },
+
   // Paint recurring-job projected occurrences on the calendar.
   // Reads from RecurringJobs.getAll() and walks the cadence forward from
   // startDate within a +/-90 day window.
@@ -296,12 +413,14 @@ var SchedulePage = {
       +   '<button class="btn btn-outline" onclick="SchedulePage.next()" style="padding:4px 10px;">&rarr;</button>'
       +   '<button class="btn btn-outline" onclick="SchedulePage.goToday()" style="font-size:12px;padding:4px 10px;">Today</button>'
       +   '<button onclick="JobsPage.showForm()" style="font-size:12px;padding:5px 12px;background:var(--green-dark);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New Job</button>'
+      +   '<button onclick="SchedulePage.addEvent()" title="Add time off / personal item" style="font-size:12px;padding:5px 12px;background:#8e44ad;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Time off</button>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;">'
       +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
       +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
       +   toggleSwitch('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
       +   toggleSwitch('Recurring', SchedulePage._recurringEnabled(), 'SchedulePage._toggleRecurring()')
+      +   toggleSwitch('Time Off', SchedulePage._eventsEnabled(), 'SchedulePage._toggleEvents()')
       +   ((self.view === 'week' || self.view === 'month') ? toggleSwitch('Panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
       +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
       + '</div>'
@@ -318,6 +437,9 @@ var SchedulePage = {
       +     _viewPill('map', 'Map')
       +   '</div>'
       + '</div>';
+
+    // Load cloud calendar events (time off / personal) once; re-renders on arrival.
+    self._loadCalEvents();
 
     // v647: Week scroller strip (S/M/T/W/T/F/S) — visible in Day/List/Map
     // views since those are single-day-focused. Hidden in Week/Month
@@ -1060,6 +1182,9 @@ var SchedulePage = {
         var monthRec = SchedulePage._getRecurringForDate(dateStr);
         monthRec.forEach(function(r) { html += SchedulePage._renderRecurringPill(r, true); });
       }
+      if (SchedulePage._eventsEnabled()) {
+        SchedulePage._getCalEventsForDate(dateStr).forEach(function(ev) { html += SchedulePage._renderEventPill(ev); });
+      }
       html += '</div>';
     }
 
@@ -1197,6 +1322,15 @@ var SchedulePage = {
     });
     var totalWorkDays = Object.keys(yearDays).length;
 
+    // Distinct calendar events (time off / personal) per month, from the loaded index.
+    var evIdx = window._bmCalEventsIndex || {};
+    Object.keys(evIdx).forEach(function(ds) {
+      if (ds.substring(0, 4) !== String(year)) return;
+      var m = parseInt(ds.substring(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      evIdx[ds].forEach(function(e) { (buckets[m]._ev = buckets[m]._ev || {})[e.id] = 1; });
+    });
+
     function stat(v, l) {
       return '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">'
         + '<div style="font-size:22px;font-weight:800;color:var(--green-dark);">' + v + '</div>'
@@ -1218,7 +1352,8 @@ var SchedulePage = {
       var revStr = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(b.revenue) : ('$' + Math.round(b.revenue));
       html += '<div onclick="SchedulePage.currentDate=new Date(' + year + ',' + mo + ',1);SchedulePage.view=\'month\';loadPage(\'schedule\')" '
         + 'style="cursor:pointer;background:' + bg + ';border:' + (isCur ? '2px solid var(--green-dark)' : '1px solid var(--border)') + ';border-radius:10px;padding:12px;min-height:84px;display:flex;flex-direction:column;justify-content:space-between;">'
-        + '<div style="font-weight:700;font-size:14px;">' + months[mo] + (isCur ? ' <span style="font-size:10px;color:var(--green-dark);">(now)</span>' : '') + '</div>'
+        + '<div style="font-weight:700;font-size:14px;">' + months[mo] + (isCur ? ' <span style="font-size:10px;color:var(--green-dark);">(now)</span>' : '')
+          + ((b._ev && Object.keys(b._ev).length) ? ' <span title="time off / events" style="font-size:11px;">🌴' + Object.keys(b._ev).length + '</span>' : '') + '</div>'
         + (b.jobs > 0
             ? '<div><div style="font-size:20px;font-weight:800;color:var(--green-dark);">' + b.jobs + '</div>'
               + '<div style="font-size:11px;color:var(--text-light);">' + dcount + ' day' + (dcount === 1 ? '' : 's') + ' &middot; ' + revStr + '</div></div>'
