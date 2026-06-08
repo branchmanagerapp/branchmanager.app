@@ -9,7 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveApiKey, getApiKey } from '../api/assistant';
 import { saveGustoConfig, getGustoConfig, disconnectGusto } from '../api/gusto';
 import { getQueue, syncQueue, clearQueue } from '../utils/offline';
-import { startTracking, stopTracking, isTrackingEnabled, isTrackingRunning } from '../tracking/locationTracker';
+import { startTracking, stopTracking, isTrackingEnabled, setBaseToCurrentLocation } from '../tracking/locationTracker';
+import { getBase } from '../tracking/trackingStore';
 import { useAuth } from '../hooks/useAuth';
 
 export function SettingsScreen({ navigation }: any) {
@@ -20,6 +21,7 @@ export function SettingsScreen({ navigation }: any) {
   const [offlineCount, setOfflineCount] = useState(0);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [trackEnabled, setTrackEnabled] = useState(false);
+  const [baseSet, setBaseSet] = useState(false);
 
   useEffect(() => {
     getApiKey().then(k => setClaudeKey(k || ''));
@@ -28,7 +30,14 @@ export function SettingsScreen({ navigation }: any) {
     });
     getQueue().then(q => setOfflineCount(q.length));
     isTrackingEnabled().then(setTrackEnabled);
+    getBase().then(b => setBaseSet(!!b));
   }, []);
+
+  const handleSetBase = async () => {
+    const res = await setBaseToCurrentLocation('Yard');
+    if (res.ok) { setBaseSet(true); Alert.alert('Yard set', 'This spot is now your yard. End-of-day hour checks will use it.'); }
+    else Alert.alert('Location', res.reason || 'Could not set yard location.');
+  };
 
   const handleToggleTracking = async (on: boolean) => {
     if (on) {
@@ -153,6 +162,15 @@ export function SettingsScreen({ navigation }: any) {
             Logs where you are in the background so your work days are recorded automatically — even when
             you forget to clock in. Requires Location set to “Always.” You can turn this off anytime.
           </Text>
+          <View style={styles.baseRow}>
+            <Text style={styles.switchLabel}>Yard location {baseSet ? '✓' : ''}</Text>
+            <TouchableOpacity style={styles.baseBtn} onPress={handleSetBase}>
+              <Text style={styles.baseBtnText}>{baseSet ? 'Update to here' : 'Set to here'}</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.trackNote}>
+            At day’s end, when you leave the yard for home, you’ll get one prompt to confirm the hours we tracked.
+          </Text>
         </Card>
 
         {/* Notifications */}
@@ -212,6 +230,9 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm },
   switchLabel: { fontSize: fontSize.md },
   trackNote: { fontSize: fontSize.xs, color: colors.textLight, marginTop: spacing.xs, lineHeight: 17 },
+  baseRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
+  baseBtn: { backgroundColor: colors.accent, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.md },
+  baseBtnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
   signOutBtn: { backgroundColor: colors.redBg, paddingVertical: 16, borderRadius: radius.md, alignItems: 'center', marginTop: spacing.xl, borderWidth: 1, borderColor: colors.red },
   signOutText: { color: colors.red, fontWeight: '700', fontSize: fontSize.md },
   version: { textAlign: 'center', fontSize: fontSize.xs, color: colors.textLight, marginTop: spacing.lg },
