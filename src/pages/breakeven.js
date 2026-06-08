@@ -52,13 +52,27 @@ var BreakEvenPage = {
   _actualDayStats: function() {
     try {
       var jobs = (typeof DB !== 'undefined' && DB.jobs) ? DB.jobs.getAll() : [];
-      var byday = {};
+      var byday = {};   // date -> { sum, count }
       jobs.forEach(function(j) {
         var done = (j.status === 'completed' || j.status === 'invoiced' || j.status === 'paid' || j.completedDate || j.completedAt);
         var d = String(j.completedDate || j.completedAt || j.scheduledDate || '').slice(0, 10);
-        if (d && done) byday[d] = (byday[d] || 0) + (parseFloat(j.total) || 0);
+        if (!d || !done) return;
+        if (!byday[d]) byday[d] = { sum: 0, count: 0 };
+        byday[d].sum += (parseFloat(j.total) || 0);
+        byday[d].count += 1;
       });
-      var vals = Object.keys(byday).map(function(k) { return byday[k]; }).filter(function(v) { return v > 0; });
+      // Drop import-batch days (>=6 jobs stamped on one date) — they're migration
+      // artifacts, not real work-days. Prefer recent data (last ~18 months).
+      var cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 18);
+      var cutStr = cutoff.toISOString().slice(0, 10);
+      var vals = [];
+      Object.keys(byday).forEach(function(d) {
+        if (byday[d].count < 6 && byday[d].sum > 0 && d >= cutStr) vals.push(byday[d].sum);
+      });
+      if (vals.length < 5) {  // fall back to all-time clean if recent is thin
+        vals = [];
+        Object.keys(byday).forEach(function(d) { if (byday[d].count < 6 && byday[d].sum > 0) vals.push(byday[d].sum); });
+      }
       if (!vals.length) return null;
       vals.sort(function(a, b) { return a - b; });
       var tot = vals.reduce(function(a, b) { return a + b; }, 0);
