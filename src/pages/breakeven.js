@@ -16,8 +16,7 @@ var BreakEvenPage = {
     overhead: [
       { name: 'Insurance — Workers Comp (Paychex)', amt: 53775, flag: true,  note: 'VERIFY vs NYSIF audit — may bundle payroll' },
       { name: 'Insurance — Liability / Auto (Erie)', amt: 16600, flag: false, note: '' },
-      { name: 'Equip financing — Bucket truck (Blue Bridge CORP)', amt: 29280, flag: false, note: '$2,440/mo' },
-      { name: 'Equip financing — 2nd machine (Blue Bridge CONS)', amt: 22800, flag: true,  note: 'Is this the dead GiANT loader?' },
+      { name: 'Equip financing — Bucket truck lease (Blue Bridge 155642)', amt: 22951, flag: false, note: '$1,912.56/mo — ONE lease (verified; bank labels it CORP/CONS inconsistently)' },
       { name: 'Equip financing — KM100 telehandler (NEW)', amt: 13200, flag: true,  note: '$1,100/mo x 5yr (Stearns)' },
       { name: 'Repairs & Maintenance', amt: 11000, flag: false, note: '' },
       { name: 'Fuel', amt: 10000, flag: false, note: '' },
@@ -84,12 +83,21 @@ var BreakEvenPage = {
       + '<p style="font-size:12px;color:var(--text-light);margin:0 0 16px;">Edit any number below — it saves and recomputes instantly. Yellow = assumption to confirm.</p>';
 
     // ── DRIVERS ──
+    var dpm = (parseFloat(c.workDays) || 0) / 12;
+    var dpw = (parseFloat(c.workDays) || 0) / 52;
+    var dpww = (parseFloat(c.workDays) || 0) / (parseFloat(c.workWeeks) || 1);
     html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;">'
-      + '<div style="font-weight:700;margin-bottom:10px;">Drivers</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +   '<span style="font-weight:700;">Drivers</span>'
+      +   '<button onclick="BreakEvenPage._reset()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--text-light);">↺ Reset to current numbers</button>'
+      + '</div>'
       + '<div style="display:flex;gap:24px;flex-wrap:wrap;">'
       +   '<label style="font-size:13px;">Work Days / Year<br>' + I(c.workDays, "BreakEvenPage._set('workDays',this.value)") + '</label>'
       +   '<label style="font-size:13px;">Work Weeks / Year<br>' + I(c.workWeeks, "BreakEvenPage._set('workWeeks',this.value)") + '</label>'
       +   '<label style="font-size:13px;">Target Day Rate ($)<br>' + I(c.dayRate, "BreakEvenPage._set('dayRate',this.value)") + '</label>'
+      + '</div>'
+      + '<div style="margin-top:10px;font-size:12px;color:var(--text-light);">'
+      +   '= <b>' + dpm.toFixed(1) + '</b> days/month &nbsp;·&nbsp; <b>' + dpw.toFixed(1) + '</b> days/week (across 52) &nbsp;·&nbsp; <b>' + dpww.toFixed(1) + '</b> days/working-week (across ' + c.workWeeks + ')'
       + '</div></div>';
 
     // ── BREAK-EVEN HEADLINE ──
@@ -150,6 +158,12 @@ var BreakEvenPage = {
       + (sub ? '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">' + sub + '</div>' : '') + '</div>';
   },
 
+  _reset: function() {
+    if (!confirm('Reset all break-even numbers to the current defaults? This overwrites your edits.')) return;
+    localStorage.removeItem('bm-breakeven');
+    BreakEvenPage._save(JSON.parse(JSON.stringify(BreakEvenPage.DEFAULTS)));
+    loadPage('breakeven');
+  },
   _set: function(k, v) { var c = BreakEvenPage._load(); c[k] = parseFloat(v) || 0; BreakEvenPage._save(c); loadPage('breakeven'); },
   _setOv: function(i, v) { var c = BreakEvenPage._load(); c.overhead[i].amt = parseFloat(v) || 0; BreakEvenPage._save(c); loadPage('breakeven'); },
   _setLab: function(i, f, v) { var c = BreakEvenPage._load(); c.labor[i][f] = parseFloat(v) || 0; BreakEvenPage._save(c); loadPage('breakeven'); }
