@@ -48,35 +48,21 @@ var BreakEvenPage = {
 
   _money: function(n) { return '$' + Math.round(n || 0).toLocaleString(); },
 
-  // Actual avg revenue per WORK-DAY, computed live from completed jobs.
+  // Actual revenue per JOB (reliable). NOT per-day — BM has no days-per-job, and
+  // jobs span multiple days, so a true day rate can't be derived from this data.
   _actualDayStats: function() {
     try {
       var jobs = (typeof DB !== 'undefined' && DB.jobs) ? DB.jobs.getAll() : [];
-      var byday = {};   // date -> { sum, count }
+      var vals = [];
       jobs.forEach(function(j) {
         var done = (j.status === 'completed' || j.status === 'invoiced' || j.status === 'paid' || j.completedDate || j.completedAt);
-        var d = String(j.completedDate || j.completedAt || j.scheduledDate || '').slice(0, 10);
-        if (!d || !done) return;
-        if (!byday[d]) byday[d] = { sum: 0, count: 0 };
-        byday[d].sum += (parseFloat(j.total) || 0);
-        byday[d].count += 1;
+        var v = parseFloat(j.total) || 0;
+        if (done && v > 0) vals.push(v);
       });
-      // Drop import-batch days (>=6 jobs stamped on one date) — they're migration
-      // artifacts, not real work-days. Prefer recent data (last ~18 months).
-      var cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 18);
-      var cutStr = cutoff.toISOString().slice(0, 10);
-      var vals = [];
-      Object.keys(byday).forEach(function(d) {
-        if (byday[d].count < 6 && byday[d].sum > 0 && d >= cutStr) vals.push(byday[d].sum);
-      });
-      if (vals.length < 5) {  // fall back to all-time clean if recent is thin
-        vals = [];
-        Object.keys(byday).forEach(function(d) { if (byday[d].count < 6 && byday[d].sum > 0) vals.push(byday[d].sum); });
-      }
       if (!vals.length) return null;
       vals.sort(function(a, b) { return a - b; });
       var tot = vals.reduce(function(a, b) { return a + b; }, 0);
-      return { days: vals.length, avg: tot / vals.length, median: vals[Math.floor(vals.length / 2)] };
+      return { jobs: vals.length, avg: tot / vals.length, median: vals[Math.floor(vals.length / 2)] };
     } catch (e) { return null; }
   },
 
@@ -145,8 +131,8 @@ var BreakEvenPage = {
       +   '= <b>' + dpm.toFixed(1) + '</b> days/month &nbsp;·&nbsp; <b>' + dpw.toFixed(1) + '</b> days/week (across 52) &nbsp;·&nbsp; <b>' + dpww.toFixed(1) + '</b> days/working-week (across ' + c.workWeeks + ')'
       + '</div>'
       + (act ? '<div style="margin-top:8px;font-size:12px;padding:8px 10px;background:#fff8e6;border:1px solid #f0d98a;border-radius:8px;">'
-          + '📊 <b>Your ACTUAL avg from completed jobs: ' + BreakEvenPage._money(act.avg) + '/work-day</b> (median ' + BreakEvenPage._money(act.median) + ', over ' + act.days + ' work-days). '
-          + 'Target above is ' + BreakEvenPage._money(c.dayRate) + ' — the gap is your lever.</div>' : '')
+          + '📊 <b>Actual avg per JOB: ' + BreakEvenPage._money(act.avg) + '</b> (median ' + BreakEvenPage._money(act.median) + ', ' + act.jobs + ' jobs). '
+          + 'Note: jobs often span multiple days and BM doesn\'t track days-per-job, so a true per-day rate can\'t be computed from data — set the Target Day Rate above to what a crew-day actually bills.</div>' : '')
       + '</div>';
 
     // ── BREAK-EVEN HEADLINE ──
