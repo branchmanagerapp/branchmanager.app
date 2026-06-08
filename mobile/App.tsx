@@ -7,6 +7,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { useAuthState, AuthContext } from './src/hooks/useAuth';
 import { registerForPushNotifications, addResponseListener } from './src/api/notifications';
+import { resumeTrackingIfEnabled } from './src/tracking/locationTracker'; // registers the background location task at import
 import { colors } from './src/theme';
 
 const queryClient = new QueryClient({
@@ -31,6 +32,10 @@ function AppContent() {
           if (result.synced > 0) console.log(`[Offline] Synced ${result.synced} queued actions`);
         }).catch(() => {});
       });
+      // If location tracking was previously enabled, make sure it's running after this cold start.
+      resumeTrackingIfEnabled(
+        auth.user.id ? { id: auth.user.id, name: auth.user.name, role: auth.user.role } : null
+      ).catch(() => {});
     }
   }, [auth.user]);
 

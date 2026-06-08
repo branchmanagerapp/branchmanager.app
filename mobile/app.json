@@ -19,6 +19,9 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Branch Manager uses your location to show nearby jobs and provide directions to job sites.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Branch Manager tracks your work location in the background so your days are logged automatically — even when you forget to clock in.",
+        "NSLocationAlwaysUsageDescription": "Branch Manager tracks your work location in the background so your days are logged automatically — even when you forget to clock in.",
+        "UIBackgroundModes": ["location", "fetch"],
         "NSCameraUsageDescription": "Branch Manager uses the camera to take before/after photos of tree work for documentation.",
         "NSPhotoLibraryUsageDescription": "Branch Manager accesses your photo library to attach job site images to work orders and quotes.",
         "NSMicrophoneUsageDescription": "Branch Manager uses the microphone for voice-to-quote dictation on job sites.",
@@ -69,6 +72,12 @@
             "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]
           },
           {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePreciseLocation",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]
+          },
+          {
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePhotosOrVideos",
             "NSPrivacyCollectedDataTypeLinked": true,
             "NSPrivacyCollectedDataTypeTracking": false,
@@ -88,6 +97,9 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "CAMERA",
         "RECORD_AUDIO"
       ]
@@ -96,7 +108,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Branch Manager tracks your work location in the background so your days are logged automatically — even when you forget to clock in.",
+          "locationWhenInUsePermission": "Branch Manager uses your location to show nearby jobs and provide directions to job sites.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       [
         "expo-image-picker",
         {

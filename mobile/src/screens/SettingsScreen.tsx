@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveApiKey, getApiKey } from '../api/assistant';
 import { saveGustoConfig, getGustoConfig, disconnectGusto } from '../api/gusto';
 import { getQueue, syncQueue, clearQueue } from '../utils/offline';
+import { startTracking, stopTracking, isTrackingEnabled, isTrackingRunning } from '../tracking/locationTracker';
 import { useAuth } from '../hooks/useAuth';
 
 export function SettingsScreen({ navigation }: any) {
@@ -18,6 +19,7 @@ export function SettingsScreen({ navigation }: any) {
   const [gustoCompanyId, setGustoCompanyId] = useState('');
   const [offlineCount, setOfflineCount] = useState(0);
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [trackEnabled, setTrackEnabled] = useState(false);
 
   useEffect(() => {
     getApiKey().then(k => setClaudeKey(k || ''));
@@ -25,7 +27,25 @@ export function SettingsScreen({ navigation }: any) {
       if (c) { setGustoKey(c.apiKey || ''); setGustoCompanyId(c.companyId || ''); }
     });
     getQueue().then(q => setOfflineCount(q.length));
+    isTrackingEnabled().then(setTrackEnabled);
   }, []);
+
+  const handleToggleTracking = async (on: boolean) => {
+    if (on) {
+      if (!user?.id) { Alert.alert('Sign in required', 'Log in with your Branch Manager account to enable tracking.'); return; }
+      setTrackEnabled(true); // optimistic
+      const res = await startTracking({ id: user.id, name: user.name || 'Owner', role: user.role || 'owner' });
+      if (!res.ok) {
+        setTrackEnabled(false);
+        Alert.alert('Location', res.reason || 'Could not start tracking.');
+        return;
+      }
+      Alert.alert('Tracking on', 'Your work location is now logged in the background — even when the app is closed.');
+    } else {
+      await stopTracking();
+      setTrackEnabled(false);
+    }
+  };
 
   const handleSaveClaude = async () => {
     await saveApiKey(claudeKey.trim());
@@ -122,6 +142,19 @@ export function SettingsScreen({ navigation }: any) {
           </View>
         </Card>
 
+        {/* Location Tracking */}
+        <Text style={styles.sectionTitle}>Location Tracking</Text>
+        <Card>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Track my location</Text>
+            <Switch value={trackEnabled} onValueChange={handleToggleTracking} trackColor={{ true: colors.greenDark }} />
+          </View>
+          <Text style={styles.trackNote}>
+            Logs where you are in the background so your work days are recorded automatically — even when
+            you forget to clock in. Requires Location set to “Always.” You can turn this off anytime.
+          </Text>
+        </Card>
+
         {/* Notifications */}
         <Text style={styles.sectionTitle}>Notifications</Text>
         <Card>
@@ -178,6 +211,7 @@ const styles = StyleSheet.create({
   clearBtnText: { color: colors.red, fontWeight: '600' },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm },
   switchLabel: { fontSize: fontSize.md },
+  trackNote: { fontSize: fontSize.xs, color: colors.textLight, marginTop: spacing.xs, lineHeight: 17 },
   signOutBtn: { backgroundColor: colors.redBg, paddingVertical: 16, borderRadius: radius.md, alignItems: 'center', marginTop: spacing.xl, borderWidth: 1, borderColor: colors.red },
   signOutText: { color: colors.red, fontWeight: '700', fontSize: fontSize.md },
   version: { textAlign: 'center', fontSize: fontSize.xs, color: colors.textLight, marginTop: spacing.lg },
