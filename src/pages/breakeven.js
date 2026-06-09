@@ -81,6 +81,28 @@ var BreakEvenPage = {
     } catch (e) { return 0; }
   },
 
+  // Live cash from bank_accounts (populated by Plaid sync / manual entry).
+  // Loaded once per session into window._bmCash, then re-renders.
+  _loadCash: function() {
+    if (window._bmCashLoaded) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) return;
+    window._bmCashLoaded = true;
+    sb.from('bank_accounts').select('name,account_type,balance_current,balance_as_of,active').eq('active', true).then(function(res) {
+      var rows = (res && res.data) || [];
+      var cash = 0, debt = 0, asof = '';
+      rows.forEach(function(a) {
+        var b = parseFloat(a.balance_current); if (isNaN(b)) return;
+        var t = (a.account_type || '').toLowerCase();
+        if (t.indexOf('check') >= 0 || t.indexOf('saving') >= 0 || t.indexOf('depos') >= 0) cash += b;
+        else if (t.indexOf('credit') >= 0 || t.indexOf('loan') >= 0 || t.indexOf('line') >= 0) debt += b;
+        if (a.balance_as_of && a.balance_as_of > asof) asof = a.balance_as_of;
+      });
+      window._bmCash = { cash: cash, debt: debt, net: cash - debt, asof: asof, n: rows.length };
+      if (typeof loadPage === 'function') loadPage('breakeven');
+    }).catch(function() {});
+  },
+
   render: function() {
     var c = BreakEvenPage._load();
     var ovTotal = c.overhead.reduce(function(s, o) { return s + (parseFloat(o.amt) || 0); }, 0);
@@ -111,6 +133,36 @@ var BreakEvenPage = {
       +   '<span style="font-size:12px;color:var(--text-light);">Minimum to keep operating · live revenue from invoices</span>'
       + '</div>'
       + '<p style="font-size:12px;color:var(--text-light);margin:0 0 14px;">Edit any number below — it saves and recomputes instantly. Yellow = assumption to confirm.</p>';
+
+    // ── CASH & RUNWAY (live bank balances) ──
+    BreakEvenPage._loadCash();
+    var cashD = window._bmCash;
+    var smartLawn = (c.smartLawn != null) ? (parseFloat(c.smartLawn) || 0) : 21000;
+    var monthlyBurn = (ovTotal + (parseFloat(c.ownerPay) || 0)) / 12;
+    html += '<div style="background:#f0f7ff;border:1px solid #bcd8f5;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +   '<span style="font-weight:700;">💵 Cash &amp; Runway</span>'
+      +   (cashD ? '<span style="font-size:11px;color:var(--text-light);">live from bank · as of ' + (cashD.asof || '—') + '</span>' : '<span style="font-size:11px;color:var(--text-light);">connect a bank or enter balances</span>')
+      + '</div>';
+    if (cashD) {
+      var net = cashD.net;
+      var afterPayable = net - smartLawn;
+      var runway = monthlyBurn > 0 ? net / monthlyBurn : 0;
+      var runwayAfter = monthlyBurn > 0 ? afterPayable / monthlyBurn : 0;
+      var winterNeed = monthlyBurn * 3;
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">'
+        + BreakEvenPage._stat('NET CASH', BreakEvenPage._money(net), '#fff', '#0a7d2c', BreakEvenPage._money(cashD.cash) + ' cash − ' + BreakEvenPage._money(cashD.debt) + ' owed')
+        + BreakEvenPage._stat('Monthly burn', BreakEvenPage._money(monthlyBurn), 'var(--card)', 'var(--text)', 'overhead + your pay ÷ 12')
+        + BreakEvenPage._stat('Runway', runway.toFixed(1) + ' mo', 'var(--card)', (runway >= 3 ? '#0a7d2c' : '#c0271d'), 'on cash alone')
+        + BreakEvenPage._stat('Winter (3mo, no income)', (net >= winterNeed ? 'covered' : 'SHORT ' + BreakEvenPage._money(winterNeed - net)), (net >= winterNeed ? '#eef7f0' : '#fdecea'), (net >= winterNeed ? '#0a7d2c' : '#c0271d'), 'needs ' + BreakEvenPage._money(winterNeed))
+        + '</div>'
+        + '<div style="margin-top:10px;font-size:12px;color:var(--text-light);">'
+        +   'Smart Lawn payable: ' + I(smartLawn, "BreakEvenPage._set('smartLawn',this.value)") + ' &nbsp;→&nbsp; after paying it, net cash <b>' + BreakEvenPage._money(afterPayable) + '</b> = <b>' + runwayAfter.toFixed(1) + ' mo</b> runway'
+        + '</div>';
+    } else {
+      html += '<div style="font-size:13px;color:var(--text-light);">Loading balances… if this stays blank, no bank balance is set yet (populates from Plaid sync or manual entry in Books).</div>';
+    }
+    html += '</div>';
 
     // ── DRIVERS ──
     var dpm = (parseFloat(c.workDays) || 0) / 12;
