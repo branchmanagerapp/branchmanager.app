@@ -22,9 +22,9 @@ var BreakEvenPage = {
       { name: 'Equip financing — Bucket truck lease (Blue Bridge 155642)', amt: 22951, flag: false, note: '$1,912.56/mo — ONE lease (verified; bank labels it CORP/CONS inconsistently)' },
       { name: 'Equip financing — KM100 telehandler', amt: 13200, flag: false, note: 'REQUIRED — replaces the dead GiANT loader. $1,100/mo x 5yr (Stearns). No competing loader loan in the books (GiANT owned, not financed).' },
       { name: 'Vehicle financing — RAM 2500 (Chase Auto)', amt: 12059, flag: false, note: '$1,004.91/mo to JPMorgan Chase — bank-verified, was missing from the model' },
-      { name: 'Repairs & Maintenance', amt: 11000, flag: false, note: '' },
-      { name: 'Fuel', amt: 10000, flag: false, note: '' },
-      { name: 'Chainsaw / Ropes / Climbing / Gear', amt: 10000, flag: false, note: '' },
+      { name: 'Repairs & Maintenance', amt: 8000, flag: false, note: 'bank-verified ~$4-7k/yr actual (was $11k)' },
+      { name: 'Fuel', amt: 10000, flag: false, note: 'bank-verified — swings $7k (2025) to $12.8k (2024)' },
+      { name: 'Chainsaw / Ropes / Climbing / Gear', amt: 5000, flag: false, note: 'bank-verified ~$3-3.6k/yr actual (was $10k)' },
       { name: 'Office / Accounting / Legal / Software', amt: 6000, flag: false, note: '' },
       { name: 'Taxes & Licenses', amt: 10400, flag: false, note: '' }
     ],
