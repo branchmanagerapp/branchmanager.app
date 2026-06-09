@@ -251,6 +251,30 @@ serve(async (req) => {
         hasMore = !!resp.has_more;
       }
 
+      // Pull live balances for this item's accounts and store them. /transactions/sync
+      // does NOT carry balances, so without this the cash view / Penny stay blank.
+      try {
+        const balResp = await plaid(creds, '/accounts/balance/get', { access_token: access });
+        const asOf = new Date().toISOString().slice(0, 10);
+        let balCount = 0;
+        for (const pa of (balResp.accounts || [])) {
+          const cur = pa?.balances?.current;
+          if (cur == null) continue;
+          await fetch(
+            `${SUPA_URL}/rest/v1/bank_accounts?plaid_account_id=eq.${encodeURIComponent(pa.account_id)}&tenant_id=eq.${tenant}`,
+            {
+              method: 'PATCH',
+              headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+              body: JSON.stringify({ balance_current: cur, balance_as_of: asOf }),
+            }
+          );
+          balCount++;
+        }
+        (itemResult as any).balances = balCount;
+      } catch (e) {
+        console.warn(`Balance fetch failed for item ${iid}:`, (e as Error).message);
+      }
+
       // Persist final cursor so subsequent syncs only pull deltas.
       if (cursor) await setCursor(tenant, iid, cursor);
       result[iid] = itemResult;
