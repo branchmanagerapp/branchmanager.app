@@ -137,7 +137,7 @@ var BreakEvenPage = {
     // ── CASH & RUNWAY (live bank balances) ──
     BreakEvenPage._loadCash();
     var cashD = window._bmCash;
-    var smartLawn = (c.smartLawn != null) ? (parseFloat(c.smartLawn) || 0) : 21000;
+    var smartLawn = (c.smartLawn != null) ? (parseFloat(c.smartLawn) || 0) : 0;
     // Winter nut = only the obligations that bill with ZERO work: insurance
     // (not WC — payroll-based), equipment financing/leases, taxes, office.
     // Fuel / repairs / gear are variable (≈ 0 in a no-income winter).
@@ -167,7 +167,7 @@ var BreakEvenPage = {
         + BreakEvenPage._stat('Winter (3mo, no income)', (net >= winterNeed ? 'covered' : 'SHORT ' + BreakEvenPage._money(winterNeed - net)), (net >= winterNeed ? '#eef7f0' : '#fdecea'), (net >= winterNeed ? '#0a7d2c' : '#c0271d'), 'needs ' + BreakEvenPage._money(winterNeed))
         + '</div>'
         + '<div style="margin-top:10px;font-size:12px;color:var(--text-light);">'
-        +   'Smart Lawn payable: ' + I(smartLawn, "BreakEvenPage._set('smartLawn',this.value)") + ' &nbsp;→&nbsp; after paying it, net cash <b>' + BreakEvenPage._money(afterPayable) + '</b>, winter ' + (winterAfter ? '<b style="color:#0a7d2c;">still covered</b>' : '<b style="color:#c0271d;">SHORT ' + BreakEvenPage._money(winterNeed - afterPayable) + '</b>') + '.'
+        +   'One-time tree payable ($): ' + I(smartLawn, "BreakEvenPage._set('smartLawn',this.value)") + ' &nbsp;→&nbsp; after paying it, net cash <b>' + BreakEvenPage._money(afterPayable) + '</b>, winter ' + (winterAfter ? '<b style="color:#0a7d2c;">still covered</b>' : '<b style="color:#c0271d;">SHORT ' + BreakEvenPage._money(winterNeed - afterPayable) + '</b>') + '. <span style="color:#999;">(Smart Lawn / Navimow is a separate LLC — not counted here.)</span>'
         +   ' Full operating burn while working ≈ <b>' + BreakEvenPage._money(workingBurnMo) + '/mo</b>.'
         + '</div>';
     } else {
