@@ -1,5 +1,5 @@
 {
-  "version": 918,
+  "version": 919,
   "released": "2026-06-08",
   "notes": "white-label: new-request SMS alerts in Settings (multi-recipient). Settings → White-label Branding → New-request SMS alerts (one phone per line). Saves to tenants.config.owner_alert_phones (array, back-compat with .owner_alert_phone singular). request-notify loops over all recipients, dedupes, normalizes E.164, drops same-as-DIALPAD_FROM. Each tenant owns their own list, no operator intervention needed."
 }

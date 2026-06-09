@@ -138,7 +138,17 @@ var BreakEvenPage = {
     BreakEvenPage._loadCash();
     var cashD = window._bmCash;
     var smartLawn = (c.smartLawn != null) ? (parseFloat(c.smartLawn) || 0) : 21000;
-    var monthlyBurn = (ovTotal + (parseFloat(c.ownerPay) || 0)) / 12;
+    // Winter nut = only the obligations that bill with ZERO work: insurance
+    // (not WC — payroll-based), equipment financing/leases, taxes, office.
+    // Fuel / repairs / gear are variable (≈ 0 in a no-income winter).
+    var winterFixedAnnual = c.overhead.reduce(function(s, o) {
+      var n = (o.name || '').toLowerCase();
+      if (/workers? comp|paychex/.test(n)) return s;
+      if (/insur|lease|financ|loan|km100|blue bridge|tax|licens|office|account|legal|software/.test(n)) return s + (parseFloat(o.amt) || 0);
+      return s;
+    }, 0);
+    var winterNutMo = winterFixedAnnual / 12 + (parseFloat(c.ownerPay) || 0) / 12; // biz fixed + your draw
+    var workingBurnMo = (ovTotal + (parseFloat(c.ownerPay) || 0)) / 12;            // full burn while operating
     html += '<div style="background:#f0f7ff;border:1px solid #bcd8f5;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
       +   '<span style="font-weight:700;">💵 Cash &amp; Runway</span>'
@@ -147,17 +157,18 @@ var BreakEvenPage = {
     if (cashD) {
       var net = cashD.net;
       var afterPayable = net - smartLawn;
-      var runway = monthlyBurn > 0 ? net / monthlyBurn : 0;
-      var runwayAfter = monthlyBurn > 0 ? afterPayable / monthlyBurn : 0;
-      var winterNeed = monthlyBurn * 3;
+      var winterNeed = winterNutMo * 3;
+      var runway = winterNutMo > 0 ? net / winterNutMo : 0;
+      var winterAfter = afterPayable >= winterNeed;
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">'
         + BreakEvenPage._stat('NET CASH', BreakEvenPage._money(net), '#fff', '#0a7d2c', BreakEvenPage._money(cashD.cash) + ' cash − ' + BreakEvenPage._money(cashD.debt) + ' owed')
-        + BreakEvenPage._stat('Monthly burn', BreakEvenPage._money(monthlyBurn), 'var(--card)', 'var(--text)', 'overhead + your pay ÷ 12')
-        + BreakEvenPage._stat('Runway', runway.toFixed(1) + ' mo', 'var(--card)', (runway >= 3 ? '#0a7d2c' : '#c0271d'), 'on cash alone')
+        + BreakEvenPage._stat('Winter nut / mo', BreakEvenPage._money(winterNutMo), 'var(--card)', 'var(--text)', 'fixed + your draw (no WC/variable)')
+        + BreakEvenPage._stat('Runway', runway.toFixed(1) + ' mo', 'var(--card)', (runway >= 3 ? '#0a7d2c' : '#c0271d'), 'at the winter nut')
         + BreakEvenPage._stat('Winter (3mo, no income)', (net >= winterNeed ? 'covered' : 'SHORT ' + BreakEvenPage._money(winterNeed - net)), (net >= winterNeed ? '#eef7f0' : '#fdecea'), (net >= winterNeed ? '#0a7d2c' : '#c0271d'), 'needs ' + BreakEvenPage._money(winterNeed))
         + '</div>'
         + '<div style="margin-top:10px;font-size:12px;color:var(--text-light);">'
-        +   'Smart Lawn payable: ' + I(smartLawn, "BreakEvenPage._set('smartLawn',this.value)") + ' &nbsp;→&nbsp; after paying it, net cash <b>' + BreakEvenPage._money(afterPayable) + '</b> = <b>' + runwayAfter.toFixed(1) + ' mo</b> runway'
+        +   'Smart Lawn payable: ' + I(smartLawn, "BreakEvenPage._set('smartLawn',this.value)") + ' &nbsp;→&nbsp; after paying it, net cash <b>' + BreakEvenPage._money(afterPayable) + '</b>, winter ' + (winterAfter ? '<b style="color:#0a7d2c;">still covered</b>' : '<b style="color:#c0271d;">SHORT ' + BreakEvenPage._money(winterNeed - afterPayable) + '</b>') + '.'
+        +   ' Full operating burn while working ≈ <b>' + BreakEvenPage._money(workingBurnMo) + '/mo</b>.'
         + '</div>';
     } else {
       html += '<div style="font-size:13px;color:var(--text-light);">Loading balances… if this stays blank, no bank balance is set yet (populates from Plaid sync or manual entry in Books).</div>';
