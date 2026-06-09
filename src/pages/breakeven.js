@@ -16,7 +16,8 @@ var BreakEvenPage = {
     directCostPerDay: 1500,  // crew + fuel + materials/dump for one productive crew-day
     ownerPay: 60000,         // what Doug wants to take out per year
     overhead: [
-      { name: 'Insurance — Workers Comp (Paychex)', amt: 53775, flag: true,  note: 'VERIFY vs NYSIF audit — may bundle payroll' },
+      { name: 'Workers Comp (NYSIF)', amt: 1000, flag: false, note: 'REAL WC ~$1k/yr (bank-verified). The old $53,775 was total Paychex = crew WAGES, double-counted in Crew Labor below.' },
+      { name: 'Payroll taxes + Paychex fees (employer)', amt: 12000, flag: false, note: 'employer payroll taxes (~$15k) + processing/401k fees; crew WAGES are in Crew Labor, not here' },
       { name: 'Insurance — Liability / Auto (Erie)', amt: 16600, flag: false, note: '' },
       { name: 'Equip financing — Bucket truck lease (Blue Bridge 155642)', amt: 22951, flag: false, note: '$1,912.56/mo — ONE lease (verified; bank labels it CORP/CONS inconsistently)' },
       { name: 'Equip financing — KM100 telehandler (NEW)', amt: 13200, flag: true,  note: '$1,100/mo x 5yr (Stearns)' },
