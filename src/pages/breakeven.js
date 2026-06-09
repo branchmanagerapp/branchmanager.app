@@ -121,6 +121,37 @@ var BreakEvenPage = {
     return out;
   },
 
+  // Direct line costs: classify ACTIVE-account expenses (tree entity only) into
+  // snow / smartlawn direct spend; everything else is shared overhead (kept
+  // company-wide, NOT dumped on tree). Answers "does each side-line cover its
+  // own direct costs" honestly, before shared overhead.
+  _loadExpenses: function() {
+    if (window._bmCostLoaded) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) return;
+    window._bmCostLoaded = true;
+    sb.from('bank_accounts').select('id').eq('active', true).then(function(ar) {
+      var ids = ((ar && ar.data) || []).map(function(a) { return a.id; });
+      if (!ids.length) { window._bmCostByLine = { snow: 0, smartlawn: 0, shared: 0 }; return; }
+      var since = new Date(); since.setFullYear(since.getFullYear() - 1);
+      sb.from('bank_transactions').select('amount,description,merchant_name,account_id')
+        .lt('amount', 0).in('account_id', ids).gte('posted_date', since.toISOString().slice(0, 10)).limit(5000)
+        .then(function(res) {
+          var rows = (res && res.data) || [];
+          var out = { snow: 0, smartlawn: 0, shared: 0 };
+          rows.forEach(function(t) {
+            var line = BreakEvenPage._classifyLine((t.description || '') + ' ' + (t.merchant_name || ''));
+            var amt = Math.abs(parseFloat(t.amount) || 0);
+            if (line === 'snow') out.snow += amt;
+            else if (line === 'smartlawn') out.smartlawn += amt;
+            else out.shared += amt; // tree-or-shared overhead, company-wide
+          });
+          window._bmCostByLine = out;
+          if (typeof loadPage === 'function') loadPage('breakeven');
+        }).catch(function() {});
+    }).catch(function() {});
+  },
+
   // Live cash from bank_accounts (populated by Plaid sync / manual entry).
   // Loaded once per session into window._bmCash, then re-renders.
   _loadCash: function() {
@@ -215,10 +246,20 @@ var BreakEvenPage = {
     }
     html += '</div>';
 
-    // ── REVENUE BY LINE OF BUSINESS (Tree / Snow / Smart Lawn) ──
+    // ── REVENUE & DIRECT COST BY LINE OF BUSINESS (Tree / Snow / Smart Lawn) ──
+    BreakEvenPage._loadExpenses();
     var byLine = BreakEvenPage._revenueByLine(12);
+    var cost = window._bmCostByLine;
     var lineTotal = byLine.tree + byLine.snow + byLine.smartlawn;
     function pct(v) { return lineTotal ? Math.round(v / lineTotal * 100) + '% of revenue' : ''; }
+    function sideSub(rev, key) {
+      if (cost && cost[key] != null) {
+        var dc = cost[key], net = rev - dc;
+        return 'rev ' + BreakEvenPage._money(rev) + ' − direct ' + BreakEvenPage._money(dc)
+          + ' = <b style="color:' + (net >= 0 ? '#0a7d2c' : '#c0271d') + ';">' + BreakEvenPage._money(net) + '</b>';
+      }
+      return pct(rev);
+    }
     html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
       +   '<span style="font-weight:700;">Revenue by line of business</span>'
@@ -226,10 +267,10 @@ var BreakEvenPage = {
       + '</div>'
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">'
       +   BreakEvenPage._stat('🌳 Tree', BreakEvenPage._money(byLine.tree), 'var(--card)', '#0a7d2c', pct(byLine.tree))
-      +   BreakEvenPage._stat('❄️ Snow', BreakEvenPage._money(byLine.snow), 'var(--card)', '#2c6fb3', pct(byLine.snow))
-      +   BreakEvenPage._stat('🤖 Smart Lawn', BreakEvenPage._money(byLine.smartlawn), 'var(--card)', '#8e44ad', lineTotal && byLine.smartlawn ? pct(byLine.smartlawn) : 'new line')
+      +   BreakEvenPage._stat('❄️ Snow', BreakEvenPage._money(byLine.snow), 'var(--card)', '#2c6fb3', sideSub(byLine.snow, 'snow'))
+      +   BreakEvenPage._stat('🤖 Smart Lawn', BreakEvenPage._money(byLine.smartlawn), 'var(--card)', '#8e44ad', (lineTotal && byLine.smartlawn) || (cost && cost.smartlawn) ? sideSub(byLine.smartlawn, 'smartlawn') : 'new line')
       + '</div>'
-      + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">Auto-split by keywords (snow/plow · navimow/yarbo). Smart Lawn is a DBA division — same books, its own line. Manual tag override coming next.</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">Snow/Smart Lawn show revenue − their <b>direct</b> spend (does the line cover itself). Shared overhead (insurance, leases, fuel) stays company-wide — not loaded onto a side line. Tag a job\'s line to override the keyword guess.</div>'
       + '</div>';
 
     // ── DRIVERS ──
