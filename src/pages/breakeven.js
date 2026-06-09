@@ -20,7 +20,7 @@ var BreakEvenPage = {
       { name: 'Payroll taxes + Paychex fees (employer)', amt: 12000, flag: false, note: 'employer payroll taxes (~$15k) + processing/401k fees; crew WAGES are in Crew Labor, not here' },
       { name: 'Insurance — Liability / Auto (Erie)', amt: 16600, flag: false, note: '' },
       { name: 'Equip financing — Bucket truck lease (Blue Bridge 155642)', amt: 22951, flag: false, note: '$1,912.56/mo — ONE lease (verified; bank labels it CORP/CONS inconsistently)' },
-      { name: 'Equip financing — KM100 telehandler (NEW)', amt: 13200, flag: true,  note: '$1,100/mo x 5yr (Stearns)' },
+      { name: 'Equip financing — KM100 telehandler', amt: 13200, flag: false, note: 'REQUIRED — replaces the dead GiANT loader. $1,100/mo x 5yr (Stearns). No competing loader loan in the books (GiANT owned, not financed).' },
       { name: 'Repairs & Maintenance', amt: 11000, flag: false, note: '' },
       { name: 'Fuel', amt: 10000, flag: false, note: '' },
       { name: 'Chainsaw / Ropes / Climbing / Gear', amt: 10000, flag: false, note: '' },
