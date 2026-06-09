@@ -92,6 +92,18 @@ var BreakEvenPage = {
     if (/navimow|yarbo|segway|robotic ?mow|robot ?mow|smart ?lawn/.test(t)) return 'smartlawn';
     return 'tree';
   },
+  // Resolve a line for an invoice: explicit invoice tag → linked job's tag → keywords.
+  _lineForInvoice: function(i) {
+    if (i.line_of_business) return i.line_of_business;
+    try {
+      if (i.jobId && typeof DB !== 'undefined' && DB.jobs && DB.jobs.getById) {
+        var j = DB.jobs.getById(i.jobId);
+        if (j && j.line_of_business) return j.line_of_business;
+      }
+    } catch (e) {}
+    var li = Array.isArray(i.lineItems) ? i.lineItems.map(function(x) { return (x.description || x.name || ''); }).join(' ') : '';
+    return BreakEvenPage._classifyLine((i.description || '') + ' ' + (i.notes || '') + ' ' + (i.clientName || '') + ' ' + li);
+  },
   _revenueByLine: function(months) {
     var out = { tree: 0, snow: 0, smartlawn: 0 };
     try {
@@ -101,8 +113,8 @@ var BreakEvenPage = {
         if (i.status !== 'paid') return;
         var d = new Date(i.paidAt || i.createdAt || i.created_at || 0);
         if (d < since) return;
-        var li = Array.isArray(i.lineItems) ? i.lineItems.map(function(x) { return (x.description || x.name || ''); }).join(' ') : '';
-        var line = BreakEvenPage._classifyLine((i.description || '') + ' ' + (i.notes || '') + ' ' + (i.clientName || '') + ' ' + li);
+        var line = BreakEvenPage._lineForInvoice(i);
+        if (out[line] == null) line = 'tree';
         out[line] += (parseFloat(i.total) || 0);
       });
     } catch (e) {}

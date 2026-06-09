@@ -920,6 +920,7 @@ var JobsPage = {
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
       + UI.formField('Total ($)', 'number', 'j-total', j.total, { placeholder: '0.00' })
       + UI.formField('Status', 'select', 'j-status', j.status || 'scheduled', { options: ['scheduled', 'in_progress', 'completed', 'late', 'cancelled'] })
+      + UI.formField('Line of Business', 'select', 'j-line', j.line_of_business || 'tree', { options: ['tree', 'snow', 'smartlawn'] })
       + '</div>'
 
       // Crew assignment (checkboxes for team members)
@@ -994,6 +995,7 @@ var JobsPage = {
       arrivalWindow: document.getElementById('j-arrival').value,
       total: parseFloat(document.getElementById('j-total').value) || 0,
       status: document.getElementById('j-status').value,
+      line_of_business: (document.getElementById('j-line') || {}).value || 'tree',
       crew: crew,
       notes: document.getElementById('j-notes').value.trim()
     };
