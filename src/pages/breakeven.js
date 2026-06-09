@@ -87,11 +87,12 @@ var BreakEvenPage = {
   // Keyword classifier — snow plowing and robotic-mower (Smart Lawn) work split
   // out from core tree, so each line gets its own revenue read while rolling up
   // to the combined Second Nature Tree books.
-  LINES: { tree: 'Tree', snow: 'Snow', smartlawn: 'Smart Lawn' },
+  LINES: { tree: 'Tree', snow: 'Snow', smartlawn: 'Smart Lawn', firewood: 'Firewood' },
   _classifyLine: function(text) {
     var t = (text || '').toLowerCase();
     if (/\bsnow\b|plow|plough|\bsalt\b|de-?ic/.test(t)) return 'snow';
     if (/navimow|yarbo|segway|robotic ?mow|robot ?mow|smart ?lawn/.test(t)) return 'smartlawn';
+    if (/fire ?wood|cord ?wood|seasoned wood|wood delivery|split wood/.test(t)) return 'firewood';
     return 'tree';
   },
   // Resolve a line for an invoice: explicit invoice tag → linked job's tag → keywords.
@@ -107,7 +108,7 @@ var BreakEvenPage = {
     return BreakEvenPage._classifyLine((i.description || '') + ' ' + (i.notes || '') + ' ' + (i.clientName || '') + ' ' + li);
   },
   _revenueByLine: function(months) {
-    var out = { tree: 0, snow: 0, smartlawn: 0 };
+    var out = { tree: 0, snow: 0, smartlawn: 0, firewood: 0 };
     try {
       var invs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
       var since = new Date(); since.setMonth(since.getMonth() - months);
@@ -134,18 +135,19 @@ var BreakEvenPage = {
     window._bmCostLoaded = true;
     sb.from('bank_accounts').select('id').eq('active', true).then(function(ar) {
       var ids = ((ar && ar.data) || []).map(function(a) { return a.id; });
-      if (!ids.length) { window._bmCostByLine = { snow: 0, smartlawn: 0, shared: 0 }; return; }
+      if (!ids.length) { window._bmCostByLine = { snow: 0, smartlawn: 0, firewood: 0, shared: 0 }; return; }
       var since = new Date(); since.setFullYear(since.getFullYear() - 1);
       sb.from('bank_transactions').select('amount,description,merchant_name,account_id')
         .lt('amount', 0).in('account_id', ids).gte('posted_date', since.toISOString().slice(0, 10)).limit(5000)
         .then(function(res) {
           var rows = (res && res.data) || [];
-          var out = { snow: 0, smartlawn: 0, shared: 0 };
+          var out = { snow: 0, smartlawn: 0, firewood: 0, shared: 0 };
           rows.forEach(function(t) {
             var line = BreakEvenPage._classifyLine((t.description || '') + ' ' + (t.merchant_name || ''));
             var amt = Math.abs(parseFloat(t.amount) || 0);
             if (line === 'snow') out.snow += amt;
             else if (line === 'smartlawn') out.smartlawn += amt;
+            else if (line === 'firewood') out.firewood += amt;
             else out.shared += amt; // tree-or-shared overhead, company-wide
           });
           window._bmCostByLine = out;
@@ -270,7 +272,7 @@ var BreakEvenPage = {
     BreakEvenPage._loadExpenses();
     var byLine = BreakEvenPage._revenueByLine(12);
     var cost = window._bmCostByLine;
-    var lineTotal = byLine.tree + byLine.snow + byLine.smartlawn;
+    var lineTotal = byLine.tree + byLine.snow + byLine.smartlawn + byLine.firewood;
     function pct(v) { return lineTotal ? Math.round(v / lineTotal * 100) + '% of revenue' : ''; }
     function sideSub(rev, key) {
       if (cost && cost[key] != null) {
@@ -289,6 +291,7 @@ var BreakEvenPage = {
       +   BreakEvenPage._stat('🌳 Tree', BreakEvenPage._money(byLine.tree), 'var(--card)', '#0a7d2c', pct(byLine.tree))
       +   BreakEvenPage._stat('❄️ Snow', BreakEvenPage._money(byLine.snow), 'var(--card)', '#2c6fb3', sideSub(byLine.snow, 'snow'))
       +   BreakEvenPage._stat('🤖 Smart Lawn', BreakEvenPage._money(byLine.smartlawn), 'var(--card)', '#8e44ad', (lineTotal && byLine.smartlawn) || (cost && cost.smartlawn) ? sideSub(byLine.smartlawn, 'smartlawn') : 'new line')
+      +   BreakEvenPage._stat('🔥 Firewood', BreakEvenPage._money(byLine.firewood), 'var(--card)', '#b5651d', (lineTotal && byLine.firewood) || (cost && cost.firewood) ? sideSub(byLine.firewood, 'firewood') : 'winter line')
       + '</div>'
       + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">Snow/Smart Lawn show revenue − their <b>direct</b> spend (does the line cover itself). Shared overhead (insurance, leases, fuel) stays company-wide — not loaded onto a side line. Tag a job\'s line to override the keyword guess.</div>'
       + '</div>';
