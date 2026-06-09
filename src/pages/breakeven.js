@@ -246,6 +246,24 @@ var BreakEvenPage = {
     }
     html += '</div>';
 
+    // ── SALES TARGET TO KEEP GOING ──
+    var tgtDays = Math.ceil(daysFixedPay);
+    var survDays = Math.ceil(daysFixed);
+    var rate = parseFloat(c.dayRate) || 0;
+    var tgtAnnual = tgtDays * rate;
+    var survAnnual = survDays * rate;
+    var wks = parseFloat(c.workWeeks) || 44;
+    html += '<div style="background:#fff8e6;border:1px solid #f0d98a;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="font-weight:700;margin-bottom:8px;">🎯 To keep going, you need to sell</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">'
+      +   BreakEvenPage._stat('Per YEAR', BreakEvenPage._money(tgtAnnual), '#fff', '#7c5a00', 'covers overhead + your ' + BreakEvenPage._money(c.ownerPay))
+      +   BreakEvenPage._stat('Per MONTH', BreakEvenPage._money(tgtAnnual / 12), '#fff', '#7c5a00', '≈ ' + (tgtDays / 12).toFixed(1) + ' billed days/mo')
+      +   BreakEvenPage._stat('Per WEEK', BreakEvenPage._money(tgtAnnual / wks), '#fff', '#7c5a00', 'across ' + wks + ' working weeks')
+      +   BreakEvenPage._stat('Bare survival', BreakEvenPage._money(survAnnual), '#fff', '#c0271d', 'overhead only — $0 to you')
+      + '</div>'
+      + '<div style="font-size:12px;color:#7c5a00;margin-top:8px;">At your ' + BreakEvenPage._money(rate) + '/day rate that\'s ~<b>' + tgtDays + ' billed days a year</b> (' + (tgtDays / wks).toFixed(1) + '/working-week). Cut a flagged fixed line or raise the day rate and this target drops fast.</div>'
+      + '</div>';
+
     // ── REVENUE & DIRECT COST BY LINE OF BUSINESS (Tree / Snow / Smart Lawn) ──
     BreakEvenPage._loadExpenses();
     var byLine = BreakEvenPage._revenueByLine(12);
