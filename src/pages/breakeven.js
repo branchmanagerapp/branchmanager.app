@@ -81,6 +81,34 @@ var BreakEvenPage = {
     } catch (e) { return 0; }
   },
 
+  // ── Line of Business: Tree / Snow / Smart Lawn (DBA divisions of one entity) ──
+  // Keyword classifier — snow plowing and robotic-mower (Smart Lawn) work split
+  // out from core tree, so each line gets its own revenue read while rolling up
+  // to the combined Second Nature Tree books.
+  LINES: { tree: 'Tree', snow: 'Snow', smartlawn: 'Smart Lawn' },
+  _classifyLine: function(text) {
+    var t = (text || '').toLowerCase();
+    if (/\bsnow\b|plow|plough|\bsalt\b|de-?ic/.test(t)) return 'snow';
+    if (/navimow|yarbo|segway|robotic ?mow|robot ?mow|smart ?lawn/.test(t)) return 'smartlawn';
+    return 'tree';
+  },
+  _revenueByLine: function(months) {
+    var out = { tree: 0, snow: 0, smartlawn: 0 };
+    try {
+      var invs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
+      var since = new Date(); since.setMonth(since.getMonth() - months);
+      invs.forEach(function(i) {
+        if (i.status !== 'paid') return;
+        var d = new Date(i.paidAt || i.createdAt || i.created_at || 0);
+        if (d < since) return;
+        var li = Array.isArray(i.lineItems) ? i.lineItems.map(function(x) { return (x.description || x.name || ''); }).join(' ') : '';
+        var line = BreakEvenPage._classifyLine((i.description || '') + ' ' + (i.notes || '') + ' ' + (i.clientName || '') + ' ' + li);
+        out[line] += (parseFloat(i.total) || 0);
+      });
+    } catch (e) {}
+    return out;
+  },
+
   // Live cash from bank_accounts (populated by Plaid sync / manual entry).
   // Loaded once per session into window._bmCash, then re-renders.
   _loadCash: function() {
@@ -174,6 +202,23 @@ var BreakEvenPage = {
       html += '<div style="font-size:13px;color:var(--text-light);">Loading balances… if this stays blank, no bank balance is set yet (populates from Plaid sync or manual entry in Books).</div>';
     }
     html += '</div>';
+
+    // ── REVENUE BY LINE OF BUSINESS (Tree / Snow / Smart Lawn) ──
+    var byLine = BreakEvenPage._revenueByLine(12);
+    var lineTotal = byLine.tree + byLine.snow + byLine.smartlawn;
+    function pct(v) { return lineTotal ? Math.round(v / lineTotal * 100) + '% of revenue' : ''; }
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +   '<span style="font-weight:700;">Revenue by line of business</span>'
+      +   '<span style="font-size:11px;color:var(--text-light);">last 12 mo · paid invoices</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">'
+      +   BreakEvenPage._stat('🌳 Tree', BreakEvenPage._money(byLine.tree), 'var(--card)', '#0a7d2c', pct(byLine.tree))
+      +   BreakEvenPage._stat('❄️ Snow', BreakEvenPage._money(byLine.snow), 'var(--card)', '#2c6fb3', pct(byLine.snow))
+      +   BreakEvenPage._stat('🤖 Smart Lawn', BreakEvenPage._money(byLine.smartlawn), 'var(--card)', '#8e44ad', lineTotal && byLine.smartlawn ? pct(byLine.smartlawn) : 'new line')
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">Auto-split by keywords (snow/plow · navimow/yarbo). Smart Lawn is a DBA division — same books, its own line. Manual tag override coming next.</div>'
+      + '</div>';
 
     // ── DRIVERS ──
     var dpm = (parseFloat(c.workDays) || 0) / 12;
