@@ -149,11 +149,11 @@ var SchedulePage = {
   },
   _eventColor: function(ev) {
     if (ev.color) return ev.color;
-    return ev.type === 'time_off' ? '#8e44ad' : ev.type === 'personal' ? '#e07c24' : '#1565c0';
+    return ev.type === 'time_off' ? '#8e44ad' : ev.type === 'personal' ? '#e07c24' : ev.type === 'bill' ? '#c62828' : '#1565c0';
   },
   _renderEventPill: function(ev) {
     var color = SchedulePage._eventColor(ev);
-    var icon = ev.type === 'time_off' ? '🌴' : ev.type === 'personal' ? '👤' : '📌';
+    var icon = ev.type === 'time_off' ? '🌴' : ev.type === 'personal' ? '👤' : ev.type === 'bill' ? '💸' : '📌';
     var label = (ev.person ? ev.person + ' — ' : '') + (ev.title || 'Event');
     return '<div onclick="event.stopPropagation();SchedulePage.editEvent(\'' + ev.id + '\')" title="' + UI.esc(label) + '" '
       + 'style="background:' + color + '22;border-left:3px solid ' + color + ';border-radius:4px;padding:1px 4px;margin-bottom:2px;font-size:9px;color:' + color + ';font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
@@ -180,7 +180,7 @@ var SchedulePage = {
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
       + '<div style="font-weight:800;font-size:16px;margin-bottom:14px;">' + (ev ? 'Edit' : 'Add') + ' calendar item</div>'
       + '<label style="font-size:12px;font-weight:600;color:#555;">Type</label>'
-      + '<select id="ev-type" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">' + opt('time_off', '🌴 Time off') + opt('personal', '👤 Personal / day-rate') + opt('note', '📌 Note') + '</select>'
+      + '<select id="ev-type" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">' + opt('time_off', '🌴 Time off') + opt('personal', '👤 Personal / day-rate') + opt('bill', '💸 Bill / payment due') + opt('note', '📌 Note') + '</select>'
       + '<label style="font-size:12px;font-weight:600;color:#555;">Who (optional)</label>'
       + '<input id="ev-person" placeholder="Catherine, Braxton, Doug…" value="' + (ev && ev.person ? UI.esc(ev.person) : '') + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">'
       + '<label style="font-size:12px;font-weight:600;color:#555;">Title</label>'
