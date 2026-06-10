@@ -29,7 +29,9 @@ var BooksPage = (function() {
   var _taxFilings = null;
   var _allTxns = null;
   var _invoicesQ = null; // v871: invoices by quarter for sales-tax reconciliation
-  var _filter = { account: 'all', category: 'all', search: '', range: '90' };
+  var _bills = null;   // v933: calendar_events type='bill' — upcoming bills/tax for Week Ahead
+  var _upJobs = null;  // v933: upcoming scheduled jobs — expected income for Week Ahead
+  var _filter = { account: 'all', category: 'all', search: '', range: '90', forecast: '7' };
 
   function _supabase() {
     return (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -68,7 +70,10 @@ var BooksPage = (function() {
       })(),
       // v871+v880: invoices for sales-tax reconciliation (per-quarter rollup)
       // AND outstanding-AR card (needs id, invoice_number, client_name, balance, due_date)
-      sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000)
+      sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000),
+      // v933: Week Ahead forecast — upcoming bills (calendar_events) + scheduled jobs
+      sb.from('calendar_events').select('type,title,start_date,notes').eq('tenant_id', TENANT_ID()).eq('type', 'bill').order('start_date'),
+      sb.from('jobs').select('job_number,client_name,scheduled_date,status,total').eq('tenant_id', TENANT_ID()).gte('scheduled_date', new Date(Date.now() - 86400000).toISOString().split('T')[0]).order('scheduled_date')
     ]).then(function(results) {
       _accounts = (results[0] && results[0].data) || [];
       _txns = (results[1] && results[1].data) || [];
@@ -76,6 +81,8 @@ var BooksPage = (function() {
       _taxFilings = (results[3] && results[3].data) || [];
       _allTxns = (results[4] && results[4].data) || [];
       _invoicesQ = (results[5] && results[5].data) || [];
+      _bills = (results[6] && results[6].data) || [];
+      _upJobs = (results[7] && results[7].data) || [];
     });
   }
 
@@ -95,6 +102,96 @@ var BooksPage = (function() {
   function _money(n) { var v = Number(n)||0; return (v < 0 ? '-' : '') + '$' + Math.abs(v).toFixed(2); }
   function _moneyInt(n) { return UI.moneyInt ? UI.moneyInt(n) : '$' + Math.round(Number(n)||0).toLocaleString(); }
   function _date(s) { return UI.dateShort ? UI.dateShort(s) : (s ? new Date(s).toLocaleDateString('en-US') : ''); }
+
+  // ── Week Ahead cash forecast (v933) ──────────────────────────────────────
+  // "What should the account look like at end of week" = current checking
+  // balance + expected job income − bills/tax due, over a forward window.
+  // Also surfaces the running LOW point so an NSF can be seen before it lands
+  // (NSFs on the statements are what blocked the KM100 telehandler financing).
+  function _parseAmt(s) {
+    var m = String(s || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+  function _ymd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function setForecast(v) { _filter.forecast = v; loadPage(window._currentPage || 'books'); }
+  function _renderWeekAhead() {
+    var accounts = _accounts || [], bills = _bills || [], jobs = _upJobs || [];
+    var windowDays = parseInt(_filter.forecast || '7', 10) || 7;
+    // Starting balance = the active CHECKING account (0606), else first account.
+    var chk = accounts.filter(function(a) {
+      var n = (a.name || '').toLowerCase(), t = (a.account_type || '').toLowerCase(), l = (a.last_4 || '');
+      return l === '0606' || /check/.test(n) || /check|depository/.test(t);
+    })[0] || accounts[0];
+    if (!chk) return '';
+    var startBal = Number(chk.balance_current) || 0;
+    var asOf = chk.balance_as_of ? _date(chk.balance_as_of) : null;
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var startStr = _ymd(today), endStr = _ymd(new Date(today.getTime() + windowDays * 86400000));
+
+    var events = [];
+    jobs.forEach(function(j) {
+      var d = (j.scheduled_date || '').substring(0, 10);
+      if (d < startStr || d > endStr) return;
+      if (['cancelled', 'canceled', 'archived', 'lost'].indexOf((j.status || '').toLowerCase()) >= 0) return;
+      var amt = Number(j.total) || 0; if (amt <= 0) return;
+      events.push({ date: d, delta: amt, pos: true, label: '#' + j.job_number + ' ' + (j.client_name || 'Job') });
+    });
+    bills.forEach(function(b) {
+      var d = (b.start_date || '').substring(0, 10);
+      if (d < startStr || d > endStr) return;
+      events.push({ date: d, delta: -_parseAmt(b.title), pos: false, label: b.title });
+    });
+    events.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+
+    var income = events.filter(function(e) { return e.pos; }).reduce(function(s, e) { return s + e.delta; }, 0);
+    var outgo = events.filter(function(e) { return !e.pos; }).reduce(function(s, e) { return s + e.delta; }, 0); // ≤0
+    var projected = startBal + income + outgo;
+
+    var run = startBal, low = startBal, lowDate = startStr;
+    events.forEach(function(e) { run += e.delta; if (run < low) { low = run; lowDate = e.date; } });
+
+    var BUFFER = 3100; // month-start auto-debit cluster (Erie + Blue Bridge ≈ $3,027)
+    var danger = low < 0, warn = !danger && low < BUFFER;
+
+    var winOpts = [['7', '7 days'], ['14', '14 days'], ['30', '30 days']];
+    var toggle = winOpts.map(function(o) {
+      var active = (_filter.forecast || '7') === o[0];
+      return '<button onclick="BooksPage.setForecast(\'' + o[0] + '\')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:' + (active ? 'var(--text)' : 'var(--white)') + ';color:' + (active ? 'var(--white)' : 'var(--text)') + ';cursor:pointer;font-weight:' + (active ? '700' : '500') + ';">' + o[1] + '</button>';
+    }).join(' ');
+
+    var banner = '';
+    if (danger) banner = '<div style="background:#fdecea;border:1px solid #f5c6cb;color:#b71c1c;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600;margin:10px 0;">🚨 Balance goes NEGATIVE — low ' + _money(low) + ' on ' + _date(lowDate) + '. NSF risk: move money in or push a payment before then.</div>';
+    else if (warn) banner = '<div style="background:#fff8e1;border:1px solid #ffe082;color:#8d6e00;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600;margin:10px 0;">⚠️ Dips to ' + _money(low) + ' on ' + _date(lowDate) + ' — below your ~' + _moneyInt(BUFFER) + ' safety buffer. Keep it topped up to avoid an NSF.</div>';
+
+    var projColor = projected < 0 ? '#b71c1c' : projected < BUFFER ? '#8d6e00' : 'var(--green-dark)';
+    var rows = events.map(function(e) {
+      return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">'
+        + '<span style="color:var(--text-light);white-space:nowrap;">' + _date(e.date) + '</span>'
+        + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (e.pos ? '🟢 ' : '💸 ') + _esc(e.label) + '</span>'
+        + '<span style="font-weight:700;color:' + (e.pos ? 'var(--green-dark)' : '#c62828') + ';white-space:nowrap;">' + (e.pos ? '+' : '') + _money(e.delta) + '</span>'
+        + '</div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text-light);padding:8px 0;">No scheduled jobs or bills in this window. (Jobs you run from Jobber won\'t appear here until pulled into BM.)</div>';
+
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">'
+      +   '<div style="font-size:15px;font-weight:800;">💵 Week Ahead — projected balance</div>'
+      +   '<div style="display:flex;gap:5px;">' + toggle + '</div>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Checking balance + expected job income − bills/tax due, next ' + windowDays + ' days.</div>'
+      + banner
+      + '<div style="margin:6px 0 12px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;font-weight:700;">Projected end balance</div>'
+      +   '<div style="font-size:30px;font-weight:800;color:' + projColor + ';line-height:1.1;">' + _money(projected) + '</div></div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;margin-bottom:12px;">'
+      +   '<span style="background:var(--bg);border-radius:8px;padding:6px 10px;">Start ' + _money(startBal) + (asOf ? ' <span style="color:var(--text-light);">(as of ' + asOf + ')</span>' : '') + '</span>'
+      +   '<span style="background:#e8f5e9;color:#1b5e20;border-radius:8px;padding:6px 10px;font-weight:700;">+ Jobs ' + _money(income) + '</span>'
+      +   '<span style="background:#fdecea;color:#b71c1c;border-radius:8px;padding:6px 10px;font-weight:700;">− Bills ' + _money(Math.abs(outgo)) + '</span>'
+      +   '<span style="background:var(--bg);border-radius:8px;padding:6px 10px;">Low point ' + _money(low) + ' · ' + _date(lowDate) + '</span>'
+      + '</div>'
+      + '<div>' + rows + '</div>'
+      + '</div>';
+  }
 
   function _renderShell() {
     var accounts = _accounts || [];
@@ -149,6 +246,9 @@ var BooksPage = (function() {
         + '</div>';
     });
     html += '</div>';
+
+    // Week Ahead forecast (v933) — projected balance + NSF early-warning
+    html += _renderWeekAhead();
 
     // ──────────────────────────────────────────────────────────────────
     // P&L Summary (v857) — roll up bank_transactions by COA class.
@@ -2050,6 +2150,7 @@ var BooksPage = (function() {
     openCsvImport: openCsvImport,
     reconcileAll: reconcileAll,
     setCashflow: setCashflow,
+    setForecast: setForecast,
     sendInvoiceFollowup: sendInvoiceFollowup,
     _setRange: _setRange,
     _setAccount: _setAccount,
