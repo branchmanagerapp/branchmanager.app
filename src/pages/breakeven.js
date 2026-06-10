@@ -178,6 +178,28 @@ var BreakEvenPage = {
     }).catch(function() {});
   },
 
+  // Monthly cash flow (income vs expense) from the bank — last 6 months, for the chart.
+  _loadMonthly: function() {
+    if (window._bmMonthlyLoaded) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) return;
+    window._bmMonthlyLoaded = true;
+    var since = new Date(); since.setMonth(since.getMonth() - 7);
+    sb.from('bank_transactions').select('posted_date,amount,description,category').gte('posted_date', since.toISOString().slice(0, 10)).limit(5000).then(function(res) {
+      var rows = (res && res.data) || [], m = {};
+      rows.forEach(function(t) {
+        var d = (t.posted_date || '').slice(0, 7); if (!d) return;
+        var du = (t.description || '').toUpperCase(), cc = String(t.category);
+        if (cc === '7100' || du.indexOf('PAYMENT - THANK') >= 0 || du.indexOf('WEB PMT TO') >= 0 || du.indexOf('XFER FROM') >= 0 || du.indexOf('XFER TO') >= 0 || du.indexOf('RETURN -') >= 0 || du.indexOf('REVERSE PRE') >= 0) return;
+        m[d] = m[d] || { income: 0, expense: 0 };
+        if (t.amount > 0) m[d].income += t.amount; else m[d].expense += Math.abs(t.amount);
+      });
+      var months = Object.keys(m).sort().slice(-6);
+      window._bmMonthly = months.map(function(k) { return { month: k, income: m[k].income, expense: m[k].expense }; });
+      if (typeof loadPage === 'function') loadPage('breakeven');
+    }).catch(function() {});
+  },
+
   render: function() {
     var c = BreakEvenPage._load();
     var ovTotal = c.overhead.reduce(function(s, o) { return s + (parseFloat(o.amt) || 0); }, 0);
@@ -247,6 +269,42 @@ var BreakEvenPage = {
         + '</div>';
     } else {
       html += '<div style="font-size:13px;color:var(--text-light);">Loading balances… if this stays blank, no bank balance is set yet (populates from Plaid sync or manual entry in Books).</div>';
+    }
+    html += '</div>';
+
+    // ── 📊 BUSINESS PICTURE (live charts) ──
+    BreakEvenPage._loadMonthly();
+    var mo = window._bmMonthly;
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="font-weight:700;margin-bottom:10px;">📊 Business Picture</div>';
+    if (mo && mo.length) {
+      var maxv = 1;
+      mo.forEach(function(x) { maxv = Math.max(maxv, x.income, x.expense); });
+      var bars = mo.map(function(x) {
+        var ih = Math.max(2, Math.round(x.income / maxv * 110)), eh = Math.max(2, Math.round(x.expense / maxv * 110));
+        var net = x.income - x.expense;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;">'
+          + '<div style="display:flex;align-items:flex-end;gap:3px;height:118px;">'
+          +   '<div title="in ' + BreakEvenPage._money(x.income) + '" style="width:13px;height:' + ih + 'px;background:#4caf50;border-radius:3px 3px 0 0;"></div>'
+          +   '<div title="out ' + BreakEvenPage._money(x.expense) + '" style="width:13px;height:' + eh + 'px;background:#c0271d;opacity:.85;border-radius:3px 3px 0 0;"></div>'
+          + '</div>'
+          + '<div style="font-size:10px;font-weight:700;color:' + (net >= 0 ? '#0a7d2c' : '#c0271d') + ';">' + (net >= 0 ? '+' : '') + Math.round(net / 1000) + 'k</div>'
+          + '<div style="font-size:10px;color:var(--text-light);">' + x.month.slice(5) + '/' + x.month.slice(2, 4) + '</div>'
+          + '</div>';
+      }).join('');
+      html += '<div style="font-size:12px;color:var(--text-light);margin-bottom:4px;">Cash flow, last 6 months &nbsp;<span style="color:#4caf50;font-weight:700;">▮ in</span> <span style="color:#c0271d;font-weight:700;">▮ out</span> &nbsp;· net below each</div>'
+        + '<div style="display:flex;align-items:flex-end;gap:10px;padding:4px 0 2px;">' + bars + '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:var(--text-light);">Loading monthly chart…</div>';
+    }
+    if (cashD) {
+      var wneed = winterNutMo * 3;
+      var wpct = wneed > 0 ? Math.min(100, Math.round(cashD.net / wneed * 100)) : 0;
+      html += '<div style="margin-top:14px;">'
+        + '<div style="font-size:12px;color:var(--text-light);margin-bottom:4px;">🏦 Winter reserve: <b>' + BreakEvenPage._money(cashD.net) + '</b> of <b>' + BreakEvenPage._money(wneed) + '</b> banked (' + wpct + '%)</div>'
+        + '<div style="height:18px;background:#eee;border-radius:9px;overflow:hidden;">'
+        +   '<div style="height:100%;width:' + wpct + '%;background:' + (wpct >= 100 ? '#0a7d2c' : '#c79a00') + ';border-radius:9px;"></div>'
+        + '</div></div>';
     }
     html += '</div>';
 
