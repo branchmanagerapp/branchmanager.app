@@ -75,6 +75,11 @@ function autoCategorize(plaidCategories: string[] | null, name: string, amount: 
   const cats = (plaidCategories || []).map(c => c.toLowerCase());
   const n = (name || '').toLowerCase();
 
+  // Internal transfers — card payments (both legs) net to a transfer, never income/expense.
+  // Runs BEFORE the income/outflow split so "PAYMENT - THANK YOU" credits aren't booked as revenue.
+  if (/web pmt to.*8882|payment\s*-\s*thank/.test(n)) return '7100';
+  if (/counter withdrawal/.test(n)) return '7000'; // owner draw / cash out
+
   // Income (positive amounts in Plaid's outflow convention = inflows)
   if (amount < 0) {
     if (n.includes('stripe')) return '4000'; // Service Revenue (Stripe payout)
@@ -82,7 +87,19 @@ function autoCategorize(plaidCategories: string[] | null, name: string, amount: 
     return '4900'; // Other Income
   }
 
-  // Outflows
+  // Outflows — Second Nature recurring merchants first (description-specific)
+  if (/blue ?brid/.test(n)) return '6400';                          // bucket-truck lease
+  if (/chase ext trnsfr|jpmorgan chase ext/.test(n)) return '6220'; // RAM 2500 loan
+  if (/bobcat/.test(n)) return '6400';                              // equipment rental
+  if (/ossining lawn|stephenson|bedford mower|brady.?s power|adams power/.test(n)) return '6400';
+  if (/\berie\b|prog specialty/.test(n)) return '6300';             // Erie / Progressive insurance
+  if (/cadco|congdon/.test(n)) return '5200';                       // Smart Lawn mower inventory
+  if (/american cycle|sav-?mor|rlparts|rl parts|hba automotive|nys ?dmv/.test(n)) return '6220';
+  if (/bouncie|intuit|qbooks|quickbooks|joist|resend|socialpilot|godaddy|wix\.com/.test(n)) return '6500';
+  if (/sansotta|american burrito/.test(n)) return '6810';           // food
+  if (/rock cut/.test(n)) return '6200';                            // gas/convenience
+  if (/nys dtf/.test(n)) return '6100';                             // withholding tax
+  // Outflows — generic rules
   if (cats.some(c => c.includes('gas station')) || /shell|sunoco|exxon|mobil|chevron|bp gas|gulf|valero|76|arco/.test(n)) return '6200';
   if (cats.some(c => c.includes('automotive') || c.includes('auto repair'))) return '6220';
   if (/messick|r&l parts|napa|advance auto|autozone|pep boys|oreilly|o'reilly/.test(n)) return '6220';
