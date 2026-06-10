@@ -21,9 +21,12 @@ SUPA_URL  = "https://ltpivkqahvplapyagljt.supabase.co"
 import subprocess, sys
 
 def get_service_key():
+    tok = os.environ.get("SUPABASE_ACCESS_TOKEN")
+    if not tok:
+        raise SystemExit("SUPABASE_ACCESS_TOKEN env var required — get a PAT at https://supabase.com/dashboard/account/tokens and `export SUPABASE_ACCESS_TOKEN=sbp_...` (never hardcode it)")
     result = subprocess.run([
         "curl", "-s", "https://api.supabase.com/v1/projects/ltpivkqahvplapyagljt/api-keys",
-        "-H", "Authorization: Bearer sbp_057050f5362c448d5885cc13ba6095ff4e80a549"
+        "-H", f"Authorization: Bearer {tok}"
     ], capture_output=True, text=True)
     data = json.loads(result.stdout)
     for k in data:
