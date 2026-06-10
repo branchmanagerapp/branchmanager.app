@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 930; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 931; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1022,6 +1022,7 @@
       <button class="nav-item" data-page="insurance"><span class="icon"><i data-lucide="shield" class="li"></i></span> Insurance</button>
       <!-- v690: Expenses promoted from buried Reports tab to its own sidebar entry. -->
       <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
+      <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
 
       <!-- v679: dropped horizontal divider — cleaner, single nav scroll like leading apps. -->
       <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
@@ -1121,7 +1122,7 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v930.min.js"></script>
+<script defer src="dist/bm.bundle.v931.min.js"></script>
 
 
 
@@ -1354,6 +1355,7 @@ var pageConfigs = {
   employeecenter: { title: 'My Pay & Hours', action: null },
   budget: { title: 'Budget Planner', action: null },
   breakeven: { title: 'Break-Even / Day Budget', action: null },
+  books: { title: 'Books', action: null },
   dispatch: { title: 'Dispatch', action: 'Open Route', actionFn: 'DispatchPage.openRoute()' },
   clientmap: { title: 'Client Map', action: null },
   photomap: { title: 'Photo Map', action: null },
@@ -1603,6 +1605,7 @@ var pageRenderers = {
   employeecenter: function() { return EmployeeCenter.render(); },
   budget: function() { return BudgetPage.render(); },
   breakeven: function() { return BreakEvenPage.render(); },
+  books: function() { return BooksPage.render(); },
   dispatch: function() { return DispatchPage.render(); },
   clientmap: function() { return ClientMapPage.render(); },
   photomap: function() { return PhotoMap.render(); },
