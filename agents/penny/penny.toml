@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PENNY — cash / treasury agent. Tracks the money in every account and watches
+# the no-income-winter reserve build toward target.
+#
+# Same modular OpenJarvis pattern as Sarah: her own spec + the shared RLS
+# Supabase client. Read-only on the money side — Penny reports, she never moves
+# funds (and the prohibited-actions rules mean no agent ever will).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[agent]
+name        = "Penny"
+role        = "treasury"
+description = "Tracks the balance in every bank account, totals cash vs. debt, and reports progress toward the winter cash reserve."
+resident    = false            # runs on a schedule + on demand; sleeps otherwise
+persona     = "Plain, numbers-first. One short cash summary. Flags accounts with no live balance."
+
+[model]
+engine   = "ollama"            # swap engine/model/endpoint Air -> Mini; nothing else changes
+name     = "llama3.1:8b"
+endpoint = "http://127.0.0.1:11434"
+temperature = 0.1              # deterministic — it's reporting numbers
+
+# ── What Penny reads ─────────────────────────────────────────────────────────
+# bank_accounts.balance_current, per account, RLS-scoped to Second Nature.
+# Populated by Plaid sync (once a bank is Link-connected) OR manual entry in BM.
+[data]
+source_table = "bank_accounts"
+balance_field = "balance_current"
+read_only = true               # Penny CANNOT move money. Reports only.
+
+# ── The reserve she watches ──────────────────────────────────────────────────
+# From the Year Plan: assume Jan-Mar earn $0; the nut is paid from cash banked
+# during the year. Target = business winter nut (~$14.7k) + owner pay (~$15k).
+[reserve]
+target = 29700                 # ~$30k no-income-winter cushion
+business_nut_monthly = 4895    # Blue Bridge + KM100 + Erie insurance + base
+owner_pay_monthly = 5000
+winter_months = 3
+note = "Penny reports total cash as a % of this target so the reserve build is visible all season."
+
+# ── When she runs + what she does ────────────────────────────────────────────
+[[schedule]]
+when = "daily 7am"             # morning cash snapshot
+action = "report"
+
+[[schedule]]
+when = "on_demand"             # 'Penny, where's our cash?'
+action = "report"
+
+[alerts]
+# Penny pings the handoff numbers when something needs attention.
+reserve_behind_pct = 100       # if, by month, cash is below the pro-rated reserve pace
+account_low_below = 2000       # any checking account under this
+stale_balance_days = 7         # an account whose balance hasn't updated in a week
+
+# ── Handoff (same config-driven recipients as Sarah) ─────────────────────────
+[handoff]
+provider = "twilio"
+recipients_config_key = "owner_alert_phones"   # Doug + Catherine, from tenants.config
+
+# ── Tool ─────────────────────────────────────────────────────────────────────
+[[tool]]
+name   = "accounts"
+module = "shared/accounts_tool.py"
+entry  = "cash_report"
+
+[permissions]
+can_write_tables = []          # NONE. Read-only treasury.
+can_read_tables  = ["bank_accounts", "tenants"]
+can_move_money   = false       # hard no — prohibited for any agent

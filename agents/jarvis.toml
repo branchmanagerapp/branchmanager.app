@@ -81,3 +81,10 @@ default_route = "new_customer_intake"
 agent = "sarah"
 spec  = "sarah/sarah.toml"
 sleeps_after = true         # Sarah wakes for intake, finishes the lead, sleeps
+
+[[handoff]]
+agent = "penny"
+spec  = "penny/penny.toml"
+sleeps_after = true         # treasury — runs on schedule / on demand, reports cash + reserve, sleeps
+# "Penny, where's our cash?" → reads every account balance (read-only) and reports
+# total cash + progress toward the ~$30k no-income-winter reserve.

@@ -2196,6 +2196,24 @@ var QuotesPage = {
           + '</div>')
       + '</div>'
 
+      // Signed-approval block — shows the customer's e-signature once captured
+      // (approve.html → quote-update writes client_signature/signed_name/signed_at).
+      + (function(){
+          var sig = q.clientSignature || q.client_signature || '';
+          var sName = q.signedName || q.signed_name || '';
+          var sAt = q.signedAt || q.signed_at || q.approvedAt || '';
+          if (!sig && !sName) return '';
+          var when = '';
+          try { if (sAt) when = new Date(sAt).toLocaleString(); } catch(e) {}
+          return '<div style="background:var(--white);border:1px solid #a5d6a7;border-radius:10px;padding:16px;margin-bottom:16px;">'
+            + '<h4 style="font-size:12px;color:#2e7d32;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;font-weight:700;">✓ Signed &amp; approved by customer</h4>'
+            + (sig && sig.indexOf('data:image') === 0 ? '<img src="' + sig + '" alt="customer signature" style="max-width:300px;max-height:100px;border-bottom:1px solid var(--border);display:block;margin-bottom:8px;">' : '')
+            + '<div style="font-size:15px;font-weight:700;color:var(--text);">' + UI.esc(sName || '(typed name not captured)') + '</div>'
+            + (when ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Signed ' + UI.esc(when) + '</div>' : '')
+            + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;">Electronic signature — legally binding under the federal ESIGN Act &amp; NY ESRA.</div>'
+            + '</div>';
+        })()
+
       // Photos + Notes + Actions in bottom section
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="detail-grid">'
 
