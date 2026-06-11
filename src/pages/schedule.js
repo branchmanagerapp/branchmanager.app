@@ -1306,7 +1306,7 @@ var SchedulePage = {
     });
     var billsIdx = window._bmCalEventsIndex || {};
     function parseAmt(s) { var m = String(s || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; }
-    function k(n) { var a = Math.abs(n); var s = a >= 1000 ? '$' + (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : '$' + Math.round(a); return (n < 0 ? '−' : '') + s; }
+    function money(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); }
 
     var base = new Date(self.currentDate); base.setHours(0, 0, 0, 0);
     base.setDate(base.getDate() - ((base.getDay() + 6) % 7)); // Monday
@@ -1329,20 +1329,24 @@ var SchedulePage = {
       var net = rev - exp; running += net; totRev += rev; totExp += exp;
       var isThis = (wsStr <= todayStr && todayStr <= weStr);
       var netC = net >= 0 ? 'var(--green-dark)' : '#c62828';
-      rowsHtml += '<div style="padding:7px 0;border-top:1px solid var(--border);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
-        +   '<span style="font-weight:700;font-size:12px;' + (isThis ? 'color:var(--green-dark);' : '') + '">' + (isThis ? '▶ ' : '') + sm[ws.getMonth()] + ' ' + ws.getDate() + '</span>'
-        +   '<span style="font-weight:800;font-size:13px;color:' + netC + ';">' + k(net) + '</span>'
-        + '</div>'
-        + '<div style="font-size:10px;color:var(--text-light);">' + k(rev) + ' in · ' + (exp > 0 ? k(-exp) + ' bills' : 'no bills') + (jobN ? ' · ' + jobN + 'j' : '') + ' · run ' + k(running) + '</div>'
-        + (bills.length ? '<div style="font-size:9px;color:#c62828;line-height:1.3;">' + bills.join(', ') + '</div>' : '')
+      var endDay = (new Date(ws.getTime() + 6 * MS)).getDate();
+      rowsHtml += '<div style="padding:8px 0;border-top:1px solid var(--border);">'
+        + '<div style="font-weight:800;font-size:12px;margin-bottom:3px;' + (isThis ? 'color:var(--green-dark);' : '') + '">' + (isThis ? '▶ ' : '') + 'Week of ' + sm[ws.getMonth()] + ' ' + ws.getDate() + '–' + endDay + (isThis ? ' · this week' : '') + '</div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;line-height:1.7;"><span style="color:var(--text-light);">Revenue</span><span style="color:var(--green-dark);font-weight:600;">' + money(rev) + (jobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + jobN + 'j)</span>' : '') + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;line-height:1.7;"><span style="color:var(--text-light);">Expenses</span><span style="color:#c62828;font-weight:600;">' + (exp > 0 ? money(-exp) : '$0') + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px dashed var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:700;">Net</span><span style="font-weight:800;color:' + netC + ';">' + money(net) + '</span></div>'
+        + (bills.length ? '<div style="font-size:9px;color:#c62828;line-height:1.3;margin-top:3px;">' + bills.join(', ') + '</div>' : '')
         + '</div>';
     }
 
     var totNet = totRev - totExp;
     return '<div style="padding:10px 12px;">'
       + '<div style="font-size:10px;color:var(--text-light);line-height:1.4;margin-bottom:8px;">Weekly P&L — booked job revenue − bills/tax due. Revenue = jobs scheduled in BM (Jobber work fills in as pulled).</div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;padding-bottom:4px;"><span>8-week net</span><span style="color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + k(totNet) + '</span></div>'
+      + '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:11px;">'
+      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">8-wk revenue</span><span style="color:var(--green-dark);font-weight:700;">' + money(totRev) + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">8-wk expenses</span><span style="color:#c62828;font-weight:700;">' + (totExp > 0 ? money(-totExp) : '$0') + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px solid var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:800;">8-wk net</span><span style="font-weight:800;color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + money(totNet) + '</span></div>'
+      + '</div>'
       + rowsHtml
       + '</div>';
   },
@@ -1634,7 +1638,7 @@ var SchedulePage = {
       + '<div style="display:flex;border-bottom:1px solid var(--border);">'
       +   tabBtn('map', 'Map')
       +   tabBtn('unscheduled', 'Unsched' + (unscheduled.length ? ' (' + unscheduled.length + ')' : ''))
-      +   tabBtn('budget', '💰 Budget')
+      +   tabBtn('budget', 'Budget')
       +   '<button onclick="SchedulePage._toggleDockedMap()" title="Hide panel" '
       +     'style="padding:0 10px;background:var(--bg);border:none;border-bottom:2px solid transparent;font-size:18px;line-height:1;cursor:pointer;color:var(--text-light);">&times;</button>'
       + '</div>';
