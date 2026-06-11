@@ -435,6 +435,7 @@ var SchedulePage = {
       +     _viewPill('year', 'Year')
       +     _viewPill('list', 'List')
       +     _viewPill('map', 'Map')
+      +     _viewPill('budget', '💰 Budget')
       +   '</div>'
       + '</div>';
 
@@ -471,6 +472,8 @@ var SchedulePage = {
       }
     } else if (self.view === 'year') {
       html += self._renderYear();
+    } else if (self.view === 'budget') {
+      html += self._renderBudget();
     } else {
       html += self._renderMonth();
     }
@@ -559,6 +562,9 @@ var SchedulePage = {
     }
     if (SchedulePage.view === 'year') {
       return String(d.getFullYear());
+    }
+    if (SchedulePage.view === 'budget') {
+      return 'Weekly Budget — booked revenue vs. bills';
     }
     var start = new Date(d);
     start.setDate(start.getDate() - start.getDay());
@@ -1289,6 +1295,74 @@ var SchedulePage = {
               : '<span style="display:inline-block;width:5px;height:5px;margin-top:2px;"></span>')
         + '</button>';
     }
+    html += '</div>';
+    return html;
+  },
+
+  // ── Budget view (v938) — weekly P&L from booked jobs vs. bills due ────────
+  // Revenue = scheduled jobs' value that week. Expenses = bills/tax on the
+  // calendar (type='bill') whose payment date lands that week. Net = the
+  // week's projected P&L; a running column shows the cumulative trajectory.
+  _renderBudget: function() {
+    var self = SchedulePage;
+    var allJobs = DB.jobs.getAll().filter(function(j) {
+      return j.scheduledDate && j.status !== 'archived' && j.status !== 'cancelled';
+    });
+    var billsIdx = window._bmCalEventsIndex || {};
+    self._loadCalEvents();
+    function parseAmt(s) { var m = String(s || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; }
+    function money(n) { return (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString(); }
+
+    var base = new Date(self.currentDate); base.setHours(0, 0, 0, 0);
+    var dow = (base.getDay() + 6) % 7; // 0 = Monday
+    base.setDate(base.getDate() - dow);
+    var WEEKS = 10, MS = 86400000;
+    var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var todayStr = self._localDateStr(new Date());
+
+    var rows = [], totRev = 0, totExp = 0, running = 0;
+    for (var w = 0; w < WEEKS; w++) {
+      var ws = new Date(base.getTime() + w * 7 * MS);
+      var wsStr = self._localDateStr(ws);
+      var weStr = self._localDateStr(new Date(ws.getTime() + 6 * MS));
+      var rev = 0, jobN = 0;
+      allJobs.forEach(function(j) { var d = j.scheduledDate.substring(0, 10); if (d >= wsStr && d <= weStr) { rev += Number(j.total) || 0; jobN++; } });
+      var exp = 0, bills = [];
+      for (var di = 0; di < 7; di++) {
+        var dStr = self._localDateStr(new Date(ws.getTime() + di * MS));
+        (billsIdx[dStr] || []).forEach(function(ev) { if (ev.type === 'bill') { var a = parseAmt(ev.title); exp += a; bills.push(ev.title); } });
+      }
+      var net = rev - exp; running += net; totRev += rev; totExp += exp;
+      rows.push({ ws: ws, rev: rev, jobN: jobN, exp: exp, net: net, running: running, bills: bills, isThis: (wsStr <= todayStr && todayStr <= weStr) });
+    }
+
+    var totNet = totRev - totExp;
+    var html = '<div style="max-width:920px;margin:0 auto;">';
+    html += '<div style="font-size:12px;color:var(--text-light);margin:0 0 14px;line-height:1.5;">Each week\'s projected P&L: <b>booked job revenue</b> (what\'s on the schedule) minus <b>bills &amp; tax due</b> that week (from the calendar). Revenue reflects what\'s scheduled in BM — Jobber work fills in as you pull it. "Run" = cumulative net.</div>';
+    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">'
+      + '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:700;">Booked · 10 wk</div><div style="font-size:20px;font-weight:800;color:var(--green-dark);">' + money(totRev) + '</div></div>'
+      + '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:700;">Bills due · 10 wk</div><div style="font-size:20px;font-weight:800;color:#c62828;">' + money(totExp) + '</div></div>'
+      + '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:700;">Net P&L</div><div style="font-size:20px;font-weight:800;color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + money(totNet) + '</div></div>'
+      + '</div>';
+
+    rows.forEach(function(r) {
+      var label = sm[r.ws.getMonth()] + ' ' + r.ws.getDate() + '–' + (new Date(r.ws.getTime() + 6 * MS)).getDate();
+      var netColor = r.net >= 0 ? 'var(--green-dark)' : '#c62828';
+      var runColor = r.running >= 0 ? 'var(--text-light)' : '#c62828';
+      html += '<div style="background:var(--white);border:1px solid ' + (r.isThis ? 'var(--green-dark)' : 'var(--border)') + ';border-radius:10px;padding:11px 14px;margin-bottom:8px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
+        +   '<div style="font-weight:800;font-size:14px;">Week of ' + label + (r.isThis ? ' <span style="font-size:10px;color:var(--green-dark);background:var(--green-bg);padding:1px 6px;border-radius:8px;">THIS WEEK</span>' : '') + '</div>'
+        +   '<div style="display:flex;gap:12px;align-items:baseline;font-size:13px;">'
+        +     '<span style="color:var(--green-dark);font-weight:700;">+' + money(r.rev) + '</span>'
+        +     '<span style="color:#c62828;font-weight:700;">' + (r.exp > 0 ? '−' + money(r.exp) : '$0') + '</span>'
+        +     '<span style="font-weight:800;color:' + netColor + ';min-width:66px;text-align:right;">' + money(r.net) + '</span>'
+        +     '<span style="color:' + runColor + ';font-size:11px;min-width:78px;text-align:right;">run ' + money(r.running) + '</span>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">' + (r.jobN ? r.jobN + ' job' + (r.jobN === 1 ? '' : 's') + ' booked' : 'no jobs booked') + (r.bills.length ? ' · 💸 ' + r.bills.map(function(b) { return b.replace(/^[^A-Za-z0-9]+/, ''); }).join(', ') : '') + '</div>'
+        + '</div>';
+    });
+
     html += '</div>';
     return html;
   },
