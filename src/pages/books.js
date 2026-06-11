@@ -70,7 +70,7 @@ var BooksPage = (function() {
       })(),
       // v871+v880: invoices for sales-tax reconciliation (per-quarter rollup)
       // AND outstanding-AR card (needs id, invoice_number, client_name, balance, due_date)
-      sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status').eq('tenant_id', TENANT_ID()).limit(10000),
+      sb.from('invoices').select('id,invoice_number,client_name,issued_date,due_date,subtotal,tax_amount,total,balance,status,line_of_business,subject').eq('tenant_id', TENANT_ID()).limit(10000),
       // v933: Week Ahead forecast — upcoming bills (calendar_events) + scheduled jobs
       sb.from('calendar_events').select('type,title,start_date,notes').eq('tenant_id', TENANT_ID()).eq('type', 'bill').order('start_date'),
       sb.from('jobs').select('job_number,client_name,scheduled_date,status,total').eq('tenant_id', TENANT_ID()).gte('scheduled_date', new Date(Date.now() - 86400000).toISOString().split('T')[0]).order('scheduled_date')
@@ -118,6 +118,94 @@ var BooksPage = (function() {
   }
   function setForecast(v) { _filter.forecast = v; loadPage(window._currentPage || 'books'); }
   function setTab(v) { _filter.tab = v; loadPage(window._currentPage || 'books'); }
+
+  // ── P&L by line of business (v936) ───────────────────────────────────────
+  // Revenue is split from invoices (line_of_business tag, else keyword guess).
+  // Expenses are mostly SHARED overhead — only snow/smartlawn/firewood have
+  // keyword-identifiable DIRECT spend; Tree absorbs the shared overhead (it's
+  // the core business). So each non-tree line shows its *marginal contribution*
+  // above shared overhead, and the columns sum to the real net.
+  var _LOB = [
+    ['tree', '🌲', 'Tree', 'var(--green-dark)'],
+    ['snow', '❄️', 'Snow', '#1565c0'],
+    ['smartlawn', '🤖', 'Smart Lawn', '#8e44ad'],
+    ['firewood', '🔥', 'Firewood', '#b5651d']
+  ];
+  function _classifyLineLocal(text) {
+    var t = (text || '').toLowerCase();
+    if (/\bplow|snow|salt|sander|de-?ic|spreader/.test(t)) return 'snow';
+    if (/navimow|yarbo|segway|robotic ?mow|robot ?mow|smart ?lawn/.test(t)) return 'smartlawn';
+    if (/fire ?wood|cord ?wood|seasoned wood|wood delivery|split wood/.test(t)) return 'firewood';
+    return 'tree';
+  }
+  function _lineForInv(i) {
+    if (i.line_of_business && /^(tree|snow|smartlawn|firewood)$/.test(i.line_of_business)) return i.line_of_business;
+    return _classifyLineLocal((i.subject || '') + ' ' + (i.client_name || ''));
+  }
+  function _renderPLByLine() {
+    var rangeDays = parseInt(_filter.range, 10) || 90;
+    var since = new Date(Date.now() - rangeDays * 86400000).toISOString().split('T')[0];
+    var rangeOpts = [['30', '30 days'], ['90', '90 days'], ['180', '6 months'], ['365', '12 months'], ['730', '24 months']];
+    var rangeLabel = (rangeOpts.find(function (r) { return r[0] === _filter.range; }) || [, '90 days'])[1];
+
+    var rev = { tree: 0, snow: 0, smartlawn: 0, firewood: 0 }, revN = { tree: 0, snow: 0, smartlawn: 0, firewood: 0 };
+    (_invoicesQ || []).forEach(function (i) {
+      var d = (i.issued_date || '').substring(0, 10);
+      if (d && d < since) return;
+      if ((i.status || '') === 'draft') return;
+      var line = _lineForInv(i); if (!(line in rev)) line = 'tree';
+      var amt = Number(i.subtotal != null ? i.subtotal : (Number(i.total || 0) - Number(i.tax_amount || 0))) || 0;
+      if (amt <= 0) return;
+      rev[line] += amt; revN[line]++;
+    });
+    var direct = { tree: 0, snow: 0, smartlawn: 0, firewood: 0 }, totalExp = 0;
+    (_txns || []).forEach(function (t) {
+      var c = (t.category || '').toString().charAt(0);
+      if (c !== '5' && c !== '6') return;
+      var amt = Math.abs(Number(t.amount) || 0); if (!amt) return;
+      totalExp += amt;
+      var line = _classifyLineLocal((t.description || '') + ' ' + (t.merchant_name || ''));
+      if (line !== 'tree') direct[line] += amt;
+    });
+    var carved = direct.snow + direct.smartlawn + direct.firewood;
+    var cost = { tree: Math.max(0, totalExp - carved), snow: direct.snow, smartlawn: direct.smartlawn, firewood: direct.firewood };
+
+    var totalRev = rev.tree + rev.snow + rev.smartlawn + rev.firewood;
+    var anyRev = totalRev > 0;
+
+    var rows = _LOB.map(function (L) {
+      var k = L[0], r = rev[k], cst = cost[k], contrib = r - cst;
+      var share = totalRev > 0 ? Math.round(r / totalRev * 100) : 0;
+      var mColor = contrib >= 0 ? 'var(--green-dark)' : '#b91c1c';
+      return '<tr style="border-top:1px solid var(--border);">'
+        + '<td style="padding:8px 8px;font-weight:700;white-space:nowrap;">' + L[1] + ' ' + L[2] + '</td>'
+        + '<td style="padding:8px 8px;text-align:right;font-weight:700;color:' + L[3] + ';">' + _moneyInt(r) + '</td>'
+        + '<td style="padding:8px 8px;text-align:right;color:var(--text-light);">' + (totalRev > 0 ? share + '%' : '—') + '</td>'
+        + '<td style="padding:8px 8px;text-align:right;color:#b45309;">' + (cst > 0 ? '−' + _moneyInt(cst) : '—') + '</td>'
+        + '<td style="padding:8px 8px;text-align:right;font-weight:800;color:' + mColor + ';">' + _moneyInt(contrib) + '</td>'
+        + '<td style="padding:8px 8px;color:var(--text-light);font-size:11px;">' + (k === 'tree' ? 'incl. shared overhead' : (revN[k] + ' inv' + (revN[k] === 1 ? '' : 's'))) + '</td>'
+        + '</tr>';
+    }).join('');
+
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;">'
+      + '<div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">'
+      +   '<div style="font-size:15px;font-weight:800;">📊 Profit &amp; Loss by line of business</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);">billed revenue · last ' + _esc(rangeLabel) + '</div>'
+      + '</div>'
+      + (anyRev
+          ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px;">'
+            + '<thead><tr style="color:var(--text-light);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">'
+            +   '<th style="padding:4px 8px;text-align:left;">Line</th>'
+            +   '<th style="padding:4px 8px;text-align:right;">Revenue</th>'
+            +   '<th style="padding:4px 8px;text-align:right;">Share</th>'
+            +   '<th style="padding:4px 8px;text-align:right;">Direct cost</th>'
+            +   '<th style="padding:4px 8px;text-align:right;">Contribution</th>'
+            +   '<th style="padding:4px 8px;text-align:left;"></th>'
+            + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+            + '<div style="font-size:11px;color:var(--text-light);margin-top:10px;line-height:1.5;">Revenue split from invoice tags. Most expenses are <b>shared overhead</b> (insurance, truck, software, fuel) which Tree carries as the core business — Snow / Smart Lawn / Firewood show only their <b>direct</b> keyword-identifiable spend, so their <b>Contribution</b> is marginal profit <i>above</i> shared overhead. Tag jobs &amp; invoices by line to sharpen this.</div>'
+          : '<div style="font-size:12px;color:var(--text-light);padding:8px 0;">No billed revenue in this range yet. Tag jobs &amp; invoices with a line of business (Tree / Snow / Smart Lawn / Firewood) and they\'ll split out here.</div>')
+      + '</div>';
+  }
   function _renderWeekAhead() {
     var accounts = _accounts || [], bills = _bills || [], jobs = _upJobs || [];
     var windowDays = parseInt(_filter.forecast || '7', 10) || 7;
@@ -272,6 +360,9 @@ var BooksPage = (function() {
 
     // ===== PROFIT & LOSS pane: P&L, top expenses, cash-flow, health, multi-year =====
     html += '<div class="bk-pane" data-pane="pl" style="display:' + (TAB === 'pl' ? 'block' : 'none') + ';">';
+
+    // P&L by line of business (v936) — revenue split + contribution per line
+    html += _renderPLByLine();
 
     // ──────────────────────────────────────────────────────────────────
     // P&L Summary (v857) — roll up bank_transactions by COA class.
