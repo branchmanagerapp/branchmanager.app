@@ -1308,17 +1308,27 @@ var SchedulePage = {
     function parseAmt(s) { var m = String(s || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; }
     function money(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); }
 
-    var base = new Date(self.currentDate); base.setHours(0, 0, 0, 0);
-    base.setDate(base.getDate() - ((base.getDay() + 6) % 7)); // Monday
-    var WEEKS = 8, MS = 86400000;
+    var MS = 86400000;
     var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var fullM = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var todayStr = self._localDateStr(new Date());
 
-    var totRev = 0, totExp = 0, running = 0, rowsHtml = '';
-    for (var w = 0; w < WEEKS; w++) {
-      var ws = new Date(base.getTime() + w * 7 * MS);
+    // Span the currently-displayed month: every week that overlaps it (4–6 weeks),
+    // so the panel lines up with the month the user is looking at.
+    var cd = self.currentDate;
+    var monthLabel = fullM[cd.getMonth()];
+    var firstOfMonth = new Date(cd.getFullYear(), cd.getMonth(), 1);
+    var lastOfMonth = new Date(cd.getFullYear(), cd.getMonth() + 1, 0);
+    var wkStart = new Date(firstOfMonth); wkStart.setHours(0, 0, 0, 0);
+    wkStart.setDate(wkStart.getDate() - ((wkStart.getDay() + 6) % 7)); // Monday of week containing the 1st
+    var weekStarts = [];
+    for (var cur = new Date(wkStart); cur <= lastOfMonth; cur.setDate(cur.getDate() + 7)) { weekStarts.push(new Date(cur)); }
+
+    var totRev = 0, totExp = 0, rowsHtml = '';
+    weekStarts.forEach(function(ws) {
+      var we = new Date(ws.getTime() + 6 * MS);
       var wsStr = self._localDateStr(ws);
-      var weStr = self._localDateStr(new Date(ws.getTime() + 6 * MS));
+      var weStr = self._localDateStr(we);
       var rev = 0, jobN = 0;
       jobs.forEach(function(j) { var d = j.scheduledDate.substring(0, 10); if (d >= wsStr && d <= weStr) { rev += Number(j.total) || 0; jobN++; } });
       var exp = 0, bills = [];
@@ -1326,26 +1336,26 @@ var SchedulePage = {
         var dStr = self._localDateStr(new Date(ws.getTime() + di * MS));
         (billsIdx[dStr] || []).forEach(function(ev) { if (ev.type === 'bill') { exp += parseAmt(ev.title); bills.push(ev.title.replace(/^[^A-Za-z0-9]+/, '')); } });
       }
-      var net = rev - exp; running += net; totRev += rev; totExp += exp;
+      var net = rev - exp; totRev += rev; totExp += exp;
       var isThis = (wsStr <= todayStr && todayStr <= weStr);
       var netC = net >= 0 ? 'var(--green-dark)' : '#c62828';
-      var endDay = (new Date(ws.getTime() + 6 * MS)).getDate();
+      var endLabel = (we.getMonth() === ws.getMonth() ? '' : sm[we.getMonth()] + ' ') + we.getDate();
       rowsHtml += '<div style="padding:8px 0;border-top:1px solid var(--border);">'
-        + '<div style="font-weight:800;font-size:12px;margin-bottom:3px;' + (isThis ? 'color:var(--green-dark);' : '') + '">' + (isThis ? '▶ ' : '') + 'Week of ' + sm[ws.getMonth()] + ' ' + ws.getDate() + '–' + endDay + (isThis ? ' · this week' : '') + '</div>'
+        + '<div style="font-weight:800;font-size:12px;margin-bottom:3px;' + (isThis ? 'color:var(--green-dark);' : '') + '">' + (isThis ? '▶ ' : '') + 'Week of ' + sm[ws.getMonth()] + ' ' + ws.getDate() + '–' + endLabel + (isThis ? ' · this week' : '') + '</div>'
         + '<div style="display:flex;justify-content:space-between;font-size:11px;line-height:1.7;"><span style="color:var(--text-light);">Revenue</span><span style="color:var(--green-dark);font-weight:600;">' + money(rev) + (jobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + jobN + 'j)</span>' : '') + '</span></div>'
         + '<div style="display:flex;justify-content:space-between;font-size:11px;line-height:1.7;"><span style="color:var(--text-light);">Expenses</span><span style="color:#c62828;font-weight:600;">' + (exp > 0 ? money(-exp) : '$0') + '</span></div>'
         + '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px dashed var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:700;">Net</span><span style="font-weight:800;color:' + netC + ';">' + money(net) + '</span></div>'
         + (bills.length ? '<div style="font-size:9px;color:#c62828;line-height:1.3;margin-top:3px;">' + bills.join(', ') + '</div>' : '')
         + '</div>';
-    }
+    });
 
     var totNet = totRev - totExp;
     return '<div style="padding:10px 12px;">'
-      + '<div style="font-size:10px;color:var(--text-light);line-height:1.4;margin-bottom:8px;">Weekly P&L — booked job revenue − bills/tax due. Revenue = jobs scheduled in BM (Jobber work fills in as pulled).</div>'
+      + '<div style="font-size:10px;color:var(--text-light);line-height:1.4;margin-bottom:8px;">' + monthLabel + ' weekly P&L — booked job revenue − bills/tax due. Revenue = jobs scheduled in BM (Jobber work fills in as pulled).</div>'
       + '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:11px;">'
-      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">8-wk revenue</span><span style="color:var(--green-dark);font-weight:700;">' + money(totRev) + '</span></div>'
-      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">8-wk expenses</span><span style="color:#c62828;font-weight:700;">' + (totExp > 0 ? money(-totExp) : '$0') + '</span></div>'
-      +   '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px solid var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:800;">8-wk net</span><span style="font-weight:800;color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + money(totNet) + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">' + monthLabel + ' revenue</span><span style="color:var(--green-dark);font-weight:700;">' + money(totRev) + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">' + monthLabel + ' expenses</span><span style="color:#c62828;font-weight:700;">' + (totExp > 0 ? money(-totExp) : '$0') + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px solid var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:800;">' + monthLabel + ' net</span><span style="font-weight:800;color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + money(totNet) + '</span></div>'
       + '</div>'
       + rowsHtml
       + '</div>';
