@@ -31,7 +31,7 @@ var BooksPage = (function() {
   var _invoicesQ = null; // v871: invoices by quarter for sales-tax reconciliation
   var _bills = null;   // v933: calendar_events type='bill' — upcoming bills/tax for Week Ahead
   var _upJobs = null;  // v933: upcoming scheduled jobs — expected income for Week Ahead
-  var _filter = { account: 'all', category: 'all', search: '', range: '90', forecast: '7' };
+  var _filter = { account: 'all', category: 'all', search: '', range: '90', forecast: '7', tab: 'overview' };
 
   function _supabase() {
     return (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -89,8 +89,9 @@ var BooksPage = (function() {
   function render() {
     if (_accounts === null) {
       _fetchAll().then(function() {
-        if (window._currentPage === 'reports' && (window._reportsTab || 'insights') === 'books') {
-          loadPage('reports');
+        // Re-render once data lands — on the dedicated Books page OR the Reports→Books tab.
+        if (window._currentPage === 'books' || (window._currentPage === 'reports' && (window._reportsTab || 'insights') === 'books')) {
+          loadPage(window._currentPage);
         }
       });
       return _renderShell();
@@ -116,6 +117,7 @@ var BooksPage = (function() {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function setForecast(v) { _filter.forecast = v; loadPage(window._currentPage || 'books'); }
+  function setTab(v) { _filter.tab = v; loadPage(window._currentPage || 'books'); }
   function _renderWeekAhead() {
     var accounts = _accounts || [], bills = _bills || [], jobs = _upJobs || [];
     var windowDays = parseInt(_filter.forecast || '7', 10) || 7;
@@ -234,6 +236,19 @@ var BooksPage = (function() {
       return html;
     }
 
+    // QuickBooks-style sub-tabs (v934) — split the long Books scroll into panes.
+    var TAB = _filter.tab || 'overview';
+    var BK_TABS = [['overview', '📊 Overview'], ['transactions', '📒 Transactions'], ['pl', '📈 Profit & Loss'], ['invoices', '💰 Invoices (A/R)'], ['taxes', '🧾 Taxes']];
+    html += '<div style="display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:18px;flex-wrap:wrap;">';
+    BK_TABS.forEach(function(t) {
+      var on = TAB === t[0];
+      html += '<button onclick="BooksPage.setTab(\'' + t[0] + '\')" style="background:none;border:none;border-bottom:3px solid ' + (on ? 'var(--green-dark)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-light)') + ';font-weight:' + (on ? '800' : '600') + ';font-size:14px;padding:9px 15px;margin-bottom:-2px;cursor:pointer;white-space:nowrap;">' + t[1] + '</button>';
+    });
+    html += '</div>';
+
+    // ===== OVERVIEW pane: account balances + Week Ahead forecast =====
+    html += '<div class="bk-pane" data-pane="overview" style="display:' + (TAB === 'overview' ? 'block' : 'none') + ';">';
+
     // Account cards
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:18px;">';
     accounts.forEach(function(a) {
@@ -249,6 +264,10 @@ var BooksPage = (function() {
 
     // Week Ahead forecast (v933) — projected balance + NSF early-warning
     html += _renderWeekAhead();
+    html += '</div>'; // end OVERVIEW pane
+
+    // ===== PROFIT & LOSS pane: P&L, top expenses, cash-flow, health, multi-year =====
+    html += '<div class="bk-pane" data-pane="pl" style="display:' + (TAB === 'pl' ? 'block' : 'none') + ';">';
 
     // ──────────────────────────────────────────────────────────────────
     // P&L Summary (v857) — roll up bank_transactions by COA class.
@@ -593,6 +612,11 @@ var BooksPage = (function() {
       }
     }
 
+    html += '</div>'; // end PROFIT & LOSS pane
+
+    // ===== TAXES pane: tax-year reconciliation + NY sales-tax reconciliation =====
+    html += '<div class="bk-pane" data-pane="taxes" style="display:' + (TAB === 'taxes' ? 'block' : 'none') + ';">';
+
     // ──────────────────────────────────────────────────────────────────
     // v867: Tax-Year Reconciliation — side-by-side BM Books P&L vs tax
     // filings for each year. The killer feature for "is my CPA right?".
@@ -794,6 +818,11 @@ var BooksPage = (function() {
       html += '</details>';
     }
 
+    html += '</div>'; // end TAXES pane
+
+    // ===== INVOICES (A/R) pane: outstanding invoice aging =====
+    html += '<div class="bk-pane" data-pane="invoices" style="display:' + (TAB === 'invoices' ? 'block' : 'none') + ';">';
+
     // ──────────────────────────────────────────────────────────────────
     // v880: Outstanding Invoices (AR aging) — surface unpaid > 0 by age
     // bucket. Direct cash-recovery surface. Drafts get a separate row so
@@ -977,6 +1006,11 @@ var BooksPage = (function() {
       return true;
     });
 
+    html += '</div>'; // end INVOICES (A/R) pane
+
+    // ===== TRANSACTIONS pane: the bank register + categorization =====
+    html += '<div class="bk-pane" data-pane="transactions" style="display:' + (TAB === 'transactions' ? 'block' : 'none') + ';">';
+
     // Transactions table
     if (filtered.length === 0) {
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:32px;text-align:center;font-size:13px;color:var(--text-light);">'
@@ -1024,7 +1058,8 @@ var BooksPage = (function() {
       html += '</div>';
     }
 
-    html += '</div>';
+    html += '</div>'; // end TRANSACTIONS pane
+    html += '</div>'; // close max-width wrapper
     return html;
   }
 
@@ -1066,7 +1101,7 @@ var BooksPage = (function() {
             if (out.error) { UI.toast('Exchange failed: ' + out.error, 'error'); return; }
             UI.toast('Bank connected (' + (out.accounts || []).length + ' account' + ((out.accounts||[]).length===1?'':'s') + '). Backfilling 2 years of transactions in the background.', 'success');
             _accounts = null; _txns = null; // force refetch
-            _fetchAll().then(function() { loadPage('reports'); });
+            _fetchAll().then(function() { loadPage(window._currentPage || 'reports'); });
           });
         },
         onExit: function(err, _meta) {
@@ -1089,13 +1124,13 @@ var BooksPage = (function() {
     }).then(function(r) { return r.json(); }).then(function(out) {
       if (out.error) { UI.toast('Sync failed: ' + out.error, 'error'); return; }
       UI.toast('Synced ' + (out.synced || 0) + ' transaction' + ((out.synced||0)===1?'':'s'), 'success');
-      _txns = null; _fetchAll().then(function() { loadPage('reports'); });
+      _txns = null; _fetchAll().then(function() { loadPage(window._currentPage || 'reports'); });
     });
   }
 
-  function _setRange(v) { _filter.range = v; _txns = null; _fetchAll().then(function() { loadPage('reports'); }); }
-  function _setAccount(v) { _filter.account = v; loadPage('reports'); }
-  function _setSearch(v) { _filter.search = v; loadPage('reports'); }
+  function _setRange(v) { _filter.range = v; _txns = null; _fetchAll().then(function() { loadPage(window._currentPage || 'reports'); }); }
+  function _setAccount(v) { _filter.account = v; loadPage(window._currentPage || 'reports'); }
+  function _setSearch(v) { _filter.search = v; loadPage(window._currentPage || 'reports'); }
   function _setCategory(txnId, code) {
     var sb = _supabase(); if (!sb) return;
     sb.from('bank_transactions').update({ category: code || null }).eq('id', txnId).then(function(res) {
@@ -1126,7 +1161,7 @@ var BooksPage = (function() {
         });
       }
       UI.toast('✅ ' + ids.length + ' rows → ' + code);
-      loadPage('reports');
+      loadPage(window._currentPage || 'reports');
     } catch (e) {
       UI.toast('Update error: ' + e.message, 'error');
     }
@@ -1661,7 +1696,7 @@ var BooksPage = (function() {
 
       // Force re-fetch + re-render
       _accounts = null; _txns = null;
-      _fetchAll().then(function() { loadPage('reports'); });
+      _fetchAll().then(function() { loadPage(window._currentPage || 'reports'); });
     } catch (e) {
       console.error('reconcileAll failed:', e);
       UI.toast('Reconcile failed: ' + (e.message || 'unknown'), 'error');
@@ -2120,12 +2155,12 @@ var BooksPage = (function() {
     UI.toast(_csvState.rows.length + ' transactions imported ✅');
     UI.closeModal();
     _accounts = null; _txns = null;
-    _fetchAll().then(function() { loadPage('reports'); });
+    _fetchAll().then(function() { loadPage(window._currentPage || 'reports'); });
   }
 
   function setCashflow(mode) {
     _filter.cashflow = mode;
-    if (window._currentPage === 'reports') loadPage('reports');
+    if (window._currentPage) loadPage(window._currentPage);
   }
 
   // v880: kick off an invoice follow-up email from the Books AR card.
@@ -2151,6 +2186,7 @@ var BooksPage = (function() {
     reconcileAll: reconcileAll,
     setCashflow: setCashflow,
     setForecast: setForecast,
+    setTab: setTab,
     sendInvoiceFollowup: sendInvoiceFollowup,
     _setRange: _setRange,
     _setAccount: _setAccount,
