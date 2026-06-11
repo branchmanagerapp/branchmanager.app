@@ -236,15 +236,19 @@ var BooksPage = (function() {
       return html;
     }
 
-    // QuickBooks-style sub-tabs (v934) — split the long Books scroll into panes.
+    // QuickBooks-style LEFT sub-nav (v935) — vertical sidebar + content column.
     var TAB = _filter.tab || 'overview';
-    var BK_TABS = [['overview', '📊 Overview'], ['transactions', '📒 Transactions'], ['pl', '📈 Profit & Loss'], ['invoices', '💰 Invoices (A/R)'], ['taxes', '🧾 Taxes']];
-    html += '<div style="display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:18px;flex-wrap:wrap;">';
+    var BK_TABS = [['overview', '📊', 'Overview'], ['transactions', '📒', 'Transactions'], ['pl', '📈', 'Profit & Loss'], ['invoices', '💰', 'Invoices (A/R)'], ['taxes', '🧾', 'Taxes']];
+    html += '<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;">';
+    // Left vertical sub-nav
+    html += '<div style="flex:0 0 188px;display:flex;flex-direction:column;gap:3px;position:sticky;top:12px;">';
     BK_TABS.forEach(function(t) {
       var on = TAB === t[0];
-      html += '<button onclick="BooksPage.setTab(\'' + t[0] + '\')" style="background:none;border:none;border-bottom:3px solid ' + (on ? 'var(--green-dark)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text-light)') + ';font-weight:' + (on ? '800' : '600') + ';font-size:14px;padding:9px 15px;margin-bottom:-2px;cursor:pointer;white-space:nowrap;">' + t[1] + '</button>';
+      html += '<button onclick="BooksPage.setTab(\'' + t[0] + '\')" style="display:flex;align-items:center;gap:9px;text-align:left;width:100%;background:' + (on ? 'var(--green-bg)' : 'transparent') + ';border:none;border-left:3px solid ' + (on ? 'var(--green-dark)' : 'transparent') + ';color:' + (on ? 'var(--green-dark)' : 'var(--text-light)') + ';font-weight:' + (on ? '800' : '600') + ';font-size:14px;padding:10px 14px;border-radius:0 8px 8px 0;cursor:pointer;">' + '<span style="font-size:16px;line-height:1;">' + t[1] + '</span>' + t[2] + '</button>';
     });
     html += '</div>';
+    // Content column (holds all panes)
+    html += '<div style="flex:1 1 320px;min-width:0;">';
 
     // ===== OVERVIEW pane: account balances + Week Ahead forecast =====
     html += '<div class="bk-pane" data-pane="overview" style="display:' + (TAB === 'overview' ? 'block' : 'none') + ';">';
@@ -1059,6 +1063,8 @@ var BooksPage = (function() {
     }
 
     html += '</div>'; // end TRANSACTIONS pane
+    html += '</div>'; // close content column
+    html += '</div>'; // close sidebar + content flex row
     html += '</div>'; // close max-width wrapper
     return html;
   }
