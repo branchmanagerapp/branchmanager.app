@@ -451,7 +451,7 @@ var Auth = {
     var all = ['dashboard','pipeline','schedule','dispatch','clients','requests','quotes','jobs','invoices',
       'payments','insights','reviews','reviewtools','satisfaction','team','timesheet','automations',
       'calculators','messaging','clientmap','photomap','propertymap','recurring','notifications',
-      'expenses','profitloss','jobcosting','budget','reports','weeklysummary','onlinebooking',
+      'expenses','books','profitloss','jobcosting','budget','reports','weeklysummary','onlinebooking',
       'clienthub','formbuilder','mediacenter','beforeafter','campaigns','referrals','receptionist',
       'import','backup','settings','crewview','crewperformance','employeecenter','equipment',
       'materials','comms','emailtemplates','customfields','visits','checklists','workflow',
