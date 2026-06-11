@@ -435,7 +435,6 @@ var SchedulePage = {
       +     _viewPill('year', 'Year')
       +     _viewPill('list', 'List')
       +     _viewPill('map', 'Map')
-      +     _viewPill('budget', '💰 Budget')
       +   '</div>'
       + '</div>';
 
@@ -472,8 +471,6 @@ var SchedulePage = {
       }
     } else if (self.view === 'year') {
       html += self._renderYear();
-    } else if (self.view === 'budget') {
-      html += self._renderBudget();
     } else {
       html += self._renderMonth();
     }
@@ -562,9 +559,6 @@ var SchedulePage = {
     }
     if (SchedulePage.view === 'year') {
       return String(d.getFullYear());
-    }
-    if (SchedulePage.view === 'budget') {
-      return 'Weekly Budget — booked revenue vs. bills';
     }
     var start = new Date(d);
     start.setDate(start.getDate() - start.getDay());
@@ -1299,72 +1293,58 @@ var SchedulePage = {
     return html;
   },
 
-  // ── Budget view (v938) — weekly P&L from booked jobs vs. bills due ────────
+  // ── Rail Budget panel (v939) — compact weekly P&L next to Map/Unscheduled ──
   // Revenue = scheduled jobs' value that week. Expenses = bills/tax on the
   // calendar (type='bill') whose payment date lands that week. Net = the
-  // week's projected P&L; a running column shows the cumulative trajectory.
-  _renderBudget: function() {
+  // week's projected P&L; "run" is the cumulative trajectory. Sized for the
+  // 320px right rail (same panel that holds Map + Unscheduled).
+  _renderRailBudget: function(allJobs) {
     var self = SchedulePage;
-    var allJobs = DB.jobs.getAll().filter(function(j) {
+    self._loadCalEvents();
+    var jobs = (allJobs || DB.jobs.getAll()).filter(function(j) {
       return j.scheduledDate && j.status !== 'archived' && j.status !== 'cancelled';
     });
     var billsIdx = window._bmCalEventsIndex || {};
-    self._loadCalEvents();
     function parseAmt(s) { var m = String(s || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; }
-    function money(n) { return (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString(); }
+    function k(n) { var a = Math.abs(n); var s = a >= 1000 ? '$' + (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : '$' + Math.round(a); return (n < 0 ? '−' : '') + s; }
 
     var base = new Date(self.currentDate); base.setHours(0, 0, 0, 0);
-    var dow = (base.getDay() + 6) % 7; // 0 = Monday
-    base.setDate(base.getDate() - dow);
-    var WEEKS = 10, MS = 86400000;
+    base.setDate(base.getDate() - ((base.getDay() + 6) % 7)); // Monday
+    var WEEKS = 8, MS = 86400000;
     var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var todayStr = self._localDateStr(new Date());
 
-    var rows = [], totRev = 0, totExp = 0, running = 0;
+    var totRev = 0, totExp = 0, running = 0, rowsHtml = '';
     for (var w = 0; w < WEEKS; w++) {
       var ws = new Date(base.getTime() + w * 7 * MS);
       var wsStr = self._localDateStr(ws);
       var weStr = self._localDateStr(new Date(ws.getTime() + 6 * MS));
       var rev = 0, jobN = 0;
-      allJobs.forEach(function(j) { var d = j.scheduledDate.substring(0, 10); if (d >= wsStr && d <= weStr) { rev += Number(j.total) || 0; jobN++; } });
+      jobs.forEach(function(j) { var d = j.scheduledDate.substring(0, 10); if (d >= wsStr && d <= weStr) { rev += Number(j.total) || 0; jobN++; } });
       var exp = 0, bills = [];
       for (var di = 0; di < 7; di++) {
         var dStr = self._localDateStr(new Date(ws.getTime() + di * MS));
-        (billsIdx[dStr] || []).forEach(function(ev) { if (ev.type === 'bill') { var a = parseAmt(ev.title); exp += a; bills.push(ev.title); } });
+        (billsIdx[dStr] || []).forEach(function(ev) { if (ev.type === 'bill') { exp += parseAmt(ev.title); bills.push(ev.title.replace(/^[^A-Za-z0-9]+/, '')); } });
       }
       var net = rev - exp; running += net; totRev += rev; totExp += exp;
-      rows.push({ ws: ws, rev: rev, jobN: jobN, exp: exp, net: net, running: running, bills: bills, isThis: (wsStr <= todayStr && todayStr <= weStr) });
+      var isThis = (wsStr <= todayStr && todayStr <= weStr);
+      var netC = net >= 0 ? 'var(--green-dark)' : '#c62828';
+      rowsHtml += '<div style="padding:7px 0;border-top:1px solid var(--border);">'
+        + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+        +   '<span style="font-weight:700;font-size:12px;' + (isThis ? 'color:var(--green-dark);' : '') + '">' + (isThis ? '▶ ' : '') + sm[ws.getMonth()] + ' ' + ws.getDate() + '</span>'
+        +   '<span style="font-weight:800;font-size:13px;color:' + netC + ';">' + k(net) + '</span>'
+        + '</div>'
+        + '<div style="font-size:10px;color:var(--text-light);">' + k(rev) + ' in · ' + (exp > 0 ? k(-exp) + ' bills' : 'no bills') + (jobN ? ' · ' + jobN + 'j' : '') + ' · run ' + k(running) + '</div>'
+        + (bills.length ? '<div style="font-size:9px;color:#c62828;line-height:1.3;">' + bills.join(', ') + '</div>' : '')
+        + '</div>';
     }
 
     var totNet = totRev - totExp;
-    var html = '<div style="max-width:920px;margin:0 auto;">';
-    html += '<div style="font-size:12px;color:var(--text-light);margin:0 0 14px;line-height:1.5;">Each week\'s projected P&L: <b>booked job revenue</b> (what\'s on the schedule) minus <b>bills &amp; tax due</b> that week (from the calendar). Revenue reflects what\'s scheduled in BM — Jobber work fills in as you pull it. "Run" = cumulative net.</div>';
-    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">'
-      + '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:700;">Booked · 10 wk</div><div style="font-size:20px;font-weight:800;color:var(--green-dark);">' + money(totRev) + '</div></div>'
-      + '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:700;">Bills due · 10 wk</div><div style="font-size:20px;font-weight:800;color:#c62828;">' + money(totExp) + '</div></div>'
-      + '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:700;">Net P&L</div><div style="font-size:20px;font-weight:800;color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + money(totNet) + '</div></div>'
+    return '<div style="padding:10px 12px;">'
+      + '<div style="font-size:10px;color:var(--text-light);line-height:1.4;margin-bottom:8px;">Weekly P&L — booked job revenue − bills/tax due. Revenue = jobs scheduled in BM (Jobber work fills in as pulled).</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;padding-bottom:4px;"><span>8-week net</span><span style="color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + k(totNet) + '</span></div>'
+      + rowsHtml
       + '</div>';
-
-    rows.forEach(function(r) {
-      var label = sm[r.ws.getMonth()] + ' ' + r.ws.getDate() + '–' + (new Date(r.ws.getTime() + 6 * MS)).getDate();
-      var netColor = r.net >= 0 ? 'var(--green-dark)' : '#c62828';
-      var runColor = r.running >= 0 ? 'var(--text-light)' : '#c62828';
-      html += '<div style="background:var(--white);border:1px solid ' + (r.isThis ? 'var(--green-dark)' : 'var(--border)') + ';border-radius:10px;padding:11px 14px;margin-bottom:8px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
-        +   '<div style="font-weight:800;font-size:14px;">Week of ' + label + (r.isThis ? ' <span style="font-size:10px;color:var(--green-dark);background:var(--green-bg);padding:1px 6px;border-radius:8px;">THIS WEEK</span>' : '') + '</div>'
-        +   '<div style="display:flex;gap:12px;align-items:baseline;font-size:13px;">'
-        +     '<span style="color:var(--green-dark);font-weight:700;">+' + money(r.rev) + '</span>'
-        +     '<span style="color:#c62828;font-weight:700;">' + (r.exp > 0 ? '−' + money(r.exp) : '$0') + '</span>'
-        +     '<span style="font-weight:800;color:' + netColor + ';min-width:66px;text-align:right;">' + money(r.net) + '</span>'
-        +     '<span style="color:' + runColor + ';font-size:11px;min-width:78px;text-align:right;">run ' + money(r.running) + '</span>'
-        +   '</div>'
-        + '</div>'
-        + '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">' + (r.jobN ? r.jobN + ' job' + (r.jobN === 1 ? '' : 's') + ' booked' : 'no jobs booked') + (r.bills.length ? ' · 💸 ' + r.bills.map(function(b) { return b.replace(/^[^A-Za-z0-9]+/, ''); }).join(', ') : '') + '</div>'
-        + '</div>';
-    });
-
-    html += '</div>';
-    return html;
   },
 
   // Year view — 12-month overview built for the "days worked per year"
@@ -1618,7 +1598,7 @@ var SchedulePage = {
 
   _railTab: function() {
     var t = localStorage.getItem('bm-cal-rail-tab');
-    return (t === 'unscheduled') ? 'unscheduled' : 'map';
+    return (t === 'unscheduled' || t === 'budget') ? t : 'map';
   },
   _setRailTab: function(tab) {
     localStorage.setItem('bm-cal-rail-tab', tab);
@@ -1653,13 +1633,16 @@ var SchedulePage = {
     var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
       + '<div style="display:flex;border-bottom:1px solid var(--border);">'
       +   tabBtn('map', 'Map')
-      +   tabBtn('unscheduled', 'Unscheduled' + (unscheduled.length ? ' (' + unscheduled.length + ')' : ''))
+      +   tabBtn('unscheduled', 'Unsched' + (unscheduled.length ? ' (' + unscheduled.length + ')' : ''))
+      +   tabBtn('budget', '💰 Budget')
       +   '<button onclick="SchedulePage._toggleDockedMap()" title="Hide panel" '
       +     'style="padding:0 10px;background:var(--bg);border:none;border-bottom:2px solid transparent;font-size:18px;line-height:1;cursor:pointer;color:var(--text-light);">&times;</button>'
       + '</div>';
 
     if (activeTab === 'map') {
       html += SchedulePage._renderRailMap(allJobs);
+    } else if (activeTab === 'budget') {
+      html += SchedulePage._renderRailBudget(allJobs);
     } else {
       html += SchedulePage._renderRailUnscheduled(unscheduled);
     }
