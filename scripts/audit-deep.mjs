@@ -41,8 +41,10 @@ process.on("uncaughtException", (e) => {
 
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 if (!ACCESS_TOKEN) {
-  console.error("ERROR: SUPABASE_ACCESS_TOKEN env var required.");
-  process.exit(2);
+  // No management token (e.g. CI secret not set). Skip cleanly (exit 0) so
+  // scheduled runs don't pile up failure issues. Resumes automatically once set.
+  console.log("SKIPPED: SUPABASE_ACCESS_TOKEN not set — deep audit needs a Supabase management token. Skipping (exit 0).");
+  process.exit(0);
 }
 
 const ANON_KEY = (() => {

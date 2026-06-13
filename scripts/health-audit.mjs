@@ -17,8 +17,11 @@
  */
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 if (!TOKEN) {
-  console.error('ERROR: SUPABASE_ACCESS_TOKEN env var required.\n  Get a personal access token from https://supabase.com/dashboard/account/tokens\n  Run: SUPABASE_ACCESS_TOKEN=sbp_... node scripts/health-audit.mjs');
-  process.exit(2);
+  // No management token available (e.g. CI secret not set). Skip cleanly
+  // rather than hard-failing so scheduled runs don't pile up failure issues.
+  // The audit resumes automatically the moment SUPABASE_ACCESS_TOKEN is present.
+  console.log('SKIPPED: SUPABASE_ACCESS_TOKEN not set — health audit needs a Supabase management token to run. Skipping (exit 0).\n  To run locally: SUPABASE_ACCESS_TOKEN=sbp_... node scripts/health-audit.mjs');
+  process.exit(0);
 }
 const PROJECT = 'ltpivkqahvplapyagljt';
 const TENANT_ID = '93af4348-8bba-4045-ac3e-5e71ec1cc8c5';
