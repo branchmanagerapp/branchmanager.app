@@ -1,5 +1,5 @@
 {
-  "version": 947,
+  "version": 948,
   "released": "2026-06-14",
-  "notes": "Schedule month view: per-week P&L strip (Rev/Exp/Net) on each calendar week row, computed from that row's dates. Nav Jobber-match retained. First proper source-rebuild deploy (bundle v947)."
+  "notes": "Dashboard: Jobber-style Workflow cards (Requests/Quotes/Jobs/Invoices with count, $, status + sub-rows). Matches Jobber Home layout."
 }
