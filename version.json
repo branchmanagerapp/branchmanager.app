@@ -1,5 +1,5 @@
 {
-  "version": 946,
+  "version": 947,
   "released": "2026-06-14",
-  "notes": "Left nav reordered to match Jobber: core money-pipeline first (Home, Schedule, Clients, Requests, Quotes, Jobs, Invoices), divider, then back-office tools, divider, Settings. index.html only, no bundle change."
+  "notes": "Schedule month view: per-week P&L strip (Rev/Exp/Net) on each calendar week row, computed from that row's dates. Nav Jobber-match retained. First proper source-rebuild deploy (bundle v947)."
 }

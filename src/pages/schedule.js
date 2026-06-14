@@ -1118,6 +1118,38 @@ var SchedulePage = {
     html += '</div>';
     } // end skipUnscheduledBanner else
 
+    // v947: per-week P&L strip wired into each calendar row (Rev/Exp/Net),
+    // computed from that row's own Sun–Sat dates so it lines up with the grid.
+    // Replaces the separate right-rail Budget tab as the primary view.
+    SchedulePage._loadCalEvents();
+    var _billsIdx = window._bmCalEventsIndex || {};
+    var _cellN = 0, _wkDates = [];
+    function _wkStrip(dates) {
+      var ds = dates.filter(Boolean);
+      if (!ds.length) return '';
+      var rev = 0, jobN = 0, exp = 0;
+      allJobs.forEach(function(j) {
+        if (!j.scheduledDate) return;
+        var dd = j.scheduledDate.substring(0, 10);
+        if (ds.indexOf(dd) >= 0 && j.status !== 'archived' && j.status !== 'cancelled') { rev += Number(j.total) || 0; jobN++; }
+      });
+      ds.forEach(function(dStr) {
+        (_billsIdx[dStr] || []).forEach(function(ev) {
+          if (ev.type === 'bill') { var m = String(ev.title || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); if (m) exp += parseFloat(m[1]); }
+        });
+      });
+      var net = rev - exp;
+      var money = function(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); };
+      var netC = net >= 0 ? 'var(--green-dark)' : '#c62828';
+      return '<div style="grid-column:1 / -1;background:var(--bg);display:flex;align-items:center;gap:14px;padding:4px 10px;font-size:10.5px;font-weight:600;border-top:1px solid var(--border);">'
+        + '<span style="color:var(--text-light);font-weight:700;margin-right:auto;letter-spacing:.03em;">WEEK P&amp;L</span>'
+        + '<span style="color:var(--green-dark);">Rev ' + money(rev) + (jobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + jobN + 'j)</span>' : '') + '</span>'
+        + '<span style="color:#c62828;">Exp ' + (exp > 0 ? money(-exp) : '$0') + '</span>'
+        + '<span style="color:' + netC + ';font-weight:800;">Net ' + money(net) + '</span>'
+        + '</div>';
+    }
+    function _tick(dateOrNull) { _wkDates.push(dateOrNull); _cellN++; if (_cellN % 7 === 0) { html += _wkStrip(_wkDates); _wkDates = []; } }
+
     html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
 
     days.forEach(function(day) {
@@ -1126,6 +1158,7 @@ var SchedulePage = {
 
     for (var i = 0; i < firstDay; i++) {
       html += '<div style="background:#fafafa;min-height:80px;padding:4px;"></div>';
+      _tick(null);
     }
 
     for (var day = 1; day <= daysInMonth; day++) {
@@ -1186,12 +1219,14 @@ var SchedulePage = {
         SchedulePage._getCalEventsForDate(dateStr).forEach(function(ev) { html += SchedulePage._renderEventPill(ev); });
       }
       html += '</div>';
+      _tick(dateStr);
     }
 
     var totalCells = firstDay + daysInMonth;
     var remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
     for (var i = 0; i < remaining; i++) {
       html += '<div style="background:#fafafa;min-height:80px;padding:4px;"></div>';
+      _tick(null);
     }
 
     html += '</div>';
