@@ -1,5 +1,5 @@
 {
-  "version": 943,
+  "version": 944,
   "released": "2026-06-14",
-  "notes": "Safety guard: never auto-boot into the Books page on cold load (it currently hangs the renderer), so a reopen can't get trapped on a dead page. Falls back to Dashboard + clears saved route. In-app Books click still works. Temporary until the Books render hang is fixed. No other changes; bundle unchanged (bm.bundle.v941.min.js)."
+  "notes": "Removed the 'Next best action' chip and the sales-tax counter banner from the Dashboard per Doug. Surgical bundle patch (no rebuild); functions remain defined but unused. Also retains the v943 Books cold-boot guard."
 }
