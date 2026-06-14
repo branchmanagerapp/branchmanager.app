@@ -4,56 +4,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>New York Tree Collective</title>
+<title>BranchManager — The Operating System for Employee-Owned Tree Co-ops</title>
 <style>
-  :root{--green:#2e7d32;--green-d:#13431a;--green-l:#e8f5e9;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--gold:#d4a017}
+  :root{--green:#2e7d32;--green-d:#10401a;--green-l:#e8f5e9;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--gold:#caa23a}
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
-  .wrap{max-width:780px;margin:0 auto;padding:0 20px}
-  /* hero */
-  header{background:linear-gradient(160deg,#0f3514,#2e7d32 85%);color:#fff;padding:54px 0 46px;text-align:center;position:relative;overflow:hidden}
+  .wrap{max-width:800px;margin:0 auto;padding:0 20px}
+  header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:58px 0 48px;text-align:center}
   .mark{font-size:40px;line-height:1}
-  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin:14px 0 6px}
-  header h1{margin:0;font-size:34px;line-height:1.12;font-weight:800}
-  header .tag{margin:12px auto 0;font-size:17px;opacity:.96;max-width:560px}
-  .founders{margin-top:18px;font-size:13px;opacity:.8}
-  /* sections */
-  section{margin:30px 0}
-  h2{font-size:22px;margin:0 0 14px;color:var(--green-d)}
+  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin:14px 0 8px}
+  header h1{margin:0;font-size:33px;line-height:1.14;font-weight:800;max-width:660px;margin:0 auto}
+  header .tag{margin:14px auto 0;font-size:17px;opacity:.96;max-width:600px}
+  section{margin:32px 0}
+  h2{font-size:23px;margin:0 0 6px;color:var(--green-d)}
+  .sub{color:var(--muted);margin:0 0 14px;font-size:15px}
   .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,20,.04)}
-  .lead{font-size:17px}.muted{color:var(--muted)}
+  .lead{font-size:17.5px}.muted{color:var(--muted)}
+  /* problem→shift */
+  .shift{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+  .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .box.bad{border-color:#f0d2d2;background:#fdf6f6}
+  .box.good{border-color:#c8e6c9;background:var(--green-l)}
+  .box h4{margin:0 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.5px}
+  .box.bad h4{color:#b0413b}.box.good h4{color:var(--green-d)}
+  .box ul{margin:0;padding-left:18px;font-size:14px}.box li{margin:4px 0}
+  .arrow{font-size:26px;color:var(--green);text-align:center;font-weight:800}
   /* pillars */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .pill{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
   .pill .ic{font-size:24px}
-  .pill h3{margin:8px 0 4px;font-size:16.5px;color:var(--green-d)}
+  .pill h3{margin:8px 0 5px;font-size:16.5px;color:var(--green-d)}
   .pill p{margin:0;font-size:14px;color:var(--muted)}
-  /* who */
-  .who{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-  .chip{background:var(--green-l);color:var(--green-d);font-weight:700;font-size:13px;padding:6px 13px;border-radius:999px;border:1px solid #c8e6c9}
-  /* flow */
-  .flow{counter-reset:s;padding:0;margin:0;list-style:none}
-  .step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 18px 15px 54px;position:relative;margin:0 0 11px;counter-increment:s}
-  .step::before{content:counter(s);position:absolute;left:15px;top:15px;width:27px;height:27px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
-  .step h3{margin:0 0 3px;font-size:15.5px}
-  .step .t{font-size:11.5px;font-weight:700;color:var(--green-d);background:var(--green-l);padding:2px 8px;border-radius:999px;margin-left:6px}
-  .down{text-align:center;color:#bcd0bc;font-size:18px;margin:-5px 0 5px}
-  table{width:100%;border-collapse:collapse;font-size:14px;margin:7px 0}
-  td,th{padding:6px 5px;border-bottom:1px solid var(--line);text-align:left}
-  td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-  tr.sub td{border-top:1px solid var(--line);font-weight:600}
-  tr.tot td{font-weight:800;color:var(--green-d);border-top:2px solid #cfe3cf}
-  .profit{background:#0f5132;color:#fff;border-radius:12px;padding:13px 17px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .profit b{font-size:21px}
-  .note{font-size:12.5px;color:var(--muted)}
-  /* cta */
-  .cta{background:linear-gradient(160deg,#13431a,#2e7d32);color:#fff;border-radius:16px;padding:28px 22px;text-align:center}
+  /* how it works steps */
+  ol.how{counter-reset:s;list-style:none;padding:0;margin:0}
+  ol.how li{counter-increment:s;position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px 14px 52px;margin:10px 0}
+  ol.how li::before{content:counter(s);position:absolute;left:14px;top:14px;width:26px;height:26px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  ol.how b{display:block;margin-bottom:2px}
+  .equity{background:#0f5132;color:#fff;border-radius:16px;padding:24px;text-align:center}
+  .equity h2{color:#fff;margin:0 0 8px}
+  .equity p{margin:0 auto;max-width:560px;opacity:.96}
+  /* software */
+  ul.feat{margin:0;padding-left:20px}.feat li{margin:6px 0;font-size:14.5px}
+  .only{background:#fffaf0;border:1px solid #f0e0bd;border-radius:12px;padding:14px 18px;font-size:15px;text-align:center;color:#6b531a;font-weight:600}
+  .cta{background:linear-gradient(160deg,#10401a,#2e7d32);color:#fff;border-radius:16px;padding:30px 22px;text-align:center}
   .cta h2{color:#fff;margin-top:0}
-  .btn{display:inline-block;background:#fff;color:var(--green-d);text-decoration:none;font-weight:800;font-size:16px;padding:13px 30px;border-radius:10px;margin:8px 0 4px}
-  .btn:hover{background:#f0f0f0}
-  ul.feat{margin:0;padding-left:20px}.feat li{margin:6px 0}
+  .btn{display:inline-block;background:#fff;color:var(--green-d);text-decoration:none;font-weight:800;font-size:16px;padding:13px 30px;border-radius:10px;margin:10px 0 4px}
+  .btn:hover{background:#eee}
+  .disc{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
   footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 0 50px}
-  @media(max-width:560px){.grid{grid-template-columns:1fr}header h1{font-size:27px}}
+  @media(max-width:580px){.grid{grid-template-columns:1fr}.shift{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}header h1{font-size:26px}}
 </style>
 </head>
 <body>
@@ -61,10 +60,9 @@
 <header>
   <div class="wrap">
     <div class="mark">🌲🤝🌲</div>
-    <div class="kicker">Grow together, not alone</div>
-    <h1>New York Tree Collective</h1>
-    <p class="tag">A network of New York tree pros sharing one system, one schedule, and the know-how to win — instead of grinding against each other.</p>
-    <div class="founders">Built for owners, crews &amp; office pros · Started by Doug @ Second Nature Tree</div>
+    <div class="kicker">Sweat equity → real equity</div>
+    <h1>Independent tree workers, one company they actually own.</h1>
+    <p class="tag">BranchManager is the operating system for employee-owned tree cooperatives — pool your costs, get legit and covered, and build real ownership instead of grinding alone.</p>
   </div>
 </header>
 
@@ -72,92 +70,97 @@
 
   <section>
     <div class="card">
-      <p class="lead" style="margin-top:0">We all deal with the same thing: slammed at the same time, dead at the same time, scheduling <em>around</em> each other instead of <em>with</em> each other. The Collective fixes that. Members share <b>one operating system, a coordinated schedule, an interchangeable crew pool, and real workshops</b> — so everybody books more work, fewer days get wasted, and nobody's figuring it out alone.</p>
-      <p class="muted" style="margin-bottom:0"><b>Free to join.</b> Bring your business as-is — keep your name, your prices, your crew.</p>
+      <p class="lead" style="margin-top:0">Every tree pro hits the same ceiling alone: insurance eats you alive, you can't touch the big insured jobs, there are no benefits, and the only thing you own is a truck and a chipper. Come together as a <b>worker-owned cooperative</b> and that flips — the costs get shared, the company gets legitimate, and every member builds equity in something bigger than themselves.</p>
     </div>
   </section>
 
   <section>
-    <h2>What members get</h2>
-    <div class="grid">
-      <div class="pill"><div class="ic">🧰</div><h3>BranchManager — free</h3><p>The full operating system: clients, quotes, scheduling, invoices, payments &amp; live books. Built by a tree guy, runs on your phone.</p></div>
-      <div class="pill"><div class="ic">🗓️</div><h3>One shared schedule</h3><p>See the whole group's week. A shared crew never double-books, and a slow day fills in on a busy member's job instead of sitting home.</p></div>
-      <div class="pill"><div class="ic">🎓</div><h3>Team workshops</h3><p>Get together on the stuff nobody teaches you: pricing, insurance, crane jobs, safety, hiring, taxes. Learn from guys actually doing it.</p></div>
-      <div class="pill"><div class="ic">🌲</div><h3>A real network</h3><p>Other NY tree pros to lend a body, share a crane, cover a job, or just talk shop. Strength in numbers — especially come winter.</p></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Who it's for</h2>
-    <div class="card">
-      <p style="margin-top:0">Anyone in New York tree who'd rather build than grind:</p>
-      <div class="who">
-        <span class="chip">Owners &amp; operators</span>
-        <span class="chip">Climbers &amp; crews</span>
-        <span class="chip">Office &amp; ops</span>
-        <span class="chip">Anyone who wants in</span>
+    <h2>The shift</h2>
+    <div class="shift">
+      <div class="box bad">
+        <h4>Solo / 1099 grind</h4>
+        <ul>
+          <li>Your own pricey GL &amp; auto policy</li>
+          <li>No real workers comp = real risk</li>
+          <li>Locked out of insured / municipal jobs</li>
+          <li>No health, retirement, or PTO</li>
+          <li>Feast &amp; famine, alone</li>
+          <li>Equity = your used truck</li>
+        </ul>
       </div>
-      <p class="muted" style="margin-bottom:0;margin-top:12px">Founding circle: Braxton, Catherine, Anthony &amp; Doug — and growing. If you're in, you're in.</p>
+      <div class="arrow">→</div>
+      <div class="box good">
+        <h4>Employee-owned co-op</h4>
+        <ul>
+          <li>One group policy, lower per-head</li>
+          <li>Pooled, legitimate WC coverage</li>
+          <li>COIs that win the big contracts</li>
+          <li>Group health, retirement, PTO</li>
+          <li>Shared work smooths the slow months</li>
+          <li>Equity = ownership that pays out</li>
+        </ul>
+      </div>
     </div>
   </section>
 
   <section>
-    <h2>🪓 How a job breaks down in the system</h2>
-    <p class="muted" style="margin-top:-4px">Example: large maple removal, crane-assisted — Peekskill</p>
+    <h2>How it works</h2>
+    <p class="sub">Four things a cooperative gives every member — that none of them could afford alone.</p>
+    <div class="grid">
+      <div class="pill"><div class="ic">💸</div><h3>Share the costs — legitimately</h3><p>One entity carries the big stuff and splits it by a clear formula: group liability &amp; auto insurance, shared chippers/cranes/bucket trucks, and a real back office (books, payroll, sales tax, licensing, certs). Properly on the books and deductible — not a handshake.</p></div>
+      <div class="pill"><div class="ic">🛡️</div><h3>Be legit &amp; covered</h3><p>Everyone's a real W-2 owner-employee with real workers comp and commercial coverage. That's not just protection — it's the certificate of insurance that unlocks utility, municipal, and high-value insured work you can't bid solo.</p></div>
+      <div class="pill"><div class="ic">🏥</div><h3>Big-company benefits</h3><p>Pooled, the group affords what no solo guy can: group health, a retirement plan, paid time off, safety &amp; climbing training, equipment financing at company rates, and bulk pricing on chain, fuel, parts &amp; PPE.</p></div>
+      <div class="pill"><div class="ic">📈</div><h3>Real equity</h3><p>Members buy in once and own a piece — one member, one vote. Profit is shared by the work you put in (patronage), and your ownership builds in a capital account that pays out when you retire or move on. Your sweat finally becomes equity.</p></div>
+    </div>
+  </section>
 
-    <ol class="flow">
-      <li><div class="step"><h3>1. Lead comes in <span class="t">Request</span></h3><div class="muted">Customer texts about a big maple over the garage. It lands as a Request with name, address &amp; notes — nothing slips.</div></div></li>
-      <div class="down">↓</div>
-
-      <li><div class="step"><h3>2. You build the quote <span class="t">Quote</span></h3>
-        <table>
-          <tr><th>Line item</th><th class="r">Price</th></tr>
-          <tr><td>Large maple removal (crane-assisted)</td><td class="r">$4,200.00</td></tr>
-          <tr><td>Brush + debris haul &amp; chip</td><td class="r">$600.00</td></tr>
-          <tr><td>Stump grind (24")</td><td class="r">$350.00</td></tr>
-          <tr class="sub"><td>Subtotal</td><td class="r">$5,150.00</td></tr>
-          <tr><td>Sales tax (8.375%)</td><td class="r">$431.31</td></tr>
-          <tr class="tot"><td>Quote total</td><td class="r">$5,581.31</td></tr>
-        </table>
-        <div class="note">Sent with a tap; customer approves from their phone.</div></div></li>
-      <div class="down">↓</div>
-
-      <li><div class="step"><h3>3. Approved → it schedules <span class="t">Schedule</span></h3><div class="muted">Becomes a Job. Drag it onto a day, assign the crew — shows on the shared calendar &amp; map so the whole Collective sees who's got what.</div></div></li>
-      <div class="down">↓</div>
-
-      <li><div class="step"><h3>4. Crew &amp; cost breakdown <span class="t">Job</span></h3>
-        <table>
-          <tr><th>What it costs you</th><th class="r">Cost</th></tr>
-          <tr><td>Crew — climber + 2 ground (day)</td><td class="r">$1,050.00</td></tr>
-          <tr><td>Crane (half-day, sub)</td><td class="r">$1,000.00</td></tr>
-          <tr><td>Fuel + dump fees</td><td class="r">$220.00</td></tr>
-          <tr class="sub"><td>Job cost</td><td class="r">$2,270.00</td></tr>
-        </table>
-        <div class="note">Know the real cost before you commit the day.</div></div></li>
-      <div class="down">↓</div>
-
-      <li><div class="step"><h3>5. Invoice → paid <span class="t">Invoice + Payment</span></h3><div class="muted">Invoice generates from the same line items, sends with a card-payment link, and the deposit auto-matches your bank feed.</div></div></li>
-      <div class="down">↓</div>
-
-      <li><div class="step"><h3>6. Books update themselves <span class="t">Books</span></h3>
-        <div class="profit"><span>This one job:</span><span>Revenue $5,150 − Cost $2,270 = <b>$2,880 profit</b></span></div>
-        <div class="note">Live P&amp;L, sales tax set aside, every job's margin tracked.</div></div></li>
+  <section>
+    <h2>The structure, plain</h2>
+    <ol class="how">
+      <li><b>Form one cooperative entity</b>Independent operators join a single worker-owned company instead of staying separate LLCs.</li>
+      <li><b>Members buy in &amp; get a vote</b>A modest membership share makes you an owner — one member, one vote, democratic say in how it's run.</li>
+      <li><b>Costs pool centrally</b>Insurance, equipment, software, and the back office are carried by the co-op and shared by a set formula.</li>
+      <li><b>Profit shared by patronage</b>At year end, surplus is paid out based on the work each member contributed — not just who put in cash.</li>
+      <li><b>Equity builds &amp; pays out</b>Each member's ownership accrues in a capital account, redeemable when they leave or retire.</li>
     </ol>
+    <p class="disc">Set up with a cooperative attorney and a CPA — exact entity, buy-in, and patronage rules vary by state. This is the model, not legal or tax advice.</p>
+  </section>
+
+  <section>
+    <div class="equity">
+      <h2>The difference: you own it</h2>
+      <p>A job isn't just a paycheck — it builds your stake in a real, growing company. That's the whole point. Workers stop competing and start compounding, together.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where BranchManager comes in</h2>
+    <p class="sub">The model only works if the shared operation actually runs cleanly. That's what we build.</p>
+    <div class="card">
+      <ul class="feat">
+        <li><b>Shared schedule &amp; crew</b> — the whole group's week in one view; interchangeable crews never double-book</li>
+        <li><b>Shared equipment</b> — cranes, chippers &amp; trucks booked across members so nothing sits idle</li>
+        <li><b>Per-member job costing</b> — every job's revenue, cost &amp; profit tracked to the member who ran it</li>
+        <li><b>Pooled books &amp; payroll</b> — one set of clean books, payroll across all members, live P&amp;L</li>
+        <li><b>Patronage &amp; equity tracking</b> — work contributed and each member's ownership, calculated for you</li>
+        <li><b>Compliance built in</b> — insurance COIs, sales tax &amp; due dates, licenses &amp; certifications</li>
+      </ul>
+    </div>
+    <div class="only">We build and service BranchManager for one kind of customer only: cooperative, employee-owned tree groups.</div>
   </section>
 
   <section>
     <div class="cta">
-      <h2>Join the Collective</h2>
-      <p style="margin:0 auto 6px;max-width:480px;opacity:.95">Free to join. Your BranchManager account gets set up on the spot, and you're in for the next workshop.</p>
-      <a class="btn" href="https://branchmanager.app">Open BranchManager →</a>
-      <div style="font-size:14px;opacity:.9;margin-top:8px">Text Doug to get your login &amp; the next workshop date.</div>
+      <h2>Start or join a tree co-op</h2>
+      <p style="margin:0 auto 6px;max-width:500px;opacity:.95">Bring your business as-is — keep your name, your prices, your crew. We'll get the shared operation running on BranchManager.</p>
+      <a class="btn" href="https://branchmanager.app">Get in touch →</a>
     </div>
   </section>
 
 </div>
 
 <footer>
-  New York Tree Collective · powered by BranchManager 🌲<br>
+  BranchManager · the operating system for employee-owned tree cooperatives 🌲<br>
   Grow together, not alone.
 </footer>
 
