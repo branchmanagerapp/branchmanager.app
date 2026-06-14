@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 950; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 951; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1114,7 +1114,30 @@
 </div>
 
 <!-- Module scripts -->
-<script defer src="dist/bm.bundle.v950.min.js"></script>
+<script>
+// v951: UI-style toggle. 'jobber' (default, new) vs 'classic' (original BM).
+// Read app-wide via window.BMUI; dashboard/schedule gate layout on it.
+window.BMUI = {
+  style: function(){ try { return localStorage.getItem('bm-ui-style') || 'jobber'; } catch(e){ return 'jobber'; } },
+  isClassic: function(){ return this.style() === 'classic'; }
+};
+(function(){
+  try {
+    if (!window.BMUI.isClassic()) return;
+    if (document.body) document.body.classList.add('bm-classic');
+    var navEl = document.querySelector('.sidebar-nav');
+    if (!navEl) return;
+    // classic order = pre-v946 nav sequence
+    var order = ['dashboard','schedule','clients','callcenter','pipeline','requests','quotes','jobs','invoices','taskreminders','operations','permits','insurance','expenses','books','reports','socialbranch','marketingsite','payroll','tools','settings'];
+    // strip the v946 group dividers, then re-append items in classic order
+    Array.prototype.slice.call(navEl.children).forEach(function(c){ if (!c.classList || !c.classList.contains('nav-item')) navEl.removeChild(c); });
+    order.forEach(function(pg){ var b = navEl.querySelector('.nav-item[data-page="'+pg+'"]'); if (b) navEl.appendChild(b); });
+    var setBtn = navEl.querySelector('.nav-item[data-page="settings"]');
+    if (setBtn) { var dv = document.createElement('div'); dv.style.cssText='border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;'; navEl.insertBefore(dv, setBtn); }
+  } catch(e){}
+})();
+</script>
+<script defer src="dist/bm.bundle.v951.min.js"></script>
 
 
 

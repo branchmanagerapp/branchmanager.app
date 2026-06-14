@@ -1,5 +1,5 @@
 {
-  "version": 950,
+  "version": 951,
   "released": "2026-06-14",
-  "notes": "Dashboard: Workflow section moved above the Leads/Website/Today/Tasks stat row (Jobber position, under greeting); fixed Quotes-Approved $ to sum approved-only (was approved+converted, inflated ~$627k). Nav back-office options stay at end."
+  "notes": "Settings → Layout Style toggle: Jobber-style (default) vs Classic BM. Classic reverts nav order, moves Workflow back below the stat row, and hides the calendar week strips. Foundation for more layout presets."
 }

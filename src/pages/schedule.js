@@ -1125,6 +1125,7 @@ var SchedulePage = {
     var _billsIdx = window._bmCalEventsIndex || {};
     var _cellN = 0, _wkDates = [];
     function _wkStrip(dates) {
+      if (window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic()) return ''; // classic UI = no week strips
       var ds = dates.filter(Boolean);
       if (!ds.length) return '';
       var rev = 0, jobN = 0, exp = 0;

@@ -199,6 +199,18 @@ var SettingsPage = {
       +   '</label>'
       + '</div>';
 
+    // ── Layout Style (v951): Jobber-style vs Classic BM ──
+    var _uiStyle = (localStorage.getItem('bm-ui-style') || 'jobber');
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px;">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text);">🎛️ Layout Style</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin:2px 0 10px;"><b>Jobber-style</b>: streamlined nav, Workflow on top, weekly P&amp;L on the calendar. <b>Classic BM</b>: the original layout.</div>'
+      + '<div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-width:340px;">'
+      +   '<button onclick="if((localStorage.getItem(\'bm-ui-style\')||\'jobber\')!==\'jobber\'){localStorage.setItem(\'bm-ui-style\',\'jobber\');location.reload();}" style="flex:1;padding:9px 0;border:none;font-size:12.5px;font-weight:700;cursor:pointer;' + (_uiStyle !== 'classic' ? 'background:var(--green-dark);color:#fff;' : 'background:transparent;color:var(--text-light);') + '">Jobber-style</button>'
+      +   '<button onclick="if((localStorage.getItem(\'bm-ui-style\')||\'jobber\')!==\'classic\'){localStorage.setItem(\'bm-ui-style\',\'classic\');location.reload();}" style="flex:1;padding:9px 0;border:none;border-left:1px solid var(--border);font-size:12.5px;font-weight:700;cursor:pointer;' + (_uiStyle === 'classic' ? 'background:var(--green-dark);color:#fff;' : 'background:transparent;color:var(--text-light);') + '">Classic BM</button>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">More layout presets coming soon.</div>'
+      + '</div>';
+
     // ── Navigation Style (moved from below Database & Storage group) ──
     var _pwaNav = localStorage.getItem('bm-pwa-nav') || 'top';
     var _appNav = localStorage.getItem('bm-app-nav') || 'top';
