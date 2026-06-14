@@ -1,5 +1,5 @@
 {
-  "version": 944,
+  "version": 945,
   "released": "2026-06-14",
-  "notes": "Removed the 'Next best action' chip and the sales-tax counter banner from the Dashboard per Doug. Surgical bundle patch (no rebuild); functions remain defined but unused. Also retains the v943 Books cold-boot guard."
+  "notes": "Removed the 'Approve comms' banner from the Dashboard per Doug (surgical bundle patch, self-no-ops). Retains v944 (NBA chip + sales-tax banner removed) and v943 Books cold-boot guard."
 }

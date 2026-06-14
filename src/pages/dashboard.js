@@ -167,24 +167,9 @@ var DashboardPage = {
     var localClients = JSON.parse(localStorage.getItem('bm-clients') || '[]');
     var html = '';
 
-    // v806: Single highest-leverage action chip. Scans every signal and
-    // surfaces the ONE item with the most $ at stake. Renders BEFORE the
-    // sales-tax banner so it's the first thing Doug sees.
-    try {
-      var nba = DashboardPage._computeNextBestAction();
-      if (nba) html += nba.html;
-    } catch(e) { console.debug('[Dashboard] NBA skip', e); }
-
-    // v760: Sales tax counter banner — shows at the top of the dashboard
-    // any time tax is owed for the current/upcoming filing period. Color
-    // escalates as the due date approaches; on 1st / 15th / 19th / 20th
-    // of the filing month it goes red. Doug sees this every day; he can't
-    // forget the quarterly NY return.
-    try {
-      if (typeof SalesTaxCounter !== 'undefined' && SalesTaxCounter.renderBanner) {
-        html += SalesTaxCounter.renderBanner();
-      }
-    } catch(e) { /* swallow — never block dashboard render */ }
+    // v943: "Next best action" chip and the sales-tax counter banner removed
+    // from the dashboard per Doug (Jun 2026). _computeNextBestAction +
+    // SalesTaxCounter remain defined but are no longer surfaced here.
 
     // v764: Expiring docs alert — insurance / vehicle / permit docs
     // within 30 days of expiry land here. Same color-escalation pattern
@@ -247,7 +232,8 @@ var DashboardPage = {
     // card opens MarketingPage (which embeds the existing Drafts to Review
     // UI at the top of its Lead Sources panel). Per hard rule: nothing
     // leaves BM without Doug clicking Send on each draft.
-    html += '<div id="bm-approve-comms-card" style="display:none;"></div>';
+    // v945: "Approve comms" banner removed from dashboard per Doug. Placeholder
+    // div no longer rendered; the async fetch below self-no-ops (card === null).
     setTimeout(function() {
       try {
         var card = document.getElementById('bm-approve-comms-card');
