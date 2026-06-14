@@ -1,5 +1,5 @@
 {
-  "version": 948,
+  "version": 949,
   "released": "2026-06-14",
-  "notes": "Dashboard: Jobber-style Workflow cards (Requests/Quotes/Jobs/Invoices with count, $, status + sub-rows). Matches Jobber Home layout."
+  "notes": "Reverted accidental duplicate Workflow cards on Dashboard (BM already had a Jobber-style Workflow section). Dashboard back to single, correct Workflow section."
 }

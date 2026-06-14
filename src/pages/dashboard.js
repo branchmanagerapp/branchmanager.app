@@ -167,51 +167,6 @@ var DashboardPage = {
     var localClients = JSON.parse(localStorage.getItem('bm-clients') || '[]');
     var html = '';
 
-    // v948: Jobber-style "Workflow" cards — Requests · Quotes · Jobs · Invoices,
-    // each with a big count, $, a bold primary status, and two sub-status rows.
-    try {
-      var _R = (DB.requests && DB.requests.getAll) ? DB.requests.getAll() : [];
-      var _Q = (DB.quotes && DB.quotes.getAll) ? DB.quotes.getAll() : [];
-      var _J = (DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : [];
-      var _I = (DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : [];
-      var _m = function(n) { return (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(n) : ('$' + Math.round(n || 0).toLocaleString()); };
-      var _st = function(x) { return ((x && x.status) || '').toLowerCase(); };
-      var _sum = function(arr, f) { return arr.reduce(function(s, x) { return s + (Number(f(x)) || 0); }, 0); };
-      var _qT = function(q) { return q.total; }, _jT = function(j) { return j.total; }, _iB = function(i) { return i.balance; }, _iT = function(i) { return i.total; };
-
-      var rNew = _R.filter(function(r) { return _st(r) === 'new'; });
-      var rAssessed = _R.filter(function(r) { return _st(r) === 'assessment' || _st(r) === 'assessed'; });
-      var rOpen = _R.filter(function(r) { return ['converted', 'archived', 'declined', 'lost'].indexOf(_st(r)) < 0; });
-      var qApproved = _Q.filter(function(q) { return _st(q) === 'approved'; });
-      var qDraft = _Q.filter(function(q) { return _st(q) === 'draft'; });
-      var qChanges = _Q.filter(function(q) { return _st(q) === 'changes_requested' || _st(q) === 'changes'; });
-      var jReqInv = _J.filter(function(j) { return _st(j) === 'completed' && !j.invoiceId && j.invoiceId !== 'legacy'; });
-      var jActive = _J.filter(function(j) { return ['scheduled', 'active', 'in_progress', 'late'].indexOf(_st(j)) >= 0; });
-      var jLate = _J.filter(function(j) { return _st(j) === 'late'; });
-      var iAwaiting = _I.filter(function(i) { return (_st(i) === 'sent' || _st(i) === 'awaiting') && Number(i.balance) > 0; });
-      var iDraft = _I.filter(function(i) { return _st(i) === 'draft'; });
-      var iPast = _I.filter(function(i) { return _st(i) === 'overdue' || (i.dueDate && i.dueDate < today && _st(i) !== 'paid' && Number(i.balance) > 0); });
-
-      var _wfCard = function(color, icon, label, page, bigCount, bigMoney, boldLabel, rows) {
-        var rh = rows.map(function(r) {
-          return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;line-height:2;"><span style="color:var(--text-light);">' + r[0] + '</span><span style="color:var(--text-light);">' + (r[1] || '') + '</span></div>';
-        }).join('');
-        return '<div onclick="loadPage(\'' + page + '\')" style="flex:1 1 200px;min-width:0;background:var(--white);border:1px solid var(--border);border-top:3px solid ' + color + ';border-radius:10px;padding:14px 16px;cursor:pointer;">'
-          + '<div style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--text-light);margin-bottom:6px;">' + icon + ' ' + label + '</div>'
-          + '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:30px;font-weight:800;line-height:1;">' + bigCount + '</span>' + (bigMoney ? '<span style="font-size:14px;font-weight:600;color:var(--text-light);">' + bigMoney + '</span>' : '') + '</div>'
-          + '<div style="font-size:14px;font-weight:700;margin:4px 0 8px;">' + boldLabel + '</div>'
-          + rh + '</div>';
-      };
-
-      html += '<div style="font-size:18px;font-weight:800;margin:2px 0 10px;">Workflow</div>'
-        + '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">'
-        + _wfCard('#e07c24', '📥', 'Requests', 'requests', rNew.length, '', 'New', [['Assessed', '(' + rAssessed.length + ')'], ['All open', '(' + rOpen.length + ')']])
-        + _wfCard('#b3365a', '🧾', 'Quotes', 'quotes', qApproved.length, _m(_sum(qApproved, _qT)), 'Approved', [['Draft (' + qDraft.length + ')', _m(_sum(qDraft, _qT))], ['Changes requested (' + qChanges.length + ')', _m(_sum(qChanges, _qT))]])
-        + _wfCard('#2e7d32', '🔧', 'Jobs', 'jobs', jReqInv.length, _m(_sum(jReqInv, _jT)), 'Requires invoicing', [['Active (' + jActive.length + ')', _m(_sum(jActive, _jT))], ['Late (' + jLate.length + ')', _m(_sum(jLate, _jT))]])
-        + _wfCard('#1565c0', '💲', 'Invoices', 'invoices', iAwaiting.length, _m(_sum(iAwaiting, _iB)), 'Awaiting payment', [['Draft (' + iDraft.length + ')', _m(_sum(iDraft, _iT))], ['Past due (' + iPast.length + ')', _m(_sum(iPast, _iB))]])
-        + '</div>';
-    } catch (e) { /* never block dashboard render */ }
-
     // v943: "Next best action" chip and the sales-tax counter banner removed
     // from the dashboard per Doug (Jun 2026). _computeNextBestAction +
     // SalesTaxCounter remain defined but are no longer surfaced here.
