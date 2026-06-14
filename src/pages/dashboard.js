@@ -501,7 +501,7 @@ var DashboardPage = {
     var sentInvoices = allInvoices.filter(function(i) { return i.status === 'sent' && (!i.dueDate || new Date(i.dueDate) >= now); });
     var draftInvoices = allInvoices.filter(function(i) { return i.status === 'draft'; });
 
-    var reqTotal = allQuotes.filter(function(q){return q.status==='approved'||q.status==='converted';}).reduce(function(s,q){return s+(q.total||0);},0);
+    var reqTotal = approvedQuotes.reduce(function(s,q){return s+(q.total||0);},0); // v950: approved-only (was approved+converted → inflated to ~$627k)
     var activeJobTotal = activeJobs.reduce(function(s,j){return s+(j.total||0);},0);
     var draftInvTotal = draftInvoices.reduce(function(s,i){return s+Number(i.total||0);},0);
     var overdueTotal = overdueInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0);
@@ -511,6 +511,62 @@ var DashboardPage = {
     // Today's Jobs / Tasks). Per Doug, condensed into a uniform 2x2 grid that
     // mirrors the Workflow grid: bordered container, internal dividers, full-
     // cell click → page nav. Detail still reachable by clicking through.
+    html += '<h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Workflow</h3>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'; /* v666: back to 2x2 (was single-col v651) — cards already have 2x2 border pattern */
+
+    // Requests card
+    var allRequests = DB.requests.getAll();
+    var newRequests = allRequests.filter(function(r) { return r.status === 'new'; });
+    var assessedRequests = allRequests.filter(function(r) { return r.status === 'assessment_complete'; });
+    var overdueRequests = allRequests.filter(function(r) {
+      if (r.status === 'converted' || r.status === 'quoted' || r.status === 'archived') return false;
+      return (Date.now() - new Date(r.createdAt || 0)) / 86400000 > 3;
+    });
+    html += '<div onclick="loadPage(\'requests\')" style="padding:16px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#e07c24;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="inbox" style="width:14px;height:14px;vertical-align:middle;"></i> Requests</div>'
+      + '<div style="font-size:32px;font-weight:700;">' + newRequests.length + '</div>'
+      + '<div style="font-size:14px;font-weight:600;">New</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">Assessments complete (' + assessedRequests.length + ')</div>'
+      + '<div style="font-size:12px;color:' + (overdueRequests.length > 0 ? 'var(--red)' : 'var(--text-light)') + ';">Overdue (' + overdueRequests.length + ')</div>'
+      + '</div>';
+
+    // Quotes card
+    var awaitingQuotes = allQuotes.filter(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
+    html += '<div onclick="loadPage(\'quotes\')" style="padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#8b2252;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:middle;"></i> Quotes</div>'
+      + '<div style="font-size:32px;font-weight:700;display:inline;">' + approvedQuotes.length + '</div>'
+      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(reqTotal) + '</span>'
+      + '<div style="font-size:14px;font-weight:600;">Approved</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftQuotes.length + ')</span><span>' + UI.moneyInt(draftQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Changes requested (' + changesQuotes.length + ')</span><span>' + UI.moneyInt(changesQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
+      + '</div>';
+
+    // Jobs card
+    html += '<div onclick="loadPage(\'jobs\')" style="padding:16px 20px;border-right:1px solid var(--border);cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#2e7d32;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="wrench" style="width:14px;height:14px;vertical-align:middle;"></i> Jobs</div>'
+      + '<div style="font-size:32px;font-weight:700;">' + needsInvoicing.length + '</div>'
+      + '<div style="font-size:14px;font-weight:600;">Requires invoicing</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Active (' + activeJobs.length + ')</span><span>' + UI.moneyInt(activeJobTotal) + '</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Action required (' + (actionJobs.length + lateJobs.length) + ')</span><span>' + UI.moneyInt(lateJobs.reduce(function(s,j){return s+(j.total||0);},0)) + '</span></div>'
+      + '</div>';
+
+    // Invoices card
+    html += '<div onclick="loadPage(\'invoices\')" style="padding:16px 20px;cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="receipt" style="width:14px;height:14px;vertical-align:middle;"></i> Invoices</div>'
+      + '<div style="font-size:32px;font-weight:700;display:inline;">' + unpaidInvoices.length + '</div>'
+      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(unpaidInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0)) + '</span>'
+      + '<div style="font-size:14px;font-weight:600;">Awaiting payment</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftInvoices.length + ')</span><span>' + UI.moneyInt(draftInvTotal) + '</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:' + (overdueInvoices.length ? 'var(--red)' : 'var(--text-light)') + ';"><span>Past due (' + overdueInvoices.length + ')</span><span>' + UI.moneyInt(overdueTotal) + '</span></div>'
+      + '</div>';
+
+    html += '</div>';
+
+
     html += '<div class="dash-desktop-only">';
 
     // Today's jobs counts (sync, used in the Jobs cell)
@@ -577,61 +633,6 @@ var DashboardPage = {
       + '@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}'
       + '</style>';
     html += '<div class="dash-grid"><div class="dash-main">';
-
-    html += '<h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Workflow</h3>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'; /* v666: back to 2x2 (was single-col v651) — cards already have 2x2 border pattern */
-
-    // Requests card
-    var allRequests = DB.requests.getAll();
-    var newRequests = allRequests.filter(function(r) { return r.status === 'new'; });
-    var assessedRequests = allRequests.filter(function(r) { return r.status === 'assessment_complete'; });
-    var overdueRequests = allRequests.filter(function(r) {
-      if (r.status === 'converted' || r.status === 'quoted' || r.status === 'archived') return false;
-      return (Date.now() - new Date(r.createdAt || 0)) / 86400000 > 3;
-    });
-    html += '<div onclick="loadPage(\'requests\')" style="padding:16px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
-      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#e07c24;"></div>'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="inbox" style="width:14px;height:14px;vertical-align:middle;"></i> Requests</div>'
-      + '<div style="font-size:32px;font-weight:700;">' + newRequests.length + '</div>'
-      + '<div style="font-size:14px;font-weight:600;">New</div>'
-      + '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">Assessments complete (' + assessedRequests.length + ')</div>'
-      + '<div style="font-size:12px;color:' + (overdueRequests.length > 0 ? 'var(--red)' : 'var(--text-light)') + ';">Overdue (' + overdueRequests.length + ')</div>'
-      + '</div>';
-
-    // Quotes card
-    var awaitingQuotes = allQuotes.filter(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
-    html += '<div onclick="loadPage(\'quotes\')" style="padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
-      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#8b2252;"></div>'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:middle;"></i> Quotes</div>'
-      + '<div style="font-size:32px;font-weight:700;display:inline;">' + approvedQuotes.length + '</div>'
-      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(reqTotal) + '</span>'
-      + '<div style="font-size:14px;font-weight:600;">Approved</div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftQuotes.length + ')</span><span>' + UI.moneyInt(draftQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Changes requested (' + changesQuotes.length + ')</span><span>' + UI.moneyInt(changesQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
-      + '</div>';
-
-    // Jobs card
-    html += '<div onclick="loadPage(\'jobs\')" style="padding:16px 20px;border-right:1px solid var(--border);cursor:pointer;position:relative;">'
-      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#2e7d32;"></div>'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="wrench" style="width:14px;height:14px;vertical-align:middle;"></i> Jobs</div>'
-      + '<div style="font-size:32px;font-weight:700;">' + needsInvoicing.length + '</div>'
-      + '<div style="font-size:14px;font-weight:600;">Requires invoicing</div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Active (' + activeJobs.length + ')</span><span>' + UI.moneyInt(activeJobTotal) + '</span></div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Action required (' + (actionJobs.length + lateJobs.length) + ')</span><span>' + UI.moneyInt(lateJobs.reduce(function(s,j){return s+(j.total||0);},0)) + '</span></div>'
-      + '</div>';
-
-    // Invoices card
-    html += '<div onclick="loadPage(\'invoices\')" style="padding:16px 20px;cursor:pointer;position:relative;">'
-      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;"></div>'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="receipt" style="width:14px;height:14px;vertical-align:middle;"></i> Invoices</div>'
-      + '<div style="font-size:32px;font-weight:700;display:inline;">' + unpaidInvoices.length + '</div>'
-      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(unpaidInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0)) + '</span>'
-      + '<div style="font-size:14px;font-weight:600;">Awaiting payment</div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftInvoices.length + ')</span><span>' + UI.moneyInt(draftInvTotal) + '</span></div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:' + (overdueInvoices.length ? 'var(--red)' : 'var(--text-light)') + ';"><span>Past due (' + overdueInvoices.length + ')</span><span>' + UI.moneyInt(overdueTotal) + '</span></div>'
-      + '</div>';
-
-    html += '</div>';
 
     // v619: workflow grid lives in main column; everything below moves to
     // the right rail (Receivables first, then Inbox, then action alerts).

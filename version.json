@@ -1,5 +1,5 @@
 {
-  "version": 949,
+  "version": 950,
   "released": "2026-06-14",
-  "notes": "Reverted accidental duplicate Workflow cards on Dashboard (BM already had a Jobber-style Workflow section). Dashboard back to single, correct Workflow section."
+  "notes": "Dashboard: Workflow section moved above the Leads/Website/Today/Tasks stat row (Jobber position, under greeting); fixed Quotes-Approved $ to sum approved-only (was approved+converted, inflated ~$627k). Nav back-office options stay at end."
 }
