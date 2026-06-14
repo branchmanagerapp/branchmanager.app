@@ -1,5 +1,5 @@
 {
-  "version": 942,
+  "version": 943,
   "released": "2026-06-14",
-  "notes": "Cache-bust release: forces stale clients to self-heal (unregister SW + clear caches + reload) after the Jun 13 CNAME redirect-loop poisoned some service-worker caches. No app feature changes vs v941; bundle unchanged (bm.bundle.v941.min.js)."
+  "notes": "Safety guard: never auto-boot into the Books page on cold load (it currently hangs the renderer), so a reopen can't get trapped on a dead page. Falls back to Dashboard + clears saved route. In-app Books click still works. Temporary until the Books render hang is fixed. No other changes; bundle unchanged (bm.bundle.v941.min.js)."
 }
