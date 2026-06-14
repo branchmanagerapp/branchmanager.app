@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Your Own BranchManager — Connected to the Co-op Hub</title>
+<style>
+  :root{--green:#2e7d32;--green-d:#10401a;--green-l:#e8f5e9;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--blue:#1a73e8}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  .wrap{max-width:800px;margin:0 auto;padding:0 20px}
+  header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:52px 0 42px;text-align:center}
+  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:8px}
+  header h1{margin:0 auto;font-size:31px;line-height:1.16;font-weight:800;max-width:560px}
+  header .tag{margin:13px auto 0;font-size:16.5px;opacity:.96;max-width:540px}
+  section{margin:30px 0}
+  h2{font-size:22px;margin:0 0 6px;color:var(--green-d)}
+  .sub{color:var(--muted);margin:0 0 16px;font-size:15px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,20,.04)}
+  .lead{font-size:17px}.muted{color:var(--muted)}
+  /* diagram */
+  .diagram{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 18px;text-align:center}
+  .members{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .ws{flex:1 1 180px;max-width:220px;background:#f7faf7;border:1.5px solid #c8e6c9;border-radius:12px;padding:14px}
+  .ws .h{font-weight:800;color:var(--green-d);font-size:14px}
+  .ws .s{font-size:12px;color:var(--muted);margin-top:3px}
+  .ws .lock{font-size:11px;color:var(--muted);margin-top:8px;border-top:1px dashed #d6e6d6;padding-top:6px}
+  .pipes{font-size:24px;color:var(--green);margin:8px 0 4px;letter-spacing:30px;padding-left:30px}
+  .share{font-size:12px;color:var(--green-d);font-weight:700;margin-bottom:10px}
+  .hub{background:linear-gradient(160deg,#10401a,#2e7d32);color:#fff;border-radius:12px;padding:16px;max-width:520px;margin:0 auto}
+  .hub .h{font-weight:800;font-size:16px}
+  .hub .s{font-size:13px;opacity:.92;margin-top:4px}
+  /* two-layer cards */
+  .layer{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:12px 0}
+  .num{flex:0 0 38px;width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .layer h3{margin:2px 0 4px;font-size:17px;color:var(--green-d)}
+  .layer p{margin:0;font-size:14.5px;color:var(--muted)}
+  /* private vs shared */
+  table{width:100%;border-collapse:collapse;font-size:14.5px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}
+  th{background:#f0f5f0;color:var(--green-d);font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+  td.c{text-align:center;width:90px}
+  tr:last-child td{border-bottom:none}
+  .yes{color:var(--green);font-weight:800}.no{color:#b0413b;font-weight:800}
+  .note{background:#fffaf0;border:1px solid #f0e0bd;border-radius:10px;padding:12px 16px;font-size:13.5px;color:#6b531a}
+  .cta{background:linear-gradient(160deg,#10401a,#2e7d32);color:#fff;border-radius:16px;padding:28px 22px;text-align:center}
+  .cta h2{color:#fff;margin-top:0}
+  .btn{display:inline-block;background:#fff;color:var(--green-d);text-decoration:none;font-weight:800;font-size:16px;padding:13px 28px;border-radius:10px;margin:8px 0 4px}
+  a.back{color:var(--green-d);font-weight:700;text-decoration:none}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:28px 0 50px}
+  @media(max-width:560px){header h1{font-size:25px}.pipes{letter-spacing:18px;padding-left:18px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Your own · then shared</div>
+    <h1>Each of you runs your own. You choose what feeds the co-op.</h1>
+    <p class="tag">Try BranchManager free in your own private workspace — and when you're ready, send only the jobs you choose up to the shared co-op hub.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="card">
+      <p class="lead" style="margin-top:0"><b>Yes — you can each have your own.</b> Every member gets a fully separate, private BranchManager: your clients, your quotes, your jobs, your books. Nobody else can see inside it. Then you flip a switch on a job to <b>feed it into the central co-op hub</b> — for the shared schedule, shared crew, and the pooled books. What you don't share stays yours.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>How it connects</h2>
+    <p class="sub">Three private workspaces, one shared hub — you control the valve.</p>
+    <div class="diagram">
+      <div class="members">
+        <div class="ws"><div class="h">Member A</div><div class="s">your business</div><div class="lock">🔒 private clients, quotes &amp; books</div></div>
+        <div class="ws"><div class="h">Member B</div><div class="s">your business</div><div class="lock">🔒 private clients, quotes &amp; books</div></div>
+        <div class="ws"><div class="h">Member C</div><div class="s">your business</div><div class="lock">🔒 private clients, quotes &amp; books</div></div>
+      </div>
+      <div class="pipes">↓ &nbsp; ↓ &nbsp; ↓</div>
+      <div class="share">only the jobs you choose to share</div>
+      <div class="hub">
+        <div class="h">🌲 Co-op Hub</div>
+        <div class="s">shared schedule · shared crew &amp; equipment · pooled books · contribution &amp; patronage roll-up</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The two layers</h2>
+    <div class="layer">
+      <div class="num">1</div>
+      <div><h3>Your private workspace</h3><p>Run your business exactly like it's yours — because it is. Clients, quotes, scheduling, invoices, payments, and books, all walled off and visible to you alone. This is what you try free, today.</p></div>
+    </div>
+    <div class="layer">
+      <div class="num">2</div>
+      <div><h3>The co-op hub</h3><p>A shared workspace the group owns. The jobs you choose to share roll up here so the crew never double-books, equipment gets used not idled, and the pooled expenses + profit-sharing are tracked across everyone. The hub only ever sees what members send it.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What stays private vs. what's shared</h2>
+    <table>
+      <thead><tr><th>Item</th><th class="c">Private to you</th><th class="c">Co-op hub</th></tr></thead>
+      <tbody>
+        <tr><td>Your clients &amp; contact info</td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Your quotes &amp; pricing</td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Jobs you mark "share to co-op"</td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td></tr>
+        <tr><td>Shared crew &amp; equipment schedule</td><td class="c"><span class="no">—</span></td><td class="c"><span class="yes">✓</span></td></tr>
+        <tr><td>Pooled co-op expenses (insurance, etc.)</td><td class="c"><span class="no">—</span></td><td class="c"><span class="yes">✓</span></td></tr>
+        <tr><td>Your contribution → patronage / equity</td><td class="c"><span class="yes">✓</span></td><td class="c"><span class="yes">✓</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="note"><b>What's ready now:</b> your own private workspace works today — go try it. <b>The co-op hub</b> is set up as the group forms, built for exactly this purpose, so the connection is turned on when you're ready — no rebuilding your data.</div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <h2>Try your own — free</h2>
+      <p style="margin:0 auto 8px;max-width:480px;opacity:.95">Each of you gets a free BranchManager to run a few jobs through. Like it? We connect you to the co-op hub when the group's ready.</p>
+      <a class="btn" href="https://branchmanager.app">Start free →</a>
+      <div style="font-size:14px;opacity:.9;margin-top:8px">Text Doug and he'll spin up your workspace.</div>
+    </div>
+    <p style="text-align:center;margin-top:16px"><a class="back" href="/collective/">← The idea</a> &nbsp;·&nbsp; <a class="back" href="/partners/">Founding circle</a> &nbsp;·&nbsp; <a class="back" href="/ground-rules/">Ground rules</a></p>
+  </section>
+
+</div>
+
+<footer>
+  Your own workspace + the co-op hub 🌲 · BranchManager
+</footer>
+
+</body>
+</html>
