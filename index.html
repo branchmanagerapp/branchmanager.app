@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 945; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 946; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1005,40 +1005,31 @@
       <h1>Branch Manager<span data-bind="companyName"></span></h1>
     </div>
     <div class="sidebar-nav">
+      <!-- v946: nav reordered to match Jobber — core money-pipeline first, then back-office tools, then Settings. -->
+      <!-- Core workflow (Jobber order) -->
       <button class="nav-item" data-page="dashboard"><span class="icon"><i data-lucide="home" class="li"></i></span> Home</button>
       <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
       <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>
-      <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Leads Center<span class="cc-dot" id="cc-indicator-dot"></span></button>
-      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
       <button class="nav-item" data-page="requests"><span class="icon"><i data-lucide="inbox" class="li"></i></span> Requests <span class="badge" id="badge-requests"></span></button>
       <button class="nav-item" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
       <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
-      <!-- v388: Pre-Trip folded into Operations as a tab. Deep link via #pretrip still works. -->
       <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
-      <!-- v697: Tasks restored as a top-level sidebar entry (was folded under Operations in v388). No badge — sidebar count badges are intentionally hidden per "felt noisy" preference. -->
-      <button class="nav-item" data-page="taskreminders"><span class="icon"><i data-lucide="check-square" class="li"></i></span> Tasks</button>
-      <!-- v419: Team folded into Payroll (tabs: Payroll / Team / Timesheets / My Pay). Operations moved up to where Team was. -->
+      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
+      <!-- Back-office / BM-specific -->
+      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
+      <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Leads Center<span class="cc-dot" id="cc-indicator-dot"></span></button>
+      <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
+      <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
+      <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
+      <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
+      <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="wallet" class="li"></i></span> Payroll</button>
       <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
       <button class="nav-item" data-page="insurance"><span class="icon"><i data-lucide="shield" class="li"></i></span> Insurance</button>
-      <!-- v690: Expenses promoted from buried Reports tab to its own sidebar entry. -->
-      <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
-      <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
-
-      <!-- v679: dropped horizontal divider — cleaner, single nav scroll like leading apps. -->
-      <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
-      <!-- v384: marketing / campaigns / referrals / reviews / reviewtools merged into SocialBranch (renamed "Marketing" in the sidebar). Deep links #marketing #campaigns #referrals #reviews #reviewtools still resolve to their standalone page modules. -->
-      <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
+      <button class="nav-item" data-page="taskreminders"><span class="icon"><i data-lucide="check-square" class="li"></i></span> Tasks</button>
       <button class="nav-item" data-page="marketingsite"><span class="icon"><i data-lucide="globe" class="li"></i></span> Website</button>
-      <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="wallet" class="li"></i></span> Payroll</button>
-      <!-- v383: My Pay (employeecenter) merged under Payroll — link at bottom of payroll page. Deep link via #employeecenter still works. -->
-      <!-- v419: Operations moved up next to Invoices. -->
-      <!-- v388: Chat & Tasks folded into Operations as a tab. Deep link via #taskreminders still works. -->
-      <!-- Media Center merged into SocialBranch v376 — deep link still works (#mediacenter) -->
-      <!-- v391: AI Assistant sidebar entry removed — accessible via the top-bar "AI" icon and the floating "Ask AI" pill (bottom-right). Deep link #ai still works. -->
       <button class="nav-item" data-page="tools"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Tools</button>
       <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
-      <!-- v395: Archive sidebar entry removed — accessible from Settings → Advanced. Deep link #archive still works. -->
       <button class="nav-item" data-page="settings"><span class="icon"><i data-lucide="settings" class="li"></i></span> Settings</button>
     </div>
 
