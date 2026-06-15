@@ -99,21 +99,22 @@
       <th></th>
       <th>Carson</th>
       <th>SkateOS-native</th>
-      <th class="best">Build on Brivo's API</th>
+      <th class="best">Build: Square → Brivo (direct)</th>
     </tr>
     <tr><td class="lab">Drives our Brivo door</td><td class="yes">Yes (Brivo partner)</td><td class="mb">Only if SkateOS has an access add-on — to confirm</td><td class="yes">Yes — directly</td></tr>
     <tr><td class="lab">Talks to Square</td><td class="no">No — built for apartment rent systems (Yardi/ClickPay), not POS</td><td class="mb">It's our check-in; works alongside Square</td><td class="yes">Yes — Square webhooks</td></tr>
-    <tr><td class="lab">Talks to SkateOS</td><td class="no">No</td><td class="yes">It is SkateOS</td><td class="yes">Yes — if it exposes check-in events</td></tr>
+    <tr><td class="lab">Talks to SkateOS</td><td class="no">No</td><td class="yes">It is SkateOS</td><td class="yes">Not needed — Square + Brivo only</td></tr>
     <tr><td class="lab">Built for</td><td class="no">Residential apartment buildings</td><td class="yes">Skate parks</td><td class="yes">Custom-fit to us</td></tr>
     <tr><td class="lab">Ongoing cost</td><td class="no">Enterprise/per-building pricing (sized for 300-unit towers)</td><td class="mb">Included if the feature exists</td><td class="yes">One-time build, then $0 per-door</td></tr>
-    <tr><td class="lab">Verdict</td><td class="no">Wrong category</td><td class="mb">Cleanest if it supports access — check first</td><td class="yes">Most control, lowest long-run cost</td></tr>
+    <tr><td class="lab">Verdict</td><td class="no">Wrong category</td><td class="mb">Cleanest if it supports access — check first</td><td class="yes">Recommended — works now, no SkateOS needed</td></tr>
   </table>
   <div class="flag"><b>On Carson:</b> it's apartment-building software (virtual doorman for residential towers). It <i>can</i> drive a Brivo door, but it does <b>not</b> integrate with Square, and it's priced and built for landlords — so it'd be an expensive middleman doing something we can do ourselves. If anyone there says it connects to Square, ask them to show it live before believing it.</div>
 </section>
 
 <section>
   <h2>Recommendation</h2>
-  <div class="pick"><b>Build the connection on Brivo's own API</b> (with one check first). Because Brivo is open, the link is a small piece of software: <b>payment or check-in → unlock / issue a PIN / flip the member's access on or off.</b> No monthly per-door fee, and it's tailored exactly to how we run the park. <b>First check:</b> see whether SkateOS already offers a Brivo/access add-on — if it does, that's the no-build shortcut; if not, we build the small connector. Either way, <b>skip Carson.</b></div>
+  <div class="pick"><b>Connect Square straight to Brivo — no SkateOS switch needed.</b> Both already have open APIs, so the link is a small piece of software: <b>customer pays in Square → it issues a Brivo PIN / unlocks the door</b>, and <b>membership active in Square → Brivo access on, lapsed → off.</b> SkateOS stays optional (add later or not at all). No monthly per-door fee, tailored to how we run the park, and we can start now. <b>Skip Carson.</b></div>
+  <div class="flag"><b>One thing to confirm:</b> what kind of <b>reader</b> is on the door. A <b>keypad (or QR) reader</b> means we can text a one-time PIN to a drop-in customer — perfect for unstaffed entry. A <b>badge/mobile-only reader</b> makes members easy but one-time drop-ins clunkier (they'd need a credential), so we'd add a small keypad/QR reader or use remote buzz-in for those.</div>
   <div class="card">
     <p style="margin:0 0 8px;font-weight:700;color:var(--blue-d)">Why it's worth doing</p>
     <p style="margin:0">Automating entry lets the park run <b>early-morning and late-night sessions unstaffed</b> and trim front-desk hours — more hours open, less labor. For a park building back up, that's real margin from systems we already own.</p>
@@ -124,9 +125,9 @@
   <h2>Next steps</h2>
   <div class="card">
     <ul style="margin:0">
-      <li>Pull a <b>Brivo API key</b> for our account (Brivo issues it).</li>
-      <li>Confirm whether <b>SkateOS</b> has a door/access integration or exposes check-in events.</li>
-      <li>Start with the simplest win — <b>day-pass payment → time-limited door PIN</b> — then add automatic member access.</li>
+      <li>Pull a <b>Brivo API key</b> + <b>Square API access</b> for our account (both self-serve).</li>
+      <li>Confirm the <b>door reader type</b> (keypad/QR vs badge/mobile) — decides the drop-in flow.</li>
+      <li>Build the small <b>Square → Brivo</b> connector; start with the simplest win — <b>day-pass payment → time-limited door PIN</b> — then add automatic member access.</li>
     </ul>
   </div>
 </section>
