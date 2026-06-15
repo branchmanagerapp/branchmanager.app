@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Park Entry Automation</title>
+<style>
+  :root{--ink:#13202b;--muted:#5d6b78;--line:#e3e9ef;--bg:#f4f7fa;--blue:#1d6fd6;--blue-d:#0f3f7d;--green:#15803d;--red:#b0413b;--amber:#b9770f}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+  .wrap{max-width:820px;margin:0 auto;padding:0 20px}
+  header{background:linear-gradient(160deg,#0c2c52,#1d6fd6 92%);color:#fff;padding:46px 0 38px;text-align:center}
+  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:8px}
+  header h1{margin:0 auto;font-size:28px;line-height:1.2;font-weight:800;max-width:600px}
+  header .tag{margin:13px auto 0;font-size:16px;opacity:.96;max-width:560px}
+  section{margin:30px 0}
+  h2{font-size:21px;margin:0 0 6px;color:var(--blue-d)}
+  .sub{color:var(--muted);margin:0 0 16px;font-size:15px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,60,.04)}
+  .lead{font-size:17px}.muted{color:var(--muted)}
+  p{margin:0 0 12px}
+  ul{margin:0 0 12px;padding-left:20px}li{margin:6px 0}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;margin:8px 0 4px}
+  .step{background:#eef5ff;border:1px solid #cfe2fb;border-radius:11px;padding:10px 14px;font-weight:700;font-size:14px;color:var(--blue-d);text-align:center}
+  .arrow{color:var(--blue);font-weight:800;font-size:18px}
+  table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid #eef2f6;vertical-align:top}
+  th{background:#0f3f7d;color:#fff;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  th.best{background:#15803d}
+  td.lab{font-weight:700;color:var(--blue-d);background:#f7fafd;width:170px}
+  .yes{color:var(--green);font-weight:700}.no{color:var(--red);font-weight:700}.mb{color:var(--amber);font-weight:700}
+  .pick{background:#eaf6ef;border:1px solid #c6e7d2;border-left:4px solid var(--green);border-radius:10px;padding:14px 16px;margin:14px 0;font-size:14.5px}
+  .pick b{color:var(--green)}
+  .flag{background:#fff8ec;border:1px solid #f0d9a8;border-left:4px solid var(--amber);border-radius:10px;padding:14px 16px;margin:14px 0;font-size:14.5px}
+  .flag b{color:var(--amber)}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:30px 0 50px}
+  @media(max-width:600px){.step{font-size:13px;padding:8px 10px}th,td{padding:8px}td.lab{width:120px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">HV Skate · operations</div>
+    <h1>Automating the front door</h1>
+    <div class="tag">Run the door off payments and check-ins — so the park can open more hours with less front-desk. Here's how the Brivo system we already have can do it, and the three ways to wire it up.</div>
+  </div>
+</header>
+<div class="wrap">
+
+<section>
+  <div class="card">
+    <p class="lead" style="margin-top:0">The idea: tie the <b>Brivo</b> door access we already have to <b>payments / check-in</b>, so a paying customer or active member gets in automatically. That lets us run <b>unstaffed or extended hours</b> and cut the front-desk cost — without changing any of the systems we already use.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What we already have</h2>
+  <div class="card">
+    <ul style="margin:0">
+      <li><b>Brivo</b> — the door-access system on the building. It's an <b>open, developer-friendly platform</b> (it can be told to unlock, issue temporary PIN codes, and turn member access on/off through its API).</li>
+      <li><b>Square</b> — payments / point of sale.</li>
+      <li><b>SkateOS</b> — sessions, memberships, check-in.</li>
+    </ul>
+    <p class="muted" style="margin:10px 0 0">All three are already in place and paid for. The only question is what connects them to the door.</p>
+  </div>
+</section>
+
+<section>
+  <h2>How it would actually work</h2>
+  <p class="sub">Two simple flows, both running off the door we already have.</p>
+  <div class="card">
+    <p style="margin:0 0 4px;font-weight:700;color:var(--blue-d)">Day-pass / drop-in</p>
+    <div class="flow">
+      <div class="step">Customer pays<br>(Square / SkateOS)</div>
+      <div class="arrow">→</div>
+      <div class="step">System issues a<br>time-limited PIN</div>
+      <div class="arrow">→</div>
+      <div class="step">Door unlocks for<br>their session</div>
+    </div>
+    <p style="margin:14px 0 4px;font-weight:700;color:var(--blue-d)">Members</p>
+    <div class="flow">
+      <div class="step">Membership active<br>in SkateOS/Square</div>
+      <div class="arrow">→</div>
+      <div class="step">Their Brivo badge/app<br>turns on automatically</div>
+      <div class="arrow">→</div>
+      <div class="step">They let themselves in;<br>lapsed = auto shut off</div>
+    </div>
+    <p class="muted" style="margin:14px 0 0">No one has to be at the desk to let people in or check whether they paid — the payment <i>is</i> the key.</p>
+  </div>
+</section>
+
+<section>
+  <h2>The three ways to connect it — Carson vs SkateOS vs build it</h2>
+  <p class="sub">All three end at the same Brivo door. The difference is what sits in the middle.</p>
+  <table>
+    <tr>
+      <th></th>
+      <th>Carson</th>
+      <th>SkateOS-native</th>
+      <th class="best">Build on Brivo's API</th>
+    </tr>
+    <tr><td class="lab">Drives our Brivo door</td><td class="yes">Yes (Brivo partner)</td><td class="mb">Only if SkateOS has an access add-on — to confirm</td><td class="yes">Yes — directly</td></tr>
+    <tr><td class="lab">Talks to Square</td><td class="no">No — built for apartment rent systems (Yardi/ClickPay), not POS</td><td class="mb">It's our check-in; works alongside Square</td><td class="yes">Yes — Square webhooks</td></tr>
+    <tr><td class="lab">Talks to SkateOS</td><td class="no">No</td><td class="yes">It is SkateOS</td><td class="yes">Yes — if it exposes check-in events</td></tr>
+    <tr><td class="lab">Built for</td><td class="no">Residential apartment buildings</td><td class="yes">Skate parks</td><td class="yes">Custom-fit to us</td></tr>
+    <tr><td class="lab">Ongoing cost</td><td class="no">Enterprise/per-building pricing (sized for 300-unit towers)</td><td class="mb">Included if the feature exists</td><td class="yes">One-time build, then $0 per-door</td></tr>
+    <tr><td class="lab">Verdict</td><td class="no">Wrong category</td><td class="mb">Cleanest if it supports access — check first</td><td class="yes">Most control, lowest long-run cost</td></tr>
+  </table>
+  <div class="flag"><b>On Carson:</b> it's apartment-building software (virtual doorman for residential towers). It <i>can</i> drive a Brivo door, but it does <b>not</b> integrate with Square, and it's priced and built for landlords — so it'd be an expensive middleman doing something we can do ourselves. If anyone there says it connects to Square, ask them to show it live before believing it.</div>
+</section>
+
+<section>
+  <h2>Recommendation</h2>
+  <div class="pick"><b>Build the connection on Brivo's own API</b> (with one check first). Because Brivo is open, the link is a small piece of software: <b>payment or check-in → unlock / issue a PIN / flip the member's access on or off.</b> No monthly per-door fee, and it's tailored exactly to how we run the park. <b>First check:</b> see whether SkateOS already offers a Brivo/access add-on — if it does, that's the no-build shortcut; if not, we build the small connector. Either way, <b>skip Carson.</b></div>
+  <div class="card">
+    <p style="margin:0 0 8px;font-weight:700;color:var(--blue-d)">Why it's worth doing</p>
+    <p style="margin:0">Automating entry lets the park run <b>early-morning and late-night sessions unstaffed</b> and trim front-desk hours — more hours open, less labor. For a park building back up, that's real margin from systems we already own.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Next steps</h2>
+  <div class="card">
+    <ul style="margin:0">
+      <li>Pull a <b>Brivo API key</b> for our account (Brivo issues it).</li>
+      <li>Confirm whether <b>SkateOS</b> has a door/access integration or exposes check-in events.</li>
+      <li>Start with the simplest win — <b>day-pass payment → time-limited door PIN</b> — then add automatic member access.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>HV Skate — internal planning notes.</footer>
+</div>
+</body>
+</html>
