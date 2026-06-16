@@ -132,6 +132,39 @@ calcA();calcB();
 </div></div>
 
 
+
+<h2>👷 Minimum revenue per employee</h2>
+<div class="card"><div class="body">
+<p>The honest version first, from your <b>filed 941 payroll forms</b> (real data): your W-2 crew was tiny in 2023–24 — <b>~$11,265 of W-2 wages across 3 quarters of 2023, ~$18,717 across 3 quarters of 2024, with 0–2 employees</b> on the IRS count dates. Back then the work was done by <b>you + subs/cash</b>, not formal employees. In 2025 you put the crew on the books and wages jumped to <b>$62,948</b>. So a real "employee count" only exists for 2025.</p>
+<div class="flag"><b>What I do NOT have, so I won't fake it:</b> your actual head-count of people doing the work (the 941's 0–2 is just W-2 snapshot dates, not your real crew including subs), and 2023/24 <i>revenue</i> (only 2025 is categorized). So I can't compute a true past revenue-per-employee. Enter your real crew size below and it gives you the benchmark from your 2025 cost structure.</div>
+<div class="grid">
+  <div class="ipanel"><div class="ihead">Inputs</div>
+    <label>Costs the business must cover / year ($) <span class="muted">— your 2025 recurring costs</span><input id="e_cost" type="number" value="230244"></label>
+    <label>A fair salary for YOU / year ($)<input id="e_owner" type="number" value="50000"></label>
+    <label class="hot">People generating revenue (you + crew)<input id="e_crew" type="number" value="3"></label>
+  </div>
+  <div class="ipanel"><div class="ihead">For comparison</div>
+    <label>2025 actual revenue ($) — real<input id="e_rev" type="number" value="255036"></label>
+  </div>
+</div>
+<div id="outE" class="out"></div>
+<div class="mtd" style="margin-top:8px">"Costs to cover" defaults to your 2025 recurring costs ($244,667 total expenses minus the one-time $14,423 NYS hit). Owner salary and crew size are yours to set — the crew number is the one I don't have, so it's the one that matters most.</div>
+</div></div>
+<script>
+function calcE(){
+  var cost=v('e_cost'),owner=v('e_owner'),crew=v('e_crew'),rev=v('e_rev');
+  var required=cost+owner; var minPer=crew>0?required/crew:0; var actualPer=crew>0?rev/crew:0;
+  var ok=actualPer>=minPer; var color=ok?'#15803d':'#b0413b';
+  document.getElementById('outE').innerHTML=
+    '<div class="orow"><span>Revenue the business needs (costs + your salary)</span><b>'+money(required)+'/yr</b></div>'+
+    '<div class="verdict" style="border-color:'+color+';color:'+color+'">Minimum each person must generate: <b>'+money(minPer)+' / year</b></div>'+
+    '<div class="orow"><span>Your 2025 actual, per person at this crew size</span><b>'+money(actualPer)+'/yr</b></div>'+
+    '<div class="mtd">'+(ok?'You\'re above the line — each person is generating enough to cover costs and pay you a real wage.':'You\'re <b>below</b> the line — at this crew size and owner salary, each person isn\'t yet generating enough. Either each guy bills more, the crew is too big for the revenue, or costs come down.')+'</div>';
+}
+['e_cost','e_owner','e_crew','e_rev'].forEach(function(id){document.getElementById(id).addEventListener('input',calcE);});
+calcE();
+</script>
+
 <h2>How to fix the cash flow</h2>
 <div class="card"><div class="body">
 <ul>
