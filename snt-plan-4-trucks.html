@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Step 4: The truck & equipment calculator</title><style>:root{--green:#2e7d32;--green-d:#10401a;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--blue:#1d6fd6;--red:#b0413b;--amber:#b9770f}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:42px 0 34px;text-align:center}
+.kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:8px}
+header h1{margin:0 auto;font-size:28px;font-weight:800;max-width:560px;line-height:1.18}
+header .tag{margin:13px auto 0;font-size:16px;opacity:.96;max-width:540px}
+.prog{display:flex;gap:5px;justify-content:center;margin-top:16px}.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35)}.dot.on{background:#fff}
+section{margin:24px 0}h2{color:var(--green-d);font-size:21px;margin:26px 0 8px}h3{font-size:17px;margin:0 0 4px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,20,.04)}
+.lead{font-size:17px}.muted{color:var(--muted);font-size:14px}p{margin:0 0 12px}ul{padding-left:20px}li{margin:7px 0}
+.real{color:#15803d;font-weight:700}.proj{color:var(--blue);font-weight:700}.bad{color:var(--red);font-weight:700}
+.flag{background:#fff8ec;border:1px solid #f0d9a8;border-left:4px solid var(--amber);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:14.5px}
+.win{background:#eaf6ef;border:1px solid #c6e7d2;border-left:4px solid #15803d;border-radius:10px;padding:14px 16px;margin:14px 0}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f2f5f2;font-size:15px}
+.bar{height:26px;border-radius:6px;background:var(--red);display:flex;align-items:center;color:#fff;font-size:13px;font-weight:700;padding-left:10px;margin:4px 0}
+.steps{counter-reset:s}.step{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px 16px 60px;margin:0 0 14px;box-shadow:0 1px 3px rgba(20,40,20,.04);display:block;text-decoration:none;color:inherit}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:16px;width:30px;height:30px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800}
+.step h3{color:var(--ink)}.step .do{font-size:14px;color:var(--muted);margin:2px 0 0}.step:hover{border-color:#9ccfa3}
+.nav{display:flex;justify-content:space-between;gap:10px;margin:26px 0 8px}
+.go{display:inline-block;background:var(--green);color:#fff;text-decoration:none;font-weight:800;font-size:15px;padding:11px 20px;border-radius:9px}.go:hover{background:var(--green-d)}
+.back{display:inline-block;background:#eef3ee;color:#3a4a40;text-decoration:none;font-weight:700;font-size:14px;padding:11px 16px;border-radius:9px}
+.ov{display:block;text-align:center;margin-top:12px}.ov a{color:var(--muted);font-size:13px;text-decoration:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0}@media(max-width:560px){.grid{grid-template-columns:1fr}}
+.ipanel{background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px}.ihead{font-weight:700;color:var(--green-d);margin-bottom:8px;font-size:14px}
+label{display:block;font-size:13px;color:#3a4a40;margin:8px 0}label.hot{color:var(--red);font-weight:700}input{width:100%;padding:7px 9px;border:1px solid #cfd9cf;border-radius:7px;font-size:15px;margin-top:3px;font-variant-numeric:tabular-nums}
+.orow{display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px solid #f2f5f2;font-size:15px}.verdict{border:2px solid;border-radius:10px;padding:11px 14px;margin:10px 0 4px;font-size:15.5px;font-weight:600}.mtd{font-size:13px;color:var(--muted);margin-top:4px}
+.opt{background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14.5px}.oh{font-weight:800;margin-bottom:6px}
+.dls{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}.dl{display:inline-block;background:#eef6ef;border:1px solid #c6e7d2;color:#15803d;text-decoration:none;border-radius:9px;padding:10px 14px;font-weight:600;font-size:14px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:24px 0 50px}</style></head><body>
+<header><div class="wrap"><div class="kicker">Step 4 of 8</div><h1>The truck & equipment calculator</h1><p class="tag"></p><div class="prog"><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div><div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></header>
+<div class="wrap"><h2 style="margin-top:24px">The truck & equipment calculator</h2><div class="flag"><b>Read first:</b> the starting numbers are <b>examples</b> (plus your 2025 fleet totals where labeled), NOT a per-truck breakdown — I don't have one. <b>Change every field to your real numbers</b> and the math updates live.</div>
+<div class="card"><h3>A. Keep the old truck vs. buy a newer one</h3><p class="muted">Do it once for the bucket truck, once for the pickup. (Your <b>total</b> 2025 fleet repairs were $54,272, truck payments $29,776 — split those across your vehicles.)</p>
+<div class="grid"><div class="ipanel"><div class="ihead">Keep the OLD one</div>
+<label>This truck's repairs / year ($)<input id="o_rep" type="number" value="20000"></label><label>Days in the shop / year<input id="o_down" type="number" value="20"></label><label>Revenue lost per down-day ($)<input id="o_rev" type="number" value="1500"></label><label>Current payment on it / year ($)<input id="o_pay" type="number" value="0"></label></div>
+<div class="ipanel"><div class="ihead">Buy a NEWER one</div>
+<label>Purchase price ($)<input id="n_price" type="number" value="90000"></label><label>Down payment ($)<input id="n_down" type="number" value="10000"></label><label>APR (%)<input id="n_apr" type="number" value="9" step="0.1"></label><label>Loan term (years)<input id="n_term" type="number" value="6"></label><label>Expected repairs / year ($)<input id="n_rep" type="number" value="3000"></label></div></div>
+<div id="outA" class="out"></div></div>
+<div class="card"><h3>B. Can you afford the loader?</h3><p class="muted">Add up every payment incl. the loader you're considering. See what share of revenue the iron eats — and how much revenue the loader alone needs just to pay for itself.</p>
+<div class="grid"><div class="ipanel"><div class="ihead">Yearly payments</div>
+<label>Bucket truck (F-750) / yr ($)<input id="f_bucket" type="number" value="14000"></label><label>Pickup (Ram) / yr ($)<input id="f_ram" type="number" value="12000"></label><label>Chipper / other equip / yr ($)<input id="f_other" type="number" value="0"></label><label class="hot">NEW loader payment / yr ($)<input id="f_loader" type="number" value="9000"></label></div>
+<div class="ipanel"><div class="ihead">The rest</div>
+<label>Fleet repairs &amp; maint / yr ($)<input id="f_rep" type="number" value="54272"></label><label>Annual revenue ($)<input id="f_revenue" type="number" value="255000"></label><label>Gross margin on a job (%)<input id="f_margin" type="number" value="40"></label></div></div>
+<div id="outB" class="out"></div></div><div class="nav"><a class="back" href="snt-plan-3-fleet.html">← Back</a><a class="go" href="snt-plan-5-employees.html">Next: Minimum revenue per employee →</a></div><div class="ov"><a href="snt-plan.html">⌂ All steps</a></div></div>
+<footer>Second Nature Tree — your honest plan 🌲 · private</footer><script>function money(n){return (n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString('en-US');}
+function v(id){var x=parseFloat(document.getElementById(id).value);return isNaN(x)?0:x;}
+function pmtYr(price,down,apr,term){var P=price-down,r=apr/100/12,n=term*12;if(n<=0)return 0;if(r===0)return P/term;return P*r/(1-Math.pow(1+r,-n))*12;}
+function calcA(){var keep=v('o_pay')+v('o_rep')+v('o_down')*v('o_rev');var buy=pmtYr(v('n_price'),v('n_down'),v('n_apr'),v('n_term'))+v('n_rep');var d=keep-buy;var c=d>0?'#15803d':'#b0413b';document.getElementById('outA').innerHTML='<div class="orow"><span>Keep old (payment + repairs + lost down-days)</span><b>'+money(keep)+'/yr</b></div><div class="orow"><span>Buy newer (loan payment + repairs)</span><b>'+money(buy)+'/yr</b></div><div class="verdict" style="border-color:'+c+';color:'+c+'">'+(d>0?'Buying newer saves about <b>'+money(d)+'/yr</b>.':'Keeping the old one is cheaper by <b>'+money(-d)+'/yr</b>.')+'</div>';}
+function calcB(){var pays=v('f_bucket')+v('f_ram')+v('f_other')+v('f_loader');var t=pays+v('f_rep');var rev=v('f_revenue');var pct=rev>0?t/rev*100:0;var m=v('f_margin')/100;var be=m>0?v('f_loader')/m:0;var c=pct>30?'#b0413b':(pct>22?'#b9770f':'#15803d');document.getElementById('outB').innerHTML='<div class="orow"><span>Total equipment payments (incl. loader)</span><b>'+money(pays)+'/yr</b></div><div class="orow"><span>+ repairs &amp; maintenance</span><b>'+money(v('f_rep'))+'/yr</b></div><div class="orow"><span>= Total the fleet costs you</span><b>'+money(t)+'/yr</b></div><div class="verdict" style="border-color:'+c+';color:'+c+'">The fleet eats <b>'+pct.toFixed(0)+'%</b> of revenue. '+(pct>30?'Danger zone — the loader makes it worse.':(pct>22?'Heavy. Be sure the loader earns its keep.':'Manageable.'))+'</div><div class="orow"><span>The loader alone needs this much NEW revenue to pay for itself</span><b>'+money(be)+'/yr</b></div>';}
+['o_rep','o_down','o_rev','o_pay','n_price','n_down','n_apr','n_term','n_rep'].forEach(function(i){document.getElementById(i).addEventListener('input',calcA);});
+['f_bucket','f_ram','f_other','f_loader','f_rep','f_revenue','f_margin'].forEach(function(i){document.getElementById(i).addEventListener('input',calcB);});calcA();calcB();</script></body></html>
