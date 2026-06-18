@@ -43,6 +43,11 @@ input[type=number]:focus{outline:none;border-color:var(--green);box-shadow:0 0 0
 .bar .fill{height:100%;border-radius:5px}
 .bar .be{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--blue)}
 .bar .mv{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 1px 2px rgba(20,40,20,.04)}
+.kpi .n{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green-d);line-height:1.1}
+.kpi .l{font-size:10.5px;color:var(--muted);margin-top:3px;letter-spacing:.2px}
+h2 .chev{margin-left:auto;color:#8a94a0;font-weight:400;font-size:14px}
 .zb{border:1px solid #cdd6ce;background:#fff;border-radius:7px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink)}.zb:hover{border-color:#9ccfa3}
 footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px}
 .legend{font-size:11.5px;color:var(--muted);margin:4px 0 10px}.dot{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin:0 3px 0 8px}
@@ -59,6 +64,18 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 </div></div>
 
 <div class="wrap">
+
+<div class="kpis">
+<div class="kpi"><div class="n">$257k</div><div class="l">2025 REVENUE</div></div>
+<div class="kpi"><div class="n">~5%</div><div class="l">NET MARGIN (~$12.5k)</div></div>
+<div class="kpi"><div class="n">$3,900</div><div class="l">AVG REVENUE / JOB</div></div>
+<div class="kpi"><div class="n">69</div><div class="l">TREE JOBS (18 mo)</div></div>
+<div class="kpi"><div class="n">155</div><div class="l">FIELD-DAYS WORKED 2025</div></div>
+<div class="kpi"><div class="n">~3.3</div><div class="l">FIELD-DAYS / WEEK</div></div>
+<div class="kpi"><div class="n">$16.5k</div><div class="l">REVENUE/MO TO SUSTAIN</div></div>
+<div class="kpi"><div class="n">$7,500</div><div class="l">WINTER NUT / MO</div></div>
+</div>
+<div class="faint" style="text-align:center;margin:-4px 0 8px">Tap any section heading to collapse it. Live figures below; inputs save to this browser.</div>
 
 <h2>🎯 What you need to bring in</h2>
 <div class="card">
@@ -91,7 +108,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 
 <h2>🗓️ Work tempo — field days per month (from the texts)</h2>
 <div class="card">
-<p class="muted">Reconstructed from your actual crew/office message history — <b>235 active field-work days</b> across 2025 → today (~3.3/week avg). This is what really happened on the ground; Jobber dates shift after the fact, so the texts are the true day-to-day. Full day-by-day log saved to <b>tree-daily-log.md</b>.</p>
+<p class="muted">Reconstructed from your actual crew/office message history — <b>235 active field-work days</b> across 2025 → today — <b>155 in 2025</b>, 80 in 2026 YTD (~3.3/week avg, out of ~250 possible workdays/yr). This is what really happened on the ground; Jobber dates shift after the fact, so the texts are the true day-to-day. Full day-by-day log saved to <b>tree-daily-log.md</b>.</p>
 <div class="bar"><span class="ml">Jan 25</span><div class="track"><div class="fill" style="width:57%;background:#1f7a43"></div></div><span class="mv">12d</span></div><div class="bar"><span class="ml">Feb 25</span><div class="track"><div class="fill" style="width:52%;background:#b9770f"></div></div><span class="mv">11d</span></div><div class="bar"><span class="ml">Mar 25</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Apr 25</span><div class="track"><div class="fill" style="width:100%;background:#1f7a43"></div></div><span class="mv">21d</span></div><div class="bar"><span class="ml">May 25</span><div class="track"><div class="fill" style="width:90%;background:#1f7a43"></div></div><span class="mv">19d</span></div><div class="bar"><span class="ml">Jun 25</span><div class="track"><div class="fill" style="width:57%;background:#1f7a43"></div></div><span class="mv">12d</span></div><div class="bar"><span class="ml">Jul 25</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Aug 25</span><div class="track"><div class="fill" style="width:62%;background:#1f7a43"></div></div><span class="mv">13d</span></div><div class="bar"><span class="ml">Sep 25</span><div class="track"><div class="fill" style="width:33%;background:#c0392b"></div></div><span class="mv">7d</span></div><div class="bar"><span class="ml">Oct 25</span><div class="track"><div class="fill" style="width:52%;background:#b9770f"></div></div><span class="mv">11d</span></div><div class="bar"><span class="ml">Nov 25</span><div class="track"><div class="fill" style="width:95%;background:#1f7a43"></div></div><span class="mv">20d</span></div><div class="bar"><span class="ml">Dec 25</span><div class="track"><div class="fill" style="width:52%;background:#b9770f"></div></div><span class="mv">11d</span></div><div class="bar"><span class="ml">Jan 26</span><div class="track"><div class="fill" style="width:67%;background:#1f7a43"></div></div><span class="mv">14d</span></div><div class="bar"><span class="ml">Feb 26</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Mar 26</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Apr 26</span><div class="track"><div class="fill" style="width:100%;background:#1f7a43"></div></div><span class="mv">21d</span></div><div class="bar"><span class="ml">May 26</span><div class="track"><div class="fill" style="width:90%;background:#1f7a43"></div></div><span class="mv">19d</span></div><div class="bar"><span class="ml">Jun 26</span><div class="track"><div class="fill" style="width:38%;background:#b9770f"></div></div><span class="mv">8d</span></div>
 <div class="note info"><b>Patterns from the log:</b> peaks <b>Apr–May &amp; November</b> (5–7 field days/wk, busiest week Apr 21 '25 = 7 days); slumps <b>late-Jun–Jul &amp; deep winter</b> (down to 1 day/wk). <b>Snow/storm = ~22% of work-days</b> (Jan–Feb) — a real second line. Crane gets <i>talked about</i> a lot in the texts but is rarely actually used — it's rented (Osorio) only for the occasional big removal, so ignore raw "crane" mention counts. Tight geography — Peekskill, Cortlandt, Croton — plus a <b>Connecticut cluster</b> (the CT jobs from your tax notes). <span class="faint">It's a text-signal heuristic, so 235 is a floor (phone/in-person work undercounts), not a timesheet — it'll firm up once Jobber's the system of record.</span></div>
 </div>
@@ -292,5 +309,14 @@ renderRange(0,HIST.length);
 const RMAP={all:[0,HIST.length],'2025':[0,11],'2026':[11,HIST.length]};
 document.querySelectorAll('#zoom .zb').forEach(b=>b.addEventListener('click',()=>{const r=RMAP[b.dataset.r];renderRange(r[0],r[1]);document.querySelectorAll('#zoom .zb').forEach(x=>x.style.background='#fff');b.style.background='#eaf6ee';}));
 })();
+
+document.querySelectorAll('.wrap h2').forEach(function(h){
+  var c=document.createElement('span'); c.className='chev'; c.textContent='\u25be'; h.appendChild(c); h.style.cursor='pointer';
+  h.addEventListener('click',function(){
+    var collapse=c.textContent==='\u25be', el=h.nextElementSibling;
+    while(el && el.tagName!=='H2'){ el.style.display=collapse?'none':''; el=el.nextElementSibling; }
+    c.textContent=collapse?'\u25b8':'\u25be';
+  });
+});
 </script>
 </body></html>
