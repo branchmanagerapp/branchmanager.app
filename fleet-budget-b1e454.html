@@ -22,7 +22,12 @@ p{margin:0 0 10px}
 .r.big{padding:11px 0}.r.big .v{font-size:18px}
 .r.tot{border-top:2px solid var(--line);border-bottom:none;margin-top:2px;font-weight:800}
 .sub{font-size:12px;color:var(--faint);font-weight:400;display:block;margin-top:1px}
-.ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}.blue{color:var(--blue)}
+.ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}.blue{color:var(--blue)}.good{color:var(--green-d,#1f7a43)}
+table.cmp{width:100%;border-collapse:collapse;margin:6px 0;font-size:12.5px}
+table.cmp th,table.cmp td{padding:7px 9px;text-align:left;border-bottom:1px solid #ececec;vertical-align:top}
+table.cmp th{font-weight:700;color:#555;background:#fafafa;border-bottom:2px solid #e2e2e2}
+table.cmp td:first-child{color:#666;width:30%}
+table.cmp td.good{font-weight:600}table.cmp td.bad{font-weight:600}
 .note{border-radius:10px;padding:10px 13px;font-size:12.5px;margin-top:10px}
 .note.warn{background:#fff8ec;border:1px solid #f0d9a8;color:#7a5512}
 .note.info{background:#eef4fb;border:1px solid #cfe0f5;color:#2b4a6f}
@@ -103,12 +108,34 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 <p class="muted">Most accurate signal = actual <b>payments to HBA</b> (the mechanic) + total vehicle-repair $. The mechanic works by phone (only 8 texts ever), so the money is the record. Vehicle-repair $ per month, Jan '25 → today:</p>
 <div id="breakdowns"></div>
 <p class="faint" style="margin-top:8px"><b>HBA charge dates (CC):</b> a major overhaul <b>Dec '24–Jan '25 (~$20k)</b>, then 2/18 $897 · 7/28 $6 · 8/15 $575 · 8/21 $702 · 12/5/25 $1,953 · 1/13/26 $1,059 · 6/17/26 $223.</p>
-<p class="muted" style="margin-top:12px;font-weight:700;color:var(--green-d)">Crew in-house fixes — repair time the crew eats themselves (text mentions / mo):</p>
+<p class="muted" style="margin-top:12px;font-weight:700;color:var(--green-d)">Field days the crew LOST to fixing equipment themselves (read from 13,680 work texts, per month):</p>
 <div id="crewfix"></div>
-<div class="note info"><b>The real picture — and it reframes your theory.</b> The dominant repair was a <b>~$16k HBA overhaul in January '25</b> (on top of $3.8k in Dec '24). But it happened in the <b>dead of winter</b>, so it cost almost no peak-season workdays. Other months are modest ($430–$2,600) and rise with use (Jun–Aug). So breakdowns <b>don't drive your non-workdays</b> — season does, and the big repair was (smartly) done in the slow season. <b>Where breakdowns DO hurt is the margin:</b> ~<b>$31,844 of vehicle repair in 2025</b> (HBA the biggest vendor, ~$21k) against a business that netted ~$12.5k. The fleet is old (2004 F-550, 2011 F-750) and repair cost is quietly eating more profit than any crew or attendance issue — that's the real lever.</div>
+<div class="note info"><b>The real picture — and it half-confirms your theory.</b> Reading every work text (Jan&nbsp;\'25\u2192today), the crew lost <b>~16 field days</b> to fixing equipment <i>themselves</i> instead of cutting \u2014 <b>14 of them in 2025</b>, and <b>5 in October \'25 alone</b> (the chipper + Giant-loader radiator/cooling saga). The chipper and loader are what actually <b>grounded the crew</b>; truck problems are more frequent but usually get sent out. So breakdowns <i>do</i> cost workdays \u2014 just fewer than the season does, and mostly through <b>self-repair</b>, not the breakdown itself. The big <b>~$16k January HBA overhaul</b> cost almost no peak-season days (done in the dead of winter \u2014 smart). Two costs are stacking up: <b>~$31,844 of vehicle repair in 2025</b> (HBA the biggest vendor, ~$21k) <i>plus</i> the lost revenue from those self-repair days \u2014 against a business that netted ~$12.5k. See the next section for what DIY actually cost vs. paying the shop.</div>
 </div>
 
-<h2>🧾 Monthly expenses<h2>🧾 Monthly expenses — average per month</h2>
+<h2>\U0001F4B8 DIY repairs vs. paying HBA \u2014 the true cost</h2>
+<div class="card">
+<p class="muted">The instinct is "fixing it ourselves is free." It isn't. When a truck or the chipper goes down <b>in season</b> and the crew spends the day fixing it, you still pay their wages <b>and</b> you lose that day\'s revenue. Paying a shop costs a labor bill \u2014 but the crew keeps cutting and earning. Here\'s the honest math.</p>
+
+<div id="diydays" style="margin:6px 0 14px"></div>
+
+<table class="cmp">
+<tr><th>&nbsp;</th><th>Fix it ourselves (DIY)</th><th>Pay HBA / a shop</th></tr>
+<tr><td>Crew wages that day</td><td>Paid anyway (redirected to wrench)</td><td>Paid anyway (crew still cutting)</td></tr>
+<tr><td>Parts</td><td>Same</td><td>Same</td></tr>
+<tr><td>Shop labor bill</td><td class="good">$0 saved</td><td class="bad">~$300\u2013$1,000 / repair</td></tr>
+<tr><td>Field-day revenue</td><td class="bad">LOST (~$1,660 / day)</td><td class="good">Kept</td></tr>
+<tr><td><b>Net hit per in-season down-day</b></td><td class="bad"><b>\u2212~$1,660 revenue</b></td><td class="good"><b>\u2212~$300\u2013$1,000 labor</b></td></tr>
+</table>
+
+<div class="note warn"><b>Bottom line (estimate, clearly flagged):</b> The 16 self-repair days cost roughly <b>16 \u00d7 ~$1,660 \u2248 ~$26,600 in lost revenue</b> over 18 months (~$23k of it in 2025). Even crediting DIY with the shop labor it saved (~$600/repair \u00d7 16 \u2248 ~$9,600), the net drag is on the order of <b>~$15\u2013$17k</b> \u2014 <i>if</i> a shop could have turned those jobs same-day. <b>The math says: for an in-season breakdown, pay the shop and keep the crew cutting.</b></div>
+
+<div class="note info"><b>The honest counter-argument.</b> DIY is genuinely <b>free when it costs no field day</b> \u2014 evenings, weekends, and the winter slow season (which is exactly when the smart $16k January overhaul happened). And a shop can\'t always fit you in same-day, so some of those lost days would\'ve been lost regardless. The rule of thumb that actually holds: <b>off-season &amp; after-hours \u2192 DIY; peak-season grounding \u2192 outsource fast.</b> October \'25 (5 lost days on the loader) is the case study for what <i>not</i> to do.</div>
+
+<p class="faint" style="margin-top:8px"><b>How these numbers were built:</b> Lost-day count = manual read of 44 in-house repair days flagged across 13,680 work texts (conservative floor \u2014 a repair could be a half-day, and untexted down-days aren\'t counted). Revenue/field-day \u2248 $257,507 2025 revenue \u00f7 ~155 field days \u2248 <b>$1,661</b>. Shop labor/repair is a rough range from HBA\'s actual bills ($223\u2013$1,953 each, parts included). Treat the dollar totals as <b>order-of-magnitude</b>, not exact.</p>
+</div>
+
+<h2>🧾 Monthly expenses — average per month</h2>
 <div class="card">
 <p class="muted">Averaged from the full 2025 books, accountant-style. Bucket truck split from the Ram; one line each.</p>
 <div class="r"><span>Payroll &amp; wages — crew</span><b class="v">$5,246</b></div>
@@ -206,10 +233,10 @@ RB.forEach(function(r){var v=r[1],w=Math.max(v>0?2:0,Math.round(v/mx*100)),col=v
 h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><span class="mv">'+lab+'</span></div>';});
 var e=document.getElementById('breakdowns');if(e)e.innerHTML=h;})();
 (function(){
-const CF=[['Jan 25',30],['Feb 25',5],['Mar 25',10],['Apr 25',12],['May 25',5],['Jun 25',23],['Jul 25',10],['Aug 25',3],['Sep 25',11],['Oct 25',14],['Nov 25',20],['Dec 25',8],['Jan 26',0],['Feb 26',11],['Mar 26',11],['Apr 26',4],['May 26',1],['Jun 26',7]];
-const mx=30;let h='';
-CF.forEach(function(r){var v=r[1],w=Math.max(v>0?2:0,Math.round(v/mx*100)),col=v>=18?'#b9770f':v>=8?'#6d8f5a':'#9ccfa3';
-h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><span class="mv">'+(v||'–')+'</span></div>';});
+const CF=[['Jan 25',1],['Feb 25',2],['Mar 25',1],['Apr 25',0],['May 25',0],['Jun 25',2],['Jul 25',1],['Aug 25',1],['Sep 25',1],['Oct 25',5],['Nov 25',0],['Dec 25',0],['Jan 26',0],['Feb 26',1],['Mar 26',1],['Apr 26',0],['May 26',0],['Jun 26',0]];
+const mx=5;let h='';
+CF.forEach(function(r){var v=r[1],w=Math.max(v>0?3:0,Math.round(v/mx*100)),col=v>=4?'#c0392b':v>=2?'#b9770f':v>=1?'#6d8f5a':'#ddd';
+h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><span class="mv">'+(v?v+'d':'–')+'</span></div>';});
 var e=document.getElementById('crewfix');if(e)e.innerHTML=h;})();
 document.querySelectorAll('.wrap h2').forEach(function(h){
   var c=document.createElement('span'); c.className='chev'; c.textContent='▾'; h.appendChild(c);
