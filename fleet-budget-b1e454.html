@@ -68,18 +68,19 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <div class="result" id="result"><div class="big" id="r_big"></div><div id="r_verdict" style="font-size:15px"></div></div>
 </div>
 
-<h2>🛻 Dump insert on the Ram 2500</h2>
+<h2>🛻 Ram 2500 upgrades — dump insert + air intake</h2>
 <div class="card">
-<p>An <b>8ft dump insert (~$9k)</b> makes the Ram a light dump truck — haul &amp; dump debris, firewood, soil — alongside towing the Intrepid trailer. The Ram now does two jobs, so it's a <b>keeper</b>. Small cost; mostly one-time.</p>
+<p>An <b>8ft dump insert (~$9k)</b> makes the Ram a light dump truck — haul &amp; dump debris, firewood, soil — alongside towing the Intrepid trailer. Plus the <b>air intake (~$2k)</b> — worth doing now that the Ram is a confirmed keeper. The Ram does two jobs, so these are easy yeses. Small cost; mostly one-time.</p>
 <div class="grid">
 <div class="ip"><div class="h">Cost</div>
 <label>8ft dump insert, installed ($)<input type="number" id="dumpcost" value="9000"></label>
+<label>Air intake ($)<input type="number" id="intakecost" value="2000"></label>
 <label style="margin-top:8px"><input type="checkbox" id="dumpfin"> Finance it (else paid cash, one-time)</label>
 </div>
 <div class="ip"><div class="h">Monthly impact</div>
 <div class="row"><span>Added to monthly (if financed)</span><b class="num" id="r_dump"></b></div>
 <div class="row"><span>Or one-time cash</span><b class="num" id="r_dumponce"></b></div>
-<div class="subtle" style="margin-top:6px">Cash keeps your monthly clean; financing adds ~$191/mo.</div>
+<div class="subtle" style="margin-top:6px">Cash keeps your monthly clean; financing both (~$11k) adds ~$234/mo.</div>
 </div>
 </div>
 </div>
@@ -113,15 +114,15 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0, m=v=>(v<0?'–$':'$')+Math.abs(Math.round(v)).toLocaleString('en-US');
 const LS='bm-operating';const INTREPID=1000, RAM_SHED=1205;
 function pmt5(P){const i=10/1200,N=60;return P<=0?0:P*i/(1-Math.pow(1+i,-N));}
-function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value,dumpcost:$('dumpcost').value,dumpfin:$('dumpfin').checked}));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep','dumpcost'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;if(s.dumpfin)$('dumpfin').checked=true;}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value,dumpcost:$('dumpcost').value,intakecost:$('intakecost').value,dumpfin:$('dumpfin').checked}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep','dumpcost','intakecost'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;if(s.dumpfin)$('dumpfin').checked=true;}catch(e){}}
 function calc(){
   const net=n('net'),draw=n('draw'),earn=n('earn'),dr=n('dayrate')||400;
   const base=net-draw;
-  const dumpcost=n('dumpcost'),dumpfin=$('dumpfin').checked,dumpMo=dumpfin?pmt5(dumpcost):0,need=INTREPID+dumpMo;
+  const dumpcost=n('dumpcost'),intakecost=n('intakecost'),upg=dumpcost+intakecost,dumpfin=$('dumpfin').checked,dumpMo=dumpfin?pmt5(upg):0,need=INTREPID+dumpMo;
   $('m_net').textContent=m(net);$('m_draw').textContent='– '+m(draw);$('m_free').textContent=m(base);$('m_free').className='num '+(base>=0?'ok':'bad');
   const total=base-need+earn;
-  $('r_base').textContent=m(base);$('r_earn').textContent='+'+m(earn);$('r_dump').textContent=dumpfin?('– '+m(dumpMo)):'$0';$('r_dumponce').textContent=dumpfin?'(financed)':(m(dumpcost)+' once');
+  $('r_base').textContent=m(base);$('r_earn').textContent='+'+m(earn);$('r_dump').textContent=dumpfin?('– '+m(dumpMo)):'$0';$('r_dumponce').textContent=dumpfin?'(financed)':(m(upg)+' once');
   $('r_total').textContent=m(total)+'/mo';$('r_total').className='num '+(total>=300?'ok':total>=0?'warn':'bad');
   $('r_big').textContent=m(total)+'/mo';$('r_big').className='big '+(total>=300?'ok':total>=0?'warn':'bad');
   // break-even
@@ -141,7 +142,7 @@ function calc(){
   const ramTotal=$('sellRam').checked?(total+RAM_SHED-tow):total;
   $('r_ramsold').textContent=m(ramTotal)+'/mo';$('r_ramsold').className='num '+(ramTotal>=300?'ok':ramTotal>=0?'warn':'bad');
   // bottom
-  $('bottom').innerHTML='Operating as you are + the Intrepid (and the dump insert) starts at <b class="bad">'+m(base-need)+'/mo</b> before the machine earns. Since it’s mandatory, the real job is <b>utilization</b>: it needs to bill or save about <b>'+m(even)+'/mo (~'+(even/dr).toFixed(1)+' machine-days)</b> just to break even, and ~'+m(healthy)+'/mo for a real cushion. That’s very reachable for a loader you can’t operate without. If a slow stretch makes it tight, the Ram is your relief valve — selling or downsizing it frees ~'+m(RAM_SHED)+'/mo. Watch the cash buffer month to month; this works as long as the Intrepid stays busy.';
+  $('bottom').innerHTML='Operating as you are + the Intrepid (plus the dump insert + air intake) starts at <b class="bad">'+m(base-need)+'/mo</b> before the machine earns. Since it’s mandatory, the real job is <b>utilization</b>: it needs to bill or save about <b>'+m(even)+'/mo (~'+(even/dr).toFixed(1)+' machine-days)</b> just to break even, and ~'+m(healthy)+'/mo for a real cushion. That’s very reachable for a loader you can’t operate without. If a slow stretch makes it tight, the Ram is your relief valve — selling or downsizing it frees ~'+m(RAM_SHED)+'/mo. Watch the cash buffer month to month; this works as long as the Intrepid stays busy.';
   save();
 }
 document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));
