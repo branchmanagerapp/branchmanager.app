@@ -79,9 +79,9 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 
 <h2>👷 Crew &amp; office — on / off over time</h2>
 <div class="card">
-<p class="muted">When Catherine (office) and Ryan (crew lead) were active each month — email &amp; text volume as a presence proxy, laid over the same Feb '25 → Jun '26 timeline as the revenue above.</p>
+<p class="muted">Monthly activity for Catherine (office) and Ryan (crew lead) as overlaid lines, Feb '25 → Jun '26 — each scaled to its own peak (% of busiest month) so you can compare the shape against the revenue above.</p>
 <div id="presence"></div>
-<div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>heavy<span class="dot" style="background:#6db38a"></span>steady<span class="dot" style="background:#cfe0d4"></span>light<span class="dot" style="background:#e2e2e2"></span>quiet</div>
+<div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>Catherine (office)<span class="dot" style="background:#1d6fd6"></span>Ryan (crew)<span style="border-left:2px dashed #b9770f;margin-left:10px;padding-left:5px">March (seasonal low)</span></div>
 <div class="note info">Both track the <b>season</b>, not time off — heaviest spring–fall, lightest every <b>March</b> (matching the revenue troughs above). No documented vacation/leave for either. <span class="faint">Ryan: 22.8k texts across 2 numbers; Catherine: continuous on payroll.</span></div>
 </div>
 
@@ -238,14 +238,19 @@ const HIST=[['Feb 25',9554,7078,1,3],['Mar 25',6858,10332,0,1],['Apr 25',23209,7
 HIST.forEach(([l,v,c])=>{const rp=Math.round(v/max*100),cp=(c/max*100).toFixed(1),net=v-c,col=net>=0?'#1f7a43':'#c0392b';
 h+='<div class="bar"><span class="ml">'+l+'</span><div class="track"><div class="fill" style="width:'+rp+'%;background:'+col+'"></div><div class="be" style="left:'+cp+'%;background:#16201a;width:3px"></div></div><span class="mv" style="color:'+col+'">'+(net>=0?'+':'\u2013')+'$'+Math.abs(Math.round(net/1000))+'k</span></div>';});
 const el=$('chart');if(el)el.innerHTML=h;
-// presence timeline
-const MN=['F','M','A','M','J','J','A','S','O','N','D','J','F','M','A','M','J'];
-const ac=['#e2e2e2','#cfe0d4','#6db38a','#1f7a43'];
-const PPL=[['Catherine',[1,0,2,1,3,2,3,3,3,3,2,1,2,1,1,2,2]],['Ryan',[2,1,3,3,3,2,2,2,3,3,2,1,2,2,3,2,2]]];
-let p='<div style="display:grid;grid-template-columns:66px repeat(17,1fr);gap:3px;align-items:center">';
-p+='<div style="font-size:10px;color:#8a94a0">2025 \u2192 2026</div>'+MN.map(mm=>'<div style="font-size:9px;color:#8a94a0;text-align:center">'+mm+'</div>').join('');
-PPL.forEach(([nm,arr])=>{p+='<div style="font-size:12.5px;font-weight:700;color:#0d3a20">'+nm+'</div>'+arr.map(x=>'<div title="'+nm+'" style="height:17px;border-radius:3px;background:'+ac[x]+'"></div>').join('');});
-p+='</div>';
-const pe=$('presence');if(pe)pe.innerHTML=p;})();
+// presence line graph (overlaid lines, % of each person's own peak)
+const MO=['F','M','A','M','J','J','A','S','O','N','D','J','F','M','A','M','J'];
+const CATH=[33,0,67,33,100,67,100,100,100,100,67,33,67,33,33,67,67];
+const RYAN=[63,32,76,73,74,61,52,55,87,100,58,38,55,47,67,65,45];
+const W=720,Hh=200,pL=28,pR=10,pT=12,pB=26,nn=MO.length,iw=W-pL-pR,ih=Hh-pT-pB;
+const X=i=>pL+i/(nn-1)*iw, Y=v=>pT+(100-v)/100*ih;
+const line=(arr,col)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.3" fill="'+col+'"/>').join('');
+let g='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto">';
+[0,50,100].forEach(v=>{g+='<line x1="'+pL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pR)+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1ee"/><text x="2" y="'+(Y(v)+3).toFixed(1)+'" font-size="8" fill="#b6bcc2">'+v+'</text>';});
+[1,13].forEach(mi=>{g+='<line x1="'+X(mi).toFixed(1)+'" y1="'+pT+'" x2="'+X(mi).toFixed(1)+'" y2="'+(Hh-pB)+'" stroke="#e9c98a" stroke-dasharray="3,3"/>';});
+g+=line(CATH,'#1f7a43')+line(RYAN,'#1d6fd6');
+MO.forEach((m,i)=>{g+='<text x="'+X(i).toFixed(1)+'" y="'+(Hh-9)+'" font-size="9" fill="#8a94a0" text-anchor="middle">'+m+'</text>';});
+g+='</svg>';
+const pe=$('presence');if(pe)pe.innerHTML=g;})();
 </script>
 </body></html>
