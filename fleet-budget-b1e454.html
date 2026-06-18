@@ -43,6 +43,7 @@ input[type=number]:focus{outline:none;border-color:var(--green);box-shadow:0 0 0
 .bar .fill{height:100%;border-radius:5px}
 .bar .be{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--blue)}
 .bar .mv{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.zb{border:1px solid #cdd6ce;background:#fff;border-radius:7px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink)}.zb:hover{border-color:#9ccfa3}
 footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px}
 .legend{font-size:11.5px;color:var(--muted);margin:4px 0 10px}.dot{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin:0 3px 0 8px}
 </style></head><body>
@@ -71,7 +72,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 
 <h2>📊 Revenue vs. true cost — every month</h2>
 <div class="card">
-<div class="legend">Bars = monthly revenue (<span class="dot" style="background:#1f7a43"></span>profit / <span class="dot" style="background:#c0392b"></span>loss month) · dark tick = that month's actual cost · right label = net.</div>
+<div class="legend">Bars = revenue (<span class="dot" style="background:#1f7a43"></span>profit/<span class="dot" style="background:#c0392b"></span>loss) · <b style="color:#16201a">▍</b>dark tick = that month's cost · <b style="color:#1d6fd6">▍</b>blue = average cost line · right label = net.</div><div id="zoom" style="display:flex;gap:6px;margin:0 0 10px"><span class="faint" style="align-self:center;margin-right:4px">Zoom:</span><button class="zb" data-r="all">All</button><button class="zb" data-r="2025">2025</button><button class="zb" data-r="2026">2026</button><span class="faint" style="align-self:center">(both charts)</span></div>
 <div id="chart"></div>
 <div class="r tot" style="margin-top:8px"><span>2025 full year</span><b class="v">$257k rev · ~$245k cost · <span class="bad">~$12.5k net (5%)</span></b></div>
 <div class="note warn"><b>The real story:</b> you gross $250k+ but keep ~5%. Costs swing hard month-to-month (watch the ticks) — <b>Aug &amp; Dec '25, Feb–Mar '26 ran at a loss</b>; spring/early-summer carry the year. Revenue isn't the problem — the thin margin is.</div>
@@ -79,9 +80,9 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 
 <h2>👷 Crew &amp; office — on / off over time</h2>
 <div class="card">
-<p class="muted">Real monthly text volume for <b>Catherine Conway</b> (office, 978) and <b>Ryan Knapp</b> (crew, 845), Feb '25 → Jun '26 — each scaled to its own busiest month so the shapes compare. Pulled straight from Messages.</p>
+<p class="muted"><b>Catherine Conway</b> (office, 978) and <b>Ryan Knapp</b> (crew, 845) text activity overlaid with <b>revenue</b> — so you can see whether the key people being heavy/light moves the money. Each line scaled to its own peak; Feb '25 → Jun '26 (use the Zoom above).</p>
 <div id="presence"></div>
-<div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>Catherine (office)<span class="dot" style="background:#1d6fd6"></span>Ryan (crew)<span style="border-left:2px dashed #b9770f;margin-left:10px;padding-left:5px">March (seasonal low)</span></div>
+<div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>Catherine<span class="dot" style="background:#1d6fd6"></span>Ryan<span style="border-bottom:2px dashed #c9a227;display:inline-block;width:14px;margin:0 4px 3px 10px"></span>Revenue</div>
 <div class="note info">From the actual thread, Catherine isn't "office" — she stages trucks &amp; chipper, fuels the rigs, cleans/stows saws, clocks the crew, AND runs every estimate. She takes only <b>scattered single days</b> (lacrosse, a doctor day, a late-March CT speaking trip, late-summer travel) — never weeks — so no single absence tanked revenue; the March dip is seasonal. <span class="faint">Catherine: 20.6k texts (978 + cat.conway@gmail.com); Ryan Knapp: 845.</span></div>
 </div>
 
@@ -244,23 +245,33 @@ function calc(){
 document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));
 load();calc();
 const HIST=[['Feb 25',9554,7078,1,3],['Mar 25',6858,10332,0,1],['Apr 25',23209,7754,2,3],['May 25',32207,14960,1,3],['Jun 25',30686,23396,3,3],['Jul 25',27993,19661,2,2],['Aug 25',4358,21424,3,2],['Sep 25',45464,31441,3,2],['Oct 25',18934,13843,3,3],['Nov 25',35507,33855,3,3],['Dec 25',14042,29210,2,3],['Jan 26',9804,7615,1,2],['Feb 26',8304,13235,2,3],['Mar 26',1728,15807,1,2],['Apr 26',33913,8534,1,3],['May 26',16993,17033,2,3],['Jun 26',34544,22816,2,2]];
-(function(){const max=46000;let h='';
-HIST.forEach(([l,v,c])=>{const rp=Math.round(v/max*100),cp=(c/max*100).toFixed(1),net=v-c,col=net>=0?'#1f7a43':'#c0392b';
-h+='<div class="bar"><span class="ml">'+l+'</span><div class="track"><div class="fill" style="width:'+rp+'%;background:'+col+'"></div><div class="be" style="left:'+cp+'%;background:#16201a;width:3px"></div></div><span class="mv" style="color:'+col+'">'+(net>=0?'+':'\u2013')+'$'+Math.abs(Math.round(net/1000))+'k</span></div>';});
-const el=$('chart');if(el)el.innerHTML=h;
-// presence line graph (overlaid lines, % of each person's own peak)
-const MO=['F','M','A','M','J','J','A','S','O','N','D','J','F','M','A','M','J'];
+(function(){
 const CATH=[65,26,70,64,78,49,39,52,79,100,57,39,58,35,69,64,50];
 const RYAN=[41,50,79,89,39,98,92,56,100,75,47,28,28,86,44,53,17];
-const W=720,Hh=200,pL=28,pR=10,pT=12,pB=26,nn=MO.length,iw=W-pL-pR,ih=Hh-pT-pB;
-const X=i=>pL+i/(nn-1)*iw, Y=v=>pT+(100-v)/100*ih;
-const line=(arr,col)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.3" fill="'+col+'"/>').join('');
-let g='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto">';
-[0,50,100].forEach(v=>{g+='<line x1="'+pL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pR)+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1ee"/><text x="2" y="'+(Y(v)+3).toFixed(1)+'" font-size="8" fill="#b6bcc2">'+v+'</text>';});
-[1,13].forEach(mi=>{g+='<line x1="'+X(mi).toFixed(1)+'" y1="'+pT+'" x2="'+X(mi).toFixed(1)+'" y2="'+(Hh-pB)+'" stroke="#e9c98a" stroke-dasharray="3,3"/>';});
-g+=line(CATH,'#1f7a43')+line(RYAN,'#1d6fd6');
-MO.forEach((m,i)=>{g+='<text x="'+X(i).toFixed(1)+'" y="'+(Hh-9)+'" font-size="9" fill="#8a94a0" text-anchor="middle">'+m+'</text>';});
-g+='</svg>';
-const pe=$('presence');if(pe)pe.innerHTML=g;})();
+function renderRange(s,e){
+  const rows=HIST.slice(s,e),max=46000;
+  const avg=rows.reduce((a,r)=>a+r[2],0)/rows.length,bx=(avg/max*100).toFixed(1);
+  let h='';
+  rows.forEach(([l,v,c])=>{const rp=Math.round(v/max*100),cp=(c/max*100).toFixed(1),net=v-c,col=net>=0?'#1f7a43':'#c0392b';
+    h+='<div class="bar"><span class="ml">'+l+'</span><div class="track"><div class="fill" style="width:'+rp+'%;background:'+col+'"></div><div class="be" style="left:'+bx+'%;background:#1d6fd6;width:2px;opacity:.65"></div><div class="be" style="left:'+cp+'%;background:#16201a;width:3px"></div></div><span class="mv" style="color:'+col+'">'+(net>=0?'+':'\u2013')+'$'+Math.abs(Math.round(net/1000))+'k</span></div>';});
+  var ce=document.getElementById('chart'); if(ce) ce.innerHTML=h;
+  // line chart: Catherine, Ryan, Revenue
+  const cath=CATH.slice(s,e),ryan=RYAN.slice(s,e),rev=rows.map(r=>r[1]),rmax=Math.max.apply(null,rev)||1,revP=rev.map(v=>v/rmax*100);
+  const labels=rows.map(r=>r[0].split(' ')[0].substr(0,1));
+  const W=720,Hh=200,pL=26,pR=10,pT=12,pB=26,nn=rows.length,iw=W-pL-pR,ih=Hh-pT-pB;
+  const X=i=>nn<2?pL+iw/2:pL+i/(nn-1)*iw,Y=v=>pT+(100-v)/100*ih;
+  const line=(arr,col,d)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.4"'+(d?' stroke-dasharray="5,3"':'')+' points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.2" fill="'+col+'"/>').join('');
+  let g='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto">';
+  [0,50,100].forEach(v=>{g+='<line x1="'+pL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pR)+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1ee"/>';});
+  g+='<polyline fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="5,3" opacity="0.85" points="'+revP.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>';
+  g+=line(cath,'#1f7a43')+line(ryan,'#1d6fd6');
+  labels.forEach((m,i)=>{g+='<text x="'+X(i).toFixed(1)+'" y="'+(Hh-9)+'" font-size="9" fill="#8a94a0" text-anchor="middle">'+m+'</text>';});
+  g+='</svg>';
+  var pe=document.getElementById('presence'); if(pe) pe.innerHTML=g;
+}
+renderRange(0,HIST.length);
+const RMAP={all:[0,HIST.length],'2025':[0,11],'2026':[11,HIST.length]};
+document.querySelectorAll('#zoom .zb').forEach(b=>b.addEventListener('click',()=>{const r=RMAP[b.dataset.r];renderRange(r[0],r[1]);document.querySelectorAll('#zoom .zb').forEach(x=>x.style.background='#fff');b.style.background='#eaf6ee';}));
+})();
 </script>
 </body></html>
