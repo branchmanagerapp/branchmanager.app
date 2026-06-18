@@ -1000,10 +1000,20 @@ var JobsPage = {
       notes: document.getElementById('j-notes').value.trim()
     };
 
-    // Optimistic — toast first, write locally, one navigation, Supabase sync in bg
+    // Audit fix (Jun 2026): used to toast "created ✓" BEFORE writing and never
+    // checked the result — a quota-exceeded write was swallowed and the job was
+    // lost while the UI claimed success. Now we write first, confirm it
+    // committed (update returns the row / DB._lastWriteOk catches quota loss),
+    // and only then toast + navigate. On failure we keep the form so nothing
+    // typed is lost.
+    var saved = jobId ? DB.jobs.update(jobId, data) : DB.jobs.create(data);
+    var ok = (jobId ? !!saved : !!(saved && saved.id))
+      && (!DB._lastWriteOk || DB._lastWriteOk());
+    if (!ok) {
+      UI.toast('⚠ Could not save the job — storage may be full (clear old data in Settings) or the job was removed elsewhere. Nothing you typed was lost; try again.', 'error');
+      return;
+    }
     UI.toast(jobId ? 'Job updated ✓' : 'Job created ✓');
-    if (jobId) DB.jobs.update(jobId, data);
-    else DB.jobs.create(data);
     loadPage('jobs');
   },
 

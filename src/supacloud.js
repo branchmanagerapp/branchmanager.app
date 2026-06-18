@@ -7,9 +7,23 @@
  * Reads come from cache (fast, synchronous). Writes go to both cache + cloud.
  */
 var CloudSync = {
-  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments', 'services', 'expenses', 'time_entries'],
+  // Audit fix (Jun 2026): 'team_members' was MISSING here — db.js already
+  // PUSHES team writes (REMOTE_TABLE 'bm-team'→'team_members'), but without it
+  // in this pull list the crew roster was never synced DOWN to other devices.
+  // Result: a crew member added on the office laptop never appeared as a crew
+  // checkbox on the phone. See _localKeyFor() for its non-standard local key.
+  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments', 'services', 'expenses', 'time_entries', 'team_members'],
   syncing: false,
   lastSync: 0,
+
+  // Most tables map table_name → 'bm-table-name'. A few don't: the team roster
+  // lives under 'bm-team' (NOT 'bm-team-members'), matching db.js KEYS.team and
+  // everywhere team.js reads. Centralize the exceptions here so the pull (init)
+  // and the write-wrap (wrapWrites) agree on the same localStorage key.
+  _localKeyOverrides: { team_members: 'bm-team' },
+  _localKeyFor: function(table) {
+    return CloudSync._localKeyOverrides[table] || ('bm-' + table.replace(/_/g, '-'));
+  },
 
   init: async function() {
     if (!SupabaseDB || !SupabaseDB.ready) return;
@@ -25,7 +39,7 @@ var CloudSync = {
 
     for (var i = 0; i < CloudSync.tables.length; i++) {
       var table = CloudSync.tables[i];
-      var localKey = 'bm-' + table.replace(/_/g, '-');
+      var localKey = CloudSync._localKeyFor(table);
 
       try {
         // Pull all rows from Supabase
@@ -126,6 +140,22 @@ var CloudSync = {
           converted = merged;
 
           localStorage.setItem(localKey, JSON.stringify(converted));
+          // Audit fix (Jun 2026): bump DB's in-memory parse cache so reads after
+          // a background poll-sync return the freshly-merged rows. Without this,
+          // DB._get() kept serving the pre-sync cached array until the next local
+          // write (stale crew/job reads after an idle sync). The realtime path in
+          // supabase.js already does this; the poll path didn't.
+          try { if (typeof DB !== 'undefined' && DB._bumpCacheVer) DB._bumpCacheVer(localKey); } catch (e) {}
+          // Audit fix (Jun 2026): record the highest job_number seen in the
+          // cloud so DB.nextJobNum() can avoid handing out a number another
+          // device already used (cloud-aware numbering — closes the online race).
+          if (table === 'jobs') {
+            try {
+              window._bmCloudMax = window._bmCloudMax || {};
+              var cmax = converted.reduce(function(m, j) { return Math.max(m, (j.jobNumber || j.job_number || 0)); }, 0);
+              if (cmax > (window._bmCloudMax.jobs || 0)) window._bmCloudMax.jobs = cmax;
+            } catch (e) {}
+          }
           totalRows += converted.length;
           if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: loaded ' + converted.length + ' ' + table);
         }
@@ -164,8 +194,10 @@ var CloudSync = {
     var sb = SupabaseDB.client;
 
     CloudSync.tables.forEach(function(table) {
-      var localKey = 'bm-' + table.replace(/_/g, '-');
-      var dbSection = table === 'time_entries' ? DB.timeEntries : DB[table];
+      var localKey = CloudSync._localKeyFor(table);
+      var dbSection = table === 'time_entries' ? DB.timeEntries
+                    : table === 'team_members' ? DB.team
+                    : DB[table];
       if (!dbSection) return;
 
       var origCreate = dbSection.create;

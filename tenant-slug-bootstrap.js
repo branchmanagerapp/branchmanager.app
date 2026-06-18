@@ -68,17 +68,32 @@
   }
   window.bmApplyBranding = applyBranding;
 
-  // Resolve a tenant's branding by id (anon REST — public_read policy on
-  // tenants allows select name,config by id). Returns a Promise. Used by
-  // pages that have the record's tenant_id but no ?tenant_slug.
+  // Resolve a tenant's branding by id. Used by customer-facing pages that have
+  // the record's tenant_id but no ?tenant_slug. Returns a Promise.
+  //
+  // Audit fix (Jun 2026): this used to anon-SELECT name,config straight off the
+  // `tenants` table, which required a broad anon read policy that ALSO exposed
+  // owner_email + the full config for EVERY tenant (cross-tenant PII leak). It
+  // now calls the tenant_branding() RPC, which returns ONLY safe public branding
+  // (see migrate-tenants-public-branding.sql). The RPC returns the same
+  // { name, config } shape applyBranding() already expects.
+  // NOTE: requires migrate-tenants-public-branding.sql to be applied first —
+  // until then this RPC 404s and we fall back to the legacy table read so
+  // branding never breaks mid-rollout.
   window.bmApplyTenantBranding = function(tenantId) {
     if (!tenantId) return Promise.resolve(null);
     if (window.bmResolvedTenant) return Promise.resolve(window.bmResolvedTenant);
-    return fetch(SB_URL + '/rest/v1/tenants?select=name,config&id=eq.' + encodeURIComponent(tenantId) + '&limit=1',
-        { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } })
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(rows) {
-        var t = rows && rows[0];
+    var hdrs = { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json' };
+    return fetch(SB_URL + '/rest/v1/rpc/tenant_branding',
+        { method: 'POST', headers: hdrs, body: JSON.stringify({ p_id: tenantId }) })
+      .then(function(r) {
+        if (r.ok) return r.json();
+        // RPC not deployed yet (pre-migration) — fall back to the legacy read so
+        // existing customer pages keep rendering until the migration lands.
+        return fetch(SB_URL + '/rest/v1/tenants?select=name,config&id=eq.' + encodeURIComponent(tenantId) + '&limit=1',
+            { headers: hdrs }).then(function(r2) { return r2.ok ? r2.json().then(function(rows){ return rows && rows[0]; }) : null; });
+      })
+      .then(function(t) {
         if (t) applyBranding(t);
         return t || null;
       })

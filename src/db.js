@@ -21,6 +21,11 @@ var DB = (function() {
   var _parseCache = {};
   var _parseCacheVer = {};
   var _cacheVer = {};
+  // Audit fix (Jun 2026): track whether the most recent localStorage write
+  // actually committed. _set() swallows QuotaExceededError (the in-memory parse
+  // cache still updates, so getById() can't detect the loss) — callers that
+  // want to confirm a save persisted check DB._lastWriteOk() right after.
+  var _lastSetOk = true;
 
   function _get(key) {
     var ver = _cacheVer[key] || 0;
@@ -39,7 +44,9 @@ var DB = (function() {
     _parseCacheVer[key] = _cacheVer[key];
     try {
       localStorage.setItem(key, JSON.stringify(data));
+      _lastSetOk = true;
     } catch(e) {
+      _lastSetOk = false;
       // localStorage quota exceeded — warn user
       if (e.name === 'QuotaExceededError' || e.code === 22) {
         console.error('localStorage full! Data may not be saved for: ' + key);
@@ -736,9 +743,22 @@ var DB = (function() {
   };
 
   // ── Jobs ──
+  // Audit fix (Jun 2026): job numbers used to be max(LOCAL jobNumber)+1 only —
+  // never reconciled against the cloud — so two devices/tabs that hadn't synced
+  // each other minted the SAME number. UUIDs keep the rows distinct but the
+  // job_number is the human ID on invoices/schedule/dispatch. We now also factor
+  // in the highest job_number seen on the last cloud pull (window._bmCloudMax.jobs,
+  // set by CloudSync). This closes the common online/multi-tab race. The full
+  // offline two-device fix (atomic server-side numbering) is staged in
+  // migrate-job-number-unique.sql — apply it WITH the two-device live test;
+  // it needs the create path to await the next_job_number() RPC (see that file).
   var nextJobNum = function() {
     var all = getAll(KEYS.jobs);
     var max = all.reduce(function(m, j) { return Math.max(m, j.jobNumber || 0); }, 399);
+    try {
+      var cloudHint = (typeof window !== 'undefined' && window._bmCloudMax && window._bmCloudMax.jobs) || 0;
+      if (cloudHint > max) max = cloudHint;
+    } catch (e) {}
     return max + 1;
   };
   var jobs = {
@@ -1099,6 +1119,10 @@ var DB = (function() {
     // v893: expose cache invalidator so the realtime path in supabase.js can
     // bump our in-memory parse cache after writing directly to localStorage
     // (otherwise subsequent _get() reads would return the stale cached parse).
+    // Audit fix (Jun 2026): true if the last localStorage write committed
+    // (false after a swallowed QuotaExceededError). Callers toast success only
+    // when this is true so a quota loss isn't reported as "saved ✓".
+    _lastWriteOk: function() { return _lastSetOk; },
     _bumpCacheVer: function(key) {
       _cacheVer[key] = (_cacheVer[key] || 0) + 1;
       delete _parseCache[key];

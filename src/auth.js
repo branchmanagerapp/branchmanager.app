@@ -31,13 +31,35 @@ var Auth = {
           SupabaseDB.client.auth.getSession().then(function(result) {
             if (result.data && result.data.session) {
               // Supabase session valid — keep going
-            } else if (Auth.user && Auth.user.email && !Auth.user.email.endsWith('@demo')) {
-              // Local auth user — allow (offline fallback)
-            } else {
-              // No valid session — clear
-              Auth.logout();
+              return;
             }
-          }).catch(function() { /* offline — trust local session */ });
+            // No active Supabase session. BM is designed to tolerate this for
+            // in-app team logins (bm-auth-hashes — no Supabase user id) and for
+            // the local-auth + anon-key-write path. So we ONLY act when:
+            //   • this account actually signed in via Supabase (has a user id), AND
+            //   • we're online (an offline boot must never get logged out), AND
+            //   • a refresh token exists to attempt recovery with.
+            // Audit fix (Jun 2026): the old code KEPT such a user "logged in"
+            // unconditionally ("offline fallback"), so an expired/revoked
+            // session left the UI looking authenticated while cloud READS came
+            // back empty (anon can't SELECT) and the user worked against stale
+            // data. We now mirror CloudSync._checkAuthHealth: try a silent
+            // refresh first, and only force logout if the refresh definitively
+            // fails (refresh token is truly dead).
+            var isSupaUser = !!(Auth.user && Auth.user.id);
+            var hasRefreshable = false;
+            try {
+              for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k && /^sb-.*-auth-token$/.test(k)) { hasRefreshable = true; break; }
+              }
+            } catch (e) {}
+            if (!isSupaUser || !navigator.onLine || !hasRefreshable) return; // keep local session
+            SupabaseDB.client.auth.refreshSession().then(function(r2) {
+              var ok = !!(r2 && r2.data && r2.data.session);
+              if (!ok) Auth.logout(); // refresh token dead → genuinely signed out
+            }).catch(function() { /* refresh network error — stay logged in, try again next tick */ });
+          }).catch(function() { /* genuine network error — trust local session offline */ });
         }
       } catch(e) {
         localStorage.removeItem('bm-session');
@@ -409,16 +431,36 @@ var Auth = {
     } catch(e) {}
     // Clear biometric session unlock so the next login re-prompts
     try { sessionStorage.removeItem('bm-biometric-unlocked'); } catch(e) {}
+    // Audit fix (Jun 2026): signOut() is async and used to fire-and-forget
+    // with an immediate reload below — the reload could win the race and the
+    // Supabase token blob (sb-<ref>-auth-token) survived in localStorage past
+    // logout, so logging in as a different user on the same device briefly
+    // rode the prior user's token (tenant/data-bleed window). Now we AWAIT
+    // signOut (which removes the token blob) before reloading, with a 1.5s
+    // safety timeout so a hung network can never trap the user on the way out.
+    var _reloaded = false;
+    var _finish = function() {
+      if (_reloaded) return; _reloaded = true;
+      // Belt-and-suspenders: hard-remove the SDK token blob in case signOut
+      // didn't (offline / SDK error) so it can never bleed into the next login.
+      try {
+        Object.keys(localStorage).forEach(function(k) {
+          if (/^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k);
+        });
+        localStorage.removeItem('bm-tenant-id');
+      } catch(e) {}
+      // Clear service worker cache for security
+      if ('caches' in window) {
+        try { caches.keys().then(function(names) { names.forEach(function(n) { caches.delete(n); }); }); } catch(e) {}
+      }
+      window.location.reload();
+    };
     if (SupabaseDB && SupabaseDB.ready) {
-      SupabaseDB.client.auth.signOut().catch(function() {});
+      try { SupabaseDB.client.auth.signOut().then(_finish, _finish); } catch(e) { _finish(); }
+      setTimeout(_finish, 1500); // safety net if signOut hangs
+    } else {
+      _finish();
     }
-    // Clear service worker cache for security
-    if ('caches' in window) {
-      caches.keys().then(function(names) {
-        names.forEach(function(n) { caches.delete(n); });
-      });
-    }
-    window.location.reload();
   },
 
   // Session timeout — auto logout after 30 DAYS inactivity (was 30 min).
