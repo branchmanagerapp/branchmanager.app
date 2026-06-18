@@ -1,23 +1,19 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Second Nature Tree — Operating Plan</title><style>
-:root{
-  --green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#667;--faint:#8a94a0;
-  --line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--blue:#1d6fd6;--red:#c0392b;--amber:#b9770f;
-}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Second Nature Tree — Operating Picture</title><style>
+:root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#667;--faint:#8a94a0;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--blue:#1d6fd6;--red:#c0392b;--amber:#b9770f;}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
 .wrap{max-width:840px;margin:0 auto;padding:0 16px}
-header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:30px 0 22px;text-align:center}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:28px 0 22px;text-align:center}
 .kick{letter-spacing:2.5px;font-size:11px;font-weight:800;text-transform:uppercase;opacity:.8}
 header h1{margin:6px 0 0;font-size:23px;font-weight:800}
-header p{margin:8px auto 0;font-size:14px;opacity:.92;max-width:520px}
-.hero{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);box-shadow:0 2px 8px rgba(20,40,20,.05)}
-.hero .in{max-width:840px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.hero .lab{font-size:12px;color:var(--muted);font-weight:600}
-.hero .val{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.pill{font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;margin-left:auto}
-.pill.ok{background:var(--green-l);color:var(--green)}.pill.warn{background:#fff5e6;color:var(--amber)}.pill.bad{background:#fdecea;color:var(--red)}
-h2{color:var(--green-d);font-size:17px;margin:26px 0 10px;display:flex;align-items:center;gap:8px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:10px 0;box-shadow:0 1px 2px rgba(20,40,20,.04)}
+header p{margin:8px auto 0;font-size:14px;opacity:.92;max-width:540px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 1px 2px rgba(20,40,20,.04)}
+.kpi .n{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green-d);line-height:1.1}
+.kpi .l{font-size:10.5px;color:var(--muted);margin-top:3px;letter-spacing:.2px}
+h2{color:var(--green-d);font-size:17px;margin:24px 0 10px;display:flex;align-items:center;gap:8px;cursor:pointer}
+h2 .chev{margin-left:auto;color:#8a94a0;font-weight:400;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin:10px 0;box-shadow:0 1px 2px rgba(20,40,20,.04)}
 .muted{color:var(--muted);font-size:13px}.faint{color:var(--faint);font-size:12px}
 p{margin:0 0 10px}
 .r{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid #f1f4f1;font-size:14.5px;gap:12px}
@@ -27,41 +23,22 @@ p{margin:0 0 10px}
 .r.tot{border-top:2px solid var(--line);border-bottom:none;margin-top:2px;font-weight:800}
 .sub{font-size:12px;color:var(--faint);font-weight:400;display:block;margin-top:1px}
 .ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}.blue{color:var(--blue)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.grid2{grid-template-columns:1fr}}
-.fld{background:#f7faf8;border:1px solid var(--line);border-radius:10px;padding:11px 13px}
-.fld h4{margin:0 0 8px;font-size:13px;color:var(--green-d);font-weight:700}
-label{display:block;font-size:12px;color:#46514a;margin:7px 0 0}
-input[type=number]{width:100%;padding:7px 9px;border:1px solid #cdd6ce;border-radius:8px;font-size:15px;margin-top:3px;font-variant-numeric:tabular-nums;background:#fff}
-input[type=number]:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
-.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:9px}.chk input{width:17px;height:17px}
 .note{border-radius:10px;padding:10px 13px;font-size:12.5px;margin-top:10px}
 .note.warn{background:#fff8ec;border:1px solid #f0d9a8;color:#7a5512}
 .note.info{background:#eef4fb;border:1px solid #cfe0f5;color:#2b4a6f}
 .bar{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px}
 .bar .ml{width:44px;color:var(--muted)}
 .bar .track{flex:1;background:#eef1ee;border-radius:5px;height:15px;position:relative;overflow:visible}
-.bar .fill{height:100%;border-radius:5px}
-.bar .be{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--blue)}
-.bar .mv{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 1px 2px rgba(20,40,20,.04)}
-.kpi .n{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green-d);line-height:1.1}
-.kpi .l{font-size:10.5px;color:var(--muted);margin-top:3px;letter-spacing:.2px}
-h2 .chev{margin-left:auto;color:#8a94a0;font-weight:400;font-size:14px}
-.zb{border:1px solid #cdd6ce;background:#fff;border-radius:7px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink)}.zb:hover{border-color:#9ccfa3}
-footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px}
+.bar .fill{height:100%;border-radius:5px}.bar .be{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--blue)}
+.bar .mv{width:50px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
 .legend{font-size:11.5px;color:var(--muted);margin:4px 0 10px}.dot{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin:0 3px 0 8px}
+footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px}
 </style></head><body>
 <header><div class="wrap">
-<div class="kick">Private · Operating Plan</div>
-<h1>Second Nature Tree — Fleet & Cash Plan</h1>
-<p>Keep the fleet, run the mandatory Intrepid, and earn enough to cover the year — winter included.</p>
+<div class="kick">Private · Operating Picture</div>
+<h1>Second Nature Tree — The Whole Picture</h1>
+<p>What the business actually does, earns, and spends — from the books, Jobber, and the texts. The numbers are what they are.</p>
 </div></header>
-
-<div class="hero"><div class="in">
-<div><div class="lab">Projected free cash / month</div><div class="val" id="hero">—</div></div>
-<div class="pill" id="heropill">—</div>
-</div></div>
 
 <div class="wrap">
 
@@ -72,251 +49,151 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 <div class="kpi"><div class="n">69</div><div class="l">TREE JOBS (18 mo)</div></div>
 <div class="kpi"><div class="n">155</div><div class="l">FIELD-DAYS WORKED 2025</div></div>
 <div class="kpi"><div class="n">~3.3</div><div class="l">FIELD-DAYS / WEEK</div></div>
-<div class="kpi"><div class="n">$16.5k</div><div class="l">REVENUE/MO TO SUSTAIN</div></div>
+<div class="kpi"><div class="n">$20.4k</div><div class="l">AVG MONTHLY COST</div></div>
 <div class="kpi"><div class="n">$7,500</div><div class="l">WINTER NUT / MO</div></div>
 </div>
-<div class="faint" style="text-align:center;margin:-4px 0 8px">Tap any section heading to collapse it. Live figures below; inputs save to this browser.</div>
+<div class="faint" style="text-align:center;margin:-2px 0 10px">Tap any heading to collapse it.</div>
 
-<h2>🎯 What you need to bring in</h2>
+<h2>🎯 The bottom line</h2>
 <div class="card">
-<div class="r"><span>Break even — cover all current operating costs</span><b class="v" id="t_break"></b></div>
-<div class="r"><span>+ carry the Intrepid ($1,000/mo)</span><b class="v" id="t_intr"></b></div>
-<div class="r big tot"><span>Sustain — current ops + Intrepid + your pay</span><b class="v ok" id="t_sustain"></b></div>
-<div class="r"><span>You're averaging now (2026)</span><b class="v" id="t_now"></b></div>
-<div class="r"><span>Monthly gap to fully cover it</span><b class="v" id="t_gap"></b></div>
-<div class="note info">Annual target to sustain comfortably ≈ <b>$195–200k/yr</b>. 2025 actual: <b>$257k</b>. That gap is what the Intrepid's work + rentals (below) close.</div>
-<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;color:var(--green-d);font-size:13px">▸ Show month-by-month — what actually varies</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px"><thead><tr><th style="text-align:left">Mo</th><th class="n">Truck</th><th class="n">Insur</th><th class="n">WC</th><th class="n">Payroll</th><th class="n">Repairs</th><th class="n">Fuel</th></tr></thead><tbody><tr><td>Feb 25</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">1,800</td><td class="n">1,136</td><td class="n">296</td></tr><tr><td>Mar 25</td><td class="n">1,913</td><td class="n">1,349</td><td class="n">94</td><td class="n">325</td><td class="n">9</td><td class="n">375</td></tr><tr><td>Apr 25</td><td class="n">1,949</td><td class="n">1,349</td><td class="n">94</td><td class="n">–</td><td class="n">1,193</td><td class="n">433</td></tr><tr><td>May 25</td><td class="n">1,913</td><td class="n">1,349</td><td class="n">–</td><td class="n">5,858</td><td class="n">1,854</td><td class="n">1,151</td></tr><tr><td>Jun 25</td><td class="n">1,913</td><td class="n">1,349</td><td class="n">–</td><td class="n">13,576</td><td class="n">2,594</td><td class="n">727</td></tr><tr><td>Jul 25</td><td class="n">3,109</td><td class="n">–</td><td class="n">81</td><td class="n">9,794</td><td class="n">2,378</td><td class="n">930</td></tr><tr><td>Aug 25</td><td class="n">3,109</td><td class="n">3,659</td><td class="n">86</td><td class="n">3,665</td><td class="n">1,700</td><td class="n">667</td></tr><tr><td>Sep 25</td><td class="n">1,005</td><td class="n">2,217</td><td class="n">86</td><td class="n">7,026</td><td class="n">430</td><td class="n">569</td></tr><tr><td>Oct 25</td><td class="n">4,870</td><td class="n">–</td><td class="n">86</td><td class="n">1,937</td><td class="n">557</td><td class="n">687</td></tr><tr><td>Nov 25</td><td class="n">1,005</td><td class="n">1,003</td><td class="n">86</td><td class="n">11,393</td><td class="n">1,324</td><td class="n">996</td></tr><tr><td>Dec 25</td><td class="n">5,167</td><td class="n">1,389</td><td class="n">86</td><td class="n">5,270</td><td class="n">2,484</td><td class="n">478</td></tr><tr><td>Jan 26</td><td class="n">2,917</td><td class="n">1,115</td><td class="n">86</td><td class="n">17</td><td class="n">1,082</td><td class="n">163</td></tr><tr><td>Feb 26</td><td class="n">3,446</td><td class="n">1,333</td><td class="n">86</td><td class="n">1,578</td><td class="n">246</td><td class="n">344</td></tr><tr><td>Mar 26</td><td class="n">2,726</td><td class="n">1,115</td><td class="n">86</td><td class="n">–</td><td class="n">140</td><td class="n">491</td></tr><tr><td>Apr 26</td><td class="n">3,063</td><td class="n">1,115</td><td class="n">86</td><td class="n">–</td><td class="n">648</td><td class="n">972</td></tr><tr><td>May 26</td><td class="n">2,917</td><td class="n">1,115</td><td class="n">86</td><td class="n">–</td><td class="n">753</td><td class="n">764</td></tr><tr><td>Jun 26</td><td class="n">1,913</td><td class="n">1,115</td><td class="n">86</td><td class="n">–</td><td class="n">–</td><td class="n">72</td></tr></tbody></table></div><div class="note info" style="margin-top:8px"><b>What this shows:</b> Truck, insurance &amp; workers-comp ($86) stay <b>steady</b> every month — they hit even in dead winter. <b>Payroll &amp; repairs swing hard</b> ($0–$13,576 payroll) — that flex is how you survive slow months: crew cost drops when work dries up. <span class="faint">2026 payroll reads ~$0 because the crew moved to Square (not yet booked to the payroll line) — labor didn't actually stop.</span></div></details>
+<p>You gross <b>$250k+</b> a year but keep only <b>~5%</b>. Revenue isn't the problem — the thin margin is. Costs (payroll, repairs, truck debt) eat almost all of it, so small monthly swings decide everything.</p>
+<div class="r"><span>Break even — cover all current operating costs</span><b class="v">~$14,025/mo</b></div>
+<div class="r"><span>+ carry the Intrepid ($1,000/mo)</span><b class="v">~$15,025/mo</b></div>
+<div class="r big tot"><span>Sustain — current ops + Intrepid + your pay</span><b class="v ok">~$16,465/mo</b></div>
+<div class="r"><span>Averaging now (2026)</span><b class="v">~$15,836/mo</b></div>
+<div class="r"><span>Gap to fully cover it</span><b class="v bad">~$629/mo</b></div>
+<div class="note info">Annual target to sustain comfortably ≈ <b>$195–200k/yr</b>. 2025 cleared it at $257k. The ~$629/mo gap is small — a couple of extra jobs or rental days a month closes it.</div>
 </div>
 
-<h2>📊 Revenue vs. true cost — every month</h2>
+<h2>📊 Revenue vs. true cost, every month</h2>
 <div class="card">
-<div class="legend">Bars = revenue (<span class="dot" style="background:#1f7a43"></span>profit/<span class="dot" style="background:#c0392b"></span>loss) · <b style="color:#16201a">▍</b>dark tick = that month's cost · <b style="color:#1d6fd6">▍</b>blue = average cost line · right label = net.</div><div id="zoom" style="display:flex;gap:6px;margin:0 0 10px"><span class="faint" style="align-self:center;margin-right:4px">Zoom:</span><button class="zb" data-r="all">All</button><button class="zb" data-r="2025">2025</button><button class="zb" data-r="2026">2026</button><span class="faint" style="align-self:center">(both charts)</span></div>
+<div class="legend">Bars = revenue (<span class="dot" style="background:#1f7a43"></span>profit/<span class="dot" style="background:#c0392b"></span>loss) · <b style="color:#16201a">▍</b>dark tick = that month's cost · <b style="color:#1d6fd6">▍</b>blue = average cost · right label = net.</div>
 <div id="chart"></div>
 <div class="r tot" style="margin-top:8px"><span>2025 full year</span><b class="v">$257k rev · ~$245k cost · <span class="bad">~$12.5k net (5%)</span></b></div>
-<div class="note warn"><b>The real story:</b> you gross $250k+ but keep ~5%. Costs swing hard month-to-month (watch the ticks) — <b>Aug &amp; Dec '25, Feb–Mar '26 ran at a loss</b>; spring/early-summer carry the year. Revenue isn't the problem — the thin margin is.</div>
+<div class="note warn"><b>The real story:</b> costs swing hard month-to-month — <b>Aug &amp; Dec '25, Feb–Mar '26 ran at a loss</b>; spring and early-summer carry the year.</div>
 </div>
 
-<h2>🌳 Jobs &amp; revenue per job (Jobber, Jan '25 → today)</h2>
+<h2>🌳 Jobs &amp; revenue per job</h2>
 <div class="card">
-<div class="r"><span>One-off (tree) jobs done</span><b class="v">69</b></div>
+<div class="r"><span>One-off tree jobs (Jan '25 → today, Jobber)</span><b class="v">69</b></div>
 <div class="r"><span>Total job revenue</span><b class="v">$269,103</b></div>
 <div class="r big tot"><span>Average revenue per job</span><b class="v ok">~$3,900</b></div>
 <div class="r"><span>Range</span><b class="v">~$200 → $17,000 · median ~$3,400</b></div>
-<div class="r"><span>Pace</span><b class="v">~1 job/week avg · 5–7/mo in season · 1–2/mo winter</b></div>
-<div class="note info"><b>The takeaway:</b> your <b>per-job price is healthy (~$3,900)</b> — you're not underpricing. The real constraint is <b>volume</b> (~1 booked tree job/week on average, swinging 2→21 visits/mo seasonally). Growth = <b>more jobs/week in season + monetizing winter</b> (snow, firewood, recurring), not raising prices. <b>Catherine is the salesperson on nearly every job</b> in Jobber — concrete proof that when she's out, the estimate→booking pipeline slows. <span class="faint">Snowplowing/firewood are separate recurring jobs (~$30–160 each) — the winter work not counted here.</span></div>
+<div class="r"><span>Pace</span><b class="v">~1 job/week · 5–7/mo in season · 1–2/mo winter</b></div>
+<div class="note info">Per-job <b>price is healthy</b> — the constraint is <b>volume</b>. Growth = more jobs/week in season + monetizing winter (snow, firewood), not raising prices. <b>Catherine is the salesperson on nearly every job</b>. Snowplowing/firewood are separate recurring jobs (~$30–160 each).</div>
 </div>
 
-<h2>🗓️ Work tempo — field days per month (from the texts)</h2>
+<h2>🗓️ Work tempo — field-days per month</h2>
 <div class="card">
-<p class="muted">Reconstructed from your actual crew/office message history — <b>235 active field-work days</b> across 2025 → today — <b>155 in 2025</b>, 80 in 2026 YTD (~3.3/week avg, out of ~250 possible workdays/yr). This is what really happened on the ground; Jobber dates shift after the fact, so the texts are the true day-to-day. Full day-by-day log saved to <b>tree-daily-log.md</b>.</p>
-<div class="bar"><span class="ml">Jan 25</span><div class="track"><div class="fill" style="width:57%;background:#1f7a43"></div></div><span class="mv">12d</span></div><div class="bar"><span class="ml">Feb 25</span><div class="track"><div class="fill" style="width:52%;background:#b9770f"></div></div><span class="mv">11d</span></div><div class="bar"><span class="ml">Mar 25</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Apr 25</span><div class="track"><div class="fill" style="width:100%;background:#1f7a43"></div></div><span class="mv">21d</span></div><div class="bar"><span class="ml">May 25</span><div class="track"><div class="fill" style="width:90%;background:#1f7a43"></div></div><span class="mv">19d</span></div><div class="bar"><span class="ml">Jun 25</span><div class="track"><div class="fill" style="width:57%;background:#1f7a43"></div></div><span class="mv">12d</span></div><div class="bar"><span class="ml">Jul 25</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Aug 25</span><div class="track"><div class="fill" style="width:62%;background:#1f7a43"></div></div><span class="mv">13d</span></div><div class="bar"><span class="ml">Sep 25</span><div class="track"><div class="fill" style="width:33%;background:#c0392b"></div></div><span class="mv">7d</span></div><div class="bar"><span class="ml">Oct 25</span><div class="track"><div class="fill" style="width:52%;background:#b9770f"></div></div><span class="mv">11d</span></div><div class="bar"><span class="ml">Nov 25</span><div class="track"><div class="fill" style="width:95%;background:#1f7a43"></div></div><span class="mv">20d</span></div><div class="bar"><span class="ml">Dec 25</span><div class="track"><div class="fill" style="width:52%;background:#b9770f"></div></div><span class="mv">11d</span></div><div class="bar"><span class="ml">Jan 26</span><div class="track"><div class="fill" style="width:67%;background:#1f7a43"></div></div><span class="mv">14d</span></div><div class="bar"><span class="ml">Feb 26</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Mar 26</span><div class="track"><div class="fill" style="width:43%;background:#b9770f"></div></div><span class="mv">9d</span></div><div class="bar"><span class="ml">Apr 26</span><div class="track"><div class="fill" style="width:100%;background:#1f7a43"></div></div><span class="mv">21d</span></div><div class="bar"><span class="ml">May 26</span><div class="track"><div class="fill" style="width:90%;background:#1f7a43"></div></div><span class="mv">19d</span></div><div class="bar"><span class="ml">Jun 26</span><div class="track"><div class="fill" style="width:38%;background:#b9770f"></div></div><span class="mv">8d</span></div>
-<div class="note info"><b>Patterns from the log:</b> peaks <b>Apr–May &amp; November</b> (5–7 field days/wk, busiest week Apr 21 '25 = 7 days); slumps <b>late-Jun–Jul &amp; deep winter</b> (down to 1 day/wk). <b>Snow/storm = ~22% of work-days</b> (Jan–Feb) — a real second line. Crane gets <i>talked about</i> a lot in the texts but is rarely actually used — it's rented (Osorio) only for the occasional big removal, so ignore raw "crane" mention counts. Tight geography — Peekskill, Cortlandt, Croton — plus a <b>Connecticut cluster</b> (the CT jobs from your tax notes). <span class="faint">It's a text-signal heuristic, so 235 is a floor (phone/in-person work undercounts), not a timesheet — it'll firm up once Jobber's the system of record.</span></div>
+<p class="muted">From the actual crew/office texts — the true day-to-day. <b>235 field-work days</b> across 2025→today: <b>155 in 2025</b>, 80 in 2026 YTD (~3.3/week, out of ~250 possible workdays/yr).</p>
+<div id="tempo"></div>
+<div class="note info"><b>Patterns:</b> peaks <b>Apr–May &amp; November</b> (5–7 field days/wk); slumps <b>late-Jun–Jul &amp; deep winter</b> (down to 1/wk; longest dead stretch Feb 22→Mar 15 '26). <b>Snow/storm ≈ 22% of work-days</b> (Jan–Feb) — a real second line. Tight geography (Peekskill, Cortlandt, Croton) + a Connecticut cluster. <span class="faint">Text-signal heuristic — 235 is a floor, not a timesheet.</span></div>
 </div>
 
-<h2>👷 Crew &amp; office — on / off over time</h2>
+<h2>👷 Crew &amp; office — activity vs. revenue</h2>
 <div class="card">
-<p class="muted"><b>Catherine Conway</b> (field + office, 978 — she scopes jobs, runs crews &amp; does estimates) and <b>Ryan Knapp</b> (crew, 845) text activity overlaid with <b>revenue</b> — so you can see whether the key people being heavy/light moves the money. Each line scaled to its own peak; Feb '25 → Jun '26 (use the Zoom above).</p>
+<p class="muted"><b>Catherine Conway</b> (field + office, 978 — scopes jobs, runs crews &amp; estimates) and <b>Ryan Knapp</b> (crew, 845), text activity overlaid with <b>revenue</b>, each scaled to its own peak. Red bands = Catherine out.</p>
 <div id="presence"></div>
-<div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>Catherine<span class="dot" style="background:#1d6fd6"></span>Ryan<span style="border-bottom:2px dashed #c9a227;display:inline-block;width:14px;margin:0 4px 3px 10px"></span>Revenue<span style="background:#c0392b;opacity:.18;display:inline-block;width:12px;height:11px;margin:0 4px -1px 10px"></span>Catherine out</div><div class="note info"><b>Catherine in/out → the business.</b> She's <b>not just "office"</b> — she stages the trucks &amp; chipper, fuels the rigs, cleans/stows saws, clocks the crew, AND runs every estimate (~20.6k texts; 978 + cat.conway@gmail.com). She's normally active <b>~29–30 days/mo</b> and takes only <b>scattered single days — never full weeks</b>: a lacrosse game, a doctor day, a late-March CT speaking trip, late-summer travel. Her lower-engagement months <i>do</i> line up with revenue lows — <b>Mar '25</b> (21 days, family heart surgery → $6,858 loss) · <b>Aug '25</b> (21 days, 5-day gap → $4,358, lowest) · <b>Jan '26</b> (18 days → $9,804) — <b>but those are also the seasonal troughs</b>, and since she never disappears for a stretch, <b>no single absence tanked revenue.</b> Honest read: her time off is a <b>mild compounding factor</b> on already-slow winter months, not the driver. Red bands on the chart mark her out-stretches. <span class="faint">(Jun '26 reads low only because the month is half over.)</span></div>
+<div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>Catherine<span class="dot" style="background:#1d6fd6"></span>Ryan<span style="border-bottom:2px dashed #c9a227;display:inline-block;width:14px;margin:0 4px 3px 10px"></span>Revenue<span style="background:#c0392b;opacity:.18;display:inline-block;width:12px;height:11px;margin:0 4px -1px 10px"></span>Catherine out</div>
+<div class="note info"><b>Catherine in/out:</b> normally active ~29–30 days/mo, takes only scattered single days — never full weeks. Her lower-engagement months (<b>Mar '25</b> family heart surgery → $6,858 loss; <b>Aug '25</b> vacation → $4,358; <b>Jan '26</b> → $9,804) line up with revenue lows — but those are also the seasonal troughs, so no single absence tanked revenue. Her time off is a <b>mild compounding factor</b>, not the driver. The bigger risk is concentration: she's a near single-point-of-failure (sales + ops).</div>
 </div>
 
-<h2>🔑 The biggest risk isn't money — it's Catherine</h2>
+<h2>🧾 Monthly expenses — average per month</h2>
 <div class="card">
-<p><b>Catherine Conway runs everything.</b> The crew thread makes it plain: she's not "office" — she stages the trucks and chipper, fuels the white truck and bucket, cleans and stows the saws, covers grounds, clocks the crew, <i>and</i> does all the estimates, scheduling, and client comms. She is effectively co-running the company.</p>
-<div class="note warn"><b>Key-person risk — #1 risk to the business, bigger than any number on this page.</b> If Catherine leaves, the company likely doesn't survive in its current form. Making her a <b>partner/owner</b> isn't a perk — it's the single most important decision for whether this works long-term. Everything else here (the trucks, the Intrepid, the margin) is downstream of keeping her.</div>
+<p class="muted">Averaged from the full 2025 books, accountant-style. Bucket truck split from the Ram; one line each.</p>
+<div class="r"><span>Payroll &amp; wages — crew</span><b class="v">$5,246</b></div>
+<div class="r"><span>Vehicle repair &amp; maintenance</span><b class="v">$2,654</b></div>
+<div class="r"><span>Equipment — saws, chains, parts</span><b class="v">$1,869</b></div>
+<div class="r"><span>F-750 bucket truck — Blue Bridge lease</span><b class="v">$1,476</b></div>
+<div class="r"><span>General liability + commercial pkg — Erie</span><b class="v">$1,363</b></div>
+<div class="r"><span>Sales tax remitted — pass-through</span><b class="v">$1,205</b></div>
+<div class="r"><span>NYS back-tax catch-up — one-time '25</span><b class="v">$1,202</b></div>
+<div class="r"><span>Materials / COGS</span><b class="v">$1,147</b></div>
+<div class="r"><span>Ram 2500 — Chase auto loan</span><b class="v">$1,005</b></div>
+<div class="r"><span>Subcontractor — crane / log truck</span><b class="v">$667</b></div>
+<div class="r"><span>Fuel</span><b class="v">$664</b></div>
+<div class="r"><span>Software / subscriptions</span><b class="v">$604</b></div>
+<div class="r"><span>Meals · office · marketing</span><b class="v">$560</b></div>
+<div class="r"><span>Legal / professional</span><b class="v">$362</b></div>
+<div class="r"><span>Licenses / dues</span><b class="v">$116</b></div>
+<div class="r"><span>Workers comp — NYSIF <b class="bad">*</b></span><b class="v">$83</b></div>
+<div class="r"><span>Bank / processing fees</span><b class="v">$37</b></div>
+<div class="r tot big"><span>Total — monthly average (2025)</span><b class="v">~$20,389</b></div>
+<div class="note warn"><b class="bad">* Workers comp $83/mo is installments only</b> — does NOT include the pending NYSIF payroll-audit true-up, so real WC is meaningfully higher. <b>Fixed costs</b> (truck, insurance, WC) stay flat every month; <b>payroll &amp; repairs swing $0–$13,576</b> — that flex is how slow months survive.</div>
 </div>
 
 <h2>❄️ Surviving winter</h2>
 <div class="card">
-<p class="muted">When tree work stops, the payments don't. This is the fixed nut you must cover — or pre-bank — through the lean months.</p>
+<p class="muted">When tree work stops, the payments don't. Dec–March run under break-even every year.</p>
 <div class="r"><span>Fixed nut due every month<span class="sub">truck loans + F-750 lease + insurance + Intrepid + software + your draw</span></span><b class="v">~$7,500/mo</b></div>
-<div class="grid2" style="margin-top:6px"><div class="fld"><label>Lean winter months to bridge<input type="number" id="leanmo" value="3"></label></div>
-<div class="fld" style="display:flex;flex-direction:column;justify-content:center"><div class="muted">Cash to bank by late fall</div><div class="val ok" id="w_bank" style="font-size:22px"></div></div></div>
-<div class="note info">Snow, firewood &amp; SmartLawn income directly reduce this — every winter dollar earned is one you don't pre-bank.</div>
-</div>
-
-<h2>💵 Your numbers</h2>
-<div class="card">
-<div class="grid2">
-<div class="fld"><h4>Monthly cash (from books)</h4>
-<label>Revenue / month ($)<input type="number" id="rev" value="15836"></label>
-<label>Operating costs / month ($)<input type="number" id="costs" value="14025"></label>
-<label>Owner draw — what you take to live ($)<input type="number" id="draw" value="1440"></label>
-</div>
-<div class="fld"><h4>Free cash before the Intrepid</h4>
-<div class="r"><span>Net (rev − costs)</span><b class="v" id="m_net"></b></div>
-<div class="r"><span>− owner draw</span><b class="v" id="m_draw"></b></div>
-<div class="r tot"><span>Free cash now</span><b class="v" id="m_free"></b></div>
-<div class="faint" style="margin-top:6px">Already inside costs: Ram ~$1,005 · F-750 lease ~$1,825 · insurance ~$1,200/mo.</div>
-</div>
-</div>
-</div>
-
-<h2>🧾 Monthly expenses — fixed vs. what swings</h2>
-<div class="card">
-<p class="muted">From your 2025 books. The <b>fixed</b> costs hit every month no matter what; the <b>variable</b> ones swing with how much you work — and they're what turn a slow month into a loss (see the cost ticks above).</p>
-<div class="r" style="font-weight:800;color:var(--green-d);border-bottom:none;padding-bottom:2px">🔒 FIXED — same every month</div>
-<div class="r"><span>F-750 bucket truck — Blue Bridge lease</span><b class="v">$1,476</b></div>
-<div class="r"><span>General liability + commercial pkg — Erie</span><b class="v">$1,363</b></div>
-<div class="r"><span>Ram 2500 — Chase auto loan</span><b class="v">$1,005</b></div>
-<div class="r"><span>Software / subscriptions</span><b class="v">$604</b></div>
-<div class="r"><span>Licenses / dues</span><b class="v">$116</b></div>
-<div class="r"><span>Workers comp — NYSIF <b class="bad">*</b></span><b class="v">$83</b></div>
-<div class="r"><span>Bank / processing fees</span><b class="v">$37</b></div>
-<div class="r tot"><span>Fixed subtotal</span><b class="v">~$4,684/mo</b></div>
-<div class="r" style="font-weight:800;color:var(--green-d);border-bottom:none;padding-bottom:2px;padding-top:12px">📈 VARIABLE — swings with the work <span class="faint" style="font-weight:400">(avg · range across 2025)</span></div>
-<div class="r"><span>Payroll &amp; wages — crew</span><b class="v">$5,246 <span class="faint">· $0–13,576</span></b></div>
-<div class="r"><span>Vehicle repair &amp; maintenance</span><b class="v">$2,654 <span class="faint">· $9–16,126</span></b></div>
-<div class="r"><span>Equipment — saws, parts, attachments</span><b class="v">$1,869 <span class="faint">· $157–5,187</span></b></div>
-<div class="r"><span>Materials / COGS</span><b class="v">$1,147 <span class="faint">· $86–2,660</span></b></div>
-<div class="r"><span>Subcontractor — crane / log truck</span><b class="v">$667 <span class="faint">· $0–8,000</span></b></div>
-<div class="r"><span>Fuel</span><b class="v">$664 <span class="faint">· $375–1,151</span></b></div>
-<div class="r"><span>Legal · meals · office · marketing</span><b class="v">$922</b></div>
-<div class="r tot"><span>Variable subtotal (avg)</span><b class="v">~$13,169/mo</b></div>
-<div class="r" style="font-weight:800;color:var(--green-d);border-bottom:none;padding-bottom:2px;padding-top:12px">↔️ PASS-THROUGH / ONE-TIME</div>
-<div class="r"><span>Sales tax remitted (pass-through)</span><b class="v">$1,205</b></div>
-<div class="r"><span>NYS back-tax catch-up — one-time '25</span><b class="v">$1,202</b></div>
-<div class="r tot big"><span>Total — monthly average</span><b class="v">~$20,389</b></div>
-<div class="note warn"><b class="bad">* Workers comp $83/mo is installments only</b> — excludes the pending NYSIF payroll-audit true-up, so real WC is higher. And the swing months on the chart above (Aug &amp; Dec '25) were driven by the <b>variable</b> lines — big repair + equipment + payroll runs, not the fixed costs.</div>
+<div class="r tot"><span>Cash to bank by late fall (3 lean months)</span><b class="v ok">~$22,500</b></div>
+<div class="note info">Snow, firewood &amp; SmartLawn income directly reduce this — every winter dollar earned is one less to pre-bank. The discipline is setting aside the surplus from the busy months.</div>
 </div>
 
 <h2>🚜 The Intrepid (mandatory)</h2>
 <div class="card">
-<p class="muted"><b style="color:var(--green)">MANDATORY</b> — Intrepid KM100 Tele, ~$1,000/mo × 60. The question is utilization, not whether. It needs to bill/save <b id="be_even" class="blue"></b>/mo (~<b id="be_days"></b> machine-days) just to erase its own note.</p>
-<div class="grid2">
-<div class="fld"><h4>What it earns / saves on your own jobs</h4>
-<label>New revenue + costs saved ($/mo)<span class="sub">jobs you can now take, rentals/subs you stop paying</span><input type="number" id="earn" value="0"></label>
-<label>Day-rate you bill / save per machine-day ($)<input type="number" id="dayrate" value="400"></label>
-</div>
-<div class="fld"><h4>Effect on monthly cash</h4>
-<div class="r"><span>Free cash now</span><b class="v" id="i_base"></b></div>
-<div class="r"><span>− Intrepid payment</span><b class="v">– $1,000</b></div>
-<div class="r"><span>− Ram upgrades (if financed)</span><b class="v" id="i_upg"></b></div>
-<div class="r"><span>+ Intrepid earns / saves</span><b class="v" id="i_earn"></b></div>
-<div class="r"><span>+ rental &amp; hire income</span><b class="v" id="i_rent"></b></div>
-<div class="r tot big"><span>Projected free cash</span><b class="v" id="i_total"></b></div>
-</div>
-</div>
+<p>Intrepid KM100 Tele — <b>~$1,000/mo × 60</b>, locked in. Operating as you are today, that puts you at <b class="bad">~$629/mo negative</b> until it earns. It only needs to bill or save <b class="blue">~$629/mo (~1.6 machine-days)</b> to cover its own note — easily cleared for a machine you can't operate without.</p>
 </div>
 
 <h2>🛠️ Ram 2500 upgrades</h2>
 <div class="card">
-<p class="muted">Dump insert + air intake make the Ram a <b>keeper</b> — tows the Intrepid trailer and now dumps debris/firewood. Mostly one-time.</p>
-<div class="grid2">
-<div class="fld"><h4>Cost</h4>
-<label>8ft dump insert, installed ($)<input type="number" id="dumpcost" value="9000"></label>
-<label>Air intake ($)<input type="number" id="intakecost" value="2000"></label>
-<div class="chk"><input type="checkbox" id="dumpfin"><label style="margin:0">Finance it (else cash, one-time)</label></div>
-</div>
-<div class="fld"><h4>Impact</h4>
-<div class="r"><span>One-time cash (if paid cash)</span><b class="v" id="u_once"></b></div>
-<div class="r"><span>Added monthly (if financed)</span><b class="v" id="u_mo"></b></div>
-<div class="faint" style="margin-top:6px">Financing ~$11k adds ~$234/mo.</div>
-</div>
-</div>
+<div class="r"><span>8ft dump insert, installed</span><b class="v">~$9,000</b></div>
+<div class="r"><span>Air intake</span><b class="v">~$2,000</b></div>
+<div class="r tot"><span>Total (one-time, or ~$234/mo financed)</span><b class="v">~$11,000</b></div>
+<div class="note info">Makes the Ram a keeper — it tows the Intrepid trailer and now dumps debris/firewood (dump + tow rig).</div>
 </div>
 
-<h2>💰 Rent & hire it out (Braxton / Anthony)</h2>
+<h2>💰 Rent &amp; hire rates (Braxton / Anthony)</h2>
 <div class="card">
-<p class="muted">Idle iron on your off-days = income. Researched 2026 fair day-rates pre-filled; set days/month for each.</p>
-<div class="grid2">
-<div class="fld"><h4>🛻 Ram + dump <span class="faint">($150–225 fair)</span></h4>
-<label>Day-rate ($)<input type="number" id="ram_rate" value="300"></label>
-<label>Days / month<input type="number" id="ram_days" value="0"></label></div>
-<div class="fld"><h4>🚜 Intrepid <span class="faint">($250–300 fair)</span></h4>
-<label>Day-rate ($)<input type="number" id="intr_rate" value="300"></label>
-<label>Days / month<input type="number" id="intr_days" value="0"></label></div>
-<div class="fld"><h4>🪵 Dump trailer <span class="faint">($150–250 fair)</span></h4>
-<label>Day-rate ($)<input type="number" id="trail_rate" value="175"></label>
-<label>Days / month<input type="number" id="trail_days" value="0"></label></div>
-<div class="fld"><h4>🌲 Chipper <span class="faint">($250–300 fair)</span></h4>
-<label>Day-rate ($)<input type="number" id="chip_rate" value="275"></label>
-<label>Days / month<input type="number" id="chip_days" value="0"></label></div>
-<div class="fld"><h4>🪜 Bucket + YOU <span class="faint">(operated $650–850)</span></h4>
-<label>Day-rate ($)<input type="number" id="bucket_rate" value="750"></label>
-<label>Days / month<input type="number" id="bucket_days" value="0"></label></div>
-<div class="fld" style="display:flex;flex-direction:column;justify-content:center"><div class="muted">Total rental &amp; hire income</div><div class="val ok" id="rent_total" style="font-size:24px"></div><div class="faint">flows into free cash ↑</div></div>
-</div>
-<div class="note warn">Renting the <b>truck</b> means someone driving your insured Ram — confirm coverage for a non-employee driver, or rent it operated (you drive). The bucket line is a working day for you, not passive. Paper every rental with an agreement + COI. Don't double-count a day you use it yourself.</div>
+<p class="muted">Idle iron on off-days = income. Researched 2026 fair day-rates:</p>
+<div class="r"><span>🚜 Intrepid KM100 Tele</span><b class="v">$300/day</b></div>
+<div class="r"><span>🛻 Ram 2500 + dump insert</span><b class="v">$300/day</b></div>
+<div class="r"><span>🌲 Chipper (Bandit)</span><b class="v">$275/day</b></div>
+<div class="r"><span>🪵 Dump trailer (no CDL)</span><b class="v">$175/day</b></div>
+<div class="r"><span>🪜 Bucket truck + you (operated)</span><b class="v">$750/day</b></div>
+<div class="note info">A couple of rental days a month covers the Intrepid's note and erases the $629 gap. Renting the <b>truck</b> means someone driving your insured Ram — confirm coverage or rent it operated. The bucket line is a working day for you, not passive.</div>
 </div>
 
-<footer>Private working sheet · inputs saved to this browser · books figures real, market rates &amp; estimates labeled · not financial advice</footer>
+<h2>⏰ Open items that need action</h2>
+<div class="card">
+<div class="r"><span><b class="bad">GL insurance cancels 9/18/2026</b> — unpaid $3,279.54 audit</span><b class="v bad">urgent</b></div>
+<div class="r"><span>Workers comp — NYSIF payroll-audit true-up pending</span><b class="v warn">verify</b></div>
+<div class="r"><span>Catherine = near single-point-of-failure (sales + ops)</span><b class="v warn">risk</b></div>
+<div class="r"><span>Jobber ↔ bank ↔ books don't reconcile (no single source of truth)</span><b class="v warn">cleanup</b></div>
+<div class="note info">The first is on a clock — pay or formally dispute the GL audit before Sept 18 or liability coverage lapses (and the county licenses with it).</div>
+</div>
+
+<footer>Private working sheet · books + Jobber + texts · figures real, estimates labeled · not financial advice</footer>
 </div>
 
 <script>
-const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0;
-const m=v=>(v<0?'–$':'$')+Math.abs(Math.round(v)).toLocaleString('en-US');
-const LS='bm-opplan-v2', INTREPID=1000, WINTER_NUT=7500;
-const FIELDS=['rev','costs','draw','earn','dayrate','dumpcost','intakecost','leanmo','ram_rate','ram_days','intr_rate','intr_days','trail_rate','trail_days','chip_rate','chip_days','bucket_rate','bucket_days'];
-function pmt5(P){const i=10/1200,N=60;return P<=0?0:P*i/(1-Math.pow(1+i,-N));}
-function save(){try{const o={dumpfin:$('dumpfin').checked};FIELDS.forEach(k=>o[k]=$(k).value);localStorage.setItem(LS,JSON.stringify(o));}catch(e){}}
-function load(){try{const o=JSON.parse(localStorage.getItem(LS));if(!o)return;FIELDS.forEach(k=>{if(o[k]!=null&&$(k))$(k).value=o[k];});if(o.dumpfin)$('dumpfin').checked=true;}catch(e){}}
-function setPill(el,v){el.className='pill '+(v>=500?'ok':v>=0?'warn':'bad');el.textContent=v>=500?'Healthy':v>=0?'Tight':'Short';}
-function calc(){
-  const rev=n('rev'),costs=n('costs'),draw=n('draw'),earn=n('earn'),dr=n('dayrate')||400;
-  const net=rev-costs, free=net-draw;
-  $('m_net').textContent=m(net);$('m_draw').textContent='– '+m(draw);
-  $('m_free').textContent=m(free);$('m_free').className='v '+(free>=0?'ok':'bad');
-  const upg=n('dumpcost')+n('intakecost'),dumpfin=$('dumpfin').checked,upgMo=dumpfin?pmt5(upg):0;
-  $('u_once').textContent=dumpfin?'– (financed)':m(upg);
-  $('u_mo').textContent=dumpfin?('– '+m(upgMo)):'$0';
-  const rent=n('ram_rate')*n('ram_days')+n('intr_rate')*n('intr_days')+n('trail_rate')*n('trail_days')+n('chip_rate')*n('chip_days')+n('bucket_rate')*n('bucket_days');
-  $('rent_total').textContent=m(rent)+'/mo';
-  const total=free-INTREPID-upgMo+earn+rent;
-  $('i_base').textContent=m(free);$('i_upg').textContent='– '+m(upgMo);$('i_earn').textContent='+'+m(earn);$('i_rent').textContent='+'+m(rent);
-  $('i_total').textContent=m(total)+'/mo';$('i_total').className='v '+(total>=500?'ok':total>=0?'warn':'bad');
-  $('hero').textContent=m(total)+'/mo';$('hero').className='val '+(total>=500?'ok':total>=0?'warn':'bad');
-  setPill($('heropill'),total);
-  const need=INTREPID+upgMo, even=Math.max(0,need-free);
-  $('be_even').textContent=m(even);$('be_days').textContent=(even/dr).toFixed(1);
-  const breakRev=costs, sustain=costs+INTREPID+draw, gap=sustain-rev;
-  $('t_break').textContent=m(breakRev)+'/mo';$('t_intr').textContent=m(costs+INTREPID)+'/mo';
-  $('t_sustain').textContent=m(sustain)+'/mo';$('t_now').textContent=m(rev)+'/mo';
-  $('t_gap').textContent=(gap>0?'':'+')+m(gap)+'/mo';$('t_gap').className='v '+(gap>0?'bad':'ok');
-  $('w_bank').textContent=m((n('leanmo')||3)*WINTER_NUT);
-  save();
-}
-document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));
-load();calc();
-const HIST=[['Feb 25',9554,7078,1,3],['Mar 25',6858,10332,0,1],['Apr 25',23209,7754,2,3],['May 25',32207,14960,1,3],['Jun 25',30686,23396,3,3],['Jul 25',27993,19661,2,2],['Aug 25',4358,21424,3,2],['Sep 25',45464,31441,3,2],['Oct 25',18934,13843,3,3],['Nov 25',35507,33855,3,3],['Dec 25',14042,29210,2,3],['Jan 26',9804,7615,1,2],['Feb 26',8304,13235,2,3],['Mar 26',1728,15807,1,2],['Apr 26',33913,8534,1,3],['May 26',16993,17033,2,3],['Jun 26',34544,22816,2,2]];
-(function(){
-const CATH=[65,26,70,64,78,49,39,52,79,100,57,39,58,35,69,64,50];
-const RYAN=[41,50,79,89,39,98,92,56,100,75,47,28,28,86,44,53,17];
-function renderRange(s,e){
-  const rows=HIST.slice(s,e),max=46000;
-  const avg=rows.reduce((a,r)=>a+r[2],0)/rows.length,bx=(avg/max*100).toFixed(1);
-  let h='';
-  rows.forEach(([l,v,c])=>{const rp=Math.round(v/max*100),cp=(c/max*100).toFixed(1),net=v-c,col=net>=0?'#1f7a43':'#c0392b';
-    h+='<div class="bar"><span class="ml">'+l+'</span><div class="track"><div class="fill" style="width:'+rp+'%;background:'+col+'"></div><div class="be" style="left:'+bx+'%;background:#1d6fd6;width:2px;opacity:.65"></div><div class="be" style="left:'+cp+'%;background:#16201a;width:3px"></div></div><span class="mv" style="color:'+col+'">'+(net>=0?'+':'\u2013')+'$'+Math.abs(Math.round(net/1000))+'k</span></div>';});
-  var ce=document.getElementById('chart'); if(ce) ce.innerHTML=h;
-  // line chart: Catherine, Ryan, Revenue
-  const cath=CATH.slice(s,e),ryan=RYAN.slice(s,e),rev=rows.map(r=>r[1]),rmax=Math.max.apply(null,rev)||1,revP=rev.map(v=>v/rmax*100);
-  const labels=rows.map(r=>r[0].split(' ')[0].substr(0,1));
-  const W=720,Hh=200,pL=26,pR=10,pT=12,pB=26,nn=rows.length,iw=W-pL-pR,ih=Hh-pT-pB;
-  const X=i=>nn<2?pL+iw/2:pL+i/(nn-1)*iw,Y=v=>pT+(100-v)/100*ih;
-  const line=(arr,col,d)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.4"'+(d?' stroke-dasharray="5,3"':'')+' points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.2" fill="'+col+'"/>').join('');
-  let g='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto">';
-  [0,50,100].forEach(v=>{g+='<line x1="'+pL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pR)+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1ee"/>';});
-  var OUTM={'Feb 25':0,'Mar 25':1,'Aug 25':1,'Jan 26':1};
-  rows.forEach((r,i)=>{if(r[0] in OUTM){g+='<rect x="'+(X(i)-9)+'" y="'+pT+'" width="18" height="'+ih+'" fill="#c0392b" opacity="0.12"/>';if(OUTM[r[0]]){g+='<text x="'+X(i).toFixed(1)+'" y="'+(pT+8)+'" font-size="8" fill="#c0392b" text-anchor="middle">out</text>';}}});
-  g+='<polyline fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="5,3" opacity="0.85" points="'+revP.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>';
-  g+=line(cath,'#1f7a43')+line(ryan,'#1d6fd6');
-  labels.forEach((m,i)=>{g+='<text x="'+X(i).toFixed(1)+'" y="'+(Hh-9)+'" font-size="9" fill="#8a94a0" text-anchor="middle">'+m+'</text>';});
-  g+='</svg>';
-  var pe=document.getElementById('presence'); if(pe) pe.innerHTML=g;
-}
-renderRange(0,HIST.length);
-const RMAP={all:[0,HIST.length],'2025':[0,11],'2026':[11,HIST.length]};
-document.querySelectorAll('#zoom .zb').forEach(b=>b.addEventListener('click',()=>{const r=RMAP[b.dataset.r];renderRange(r[0],r[1]);document.querySelectorAll('#zoom .zb').forEach(x=>x.style.background='#fff');b.style.background='#eaf6ee';}));
-})();
-
+const HIST=[['Feb 25',9554,7078],['Mar 25',6858,10332],['Apr 25',23209,7754],['May 25',32207,14960],['Jun 25',30686,23396],['Jul 25',27993,19661],['Aug 25',4358,21424],['Sep 25',45464,31441],['Oct 25',18934,13843],['Nov 25',35507,33855],['Dec 25',14042,29210],['Jan 26',9804,7615],['Feb 26',8304,13235],['Mar 26',1728,15807],['Apr 26',33913,8534],['May 26',16993,17033],['Jun 26',34544,22816]];
+(function(){const max=46000,avg=HIST.reduce((a,r)=>a+r[2],0)/HIST.length,bx=(avg/max*100).toFixed(1);let h='';
+HIST.forEach(function(r){var v=r[1],c=r[2],rp=Math.round(v/max*100),cp=(c/max*100).toFixed(1),net=v-c,col=net>=0?'#1f7a43':'#c0392b';
+h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+rp+'%;background:'+col+'"></div><div class="be" style="left:'+bx+'%;background:#1d6fd6;width:2px;opacity:.65"></div><div class="be" style="left:'+cp+'%;background:#16201a;width:3px"></div></div><span class="mv" style="color:'+col+'">'+(net>=0?'+':'–')+'$'+Math.abs(Math.round(net/1000))+'k</span></div>';});
+document.getElementById('chart').innerHTML=h;})();
+(function(){const CATH=[65,26,70,64,78,49,39,52,79,100,57,39,58,35,69,64,50],RYAN=[41,50,79,89,39,98,92,56,100,75,47,28,28,86,44,53,17];
+const rev=HIST.map(r=>r[1]),rmax=Math.max.apply(null,rev),revP=rev.map(v=>v/rmax*100),labels=HIST.map(r=>r[0][0]);
+const W=720,Hh=200,pL=26,pR=10,pT=12,pB=26,nn=HIST.length,iw=W-pL-pR,ih=Hh-pT-pB;
+const X=i=>pL+i/(nn-1)*iw,Y=v=>pT+(100-v)/100*ih;
+const line=(arr,col)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.4" points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.2" fill="'+col+'"/>').join('');
+let g='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto">';
+[0,50,100].forEach(v=>{g+='<line x1="'+pL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pR)+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1ee"/>';});
+var OUTM={'Feb 25':0,'Mar 25':1,'Aug 25':1,'Jan 26':1};
+HIST.forEach(function(r,i){if(r[0] in OUTM){g+='<rect x="'+(X(i)-9)+'" y="'+pT+'" width="18" height="'+ih+'" fill="#c0392b" opacity="0.12"/>';if(OUTM[r[0]]){g+='<text x="'+X(i).toFixed(1)+'" y="'+(pT+8)+'" font-size="8" fill="#c0392b" text-anchor="middle">out</text>';}}});
+g+='<polyline fill="none" stroke="#c9a227" stroke-width="2" stroke-dasharray="5,3" opacity="0.85" points="'+revP.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>';
+g+=line(CATH,'#1f7a43')+line(RYAN,'#1d6fd6');
+labels.forEach((m,i)=>{g+='<text x="'+X(i).toFixed(1)+'" y="'+(Hh-9)+'" font-size="9" fill="#8a94a0" text-anchor="middle">'+m+'</text>';});
+g+='</svg>';document.getElementById('presence').innerHTML=g;})();
+(function(){const M=[['Jan 25',12],['Feb 25',11],['Mar 25',9],['Apr 25',21],['May 25',19],['Jun 25',12],['Jul 25',9],['Aug 25',13],['Sep 25',7],['Oct 25',11],['Nov 25',20],['Dec 25',11],['Jan 26',14],['Feb 26',9],['Mar 26',9],['Apr 26',21],['May 26',19],['Jun 26',8]];
+let h='';M.forEach(function(r){var c=r[1],col=c>=12?'#1f7a43':c>=8?'#b9770f':'#c0392b';
+h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+Math.round(c/21*100)+'%;background:'+col+'"></div></div><span class="mv">'+c+'d</span></div>';});
+document.getElementById('tempo').innerHTML=h;})();
 document.querySelectorAll('.wrap h2').forEach(function(h){
-  var c=document.createElement('span'); c.className='chev'; c.textContent='\u25be'; h.appendChild(c); h.style.cursor='pointer';
-  h.addEventListener('click',function(){
-    var collapse=c.textContent==='\u25be', el=h.nextElementSibling;
-    while(el && el.tagName!=='H2'){ el.style.display=collapse?'none':''; el=el.nextElementSibling; }
-    c.textContent=collapse?'\u25b8':'\u25be';
-  });
+  var c=document.createElement('span'); c.className='chev'; c.textContent='▾'; h.appendChild(c);
+  h.addEventListener('click',function(){var collapse=c.textContent==='▾',el=h.nextElementSibling;
+    while(el&&el.tagName!=='H2'){el.style.display=collapse?'none':'';el=el.nextElementSibling;}
+    c.textContent=collapse?'▸':'▾';});
 });
 </script>
 </body></html>
