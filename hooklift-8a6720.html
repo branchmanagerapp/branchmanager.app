@@ -1,0 +1,138 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>$50k hook-lift — consolidate the fleet?</title><style>
+:root{--green:#2e7d32;--green-d:#10401a;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--blue:#1d6fd6;--red:#b0413b;--amber:#b9770f}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+.wrap{max-width:800px;margin:0 auto;padding:0 20px}
+header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:40px 0 30px;text-align:center}
+.kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:8px}
+header h1{margin:0 auto;font-size:27px;font-weight:800;max-width:600px;line-height:1.18}
+header .tag{margin:12px auto 0;font-size:16px;opacity:.96;max-width:560px}
+section{margin:22px 0}h2{color:var(--green-d);font-size:21px;margin:26px 0 8px}h3{font-size:17px;margin:0 0 4px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,20,.04)}
+.muted{color:var(--muted);font-size:14px}p{margin:0 0 12px}
+.flag{background:#fff8ec;border:1px solid #f0d9a8;border-left:4px solid var(--amber);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:14.5px}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f2f5f2;font-size:15px}.row b{font-variant-numeric:tabular-nums}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:6px 0}@media(max-width:640px){.grid3{grid-template-columns:1fr}}
+.ipanel{background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px}.ihead{font-weight:700;color:var(--green-d);margin-bottom:8px;font-size:14px}
+label{display:block;font-size:12.5px;color:#3a4a40;margin:7px 0}label.hot{color:#15803d;font-weight:700}
+input{width:100%;padding:7px 9px;border:1px solid #cfd9cf;border-radius:7px;font-size:15px;margin-top:3px;font-variant-numeric:tabular-nums}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}@media(max-width:600px){.cols{grid-template-columns:1fr}}
+.scn{border:2px solid;border-radius:12px;padding:14px 16px}.scn.a{border-color:#15803d;background:#f3fbf5}.scn.b{border-color:#cfd9cf;background:#fafbfa}
+.scn h3{margin:0 0 8px}.scn.a h3{color:#15803d}.scn.b h3{color:var(--muted)}
+.big{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;margin:6px 0}
+.verdict{border:2px solid #15803d;background:#f3fbf5;border-radius:12px;padding:16px 18px;margin:18px 0;font-size:16px}
+.verdict .vh{font-weight:800;color:var(--green-d);font-size:18px;margin-bottom:6px}
+.num{font-variant-numeric:tabular-nums;font-weight:700}.real{color:#15803d}.bad{color:var(--red)}
+.src{font-size:12px;color:var(--muted);margin-top:4px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:22px 0 50px}
+</style></head><body>
+<header><div class="wrap">
+<div class="kicker">Private · Fleet decision</div>
+<h1>Hook-lift truck: consolidate the fleet into one?</h1>
+<p class="tag">Sell the F550 chip truck <i>and</i> the Ram 2500, buy one hook-lift with swappable bodies. The Ram's $1,005/mo payment is what makes the math work.</p>
+</div></header>
+
+<div class="wrap">
+
+<section><h2>What your books say</h2>
+<div class="card">
+<div class="row"><span>Ram 2500 — payoff / value / <b>monthly payment</b></span><b class="num">$39,186 / ~$42k / <span class="bad">$1,004.91</span></b></div>
+<div class="row"><span>F550 chip truck — loan payment in books</span><b class="num real">$0 (owned free &amp; clear)</b></div>
+<div class="row"><span>Disposal/hauling you'd save</span><b class="num">~$115/mo</b></div>
+<p class="src">The big lever is the <b>Ram's $1,004.91/mo payment</b> — selling it (diesel, ~$42k value, ~$2.8k equity over the $39,186 payoff) ends that payment AND clears the loan. The F550 is owned outright, so it's pure sale cash. Together they nearly pay for the hook-lift.</p>
+</div></section>
+
+<section><h2>Set your numbers</h2>
+<div class="flag"><b>⚠️ Reality check before the math:</b> a ~$50k hook-lift is a <b>Class 7 medium-duty</b> — it is NOT a daily-driver / errand / estimate truck, and it needs a <b>CDL-B</b> to drive. The Ram does light-duty + non-CDL crew runs the hook-lift can't. Make sure consolidating to one big truck genuinely covers those roles, or you'll end up buying a pickup back. <span class="muted">Set the real F550 value (its year/hours) + your honest extra-revenue number.</span></div>
+<div class="grid3">
+<div class="ipanel"><div class="ihead">Hook-lift</div>
+<label>Price ($)<input id="price" type="number" value="50000"></label>
+<label>APR (%)<input id="apr" type="number" value="10" step="0.1"></label>
+<label>Term (yrs)<input id="term" type="number" value="5"></label>
+<label>Running cost ($/mo, est.)<input id="hookrun" type="number" value="600"></label>
+</div>
+<div class="ipanel"><div class="ihead">Sell the Ram 2500</div>
+<label>Payoff owed ($)<input id="rampay" type="number" value="39186"></label>
+<label>Resale value ($)<input id="ramval" type="number" value="42000"></label>
+<label>Monthly payment ended ($)<input id="rampmt" type="number" value="1004.91"></label>
+<label>Insurance saved ($/mo, est.)<input id="ramins" type="number" value="200"></label>
+</div>
+<div class="ipanel"><div class="ihead">Sell the F550 + upside</div>
+<label class="hot">F550 resale value ($) — 2004, est. ~$10–22k<input id="f550val" type="number" value="15000"></label>
+<label>F550 costs saved ($/mo, est.)<input id="f550cost" type="number" value="300"></label>
+<label class="hot">Extra revenue ($/mo) — your est.<input id="rev" type="number" value="0"></label>
+<label>Cash down if you KEEP all ($)<input id="down" type="number" value="5000"></label>
+</div>
+</div>
+</section>
+
+<section><h2>The two roads</h2>
+<div class="cols">
+<div class="scn a"><h3>♻️ Consolidate — sell F550 + Ram, buy the hook-lift</h3>
+<div class="big" id="a_net"></div>
+<div class="row"><span>Cash from selling F550 + Ram equity</span><b class="num real" id="a_cash"></b></div>
+<div class="row"><span>Hook-lift financed after that</span><b class="num" id="a_fin"></b></div>
+<div class="row"><span>New hook-lift payment</span><b class="num" id="a_pmt"></b></div>
+<div class="row"><span>Monthly costs you SHED (Ram pmt+ins, F550, disposal)</span><b class="num real" id="a_shed"></b></div>
+<div class="row"><span>Break-even new work needed</span><b class="num" id="a_be"></b></div>
+</div>
+<div class="scn b"><h3>➕ Keep all 3, add the hook-lift</h3>
+<div class="big" id="b_net"></div>
+<div class="row"><span>Hook-lift financed (− cash down)</span><b class="num" id="b_fin"></b></div>
+<div class="row"><span>New hook-lift payment</span><b class="num" id="b_pmt"></b></div>
+<div class="row"><span>Monthly costs shed</span><b class="num" id="b_shed"></b></div>
+<div class="row"><span>Break-even new work needed</span><b class="num" id="b_be"></b></div>
+<div class="row"><span>Cash out today</span><b class="num bad" id="b_cash"></b></div>
+</div>
+</div>
+</section>
+
+<div class="verdict">
+<div class="vh" id="v_head"></div>
+<div id="v_body"></div>
+</div>
+
+<section><h2>The honest gut-check</h2>
+<div class="card">
+<p><b>The numbers say consolidate.</b> Killing the Ram's $1,004.91/mo payment is the whole story — it turns a $50k purchase into a cash-positive move before you haul a single extra log. The F550 + Ram sales cover most of the truck, so you finance almost nothing.</p>
+<p class="muted"><b>The thing the math can't see:</b> one Class-7 hook-lift can't be everywhere. If you regularly need a chipper running while a truck hauls, or a non-CDL driver to run errands/estimates, one truck won't cover it and you'll re-buy a pickup — wiping out the savings. Consolidate only if the crew + remaining vehicles genuinely cover daily/light-duty. <b>The truck sales cover most of the cost — finance the small remainder.</b></p>
+</div></section>
+
+<footer>Private working sheet · figures update live · F550 value, insurance &amp; revenue are estimates until you set them · not financial advice</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0, m=v=>(v<0?'–$':'$')+Math.abs(Math.round(v)).toLocaleString('en-US');
+const DISPOSAL=115;
+function pmtCalc(P,apr,yrs){if(P<=0)return 0;const i=apr/100/12,N=yrs*12; if(i===0)return P/N; return P*i/(1-Math.pow(1+i,-N));}
+function calc(){
+  const price=n('price'),apr=n('apr'),term=n('term'),hookrun=n('hookrun'),rampay=n('rampay'),ramval=n('ramval'),rampmt=n('rampmt'),ramins=n('ramins'),f550val=n('f550val'),f550cost=n('f550cost'),rev=n('rev'),down=n('down');
+  // CONSOLIDATE: sell F550 (free+clear cash) + Ram (value − payoff = equity)
+  const saleCash=f550val+Math.max(0,ramval-rampay);
+  const finA=Math.max(0,price-saleCash), pmtA=pmtCalc(finA,apr,term);
+  const shed=rampmt+ramins+f550cost+DISPOSAL;            // monthly costs eliminated
+  const netA=shed+rev-pmtA-hookrun;
+  const beA=Math.max(0,pmtA+hookrun-shed);
+  // KEEP ALL + ADD
+  const finB=Math.max(0,price-down), pmtB=pmtCalc(finB,apr,term);
+  const shedB=DISPOSAL;                                   // only disposal; you keep both trucks
+  const netB=shedB+rev-pmtB-hookrun;
+  const beB=Math.max(0,pmtB+hookrun-shedB);
+  // fill A
+  $('a_net').innerHTML='Net: <span class="'+(netA>=0?'real':'bad')+'">'+m(netA)+'/mo</span>'+(rev===0?' <span class="muted" style="font-size:13px;font-weight:400">(before any new work)</span>':'');
+  $('a_cash').textContent=m(saleCash); $('a_fin').textContent=m(finA); $('a_pmt').textContent=m(pmtA)+'/mo'; $('a_shed').textContent='+'+m(shed)+'/mo'; $('a_be').textContent= beA<=0?'$0 — already positive':m(beA)+'/mo';
+  // fill B
+  $('b_net').innerHTML='Net: <span class="'+(netB>=0?'real':'bad')+'">'+m(netB)+'/mo</span>';
+  $('b_fin').textContent=m(finB); $('b_pmt').textContent=m(pmtB)+'/mo'; $('b_shed').textContent='+'+m(shedB)+'/mo'; $('b_be').textContent=m(beB)+'/mo'; $('b_cash').textContent=m(down)+' down';
+  // verdict
+  const gap=netA-netB;
+  if(netA>=0){
+    $('v_head').textContent='Verdict: Consolidate — sell the F550 + Ram, finance the rest. It’s cash-positive day one.';
+    $('v_body').innerHTML='Selling both throws off <b class="real">'+m(saleCash)+'</b>, so you finance just <b>'+m(finA)+'</b> (~'+m(pmtA)+'/mo) while shedding <b class="real">'+m(shed)+'/mo</b> of payments — mostly the Ram’s $1,005 note. Net <b class="real">'+m(netA)+'/mo positive</b> before a single extra job, vs '+m(netB)+'/mo if you keep all three and bolt on a 4th truck. That’s a ~'+m(gap)+'/mo swing. Confirm one truck covers daily/light-duty first.';
+  } else {
+    $('v_head').textContent='Verdict: Consolidating is far better than keeping all — but check these inputs.';
+    $('v_body').innerHTML='Consolidating nets '+m(netA)+'/mo vs '+m(netB)+'/mo for keep-all (a '+m(gap)+'/mo swing) and frees ~'+m(saleCash)+'. It only goes cash-negative if your running cost is high or the resale values are low — set the real F550/Ram numbers. Either way, <b>don’t keep all three + add a 4th.</b>';
+  }
+}
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc)); calc();
+</script>
+</body></html>
