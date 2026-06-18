@@ -103,6 +103,8 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 <p class="muted">Most accurate signal = actual <b>payments to HBA</b> (the mechanic) + total vehicle-repair $. The mechanic works by phone (only 8 texts ever), so the money is the record. Vehicle-repair $ per month, Jan '25 → today:</p>
 <div id="breakdowns"></div>
 <p class="faint" style="margin-top:8px"><b>HBA charge dates (CC):</b> a major overhaul <b>Dec '24–Jan '25 (~$20k)</b>, then 2/18 $897 · 7/28 $6 · 8/15 $575 · 8/21 $702 · 12/5/25 $1,953 · 1/13/26 $1,059 · 6/17/26 $223.</p>
+<p class="muted" style="margin-top:12px;font-weight:700;color:var(--green-d)">Crew in-house fixes — repair time the crew eats themselves (text mentions / mo):</p>
+<div id="crewfix"></div>
 <div class="note info"><b>The real picture — and it reframes your theory.</b> The dominant repair was a <b>~$16k HBA overhaul in January '25</b> (on top of $3.8k in Dec '24). But it happened in the <b>dead of winter</b>, so it cost almost no peak-season workdays. Other months are modest ($430–$2,600) and rise with use (Jun–Aug). So breakdowns <b>don't drive your non-workdays</b> — season does, and the big repair was (smartly) done in the slow season. <b>Where breakdowns DO hurt is the margin:</b> ~<b>$31,844 of vehicle repair in 2025</b> (HBA the biggest vendor, ~$21k) against a business that netted ~$12.5k. The fleet is old (2004 F-550, 2011 F-750) and repair cost is quietly eating more profit than any crew or attendance issue — that's the real lever.</div>
 </div>
 
@@ -203,6 +205,12 @@ const mx=16126;let h='';
 RB.forEach(function(r){var v=r[1],w=Math.max(v>0?2:0,Math.round(v/mx*100)),col=v>=8000?'#c0392b':v>=1500?'#b9770f':'#1f7a43',lab=v>=1000?'$'+(v/1000).toFixed(1)+'k':(v>0?'$'+v:'–');
 h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><span class="mv">'+lab+'</span></div>';});
 var e=document.getElementById('breakdowns');if(e)e.innerHTML=h;})();
+(function(){
+const CF=[['Jan 25',30],['Feb 25',5],['Mar 25',10],['Apr 25',12],['May 25',5],['Jun 25',23],['Jul 25',10],['Aug 25',3],['Sep 25',11],['Oct 25',14],['Nov 25',20],['Dec 25',8],['Jan 26',0],['Feb 26',11],['Mar 26',11],['Apr 26',4],['May 26',1],['Jun 26',7]];
+const mx=30;let h='';
+CF.forEach(function(r){var v=r[1],w=Math.max(v>0?2:0,Math.round(v/mx*100)),col=v>=18?'#b9770f':v>=8?'#6d8f5a':'#9ccfa3';
+h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><span class="mv">'+(v||'–')+'</span></div>';});
+var e=document.getElementById('crewfix');if(e)e.innerHTML=h;})();
 document.querySelectorAll('.wrap h2').forEach(function(h){
   var c=document.createElement('span'); c.className='chev'; c.textContent='▾'; h.appendChild(c);
   h.addEventListener('click',function(){var collapse=c.textContent==='▾',el=h.nextElementSibling;
