@@ -73,6 +73,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <h2>🚛 The fleet — keep or sell, and what you're adding</h2>
 <div class="card">
 <p class="muted">Toggle each truck, check the new equipment, and the monthly cash + one-time cash update live. The F-750 (bucket) and chippers are core — kept.</p>
+<div class="flag"><b>🚜 Towing reality:</b> the Ram is your <b>tow rig for the trailer + the Intrepid</b>. Selling it is only clean if the <b>hook-lift hauls the Intrepid on a flatbed/equipment body</b> (then no trailer, tow truck = $0). If the Intrepid still rides a trailer, you need a tow vehicle — either keep the Ram, or <b>swap it for a cheaper used 3/4-ton</b> (~$450/mo, set it in "replacement tow truck"). That still sheds the Ram's underwater diesel + ~half its payment while keeping towing.</div>
 <table>
 <thead><tr><th>Vehicle</th><th class="n">If kept ($/mo)</th><th class="n">If sold: cash + $/mo saved</th><th>Decision</th></tr></thead>
 <tbody>
@@ -90,6 +91,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <label>F-550 sale value if sold ($)<input type="number" id="f550val" value="35000"></label>
 <label>Hook-lift price ($) · financed after sale cash<input type="number" id="hookprice" value="50000"></label>
 <label>New revenue the Intrepid + hook-lift win ($/mo)<input type="number" id="newrev" value="0"></label>
+<label>Replacement tow truck if Ram sold ($/mo) — <b>$0</b> if the hook-lift hauls the Intrepid; ~$450 if you need a cheaper pickup<input type="number" id="towrep" value="0"></label>
 </div>
 </div>
 <div class="presets">
@@ -107,6 +109,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <div class="row"><span>+ from selling trucks (monthly)</span><b class="num" id="r_sold"></b></div>
 <div class="row"><span>− Intrepid</span><b class="num" id="r_intr"></b></div>
 <div class="row"><span>− hook-lift (payment + running − disposal)</span><b class="num" id="r_hook"></b></div>
+<div class="row"><span>− replacement tow truck (if Ram sold)</span><b class="num" id="r_tow"></b></div>
 <div class="row"><span>+ new revenue (your estimate)</span><b class="num" id="r_rev"></b></div>
 <div class="row tot"><span>Projected monthly free cash</span><b class="num" id="r_total"></b></div>
 <div style="margin-top:6px"><span>One-time cash from sales:</span> <b class="num ok" id="r_once"></b> <span class="subtle" id="r_oncenote"></span></div>
@@ -163,12 +166,14 @@ function calc(){
   let hookMonthly=0, hookFin=0;
   if($('buyHook').checked){hookFin=Math.max(0,hookprice-onceCash);hookMonthly=pmtCalc(hookFin)+HOOK_RUN-DISPOSAL;}
   const cashLeft=Math.max(0,onceCash-($('buyHook').checked?hookprice:0));
-  const total=base+soldMonthly-intr-hookMonthly+newrev;
+  const tow=(dec.ram==='sell')?n('towrep'):0;
+  const total=base+soldMonthly-intr-hookMonthly+newrev-tow;
   // fill
   $('r_base').textContent=m(base);
   $('r_sold').textContent='+'+m(soldMonthly);
   $('r_intr').textContent='– '+m(intr);
   $('r_hook').textContent='– '+m(hookMonthly);
+  $('r_tow').textContent='– '+m(tow);
   $('r_rev').textContent='+'+m(newrev);
   $('r_total').textContent=m(total)+'/mo';$('r_total').className='num '+(total>=300?'ok':total>=0?'warn':'bad');
   $('r_big').textContent=m(total)+'/mo';
@@ -185,7 +190,7 @@ function calc(){
   else {v='🔴 <b>Negative cash flow — '+m(-total)+'/mo short.</b> Not sustainable without more revenue or shedding payments.';border='#b0413b';bg='#fbeeed';}
   res.style.borderColor=border;res.style.background=bg;$('r_verdict').innerHTML=v;
   // bottom line
-  $('bottom').innerHTML='With only <b>'+m(base)+'/mo</b> free today, adding the Intrepid ('+m(intr)+') while <b>keeping every truck</b> runs you negative. The hook-lift is better for the work — but you can only afford it if you <b>sell the Ram and the white F-550 to fund it and shed the Ram’s '+m(RAM_PMT)+'/mo payment</b>. That path (C) lands near <b>'+m(base+1505-1000-(pmtCalc(Math.max(0,hookprice-(RAM_EQUITY+f550val)))+HOOK_RUN-DISPOSAL))+'/mo</b> before any new work — thin but positive — and the new gear has to earn its keep on top. Keeping everything + Intrepid + hook-lift is firmly out of reach.';
+  $('bottom').innerHTML='With only <b>'+m(base)+'/mo</b> free today, adding the Intrepid ('+m(intr)+') while <b>keeping every truck</b> runs you negative. The hook-lift is better for the work — but you can only afford it if you <b>sell the Ram and the white F-550 to fund it and shed the Ram’s '+m(RAM_PMT)+'/mo payment</b>. That path (C) lands near <b>'+m(base+1505-1000-(pmtCalc(Math.max(0,hookprice-(RAM_EQUITY+f550val)))+HOOK_RUN-DISPOSAL))+'/mo</b> before any new work — thin but positive — and the new gear has to earn its keep on top. Keeping everything + Intrepid + hook-lift is firmly out of reach. <b>Catch:</b> the Ram is your trailer tow rig — selling it cleanly assumes the hook-lift hauls the Intrepid on a flatbed body; if not, swap the Ram for a cheaper ~$450/mo pickup (set it above) and you still beat keeping the underwater diesel.';
   save();
 }
 document.querySelectorAll('.toggle button').forEach(b=>b.addEventListener('click',()=>{setToggle(b.parentElement.dataset.v,b.dataset.s);calc();}));
