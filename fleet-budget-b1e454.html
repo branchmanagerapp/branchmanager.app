@@ -79,10 +79,10 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 
 <h2>👷 Crew &amp; office — on / off over time</h2>
 <div class="card">
-<p class="muted">Monthly activity for Catherine (office) and Ryan (crew lead) as overlaid lines, Feb '25 → Jun '26 — each scaled to its own peak (% of busiest month) so you can compare the shape against the revenue above.</p>
+<p class="muted">Real monthly text volume for <b>Catherine Conway</b> (office, 978) and <b>Ryan Knapp</b> (crew, 845), Feb '25 → Jun '26 — each scaled to its own busiest month so the shapes compare. Pulled straight from Messages.</p>
 <div id="presence"></div>
 <div class="legend" style="margin-top:8px"><span class="dot" style="background:#1f7a43"></span>Catherine (office)<span class="dot" style="background:#1d6fd6"></span>Ryan (crew)<span style="border-left:2px dashed #b9770f;margin-left:10px;padding-left:5px">March (seasonal low)</span></div>
-<div class="note info">Both track the <b>season</b>, not time off — heaviest spring–fall, lightest every <b>March</b> (matching the revenue troughs above). No documented vacation/leave for either. <span class="faint">Ryan: 22.8k texts across 2 numbers; Catherine: continuous on payroll.</span></div>
+<div class="note info">Catherine carries the heavier comms load (she runs estimates &amp; scheduling) and her presence is <b>not steady</b> — clear dips in <b>March, August &amp; January</b>. Ryan's texting tapers hard into 2026. Both lows line up with the revenue troughs above. <span class="faint">Catherine: 20.6k texts (978 + cat.conway@gmail.com); Ryan: 845 line.</span></div>
 </div>
 
 <h2>❄️ Surviving winter</h2>
@@ -240,8 +240,8 @@ h+='<div class="bar"><span class="ml">'+l+'</span><div class="track"><div class=
 const el=$('chart');if(el)el.innerHTML=h;
 // presence line graph (overlaid lines, % of each person's own peak)
 const MO=['F','M','A','M','J','J','A','S','O','N','D','J','F','M','A','M','J'];
-const CATH=[33,0,67,33,100,67,100,100,100,100,67,33,67,33,33,67,67];
-const RYAN=[63,32,76,73,74,61,52,55,87,100,58,38,55,47,67,65,45];
+const CATH=[65,26,70,64,78,49,39,52,79,100,57,39,58,35,69,64,50];
+const RYAN=[41,50,79,89,39,98,92,56,100,75,47,28,28,86,44,53,17];
 const W=720,Hh=200,pL=28,pR=10,pT=12,pB=26,nn=MO.length,iw=W-pL-pR,ih=Hh-pT-pB;
 const X=i=>pL+i/(nn-1)*iw, Y=v=>pT+(100-v)/100*ih;
 const line=(arr,col)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.3" fill="'+col+'"/>').join('');
