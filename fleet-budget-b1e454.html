@@ -68,6 +68,22 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <div class="result" id="result"><div class="big" id="r_big"></div><div id="r_verdict" style="font-size:15px"></div></div>
 </div>
 
+<h2>🛻 Dump insert on the Ram 2500</h2>
+<div class="card">
+<p>An <b>8ft dump insert (~$9k)</b> makes the Ram a light dump truck — haul &amp; dump debris, firewood, soil — alongside towing the Intrepid trailer. The Ram now does two jobs, so it's a <b>keeper</b>. Small cost; mostly one-time.</p>
+<div class="grid">
+<div class="ip"><div class="h">Cost</div>
+<label>8ft dump insert, installed ($)<input type="number" id="dumpcost" value="9000"></label>
+<label style="margin-top:8px"><input type="checkbox" id="dumpfin"> Finance it (else paid cash, one-time)</label>
+</div>
+<div class="ip"><div class="h">Monthly impact</div>
+<div class="row"><span>Added to monthly (if financed)</span><b class="num" id="r_dump"></b></div>
+<div class="row"><span>Or one-time cash</span><b class="num" id="r_dumponce"></b></div>
+<div class="subtle" style="margin-top:6px">Cash keeps your monthly clean; financing adds ~$191/mo.</div>
+</div>
+</div>
+</div>
+
 <h2>🎯 What it has to earn to carry itself</h2>
 <div class="be">
 <p style="margin:0 0 6px">Starting from <b id="be_free"></b>/mo free cash, the Intrepid's $1,000 note puts you <b id="be_gap" class="bad"></b>/mo in the hole until it earns. To get back to:</p>
@@ -78,7 +94,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 
 <h2>🔧 If lean months get too tight — one relief valve</h2>
 <div class="lever">
-<p style="margin:0">You said keep what you have, and the Ram tows the Intrepid's trailer — so this is a <b>backup, not a push</b>: if cash gets tight, selling the Ram (or swapping it for a cheaper used tow pickup) sheds the biggest single payment. Toggle to see the swing — it buys breathing room without touching the F-750 or chippers.</p>
+<p style="margin:0">You said keep what you have, and the Ram tows the Intrepid's trailer — so this is a <b>backup, not a push</b>: with the dump insert you just made the Ram a keeper (dump + tow), so this is firmly a last resort — but if cash ever gets really tight, selling/downsizing the Ram still sheds the biggest single payment. Toggle to see the swing — it buys breathing room without touching the F-750 or chippers.</p>
 <label style="margin-top:8px"><input type="checkbox" id="sellRam"> Model selling the Ram (sheds ~$1,205/mo; you'd need a tow truck — set its cost)</label>
 <label>Replacement tow truck if Ram sold ($/mo)<input type="number" id="towrep" value="450"></label>
 <div class="row" style="margin-top:6px"><span>Free cash if Ram sold (with Intrepid earning above)</span><b class="num" id="r_ramsold"></b></div>
@@ -96,20 +112,22 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <script>
 const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0, m=v=>(v<0?'–$':'$')+Math.abs(Math.round(v)).toLocaleString('en-US');
 const LS='bm-operating';const INTREPID=1000, RAM_SHED=1205;
-function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value}));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;}catch(e){}}
+function pmt5(P){const i=10/1200,N=60;return P<=0?0:P*i/(1-Math.pow(1+i,-N));}
+function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value,dumpcost:$('dumpcost').value,dumpfin:$('dumpfin').checked}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep','dumpcost'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;if(s.dumpfin)$('dumpfin').checked=true;}catch(e){}}
 function calc(){
   const net=n('net'),draw=n('draw'),earn=n('earn'),dr=n('dayrate')||400;
   const base=net-draw;
+  const dumpcost=n('dumpcost'),dumpfin=$('dumpfin').checked,dumpMo=dumpfin?pmt5(dumpcost):0,need=INTREPID+dumpMo;
   $('m_net').textContent=m(net);$('m_draw').textContent='– '+m(draw);$('m_free').textContent=m(base);$('m_free').className='num '+(base>=0?'ok':'bad');
-  const total=base-INTREPID+earn;
-  $('r_base').textContent=m(base);$('r_earn').textContent='+'+m(earn);
+  const total=base-need+earn;
+  $('r_base').textContent=m(base);$('r_earn').textContent='+'+m(earn);$('r_dump').textContent=dumpfin?('– '+m(dumpMo)):'$0';$('r_dumponce').textContent=dumpfin?'(financed)':(m(dumpcost)+' once');
   $('r_total').textContent=m(total)+'/mo';$('r_total').className='num '+(total>=300?'ok':total>=0?'warn':'bad');
   $('r_big').textContent=m(total)+'/mo';$('r_big').className='big '+(total>=300?'ok':total>=0?'warn':'bad');
   // break-even
   const gap=INTREPID-base; // how much earn needed to hit 0
-  $('be_free').textContent=m(base);$('be_gap').textContent=m(-(base-INTREPID));
-  const even=Math.max(0,INTREPID-base), healthy=Math.max(0,INTREPID-base+1000);
+  $('be_free').textContent=m(base);$('be_gap').textContent=m(-(base-need));
+  const even=Math.max(0,need-base), healthy=Math.max(0,need-base+1000);
   $('be_even').textContent=m(even)+'/mo';$('be_healthy').textContent=m(healthy)+'/mo';
   $('be_days').innerHTML='At ~'+m(dr)+'/machine-day, that’s about <b>'+(even/dr).toFixed(1)+' days/mo</b> to break even and <b>'+(healthy/dr).toFixed(1)+' days/mo</b> for a healthy cushion. A mini loader that’s genuinely mandatory should clear that easily.';
   // verdict
@@ -123,7 +141,7 @@ function calc(){
   const ramTotal=$('sellRam').checked?(total+RAM_SHED-tow):total;
   $('r_ramsold').textContent=m(ramTotal)+'/mo';$('r_ramsold').className='num '+(ramTotal>=300?'ok':ramTotal>=0?'warn':'bad');
   // bottom
-  $('bottom').innerHTML='Operating as you are + the Intrepid starts at <b class="bad">'+m(base-INTREPID)+'/mo</b> before the machine earns. Since it’s mandatory, the real job is <b>utilization</b>: it needs to bill or save about <b>'+m(even)+'/mo (~'+(even/dr).toFixed(1)+' machine-days)</b> just to break even, and ~'+m(healthy)+'/mo for a real cushion. That’s very reachable for a loader you can’t operate without. If a slow stretch makes it tight, the Ram is your relief valve — selling or downsizing it frees ~'+m(RAM_SHED)+'/mo. Watch the cash buffer month to month; this works as long as the Intrepid stays busy.';
+  $('bottom').innerHTML='Operating as you are + the Intrepid (and the dump insert) starts at <b class="bad">'+m(base-need)+'/mo</b> before the machine earns. Since it’s mandatory, the real job is <b>utilization</b>: it needs to bill or save about <b>'+m(even)+'/mo (~'+(even/dr).toFixed(1)+' machine-days)</b> just to break even, and ~'+m(healthy)+'/mo for a real cushion. That’s very reachable for a loader you can’t operate without. If a slow stretch makes it tight, the Ram is your relief valve — selling or downsizing it frees ~'+m(RAM_SHED)+'/mo. Watch the cash buffer month to month; this works as long as the Intrepid stays busy.';
   save();
 }
 document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));
