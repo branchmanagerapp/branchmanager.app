@@ -50,6 +50,23 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 <p class="subtle">Current monthly load already in those numbers: Ram 2500 ~$1,005 · F-750 lease ~$1,825 · Erie insurance ~$1,115 · NYSIF WC ~$85. Account runs tight, so the cushion above is the real starting point.</p>
 </div>
 
+<h2>🎯 Revenue you need to bring in</h2>
+<div class="card">
+<div class="row"><span>Break even — cover all current costs ($0 profit)</span><b class="num">~$14,000/mo</b></div>
+<div class="row"><span>+ cover the Intrepid ($1,000/mo)</span><b class="num">~$15,000/mo</b></div>
+<div class="row tot"><span><b>Maintain as-is + Intrepid + your draw</b></span><b class="num ok">~$16,500/mo</b></div>
+<div class="row"><span>You're grossing now (2026 avg)</span><b class="num">~$15,800/mo</b></div>
+<div class="row"><span>Gap to fully cover the Intrepid + your pay</span><b class="num bad">~$700/mo</b></div>
+<p class="muted" style="margin-top:6px">That ~$700/mo gap is exactly what Intrepid utilization + the rentals below close. Annual target to sustain comfortably: <b>~$195–200k/yr</b> (you ran ~$264k in 2025).</p>
+<div class="be" style="margin-top:12px">
+<b style="color:var(--green-d)">❄️ Winter — the payments don't stop</b>
+<div class="row" style="margin-top:6px"><span>Fixed nut due even with no tree work<br><span class="subtle">truck loans + F-750 lease + insurance + Intrepid + software + your draw</span></span><b class="num">~$7,500/mo</b></div>
+<label>Lean winter months you need to bridge<input type="number" id="leanmo" value="3"></label>
+<div class="row tot"><span>Cash to bank by late fall for winter</span><b class="num" id="w_bank"></b></div>
+<p class="subtle">Snow, firewood &amp; SmartLawn revenue offset this — every winter dollar earned cuts what you must bank.</p>
+</div>
+</div>
+
 <h2>🚜 Add the Intrepid (mandatory)</h2>
 <div class="card">
 <p><span class="mand">MANDATORY</span> &nbsp;Intrepid KM100 Tele — financing ~<b>$1,000/mo × 60</b>. It's locked in: the question is utilization, not whether.</p>
@@ -149,8 +166,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0, m=v=>(v<0?'–$':'$')+Math.abs(Math.round(v)).toLocaleString('en-US');
 const LS='bm-operating';const INTREPID=1000, RAM_SHED=1205;
 function pmt5(P){const i=10/1200,N=60;return P<=0?0:P*i/(1-Math.pow(1+i,-N));}
-function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value,dumpcost:$('dumpcost').value,intakecost:$('intakecost').value,dumpfin:$('dumpfin').checked,ram_rate:$('ram_rate').value,ram_days:$('ram_days').value,intr_rate:$('intr_rate').value,intr_days:$('intr_days').value,trail_rate:$('trail_rate').value,trail_days:$('trail_days').value,chip_rate:$('chip_rate').value,chip_days:$('chip_days').value,bucket_rate:$('bucket_rate').value,bucket_days:$('bucket_days').value}));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep','dumpcost','intakecost','ram_rate','ram_days','intr_rate','intr_days','trail_rate','trail_days','chip_rate','chip_days','bucket_rate','bucket_days'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;if(s.dumpfin)$('dumpfin').checked=true;}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value,dumpcost:$('dumpcost').value,intakecost:$('intakecost').value,dumpfin:$('dumpfin').checked,ram_rate:$('ram_rate').value,ram_days:$('ram_days').value,intr_rate:$('intr_rate').value,intr_days:$('intr_days').value,leanmo:$('leanmo').value,trail_rate:$('trail_rate').value,trail_days:$('trail_days').value,chip_rate:$('chip_rate').value,chip_days:$('chip_days').value,bucket_rate:$('bucket_rate').value,bucket_days:$('bucket_days').value}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep','dumpcost','intakecost','ram_rate','ram_days','intr_rate','intr_days','leanmo','trail_rate','trail_days','chip_rate','chip_days','bucket_rate','bucket_days'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;if(s.dumpfin)$('dumpfin').checked=true;}catch(e){}}
 function calc(){
   const net=n('net'),draw=n('draw'),earn=n('earn'),dr=n('dayrate')||400;
   const base=net-draw;
@@ -179,6 +196,7 @@ function calc(){
   $('r_ramsold').textContent=m(ramTotal)+'/mo';$('r_ramsold').className='num '+(ramTotal>=300?'ok':ramTotal>=0?'warn':'bad');
   // bottom
   $('bottom').innerHTML='Operating as you are + the Intrepid (plus the dump insert + air intake) starts at <b class="bad">'+m(base-need)+'/mo</b> before the machine earns. Since it’s mandatory, the real job is <b>utilization</b>: it needs to bill or save about <b>'+m(even)+'/mo (~'+(even/dr).toFixed(1)+' machine-days)</b> just to break even, and ~'+m(healthy)+'/mo for a real cushion. That’s very reachable for a loader you can’t operate without. If a slow stretch makes it tight, the Ram is your relief valve — selling or downsizing it frees ~'+m(RAM_SHED)+'/mo. Watch the cash buffer month to month; this works as long as the Intrepid stays busy.';
+  $('w_bank').textContent=m((n('leanmo')||3)*7500)+' banked';
   save();
 }
 document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));
