@@ -98,6 +98,14 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0 46px
 <div class="note info"><b>Catherine in/out:</b> normally active ~29–30 days/mo, takes only scattered single days — never full weeks. Her lower-engagement months (<b>Mar '25</b> family heart surgery → $6,858 loss; <b>Aug '25</b> vacation → $4,358; <b>Jan '26</b> → $9,804) line up with revenue lows — but those are also the seasonal troughs, so no single absence tanked revenue. Her time off is a <b>mild compounding factor</b>, not the driver. The bigger risk is concentration: she's a near single-point-of-failure (sales + ops).</div>
 </div>
 
+<h2>🔧 Breakdowns &amp; repairs vs. work-days</h2>
+<div class="card">
+<p class="muted">Testing the theory: do truck/equipment <b>breakdowns</b> cost more workdays than crew being out? Repair $ (books) + breakdown chatter (texts) vs. field-days, Feb '25 → Jun '26, each scaled to its own peak. Repairs route through HBA/Eric (mostly by phone), Westchester Tractor, Ossining Lawnmower &amp; Austin — the $ captures all of them.</p>
+<div id="breakdowns"></div>
+<div class="legend" style="margin-top:8px"><span class="dot" style="background:#c0392b"></span>Repair $<span class="dot" style="background:#b9770f"></span>Breakdown mentions<span class="dot" style="background:#1f7a43"></span>Field-days</div>
+<div class="note info"><b>What it actually shows — your instinct is half right.</b> Repairs <b>rise with the busy months</b> (peak repair $ in Jun &amp; Dec '25; heavy chatter Jun/Nov) — gear wears from USE, so repair cost tracks work rather than sitting opposite it (Nov '25 had the most repairs AND the most field-days). So breakdowns are <b>not</b> the main thing keeping you off jobs — the big non-workday swings are <b>seasonal</b> (winter + mid-summer slumps). BUT between the two things you <i>can</i> control, you're right: <b>breakdowns cost more than crew absences</b> — Catherine/Ryan are out only scattered days, while something's in the shop almost every month (~$2,654/mo repairs + a constant 5–20 repair mentions). Fleet reliability buys back more days than chasing attendance. <span class="faint">Mentions are keyword-flagged (some "battery/shop" = tools/stores), so read the shape, not exact counts.</span></div>
+</div>
+
 <h2>🧾 Monthly expenses — average per month</h2>
 <div class="card">
 <p class="muted">Averaged from the full 2025 books, accountant-style. Bucket truck split from the Ram; one line each.</p>
@@ -189,6 +197,19 @@ g+='</svg>';document.getElementById('presence').innerHTML=g;})();
 let h='';M.forEach(function(r){var c=r[1],col=c>=12?'#1f7a43':c>=8?'#b9770f':'#c0392b';
 h+='<div class="bar"><span class="ml">'+r[0]+'</span><div class="track"><div class="fill" style="width:'+Math.round(c/21*100)+'%;background:'+col+'"></div></div><span class="mv">'+c+'d</span></div>';});
 document.getElementById('tempo').innerHTML=h;})();
+(function(){
+const REPAIR=[44,0,46,71,100,92,66,17,21,51,96,42,9,5,25,29,0];
+const MENT=[22,43,52,22,100,43,13,48,61,87,35,0,48,48,17,4,30];
+const WDAYS=[52,43,100,90,57,43,62,33,52,95,52,67,43,43,100,90,38];
+const labels=HIST.map(r=>r[0][0]);
+const W=720,Hh=200,pL=26,pR=10,pT=12,pB=26,nn=17,iw=W-pL-pR,ih=Hh-pT-pB;
+const X=i=>pL+i/(nn-1)*iw,Y=v=>pT+(100-v)/100*ih;
+const line=(arr,col,d)=>'<polyline fill="none" stroke="'+col+'" stroke-width="2.4"'+(d?' stroke-dasharray="5,3"':'')+' points="'+arr.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')+'"/>'+arr.map((v,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="2.1" fill="'+col+'"/>').join('');
+let g='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;height:auto">';
+[0,50,100].forEach(v=>{g+='<line x1="'+pL+'" y1="'+Y(v).toFixed(1)+'" x2="'+(W-pR)+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1ee"/>';});
+g+=line(WDAYS,'#1f7a43')+line(REPAIR,'#c0392b')+line(MENT,'#b9770f',true);
+labels.forEach((m,i)=>{g+='<text x="'+X(i).toFixed(1)+'" y="'+(Hh-9)+'" font-size="9" fill="#8a94a0" text-anchor="middle">'+m+'</text>';});
+g+='</svg>';var e=document.getElementById('breakdowns');if(e)e.innerHTML=g;})();
 document.querySelectorAll('.wrap h2').forEach(function(h){
   var c=document.createElement('span'); c.className='chev'; c.textContent='▾'; h.appendChild(c);
   h.addEventListener('click',function(){var collapse=c.textContent==='▾',el=h.nextElementSibling;
