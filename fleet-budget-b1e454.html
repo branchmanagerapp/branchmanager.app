@@ -1,119 +1,88 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Full Picture — Fleet, Budget & Decision</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Operating with the Fleet + Intrepid</title><style>
 :root{--green:#2e7d32;--green-d:#10401a;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--blue:#1d6fd6;--red:#b0413b;--amber:#b9770f}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
-.wrap{max-width:860px;margin:0 auto;padding:0 18px}
+.wrap{max-width:820px;margin:0 auto;padding:0 18px}
 header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:36px 0 26px;text-align:center}
 .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:8px}
 header h1{margin:0 auto;font-size:26px;font-weight:800;max-width:600px;line-height:1.18}
 header .tag{margin:11px auto 0;font-size:15px;opacity:.95;max-width:580px}
-h2{color:var(--green-d);font-size:20px;margin:28px 0 8px;display:flex;align-items:center;gap:8px}
+h2{color:var(--green-d);font-size:20px;margin:26px 0 8px}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:12px 0;box-shadow:0 1px 3px rgba(20,40,20,.04)}
 .muted{color:var(--muted);font-size:13.5px}p{margin:0 0 10px}
 .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f4f6f4;font-size:15px}.row b{font-variant-numeric:tabular-nums}
 .row.tot{border-top:2px solid var(--line);border-bottom:none;font-weight:800;margin-top:4px;padding-top:8px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:620px){.grid{grid-template-columns:1fr}}
 .ip{background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:10px 13px}.ip .h{font-weight:700;color:var(--green-d);font-size:13px;margin-bottom:6px}
-label{display:block;font-size:12px;color:#3a4a40;margin:6px 0}
+label{display:block;font-size:12.5px;color:#3a4a40;margin:6px 0}
 input[type=number]{width:100%;padding:6px 8px;border:1px solid #cfd9cf;border-radius:6px;font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums}
-table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{text-align:left;padding:7px 6px;border-bottom:1px solid #f0f3f0}th{color:var(--muted);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.toggle{display:inline-flex;border:1px solid #cfd9cf;border-radius:8px;overflow:hidden}
-.toggle button{border:0;background:#fff;padding:5px 11px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted)}
-.toggle button.on.keep{background:#eaf6ef;color:#15803d}.toggle button.on.sell{background:#fbeeed;color:var(--red)}
-.chk{display:flex;align-items:center;gap:8px;font-size:14px;margin:8px 0}.chk input{width:18px;height:18px}
-.presets{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-.presets button{border:1px solid #cfd9cf;background:#fff;border-radius:9px;padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
-.presets button:hover{border-color:#9ccfa3;background:#f3fbf5}
-.result{border:2px solid;border-radius:12px;padding:16px 18px;margin:14px 0}
-.result .big{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin:2px 0}
-.flag{background:#fff8ec;border:1px solid #f0d9a8;border-left:4px solid var(--amber);border-radius:10px;padding:11px 14px;margin:10px 0;font-size:13.5px}
+.big{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;margin:2px 0}
 .ok{color:#15803d;font-weight:800}.bad{color:var(--red);font-weight:800}.warn{color:var(--amber);font-weight:800}
 .num{font-variant-numeric:tabular-nums;font-weight:700}
+.result{border:2px solid;border-radius:12px;padding:16px 18px;margin:14px 0}
+.be{background:#eef3fb;border:1px solid #cfe0f5;border-radius:12px;padding:14px 18px;margin:12px 0}
+.be .n{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--blue)}
+.lever{background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:10px 0}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 .subtle{font-size:12px;color:var(--muted)}
+.mand{display:inline-block;background:#15803d;color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px}
 </style></head><body>
 <header><div class="wrap">
-<div class="kicker">Private · Master decision sheet</div>
-<h1>The Full Picture — Money, Fleet &amp; the Equipment Call</h1>
-<p class="tag">Everything in one place: real cash flow, every payment, the trucks, and what happens to your monthly cash under each path. Inputs save automatically.</p>
+<div class="kicker">Private · Operating plan</div>
+<h1>Operating with the fleet you have + the Intrepid</h1>
+<p class="tag">The Intrepid is mandatory — without it you don't operate. So this isn't "if," it's: the machine costs ~$1,000/mo, your cushion is thin, and here's exactly how much it has to earn to carry itself.</p>
 </div></header>
 
 <div class="wrap">
 
-<!-- MONEY -->
-<h2>💵 The money (Second Nature Tree)</h2>
+<h2>💵 Your monthly cash today</h2>
 <div class="card">
 <div class="grid">
-<div class="ip"><div class="h">Monthly cash (2026 books)</div>
+<div class="ip"><div class="h">From the books (editable)</div>
 <label>Avg monthly net — after current truck payments ($)<input type="number" id="net" value="1812"></label>
-<label>Your owner draw — what you take to live ($/mo)<input type="number" id="draw" value="1440"></label>
+<label>Owner draw — what you take to live ($/mo)<input type="number" id="draw" value="1440"></label>
 </div>
-<div class="ip"><div class="h">Today's free cash</div>
+<div class="ip"><div class="h">Free cash before the Intrepid</div>
 <div class="row"><span>Net</span><b class="num" id="m_net"></b></div>
 <div class="row"><span>− owner draw</span><b class="num" id="m_draw"></b></div>
 <div class="row tot"><span>Free cash now</span><b class="num" id="m_free"></b></div>
-<div class="subtle" id="m_freenote" style="margin-top:6px"></div>
 </div>
 </div>
-<p class="subtle">2026 YTD: rev $95,016 − exp $84,147 = net $10,869 over 6 mo. 2025 filed-ready net $12,504. Account runs tight (overdrafts on record) — the "free cash now" number is the real cushion before any new equipment.</p>
+<p class="subtle">Current monthly load already in those numbers: Ram 2500 ~$1,005 · F-750 lease ~$1,825 · Erie insurance ~$1,115 · NYSIF WC ~$85. Account runs tight, so the cushion above is the real starting point.</p>
 </div>
 
-<!-- OBLIGATIONS -->
-<h2>📆 What you already owe every month</h2>
+<h2>🚜 Add the Intrepid (mandatory)</h2>
 <div class="card">
-<div class="row"><span>Ram 2500 — Chase auto (owe $39,186, ~$42k value)</span><b class="num">$1,005</b></div>
-<div class="row"><span>Ford F-750 bucket — Blue Bridge lease (via CeeTree)</span><b class="num">~$1,825</b></div>
-<div class="row"><span>Ford F-550 chip (2004, white) — owned free &amp; clear</span><b class="num">$0</b></div>
-<div class="row"><span>Erie commercial insurance pkg</span><b class="num">~$1,115</b></div>
-<div class="row tot"><span>Current truck + insurance / mo</span><b class="num">~$3,945</b></div>
-<p class="subtle">Plus NYSIF workers-comp ~$85/mo.</p>
+<p><span class="mand">MANDATORY</span> &nbsp;Intrepid KM100 Tele — financing ~<b>$1,000/mo × 60</b>. It's locked in: the question is utilization, not whether.</p>
+<div class="grid">
+<div class="ip"><div class="h">What the Intrepid brings in</div>
+<label>New revenue it wins + costs it saves ($/mo)<br><span class="subtle">billable machine-days, jobs you can now take, rentals/subs you stop paying</span><input type="number" id="earn" value="0"></label>
+<label>Day-rate you'd bill / save per machine-day ($)<input type="number" id="dayrate" value="400"></label>
+</div>
+<div class="ip"><div class="h">Result — free cash with the Intrepid</div>
+<div class="row"><span>Free cash now</span><b class="num" id="r_base"></b></div>
+<div class="row"><span>− Intrepid payment</span><b class="num">– $1,000</b></div>
+<div class="row"><span>+ what it earns/saves</span><b class="num" id="r_earn"></b></div>
+<div class="row tot"><span>Projected free cash</span><b class="num" id="r_total"></b></div>
+</div>
+</div>
+<div class="result" id="result"><div class="big" id="r_big"></div><div id="r_verdict" style="font-size:15px"></div></div>
 </div>
 
-<!-- THE FLEET / DECISION -->
-<h2>🚛 The fleet — keep or sell, and what you're adding</h2>
-<div class="card">
-<p class="muted">Toggle each truck, check the new equipment, and the monthly cash + one-time cash update live. The F-750 (bucket) and chippers are core — kept.</p>
-<div class="flag"><b>🚜 Towing reality:</b> the Ram is your <b>tow rig for the trailer + the Intrepid</b>. Selling it is only clean if the <b>hook-lift hauls the Intrepid on a flatbed/equipment body</b> (then no trailer, tow truck = $0). If the Intrepid still rides a trailer, you need a tow vehicle — either keep the Ram, or <b>swap it for a cheaper used 3/4-ton</b> (~$450/mo, set it in "replacement tow truck"). That still sheds the Ram's underwater diesel + ~half its payment while keeping towing.</div>
-<table>
-<thead><tr><th>Vehicle</th><th class="n">If kept ($/mo)</th><th class="n">If sold: cash + $/mo saved</th><th>Decision</th></tr></thead>
-<tbody>
-<tr><td><b>Ram 2500</b><br><span class="subtle">2019 Cummins diesel · VIN …623338</span></td><td class="n">−$1,005</td><td class="n">+$2,814 once<br>+$1,205/mo</td><td><div class="toggle" data-v="ram"><button class="keep" data-s="keep">Keep</button><button class="sell" data-s="sell">Sell</button></div></td></tr>
-<tr><td><b>F-550 chip (white)</b><br><span class="subtle">2004 · owned · your $ floor below</span></td><td class="n">$0</td><td class="n">+<span id="f550cash">35,000</span> once<br>+$300/mo</td><td><div class="toggle" data-v="f550"><button class="keep" data-s="keep">Keep</button><button class="sell" data-s="sell">Sell</button></div></td></tr>
-<tr><td>F-750 bucket · 2 chippers · trailer</td><td class="n">in numbers above</td><td class="n">—</td><td><span class="subtle">core — kept</span></td></tr>
-</tbody>
-</table>
-<div class="grid" style="margin-top:12px">
-<div class="ip"><div class="h">➕ Adding</div>
-<div class="chk"><input type="checkbox" id="buyIntrepid" checked><label style="margin:0">Intrepid KM100 Tele — <b>$1,000/mo</b> (approved/buying)</label></div>
-<div class="chk"><input type="checkbox" id="buyHook"><label style="margin:0">Hook-lift truck — see panel →</label></div>
-</div>
-<div class="ip"><div class="h">Knobs</div>
-<label>F-550 sale value if sold ($)<input type="number" id="f550val" value="35000"></label>
-<label>Hook-lift price ($) · financed after sale cash<input type="number" id="hookprice" value="50000"></label>
-<label>New revenue the Intrepid + hook-lift win ($/mo)<input type="number" id="newrev" value="0"></label>
-<label>Replacement tow truck if Ram sold ($/mo) — <b>$0</b> if the hook-lift hauls the Intrepid; ~$450 if you need a cheaper pickup<input type="number" id="towrep" value="0"></label>
-</div>
-</div>
-<div class="presets">
-<button data-p="now">A · Keep all + Intrepid (operate as now)</button>
-<button data-p="all">B · Keep all + Intrepid + hook-lift</button>
-<button data-p="consolidate">C · Sell Ram + F-550, + Intrepid + hook-lift</button>
-</div>
+<h2>🎯 What it has to earn to carry itself</h2>
+<div class="be">
+<p style="margin:0 0 6px">Starting from <b id="be_free"></b>/mo free cash, the Intrepid's $1,000 note puts you <b id="be_gap" class="bad"></b>/mo in the hole until it earns. To get back to:</p>
+<div class="row"><span><b>Break even</b> ($0 free cash)</span><b class="n" id="be_even"></b></div>
+<div class="row"><span><b>Healthy cushion</b> (~$1,000/mo free)</span><b class="n" id="be_healthy"></b></div>
+<p class="subtle" id="be_days" style="margin-top:8px"></p>
 </div>
 
-<!-- RESULT -->
-<div class="result" id="result">
-<div class="subtle" id="r_name"></div>
-<div class="big" id="r_big"></div>
-<div class="row"><span>Free cash today</span><b class="num" id="r_base"></b></div>
-<div class="row"><span>+ from selling trucks (monthly)</span><b class="num" id="r_sold"></b></div>
-<div class="row"><span>− Intrepid</span><b class="num" id="r_intr"></b></div>
-<div class="row"><span>− hook-lift (payment + running − disposal)</span><b class="num" id="r_hook"></b></div>
-<div class="row"><span>− replacement tow truck (if Ram sold)</span><b class="num" id="r_tow"></b></div>
-<div class="row"><span>+ new revenue (your estimate)</span><b class="num" id="r_rev"></b></div>
-<div class="row tot"><span>Projected monthly free cash</span><b class="num" id="r_total"></b></div>
-<div style="margin-top:6px"><span>One-time cash from sales:</span> <b class="num ok" id="r_once"></b> <span class="subtle" id="r_oncenote"></span></div>
-<div id="r_verdict" style="margin-top:10px;font-size:15px"></div>
+<h2>🔧 If lean months get too tight — one relief valve</h2>
+<div class="lever">
+<p style="margin:0">You said keep what you have, and the Ram tows the Intrepid's trailer — so this is a <b>backup, not a push</b>: if cash gets tight, selling the Ram (or swapping it for a cheaper used tow pickup) sheds the biggest single payment. Toggle to see the swing — it buys breathing room without touching the F-750 or chippers.</p>
+<label style="margin-top:8px"><input type="checkbox" id="sellRam"> Model selling the Ram (sheds ~$1,205/mo; you'd need a tow truck — set its cost)</label>
+<label>Replacement tow truck if Ram sold ($/mo)<input type="number" id="towrep" value="450"></label>
+<div class="row" style="margin-top:6px"><span>Free cash if Ram sold (with Intrepid earning above)</span><b class="num" id="r_ramsold"></b></div>
+<div class="subtle">+ one-time ~$2,814 from the Ram's equity.</div>
 </div>
 
 <div class="card" style="background:#f3fbf5;border-color:#c6e7d2">
@@ -126,67 +95,37 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px 0 48px}
 
 <script>
 const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0, m=v=>(v<0?'–$':'$')+Math.abs(Math.round(v)).toLocaleString('en-US');
-const LS='bm-fullpicture';
-// fixed monthly facts
-const RAM_PMT=1005, RAM_INS=200, RAM_EQUITY=2814, F550_COST=300, HOOK_RUN=600, DISPOSAL=115, INTREPID=1000, APR=10, TERM=5;
-let dec={ram:'keep', f550:'keep'};
-function pmtCalc(P){if(P<=0)return 0;const i=APR/100/12,N=TERM*12;return P*i/(1-Math.pow(1+i,-N));}
-function save(){try{localStorage.setItem(LS,JSON.stringify({dec,buyIntrepid:$('buyIntrepid').checked,buyHook:$('buyHook').checked,vals:{net:$('net').value,draw:$('draw').value,f550val:$('f550val').value,hookprice:$('hookprice').value,newrev:$('newrev').value}}));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;dec=s.dec||dec;$('buyIntrepid').checked=s.buyIntrepid;$('buyHook').checked=s.buyHook;if(s.vals)for(const k in s.vals)if($(k))$(k).value=s.vals[k];}catch(e){}}
-function setToggle(v,s){dec[v]=s;}
-function preset(p){
-  if(p==='now'){dec={ram:'keep',f550:'keep'};$('buyIntrepid').checked=true;$('buyHook').checked=false;}
-  if(p==='all'){dec={ram:'keep',f550:'keep'};$('buyIntrepid').checked=true;$('buyHook').checked=true;}
-  if(p==='consolidate'){dec={ram:'sell',f550:'sell'};$('buyIntrepid').checked=true;$('buyHook').checked=true;}
-  calc();
-}
+const LS='bm-operating';const INTREPID=1000, RAM_SHED=1205;
+function save(){try{localStorage.setItem(LS,JSON.stringify({net:$('net').value,draw:$('draw').value,earn:$('earn').value,dayrate:$('dayrate').value,sellRam:$('sellRam').checked,towrep:$('towrep').value}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(!s)return;['net','draw','earn','dayrate','towrep'].forEach(k=>{if($(k)&&s[k]!=null)$(k).value=s[k];});if(s.sellRam)$('sellRam').checked=true;}catch(e){}}
 function calc(){
-  const net=n('net'),draw=n('draw'),f550val=n('f550val'),hookprice=n('hookprice'),newrev=n('newrev');
+  const net=n('net'),draw=n('draw'),earn=n('earn'),dr=n('dayrate')||400;
   const base=net-draw;
-  $('m_net').textContent=m(net);$('m_draw').textContent='– '+m(draw);$('m_free').textContent=m(base);
-  $('m_free').className='num '+(base>=0?'ok':'bad');
-  $('m_freenote').textContent=base<500?'Thin cushion — little room before adding anything.':'';
-  $('f550cash').textContent=Math.round(f550val).toLocaleString();
-  // toggle visuals
-  document.querySelectorAll('.toggle').forEach(t=>{const v=t.dataset.v;t.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===dec[v]));});
-  // sales
-  let onceCash=0, soldMonthly=0;
-  if(dec.ram==='sell'){onceCash+=RAM_EQUITY;soldMonthly+=RAM_PMT+RAM_INS;}
-  if(dec.f550==='sell'){onceCash+=f550val;soldMonthly+=F550_COST;}
-  // additions
-  const intr=$('buyIntrepid').checked?INTREPID:0;
-  let hookMonthly=0, hookFin=0;
-  if($('buyHook').checked){hookFin=Math.max(0,hookprice-onceCash);hookMonthly=pmtCalc(hookFin)+HOOK_RUN-DISPOSAL;}
-  const cashLeft=Math.max(0,onceCash-($('buyHook').checked?hookprice:0));
-  const tow=(dec.ram==='sell')?n('towrep'):0;
-  const total=base+soldMonthly-intr-hookMonthly+newrev-tow;
-  // fill
-  $('r_base').textContent=m(base);
-  $('r_sold').textContent='+'+m(soldMonthly);
-  $('r_intr').textContent='– '+m(intr);
-  $('r_hook').textContent='– '+m(hookMonthly);
-  $('r_tow').textContent='– '+m(tow);
-  $('r_rev').textContent='+'+m(newrev);
+  $('m_net').textContent=m(net);$('m_draw').textContent='– '+m(draw);$('m_free').textContent=m(base);$('m_free').className='num '+(base>=0?'ok':'bad');
+  const total=base-INTREPID+earn;
+  $('r_base').textContent=m(base);$('r_earn').textContent='+'+m(earn);
   $('r_total').textContent=m(total)+'/mo';$('r_total').className='num '+(total>=300?'ok':total>=0?'warn':'bad');
-  $('r_big').textContent=m(total)+'/mo';
-  $('r_big').className='big '+(total>=300?'ok':total>=0?'warn':'bad');
-  $('r_once').textContent='+'+m(onceCash);
-  $('r_oncenote').textContent=$('buyHook').checked?('(funds the hook-lift; ~'+m(cashLeft)+' left, financing '+m(hookFin)+')'):'(no hook-lift purchase — cash stays in pocket)';
-  // name + verdict
-  const sells=(dec.ram==='sell'?'sell Ram':'keep Ram')+', '+(dec.f550==='sell'?'sell F-550':'keep F-550');
-  $('r_name').textContent=sells+(intr?' · +Intrepid':'')+($('buyHook').checked?' · +hook-lift':'');
-  const res=$('result');
-  let v,border,bg;
-  if(total>=300){v='✅ <b>Affordable.</b> This path leaves real monthly cushion.';border='#15803d';bg='#f3fbf5';}
-  else if(total>=0){v='🟡 <b>Tight but positive.</b> It works on paper, but with little margin — only safe if the new revenue estimate holds and you keep the cushion.';border='#b9770f';bg='#fffaf0';}
-  else {v='🔴 <b>Negative cash flow — '+m(-total)+'/mo short.</b> Not sustainable without more revenue or shedding payments.';border='#b0413b';bg='#fbeeed';}
-  res.style.borderColor=border;res.style.background=bg;$('r_verdict').innerHTML=v;
-  // bottom line
-  $('bottom').innerHTML='With only <b>'+m(base)+'/mo</b> free today, adding the Intrepid ('+m(intr)+') while <b>keeping every truck</b> runs you negative. The hook-lift is better for the work — but you can only afford it if you <b>sell the Ram and the white F-550 to fund it and shed the Ram’s '+m(RAM_PMT)+'/mo payment</b>. That path (C) lands near <b>'+m(base+1505-1000-(pmtCalc(Math.max(0,hookprice-(RAM_EQUITY+f550val)))+HOOK_RUN-DISPOSAL))+'/mo</b> before any new work — thin but positive — and the new gear has to earn its keep on top. Keeping everything + Intrepid + hook-lift is firmly out of reach. <b>Catch:</b> the Ram is your trailer tow rig — selling it cleanly assumes the hook-lift hauls the Intrepid on a flatbed body; if not, swap the Ram for a cheaper ~$450/mo pickup (set it above) and you still beat keeping the underwater diesel.';
+  $('r_big').textContent=m(total)+'/mo';$('r_big').className='big '+(total>=300?'ok':total>=0?'warn':'bad');
+  // break-even
+  const gap=INTREPID-base; // how much earn needed to hit 0
+  $('be_free').textContent=m(base);$('be_gap').textContent=m(-(base-INTREPID));
+  const even=Math.max(0,INTREPID-base), healthy=Math.max(0,INTREPID-base+1000);
+  $('be_even').textContent=m(even)+'/mo';$('be_healthy').textContent=m(healthy)+'/mo';
+  $('be_days').innerHTML='At ~'+m(dr)+'/machine-day, that’s about <b>'+(even/dr).toFixed(1)+' days/mo</b> to break even and <b>'+(healthy/dr).toFixed(1)+' days/mo</b> for a healthy cushion. A mini loader that’s genuinely mandatory should clear that easily.';
+  // verdict
+  const res=$('result');let v,bd,bg;
+  if(total>=300){v='✅ <b>Sustainable.</b> The Intrepid is more than carrying itself at this utilization.';bd='#15803d';bg='#f3fbf5';}
+  else if(total>=0){v='🟡 <b>Breaking even.</b> It’s paying for itself but leaving little cushion — keep it billing and watch lean months.';bd='#b9770f';bg='#fffaf0';}
+  else {v='🔴 <b>'+m(-total)+'/mo short.</b> Until the Intrepid bills/saves ~'+m(even)+'/mo, you’re running negative — this is the gap to close with utilization (or the relief valve below).';bd='#b0413b';bg='#fbeeed';}
+  res.style.borderColor=bd;res.style.background=bg;$('r_verdict').innerHTML=v;
+  // relief valve
+  const tow=$('sellRam').checked?n('towrep'):0;
+  const ramTotal=$('sellRam').checked?(total+RAM_SHED-tow):total;
+  $('r_ramsold').textContent=m(ramTotal)+'/mo';$('r_ramsold').className='num '+(ramTotal>=300?'ok':ramTotal>=0?'warn':'bad');
+  // bottom
+  $('bottom').innerHTML='Operating as you are + the Intrepid starts at <b class="bad">'+m(base-INTREPID)+'/mo</b> before the machine earns. Since it’s mandatory, the real job is <b>utilization</b>: it needs to bill or save about <b>'+m(even)+'/mo (~'+(even/dr).toFixed(1)+' machine-days)</b> just to break even, and ~'+m(healthy)+'/mo for a real cushion. That’s very reachable for a loader you can’t operate without. If a slow stretch makes it tight, the Ram is your relief valve — selling or downsizing it frees ~'+m(RAM_SHED)+'/mo. Watch the cash buffer month to month; this works as long as the Intrepid stays busy.';
   save();
 }
-document.querySelectorAll('.toggle button').forEach(b=>b.addEventListener('click',()=>{setToggle(b.parentElement.dataset.v,b.dataset.s);calc();}));
-document.querySelectorAll('.presets button').forEach(b=>b.addEventListener('click',()=>preset(b.dataset.p)));
 document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));
 load();calc();
 </script>
