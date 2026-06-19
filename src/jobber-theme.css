@@ -1,0 +1,80 @@
+/* ============================================================================
+ * jobber-theme.css — design tokens + reusable components for BM "Jobber-style".
+ *
+ * Active ONLY when localStorage `bm-ui-style` === 'jobber' (the app root gets a
+ * `.jobber-ui` class). Classic BM is untouched. Presentation-only: screens reuse
+ * BM's existing data/logic and just swap markup to these classes.
+ *
+ * Tokens are MEASURED from live secure.getjobber.com (Jun 16 2026) — real
+ * computed values, not approximations. "Jobber Pro" (display) is proprietary;
+ * Poppins is Jobber's own declared public fallback.
+ * ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+.jobber-ui {
+  /* fonts */
+  --jb-font-body: Inter, Helvetica, Arial, sans-serif;
+  --jb-font-display: Poppins, Helvetica, Arial, sans-serif;
+  /* color */
+  --jb-ink: #032B3A;        /* headings */
+  --jb-text: #233D48;       /* body */
+  --jb-muted: #49646F;      /* secondary */
+  --jb-border: #DADFE2;     /* card + table borders */
+  --jb-green: #388523;      /* primary action */
+  --jb-green-hover: #2f7020;
+  --jb-bg: #FFFFFF;         /* page background */
+  --jb-row-hover: #F5F9F2;
+  /* status */
+  --jb-active: #15803d; --jb-active-bg: #e9f5ec;
+  --jb-lead: #1d6fd6;   --jb-lead-bg: #e8f1fc;
+  --jb-draft: #5f6b62;  --jb-draft-bg: #eef0ee;
+  /* shape */
+  --jb-radius: 8px;
+
+  font-family: var(--jb-font-body);
+  font-size: 14px;
+  color: var(--jb-text);
+  background: var(--jb-bg);
+}
+
+/* ---- typography ---- */
+.jobber-ui .jb-h1 { font-family: var(--jb-font-display); font-weight: 900; font-size: 36px; line-height: 1.08; color: var(--jb-ink); margin: 0; }
+.jobber-ui .jb-h2 { font-family: var(--jb-font-display); font-weight: 800; font-size: 22px; color: var(--jb-ink); margin: 0; }
+.jobber-ui .jb-muted { color: var(--jb-muted); font-size: 12px; }
+.jobber-ui .jb-stat-num { font-size: 24px; font-weight: 700; color: var(--jb-ink); }
+
+/* ---- buttons ---- */
+.jobber-ui .jb-btn { font-family: var(--jb-font-body); font-size: 14px; font-weight: 600; border-radius: var(--jb-radius); padding: 9px 16px; cursor: pointer; border: 1px solid transparent; line-height: 1; }
+.jobber-ui .jb-btn-primary { background: var(--jb-green); color: #fff; }
+.jobber-ui .jb-btn-primary:hover { background: var(--jb-green-hover); }
+.jobber-ui .jb-btn-outline { background: #fff; color: var(--jb-text); border-color: var(--jb-border); }
+.jobber-ui .jb-btn-outline:hover { background: #f7faf7; }
+
+/* ---- cards (flat: border, no shadow) ---- */
+.jobber-ui .jb-card { background: #fff; border: 1px solid var(--jb-border); border-radius: var(--jb-radius); padding: 18px 20px; }
+.jobber-ui .jb-stat-card { display: flex; flex-direction: column; gap: 4px; }
+.jobber-ui .jb-stat-label { font-weight: 700; font-size: 13px; color: var(--jb-ink); }
+.jobber-ui .jb-trend-up { color: var(--jb-active); font-size: 12px; font-weight: 600; }
+.jobber-ui .jb-trend-down { color: #b0413b; font-size: 12px; font-weight: 600; }
+
+/* ---- status badges (● dot + label) ---- */
+.jobber-ui .jb-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 14px; }
+.jobber-ui .jb-badge::before { content: '●'; font-size: 9px; }
+.jobber-ui .jb-badge.active { color: var(--jb-active); background: var(--jb-active-bg); }
+.jobber-ui .jb-badge.lead   { color: var(--jb-lead);   background: var(--jb-lead-bg); }
+.jobber-ui .jb-badge.draft  { color: var(--jb-draft);  background: var(--jb-draft-bg); }
+
+/* ---- data table ---- */
+.jobber-ui .jb-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.jobber-ui .jb-table th { text-align: left; font-weight: 600; font-size: 13px; color: var(--jb-muted); padding: 10px 12px; border-bottom: 1px solid var(--jb-border); cursor: pointer; }
+.jobber-ui .jb-table td { padding: 16px 12px; border-bottom: 1px solid var(--jb-border); color: var(--jb-text); vertical-align: top; }
+.jobber-ui .jb-table tbody tr:hover { background: var(--jb-row-hover); }
+.jobber-ui .jb-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.jobber-ui .jb-cell-strong { font-weight: 700; color: var(--jb-ink); }
+.jobber-ui .jb-cell-sub { font-size: 13px; color: var(--jb-muted); margin-top: 2px; }
+
+/* ---- left nav item ---- */
+.jobber-ui .jb-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--jb-radius); color: var(--jb-text); font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; }
+.jobber-ui .jb-nav-item:hover { background: #f1f4f1; }
+.jobber-ui .jb-nav-item.active { background: #fff; color: var(--jb-green); border: 1px solid var(--jb-border); }
