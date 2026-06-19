@@ -37,9 +37,6 @@ var BooksPage = (function() {
     return (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
   }
 
-  // [DEBUG v_probe] breadcrumb — localStorage survives a renderer HANG/crash, unlike console.
-  function _BC(stage){ try{ localStorage.setItem('bm-books-bc', stage); localStorage.setItem('bm-books-bc-t', String(Date.now())); }catch(e){} }
-
   function _fetchAll() {
     var sb = _supabase();
     if (!sb) return Promise.resolve();
@@ -291,7 +288,6 @@ var BooksPage = (function() {
     var txns = _txns || [];
     var chart = _chart || [];
 
-    _BC('shell-start');
     var html = '<div style="max-width:1200px;">';
 
     // Header
@@ -363,7 +359,7 @@ var BooksPage = (function() {
     html += '</div>'; // end OVERVIEW pane
 
     // ===== PROFIT & LOSS pane: P&L, top expenses, cash-flow, health, multi-year =====
-    _BC('pre-pl'); html += '<div class="bk-pane" data-pane="pl" style="display:' + (TAB === 'pl' ? 'block' : 'none') + ';">';
+    html += '<div class="bk-pane" data-pane="pl" style="display:' + (TAB === 'pl' ? 'block' : 'none') + ';">';
 
     // P&L by line of business (v936) — revenue split + contribution per line
     html += _renderPLByLine();
@@ -714,7 +710,7 @@ var BooksPage = (function() {
     html += '</div>'; // end PROFIT & LOSS pane
 
     // ===== TAXES pane: tax-year reconciliation + NY sales-tax reconciliation =====
-    _BC('pre-taxes'); html += '<div class="bk-pane" data-pane="taxes" style="display:' + (TAB === 'taxes' ? 'block' : 'none') + ';">';
+    html += '<div class="bk-pane" data-pane="taxes" style="display:' + (TAB === 'taxes' ? 'block' : 'none') + ';">';
 
     // ──────────────────────────────────────────────────────────────────
     // v867: Tax-Year Reconciliation — side-by-side BM Books P&L vs tax
@@ -920,7 +916,7 @@ var BooksPage = (function() {
     html += '</div>'; // end TAXES pane
 
     // ===== INVOICES (A/R) pane: outstanding invoice aging =====
-    _BC('pre-invoices'); html += '<div class="bk-pane" data-pane="invoices" style="display:' + (TAB === 'invoices' ? 'block' : 'none') + ';">';
+    html += '<div class="bk-pane" data-pane="invoices" style="display:' + (TAB === 'invoices' ? 'block' : 'none') + ';">';
 
     // ──────────────────────────────────────────────────────────────────
     // v880: Outstanding Invoices (AR aging) — surface unpaid > 0 by age
@@ -1108,7 +1104,7 @@ var BooksPage = (function() {
     html += '</div>'; // end INVOICES (A/R) pane
 
     // ===== TRANSACTIONS pane: the bank register + categorization =====
-    _BC('pre-transactions'); html += '<div class="bk-pane" data-pane="transactions" style="display:' + (TAB === 'transactions' ? 'block' : 'none') + ';">';
+    html += '<div class="bk-pane" data-pane="transactions" style="display:' + (TAB === 'transactions' ? 'block' : 'none') + ';">';
 
     // Transactions table
     if (filtered.length === 0) {
@@ -1124,7 +1120,6 @@ var BooksPage = (function() {
       var chartByCode = {};
       chart.forEach(function(c) { chartByCode[c.code] = c; });
 
-      _BC('txn-loop-start:'+filtered.length+'x'+chart.length);
       filtered.slice(0, 200).forEach(function(t) {
         var amt = Number(t.amount) || 0;
         var amtColor = amt > 0 ? 'var(--green-dark)' : 'var(--text)';
@@ -1162,7 +1157,6 @@ var BooksPage = (function() {
     html += '</div>'; // close content column
     html += '</div>'; // close sidebar + content flex row
     html += '</div>'; // close max-width wrapper
-    _BC('shell-return');
     return html;
   }
 

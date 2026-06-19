@@ -1,5 +1,5 @@
 {
-  "version": 952,
+  "version": 953,
   "released": "2026-06-18",
-  "notes": "debug: temporary Books render breadcrumbs (localStorage bm-books-bc) to pin the render hang"
+  "notes": "Remove temporary Books debug breadcrumbs (render hang did not reproduce in v952; 108ms at default range)"
 }
