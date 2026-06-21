@@ -35,6 +35,15 @@
   .role{font-weight:700}.role span{display:block;font-size:12px;color:var(--muted);font-weight:400}
   .fine{font-size:12.5px;color:var(--muted);margin:9px 2px 0}
   .fine b.draft{color:var(--bad)}
+  .steps{counter-reset:s}
+  .stp{position:relative;padding:11px 0 11px 42px;border-bottom:1px solid var(--line);font-size:14.5px}
+  .stp:last-child{border-bottom:none}
+  .stp::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:10px;width:27px;height:27px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .stp b{display:block;margin-bottom:1px}
+  .qa{border-top:1px solid var(--line);padding:12px 0}
+  .qa:first-of-type{border-top:none;padding-top:2px}
+  .qa .q{font-weight:800;font-size:14.5px;margin:0 0 3px}
+  .qa .a{font-size:14px;color:var(--muted);margin:0}
   .cta{background:linear-gradient(160deg,#10401a,#2e7d32);color:#fff;border-radius:16px;padding:26px 22px;text-align:center}
   .cta h2{color:#fff;margin:0 0 6px;font-size:21px}
   .cta p{margin:0 auto 15px;max-width:430px;opacity:.95;font-size:15px}
@@ -80,6 +89,18 @@
 
   <section>
     <div class="card">
+      <h2>How it works</h2>
+      <p class="sub">Post what you need, someone fills it, you keep your customer.</p>
+      <div class="steps">
+        <div class="stp"><b>Post the job — or the gap.</b>Got a removal Tuesday but need a bucket truck and a climber? Post it. Slow week? Grab someone else's overflow.</div>
+        <div class="stp"><b>A member fills it.</b>Crew, iron, or the whole job — at set rates. Everyone's insured and on-site, so you're never up a tree alone.</div>
+        <div class="stp"><b>You keep your customer.</b>The job runs through your own BranchManager workspace. The client stays yours — no poaching, ever.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
       <h2>Share the iron</h2>
       <p class="sub">Idle equipment is dead money. Rates include coverage under our insurance — bring your own and take 20% off.</p>
       <table>
@@ -93,6 +114,16 @@
         </tbody>
       </table>
       <p class="fine">Rates include coverage under our Erie GL + NYSIF Workers' Comp. <b>Self-renting equipment? Provide your own insurance certificates (COI) and take 20% off.</b></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <h2>Straight answers</h2>
+      <div class="qa"><p class="q">Do I lose my own company?</p><p class="a">No. Your brand, your customers, your call — all yours. The co-op is the muscle behind you, not over you.</p></div>
+      <div class="qa"><p class="q">Do you control my prices?</p><p class="a">There's a floor so nobody lowballs the group into the ground. Above that, you price your own work.</p></div>
+      <div class="qa"><p class="q">Is there a buy-in?</p><p class="a">Yes — it's real ownership, so there's a buy-in that builds into equity that pays out. We set the terms together, finalized with a co-op attorney + CPA.</p></div>
+      <div class="qa"><p class="q">What if someone won't pull their weight?</p><p class="a">Built in: you owe your share or it comes out of your equity — run it dry and you're out. It protects the people doing the work.</p></div>
     </div>
   </section>
 
