@@ -8,32 +8,40 @@
 <style>
   :root{--green:#2e7d32;--green-d:#10401a;--green-l:#e8f5e9;--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--good:#1b6e2a;--goodl:#e8f5e9;--bad:#9a5b00;--badl:#fff6e8}
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
-  .wrap{max-width:680px;margin:0 auto;padding:0 20px}
-  header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:50px 0 42px;text-align:center}
-  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:10px}
-  header h1{margin:0 auto;font-size:32px;font-weight:800;max-width:520px;line-height:1.14}
-  header .tag{margin:14px auto 0;font-size:17px;opacity:.96;max-width:500px}
-  section{margin:24px 0}
-  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;box-shadow:0 1px 3px rgba(20,40,20,.04)}
-  .lead{font-size:17px;margin:0}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
+  .wrap{max-width:660px;margin:0 auto;padding:0 20px}
+  header{background:linear-gradient(160deg,#0c3012,#2e7d32 90%);color:#fff;padding:46px 0 38px;text-align:center}
+  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:9px}
+  header h1{margin:0 auto;font-size:30px;font-weight:800;max-width:500px;line-height:1.15}
+  header .tag{margin:13px auto 0;font-size:16.5px;opacity:.96;max-width:480px}
+  section{margin:20px 0}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:0 1px 3px rgba(20,40,20,.04)}
+  .lead{font-size:16.5px;margin:0 0 14px}
   .muted{color:var(--muted)}
-  .gb{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 4px}
-  .g,.b{border-radius:12px;padding:14px 16px;font-size:14.5px}
+  .gb{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .g,.b{border-radius:12px;padding:13px 15px;font-size:14px}
   .g{background:var(--goodl);border:1px solid #c8e6c9}
   .b{background:var(--badl);border:1px solid #f0dcb0}
-  .g .lbl,.b .lbl{font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
+  .lbl{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
   .g .lbl{color:var(--good)} .b .lbl{color:var(--bad)}
-  .g ul{margin:0;padding-left:18px} .g li{margin:3px 0}
-  .cta{background:linear-gradient(160deg,#10401a,#2e7d32);color:#fff;border-radius:16px;padding:28px 22px;text-align:center;margin-top:22px}
-  .cta h2{color:#fff;margin:0 0 6px;font-size:22px}
-  .cta p{margin:0 auto 16px;max-width:440px;opacity:.95}
-  .go{display:inline-block;background:#fff;color:var(--green-d);text-decoration:none;font-weight:800;font-size:15.5px;padding:13px 26px;border-radius:10px;margin:5px 4px}
+  .g ul{margin:0;padding-left:17px} .g li{margin:3px 0}
+  h2{font-size:18px;margin:0 0 4px;color:var(--green-d)}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+  table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left}
+  th{background:#f0f5f0;color:var(--green-d);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+  td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .role{font-weight:700}.role span{display:block;font-size:12px;color:var(--muted);font-weight:400}
+  .fine{font-size:12.5px;color:var(--muted);margin:9px 2px 0}
+  .fine b.draft{color:var(--bad)}
+  .cta{background:linear-gradient(160deg,#10401a,#2e7d32);color:#fff;border-radius:16px;padding:26px 22px;text-align:center}
+  .cta h2{color:#fff;margin:0 0 6px;font-size:21px}
+  .cta p{margin:0 auto 15px;max-width:430px;opacity:.95;font-size:15px}
+  .go{display:inline-block;background:#fff;color:var(--green-d);text-decoration:none;font-weight:800;font-size:15px;padding:12px 24px;border-radius:10px;margin:5px 4px}
   .go.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)}
-  .more{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin:18px 0 0}
-  .more a{color:var(--green-d);font-weight:700;text-decoration:none;font-size:14px}
-  footer{text-align:center;color:var(--muted);font-size:13px;padding:26px 0 50px}
-  @media(max-width:560px){.gb{grid-template-columns:1fr}header h1{font-size:26px}}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:22px 0 46px}
+  @media(max-width:560px){.gb{grid-template-columns:1fr}header h1{font-size:25px}}
 </style>
 </head>
 <body>
@@ -42,7 +50,7 @@
   <div class="wrap">
     <div class="kicker">Grow together, not alone</div>
     <h1>Stop running your tree company solo.</h1>
-    <p class="tag">Keep your own business — share the crew, the iron, the insurance, and the big jobs. One shared back-office, run through BranchManager.</p>
+    <p class="tag">Keep your own business — share the crew, the iron, the insurance, and the big jobs. One shared back-office.</p>
   </div>
 </header>
 
@@ -50,7 +58,7 @@
 
   <section>
     <div class="card">
-      <p class="lead">Alone, you bleed margin: equipment sitting idle, jobs too big to bid, brutal solo insurance, no benefits. <b>Together, we pool all of it</b> — so each of us keeps our own company but finally gets the advantages of a big one.</p>
+      <p class="lead">Alone, you bleed margin: equipment sitting idle, jobs too big to bid, brutal solo insurance, no benefits. <b>Together we pool all of it</b> — you keep your own company but finally get the muscle of a big one.</p>
       <div class="gb">
         <div class="g">
           <span class="lbl">✓ What you get</span>
@@ -59,35 +67,41 @@
             <li>Bid bigger jobs you can't touch alone</li>
             <li>Rent crew &amp; iron on demand — no payroll</li>
             <li>Shared books, scheduling &amp; sales-tax</li>
-            <li>Real ownership — equity that pays out</li>
+            <li>Real equity that pays out</li>
           </ul>
         </div>
         <div class="b">
           <span class="lbl">⚠ The honest part</span>
-          It's a real cooperative, not a loose handshake — a buy-in, set pay rates, and rules everyone lives by. You're joining a shared way of working, eyes open.
+          A real cooperative, not a handshake: a buy-in, standard pay set by the group (not by who you're friends with), and rules everyone lives by. Eyes open.
         </div>
       </div>
     </div>
   </section>
 
   <section>
-    <div class="cta">
-      <h2>Try it free first.</h2>
-      <p>Run a few real jobs through your own private BranchManager workspace and see your true day-rate. Zero risk, nothing to sign.</p>
-      <a class="go" href="https://branchmanager.app/?signup=solo">Try BranchManager free →</a>
-      <a class="go ghost" href="mailto:info@peekskilltree.com?subject=Tree%20co-op%20question">Message Doug a question</a>
+    <div class="card">
+      <h2>Share the iron</h2>
+      <p class="sub">Idle equipment is dead money. Rates include coverage under our insurance — bring your own and take 20% off.</p>
+      <table>
+        <thead><tr><th>Per day</th><th class="r">Rate</th></tr></thead>
+        <tbody>
+          <tr><td class="role">Intrepid KM100 Tele<span>track loader</span></td><td class="r">$360</td></tr>
+          <tr><td class="role">Ram 2500 + dump insert</td><td class="r">$360</td></tr>
+          <tr><td class="role">Chipper (Bandit)</td><td class="r">$360</td></tr>
+          <tr><td class="role">Dump trailer<span>no CDL</span></td><td class="r">$210</td></tr>
+          <tr><td class="role">Bucket truck + operator<span>all-in, we run it</span></td><td class="r">$1,200</td></tr>
+        </tbody>
+      </table>
+      <p class="fine">Rates include coverage under our Erie GL + NYSIF Workers' Comp. <b>Self-renting equipment? Provide your own insurance certificates (COI) and take 20% off.</b></p>
     </div>
   </section>
 
   <section>
-    <p class="muted" style="text-align:center;margin:0 0 8px;font-size:14px">Want the details before you decide?</p>
-    <div class="more">
-      <a href="../collective/">The idea</a>
-      <a href="../how-it-works/">How it works</a>
-      <a href="../rates/">Rates &amp; rentals</a>
-      <a href="../ground-rules/">Ground rules</a>
-      <a href="../partners/">Founding circle</a>
-      <a href="../agreement/">The agreement</a>
+    <div class="cta">
+      <h2>Try it free first.</h2>
+      <p>Run a few real jobs through your own private BranchManager and see your true day-rate. Zero risk, nothing to sign.</p>
+      <a class="go" href="https://branchmanager.app/?signup=solo">Try BranchManager free →</a>
+      <a class="go ghost" href="mailto:info@peekskilltree.com?subject=Tree%20co-op%20question">Ask Doug a question</a>
     </div>
   </section>
 
