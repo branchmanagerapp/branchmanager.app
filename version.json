@@ -1,5 +1,5 @@
 {
-  "version": 953,
-  "released": "2026-06-18",
-  "notes": "Remove temporary Books debug breadcrumbs (render hang did not reproduce in v952; 108ms at default range)"
+  "version": 954,
+  "released": "2026-06-21",
+  "notes": "Co-op price-floor checker on Break-even page (floorDayRate + will-this-clear-the-floor tool)"
 }

@@ -50,6 +50,32 @@ var BreakEvenPage = {
 
   _money: function(n) { return '$' + Math.round(n || 0).toLocaleString(); },
 
+  // Co-op PRICE FLOOR — the minimum a booked crew-day must bill to cover its
+  // direct run cost + this member's share of annual overhead + their pay.
+  // Same break-even math the page renders (directCost + (overhead+ownerPay)/workDays).
+  floorDayRate: function() {
+    var c = BreakEvenPage._load();
+    var ov = c.overhead.reduce(function(s, o) { return s + (parseFloat(o.amt) || 0); }, 0);
+    return (parseFloat(c.directCostPerDay) || 0) + (ov + (parseFloat(c.ownerPay) || 0)) / (parseFloat(c.workDays) || 1);
+  },
+
+  // Quote checker: price ÷ days vs the floor → green/red verdict (no save/reload).
+  _checkQuote: function() {
+    var pe = document.getElementById('beq-price'), de = document.getElementById('beq-days'), el = document.getElementById('beq-verdict');
+    if (!el) return;
+    var price = parseFloat(pe && pe.value) || 0, days = parseFloat(de && de.value) || 0;
+    if (!price || !days) { el.style.display = 'none'; return; }
+    var floor = BreakEvenPage.floorDayRate(), perDay = price / days;
+    el.style.display = 'block';
+    if (perDay >= floor) {
+      el.style.cssText = 'display:block;font-size:13.5px;padding:10px 13px;border-radius:9px;margin-top:12px;background:#e8f5e9;color:#1b5e20;border:1px solid #c8e6c9;';
+      el.innerHTML = '✅ <b>' + BreakEvenPage._money(perDay) + '/day</b> — clears your <b>' + BreakEvenPage._money(floor) + '/day</b> floor. Good to bid.';
+    } else {
+      el.style.cssText = 'display:block;font-size:13.5px;padding:10px 13px;border-radius:9px;margin-top:12px;background:#fdf3f2;color:#b0413b;border:1px solid #f0d2d2;';
+      el.innerHTML = '⚠️ <b>' + BreakEvenPage._money(perDay) + '/day</b> — BELOW your <b>' + BreakEvenPage._money(floor) + '/day</b> floor. Short <b>' + BreakEvenPage._money(floor - perDay) + '/day</b>. Raise the price or cut the days.';
+    }
+  },
+
   // Actual revenue per JOB (reliable). NOT per-day — BM has no days-per-job, and
   // jobs span multiple days, so a true day rate can't be derived from this data.
   _actualDayStats: function() {
@@ -397,6 +423,18 @@ var BreakEvenPage = {
       +   BreakEvenPage._stat('That leaves you', Math.max(0, Math.floor(daysOff)) + ' days off', '#fff3cd', '#7c5a00', '≈ ' + Math.floor(daysOff / 7) + ' weeks off/yr')
       + '</div>'
       + '<div style="font-size:12px;color:#2c5a36;margin-top:10px;line-height:1.5;">Work just <b>' + Math.ceil(daysFixedPay) + ' solid $' + Math.round(c.dayRate).toLocaleString() + ' days a year</b> and the company covers all fixed costs AND pays you ' + BreakEvenPage._money(c.ownerPay) + '. The rest is time off (Catherine’s Prague/Tokyo, your own). The catch isn’t the cost structure — it’s <b>booking + collecting</b> those days. Raise the day rate or cut a fixed line (e.g. kill a dead-machine lease) and the required days drop further.</div>'
+      + '</div>';
+
+    // ── PRICE-FLOOR CHECKER (the co-op floor flag) ──
+    var floorRate = (parseFloat(c.directCostPerDay) || 0) + (ovTotal + (parseFloat(c.ownerPay) || 0)) / (parseFloat(c.workDays) || 1);
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="font-weight:700;margin-bottom:2px;">🎯 Will this job clear the floor?</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">Your price floor is <b>' + BreakEvenPage._money(floorRate) + '/day</b> — what a booked crew-day must bill to cover its run cost + overhead + your pay. Check any quote before you send it.</div>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">'
+      +   '<label style="font-size:13px;">Job price ($)<br><input type="number" id="beq-price" oninput="BreakEvenPage._checkQuote()" placeholder="3000" style="width:120px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:13px;text-align:right;"></label>'
+      +   '<label style="font-size:13px;">Est. days<br><input type="number" id="beq-days" oninput="BreakEvenPage._checkQuote()" step="0.5" placeholder="1" style="width:90px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:13px;text-align:right;"></label>'
+      + '</div>'
+      + '<div id="beq-verdict" style="display:none;"></div>'
       + '</div>';
 
     // ── ANNUAL OVERHEAD ──
