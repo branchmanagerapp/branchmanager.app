@@ -1,5 +1,5 @@
 {
-  "version": 954,
+  "version": 955,
   "released": "2026-06-21",
-  "notes": "Co-op price-floor checker on Break-even page (floorDayRate + will-this-clear-the-floor tool)"
+  "notes": "Fix UI.field is not a function — define + export the missing labeled-field helper (fixes Leads Center/campaigns/reviews/referrals crash)"
 }

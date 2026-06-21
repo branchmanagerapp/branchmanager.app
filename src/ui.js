@@ -408,6 +408,14 @@ var UI = (function() {
     return html;
   }
 
+  // ── Labeled field wrapper around raw input HTML (UI.field) ──
+  // Companion to formField: caller supplies the <input>/<select>/<textarea>
+  // markup themselves and this just wraps it with a styled label. Used across
+  // campaigns/reviews/receptionist/referrals etc. (was called but never defined → crash).
+  function field(label, inner) {
+    return '<div class="form-group"><label>' + (label == null ? '' : label) + '</label>' + (inner || '') + '</div>';
+  }
+
   // ── Stat Card ──
   function statCard(label, value, sub, trend, trendText, onclick) {
     return '<div class="stat-card"' + (onclick ? ' onclick="' + onclick + '" style="cursor:pointer;"' : '') + '>'
@@ -630,6 +638,7 @@ var UI = (function() {
     timeAgo: timeAgo,
     phone: phone,
     formField: formField,
+    field: field,
     formSection: formSection,
     bindAddressAutocomplete: bindAddressAutocomplete,
     bindClientPicker: bindClientPicker,
