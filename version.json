@@ -1,5 +1,5 @@
 {
-  "version": 959,
+  "version": 960,
   "released": "2026-06-22",
-  "notes": "Requests + Quotes match Jobber: New Request/New Quote buttons, Quotes Overview (Draft/Awaiting/Changes/Approved) + Sent/Converted stat cards"
+  "notes": "Home greeting uses real owner name (Doug) instead of generic Owner — matches Jobber"
 }
