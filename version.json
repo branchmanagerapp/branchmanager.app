@@ -1,5 +1,5 @@
 {
-  "version": 960,
+  "version": 961,
   "released": "2026-06-22",
-  "notes": "Home greeting uses real owner name (Doug) instead of generic Owner — matches Jobber"
+  "notes": "Clients: New Client header button (Jobber match)"
 }

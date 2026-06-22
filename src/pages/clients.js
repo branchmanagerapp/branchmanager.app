@@ -188,8 +188,9 @@ var ClientsPage = {
       })()
       + (self._tagFilter ? '<button onclick="ClientsPage._tagFilter=\'\';ClientsPage._page=0;loadPage(\'clients\')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid #2e7d32;background:#2e7d32;color:#fff;cursor:pointer;font-weight:600;">Tag: ' + UI.esc(self._tagFilter) + ' ✕</button>' : '<button onclick="ClientsPage.showTagFilter()" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-weight:500;">Filter by tag +</button>')
       + '</div>'
-      + '<div style="display:flex;align-items:center;gap:8px;">'
-      + '<div class="search-box" style="min-width:200px;max-width:280px;">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      + '<button class="btn btn-primary" onclick="ClientsPage.showForm()" style="font-size:13px;font-weight:700;">New Client</button>'
+      + '<div class="search-box" style="min-width:180px;max-width:260px;">'
       + '<span style="color:var(--text-light);">🔍</span>'
       + '<input type="text" id="client-search" placeholder="Search clients..." value="' + UI.esc(self._search) + '" oninput="ClientsPage.setSearch(this.value)">'
       + '</div>'
