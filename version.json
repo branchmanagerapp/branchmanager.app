@@ -1,5 +1,5 @@
 {
-  "version": 957,
-  "released": "2026-06-21",
-  "notes": "Nav matches Jobber: add Payments + Insights, reorder to Jobber sequence, BM-only items below divider, Receptionist label"
+  "version": 958,
+  "released": "2026-06-22",
+  "notes": "Requests Overview card matches Jobber (New/Assessment complete/Overdue/Unscheduled, colored dots)"
 }

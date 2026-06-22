@@ -209,6 +209,8 @@ var RequestsPage = {
     var newCount   = allRequests.filter(function(r){ return r.status === 'new'; }).length;
     var quotedCount = allRequests.filter(function(r){ return r.status === 'quoted'; }).length;
     var overdueCount = allRequests.filter(function(r){ return self._isOverdue(r); }).length;
+    var assessCompleteCount = allRequests.filter(function(r){ return r.status === 'assessment_complete'; }).length;
+    var unscheduledCount = allRequests.filter(function(r){ return r.status === 'unscheduled'; }).length;
     var convertedCount = allRequests.filter(function(r){ return r.status === 'converted' || r.status === 'quoted'; }).length;
     var thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
     var recentNew = allRequests.filter(function(r) {
@@ -233,8 +235,9 @@ var RequestsPage = {
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       +   '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">Overview</div>'
       +   '<div onclick="RequestsPage._setFilter(\'new\')" style="display:flex;justify-content:space-between;font-size:12px;cursor:pointer;padding:2px 0;"><span><span style="color:#1565c0;">●</span> New</span><span>' + newCount + '</span></div>'
-      +   '<div onclick="RequestsPage._setFilter(\'quoted\')" style="display:flex;justify-content:space-between;font-size:12px;cursor:pointer;padding:2px 0;"><span><span style="color:#7b1fa2;">●</span> Quoted</span><span>' + quotedCount + '</span></div>'
+      +   '<div onclick="RequestsPage._setFilter(\'assessment_complete\')" style="display:flex;justify-content:space-between;font-size:12px;cursor:pointer;padding:2px 0;"><span><span style="color:#2e7d32;">●</span> Assessment complete</span><span>' + assessCompleteCount + '</span></div>'
       +   '<div onclick="RequestsPage._setFilter(\'overdue\')" style="display:flex;justify-content:space-between;font-size:12px;cursor:pointer;padding:2px 0;"><span><span style="color:#c62828;">●</span> Overdue</span><span>' + overdueCount + '</span></div>'
+      +   '<div onclick="RequestsPage._setFilter(\'unscheduled\')" style="display:flex;justify-content:space-between;font-size:12px;cursor:pointer;padding:2px 0;"><span><span style="color:#f9a825;">●</span> Unscheduled</span><span>' + unscheduledCount + '</span></div>'
       + '</div>'
       // New requests (past 30d)
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
