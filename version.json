@@ -1,5 +1,5 @@
 {
-  "version": 958,
+  "version": 959,
   "released": "2026-06-22",
-  "notes": "Requests Overview card matches Jobber (New/Assessment complete/Overdue/Unscheduled, colored dots)"
+  "notes": "Requests + Quotes match Jobber: New Request/New Quote buttons, Quotes Overview (Draft/Awaiting/Changes/Approved) + Sent/Converted stat cards"
 }

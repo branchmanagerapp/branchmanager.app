@@ -93,22 +93,43 @@ var QuotesPage = {
     var convRate = all.length > 0 ? Math.round(closed.length / all.length * 100) : 0;
     var stale = active.filter(function(q) { return q.createdAt && new Date(q.createdAt) < now7ago; });
     var convColor = convRate >= 40 ? '#059669' : convRate >= 25 ? '#d97706' : '#dc2626';
+    // Jobber-style Overview counts
+    var draftCount = all.filter(function(q){ return q.status === 'draft'; }).length;
+    var awaitingCount = all.filter(function(q){ return q.status === 'awaiting' || q.status === 'sent'; }).length;
+    var changesCount = all.filter(function(q){ return q.status === 'changes_requested'; }).length;
+    var approvedCount = all.filter(function(q){ return q.status === 'approved'; }).length;
+    var sentList = all.filter(function(q){ return q.status === 'sent' || q.status === 'awaiting'; });
+    var sentTotal = sentList.reduce(function(s,q){ return s + (q.total||0); }, 0);
+    var convList = all.filter(function(q){ return q.status === 'converted'; });
+    var convTotal = convList.reduce(function(s,q){ return s + (q.total||0); }, 0);
+    function _ovRow(f,col,lab,n){ return '<div onclick="QuotesPage._setFilter(\'' + f + '\')" style="display:flex;justify-content:space-between;font-size:12px;cursor:pointer;padding:2px 0;"><span><span style="color:' + col + ';">●</span> ' + lab + '</span><span>' + n + '</span></div>'; }
 
-    var html = '<div class="stat-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">'
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">'
-      +   '<div style="font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;">Active Pipeline</div>'
-      +   '<div style="font-size:24px;font-weight:800;color:var(--text);margin-top:4px;">' + UI.moneyInt(activeTotal) + '</div>'
-      +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + active.length + ' awaiting</div>'
+    var html = '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);">'
+      // Overview — Jobber's 4-status colored-dot summary
+      + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
+      +   '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">Overview</div>'
+      +   _ovRow('draft','#6b7280','Draft',draftCount)
+      +   _ovRow('awaiting','#f9a825','Awaiting response',awaitingCount)
+      +   _ovRow('changes_requested','#c62828','Changes requested',changesCount)
+      +   _ovRow('approved','#2e7d32','Approved',approvedCount)
       + '</div>'
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;">'
-      +   '<div style="font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;">Conversion</div>'
-      +   '<div style="font-size:24px;font-weight:800;color:' + convColor + ';margin-top:4px;">' + convRate + '%</div>'
-      +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + closed.length + ' of ' + all.length + '</div>'
+      // Conversion rate
+      + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
+      +   '<div style="font-size:14px;font-weight:700;">Conversion rate</div>'
+      +   '<div style="font-size:12px;color:var(--text-light);">All time</div>'
+      +   '<div style="font-size:28px;font-weight:700;margin-top:4px;color:' + convColor + ';">' + convRate + '%</div>'
       + '</div>'
-      + '<div style="background:' + (stale.length > 0 ? '#fffbeb' : 'var(--white)') + ';border:1px solid ' + (stale.length > 0 ? '#fcd34d' : 'var(--border)') + ';border-radius:12px;padding:16px 18px;cursor:pointer;" onclick="QuotesPage._setFilter(\'stale\')">'
-      +   '<div style="font-size:11px;font-weight:600;color:' + (stale.length > 0 ? '#92400e' : 'var(--text-light)') + ';text-transform:uppercase;letter-spacing:.04em;">Stale · 7d+</div>'
-      +   '<div style="font-size:24px;font-weight:800;color:' + (stale.length > 0 ? '#b45309' : 'var(--text)') + ';margin-top:4px;">' + stale.length + '</div>'
-      +   '<div style="font-size:12px;color:' + (stale.length > 0 ? '#92400e' : 'var(--text-light)') + ';margin-top:2px;">' + (stale.length > 0 ? 'Follow up →' : 'All caught up ✓') + '</div>'
+      // Sent (count + $)
+      + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
+      +   '<div style="font-size:14px;font-weight:700;">Sent</div>'
+      +   '<div style="font-size:12px;color:var(--text-light);">' + UI.moneyInt(sentTotal) + '</div>'
+      +   '<div style="font-size:28px;font-weight:700;margin-top:4px;">' + sentList.length + '</div>'
+      + '</div>'
+      // Converted (count + $)
+      + '<div style="padding:14px 16px;">'
+      +   '<div style="font-size:14px;font-weight:700;">Converted</div>'
+      +   '<div style="font-size:12px;color:var(--text-light);">' + UI.moneyInt(convTotal) + '</div>'
+      +   '<div style="font-size:28px;font-weight:700;margin-top:4px;">' + convList.length + '</div>'
       + '</div>'
       + '</div>';
 
@@ -127,6 +148,7 @@ var QuotesPage = {
       +   '<span style="font-size:13px;color:var(--text-light);">(' + filtered.length + ')</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      +   '<button class="btn btn-primary" onclick="QuotesPage.showNewQuotePicker()" style="font-size:13px;font-weight:700;">New Quote</button>'
       +   '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:var(--white);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ From walkthrough</button>'
       +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'

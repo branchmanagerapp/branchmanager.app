@@ -276,9 +276,12 @@ var RequestsPage = {
     });
 
     html += '</div>'
-      + '<div class="search-box" style="min-width:200px;max-width:280px;">'
-      +   '<span style="color:var(--text-light);">🔍</span>'
-      +   '<input type="text" placeholder="Search requests..." value="' + UI.esc(self._search) + '" oninput="RequestsPage._search=this.value;RequestsPage._page=0;loadPage(\'requests\')">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      +   '<button class="btn btn-primary" onclick="RequestsPage.showForm()" style="font-size:13px;font-weight:700;">New Request</button>'
+      +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
+      +     '<span style="color:var(--text-light);">🔍</span>'
+      +     '<input type="text" placeholder="Search requests..." value="' + UI.esc(self._search) + '" oninput="RequestsPage._search=this.value;RequestsPage._page=0;loadPage(\'requests\')">'
+      +   '</div>'
       + '</div>'
       + '</div>';
 
