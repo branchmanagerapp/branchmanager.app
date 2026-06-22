@@ -1,5 +1,5 @@
 {
-  "version": 955,
+  "version": 956,
   "released": "2026-06-21",
-  "notes": "Fix UI.field is not a function — define + export the missing labeled-field helper (fixes Leads Center/campaigns/reviews/referrals crash)"
+  "notes": "Jobber-style theme token layer (Poppins headings + measured Jobber colors), gated to jobber-mode via body.ui-jobber"
 }

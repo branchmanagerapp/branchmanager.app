@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 955; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 956; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -191,7 +191,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
 <!-- Google Fonts intentionally not pinned: googleapis CSS varies by user-agent, SRI not supported -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;900&display=swap">
 <style>
   :root {
     --green-dark: #00836c;
@@ -214,6 +214,20 @@
     --accent: #00836c;
     --accent-hover: #006d59;
   }
+  /* v956: Jobber-style theme token layer — exact values measured from live secure.getjobber.com (Jun 16).
+     Gated to jobber-mode via body.ui-jobber so Classic BM is untouched. Recolors/refonts every screen at once. */
+  body.ui-jobber {
+    --green-dark:#388523; --green:#388523; --green-light:#5fae3f; --green-bg:#eef6e9;
+    --accent:#388523; --accent-hover:#2f6e1d;
+    --text:#233D48; --text-light:#49646F; --border:#DADFE2; --bg:#ffffff;
+    --sidebar-active:rgba(56,133,35,.10);
+    font-family:"Inter",Helvetica,Arial,sans-serif;
+  }
+  body.ui-jobber h1, body.ui-jobber h2, body.ui-jobber h3,
+  body.ui-jobber .page-title, body.ui-jobber .greeting {
+    font-family:"Poppins","Inter",Helvetica,Arial,sans-serif; color:#032B3A;
+  }
+  body.ui-jobber h1, body.ui-jobber .page-title { font-weight:900; letter-spacing:-.01em; }
   [data-theme="dark"] {
     --green-bg: #1a2e23;
     --white: #1e2128;
@@ -1123,7 +1137,7 @@ window.BMUI = {
 };
 (function(){
   try {
-    if (!window.BMUI.isClassic()) return;
+    if (!window.BMUI.isClassic()) { if (document.body) document.body.classList.add('ui-jobber'); return; }
     if (document.body) document.body.classList.add('bm-classic');
     var navEl = document.querySelector('.sidebar-nav');
     if (!navEl) return;
@@ -1137,7 +1151,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v955.min.js"></script>
+<script defer src="dist/bm.bundle.v956.min.js"></script>
 
 
 
