@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 956; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 957; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1020,7 +1020,7 @@
     </div>
     <div class="sidebar-nav">
       <!-- v946: nav reordered to match Jobber — core money-pipeline first, then back-office tools, then Settings. -->
-      <!-- Core workflow (Jobber order) -->
+      <!-- Core workflow (Jobber order — matches secure.getjobber.com nav) -->
       <button class="nav-item" data-page="dashboard"><span class="icon"><i data-lucide="home" class="li"></i></span> Home</button>
       <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
       <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>
@@ -1028,14 +1028,16 @@
       <button class="nav-item" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
       <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
       <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
-      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
-      <!-- Back-office / BM-specific -->
-      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
-      <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Leads Center<span class="cc-dot" id="cc-indicator-dot"></span></button>
-      <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
-      <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
-      <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
+      <button class="nav-item" data-page="payments"><span class="icon"><i data-lucide="credit-card" class="li"></i></span> Payments</button>
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
+      <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Receptionist<span class="cc-dot" id="cc-indicator-dot"></span></button>
+      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
+      <button class="nav-item" data-page="insights"><span class="icon"><i data-lucide="line-chart" class="li"></i></span> Insights</button>
+      <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
+      <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
+      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
+      <!-- BM-only (below divider — Jobber doesn't have these) -->
+      <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
       <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="wallet" class="li"></i></span> Payroll</button>
       <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
@@ -1142,7 +1144,7 @@ window.BMUI = {
     var navEl = document.querySelector('.sidebar-nav');
     if (!navEl) return;
     // classic order = pre-v946 nav sequence
-    var order = ['dashboard','schedule','clients','callcenter','pipeline','requests','quotes','jobs','invoices','taskreminders','operations','permits','insurance','expenses','books','reports','socialbranch','marketingsite','payroll','tools','settings'];
+    var order = ['dashboard','schedule','clients','callcenter','pipeline','requests','quotes','jobs','invoices','payments','taskreminders','operations','permits','insurance','expenses','books','reports','insights','socialbranch','marketingsite','payroll','tools','settings'];
     // strip the v946 group dividers, then re-append items in classic order
     Array.prototype.slice.call(navEl.children).forEach(function(c){ if (!c.classList || !c.classList.contains('nav-item')) navEl.removeChild(c); });
     order.forEach(function(pg){ var b = navEl.querySelector('.nav-item[data-page="'+pg+'"]'); if (b) navEl.appendChild(b); });
@@ -1151,7 +1153,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v956.min.js"></script>
+<script defer src="dist/bm.bundle.v957.min.js"></script>
 
 
 

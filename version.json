@@ -1,5 +1,5 @@
 {
-  "version": 956,
+  "version": 957,
   "released": "2026-06-21",
-  "notes": "Jobber-style theme token layer (Poppins headings + measured Jobber colors), gated to jobber-mode via body.ui-jobber"
+  "notes": "Nav matches Jobber: add Payments + Insights, reorder to Jobber sequence, BM-only items below divider, Receptionist label"
 }
