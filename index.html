@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 962; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 963; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -704,6 +704,16 @@
     .modal-body { overflow-x:hidden !important; overflow-y:auto !important; -webkit-overflow-scrolling:touch; }
     .modal-body form, .modal-body > div { max-width:100% !important; overflow-x:hidden !important; }
 
+    /* v963: pin the inline-dialog footer as a thumb-reachable action bar (Jobber-app pattern) */
+    .bm-dialog-footer {
+      position:fixed; left:0; right:0; bottom:0; z-index:60; margin:0 !important;
+      padding:10px 14px !important; padding-bottom:calc(10px + env(safe-area-inset-bottom)) !important;
+      background:var(--white); border-top:1px solid var(--border); box-shadow:0 -2px 12px rgba(0,0,0,.07);
+    }
+    .bm-dialog-footer .btn { min-height:46px; }
+    .bm-dialog-footer .btn-primary { flex:1 1 140px; font-size:16px; }
+    .bm-dialog-page { padding-bottom:92px !important; }
+
     /* Filter chips wrap nicely */
     .filter-btn { font-size:11px !important; padding:6px 10px !important; }
 
@@ -1156,7 +1166,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v962.min.js"></script>
+<script defer src="dist/bm.bundle.v963.min.js"></script>
 
 
 

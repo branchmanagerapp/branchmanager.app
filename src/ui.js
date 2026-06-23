@@ -29,8 +29,9 @@ var UI = (function() {
     });
 
     var backBtn = '<button class="btn btn-outline" onclick="UI.closeModal()" style="padding:6px 12px;font-size:12px;">← Back</button>';
+    // v963: bm-dialog-footer class → pinned full-width action bar on mobile (Jobber-app pattern)
     var footerHtml = options.footer
-      ? '<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">' + options.footer + '</div>'
+      ? '<div class="bm-dialog-footer" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">' + options.footer + '</div>'
       : '';
     var pageHtml = '<div class="bm-dialog-page" style="max-width:' + (options.wide ? '1000px' : '760px') + ';margin:0 auto;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap;">'
