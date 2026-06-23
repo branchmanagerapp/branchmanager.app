@@ -8,12 +8,34 @@ var Receptionist = {
   _callFilter: 'real', // v964: default Call Log view hides likely-spam
   _connected: false,
 
-  // v964: a call is "likely spam" if it's an inbound/missed call from an
-  // unknown number with no linked client and no real caller name. Outbound
-  // and anything tied to a client are never spam.
+  // v965: normalize a phone to its last 10 digits for matching.
+  _normPhone: function(p) { return String(p || '').replace(/\D/g, '').slice(-10); },
+
+  // v965: auto-match an incoming number against the clients list (built-in
+  // smarts — no extra system, uses data we already have). Index is rebuilt
+  // fresh each call-log render (set Receptionist.__phoneIdx = null to bust).
+  _clientByPhone: function(phone) {
+    var n = Receptionist._normPhone(phone);
+    if (n.length < 10) return null;
+    if (!Receptionist.__phoneIdx) {
+      Receptionist.__phoneIdx = {};
+      var all = (DB.clients && DB.clients.getAll) ? DB.clients.getAll() : [];
+      (all || []).forEach(function(cl) {
+        var k = Receptionist._normPhone(cl.phone);
+        if (k.length === 10) Receptionist.__phoneIdx[k] = cl;
+      });
+    }
+    return Receptionist.__phoneIdx[n] || null;
+  },
+
+  // v964/965: a call is "likely spam" only if it's an inbound/missed call
+  // from an unknown number — NOT linked to a client, NOT matching a client
+  // phone, and no real caller name. Known callers (by link OR phone match)
+  // and outbound calls are never spam.
   _isSpam: function(c) {
     if (!c || c.type === 'outbound') return false;
     if (c.linkedClient) return false;
+    if (Receptionist._clientByPhone(c.phone)) return false; // v965: known number
     var nm = String(c.callerName || '').trim();
     return !nm || /^unknown$/i.test(nm);
   },
@@ -85,6 +107,7 @@ var Receptionist = {
 
   _renderCalls: function(calls) {
     var self = Receptionist;
+    self.__phoneIdx = null; // v965: rebuild phone→client match index fresh each render
     var f = self._callFilter || 'real';
     // v964: filter buckets so the log isn't a wall of spam
     var sets = {
@@ -122,13 +145,21 @@ var Receptionist = {
       + '</tr></thead><tbody>';
     view.sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(c) {
       var typeColors = { inbound:'#16a34a', outbound:'#2563eb', missed:'#dc3545' };
+      // v965: auto-match the number to a known client
+      var m = self._clientByPhone(c.phone);
+      var hasRealName = c.callerName && !/^unknown$/i.test(String(c.callerName).trim());
+      var nameCell = hasRealName ? UI.esc(c.callerName)
+        : (m ? UI.esc(m.name) + ' <span style="font-size:9px;background:#e9f5ec;color:#15803d;padding:1px 5px;border-radius:6px;vertical-align:middle;">matched</span>' : 'Unknown');
+      var clientCell = c.linkedClient
+        ? UI.esc(c.linkedClient)
+        : (m ? '<a onclick="ClientsPage.showForm(\'' + m.id + '\')" style="color:var(--accent);cursor:pointer;">' + UI.esc(m.name) + '</a>' : '—');
       html += '<tr>'
         + '<td>' + new Date(c.date).toLocaleString() + '</td>'
-        + '<td style="font-weight:600;">' + UI.esc(c.callerName || 'Unknown') + '</td>'
+        + '<td style="font-weight:600;">' + nameCell + '</td>'
         + '<td>' + UI.esc(c.phone || '—') + '</td>'
         + '<td>' + (c.duration || '—') + '</td>'
         + '<td><span style="color:' + (typeColors[c.type] || '#6b7280') + ';font-weight:600;font-size:12px;">' + (c.type || 'inbound') + '</span></td>'
-        + '<td>' + UI.esc(c.linkedClient || '—') + '</td>'
+        + '<td>' + clientCell + '</td>'
         + '<td><button class="btn btn-outline" style="font-size:11px;padding:2px 6px;" onclick="Receptionist.removeCall(\'' + c.id + '\')">×</button></td>'
         + '</tr>';
     });

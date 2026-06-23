@@ -1,5 +1,5 @@
 {
-  "version": 964,
+  "version": 965,
   "released": "2026-06-23",
-  "notes": "Receptionist Call Log: spam filter — Real/Clients/Missed/All/Spam tabs, hides unknown-number/no-client calls by default, one-tap clear spam"
+  "notes": "Call Log smart matching: auto-match incoming numbers to clients (known callers named + never spam), phone normalization"
 }
