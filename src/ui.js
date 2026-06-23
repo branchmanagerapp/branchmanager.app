@@ -388,7 +388,8 @@ var UI = (function() {
       });
       inputHtml += '</select>';
     } else {
-      inputHtml = '<input type="' + type + '" id="' + id + '" value="' + esc(value || '') + '" placeholder="' + esc(placeholder || '') + '"' + (options.required ? ' required' : '') + (options.onchange ? ' onchange="' + esc(options.onchange) + '"' : '') + '>';
+      // v962: mobile-first — inputmode (right keyboard) + autocomplete (phone autofill from Contacts)
+      inputHtml = '<input type="' + type + '" id="' + id + '" value="' + esc(value || '') + '" placeholder="' + esc(placeholder || '') + '"' + (options.required ? ' required' : '') + (options.inputmode ? ' inputmode="' + esc(options.inputmode) + '"' : '') + (options.autocomplete ? ' autocomplete="' + esc(options.autocomplete) + '"' : '') + (options.autocapitalize ? ' autocapitalize="' + esc(options.autocapitalize) + '"' : '') + (options.onchange ? ' onchange="' + esc(options.onchange) + '"' : '') + '>';
     }
 
     var html = '<div class="form-group">';

@@ -817,14 +817,22 @@ var ClientsPage = {
         + '</div>')
 
       // v711: Jobber-style section organization
+      // v962: Title dropdown before First name (Jobber-match, Screen 6 delta #2)
       + UI.formSection('Primary contact details', { tight: true })
-      + UI.formField('First name', 'text', 'c-first', _fn, { required: true, noLabel: true, icon: 'user' })
-      + UI.formField('Last name', 'text', 'c-last', _ln, { noLabel: true, icon: 'user' })
-      + UI.formField('Company name (optional)', 'text', 'c-company', c.company, { noLabel: true, icon: 'building-2' })
+      + UI.formField('Title', 'select', 'c-title', c.title || '', { noLabel: true, icon: 'user', options: [
+            { value: '',     label: 'No title' },
+            { value: 'Mr.',  label: 'Mr.' },
+            { value: 'Mrs.', label: 'Mrs.' },
+            { value: 'Ms.',  label: 'Ms.' },
+            { value: 'Dr.',  label: 'Dr.' }
+          ] })
+      + UI.formField('First name', 'text', 'c-first', _fn, { required: true, noLabel: true, icon: 'user', autocomplete: 'given-name', autocapitalize: 'words' })
+      + UI.formField('Last name', 'text', 'c-last', _ln, { noLabel: true, icon: 'user', autocomplete: 'family-name', autocapitalize: 'words' })
+      + UI.formField('Company name (optional)', 'text', 'c-company', c.company, { noLabel: true, icon: 'building-2', autocomplete: 'organization', autocapitalize: 'words' })
 
       + UI.formSection('Communication')
-      + UI.formField('Phone (914) 555-0000', 'tel', 'c-phone', c.phone, { required: true, noLabel: true, icon: 'phone' })
-      + UI.formField('Email', 'email', 'c-email', c.email, { noLabel: true, icon: 'mail' })
+      + UI.formField('Phone (914) 555-0000', 'tel', 'c-phone', c.phone, { required: true, noLabel: true, icon: 'phone', inputmode: 'tel', autocomplete: 'tel' })
+      + UI.formField('Email', 'email', 'c-email', c.email, { noLabel: true, icon: 'mail', inputmode: 'email', autocomplete: 'email', autocapitalize: 'off' })
       + (id ? '<button type="button" onclick="ClientsPage._showCommSettings(\'' + id + '\')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:4px 0;text-decoration:underline;">Communication settings</button>' : '')
 
       + UI.formSection('Lead information')
@@ -851,7 +859,7 @@ var ClientsPage = {
           ] })
 
       + UI.formSection('Property address')
-      + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin' })
+      + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin', autocomplete: 'street-address' })
 
       // Less-used fields tucked behind a disclosure so the form looks shorter on mobile
       + '<details style="margin-top:18px;">'
@@ -866,6 +874,8 @@ var ClientsPage = {
     UI.showModal(title, html, {
       footer: (id ? '<button class="btn" style="background:#c0392b;color:#fff;margin-right:auto;" onclick="ClientsPage.remove(\'' + id + '\')">Delete</button>' : '')
         + '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        // v962: "Save and Create Another" (Jobber-match, Screen 6 delta #4) — new clients only
+        + (id ? '' : ' <button class="btn btn-outline" onclick="ClientsPage._saveAndAnother()">Save and Create Another</button>')
         + ' <button class="btn btn-primary" onclick="document.getElementById(\'client-form\').requestSubmit()">Save Client</button>'
     });
     // v623: Photon address autocomplete on the Address field
@@ -882,6 +892,7 @@ var ClientsPage = {
     var _ln = (document.getElementById('c-last') || {}).value || '';
     _fn = _fn.trim(); _ln = _ln.trim();
     var data = {
+      title: (document.getElementById('c-title') || {}).value || '',
       firstName: _fn,
       lastName: _ln,
       name: (_fn + ' ' + _ln).trim(),
@@ -906,8 +917,21 @@ var ClientsPage = {
     } else {
       var newClient = DB.clients.create(data);
       if (typeof SendJim !== 'undefined') SendJim.afterNewClient(newClient || data);
+      // v962: "Save and Create Another" — reopen a blank form instead of leaving
+      if (ClientsPage._createAnother) {
+        ClientsPage._createAnother = false;
+        ClientsPage.showForm();
+        return;
+      }
     }
     loadPage('clients');
+  },
+
+  // v962: set the flag then submit; save() reopens a fresh form (Jobber-match)
+  _saveAndAnother: function() {
+    ClientsPage._createAnother = true;
+    var f = document.getElementById('client-form');
+    if (f) f.requestSubmit();
   },
 
   // Push name/phone/email changes to all invoices, quotes, and jobs that

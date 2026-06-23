@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 961; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 962; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -796,6 +796,7 @@
   .modal-footer {
     display:flex; align-items:center; justify-content:flex-end; gap:8px;
     padding:12px 20px; border-top:1px solid var(--border);
+    flex-wrap:wrap; /* v962: wrap on narrow phones so buttons stay tappable, never overflow */
   }
 
   /* ── Forms (v627: taller inputs + bigger spacing for mobile) ── */
@@ -803,9 +804,11 @@
   .form-group label { display:block; font-size:13px; font-weight:600; color:var(--text); margin-bottom:6px; }
   .form-group input, .form-group select, .form-group textarea {
     width:100%; padding:16px 14px; border:1px solid var(--border); border-radius:10px;
-    font-size:15px; line-height:1.4; font-family:inherit; background:var(--white); color:var(--text);
+    font-size:16px; line-height:1.4; font-family:inherit; background:var(--white); color:var(--text);
     transition:border-color .15s, box-shadow .15s;
   }
+  /* v962: never let iOS auto-zoom on focus — all form inputs render ≥16px on phones */
+  @media (max-width:600px){ .form-group input, .form-group select, .form-group textarea { font-size:16px; } }
   .form-group select { min-height:54px; }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,131,108,.12);
@@ -1153,7 +1156,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v961.min.js"></script>
+<script defer src="dist/bm.bundle.v962.min.js"></script>
 
 
 

@@ -1,5 +1,5 @@
 {
-  "version": 961,
-  "released": "2026-06-22",
-  "notes": "Clients: New Client header button (Jobber match)"
+  "version": 962,
+  "released": "2026-06-23",
+  "notes": "Mobile-first client/quote entry: Contacts autofill + right keyboards, decimal keypad for Rate, 16px inputs (no iOS zoom), Title dropdown + Save and Create Another, wrapping modal footer"
 }
