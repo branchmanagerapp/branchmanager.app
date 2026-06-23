@@ -1,5 +1,5 @@
 {
-  "version": 963,
+  "version": 964,
   "released": "2026-06-23",
-  "notes": "Mobile: pinned full-width action bar on create forms (Jobber-app pattern) — Save always thumb-reachable"
+  "notes": "Receptionist Call Log: spam filter — Real/Clients/Missed/All/Spam tabs, hides unknown-number/no-client calls by default, one-tap clear spam"
 }

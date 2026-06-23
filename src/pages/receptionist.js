@@ -5,7 +5,18 @@
  */
 var Receptionist = {
   _tab: 'calls',
+  _callFilter: 'real', // v964: default Call Log view hides likely-spam
   _connected: false,
+
+  // v964: a call is "likely spam" if it's an inbound/missed call from an
+  // unknown number with no linked client and no real caller name. Outbound
+  // and anything tied to a client are never spam.
+  _isSpam: function(c) {
+    if (!c || c.type === 'outbound') return false;
+    if (c.linkedClient) return false;
+    var nm = String(c.callerName || '').trim();
+    return !nm || /^unknown$/i.test(nm);
+  },
 
   render: function() {
     var settings = JSON.parse(localStorage.getItem('bm-receptionist-settings') || '{}');
@@ -73,21 +84,43 @@ var Receptionist = {
   },
 
   _renderCalls: function(calls) {
-    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
-    html += '<span style="font-size:14px;font-weight:700;">' + calls.length + ' calls</span>';
+    var self = Receptionist;
+    var f = self._callFilter || 'real';
+    // v964: filter buckets so the log isn't a wall of spam
+    var sets = {
+      real:    calls.filter(function(c){ return !self._isSpam(c); }),
+      clients: calls.filter(function(c){ return !!c.linkedClient; }),
+      missed:  calls.filter(function(c){ return c.type === 'missed'; }),
+      spam:    calls.filter(function(c){ return self._isSpam(c); }),
+      all:     calls
+    };
+    var view = sets[f] || sets.real;
+    var spamCount = sets.spam.length;
+
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+    [['real','Real',sets.real.length],['clients','Clients',sets.clients.length],['missed','Missed',sets.missed.length],['all','All',calls.length],['spam','Spam',spamCount]].forEach(function(ch){
+      var on = ch[0] === f;
+      html += '<button class="btn ' + (on ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 10px;" onclick="Receptionist._callFilter=\'' + ch[0] + '\';App.render()">' + ch[1] + ' (' + ch[2] + ')</button>';
+    });
+    html += '</div>';
     html += '<button class="btn btn-primary" style="font-size:12px;" onclick="Receptionist.logCall()">+ Log Call</button>';
     html += '</div>';
 
-    if (calls.length === 0) {
+    if (f === 'real' && spamCount > 0) {
+      html += '<div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">Hiding ' + spamCount + ' likely-spam call' + (spamCount === 1 ? '' : 's') + ' (unknown number, no client). Tap <b>Spam</b> to review' + (spamCount ? ' or <a onclick="Receptionist.clearSpam()" style="color:var(--accent);cursor:pointer;">clear them</a>' : '') + '.</div>';
+    }
+
+    if (view.length === 0) {
       return html + '<div style="text-align:center;padding:40px;color:var(--text-light);">'
         + '<div style="font-size:48px;margin-bottom:12px;">📞</div>'
-        + '<h3>No calls logged yet</h3><p>Calls will appear here when Dialpad is connected, or log them manually.</p></div>';
+        + '<h3>No calls here</h3><p>' + (calls.length ? 'Nothing in this filter — try another tab.' : 'Calls will appear when Dialpad is connected, or log them manually.') + '</p></div>';
     }
 
     html += '<table class="data-table" style="width:100%;"><thead><tr>'
       + '<th>DATE</th><th>CALLER</th><th>PHONE</th><th>DURATION</th><th>TYPE</th><th>CLIENT</th><th></th>'
       + '</tr></thead><tbody>';
-    calls.sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(c) {
+    view.sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(c) {
       var typeColors = { inbound:'#16a34a', outbound:'#2563eb', missed:'#dc3545' };
       html += '<tr>'
         + '<td>' + new Date(c.date).toLocaleString() + '</td>'
@@ -521,6 +554,17 @@ var Receptionist = {
     DB.remove('bm-call-log', id);
     UI.toast('Call removed');
     App.render();
+  },
+
+  // v964: bulk-remove the likely-spam calls (with confirm — this deletes)
+  clearSpam: function() {
+    var spam = DB.getAll('bm-call-log').filter(Receptionist._isSpam);
+    if (!spam.length) { UI.toast('No spam calls to clear'); return; }
+    UI.confirm('Clear ' + spam.length + ' likely-spam call' + (spam.length === 1 ? '' : 's') + '? (Unknown numbers, no client — this deletes them from the log.)', function() {
+      spam.forEach(function(c){ DB.remove('bm-call-log', c.id); });
+      UI.toast('Cleared ' + spam.length + ' spam call' + (spam.length === 1 ? '' : 's'));
+      App.render();
+    });
   },
 
   composeSMS: function() {
