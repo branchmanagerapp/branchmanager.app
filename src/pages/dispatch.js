@@ -551,8 +551,14 @@ var DispatchPage = {
       DispatchPage._loadChipDrops();
       DispatchPage._toggleWeatherLayer();
 
+      // v965: fleet (Bouncie) now updates via Supabase Realtime — markers move
+      // within ~1-2s of each webhook write (meets sub-60s requirement). The
+      // 60s poll below stays as a safety-net fallback if realtime drops.
+      DispatchPage._subscribeFleetRealtime();
+
       // v663: Refresh interval bumped 30s → 60s. Crew+fleet positions don't
       // change fast enough to justify a Supabase round-trip every half minute.
+      // (v965: this is now a fallback — realtime is the fast path for fleet.)
       DispatchPage._refreshTimer = setInterval(function() {
         DispatchPage._loadCrewLocations();
         DispatchPage._loadFleetLocations();
@@ -575,10 +581,36 @@ var DispatchPage = {
       DispatchPage._refreshFleetMarkers();
     });
   },
+  // v965: Supabase Realtime subscription on `vehicles` → sub-60s fleet updates.
+  // Merges each changed row into the cache and re-renders just the markers.
+  _fleetChannel: null,
+  _subscribeFleetRealtime: function() {
+    var _sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!_sb || typeof _sb.channel !== 'function') { console.warn('[fleet] realtime unavailable — using 60s poll'); return; }
+    // Tear down a prior channel so re-renders don't stack subscriptions
+    if (DispatchPage._fleetChannel) { try { _sb.removeChannel(DispatchPage._fleetChannel); } catch(e){} DispatchPage._fleetChannel = null; }
+    DispatchPage._fleetChannel = _sb.channel('fleet-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, function(payload) {
+        var row = payload && payload.new;
+        if (!row || !row.id) return;
+        var arr = DispatchPage._fleetData || [];
+        var found = false;
+        for (var i = 0; i < arr.length; i++) { if (arr[i].id === row.id) { arr[i] = Object.assign({}, arr[i], row); found = true; break; } }
+        if (!found && row.last_lat && row.last_lon) arr.push(row);
+        DispatchPage._fleetData = arr;
+        DispatchPage._refreshFleetMarkers();
+      })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') console.log('[fleet] realtime SUBSCRIBED — sub-60s updates active');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') console.warn('[fleet] realtime ' + status + ' — relying on 60s poll fallback');
+      });
+  },
+
   _refreshFleetMarkers: function() {
     if (!DispatchPage._map) return;
     var show = window._dispatchFleetLayer !== false;
     var data = DispatchPage._fleetData || [];
+    var _stale = []; // v965: collect trucks that haven't pinged in >60m for logging/alerting
     // Remove markers not in current set or if hidden
     Object.keys(DispatchPage._fleetMarkers).forEach(function(id) {
       var keep = show && data.some(function(v) { return v.id === id && v.last_lat && v.last_lon; });
@@ -591,6 +623,7 @@ var DispatchPage = {
     data.forEach(function(v) {
       if (!v.last_lat || !v.last_lon) return;
       var ageMin = v.last_seen_at ? (Date.now() - new Date(v.last_seen_at).getTime()) / 60000 : 9999;
+      if (ageMin > 60 && ageMin < 9999) _stale.push((v.name || v.id) + ' (' + Math.round(ageMin) + 'm)');
       var color;
       if (ageMin > 1440) color = '#c62828'; // offline
       else if (ageMin > 60) color = '#a04400'; // stale
@@ -612,6 +645,8 @@ var DispatchPage = {
         DispatchPage._fleetMarkers[v.id] = m;
       }
     });
+    // v965: surface stale trucks (Bouncie feed went quiet) for logging/alerting
+    if (_stale.length) console.warn('[fleet] STALE — no Bouncie ping >60m: ' + _stale.join(', '));
   },
 
   // ── Chip-drop spot layer (v660: was its own Operations tab; now an opt-in
