@@ -1,5 +1,5 @@
 {
-  "version": 967,
+  "version": 968,
   "released": "2026-06-24",
-  "notes": "Phone live-tracking: passive tracker now also feeds crew_locations so the owner's phone shows live on the dispatch map while BM is open (no clock-in needed); marks offline on stop. + Northeast Intrepid dealer-proposal page."
+  "notes": "Time Tracking rebuilt Rewind-style: Calendar day-timeline (week, color blocks per place + daily totals), Charts (donut time-share by place + line per day, Weeks/Months/Years), Places (maplibre map + address list, reverse-geocoded names, tap-to-rename). Sources detected_locations dwells."
 }
