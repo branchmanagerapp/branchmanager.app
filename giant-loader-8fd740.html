@@ -38,6 +38,14 @@
   .spent{ font-size:13px; color:var(--muted); }
   .foot{ font-size:11px; color:var(--muted); text-align:center; margin-top:30px; }
   a{ color:var(--green); }
+  details{ background:#fff; border:1px solid var(--line); border-radius:12px; margin:10px 0; overflow:hidden; }
+  details>summary{ cursor:pointer; padding:13px 16px; font-weight:700; font-size:14px; color:var(--ink); list-style:none; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  details>summary::-webkit-details-marker{ display:none; }
+  details>summary::after{ content:'＋'; color:var(--green); font-weight:800; font-size:17px; }
+  details[open]>summary::after{ content:'－'; }
+  details .body{ padding:0 16px 14px; font-size:13.5px; color:#23302a; border-top:1px solid var(--line); padding-top:12px; }
+  details .body ul{ margin:6px 0; padding-left:18px; } details .body li{ margin:5px 0; }
+  details .body .k{ font-weight:700; color:var(--ink); }
 </style>
 </head>
 <body>
@@ -85,6 +93,36 @@
     <p><b>The one thing that could change it:</b> the un-checked hydraulics. If a 15-min function check shows the hydraulics are usable → <b>fix the engine for $1,500, keep earning, buy the Intrepid later on your own timeline.</b> If the hydraulics are also shot → then the repair-vs-Intrepid math reopens.</p>
     <p class="spent">Already spent: $417.24 diagnostic (2.2 hrs @ $175 + tax), 6/23/26.</p>
   </div>
+
+  <h2>The details</h2>
+
+  <details>
+    <summary>Full mechanic diagnosis</summary>
+    <div class="body">
+      <ul>
+        <li>Overheated again after a thermostat workaround → limped it back in.</li>
+        <li><span class="k">Compression test:</span> center cylinder down. Pulled the radiator cap — lots of compression in the cooling system. Funnel-on-cap test (let it boil and circulate): <span class="k">bubbles = combustion getting into the coolant</span> → cracked head or head gasket. He's going with a <span class="k">hairline cracked head</span> ("it runs cracked").</li>
+        <li><span class="k">Mechanism:</span> the glow-plug pre-chamber "pucks" (pressed into the head) warp/crack under heat and let compression leak past the compression ring into the coolant jackets. The <span class="k">oil jackets are separate and sealed</span> — so no oil-in-coolant; engine isn't destroyed.</li>
+        <li><span class="k">Cause:</span> likely a plugged radiator originally → ran hot → cracked. Flipping the machine adds cylinder wear (oil pools at the top, hydrolocks; he pops the glow plugs and bumps it over to clear).</li>
+        <li><span class="k">Why head-only is a band-aid:</span> the center cylinder being down on compression means the bore is probably scored — a new head stops the overheating but won't fully restore power. Full power = a long block (Kubota's made these hard to rebuild).</li>
+        <li><span class="k">The cheap fix:</span> pull the head, new head + gasket set, valve job at his machine shop (Arnold's Garage, Canaan — ~$120 to set up the head), reinstall. He's mobile, ~1 hr out, hourly. ≈ $1,500 all in.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Giant dealer invoice — what they found</summary>
+    <div class="body">
+      <ul>
+        <li><span class="k">Reported:</span> overheats, spikes after ~20 min then drops. New radiator system already installed.</li>
+        <li><span class="k">Verified:</span> hot upper hose / cold lower hose; thermostat tested OK; compression + engine exhaust in the cooling system; <span class="k">compression test FAILED</span>.</li>
+        <li><span class="k">Compression:</span> Cyl 1 = 490 · Cyl 2 (center) = 450 · Cyl 3 = 495 psi.</li>
+        <li><span class="k">Also:</span> overheating left the radiator hoses soft/brittle → a hydraulic fluid leak when the machine pivots → hoses need replacing.</li>
+        <li><span class="k">Recommendation:</span> full engine replacement — engine, water pump, valve cover, oil pan, cylinder head, injection pump, fan belt, radiator hoses, clamps, filters, fluids. <span class="k">Price not quoted</span> (diag only).</li>
+        <li><span class="k">Billed:</span> $417.24 diagnostic (2.2 hrs @ $175 + tax). Invoice 04-449773 / WO 04-478407.</li>
+      </ul>
+    </div>
+  </details>
 
   <h2>Two texts to get the numbers</h2>
 
