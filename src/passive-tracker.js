@@ -102,8 +102,59 @@ var PassiveTracker = (function() {
       source:      document.hidden ? 'background' : 'foreground'
     });
 
+    // Live presence — also surface me on the dispatch/crew map while foreground.
+    // (Passive tracking used to only feed job-site detection; the owner never
+    //  clocks in as crew, so they were tracked but invisible on the live map.)
+    pingCrewLocation(fix);
+
     // Dwell detection — maintain a running cluster
     updateCluster(fix);
+  }
+
+  // ── Live presence bridge → crew_locations (the live dispatch map) ─────────
+  // Same table/shape CrewView's clock-in tracker uses, so the owner's phone
+  // shows up live whenever BM is open — no clock-in required. Foreground-only
+  // (PWA limit); the native build's background plugin keeps feeding this too.
+  function crewUserId() {
+    if (typeof Auth === 'undefined' || !Auth.user) return null;
+    return Auth.user.id || Auth.user.email || Auth.user.name || null;
+  }
+  function pingCrewLocation(fix) {
+    if (!SupabaseDB || !SupabaseDB.ready || !SupabaseDB.client) return;
+    var tenant = getTenantId();
+    var uid    = crewUserId();
+    if (!tenant || !uid) return;
+    var name = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : 'Me';
+    var role = (typeof Auth !== 'undefined' && Auth.user && Auth.user.role) ? Auth.user.role : 'owner';
+    SupabaseDB.client.from('crew_locations').upsert({
+      tenant_id:  tenant,
+      user_id:    uid,
+      user_name:  name,
+      role:       role,
+      lat:        fix.lat,
+      lng:        fix.lng,
+      accuracy:   fix.accuracy_m || null,
+      heading:    fix.heading || null,
+      speed:      fix.speed_mps || null,
+      status:     'active',
+      updated_at: fix.iso
+    }, { onConflict: 'user_id' }).then(function(res) {
+      if (res && res.error) console.warn('[PassiveTracker] crew_locations upsert failed:', res.error.message);
+    }).catch(function(){});
+  }
+  function markCrewOffline() {
+    if (!SupabaseDB || !SupabaseDB.ready || !SupabaseDB.client) return;
+    var uid = crewUserId();
+    if (!uid || !state.lastFix) return;
+    SupabaseDB.client.from('crew_locations').upsert({
+      tenant_id:  getTenantId(),
+      user_id:    uid,
+      user_name:  (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : 'Me',
+      lat:        state.lastFix.lat,
+      lng:        state.lastFix.lng,
+      status:     'offline',
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' }).then(function(){}).catch(function(){});
   }
 
   function onError(err) {
@@ -305,6 +356,7 @@ var PassiveTracker = (function() {
     }
     if (state.flushInterval) { clearInterval(state.flushInterval); state.flushInterval = null; }
     flush(); // drain
+    markCrewOffline(); // drop my live pin off the dispatch map
     state.running = false;
     state.cluster = null;
     console.debug('[PassiveTracker] stopped');

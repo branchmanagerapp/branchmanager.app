@@ -174,14 +174,19 @@ Deno.serve(async (req) => {
       tenant_id: TENANT_ID,
       raw: p.raw,
     }));
-    await sb.from("vehicle_positions").insert(rows);
+    // v966 audit fix: these writes were unchecked — a failed insert silently
+    // dropped GPS pings (the "data loss" in the audit). Now logged loudly so
+    // failures are visible (next step: alert/dead-letter on these).
+    const posIns = await sb.from("vehicle_positions").insert(rows);
+    if (posIns.error) console.error("[bouncie-webhook] DATA LOSS — vehicle_positions insert FAILED:", posIns.error.message, "| pings:", rows.length, "| vehicle:", vehicleId, "| event:", event);
     // Update last-known cache from the most recent ping
     const last = pings.reduce((a, b) => (a.ts > b.ts ? a : b));
-    await sb.from("vehicles").update({
+    const vehUpd = await sb.from("vehicles").update({
       last_lat: last.lat, last_lon: last.lon, last_seen_at: last.ts,
       last_speed_mph: last.speed ?? null, last_ignition: last.ignition ?? null,
       updated_at: new Date().toISOString(),
     }).eq("id", vehicleId);
+    if (vehUpd.error) console.error("[bouncie-webhook] vehicles last-known update FAILED:", vehUpd.error.message, "| vehicle:", vehicleId);
   }
 
   // Even with no GPS pings (tripEnd / tripMetrics), record the timestamp so

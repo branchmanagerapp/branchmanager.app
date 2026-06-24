@@ -1,5 +1,5 @@
 {
-  "version": 966,
-  "released": "2026-06-23",
-  "notes": "Bouncie fleet realtime: Supabase Realtime subscription on vehicles (sub-60s updates) + stale-truck logging, 60s poll kept as fallback"
+  "version": 967,
+  "released": "2026-06-24",
+  "notes": "Phone live-tracking: passive tracker now also feeds crew_locations so the owner's phone shows live on the dispatch map while BM is open (no clock-in needed); marks offline on stop. + Northeast Intrepid dealer-proposal page."
 }
