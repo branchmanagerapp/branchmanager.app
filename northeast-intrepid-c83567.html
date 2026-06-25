@@ -152,17 +152,17 @@
   <div class="card">
     <p style="margin-top:0;">Here's the footprint, so you can see how it actually works on the ground:</p>
     <ul>
-      <li><b>8,000 sq ft building (the skate park)</b> — indoor demo floor / showroom and service bay.</li>
-      <li><b>Expansion space directly behind it</b> — room we can potentially take for more inventory and outdoor demo / storage.</li>
+      <li><b>8,000 sq ft building (the skate park)</b> — the demo floor / showroom and service bay we start in.</li>
+      <li><b>A 3,300 sq ft unit right next door</b> — currently an antique-ladder shop whose owner is near retirement and happy to hand it over <i>gradually</i>. That's the natural <b>showroom expansion</b>: realistically a year-one-to-two move, once the volume can carry the extra rent — which lines up neatly with his retirement timeline. Room to keep growing into adjacent space from there.</li>
       <li><b>Kevin's yard, just past the soccer field</b> — Kevin's Heavy Trucking space for transport staging and the heavier service work.</li>
     </ul>
     <div id="space-map"></div>
     <div class="loc-leg">
-      <span><i style="background:#2e7d32;"></i> 8,000 sq ft skate park — demo center</span>
-      <span><i style="background:#1565c0;"></i> Expansion (behind)</span>
+      <span><i style="background:#2e7d32;"></i> 8,000 sf skate park — demo center</span>
+      <span><i style="background:#1565c0;"></i> 3,300 sf next-door unit — future showroom</span>
       <span><i style="background:#a04400;"></i> Kevin's yard (past soccer)</span>
     </div>
-    <p class="note" style="margin-top:8px;">Satellite view of the site. The skate park location is exact; the expansion area and Kevin's yard are placed approximately while we finalize the footprints.</p>
+    <p class="note" style="margin-top:8px;">Satellite view of the site. The skate park location is exact; the next-door unit and Kevin's yard are placed approximately while we finalize the footprints. <b>The growth path is phased and honest:</b> start in the skate park, take the 3,300 sf showroom next door in year 1–2 as the budget allows.</p>
   </div>
 
   <h2>How the floor-plan model works for both of us</h2>
@@ -272,7 +272,7 @@
     if (!el || el._init) return; el._init = true;
     var pts = {
       skate:     { ll:[41.3050214,-73.9227667], color:'#2e7d32', label:'Skate park · demo center', drag:false },
-      expansion: { ll:[41.30472,-73.92235],     color:'#1565c0', label:'Expansion (approx)',       drag:true },
+      expansion: { ll:[41.30472,-73.92235],     color:'#1565c0', label:'3,300 sf next-door unit (approx)', drag:true },
       kevin:     { ll:[41.30560,-73.92090],     color:'#a04400', label:"Kevin's yard (approx)",     drag:true }
     };
     var map = L.map('space-map', { scrollWheelZoom:false }).setView([41.30525,-73.92205], 17);
@@ -282,7 +282,7 @@
     readout.className = 'note'; readout.style.marginTop = '6px';
     el.parentNode.insertBefore(readout, el.nextSibling);
     function upd(){
-      readout.innerHTML = 'Expansion ≈ ' + pts.expansion.ll[0].toFixed(5) + ', ' + pts.expansion.ll[1].toFixed(5)
+      readout.innerHTML = 'Next-door unit ≈ ' + pts.expansion.ll[0].toFixed(5) + ', ' + pts.expansion.ll[1].toFixed(5)
         + '  ·  Kevin\'s ≈ ' + pts.kevin.ll[0].toFixed(5) + ', ' + pts.kevin.ll[1].toFixed(5)
         + '  — drag the blue &amp; orange pins to their real spots.';
     }
