@@ -5,108 +5,224 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Northeast Intrepid — Compact Loaders for the Green Industry</title>
+<meta name="description" content="Intrepid compact articulating loaders & telehandlers for tree care, landscaping, and farms — demos, delivery, rentals, and real local service across the Hudson Valley.">
 <style>
-  :root{ --ink:#16241c; --green:#2e7d32; --green2:#1f3b2c; --amber:#a04400; --line:#e3e8e3; --muted:#5b6b60; --bg:#f6f8f6; }
+  :root{ --ink:#1d1d1f; --gray:#f5f5f7; --muted:#6e6e73; --line:#e4e4e6; --green:#2e7d32; --green2:#1f5c24; }
   *{box-sizing:border-box}
-  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c2620; background:var(--bg); line-height:1.55; }
-  .wrap{ max-width:820px; margin:0 auto; padding:0 18px 70px; }
-  header{ background:linear-gradient(140deg,#2e7d32 0%,#1f3b2c 55%,#16241c 100%); color:#fff; padding:46px 18px 40px; text-align:center; }
-  .brand{ font-size:13px; letter-spacing:.22em; text-transform:uppercase; font-weight:800; opacity:.9; }
-  h1{ font-size:34px; margin:10px 0 8px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
-  .tag{ font-size:16px; opacity:.93; max-width:540px; margin:0 auto; }
-  .cta{ display:inline-block; margin-top:20px; background:#fff; color:var(--green2); font-weight:800; font-size:15px; padding:12px 26px; border-radius:30px; text-decoration:none; }
-  .chips{ margin-top:16px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-  .chip{ font-size:12px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); padding:5px 12px; border-radius:30px; }
-  h2{ font-size:14px; color:var(--green); margin:36px 0 12px; text-transform:uppercase; letter-spacing:.08em; font-weight:800; text-align:center; }
-  .lead{ font-size:17px; text-align:center; max-width:620px; margin:24px auto 0; }
-  .card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin:12px 0; }
-  p{ margin:9px 0; } ul{ margin:8px 0; padding-left:20px; } li{ margin:6px 0; }
-  .grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  @media(max-width:640px){ .grid,.grid2{ grid-template-columns:1fr; } h1{font-size:28px;} }
-  .feat{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; text-align:center; }
-  .feat .ic{ font-size:30px; } .feat h3{ margin:10px 0 4px; font-size:16px; } .feat p{ margin:0; font-size:13.5px; color:var(--muted); }
-  .mdl{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
-  .mdl .nm{ font-weight:800; font-size:16px; color:var(--green2); } .mdl .ds{ font-size:13px; color:var(--muted); margin-top:2px; }
-  .rent{ background:linear-gradient(135deg,#eef7ef,#e3f1e5); border:1px solid #cfe6d2; border-radius:16px; padding:20px 22px; }
-  .rent h3{ margin:0 0 6px; color:var(--green2); font-size:19px; }
-  .story p{ font-size:15px; } .story b{ color:var(--green2); }
-  .yr{ display:inline-block; min-width:54px; font-weight:800; color:var(--green); }
-  .contact{ background:var(--green2); color:#fff; border-radius:16px; padding:24px; text-align:center; margin-top:20px; }
-  .contact a{ color:#fff; } .contact .big{ font-size:20px; font-weight:800; margin:6px 0; }
-  .fill{ background:rgba(255,255,255,.18); border:1px dashed rgba(255,255,255,.6); border-radius:6px; padding:1px 8px; }
-  .note{ font-size:12.5px; color:var(--muted); text-align:center; }
-  .foot{ font-size:11.5px; color:var(--muted); text-align:center; margin-top:34px; }
-  a.inl{ color:var(--green); }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:#fff; -webkit-font-smoothing:antialiased; }
+  a{ color:var(--green); text-decoration:none; }
+  img{ display:block; max-width:100%; }
+  .wrap{ max-width:1040px; margin:0 auto; padding:0 22px; }
+  /* nav */
+  nav{ position:sticky; top:0; z-index:50; background:rgba(255,255,255,.8); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--line); }
+  nav .wrap{ display:flex; align-items:center; justify-content:space-between; height:50px; }
+  .brand{ font-weight:700; font-size:18px; letter-spacing:-.01em; color:var(--ink); }
+  .brand .i{ color:var(--green); }
+  nav .links{ display:flex; gap:24px; font-size:13.5px; }
+  nav .links a{ color:var(--ink); opacity:.85; }
+  nav .links a:hover{ opacity:1; }
+  @media(max-width:720px){ nav .links{ display:none; } }
+  .navcta{ font-size:13.5px; background:var(--green); color:#fff; padding:6px 14px; border-radius:20px; }
+  /* hero */
+  .hero{ position:relative; min-height:74vh; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; overflow:hidden; }
+  .hero img.bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .hero .scrim{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.15) 40%, rgba(0,0,0,.55)); }
+  .hero .inner{ position:relative; padding:40px 22px; max-width:760px; }
+  .hero h1{ font-size:clamp(34px,6vw,60px); font-weight:700; letter-spacing:-.03em; line-height:1.05; margin:0 0 14px; text-shadow:0 2px 30px rgba(0,0,0,.3); }
+  .hero p{ font-size:clamp(16px,2.4vw,21px); opacity:.96; margin:0 auto 26px; max-width:620px; line-height:1.4; }
+  .btns{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .btn{ font-size:16px; font-weight:600; padding:12px 26px; border-radius:30px; }
+  .btn.p{ background:var(--green); color:#fff; }
+  .btn.s{ background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.5); }
+  /* sections */
+  section{ padding:84px 0; }
+  section.g{ background:var(--gray); }
+  .eyebrow{ text-align:center; color:var(--green); font-weight:700; font-size:14px; letter-spacing:.02em; text-transform:uppercase; margin-bottom:8px; }
+  .h2{ text-align:center; font-size:clamp(28px,4.6vw,44px); font-weight:700; letter-spacing:-.02em; margin:0 auto 10px; max-width:760px; line-height:1.1; }
+  .sub{ text-align:center; font-size:clamp(16px,2.2vw,20px); color:var(--muted); max-width:640px; margin:0 auto 14px; line-height:1.45; }
+  /* model showcase */
+  .model{ display:flex; align-items:center; gap:40px; padding:34px 0; border-bottom:1px solid var(--line); }
+  .model:last-child{ border-bottom:none; }
+  .model:nth-child(even){ flex-direction:row-reverse; }
+  .model .ph{ flex:1; min-width:0; text-align:center; }
+  .model .ph img{ width:100%; max-width:480px; margin:0 auto; }
+  .model .tx{ flex:1; min-width:0; }
+  .model .nm{ font-size:clamp(24px,3.4vw,34px); font-weight:700; letter-spacing:-.02em; }
+  .model .tag{ color:var(--green); font-weight:600; font-size:15px; margin:2px 0 8px; }
+  .model .ds{ font-size:16px; color:var(--muted); line-height:1.5; }
+  .model .spec{ margin-top:10px; font-size:14px; color:var(--ink); font-weight:600; }
+  @media(max-width:720px){ .model, .model:nth-child(even){ flex-direction:column; gap:10px; text-align:center; } .model .tx{ text-align:center; } }
+  /* feature grid */
+  .feats{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:34px; }
+  @media(max-width:720px){ .feats{ grid-template-columns:1fr; } }
+  .feat{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:24px; }
+  .feat h3{ margin:0 0 6px; font-size:19px; font-weight:700; letter-spacing:-.01em; }
+  .feat p{ margin:0; color:var(--muted); font-size:15px; line-height:1.5; }
+  /* split image block */
+  .split{ display:flex; align-items:center; gap:44px; }
+  .split.rev{ flex-direction:row-reverse; }
+  .split .im{ flex:1; min-width:0; } .split .im img{ width:100%; border-radius:20px; }
+  .split .cp{ flex:1; min-width:0; }
+  .split h2{ font-size:clamp(26px,4vw,38px); font-weight:700; letter-spacing:-.02em; margin:0 0 10px; line-height:1.12; }
+  .split p{ font-size:17px; color:var(--muted); line-height:1.55; }
+  @media(max-width:720px){ .split,.split.rev{ flex-direction:column; gap:20px; } }
+  /* bio */
+  .bio{ max-width:760px; margin:0 auto; }
+  .bio p{ font-size:18px; line-height:1.6; }
+  .bio b{ color:var(--ink); }
+  /* contact */
+  .contact{ text-align:center; }
+  .contact .big{ font-size:clamp(28px,5vw,46px); font-weight:700; letter-spacing:-.01em; margin:10px 0; }
+  .contact .big a{ color:var(--green); }
+  .contact .meta{ color:var(--muted); font-size:16px; }
+  footer{ background:#fff; border-top:1px solid var(--line); padding:30px 0; }
+  footer .wrap{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  footer .fl{ font-size:12.5px; color:var(--muted); max-width:620px; line-height:1.5; }
+  footer img{ height:22px; opacity:.7; }
+  .chev::after{ content:' ›'; }
 </style>
 </head>
 <body>
-<header>
-  <div class="brand">Northeast Intrepid</div>
-  <h1>Compact loaders that actually fit the work.</h1>
-  <div class="tag">Intrepid articulating loaders &amp; telehandlers for tree care, landscaping, and farms — demos, delivery, rentals, and real local service across the Hudson Valley.</div>
-  <a class="cta" href="#book">Book a demo →</a>
-  <div class="chips"><span class="chip">🌲 Working demos</span><span class="chip">🚚 We deliver</span><span class="chip">🔑 Rentals</span><span class="chip">🔧 Local service</span></div>
+
+<nav><div class="wrap">
+  <div class="brand">Northeast <span class="i">Intrepid</span></div>
+  <div class="links">
+    <a href="#lineup">Machines</a>
+    <a href="#do">What we do</a>
+    <a href="#rent">Rentals</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a class="navcta" href="#contact">Book a demo</a>
+</div></nav>
+
+<header class="hero">
+  <img class="bg" src="https://miniloaders.com/wp-content/uploads/2025/03/PXL_20230731_161023604-scaled.jpg" alt="Intrepid compact loader at work">
+  <div class="scrim"></div>
+  <div class="inner">
+    <h1>Compact loaders, built for real work.</h1>
+    <p>Intrepid articulating loaders &amp; telehandlers for tree care, landscaping, and farms — demos, delivery, rentals, and real local service across the Hudson Valley.</p>
+    <div class="btns">
+      <a class="btn p" href="#contact">Book a demo</a>
+      <a class="btn s" href="tel:+19146477276">Call (914) 647-7276</a>
+    </div>
+  </div>
 </header>
 
-<div class="wrap">
-
-  <p class="lead">Intrepid loaders (built by Belgium's Knikmops since 1997) move serious material in tight spaces — but until now there's been nowhere in the Northeast to <b>see one work, rent one, or get one serviced</b>. That's what we're here for.</p>
-
-  <h2>What we do</h2>
-  <div class="grid">
-    <div class="feat"><div class="ic">🌲</div><h3>Working demos</h3><p>We bring a machine to your site and put it to work — loading logs, moving material, tight-space maneuvering. Not a parking-lot walkaround.</p></div>
-    <div class="feat"><div class="ic">🚚</div><h3>Delivery</h3><p>We haul it to your jobsite or yard. No freight to arrange, no pickup to figure out.</p></div>
-    <div class="feat"><div class="ic">🔑</div><h3>Rentals</h3><p>Rent a unit by the day or week — try it on a real job before you buy, or just get the work done.</p></div>
-    <div class="feat"><div class="ic">🔧</div><h3>Service &amp; parts</h3><p>Local mechanics for setup, warranty work, and repairs — so a down machine doesn't ship across the country.</p></div>
-    <div class="feat"><div class="ic">🤝</div><h3>Trade &amp; advice</h3><p>Trade-ins, financing guidance, and honest fit advice from someone who runs this equipment every day.</p></div>
-    <div class="feat"><div class="ic">📅</div><h3>By appointment</h3><p>One-on-one time with someone who knows the machine — at your pace, on your schedule.</p></div>
+<section>
+  <div class="wrap">
+    <div class="eyebrow">See it work</div>
+    <h2 class="h2">The machine sells itself once you see it move material.</h2>
+    <p class="sub">So we bring it to you. Compact, articulated, and surprisingly capable — Intrepid loaders get into tight spaces, won't tear up turf, and do the work of machines twice their size. Built by Belgium's Knikmops since 1997.</p>
   </div>
+</section>
 
-  <h2>The machines</h2>
-  <p class="note">The full Intrepid line, plus Jobeau stump grinders and chippers — a complete green-industry package.</p>
-  <div class="grid2">
-    <div class="mdl"><div class="nm">Intrepid KM85</div><div class="ds">Mini articulating loader — the nimble one for tight gates and backyards.</div></div>
-    <div class="mdl"><div class="nm">Intrepid KM100 TELE</div><div class="ds">Telehandler-style reach in a compact, articulating package.</div></div>
-    <div class="mdl"><div class="nm">Intrepid KM130 TELE</div><div class="ds">Compact wheel loader with more lift and capacity.</div></div>
-    <div class="mdl"><div class="nm">Intrepid KM180 TELE</div><div class="ds">Stepping up in size and power for heavier work.</div></div>
-    <div class="mdl"><div class="nm">Intrepid KM250 TELE</div><div class="ds">The big compact wheel loader for serious capacity.</div></div>
-    <div class="mdl"><div class="nm">Jobeau grinders &amp; chippers</div><div class="ds">Stump grinders and wood chippers to round out the fleet.</div></div>
+<section class="g" id="lineup">
+  <div class="wrap">
+    <div class="eyebrow">The lineup</div>
+    <h2 class="h2">Five machines. One for every job.</h2>
+    <p class="sub" style="margin-bottom:24px;">From the nimble KM85 up to the big KM250 — plus Jobeau stump grinders and chippers for a complete green-industry fleet.</p>
+
+    <div class="model">
+      <div class="ph"><img src="https://miniloaders.com/wp-content/uploads/2026/03/miniloaders-Intrepid-KM85.png" alt="Intrepid KM85"></div>
+      <div class="tx"><div class="nm">Intrepid KM85</div><div class="tag">The nimble one</div>
+        <div class="ds">A mini articulating loader for tight gates, backyards, and anywhere a bigger machine just won't fit.</div></div>
+    </div>
+
+    <div class="model">
+      <div class="ph"><img src="https://miniloaders.com/wp-content/uploads/2026/03/miniloaders-Intrepid-KM100-Tele.png" alt="Intrepid KM100 Tele"></div>
+      <div class="tx"><div class="nm">Intrepid KM100 Tele</div><div class="tag">The tree-care favorite</div>
+        <div class="ds">Telescoping reach in a compact, articulating package — get over the fence and into the truck. The model tree companies keep reaching for.</div>
+        <div class="spec">25 hp Kubota · ~1,760 lb lift · ~9.7 ft telescoping reach</div></div>
+    </div>
+
+    <div class="model">
+      <div class="ph"><img src="https://miniloaders.com/wp-content/uploads/2026/03/miniloaders-Intrepid-KM130.png" alt="Intrepid KM130"></div>
+      <div class="tx"><div class="nm">Intrepid KM130</div><div class="tag">The step up</div>
+        <div class="ds">More lift and capacity for farms, estates, and heavier material — without giving up the compact footprint.</div></div>
+    </div>
+
+    <div class="model">
+      <div class="ph"><img src="https://miniloaders.com/wp-content/uploads/2026/03/miniloaders-Intrepid-KM180.png" alt="Intrepid KM180"></div>
+      <div class="tx"><div class="nm">Intrepid KM180 Tele</div><div class="tag">More muscle</div>
+        <div class="ds">Stepping up in size and power for the bigger jobs, with the reach of a telehandler.</div></div>
+    </div>
+
+    <div class="model">
+      <div class="ph"><img src="https://miniloaders.com/wp-content/uploads/2026/03/miniloaders-Intrepid-KM250-Tele.png" alt="Intrepid KM250 Tele"></div>
+      <div class="tx"><div class="nm">Intrepid KM250 Tele</div><div class="tag">The big one</div>
+        <div class="ds">Serious capacity for the toughest material handling — the most machine in the line.</div></div>
+    </div>
   </div>
-  <p class="note">Specs, attachments, and pricing by appointment — every operation is different and we'll match the machine to your work.</p>
+</section>
 
-  <h2>Rent before you buy</h2>
-  <div class="rent">
-    <h3>🔑 Rental units available</h3>
-    <p>Not ready to commit? <b>Rent an Intrepid</b> and put it on a real job. A rental is the honest demo — you find out exactly how it handles <i>your</i> work before you spend a dollar on ownership. And if you do buy, we'll talk about putting rental time toward the purchase.</p>
-    <p class="note" style="text-align:left;">Rental rates and availability by appointment.</p>
+<section>
+  <div class="wrap">
+    <div class="split rev">
+      <div class="im"><img src="https://miniloaders.com/wp-content/uploads/2026/03/miniloaders-Jobeau-M600-Chipper-web.png" alt="Jobeau chipper"></div>
+      <div class="cp">
+        <div class="eyebrow" style="text-align:left;">More than loaders</div>
+        <h2>Jobeau grinders &amp; chippers, too.</h2>
+        <p>Stump grinders and wood chippers round out the fleet — a complete green-industry package from one place, from someone who runs this stuff every day.</p>
+      </div>
+    </div>
   </div>
+</section>
 
-  <h2>Who's behind it</h2>
-  <div class="card story">
-    <p style="margin-top:0;"><b>Doug Brown</b> — owner, Second Nature Tree Service (Peekskill, NY). I'm not a salesman who read a brochure. I run this class of machine every week, and I've spent twenty years taking care of customers:</p>
-    <ul>
-      <li><span class="yr">2004</span> — got into retail running a <b>skate shop and skate park</b>: real customers, real expectations, every single day. That's where I learned to take care of the people who walk in the door.</li>
-      <li><span class="yr">2018</span> — built <b>Second Nature Tree Service</b> into a full tree service operation across the Hudson Valley — and became the exact kind of buyer these loaders are built for.</li>
-      <li><span class="yr">recently</span> — moved into <b>mower and equipment sales &amp; service</b>, working hands-on with the machines and the people who depend on them.</li>
-    </ul>
-    <p>So when I tell you a machine will or won't do your job, it's coming from someone who's actually done the work — and who'll still be here when you need parts or service.</p>
+<section class="g" id="do">
+  <div class="wrap">
+    <div class="eyebrow">What we do</div>
+    <h2 class="h2">Everything around the machine — handled.</h2>
+    <div class="feats">
+      <div class="feat"><h3>Working demos</h3><p>We bring a machine to your site and put it to work on real material. Not a parking-lot walkaround.</p></div>
+      <div class="feat"><h3>Delivery</h3><p>We haul it to your jobsite or yard. No freight to arrange, no pickup to figure out.</p></div>
+      <div class="feat"><h3>Rentals</h3><p>Rent a unit by the day or week — try it on a real job, or just get the work done.</p></div>
+      <div class="feat"><h3>Local service &amp; parts</h3><p>Local mechanics for setup, warranty work, and repairs. A down machine doesn't ship across the country.</p></div>
+      <div class="feat"><h3>Trade &amp; honest advice</h3><p>Trade-ins, financing guidance, and a straight answer on fit from someone who runs this equipment.</p></div>
+      <div class="feat"><h3>By appointment</h3><p>One-on-one time with someone who knows the machine — at your pace, on your schedule.</p></div>
+    </div>
   </div>
+</section>
 
-  <h2>Demos available now</h2>
-  <div class="card">
-    <p style="margin-top:0;">We can get a <b>KM130 in front of you to demo right away</b> — and a full demo fleet is coming. Want to see one work on your site? Let's set it up.</p>
+<section id="rent">
+  <div class="wrap">
+    <div class="split">
+      <div class="im"><img src="https://miniloaders.com/wp-content/uploads/2022/11/KM100-3.jpeg" alt="Intrepid loader working"></div>
+      <div class="cp">
+        <div class="eyebrow" style="text-align:left;">Try it first</div>
+        <h2>Rent before you buy.</h2>
+        <p>A rental is the honest demo — put an Intrepid on a real job and find out exactly how it handles <i>your</i> work before you spend a dollar on ownership. And if you do buy, we'll talk about putting rental time toward the purchase.</p>
+        <p><a class="chev" href="#contact">Reserve a rental</a></p>
+      </div>
+    </div>
   </div>
+</section>
 
-  <h2 id="book">Book a demo or rental</h2>
-  <div class="contact">
-    <div>Serving the Hudson Valley — Westchester, Putnam, Dutchess, Orange, Rockland &amp; Fairfield County</div>
-    <div class="big">Call or text: <a href="tel:+19146477276" style="color:#fff;">(914) 647-7276</a></div>
-    <div>✉️ <a href="mailto:info@peekskilltree.com">info@peekskilltree.com</a></div>
-    <div style="margin-top:8px;font-size:13px;opacity:.85;">By appointment · We come to you</div>
+<section class="g">
+  <div class="wrap">
+    <div class="eyebrow">Who's behind it</div>
+    <h2 class="h2">Bought, run, and beaten on — by me, every week.</h2>
+    <div class="bio">
+      <p><b>Doug Brown</b> — owner of Second Nature Tree Service in the Hudson Valley. I'm not a salesman who read a brochure. I run this class of machine every week, on real jobs.</p>
+      <p>Twenty years of taking care of customers taught me the same thing over and over — a <b>skate shop and park since 2004</b>, then <b>Second Nature Tree Service since 2018</b>: people remember who took care of them. Somewhere in there I became the exact kind of buyer these loaders are built for.</p>
+      <p>So when I tell you whether a machine will do your job, it isn't a pitch — it's coming from someone who's run it in the dirt, and who'll still be here when you need parts or a wrench.</p>
+    </div>
   </div>
+</section>
 
-  <div class="foot">Northeast Intrepid · carrying the Intrepid line (Knikmops, imported by Intrepid Loaders USA · miniloaders.com) · operated by Doug Brown, Second Nature Tree Service · Hudson Valley, NY</div>
-</div>
+<section id="contact">
+  <div class="wrap contact">
+    <div class="eyebrow">Book a demo or rental</div>
+    <h2 class="h2">See one work on your own ground.</h2>
+    <div class="big">Call or text <a href="tel:+19146477276">(914) 647-7276</a></div>
+    <div class="meta">✉️ <a href="mailto:info@peekskilltree.com">info@peekskilltree.com</a> &nbsp;·&nbsp; Hudson Valley, NY &nbsp;·&nbsp; By appointment — we come to you</div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <div class="fl">Northeast Intrepid · carrying the Intrepid line (built by Knikmops, imported by Intrepid Loaders USA · miniloaders.com) · operated by Doug Brown, Second Nature Tree Service · Hudson Valley, NY. Machine photos courtesy of Miniloaders.com.</div>
+  <img src="https://miniloaders.com/wp-content/uploads/2022/11/Miniloaders-transparant-v0.3.png" alt="Miniloaders">
+</div></footer>
+
 </body>
 </html>
