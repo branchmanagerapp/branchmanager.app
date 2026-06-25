@@ -58,6 +58,8 @@
   .loc-leg span{ display:inline-flex; align-items:center; gap:6px; }
   .loc-leg i{ width:12px; height:12px; border-radius:50%; display:inline-block; }
   .leaflet-container{ font:inherit; }
+  .leaflet-tooltip.region-tip{ background:#2e7d32; color:#fff; border:none; box-shadow:0 1px 5px rgba(0,0,0,.35); font-weight:800; font-size:11px; padding:4px 9px; border-radius:8px; }
+  .leaflet-tooltip.region-tip::before{ border-top-color:#2e7d32; }
   /* refined feature grid — no emojis */
   .feat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0; }
   @media(max-width:640px){ .feat-grid{ grid-template-columns:1fr; } }
@@ -212,7 +214,7 @@
   <div class="card">
     <p style="margin-top:0;">Initial focus: the <b>lower Hudson Valley and Western Connecticut</b> — Westchester, Putnam, Dutchess, Orange, Rockland, and Fairfield County — a dense market of tree, landscape, excavation, and farm operators with no nearby Intrepid presence. Demo center located centrally on this corridor, with delivery and demos radiating out. Room to expand coverage north and east as volume supports it.</p>
     <div id="region-map"></div>
-    <p class="note">Where we sit in the Northeast — Hudson Valley base, an hour from NYC, with the whole NY / New England / NJ / PA market within reach. Green ring ≈ the initial delivery/demo radius.</p>
+    <p class="note">Where we sit in the Northeast — Hudson Valley base, an hour from NYC, with the whole NY / New England / NJ / PA market within reach.</p>
   </div>
 
   <h2>The location — built-in foot traffic</h2>
@@ -389,8 +391,8 @@
     var map = L.map('region-map', { scrollWheelZoom:false }).setView([42.3,-73.7], 6);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       { maxZoom:19, attribution:'© OpenStreetMap © CARTO' }).addTo(map);
-    L.circle(base, { radius:80000, color:'#2e7d32', weight:1, fillColor:'#2e7d32', fillOpacity:.10 }).addTo(map);
-    L.marker(base, { icon: labelIcon('#2e7d32', 'Northeast Intrepid · Hudson Valley NY') }).addTo(map);
+    L.circleMarker(base, { radius:7, color:'#fff', weight:2, fillColor:'#2e7d32', fillOpacity:1 }).addTo(map)
+      .bindTooltip('Northeast Intrepid · Hudson Valley, NY', { permanent:true, direction:'top', offset:[0,-8], className:'region-tip' });
     setTimeout(function(){ map.invalidateSize(); }, 250);
   }
 
