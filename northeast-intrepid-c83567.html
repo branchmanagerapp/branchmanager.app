@@ -50,7 +50,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  #loc-map{ height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--line); margin:10px 0; }
+  #loc-map,#space-map,#region-map{ height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--line); margin:10px 0; }
+  #region-map{ height:380px; }
   .loc-pin{ font-size:11px; font-weight:800; padding:4px 8px; border-radius:8px; white-space:nowrap; box-shadow:0 1px 4px rgba(0,0,0,.3); border:2px solid #fff; }
   .loc-leg{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin:6px 0 0; }
   .loc-leg span{ display:inline-flex; align-items:center; gap:6px; }
@@ -127,6 +128,8 @@
   <h2>Territory</h2>
   <div class="card">
     <p style="margin-top:0;">Initial focus: the <b>lower Hudson Valley and Western Connecticut</b> — Westchester, Putnam, Dutchess, Orange, Rockland, and Fairfield County — a dense market of tree, landscape, excavation, and farm operators with no nearby Intrepid presence. Demo center located centrally on this corridor, with delivery and demos radiating out. Room to expand coverage north and east as volume supports it.</p>
+    <div id="region-map"></div>
+    <p class="note">Where we sit in the Northeast — Hudson Valley base, an hour from NYC, with the whole NY / New England / NJ / PA market within reach. Green ring ≈ the initial delivery/demo radius.</p>
   </div>
 
   <h2>The location — built-in foot traffic</h2>
@@ -143,6 +146,23 @@
       <span><i style="background:#a04400;"></i> Jim Reed's — Bandit · Bobcat · Freightliner</span>
     </div>
     <p class="note" style="margin-top:8px;">~0.3 mi apart · same corridor · ~1-minute drive.</p>
+  </div>
+
+  <h2>The space — room to demo, store &amp; service</h2>
+  <div class="card">
+    <p style="margin-top:0;">Here's the footprint, so you can see how it actually works on the ground:</p>
+    <ul>
+      <li><b>8,000 sq ft building (the skate park)</b> — indoor demo floor / showroom and service bay.</li>
+      <li><b>Expansion space directly behind it</b> — room we can potentially take for more inventory and outdoor demo / storage.</li>
+      <li><b>Kevin's yard, just past the soccer field</b> — Kevin's Heavy Trucking space for transport staging and the heavier service work.</li>
+    </ul>
+    <div id="space-map"></div>
+    <div class="loc-leg">
+      <span><i style="background:#2e7d32;"></i> 8,000 sq ft skate park — demo center</span>
+      <span><i style="background:#1565c0;"></i> Expansion (behind)</span>
+      <span><i style="background:#a04400;"></i> Kevin's yard (past soccer)</span>
+    </div>
+    <p class="note" style="margin-top:8px;">Satellite view of the site. The skate park location is exact; the expansion area and Kevin's yard are placed approximately while we finalize the footprints.</p>
   </div>
 
   <h2>How the floor-plan model works for both of us</h2>
@@ -168,6 +188,19 @@
     <tr><td>Add-on: attachments, delivery, service</td><td class="r">+ margin</td><td><span class="assume">assumption</span> — secondary revenue per sale</td></tr>
   </table>
   <p class="note">Once Chris confirms the per-unit dealer margin and floor-plan rate, this becomes a real P&amp;L: <i>(units × margin) + attachment/service revenue − demo center overhead − floor-plan carrying cost</i>. I'll model it properly the moment those two numbers are set.</p>
+
+  <h2>Straight talk</h2>
+  <div class="card" style="border-color:#cfe6d2;">
+    <p style="margin-top:0;">I'll be straight with you, Chris. On paper, a <b>bigger multi-brand dealer</b> — someone already carrying Giant, New Holland, or Kubota — might make more sense than one tree guy putting a few pieces together. I get that, and I'm not going to pretend otherwise.</p>
+    <p>Here's where I think I actually win you machines:</p>
+    <ul>
+      <li><b>I'll sell these because I genuinely like them.</b> The interest is real — and guys can tell the difference between a sales pitch and someone who actually wants the machine. That's most of selling right there.</li>
+      <li><b>I want to learn the service side myself</b> — not just move units, but maintain and repair them, hands-on, alongside Ron and Kevin and his guys. I want to know these machines cold.</li>
+      <li><b>I'm already out there.</b> I'm driving around the Northeast meeting other tree guys — honestly, it sounds like a good time, and relationships are how this equipment actually moves.</li>
+      <li><b>The location.</b> Being a third of a mile from Jim Reed's and Bobcat puts us right where the contractors already are — that's the piece a bigger dealer three hours away just doesn't have.</li>
+    </ul>
+    <p class="note">No smoke. I know what I am and what I'm not. I think the mix of real interest, a willingness to learn the wrench side, boots on the ground, and that location is worth betting on.</p>
+  </div>
 
   <h2>What I'm asking Chris for</h2>
   <div class="ask">
@@ -223,8 +256,62 @@
     pin(intrepid, '#2e7d32', 'Northeast Intrepid');
     setTimeout(function(){ map.invalidateSize(); }, 250);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLocMap);
-  else initLocMap();
+  function labelIcon(color, label){
+    return L.divIcon({ className:'', iconSize:null,
+      html:'<div style="display:flex;flex-direction:column;align-items:center;">'
+        + '<div class="loc-pin" style="background:'+color+';color:#fff;">'+label+'</div>'
+        + '<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);margin-top:-1px;"></div>'
+        + '</div>' });
+  }
+
+  // Satellite view of the site footprint — skate park (exact) + draggable
+  // expansion / Kevin's-yard pins Doug can position to the real spots.
+  function initSpaceMap(){
+    if (typeof L === 'undefined') return setTimeout(initSpaceMap, 300);
+    var el = document.getElementById('space-map');
+    if (!el || el._init) return; el._init = true;
+    var pts = {
+      skate:     { ll:[41.3050214,-73.9227667], color:'#2e7d32', label:'Skate park · demo center', drag:false },
+      expansion: { ll:[41.30472,-73.92235],     color:'#1565c0', label:'Expansion (approx)',       drag:true },
+      kevin:     { ll:[41.30560,-73.92090],     color:'#a04400', label:"Kevin's yard (approx)",     drag:true }
+    };
+    var map = L.map('space-map', { scrollWheelZoom:false }).setView([41.30525,-73.92205], 17);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom:19, attribution:'Imagery © Esri' }).addTo(map);
+    var readout = document.createElement('div');
+    readout.className = 'note'; readout.style.marginTop = '6px';
+    el.parentNode.insertBefore(readout, el.nextSibling);
+    function upd(){
+      readout.innerHTML = 'Expansion ≈ ' + pts.expansion.ll[0].toFixed(5) + ', ' + pts.expansion.ll[1].toFixed(5)
+        + '  ·  Kevin\'s ≈ ' + pts.kevin.ll[0].toFixed(5) + ', ' + pts.kevin.ll[1].toFixed(5)
+        + '  — drag the blue &amp; orange pins to their real spots.';
+    }
+    Object.keys(pts).forEach(function(k){
+      var p = pts[k];
+      var m = L.marker(p.ll, { draggable:p.drag, icon:labelIcon(p.color, p.label) }).addTo(map);
+      if (p.drag) m.on('dragend', function(){ var ll = m.getLatLng(); pts[k].ll = [ll.lat, ll.lng]; upd(); });
+    });
+    upd();
+    setTimeout(function(){ map.invalidateSize(); }, 250);
+  }
+
+  // Wide Northeast view — where Northeast Intrepid sits in the region.
+  function initRegionMap(){
+    if (typeof L === 'undefined') return setTimeout(initRegionMap, 300);
+    var el = document.getElementById('region-map');
+    if (!el || el._init) return; el._init = true;
+    var base = [41.3050214,-73.9227667];
+    var map = L.map('region-map', { scrollWheelZoom:false }).setView([42.3,-73.7], 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      { maxZoom:19, attribution:'© OpenStreetMap © CARTO' }).addTo(map);
+    L.circle(base, { radius:80000, color:'#2e7d32', weight:1, fillColor:'#2e7d32', fillOpacity:.10 }).addTo(map);
+    L.marker(base, { icon: labelIcon('#2e7d32', 'Northeast Intrepid · Hudson Valley NY') }).addTo(map);
+    setTimeout(function(){ map.invalidateSize(); }, 250);
+  }
+
+  function boot(){ initLocMap(); initSpaceMap(); initRegionMap(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
 </script>
 </body>
