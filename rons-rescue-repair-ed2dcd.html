@@ -40,6 +40,16 @@
   .step .n{ width:30px; height:30px; border-radius:50%; background:var(--red); color:#fff; font-weight:900; display:inline-flex; align-items:center; justify-content:center; font-size:15px; margin-bottom:8px; }
   .step b{ display:block; font-size:14.5px; } .step span{ font-size:12.5px; color:var(--muted); }
   .smsbtn{ display:inline-block; margin-top:14px; background:#fff; color:var(--red2); font-weight:900; font-size:16px; padding:13px 26px; border-radius:12px; text-decoration:none; }
+  .banner{ position:relative; border-radius:16px; overflow:hidden; margin:16px 0; min-height:190px; display:flex; align-items:flex-end; }
+  .banner .bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .banner .ov{ position:relative; width:100%; background:linear-gradient(to top, rgba(18,16,20,.9), rgba(18,16,20,.12)); padding:18px 20px; color:#fff; }
+  .banner h3{ margin:0 0 4px; font-size:21px; font-weight:900; color:#fff; }
+  .banner p{ margin:0 0 11px; font-size:14px; opacity:.95; }
+  .banner .b{ display:inline-block; background:var(--red); color:#fff; font-weight:800; font-size:14px; padding:9px 18px; border-radius:10px; text-decoration:none; }
+  .brands{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:16px 22px; }
+  .brand{ height:40px; display:flex; align-items:center; }
+  .brand img{ max-height:40px; width:auto; display:block; }
+  .brand .bn{ font-weight:900; font-size:16px; letter-spacing:.01em; }
 </style>
 </head>
 <body>
@@ -53,6 +63,15 @@
 <div class="wrap">
 
   <div class="free">★ Free pick-up &amp; drop-off — we come to you ★</div>
+
+  <div class="banner">
+    <img class="bg" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Lawn_mower_on_the_grass_closeup.jpg/500px-Lawn_mower_on_the_grass_closeup.jpg" alt="Lawn mower on the grass" loading="lazy">
+    <div class="ov">
+      <h3>Mowing season's here.</h3>
+      <p>Mower won't start, running rough, or due for a tune-up? We'll pick it up free and get it cutting again.</p>
+      <a class="b" href="tel:+18456544507">Call 845-654-4507</a>
+    </div>
+  </div>
 
   <p class="lead">Dependable, reliable, and affordable. A <b>certified mechanic</b> ready to service all your small machinery and small engines — and get them running right.</p>
 
@@ -76,15 +95,24 @@
     <div class="step"><div class="n">3</div><b>Fixed &amp; dropped back</b><span>Running like new.</span></div>
   </div>
 
+  <div class="banner">
+    <img class="bg" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Snow_Blower_In_Action_%288458107983%29.jpg" alt="Snow blower clearing snow" loading="lazy">
+    <div class="ov">
+      <h3>Beat the first storm.</h3>
+      <p>Get your snow blower serviced before winter — skip the dead-pull-cord panic when the snow flies.</p>
+      <a class="b" href="tel:+18456544507">Schedule a tune-up</a>
+    </div>
+  </div>
+
   <h2>Certified &amp; trusted</h2>
   <div class="card">
-    <div class="certs">
-      <span class="cert">Stihl</span>
-      <span class="cert">Briggs &amp; Stratton</span>
-      <span class="cert">Kohler</span>
-      <span class="cert">&amp; more</span>
+    <div class="brands">
+      <div class="brand"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Stihl_Logo_WhiteOnOrange.svg/500px-Stihl_Logo_WhiteOnOrange.svg.png" alt="STIHL" loading="lazy"></div>
+      <div class="brand"><span class="bn" style="color:#c1272d;">BRIGGS &amp; STRATTON</span></div>
+      <div class="brand"><span class="bn" style="color:#111;">KOHLER</span></div>
+      <div class="brand"><span class="bn" style="color:var(--muted);">&amp; more</span></div>
     </div>
-    <p style="text-align:center;margin-top:12px;color:var(--muted);font-size:13.5px;">Factory-certified service you can count on — quality work, fair prices, done right.</p>
+    <p style="text-align:center;margin-top:14px;color:var(--muted);font-size:13.5px;">Factory-certified service you can count on — quality work, fair prices, done right.</p>
   </div>
 
   <h2>Your mechanic</h2>
