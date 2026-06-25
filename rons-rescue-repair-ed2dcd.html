@@ -10,14 +10,13 @@
   *{box-sizing:border-box}
   body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c1c20; background:var(--bg); line-height:1.55; }
   .wrap{ max-width:760px; margin:0 auto; padding:0 18px 70px; }
-  header{ background:linear-gradient(135deg,#23252b 0%,#1c1c20 60%,#2a1530 100%); color:#fff; padding:40px 18px 34px; text-align:center; }
-  .badge{ font-size:12px; letter-spacing:.22em; text-transform:uppercase; font-weight:800; color:#d9b3ff; }
-  h1{ font-size:38px; margin:8px 0 6px; font-weight:900; letter-spacing:-.01em; line-height:1.05; }
-  h1 .r{ color:#b58bff; } h1 .rr{ color:#fff; }
-  .kind{ font-size:13px; letter-spacing:.14em; text-transform:uppercase; opacity:.85; font-weight:700; }
-  .tagline{ margin:16px auto 0; max-width:440px; font-size:16px; font-weight:700; color:#ffd9d9; }
-  .call{ display:inline-block; margin-top:20px; background:var(--red); color:#fff; font-weight:900; font-size:22px; letter-spacing:.02em; padding:14px 30px; border-radius:14px; text-decoration:none; box-shadow:0 6px 20px rgba(193,39,45,.4); }
-  .call small{ display:block; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; opacity:.9; margin-bottom:2px; }
+  header{ background:radial-gradient(130% 130% at 50% 0%, #2c2e35 0%, #191a1e 72%); color:#fff; padding:46px 18px 40px; text-align:center; border-bottom:4px solid var(--red); }
+  .h-rons{ display:block; font-family:Georgia,"Times New Roman",serif; font-style:italic; font-size:clamp(22px,6vw,30px); color:#c8a8ff; line-height:1; margin-bottom:3px; }
+  .h-logo{ font-size:clamp(36px,11vw,58px); font-weight:900; letter-spacing:.01em; line-height:.95; margin:0; text-transform:uppercase; }
+  .h-logo .resc{ color:#fff; } .h-logo .rep{ color:var(--gold); }
+  .h-eyebrow{ font-size:11px; letter-spacing:.24em; text-transform:uppercase; font-weight:800; color:#9b9ba4; margin-top:15px; }
+  .h-tag{ font-size:15.5px; color:#e8e8ee; margin:11px auto 0; max-width:400px; line-height:1.4; }
+  .callbtn{ display:inline-flex; align-items:center; gap:8px; margin-top:20px; background:var(--red); color:#fff; font-weight:800; font-size:16px; padding:12px 26px; border-radius:30px; text-decoration:none; box-shadow:0 6px 20px rgba(193,39,45,.4); }
   .free{ background:var(--gold); color:#23252b; font-weight:900; text-transform:uppercase; letter-spacing:.04em; font-size:14px; text-align:center; padding:12px; border-radius:12px; margin:18px 0; }
   h2{ font-size:14px; color:var(--red); margin:34px 0 12px; text-transform:uppercase; letter-spacing:.08em; font-weight:900; text-align:center; }
   .lead{ font-size:17px; text-align:center; max-width:560px; margin:22px auto 0; }
@@ -60,10 +59,11 @@
 </head>
 <body>
 <header>
-  <div class="badge">Small Engine · Powersports · Equipment</div>
-  <h1><span class="r">Ron's</span><br><span class="rr">Rescue Repair</span></h1>
-  <div class="tagline">"Sit back and relax with our free pick-up and drop-off service!"</div>
-  <a class="call" href="tel:+18456544507"><small>Call or text</small>845-654-4507</a>
+  <span class="h-rons">Ron's</span>
+  <h1 class="h-logo"><span class="resc">Rescue</span> <span class="rep">Repair</span></h1>
+  <div class="h-eyebrow">Small Engine · Powersports · Equipment</div>
+  <div class="h-tag">Sit back and relax — free pick-up &amp; drop-off service.</div>
+  <a class="callbtn" href="tel:+18456544507">📞 Call or text · 845-654-4507</a>
 </header>
 
 <div class="wrap">
