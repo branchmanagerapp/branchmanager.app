@@ -34,6 +34,12 @@
   .contact a{ color:#fff; } .contact .big{ font-size:26px; font-weight:900; margin:6px 0; letter-spacing:.02em; }
   .foot{ font-size:11.5px; color:var(--muted); text-align:center; margin-top:30px; }
   p{ margin:9px 0; }
+  .steps{ display:flex; gap:10px; }
+  @media(max-width:560px){ .steps{ flex-direction:column; } }
+  .step{ flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:15px 14px; text-align:center; }
+  .step .n{ width:30px; height:30px; border-radius:50%; background:var(--red); color:#fff; font-weight:900; display:inline-flex; align-items:center; justify-content:center; font-size:15px; margin-bottom:8px; }
+  .step b{ display:block; font-size:14.5px; } .step span{ font-size:12.5px; color:var(--muted); }
+  .smsbtn{ display:inline-block; margin-top:14px; background:#fff; color:var(--red2); font-weight:900; font-size:16px; padding:13px 26px; border-radius:12px; text-decoration:none; }
 </style>
 </head>
 <body>
@@ -63,6 +69,13 @@
     <div class="svc"><span class="i">🛠️</span>All small engines</div>
   </div>
 
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><b>Text or call</b><span>Tell us what's broken.</span></div>
+    <div class="step"><div class="n">2</div><b>We pick it up — free</b><span>Right from your place.</span></div>
+    <div class="step"><div class="n">3</div><b>Fixed &amp; dropped back</b><span>Running like new.</span></div>
+  </div>
+
   <h2>Certified &amp; trusted</h2>
   <div class="card">
     <div class="certs">
@@ -85,6 +98,7 @@
     <div>Free pick-up &amp; drop-off across the Hudson Valley</div>
     <div class="big"><a href="tel:+18456544507">845-654-4507</a></div>
     <div style="font-size:13px;opacity:.9;">Call or text — dependable, reliable, affordable.</div>
+    <a class="smsbtn" href="sms:+18456544507?&body=Hi%20Ron%2C%20I'd%20like%20to%20schedule%20a%20free%20pickup.%0AItem%3A%20%0AAddress%3A%20%0ABest%20day%2Ftime%3A%20">Text to schedule a pickup →</a>
   </div>
 
   <div class="foot">Ron's Rescue Repair · Small Engine · Powersports · Equipment · Lake Peekskill / Hudson Valley, NY</div>
