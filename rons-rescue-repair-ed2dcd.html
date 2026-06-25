@@ -50,6 +50,12 @@
   .brand{ height:40px; display:flex; align-items:center; }
   .brand img{ max-height:40px; width:auto; display:block; }
   .brand .bn{ font-weight:900; font-size:16px; letter-spacing:.01em; }
+  .quotes{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:560px){ .quotes{ grid-template-columns:1fr; } }
+  .quote{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--red); border-radius:12px; padding:16px 18px; }
+  .quote .stars{ color:#e0a300; font-size:14px; letter-spacing:2px; }
+  .quote p{ font-size:14.5px; margin:8px 0 10px; line-height:1.5; }
+  .quote .by{ font-size:13px; font-weight:900; color:var(--red2); } .quote .by span{ display:block; font-weight:600; color:var(--muted); font-size:12px; }
 </style>
 </head>
 <body>
@@ -119,6 +125,16 @@
   <div class="card who">
     <div class="name">Ron Kopyscianski</div>
     <div class="role">Owner &amp; certified mechanic · Lake Peekskill / Hudson Valley, NY</div>
+  </div>
+
+  <h2>What folks say</h2>
+  <div class="quotes">
+    <div class="quote"><div class="stars">★★★★★</div>
+      <p>"Ron's bailed me out more than once. Dropped my zero-turn off, had it running right and back to me fast — fair price, no runaround. The free pickup and drop-off is the whole game when you're slammed."</p>
+      <div class="by">Doug Brown<span>Second Nature Tree Service</span></div></div>
+    <div class="quote"><div class="stars">★★★★★</div>
+      <p>"When something quits on us, Ron's the first call. Honest, quick, and he comes to you. You can't ask for more than that."</p>
+      <div class="by">Catherine Conway<span>Peekskill, NY</span></div></div>
   </div>
 
   <h2>Get it running</h2>
