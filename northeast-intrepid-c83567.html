@@ -58,6 +58,44 @@
   .loc-leg span{ display:inline-flex; align-items:center; gap:6px; }
   .loc-leg i{ width:12px; height:12px; border-radius:50%; display:inline-block; }
   .leaflet-container{ font:inherit; }
+  /* refined feature grid — no emojis */
+  .feat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0; }
+  @media(max-width:640px){ .feat-grid{ grid-template-columns:1fr; } }
+  .feat2{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--green); border-radius:12px; padding:14px 16px; }
+  .feat2 h3{ margin:0 0 5px; font-size:15px; color:var(--green2); }
+  .feat2 p{ margin:0; font-size:13.5px; color:var(--muted); }
+  /* Calendly-style booking mockup */
+  .bk-wrap{ margin:18px 0 6px; }
+  .bk-label{ font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .bk-steps{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+  .bk-step{ font-size:11.5px; font-weight:700; color:var(--muted); background:#f1f5f2; border-radius:20px; padding:5px 11px; }
+  .bk-step.done{ background:#eef7ef; color:var(--green2); }
+  .bk-card{ display:flex; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 8px 28px rgba(20,40,28,.10); }
+  @media(max-width:600px){ .bk-card{ flex-direction:column; } }
+  .bk-left{ flex:1; padding:20px; border-right:1px solid var(--line); min-width:0; }
+  @media(max-width:600px){ .bk-left{ border-right:none; border-bottom:1px solid var(--line); } }
+  .bk-brand{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--green); }
+  .bk-h{ font-size:22px; font-weight:800; margin:6px 0 12px; color:var(--ink); }
+  .bk-row{ font-size:13px; color:var(--muted); padding:4px 0 4px 16px; position:relative; }
+  .bk-row::before{ content:''; position:absolute; left:0; top:10px; width:7px; height:7px; border-radius:50%; background:var(--green); }
+  .bk-desc{ font-size:13px; color:#3a463f; margin:12px 0; }
+  .bk-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .bk-chip{ font-size:12px; font-weight:600; padding:5px 11px; border-radius:20px; border:1px solid var(--line); color:var(--muted); background:#fafcfa; }
+  .bk-chip.on{ background:var(--green); color:#fff; border-color:var(--green); }
+  .bk-right{ flex:1.1; padding:20px; min-width:0; }
+  .bk-cal-head{ display:flex; align-items:center; justify-content:space-between; font-size:15px; color:var(--ink); margin-bottom:10px; }
+  .bk-nav{ color:var(--green); font-weight:800; font-size:18px; }
+  .bk-dow{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; font-size:11px; color:var(--muted); text-align:center; margin-bottom:4px; }
+  .bk-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .bk-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:13px; border-radius:50%; color:#c2cbc4; }
+  .bk-day.avail{ color:var(--green2); background:#eef7ef; font-weight:700; }
+  .bk-day.sel{ background:var(--green); color:#fff; font-weight:800; }
+  .bk-slots{ margin-top:12px; }
+  .bk-slots-h{ font-size:12px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+  .bk-slot{ display:inline-block; font-size:12.5px; font-weight:600; padding:7px 12px; margin:0 6px 6px 0; border:1px solid #cfe6d2; border-radius:8px; color:var(--green2); }
+  .bk-slot.on{ background:var(--green); color:#fff; border-color:var(--green); }
+  .bk-cta{ margin-top:10px; background:var(--green2); color:#fff; text-align:center; font-weight:700; font-size:13.5px; padding:11px; border-radius:9px; }
+  .bk-note{ font-size:12px; color:var(--muted); margin-top:8px; }
 </style>
 </head>
 <body>
@@ -81,21 +119,67 @@
   <p>Chris has proven the machine moves — by his own count, roughly <b>150 units over 7–8 years at 20–30 a year</b>, almost entirely on reputation and word of mouth. The public record backs the trajectory: Intrepid has been in the U.S. <b>since 2018</b>, sold <b>nationwide</b>, with the <b>KM100 Tele the best-seller</b> — and it's caught on most with <b>tree-care companies</b>, which is exactly my world. That's a strong base built <i>without</i> a physical demo center, a demo program, or a local service bench in the Northeast — the things that turn a "maybe" into a sale and a one-time buyer into a referral source. Northeast Intrepid is built to add that layer, not to compete with it.</p>
 
   <h2>What Northeast Intrepid does</h2>
-  <div class="grid">
-    <div class="feat"><div class="ic">🚚</div><h3>Delivery</h3><p>We bring the machine to the jobsite or yard — no buyer has to figure out freight or pickup.</p></div>
-    <div class="feat"><div class="ic">🌲</div><h3>Working demos</h3><p>On-site demos on real work — loading logs, moving material, tight-space maneuvering — not a parking-lot walkaround.</p></div>
-    <div class="feat"><div class="ic">🏢</div><h3>Demo center</h3><p>A physical location where contractors can see, sit in, and compare machines, attachments, and options.</p></div>
-    <div class="feat"><div class="ic">📅</div><h3>By appointment</h3><p>Scheduled one-on-one time with someone who knows the machine — no tire-kickers wasting the floor.</p></div>
-    <div class="feat"><div class="ic">🔧</div><h3>Service & parts</h3><p>In-house mechanics for setup, warranty work, and repairs — the piece that's been missing in the region.</p></div>
-    <div class="feat"><div class="ic">🤝</div><h3>Trade & trusted advice</h3><p>Trade-ins, financing guidance, and honest fit advice from someone who runs this equipment daily.</p></div>
+  <p style="margin-top:0;">Six things, all run off one simple <b>by-appointment</b> site — a buyer picks what they need and a time, and we take it from there.</p>
+  <div class="feat-grid">
+    <div class="feat2"><h3>Delivery</h3><p>We bring the machine to the jobsite or yard — no buyer has to arrange freight or pickup.</p></div>
+    <div class="feat2"><h3>Working demos</h3><p>On-site demos on real work — loading logs, moving material, tight-space maneuvering. Not a parking-lot walkaround.</p></div>
+    <div class="feat2"><h3>Demo center</h3><p>A real place to see, sit in, and compare machines, attachments, and options.</p></div>
+    <div class="feat2"><h3>Rentals</h3><p>Rent a unit by the day or week — try it on a real job before buying, or just get the work done.</p></div>
+    <div class="feat2"><h3>Service &amp; parts</h3><p>Local mechanics for setup, warranty work, and repairs — the piece that's been missing in the region.</p></div>
+    <div class="feat2"><h3>Trade &amp; advice</h3><p>Trade-ins, financing guidance, and honest fit advice from someone who runs this equipment daily.</p></div>
+  </div>
+
+  <div class="bk-wrap">
+    <div class="bk-label">A preview of the booking site</div>
+    <div class="bk-steps">
+      <span class="bk-step done">1 &middot; Pick a service</span>
+      <span class="bk-step done">2 &middot; Choose a time</span>
+      <span class="bk-step">3 &middot; Confirmed</span>
+    </div>
+    <div class="bk-card">
+      <div class="bk-left">
+        <div class="bk-brand">Northeast Intrepid</div>
+        <div class="bk-h">Book a Demo</div>
+        <div class="bk-row">45 minutes</div>
+        <div class="bk-row">Your jobsite, or our demo yard</div>
+        <p class="bk-desc">See an Intrepid work on real material — bring your toughest task and we'll put a machine on it.</p>
+        <div class="bk-chips">
+          <span class="bk-chip on">Working demo</span>
+          <span class="bk-chip">Rental</span>
+          <span class="bk-chip">Service</span>
+          <span class="bk-chip">Trade-in</span>
+        </div>
+      </div>
+      <div class="bk-right">
+        <div class="bk-cal-head"><span class="bk-nav">&lsaquo;</span><b>June 2026</b><span class="bk-nav">&rsaquo;</span></div>
+        <div class="bk-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div class="bk-days">
+          <span class="bk-day"></span>
+          <span class="bk-day">1</span><span class="bk-day">2</span><span class="bk-day">3</span><span class="bk-day">4</span><span class="bk-day">5</span><span class="bk-day">6</span>
+          <span class="bk-day">7</span><span class="bk-day">8</span><span class="bk-day">9</span><span class="bk-day">10</span><span class="bk-day">11</span><span class="bk-day">12</span><span class="bk-day">13</span>
+          <span class="bk-day">14</span><span class="bk-day">15</span><span class="bk-day">16</span><span class="bk-day">17</span><span class="bk-day">18</span><span class="bk-day">19</span><span class="bk-day">20</span>
+          <span class="bk-day">21</span><span class="bk-day">22</span><span class="bk-day">23</span><span class="bk-day">24</span><span class="bk-day sel">25</span><span class="bk-day avail">26</span><span class="bk-day avail">27</span>
+          <span class="bk-day">28</span><span class="bk-day avail">29</span><span class="bk-day avail">30</span>
+        </div>
+        <div class="bk-slots">
+          <div class="bk-slots-h">Thursday, June 25</div>
+          <span class="bk-slot">8:00 am</span>
+          <span class="bk-slot on">9:30 am</span>
+          <span class="bk-slot">11:00 am</span>
+          <span class="bk-slot">1:00 pm</span>
+        </div>
+        <div class="bk-cta">Confirm — Thu Jun 25, 9:30 am</div>
+      </div>
+    </div>
+    <div class="bk-note">A sample of the by-appointment site — clean and simple: two clicks to book a demo, rental, service, or trade-in. No phone tag, no guessing.</div>
   </div>
 
   <h2>Why me, why now</h2>
   <div class="card who">
     <div>
-      <p style="margin-top:0;"><b>Doug Brown — Second Nature Tree Service (Peekskill, NY).</b> I run a full tree and land-clearing operation in the Hudson Valley, so I'm not a salesman learning the product — I'm the customer. I buy, run, and beat on this class of machine every week, and my own crews are the first proof-of-concept demo.</p>
+      <p style="margin-top:0;"><b>Doug Brown — Second Nature Tree Service (Peekskill, NY).</b> I run a full tree service operation in the Hudson Valley, so I'm not a salesman learning the product — I'm the customer. I buy, run, and beat on this class of machine every week, and my own crews are the first proof-of-concept demo.</p>
       <ul>
-        <li><b>Real demo yard + real work</b> — I can show the machine doing the job, on actual sites, to the exact buyers who'd want one (tree, landscape, excavation, and farm operators across the Hudson Valley / Westchester / Putnam / Fairfield corridor).</li>
+        <li><b>A demo yard built for it</b> — we run a small firewood yard, so there are <b>always logs on-site to load</b>, plus a <b>gravel-and-dirt demo area</b> and a <b>whole hillside</b> a buyer can dig into when they want to really lean on the machine. I can put an Intrepid to work on the actual job, in front of the exact buyers who'd want one — tree, landscape, excavation, and farm operators across the Hudson Valley / Westchester / Putnam / Fairfield corridor.</li>
         <li><b>An existing network</b> of contractors and a back-office platform (Branch Manager) I already use to run scheduling, invoicing, and fleet — the bones of a dealership are already in place.</li>
         <li><b>Credibility with buyers</b> — they trust a recommendation from someone who owns and depends on the machine, not a sales rep.</li>
       </ul>
