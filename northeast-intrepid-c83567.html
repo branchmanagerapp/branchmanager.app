@@ -231,10 +231,12 @@
     </ul>
     <div id="loc-map"></div>
     <div class="loc-leg">
-      <span><i style="background:#2e7d32;"></i> Northeast Intrepid demo center (Highland Industrial Park)</span>
+      <span><i style="background:#2e7d32;"></i> Demo area</span>
+      <span><i style="background:#7e57c2;"></i> Future showroom</span>
+      <span><i style="background:#1565c0;"></i> Skatepark</span>
       <span><i style="background:#a04400;"></i> Jim Reed's — Bandit · Bobcat · Freightliner</span>
     </div>
-    <p class="note" style="margin-top:8px;">~0.3 mi apart · same corridor · ~1-minute drive.</p>
+    <p class="note" style="margin-top:8px;">Our spot sits right across the corridor from Jim Reed's — ~0.3 mi, a one-minute drive. (Showroom / demo / skatepark positions approximate.)</p>
   </div>
 
   <h2>The space — room to demo, store &amp; service</h2>
@@ -350,10 +352,12 @@
     var el = document.getElementById('loc-map');
     if (!el || el._init) return;
     el._init = true;
-    var intrepid = [41.3050214, -73.9227667];   // 1 Highland Industrial Park Dr, Peekskill
     var reed     = [41.3075110, -73.9282503];    // 5742 Albany Post Rd, Cortlandt Manor (Jim Reed's)
+    var showroom = [41.30515, -73.92330];        // star — future showroom (approx, per Doug's sketch)
+    var demo     = [41.30452, -73.92315];        // oval — Intrepid demo area
+    var skate    = [41.30525, -73.92460];        // square — skate park
     var map = L.map('loc-map', { scrollWheelZoom:false, attributionControl:true })
-      .fitBounds([intrepid, reed], { padding:[55,55] });
+      .fitBounds([reed, showroom, demo, skate], { padding:[55,55] });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19, attribution: '© OpenStreetMap © CARTO'
     }).addTo(map);
@@ -366,9 +370,11 @@
            + '</div>'
       }) }).addTo(map);
     }
-    L.polyline([intrepid, reed], { color:'#1f3b2c', weight:3, dashArray:'6,6', opacity:.7 }).addTo(map);
+    L.polyline([showroom, reed], { color:'#1f3b2c', weight:3, dashArray:'6,6', opacity:.7 }).addTo(map);
     pin(reed,     '#a04400', "Jim Reed's");
-    pin(intrepid, '#2e7d32', 'Northeast Intrepid');
+    pin(skate,    '#1565c0', 'Skatepark');
+    pin(demo,     '#2e7d32', 'Demo area');
+    pin(showroom, '#7e57c2', 'Future showroom');
     setTimeout(function(){ map.invalidateSize(); }, 250);
   }
   function labelIcon(color, label){
