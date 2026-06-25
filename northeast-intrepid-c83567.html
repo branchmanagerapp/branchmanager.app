@@ -47,6 +47,16 @@
   a{ color:var(--green); }
   .who{ display:flex; gap:14px; align-items:flex-start; }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  #loc-map{ height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--line); margin:10px 0; }
+  .loc-pin{ font-size:11px; font-weight:800; padding:4px 8px; border-radius:8px; white-space:nowrap; box-shadow:0 1px 4px rgba(0,0,0,.3); border:2px solid #fff; }
+  .loc-leg{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin:6px 0 0; }
+  .loc-leg span{ display:inline-flex; align-items:center; gap:6px; }
+  .loc-leg i{ width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .leaflet-container{ font:inherit; }
+</style>
 </head>
 <body>
 <header><div class="wrap">
@@ -119,6 +129,22 @@
     <p style="margin-top:0;">Initial focus: the <b>lower Hudson Valley and Western Connecticut</b> — Westchester, Putnam, Dutchess, Orange, Rockland, and Fairfield County — a dense market of tree, landscape, excavation, and farm operators with no nearby Intrepid presence. Demo center located centrally on this corridor, with delivery and demos radiating out. Room to expand coverage north and east as volume supports it.</p>
   </div>
 
+  <h2>The location — built-in foot traffic</h2>
+  <div class="card">
+    <p style="margin-top:0;">The demo center base sits in the <b>Route 9 / Albany Post Road corridor in Cortlandt / Peekskill</b> — and it's <b>a third of a mile from Jim Reed's</b> (Jim Reed Truck Sales / Bobcat of Westchester, 5742 Albany Post Rd). That matters:</p>
+    <ul>
+      <li><b>Jim Reed's is already where tree guys and contractors go</b> — they sell <b>Bandit chippers, Bobcat equipment, and Freightliner / Fuso / UD trucks</b>, plus full service. Our exact buyers are <i>already driving to this corridor.</i></li>
+      <li><b>We slot in alongside that traffic, not against it</b> — Intrepid loaders aren't what Jim Reed sells; we add the compact-loader piece the same crowd needs.</li>
+      <li><b>It's a proven equipment destination</b> — putting the Northeast's first Intrepid demo center here means buyers don't have to be taught where to go.</li>
+    </ul>
+    <div id="loc-map"></div>
+    <div class="loc-leg">
+      <span><i style="background:#2e7d32;"></i> Northeast Intrepid demo center (Highland Industrial Park)</span>
+      <span><i style="background:#a04400;"></i> Jim Reed's — Bandit · Bobcat · Freightliner</span>
+    </div>
+    <p class="note" style="margin-top:8px;">~0.3 mi apart · same corridor · ~1-minute drive.</p>
+  </div>
+
   <h2>How the floor-plan model works for both of us</h2>
   <div class="card">
     <p style="margin-top:0;">The whole plan hinges on inventory I can <b>show and demo</b> without buying it outright up front. The structure Chris floated does exactly that:</p>
@@ -169,5 +195,37 @@
 
   <div class="foot">Northeast Intrepid — concept proposal · prepared by Doug Brown, Second Nature Tree Service · June 2026 · private, not indexed.</div>
 </div>
+<script>
+(function(){
+  function initLocMap(){
+    if (typeof L === 'undefined') { return setTimeout(initLocMap, 300); }
+    var el = document.getElementById('loc-map');
+    if (!el || el._init) return;
+    el._init = true;
+    var intrepid = [41.3050214, -73.9227667];   // 1 Highland Industrial Park Dr, Peekskill
+    var reed     = [41.3075110, -73.9282503];    // 5742 Albany Post Rd, Cortlandt Manor (Jim Reed's)
+    var map = L.map('loc-map', { scrollWheelZoom:false, attributionControl:true })
+      .fitBounds([intrepid, reed], { padding:[55,55] });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, attribution: '© OpenStreetMap © CARTO'
+    }).addTo(map);
+    function pin(latlng, color, label){
+      L.marker(latlng, { icon: L.divIcon({
+        className:'', iconSize:null,
+        html:'<div style="display:flex;flex-direction:column;align-items:center;">'
+           + '<div class="loc-pin" style="background:'+color+';color:#fff;">'+label+'</div>'
+           + '<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);margin-top:-1px;"></div>'
+           + '</div>'
+      }) }).addTo(map);
+    }
+    L.polyline([intrepid, reed], { color:'#1f3b2c', weight:3, dashArray:'6,6', opacity:.7 }).addTo(map);
+    pin(reed,     '#a04400', "Jim Reed's");
+    pin(intrepid, '#2e7d32', 'Northeast Intrepid');
+    setTimeout(function(){ map.invalidateSize(); }, 250);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLocMap);
+  else initLocMap();
+})();
+</script>
 </body>
 </html>
