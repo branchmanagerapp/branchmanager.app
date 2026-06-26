@@ -523,6 +523,13 @@ var QuotesPage = {
     var allClients = [];
     try { allClients = JSON.parse(localStorage.getItem('bm-clients') || '[]'); } catch(e) {}
 
+    // v970: Jobber-mode visual match. Flat #DADFE2 cards (no shadow, 8px), and a
+    // clean understated total instead of the green bar. Gated so Classic is untouched.
+    var _jb = !(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
+    var _cardCss = _jb
+      ? 'background:#fff;border:1px solid #DADFE2;border-radius:8px;box-shadow:none;'
+      : 'background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);';
+
     var html = '<form id="quote-form" onsubmit="QuotesPage.save(event, \'' + (quoteId || '') + '\')">';
 
     // Client + property + description (minimal, auto-filled)
@@ -553,7 +560,7 @@ var QuotesPage = {
       else if (_parts.length === 2) _townName = _parts[1];
     }
     var clientSummaryLine = clientSummaryName + (_townName ? ' · ' + UI.esc(_townName) : '');
-    html += '<div class="q-client-box" style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+    html += '<div class="q-client-box" style="' + _cardCss + 'margin-bottom:14px;overflow:hidden;">'
       // Summary header (always visible)
       + '<div onclick="QuotesPage._toggleClientBox(this)" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;">'
       +   '<div style="flex:1;min-width:0;">'
@@ -673,7 +680,7 @@ var QuotesPage = {
     var _equipSummaryText = _pickedKeys.length
       ? _pickedKeys.length + ' piece(s) · $' + _totalRate + '/hr'
       : 'None selected';
-    var _equipHtml = '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-top:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">'
+    var _equipHtml = '<details style="' + _cardCss + 'margin-top:14px;margin-bottom:14px;overflow:hidden;">'
       + '<summary style="padding:14px 16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;">'
       +   '<span style="font-size:14px;font-weight:800;">🛠 Equipment on this job</span>'
       +   '<span style="display:flex;align-items:center;gap:10px;">'
@@ -727,9 +734,9 @@ var QuotesPage = {
       + '</span>'
       + '<span id="q-tax-display" style="font-weight:600;">' + UI.money(_qTaxAmt) + '</span>'
       + '</div>'
-      + '<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--green-dark);color:var(--white);">'
-      + '<span style="font-weight:600;">Total</span>'
-      + '<span id="q-total-display" style="font-size:1.5rem;font-weight:800;">' + UI.money(_qGrandTotal) + '</span>'
+      + '<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;' + (_jb ? 'background:#fff;color:#032B3A;border-top:1px solid #DADFE2;' : 'background:var(--green-dark);color:var(--white);') + '">'
+      + '<span style="font-weight:700;' + (_jb ? 'font-size:16px;' : '') + '">Total</span>'
+      + '<span id="q-total-display" style="font-size:' + (_jb ? '22px' : '1.5rem') + ';font-weight:' + (_jb ? '700' : '800') + ';">' + UI.money(_qGrandTotal) + '</span>'
       + '</div>'
       // Est. Profit Margin row removed — T&M price check already shows cost vs line-item spread
       + '</div>';
@@ -750,7 +757,7 @@ var QuotesPage = {
     // ═══ Labor Estimate (renamed from Production Estimate / T&M) ═══
     // v633: collapsed by default — secondary section, not needed for every quote.
     // Click the summary to expand crew + equipment + hours pricing check.
-    html += '<details id="q-mode-tm" style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin:24px 0 12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">'
+    html += '<details id="q-mode-tm" style="' + _cardCss + 'margin:24px 0 12px;overflow:hidden;">'
       + '<summary style="padding:16px 18px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">'
       +   '<span style="font-size:15px;font-weight:800;">Labor estimate <span style="font-weight:400;color:var(--text-light);font-size:12px;margin-left:6px;">— optional sanity check</span></span>'
       +   '<span style="font-size:12px;color:var(--text-light);font-weight:500;">▾</span>'

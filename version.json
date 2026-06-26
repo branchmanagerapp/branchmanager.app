@@ -1,5 +1,5 @@
 {
-  "version": 969,
+  "version": 970,
   "released": "2026-06-26",
-  "notes": "Jobber UI fidelity: jobber-mode no longer just recolors — it now rebuilds card/spacing/button/table/nav geometry to MEASURED secure.getjobber.com tokens (Build Spec, Jun 16). White page background + FLAT white cards (1px #DADFE2 border, no shadow, 8px radius), bold green #388523 buttons at 8px radius (no hover bounce), 24px/700 #032B3A stat numbers, light table headers with roomy rows + neutral hover, pill-style active nav item, green focus rings, Poppins headings (#032B3A). Classic BM untouched."
+  "notes": "v970: Jobber-mode quote form — flat #DADFE2 cards (client/equipment/labor), killed the green Total bar for Jobber's clean dark-on-white total. Classic unchanged."
 }
