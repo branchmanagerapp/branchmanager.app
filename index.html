@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 968; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 969; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -221,13 +221,123 @@
     --accent:#388523; --accent-hover:#2f6e1d;
     --text:#233D48; --text-light:#49646F; --border:#DADFE2; --bg:#ffffff;
     --sidebar-active:rgba(56,133,35,.10);
+    --jb-card:#ffffff; --jb-card-border:#DADFE2; --jb-radius:8px;
+    --jb-th-bg:#f7f9fa; --jb-row-hover:#f5f7f8; --jb-ink:#032B3A;
     font-family:"Inter",Helvetica,Arial,sans-serif;
   }
   body.ui-jobber h1, body.ui-jobber h2, body.ui-jobber h3,
-  body.ui-jobber .page-title, body.ui-jobber .greeting {
-    font-family:"Poppins","Inter",Helvetica,Arial,sans-serif; color:#032B3A;
+  body.ui-jobber .page-title, body.ui-jobber .greeting, body.ui-jobber .section-title,
+  body.ui-jobber #pageTitle, body.ui-jobber .topbar h2 {
+    font-family:"Poppins","Inter",Helvetica,Arial,sans-serif; color:var(--jb-ink);
   }
   body.ui-jobber h1, body.ui-jobber .page-title { font-weight:900; letter-spacing:-.01em; }
+  body.ui-jobber h2, body.ui-jobber h3, body.ui-jobber #pageTitle,
+  body.ui-jobber .topbar h2, body.ui-jobber .section-title { font-weight:800; letter-spacing:-.01em; }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     v969: Jobber COMPONENT-FIDELITY layer. Beyond colors/fonts — rebuilds the
+     actual card/spacing/button/table/nav geometry to match Atlantis (Jobber's
+     design system that powers secure.getjobber.com): grey app canvas + white
+     hairline cards, chunky bold square-ish buttons, light-grey table headers,
+     pill nav active-state. Note: real headings use the proprietary "JobberPro"
+     face; Poppins 800/900 is the closest loadable stand-in. Gated to ui-jobber.
+     ────────────────────────────────────────────────────────────────────────── */
+
+  /* Canvas — MEASURED (Build Spec, live secure.getjobber.com Jun 16): Jobber's
+     page background is WHITE, not grey. Cards are distinguished by border alone. */
+  body.ui-jobber .content { background:#ffffff; }
+
+  /* Cards (stat tiles, generic cards, mobile list cards) — MEASURED: white,
+     8px radius, 1px #DADFE2 border, FLAT (no shadow), no hover "lift". */
+  body.ui-jobber .card,
+  body.ui-jobber .stat-card,
+  body.ui-jobber .client-card,
+  body.ui-jobber .quote-card,
+  body.ui-jobber .job-card,
+  body.ui-jobber .invoice-card,
+  body.ui-jobber .request-card {
+    background:var(--jb-card); border:1px solid var(--jb-card-border);
+    border-radius:var(--jb-radius); box-shadow:none;
+  }
+  body.ui-jobber .stat-card { padding:18px 20px; }
+  body.ui-jobber .stat-card:hover { transform:none; box-shadow:none; border-color:#c7d0d4; }
+  /* MEASURED (live /clients Jun 26): stat number is INTER 24px/700/#032B3A;
+     the label is a bold dark 16px TITLE (#032B3A/700), NOT a grey uppercase eyebrow. */
+  body.ui-jobber .stat-card .stat-value { font-family:"Inter",Helvetica,Arial,sans-serif; font-size:24px; font-weight:700; color:var(--jb-ink); }
+  body.ui-jobber .stat-card .stat-label { font-size:16px; font-weight:700; color:var(--jb-ink); text-transform:none; letter-spacing:normal; margin-bottom:2px; }
+
+  /* Buttons — Jobber buttons are bold, near-square (small radius), solid fill,
+     and do NOT bounce/translate on hover (they just deepen in color). */
+  /* MEASURED: 40px tall, padding 0 16, radius 8, text weight 600; outline = GREEN text. */
+  body.ui-jobber .btn {
+    border-radius:8px; font-weight:600; font-size:14px; padding:10px 16px; letter-spacing:0; min-height:40px;
+  }
+  body.ui-jobber .btn-primary {
+    background:var(--accent); color:#fff; border:1px solid var(--accent); box-shadow:none;
+  }
+  body.ui-jobber .btn-primary:hover { background:var(--accent-hover); border-color:var(--accent-hover); box-shadow:none; transform:none; }
+  body.ui-jobber .btn-primary:active { background:#2a6019; transform:none; box-shadow:none; }
+  body.ui-jobber .btn-outline {
+    background:#fff; border:1px solid var(--jb-card-border); color:var(--accent); font-weight:600;
+  }
+  body.ui-jobber .btn-outline:hover { background:var(--jb-row-hover); border-color:#a9b6bd; }
+
+  /* Topbar — white bar with a hairline base, like Jobber's app chrome. */
+  body.ui-jobber .topbar { background:#fff; border-bottom:1px solid var(--jb-card-border); }
+
+  /* Sidebar nav — Jobber's active item is a filled light-green PILL with a green
+     left marker, not just colored text. */
+  body.ui-jobber .nav-item { color:#4a626d; font-weight:600; border-radius:8px; }
+  body.ui-jobber .nav-item .li { stroke:#7e929b; }
+  body.ui-jobber .nav-item:hover { background:#f1f4f2; color:var(--jb-ink); }
+  body.ui-jobber .nav-item.active { background:var(--green-bg); color:#2f6e1d; font-weight:700; }
+  body.ui-jobber .nav-item.active .li { stroke:var(--accent); }
+  body.ui-jobber .nav-item.active::before { background:var(--accent); }
+
+  /* Data tables — light-grey header, roomy rows, neutral (grey) hover. */
+  body.ui-jobber .data-table {
+    border:1px solid var(--jb-card-border); border-radius:var(--jb-radius);
+    box-shadow:none;
+  }
+  /* MEASURED: Jobber table headers are TRANSPARENT, regular weight (400),
+     dark text, NO uppercase, NO grey fill — understated. First cell bold. */
+  body.ui-jobber .data-table th {
+    background:transparent; color:var(--text); font-weight:400;
+    text-transform:none; letter-spacing:normal; padding:12px 16px; font-size:14px;
+    border-bottom:1px solid var(--jb-card-border);
+  }
+  body.ui-jobber .data-table th[onclick]:hover { background:transparent; color:var(--jb-ink); }
+  body.ui-jobber .data-table td { padding:14px 16px; color:var(--text); border-bottom:1px solid #eef1f3; }
+  body.ui-jobber .data-table td:first-child { font-weight:700; color:var(--jb-ink); }
+  body.ui-jobber .data-table tbody tr:hover { background:var(--jb-row-hover); }
+  body.ui-jobber .data-table tbody tr:hover td { color:var(--jb-ink); }
+
+  /* Form inputs — defined hairline border, 8px radius, green focus ring. */
+  body.ui-jobber .form-group input,
+  body.ui-jobber .form-group select,
+  body.ui-jobber .form-group textarea,
+  body.ui-jobber input[type=text], body.ui-jobber input[type=email],
+  body.ui-jobber input[type=number], body.ui-jobber input[type=tel],
+  body.ui-jobber input[type=search], body.ui-jobber input[type=date], body.ui-jobber textarea {
+    border:1px solid var(--jb-card-border); border-radius:8px;
+  }
+  body.ui-jobber .form-group input:focus,
+  body.ui-jobber .form-group select:focus,
+  body.ui-jobber .form-group textarea:focus {
+    border-color:var(--accent); box-shadow:0 0 0 3px rgba(56,133,35,.15);
+  }
+
+  /* Modals — Jobber dialogs are a touch less rounded; bold Poppins title. */
+  body.ui-jobber .modal { border-radius:8px; }
+  body.ui-jobber .modal-header h3 { font-family:"Poppins","Inter",sans-serif; font-weight:800; color:var(--jb-ink); }
+
+  /* MEASURED status pills (e.g. Lead = #e2f1fd bg / #225c8c text): soft-tinted
+     12px-radius chip, regular weight (400), 12px, 6px/10px padding. Colors stay
+     per-status (set inline in BM markup); this only fixes the shape/weight. */
+  body.ui-jobber .badge:not(.nav-item .badge),
+  body.ui-jobber .pill, body.ui-jobber .tag, body.ui-jobber .status-pill {
+    border-radius:12px; font-weight:400; font-size:12px; padding:6px 10px;
+  }
   [data-theme="dark"] {
     --green-bg: #1a2e23;
     --white: #1e2128;
@@ -1166,7 +1276,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v968.min.js"></script>
+<script defer src="dist/bm.bundle.v969.min.js"></script>
 
 
 
