@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 971; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 972; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -221,6 +221,8 @@
     --accent:#388523; --accent-hover:#2f6e1d;
     --text:#233D48; --text-light:#49646F; --border:#DADFE2; --bg:#ffffff;
     --sidebar-active:rgba(56,133,35,.10);
+    /* v972: Jobber's warm beige icon-rail (measured #eeece7 / border #dcdad5). */
+    --sidebar-bg:#eeece7; --sidebar-border:#dcdad5; --sidebar-hover:rgba(255,255,255,.55);
     --jb-card:#ffffff; --jb-card-border:#DADFE2; --jb-radius:8px;
     --jb-th-bg:#f7f9fa; --jb-row-hover:#f5f7f8; --jb-ink:#032B3A;
     font-family:"Inter",Helvetica,Arial,sans-serif;
@@ -287,12 +289,15 @@
 
   /* Sidebar nav — Jobber's active item is a filled light-green PILL with a green
      left marker, not just colored text. */
-  body.ui-jobber .nav-item { color:#4a626d; font-weight:600; border-radius:8px; }
-  body.ui-jobber .nav-item .li { stroke:#7e929b; }
-  body.ui-jobber .nav-item:hover { background:#f1f4f2; color:var(--jb-ink); }
-  body.ui-jobber .nav-item.active { background:var(--green-bg); color:#2f6e1d; font-weight:700; }
+  /* v972: on Jobber's beige rail, icons are dark and the ACTIVE item is a white
+     rounded pill (not a green-tint pill or left bar). */
+  body.ui-jobber .nav-item { color:#2a3d45; font-weight:600; border-radius:8px; }
+  body.ui-jobber .nav-item .li { stroke:#2a3d45; }
+  body.ui-jobber .nav-item:hover { background:rgba(255,255,255,.6); color:#032B3A; }
+  body.ui-jobber .nav-item:hover .li { stroke:#032B3A; }
+  body.ui-jobber .nav-item.active { background:#ffffff; color:#032B3A; font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.06); }
   body.ui-jobber .nav-item.active .li { stroke:var(--accent); }
-  body.ui-jobber .nav-item.active::before { background:var(--accent); }
+  body.ui-jobber .nav-item.active::before { display:none; }
 
   /* Data tables — light-grey header, roomy rows, neutral (grey) hover. */
   body.ui-jobber .data-table {
@@ -1276,7 +1281,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v971.min.js"></script>
+<script defer src="dist/bm.bundle.v972.min.js"></script>
 
 
 
@@ -3422,8 +3427,20 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 600);
 });
 // Restore sidebar state. v657: storage-guarded for data:-URL contexts.
+// v972: jobber-mode DEFAULTS to Jobber's collapsed 56px icon-rail (hover-expands)
+// when the user hasn't explicitly chosen — matches secure.getjobber.com. The user's
+// own ◀/▶ toggle still wins (it writes bm-sidebar-collapsed).
 try {
-  if (localStorage.getItem('bm-sidebar-collapsed') === 'true') {
+  var _jbUI = !(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
+  // v972 one-time migration: clear any old expanded preference so the new
+  // Jobber rail-by-default shows once for everyone; their later ◀/▶ toggle persists.
+  if (_jbUI && localStorage.getItem('bm-rail-default-applied') !== '1') {
+    localStorage.removeItem('bm-sidebar-collapsed');
+    localStorage.setItem('bm-rail-default-applied', '1');
+  }
+  var _sbPref = localStorage.getItem('bm-sidebar-collapsed');
+  var _railDefault = (_sbPref === null && _jbUI && window.innerWidth > 768);
+  if (_sbPref === 'true' || _railDefault) {
     document.getElementById('sidebar').classList.add('collapsed');
     var tb = document.getElementById('sidebar-toggle-btn');
     if (tb) tb.textContent = '▶';

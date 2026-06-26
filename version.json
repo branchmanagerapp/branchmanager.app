@@ -1,5 +1,5 @@
 {
-  "version": 971,
+  "version": 972,
   "released": "2026-06-26",
-  "notes": "v971: Jobber-mode forms — section headings now Jobber's bold-dark titles+helper text (was uppercase grey eyebrows), client form Additional-details collapsible + Jobber helper copy, invoice form green Total bar killed (clean dark-on-white). Classic untouched."
+  "notes": "v972: Sidebar = Jobber's beige 56px icon-rail. jobber-mode now defaults to the collapsed rail (hover-expands, BM's existing mechanism), painted Jobber's #eeece7 beige with #dcdad5 border, dark icons, white active pill. One-time migration shows the rail for existing users; ◀/▶ toggle still persists. Classic untouched."
 }
