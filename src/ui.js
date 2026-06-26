@@ -358,6 +358,15 @@ var UI = (function() {
   // (use on the first section after a card opens).
   function formSection(label, opts) {
     opts = opts || {};
+    // v971: jobber-mode → Jobber's section style = bold DARK title (~17px, not the
+    // uppercase grey eyebrow) with optional helper text STACKED below. Classic unchanged.
+    var _jb = !(typeof window !== 'undefined' && window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
+    if (_jb) {
+      return '<div style="margin:' + (opts.tight ? '4px' : '24px') + ' 0 12px;">'
+        +   '<div style="font-family:\'Poppins\',\'Inter\',sans-serif;font-size:17px;font-weight:800;color:#032B3A;letter-spacing:-.01em;">' + esc(label) + '</div>'
+        +   (opts.hint ? '<div style="font-size:13px;color:#49646F;margin-top:3px;line-height:1.4;">' + esc(opts.hint) + '</div>' : '')
+        + '</div>';
+    }
     var marginTop = opts.tight ? '0' : '20px';
     return '<div style="margin:' + marginTop + ' 0 10px;padding-top:' + (opts.tight ? '0' : '14px') + ';'
       + (opts.tight ? '' : 'border-top:1px solid var(--border);')

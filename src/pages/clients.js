@@ -798,6 +798,7 @@ var ClientsPage = {
   showForm: function(id) {
     var c = id ? DB.clients.getById(id) : {};
     var title = id ? 'Edit Client' : 'New Client';
+    var _jb = !(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
 
     // Split existing name into first/last if present (for edits)
     var _fn = c.firstName || '';
@@ -818,7 +819,7 @@ var ClientsPage = {
 
       // v711: Jobber-style section organization
       // v962: Title dropdown before First name (Jobber-match, Screen 6 delta #2)
-      + UI.formSection('Primary contact details', { tight: true })
+      + UI.formSection('Primary contact details', { tight: true, hint: 'Provide the main point of contact to ensure smooth communication and reliable client records.' })
       + UI.formField('Title', 'select', 'c-title', c.title || '', { noLabel: true, icon: 'user', options: [
             { value: '',     label: 'No title' },
             { value: 'Mr.',  label: 'Mr.' },
@@ -861,14 +862,21 @@ var ClientsPage = {
       + UI.formSection('Property address')
       + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin', autocomplete: 'street-address' })
 
-      // Less-used fields tucked behind a disclosure so the form looks shorter on mobile
-      + '<details style="margin-top:18px;">'
-      +   '<summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);padding:8px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;">'
-      +     'Additional client details <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);">— optional</span>'
-      +   '</summary>'
+      // Less-used fields tucked behind a disclosure so the form looks shorter on mobile.
+      // v971: jobber-mode → Jobber's bold-dark collapsible bar (grey-tint), not an uppercase eyebrow.
+      + (function(){
+          if (_jb) return '<details style="margin-top:18px;background:#f7f8f9;border:1px solid #DADFE2;border-radius:8px;overflow:hidden;">'
+            + '<summary style="cursor:pointer;list-style:none;font-size:15px;font-weight:700;color:#032B3A;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:6px;">'
+            +   'Additional client details <span style="font-size:13px;font-weight:400;color:#49646F;">▾</span>'
+            + '</summary><div style="padding:0 16px 8px;">';
+          return '<details style="margin-top:18px;">'
+            + '<summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);padding:8px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;">'
+            +   'Additional client details <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light);">— optional</span>'
+            + '</summary>';
+        })()
       +   UI.formField('Tags (comma separated)', 'text', 'c-tags', (c.tags || []).join(', '), { noLabel: true, icon: 'tag' })
       +   UI.formField('Internal notes', 'textarea', 'c-notes', c.notes, { noLabel: true, icon: 'sticky-note' })
-      + '</details>'
+      + (_jb ? '</div>' : '') + '</details>'
       + '</form>';
 
     UI.showModal(title, html, {

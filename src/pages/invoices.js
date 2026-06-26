@@ -1136,6 +1136,7 @@ var InvoicesPage = {
   // ── New Invoice Form ──
   showForm: function(invoiceId, clientId) {
     var inv = invoiceId ? DB.invoices.getById(invoiceId) : {};
+    var _jb = !(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic()); // v971: Jobber-mode total
     // Pre-fill client from parameter (e.g., from client detail page)
     if (!inv.clientId && clientId) {
       var prefillClient = DB.clients.getById(clientId);
@@ -1213,9 +1214,9 @@ var InvoicesPage = {
       +   '</span>'
       +   '<span id="inv-tax-display" style="font-weight:600;">' + UI.money(_invTaxAmt) + '</span>'
       + '</div>'
-      + '<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--green-dark);color:var(--white);">'
-      + '<span style="font-weight:600;">Total</span>'
-      + '<span id="inv-total-display" style="font-size:1.5rem;font-weight:800;">' + UI.money(inv.total || _invGrandTotal) + '</span>'
+      + '<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;' + (_jb ? 'background:#fff;color:#032B3A;border-top:1px solid #DADFE2;' : 'background:var(--green-dark);color:var(--white);') + '">'
+      + '<span style="font-weight:700;' + (_jb ? 'font-size:16px;' : '') + '">Total</span>'
+      + '<span id="inv-total-display" style="font-size:' + (_jb ? '22px' : '1.5rem') + ';font-weight:' + (_jb ? '700' : '800') + ';">' + UI.money(inv.total || _invGrandTotal) + '</span>'
       + '</div>'
       + '</div>';
 

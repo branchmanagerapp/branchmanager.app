@@ -1,5 +1,5 @@
 {
-  "version": 970,
+  "version": 971,
   "released": "2026-06-26",
-  "notes": "v970: Jobber-mode quote form — flat #DADFE2 cards (client/equipment/labor), killed the green Total bar for Jobber's clean dark-on-white total. Classic unchanged."
+  "notes": "v971: Jobber-mode forms — section headings now Jobber's bold-dark titles+helper text (was uppercase grey eyebrows), client form Additional-details collapsible + Jobber helper copy, invoice form green Total bar killed (clean dark-on-white). Classic untouched."
 }
