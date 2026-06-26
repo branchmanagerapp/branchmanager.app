@@ -327,7 +327,7 @@ var DashboardPage = {
       + '<div style="font-size:13px;color:var(--text-light);">'
       + dayNames[now.getDay()] + ', ' + monthFull[now.getMonth()] + ' ' + now.getDate()
       + '</div>'
-      + '<h2 style="font-size:28px;font-weight:700;margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
+      + '<h2 style="' + ((window.BMUI && BMUI.isClassic && BMUI.isClassic()) ? 'font-size:28px;font-weight:700;' : 'font-size:34px;font-weight:900;font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;letter-spacing:-.01em;') + 'margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
       + '</div>';
 
     // v645: Mobile-focused Home — Jobber-style "Let's get started / Clock In"
@@ -512,8 +512,13 @@ var DashboardPage = {
     // cell click → page nav. Detail still reachable by clicking through.
     var _wfHtml = '';
     var _bmClassic = !!(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
-    _wfHtml += '<h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Workflow</h3>';
-    _wfHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'; /* v666: back to 2x2 (was single-col v651) — cards already have 2x2 border pattern */
+    // v973: jobber-mode → flat Workflow grid + Jobber's big 36px/900 Poppins numbers (#032B3A). Classic unchanged.
+    var _wfNumCss = _bmClassic
+      ? 'font-size:32px;font-weight:700;'
+      : 'font-size:36px;font-weight:900;font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;letter-spacing:-.01em;line-height:1.05;';
+    var _wfGridShadow = _bmClassic ? 'box-shadow:0 1px 3px rgba(0,0,0,0.04);' : '';
+    _wfHtml += '<h3 style="font-size:18px;font-weight:' + (_bmClassic ? '700' : '800') + ';margin-bottom:12px;' + (_bmClassic ? '' : 'font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;') + '">Workflow</h3>';
+    _wfHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);' + _wfGridShadow + '">'; /* v666: back to 2x2 (was single-col v651) — cards already have 2x2 border pattern */
 
     // Requests card
     var allRequests = DB.requests.getAll();
@@ -526,8 +531,8 @@ var DashboardPage = {
     _wfHtml += '<div onclick="loadPage(\'requests\')" style="padding:16px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
       + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#e07c24;"></div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="inbox" style="width:14px;height:14px;vertical-align:middle;"></i> Requests</div>'
-      + '<div style="font-size:32px;font-weight:700;">' + newRequests.length + '</div>'
-      + '<div style="font-size:14px;font-weight:600;">New</div>'
+      + '<div style="' + _wfNumCss + '">' + newRequests.length + '</div>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">New</div>'
       + '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">Assessments complete (' + assessedRequests.length + ')</div>'
       + '<div style="font-size:12px;color:' + (overdueRequests.length > 0 ? 'var(--red)' : 'var(--text-light)') + ';">Overdue (' + overdueRequests.length + ')</div>'
       + '</div>';
@@ -537,9 +542,9 @@ var DashboardPage = {
     _wfHtml += '<div onclick="loadPage(\'quotes\')" style="padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
       + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#8b2252;"></div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:middle;"></i> Quotes</div>'
-      + '<div style="font-size:32px;font-weight:700;display:inline;">' + approvedQuotes.length + '</div>'
+      + '<div style="' + _wfNumCss + 'display:inline;">' + approvedQuotes.length + '</div>'
       + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(reqTotal) + '</span>'
-      + '<div style="font-size:14px;font-weight:600;">Approved</div>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">Approved</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftQuotes.length + ')</span><span>' + UI.moneyInt(draftQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Changes requested (' + changesQuotes.length + ')</span><span>' + UI.moneyInt(changesQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
       + '</div>';
@@ -548,8 +553,8 @@ var DashboardPage = {
     _wfHtml += '<div onclick="loadPage(\'jobs\')" style="padding:16px 20px;border-right:1px solid var(--border);cursor:pointer;position:relative;">'
       + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#2e7d32;"></div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="wrench" style="width:14px;height:14px;vertical-align:middle;"></i> Jobs</div>'
-      + '<div style="font-size:32px;font-weight:700;">' + needsInvoicing.length + '</div>'
-      + '<div style="font-size:14px;font-weight:600;">Requires invoicing</div>'
+      + '<div style="' + _wfNumCss + '">' + needsInvoicing.length + '</div>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">Requires invoicing</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Active (' + activeJobs.length + ')</span><span>' + UI.moneyInt(activeJobTotal) + '</span></div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Action required (' + (actionJobs.length + lateJobs.length) + ')</span><span>' + UI.moneyInt(lateJobs.reduce(function(s,j){return s+(j.total||0);},0)) + '</span></div>'
       + '</div>';
@@ -558,9 +563,9 @@ var DashboardPage = {
     _wfHtml += '<div onclick="loadPage(\'invoices\')" style="padding:16px 20px;cursor:pointer;position:relative;">'
       + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;"></div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="receipt" style="width:14px;height:14px;vertical-align:middle;"></i> Invoices</div>'
-      + '<div style="font-size:32px;font-weight:700;display:inline;">' + unpaidInvoices.length + '</div>'
+      + '<div style="' + _wfNumCss + 'display:inline;">' + unpaidInvoices.length + '</div>'
       + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(unpaidInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0)) + '</span>'
-      + '<div style="font-size:14px;font-weight:600;">Awaiting payment</div>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">Awaiting payment</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftInvoices.length + ')</span><span>' + UI.moneyInt(draftInvTotal) + '</span></div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12px;color:' + (overdueInvoices.length ? 'var(--red)' : 'var(--text-light)') + ';"><span>Past due (' + overdueInvoices.length + ')</span><span>' + UI.moneyInt(overdueTotal) + '</span></div>'
       + '</div>';

@@ -1,5 +1,5 @@
 {
-  "version": 972,
+  "version": 973,
   "released": "2026-06-26",
-  "notes": "v972: Sidebar = Jobber's beige 56px icon-rail. jobber-mode now defaults to the collapsed rail (hover-expands, BM's existing mechanism), painted Jobber's #eeece7 beige with #dcdad5 border, dark icons, white active pill. One-time migration shows the rail for existing users; ◀/▶ toggle still persists. Classic untouched."
+  "notes": "v973: Home Workflow grid → Jobber. jobber-mode: flat grid (no shadow), big 36px/900 Poppins #032B3A numbers (was 32/700), 16/700 status words, Poppins greeting (34/900) + Workflow heading. Colored top bars already matched. Classic untouched."
 }
