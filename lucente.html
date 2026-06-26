@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartLawn NY × Lucente Landscaping — Build Your Navimow Fleet</title>
+<style>
+  :root{
+    --green:#2e7d32; --green-dark:#1b4d20; --ink:#13241a; --muted:#5b6b60;
+    --line:#dce3dd; --bg:#f5f8f5; --card:#ffffff; --accent:#388523; --warn:#8a5a00; --warnbg:#fff7e6;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 22px 70px;}
+  .hero{background:linear-gradient(135deg,#1b4d20,#2e7d32);color:#fff;margin:0 -22px 26px;padding:52px 38px 44px;}
+  .hero .brand{font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;opacity:.85;}
+  .hero h1{font-size:34px;line-height:1.12;margin:13px 0 8px;font-weight:800;letter-spacing:-.015em;}
+  .hero p{font-size:17px;opacity:.95;max-width:680px;margin:0;}
+  .hero .for{margin-top:18px;font-size:13.5px;opacity:.85;}
+  h2{font-size:22px;margin:40px 0 6px;color:var(--green-dark);letter-spacing:-.01em;}
+  h2 .sub{display:block;font-size:14px;font-weight:500;color:var(--muted);margin-top:4px;}
+  h3{font-size:16px;margin:14px 0 6px;}
+  p{margin:9px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;}
+  /* configurator */
+  .cfg{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .cfg-row{display:grid;grid-template-columns:1fr 92px 96px 132px 116px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);}
+  .cfg-head{background:#eef3ee;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--green-dark);font-weight:700;padding:11px 18px;}
+  .cfg-row:last-child{border-bottom:none;}
+  .cfg-row .m{font-weight:700;}
+  .cfg-row .m small{display:block;font-weight:500;color:var(--muted);font-size:12px;}
+  .cfg-row .cov,.cfg-row .pr{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;text-align:right;}
+  .cfg-row .pr{color:var(--ink);font-weight:600;}
+  .cfg-row .lt{font-variant-numeric:tabular-nums;text-align:right;font-weight:800;color:var(--green-dark);}
+  .badge.com{display:inline-block;background:#e7eefc;color:#274b9c;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;}
+  .stepper{display:flex;align-items:center;gap:6px;justify-content:center;}
+  .stepper button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#f6faf5;color:var(--green-dark);font-size:18px;font-weight:800;cursor:pointer;line-height:1;}
+  .stepper button:active{transform:scale(.94);}
+  .stepper input{width:42px;height:32px;text-align:center;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;}
+  /* summary */
+  .summary{position:sticky;bottom:0;z-index:5;background:#0f3b16;color:#eaf6ea;border-radius:14px;padding:16px 20px;margin:16px 0;box-shadow:0 -6px 24px rgba(0,0,0,.12);}
+  .summary .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:end;}
+  .summary .k{font-size:11.5px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;}
+  .summary .v{font-size:22px;font-weight:800;margin-top:3px;}
+  .summary .v.big{font-size:28px;color:#9be37e;}
+  .calc{background:#123f1a;color:#eaf6ea;border-radius:16px;padding:24px;margin:18px 0;}
+  .calc h2{color:#fff;margin:0 0 4px;}
+  .calc .row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.14);}
+  .calc label{font-size:14.5px;} .calc label small{display:block;opacity:.7;font-size:12px;}
+  .calc input{width:120px;padding:9px 11px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.10);color:#fff;font-size:15px;font-weight:700;text-align:right;}
+  .calc input:focus{outline:2px solid #7ac46b;}
+  .out{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+  .out .box{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px;}
+  .out .k{font-size:12px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;}
+  .out .v{font-size:26px;font-weight:800;margin-top:4px;} .out .v.green{color:#9be37e;}
+  .out .note{font-size:12.5px;opacity:.85;margin-top:6px;grid-column:1/-1;}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .step .num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px;}
+  .cta{background:#eef6e9;border:1px solid #cfe6c6;border-radius:14px;padding:22px 24px;margin:22px 0;text-align:center;}
+  .btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:800;padding:12px 24px;border-radius:10px;margin:6px 4px 0;border:none;cursor:pointer;font-size:15px;}
+  .btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .foot{margin-top:36px;border-top:2px solid var(--line);padding-top:16px;font-size:12px;color:var(--muted);}
+  .src{font-size:12px;color:var(--muted);}
+  @media (max-width:760px){
+    .cfg-row{grid-template-columns:1fr 84px 110px;grid-template-areas:"m m m" "cov pr lt" "step step step";gap:8px 10px;}
+    .cfg-row .m{grid-area:m;} .cfg-row .cov{grid-area:cov;text-align:left;} .cfg-row .pr{grid-area:pr;} .cfg-row .lt{grid-area:lt;}
+    .cfg-row .stepper{grid-area:step;justify-content:flex-start;}
+    .cfg-head{display:none;}
+    .summary .grid{grid-template-columns:1fr 1fr;} .steps{grid-template-columns:1fr;} .out{grid-template-columns:1fr;} .hero h1{font-size:27px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="brand">SmartLawn NY · Authorized Navimow Dealer &amp; Installer</div>
+    <h1>Build your Navimow fleet.</h1>
+    <p>Pick how many of each model you need for the properties you maintain — the page tallies coverage, equipment, install, and what it saves you, live. We source, install, and service every unit.</p>
+    <div class="for">Prepared for <b>Dennis Lucente</b> · Lucente Landscaping, New Rochelle NY · June 2026</div>
+  </div>
+
+  <p style="font-size:16px;">Dennis — match a model to each property by lot size (step up for slopes, obstacles, or complex layouts), set the quantity, and watch the totals build. Every unit is wire-free RTK navigation, handles slopes, and mows on its own schedule. Install &amp; setup is a flat <b>$300 per unit</b>.</p>
+
+  <h2>Configure your order <span class="sub">Set a quantity for each model — totals update instantly</span></h2>
+  <div class="cfg" id="cfg">
+    <div class="cfg-row cfg-head">
+      <div>Model</div><div style="text-align:right;">Coverage</div><div style="text-align:right;">Unit price</div><div style="text-align:center;">Quantity</div><div style="text-align:right;">Line total</div>
+    </div>
+    <!-- rows injected by JS -->
+  </div>
+
+  <div class="summary">
+    <div class="grid">
+      <div><div class="k">Total units</div><div class="v" id="s-units">0</div></div>
+      <div><div class="k">Coverage</div><div class="v" id="s-cov">0 ac</div></div>
+      <div><div class="k">Equipment</div><div class="v" id="s-equip">$0</div></div>
+      <div><div class="k">Install ($300/unit)</div><div class="v" id="s-install">$0</div></div>
+      <div><div class="k">Turnkey total</div><div class="v big" id="s-total">$0</div></div>
+    </div>
+  </div>
+  <p class="src">Coverage is the combined managed area of the units selected. Multi-unit / fleet orders qualify for preferred unit pricing and combined install — ask for a fleet quote once the list is set.</p>
+
+  <div class="calc">
+    <h2 style="border:0;">What this fleet saves you <span class="sub" style="color:#bfe0bd;">"One guy not mowing" — across every unit, per season. Edit the assumptions.</span></h2>
+    <div class="row"><label>Loaded labor cost / hour<small>wage + taxes + overhead, one crew member</small></label><div>$<input id="rate" type="number" value="35" min="0" step="1"></div></div>
+    <div class="row"><label>Avg hours to mow a property / week<small>drive + mow + trim + cleanup, one visit</small></label><div><input id="hours" type="number" value="2" min="0" step="0.25"></div></div>
+    <div class="row"><label>Mowing weeks / season<small>typical Apr–Oct in Westchester</small></label><div><input id="weeks" type="number" value="28" min="0" step="1"></div></div>
+    <div class="out">
+      <div class="box"><div class="k">Fleet labor saved / season</div><div class="v green" id="o-season">$0</div></div>
+      <div class="box"><div class="k">Fleet pays for itself in</div><div class="v" id="o-payback">—</div></div>
+      <div class="note">Each robot replaces one weekly mow visit on its property. After payback that's labor you keep saving every season — while you keep billing the accounts. Units run on a few dollars of electricity a month.</div>
+    </div>
+  </div>
+
+  <h2>Where SmartLawn comes in</h2>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><h3>Sales &amp; sourcing</h3><p>Full Navimow line, best available pricing for your order — you don't deal with the manufacturer.</p></div>
+    <div class="step"><div class="num">2</div><h3>Install &amp; setup</h3><p>$300/unit: mapping, dock, no-go zones, app, and a crew walk-through on each property.</p></div>
+    <div class="step"><div class="num">3</div><h3>Service &amp; support</h3><p>Local same-week service — blades, seasonal start-up/winterization, troubleshooting. One call.</p></div>
+  </div>
+
+  <div class="cta">
+    <h3 style="margin-top:0;font-size:19px;">Lock in your list and we'll schedule a demo.</h3>
+    <p style="margin:6px 0 12px;">Build the order above, then send it over or call — we'll confirm models per property and set up a live run on a Lucente site.</p>
+    <button class="btn" id="email-btn">Email this configuration</button>
+    <a class="btn ghost" href="tel:19146477276">Call Doug · (914) 647-7276</a>
+  </div>
+
+  <div class="foot">
+    <p><b>SmartLawn NY</b> · Doug Brown · (914) 647-7276 · smartlawnny@gmail.com · authorized Navimow dealer, installer &amp; service · Peekskill, NY · smartlawnny.com</p>
+    <p style="margin-top:8px;">Model coverage and prices are SmartLawn NY's current Navimow catalog. The savings figure is an editable estimate from the numbers you enter — not a guaranteed amount. Final per-property models and pricing are confirmed after a site walk-through.</p>
+  </div>
+
+</div>
+<script>
+  var MODELS=[
+    {id:'i105e', name:'Navimow i105E', fit:'Small residential lawns — entry', cov:0.13, covLabel:'5,500 sq ft', price:799},
+    {id:'i210', name:'Navimow i210-AWD', fit:'AWD for slopes & uneven ground', cov:0.5, covLabel:'0.5 ac', price:948},
+    {id:'i215', name:'Navimow i215 LiDAR', fit:'Obstacle-heavy / complex yards', cov:0.37, covLabel:'0.37 ac', price:1599},
+    {id:'h220', name:'Navimow H220', fit:'Premium nav & finish, ½ acre', cov:0.5, covLabel:'0.5 ac', price:2199},
+    {id:'x430', name:'Navimow X430', fit:'Larger residential estates', cov:1.0, covLabel:'1.0 ac', price:2499},
+    {id:'x450', name:'Navimow X450', fit:'Large residential / small commercial', cov:1.5, covLabel:'1.5 ac', price:2999},
+    {id:'cm120', name:'TerraNox CM120M1', fit:'Commercial grounds, HOAs, campuses', cov:3, covLabel:'3 ac', price:5499, com:true},
+    {id:'cm240', name:'TerraNox CM240M1', fit:'Largest commercial sites', cov:6, covLabel:'6 ac', price:6999, com:true}
+  ];
+  var INSTALL=300;
+  var qty={}; MODELS.forEach(function(m){qty[m.id]=0;});
+  function money(n){return '$'+Math.round(n).toLocaleString();}
+
+  var cfg=document.getElementById('cfg');
+  MODELS.forEach(function(m){
+    var row=document.createElement('div'); row.className='cfg-row';
+    row.innerHTML=
+      '<div class="m">'+m.name+(m.com?' <span class="badge com">Commercial</span>':'')+'<small>'+m.fit+'</small></div>'+
+      '<div class="cov">'+m.covLabel+'</div>'+
+      '<div class="pr">'+money(m.price)+'</div>'+
+      '<div class="stepper">'+
+        '<button data-act="dec" data-id="'+m.id+'" aria-label="decrease">–</button>'+
+        '<input type="number" min="0" value="0" data-id="'+m.id+'" id="q-'+m.id+'">'+
+        '<button data-act="inc" data-id="'+m.id+'" aria-label="increase">+</button>'+
+      '</div>'+
+      '<div class="lt" id="lt-'+m.id+'">$0</div>';
+    cfg.appendChild(row);
+  });
+
+  function recalc(){
+    var units=0, equip=0, cov=0;
+    MODELS.forEach(function(m){
+      var q=qty[m.id]||0; units+=q; equip+=q*m.price; cov+=q*m.cov;
+      document.getElementById('lt-'+m.id).textContent=money(q*m.price);
+    });
+    var install=units*INSTALL, total=equip+install;
+    document.getElementById('s-units').textContent=units;
+    document.getElementById('s-cov').textContent=(Math.round(cov*100)/100)+' ac';
+    document.getElementById('s-equip').textContent=money(equip);
+    document.getElementById('s-install').textContent=money(install);
+    document.getElementById('s-total').textContent=money(total);
+    // savings: each unit replaces one weekly mow visit
+    var rate=+document.getElementById('rate').value||0,
+        hours=+document.getElementById('hours').value||0,
+        weeks=+document.getElementById('weeks').value||0;
+    var perUnit=rate*hours*weeks, season=perUnit*units;
+    document.getElementById('o-season').textContent=money(season);
+    document.getElementById('o-payback').textContent = (season>0) ? ((total/season)<1 ? Math.round((total/season)*12)+' months' : (Math.round((total/season)*10)/10)+' seasons') : '—';
+    return {units:units, equip:equip, install:install, total:total, cov:cov, season:season};
+  }
+
+  cfg.addEventListener('click',function(e){
+    var b=e.target.closest('button[data-act]'); if(!b) return;
+    var id=b.getAttribute('data-id');
+    qty[id]=Math.max(0,(qty[id]||0)+(b.getAttribute('data-act')==='inc'?1:-1));
+    document.getElementById('q-'+id).value=qty[id]; recalc();
+  });
+  cfg.addEventListener('input',function(e){
+    var inp=e.target.closest('input[data-id]'); if(!inp) return;
+    var id=inp.getAttribute('data-id'); qty[id]=Math.max(0,parseInt(inp.value||'0',10)); recalc();
+  });
+  ['rate','hours','weeks'].forEach(function(i){document.getElementById(i).addEventListener('input',recalc);});
+
+  document.getElementById('email-btn').addEventListener('click',function(){
+    var s=recalc(); var lines=[];
+    MODELS.forEach(function(m){ if(qty[m.id]>0) lines.push('  '+qty[m.id]+' x '+m.name+' ('+m.covLabel+') @ '+money(m.price)+' = '+money(qty[m.id]*m.price)); });
+    if(!lines.length){ alert('Add at least one unit first.'); return; }
+    var body='My Navimow fleet configuration:%0D%0A%0D%0A'+lines.join('%0D%0A').replace(/ /g,'%20')+
+      '%0D%0A%0D%0ATotal units: '+s.units+
+      '%0D%0ACoverage: '+(Math.round(s.cov*100)/100)+'%20acres'+
+      '%0D%0AEquipment: '+money(s.equip)+
+      '%0D%0AInstall%20($300/unit): '+money(s.install)+
+      '%0D%0ATurnkey%20total: '+money(s.total)+
+      '%0D%0A%0D%0AProperties / notes:%0D%0A';
+    window.location.href='mailto:smartlawnny@gmail.com?subject=Navimow%20Fleet%20Configuration%20-%20Lucente&body='+body;
+  });
+
+  recalc();
+</script>
+</body>
+</html>
