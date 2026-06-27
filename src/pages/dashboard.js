@@ -188,7 +188,7 @@ var DashboardPage = {
         ? DB.requests.getAll().filter(function(r) { return r.status === 'new'; })
             .sort(function(a, b) { return String(b.createdAt || b.created_at || '').localeCompare(String(a.createdAt || a.created_at || '')); })
         : [];
-      if (_nrs.length) {
+      if (false && _nrs.length) { // v977: green "New requests" box removed from Home per Doug
         var _rel = function(ts) {
           if (!ts) return '';
           var s = Math.round((Date.now() - new Date(ts)) / 1000);

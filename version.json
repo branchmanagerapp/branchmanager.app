@@ -1,5 +1,5 @@
 {
-  "version": 976,
+  "version": 977,
   "released": "2026-06-27",
-  "notes": "v976: FIX cloud-save failure — strip non-column fields (photo/salesperson/lead_source) before pushing quotes to Supabase (whole row was rejected: 'Could not find the photo column of quotes'). v975's Title now maps to the existing subject column so it syncs; salesperson/leadSource persist locally. Stops quote saves from failing."
+  "notes": "v977: remove green 'New requests' box from Home dashboard (per Doug)."
 }
