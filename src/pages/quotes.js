@@ -560,6 +560,18 @@ var QuotesPage = {
       else if (_parts.length === 2) _townName = _parts[1];
     }
     var clientSummaryLine = clientSummaryName + (_townName ? ' · ' + UI.esc(_townName) : '');
+    // v975: Jobber-mode New Quote structure — maroon accent + Title + two-column (client | meta rail).
+    if (_jb) {
+      var _qnumDisp = (q && q.quoteNumber) ? ('#' + q.quoteNumber) : 'Auto-assigned';
+      var _ownerName = '';
+      try { _ownerName = (window.CompanyInfo && CompanyInfo.get && (CompanyInfo.get('ownerName') || CompanyInfo.get('owner') || CompanyInfo.get('companyName'))) || ''; } catch(_e){}
+      var _qLead = (q && q.leadSource) || '';
+      var _leadOpts = ['','Referral','Google','Repeat customer','Website','Facebook','Instagram','Drive-by','Yard sign','Other'];
+      html += '<div style="height:4px;background:#8b2252;border-radius:8px 8px 0 0;margin-bottom:16px;"></div>'
+        + '<input type="text" id="q-title" value="' + UI.esc(q.title || '') + '" placeholder="Title" autocomplete="off" style="width:100%;padding:14px 16px;border:1px solid #DADFE2;border-radius:8px;font-size:16px;font-weight:600;margin-bottom:14px;box-sizing:border-box;">'
+        + '<div class="q-jobber-top" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:10px;">'
+        + '<div style="flex:1 1 320px;min-width:0;">';
+    }
     html += '<div class="q-client-box" style="' + _cardCss + 'margin-bottom:14px;overflow:hidden;">'
       // Summary header (always visible)
       + '<div onclick="QuotesPage._toggleClientBox(this)" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;">'
@@ -604,6 +616,22 @@ var QuotesPage = {
       + '</div>'
     + '</div>' // close q-client-body
     + '</div>'; // close q-client-box
+
+    // v975: close left column + Jobber meta rail (Quote # / Salesperson / Lead Source), then close the two-column row.
+    if (_jb) {
+      var _rrow = function(label, control, last) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;' + (last ? '' : 'border-bottom:1px solid #EEF1F3;') + '">'
+          + '<span style="font-size:13px;color:#49646F;flex-shrink:0;">' + label + '</span>'
+          + '<div style="text-align:right;min-width:0;">' + control + '</div></div>';
+      };
+      html += '</div>' // close left column
+        + '<div style="flex:0 1 300px;min-width:240px;align-self:stretch;background:#fff;border:1px solid #DADFE2;border-radius:8px;overflow:hidden;">'
+        +   _rrow('Quote&nbsp;#', '<span style="font-weight:700;color:#032B3A;">' + _qnumDisp + '</span>')
+        +   _rrow('Salesperson', '<input type="text" id="q-salesperson" value="' + UI.esc((q && q.salesperson) || _ownerName) + '" placeholder="—" style="width:140px;max-width:140px;border:none;background:transparent;font-size:14px;font-weight:600;text-align:right;color:#032B3A;">')
+        +   _rrow('Lead&nbsp;Source', '<select id="q-lead-source" style="border:none;background:transparent;font-size:14px;font-weight:600;text-align:right;color:#032B3A;max-width:150px;">' + _leadOpts.map(function(o){ return '<option value="' + UI.esc(o) + '"' + (o === _qLead ? ' selected' : '') + '>' + (o || '—') + '</option>'; }).join('') + '</select>', true)
+        + '</div>'
+      + '</div>'; // close q-jobber-top
+    }
 
     // ═══ STEP 1: Per Tree/Task ═══
     var tmData = q.timeMaterial || {};
@@ -820,7 +848,7 @@ var QuotesPage = {
     var quoteTitle = quoteId
       ? 'Edit ' + QuotesPage._term(true) + ' #' + q.quoteNumber
       : 'New ' + QuotesPage._term(true).toLowerCase();
-    var pageHtml = '<div style="max-width:680px;margin:0 auto;padding:0 0 96px;">'
+    var pageHtml = '<div style="max-width:' + (_jb ? '900px' : '680px') + ';margin:0 auto;padding:0 0 96px;">'
       // Top bar: X / centered title / ✨
       + '<div style="display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:8px;margin-bottom:6px;padding-top:4px;">'
       +   '<button type="button" title="Close" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;color:var(--text-light);display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>'
@@ -1986,6 +2014,10 @@ var QuotesPage = {
       taxAmount: taxAmount,
       total: total,
       notes: document.getElementById('q-notes').value.trim(),
+      // v975: Jobber-mode fields (guarded — absent in Classic, preserve existing value).
+      title: (function(){ var e = document.getElementById('q-title'); return e ? e.value.trim() : ((existingQ && existingQ.title) || ''); })(),
+      salesperson: (function(){ var e = document.getElementById('q-salesperson'); return e ? e.value.trim() : ((existingQ && existingQ.salesperson) || ''); })(),
+      leadSource: (function(){ var e = document.getElementById('q-lead-source'); return e ? e.value : ((existingQ && existingQ.leadSource) || ''); })(),
       // Field removed from form; preserve existing value if editing, else default true
       showEquipMapToClient: (existingQ && existingQ.showEquipMapToClient !== undefined) ? existingQ.showEquipMapToClient : true,
       status: (function() {
