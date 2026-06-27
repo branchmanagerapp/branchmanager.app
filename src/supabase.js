@@ -482,13 +482,20 @@ var SupabaseDB = {
   startLiveSync: function() {
     if (SupabaseDB._livePollInterval) return;
 
-    // Fallback: 30s poll while visible (safety net)
+    // Fallback poll while visible (safety net). v974: THROTTLED. Previously this
+    // ran a FULL CloudSync.init() (re-pull of every table) every 30s AND on every
+    // focus/visibilitychange — which produced ~85 Supabase calls over ~90s on a
+    // ~2,300-record account (services pulled 42×, requests 16×), making the app
+    // crawl and leaving search/data incomplete during the churn. Realtime
+    // postgres-change subscriptions (below) already deliver live updates, so the
+    // full re-pull only needs to run occasionally as a backstop.
+    var SYNC_THROTTLE_MS = 2 * 60 * 1000; // at most one full re-pull per 2 min
     var tick = async function() {
       if (document.hidden) return;
       if (!SupabaseDB.ready || !SupabaseDB.client) return;
-      try {
-        if (typeof CloudSync !== 'undefined' && !CloudSync.syncing) await CloudSync.init();
-      } catch(e) {}
+      if (typeof CloudSync === 'undefined' || CloudSync.syncing) return;
+      if (Date.now() - (CloudSync.lastSync || 0) < SYNC_THROTTLE_MS) return; // throttle: skip redundant full re-pulls
+      try { await CloudSync.init(); } catch(e) {}
     };
     SupabaseDB._livePollInterval = setInterval(tick, 30 * 1000);
     document.addEventListener('visibilitychange', function() { if (!document.hidden) tick(); });

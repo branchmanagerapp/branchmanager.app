@@ -1,5 +1,5 @@
 {
-  "version": 973,
-  "released": "2026-06-26",
-  "notes": "v973: Home Workflow grid → Jobber. jobber-mode: flat grid (no shadow), big 36px/900 Poppins #032B3A numbers (was 32/700), 16/700 status words, Poppins greeting (34/900) + Workflow heading. Colored top bars already matched. Classic untouched."
+  "version": 974,
+  "released": "2026-06-27",
+  "notes": "v974: PERF — throttle live-sync full re-pull. startLiveSync was running a full CloudSync.init() (re-pull of all ~10 tables) every 30s AND on every focus/visibilitychange → ~85 Supabase calls/~90s on a 2,300-record account (services 42x, requests 16x), causing slow load + transient search misses. Now throttled to one full re-pull / 2 min; realtime subscriptions still deliver live updates. Fixes 'takes forever to load' + 'search can't find a visible record'."
 }
