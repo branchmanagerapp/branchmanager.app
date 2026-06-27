@@ -1,5 +1,5 @@
 {
-  "version": 975,
+  "version": 976,
   "released": "2026-06-27",
-  "notes": "v975: New Quote jobber-mode structural match — maroon top accent, Title field, two-column layout (client picker | Quote#/Salesperson/Lead Source meta rail, stacks on mobile via flex-wrap), wider container. New fields persist in save (guarded; Classic untouched)."
+  "notes": "v976: FIX cloud-save failure — strip non-column fields (photo/salesperson/lead_source) before pushing quotes to Supabase (whole row was rejected: 'Could not find the photo column of quotes'). v975's Title now maps to the existing subject column so it syncs; salesperson/leadSource persist locally. Stops quote saves from failing."
 }

@@ -213,6 +213,14 @@ var DB = (function() {
     'bm-expenses': 'expenses'
   };
 
+  // v976: per-remote-table list of snake_case fields that exist in local records
+  // but have NO column in the cloud table. The cloud push strips these so the
+  // whole row isn't rejected ("Could not find the 'photo' column of 'quotes'").
+  // Keyed by REMOTE table name. These stay in localStorage; just not synced.
+  var _CLOUD_LOCAL_ONLY = {
+    'quotes': ['photo', 'salesperson', 'lead_source']
+  };
+
   // Cross-device write reliability — was: fetch().catch(console.warn) which
   // never checked response.ok; an RLS rejection / 4xx / wrong tenant_id =
   // silent loss. Local localStorage shows the row; Supabase never gets it;
@@ -310,6 +318,12 @@ var DB = (function() {
         var sk = k.replace(/([A-Z])/g, '_$1').toLowerCase();
         snakeRow[sk] = record[k];
       });
+      // v976: drop top-level fields that exist locally but have NO column in the
+      // cloud table — else Supabase rejects the WHOLE row ("Could not find the
+      // 'photo' column of 'quotes'"). These persist in localStorage; they're just
+      // not synced. (photo = legacy stray; salesperson/lead_source = v975 jobber
+      // rail fields with no column. Title is mapped to the existing `subject` col.)
+      (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeRow[f]; });
 
       // v891 (2026-05-31): use upsert ONLY on create. Full-row upsert on update
       // clobbers any field that the local cache is stale on (the Quote #513
@@ -386,6 +400,8 @@ var DB = (function() {
         var sk = k.replace(/([A-Z])/g, '_$1').toLowerCase();
         snakeChanges[sk] = changes[k];
       });
+      // v976: same non-column strip as _pushToCloud (see note there).
+      (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeChanges[f]; });
       snakeChanges.updated_at = _now();  // always wins — fresh mtime guaranteed
       // Build URL with id filter; add updated_at precondition if supplied.
       var qs = 'id=eq.' + encodeURIComponent(id);

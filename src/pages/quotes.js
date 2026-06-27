@@ -568,7 +568,7 @@ var QuotesPage = {
       var _qLead = (q && q.leadSource) || '';
       var _leadOpts = ['','Referral','Google','Repeat customer','Website','Facebook','Instagram','Drive-by','Yard sign','Other'];
       html += '<div style="height:4px;background:#8b2252;border-radius:8px 8px 0 0;margin-bottom:16px;"></div>'
-        + '<input type="text" id="q-title" value="' + UI.esc(q.title || '') + '" placeholder="Title" autocomplete="off" style="width:100%;padding:14px 16px;border:1px solid #DADFE2;border-radius:8px;font-size:16px;font-weight:600;margin-bottom:14px;box-sizing:border-box;">'
+        + '<input type="text" id="q-title" value="' + UI.esc(q.subject || q.title || '') + '" placeholder="Title" autocomplete="off" style="width:100%;padding:14px 16px;border:1px solid #DADFE2;border-radius:8px;font-size:16px;font-weight:600;margin-bottom:14px;box-sizing:border-box;">'
         + '<div class="q-jobber-top" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:10px;">'
         + '<div style="flex:1 1 320px;min-width:0;">';
     }
@@ -2014,8 +2014,10 @@ var QuotesPage = {
       taxAmount: taxAmount,
       total: total,
       notes: document.getElementById('q-notes').value.trim(),
-      // v975: Jobber-mode fields (guarded — absent in Classic, preserve existing value).
-      title: (function(){ var e = document.getElementById('q-title'); return e ? e.value.trim() : ((existingQ && existingQ.title) || ''); })(),
+      // v975/v976: Jobber-mode fields. Title -> existing `subject` column (so it
+      // syncs to cloud). salesperson/leadSource have no cloud column → stripped on
+      // push (local-only) so the save never fails. All guarded (absent in Classic).
+      subject: (function(){ var e = document.getElementById('q-title'); if (e) return e.value.trim(); return (existingQ && (existingQ.subject || existingQ.title)) || ''; })(),
       salesperson: (function(){ var e = document.getElementById('q-salesperson'); return e ? e.value.trim() : ((existingQ && existingQ.salesperson) || ''); })(),
       leadSource: (function(){ var e = document.getElementById('q-lead-source'); return e ? e.value : ((existingQ && existingQ.leadSource) || ''); })(),
       // Field removed from form; preserve existing value if editing, else default true
