@@ -594,6 +594,8 @@ var DashboardPage = {
       ? 'No jobs scheduled today'
       : __todayDone + ' of ' + __todayJobs.length + ' complete';
 
+    // v977: Jobber's Home has no Leads/Website/Today's-Jobs/Tasks tile grid — classic only.
+    if (_bmClassic) {
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
 
     // Top-left: Leads Center (count async-filled by _fillCallCenterWidget into #dash-cc-badge)
@@ -632,6 +634,7 @@ var DashboardPage = {
     if (typeof AnalyticsWidget !== 'undefined' && AnalyticsWidget.fillSummary) {
       setTimeout(function() { try { AnalyticsWidget.fillSummary('dash-aw-mini', 'dash-aw-sub', 30); } catch(e) {} }, 100);
     }
+    } // v977: end classic-only BM tile grid
 
     // v619: 2-column dashboard layout — main (workflow + lead sources) /
     // rail (receivables, inbox, action alerts). Single column on mobile.
@@ -646,6 +649,8 @@ var DashboardPage = {
     // v619: workflow grid lives in main column; everything below moves to
     // the right rail (Receivables first, then Inbox, then action alerts).
     html += '</div><div class="dash-rail">';
+    // v977: Jobber "Business Performance" section heading above the receivables rail.
+    if (!_bmClassic) html += '<h2 style="font-family:\'Poppins\',\'Inter\',sans-serif;font-size:22px;font-weight:800;color:#032B3A;letter-spacing:-.01em;margin:6px 0 14px;">Business Performance</h2>';
 
     // v620: rail cards — collapsible <details> with colored top bar matching
     // the workflow card colors (Requests=orange, Quotes=purple, Jobs=green,
