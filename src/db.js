@@ -47,15 +47,40 @@ var DB = (function() {
       _lastSetOk = true;
     } catch(e) {
       _lastSetOk = false;
-      // localStorage quota exceeded — warn user
+      // v979: localStorage quota exceeded. The biggest, most disposable consumers
+      // are the base64 photo caches (bm-photos-*) — they re-sync from Supabase, so
+      // evict them to free space and retry the save once before giving up.
       if (e.name === 'QuotaExceededError' || e.code === 22) {
+        var freed = _freePhotoCache(key);
+        if (freed > 0) {
+          try { localStorage.setItem(key, JSON.stringify(data)); _lastSetOk = true; return; } catch(e2) {}
+        }
         console.error('localStorage full! Data may not be saved for: ' + key);
         if (typeof UI !== 'undefined' && UI.toast) {
-          UI.toast('Storage full — some data may not save. Clear old data in Settings.', 'error');
+          UI.toast('Storage was full — cleared cached photos to make room. They’ll reload from the cloud.', 'error');
         }
       }
     }
   }
+
+  // v979: free space by dropping cached photo blobs (bm-photos-*), which are
+  // re-fetchable from Supabase Storage/DB. Returns approx chars freed. Exposed
+  // as window.BM_freePhotoStorage so photos.js can reuse it on its own writes.
+  function _freePhotoCache(exceptKey) {
+    var freed = 0;
+    try {
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('bm-photos-') === 0 && k !== exceptKey) keys.push(k);
+      }
+      keys.forEach(function(k) {
+        try { freed += (localStorage.getItem(k) || '').length; localStorage.removeItem(k); } catch(_e) {}
+      });
+    } catch(_e) {}
+    return freed;
+  }
+  try { window.BM_freePhotoStorage = _freePhotoCache; } catch(_e) {}
   function _id() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
   function _now() { return new Date().toISOString(); }
 

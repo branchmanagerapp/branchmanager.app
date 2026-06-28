@@ -8,6 +8,22 @@ var Photos = {
   BUCKET: 'job-photos',
   BRAND: 'Branch Cam',
 
+  // v979: quota-safe localStorage write for photo blobs (base64 can be MBs each
+  // and blows mobile Safari's ~5MB quota → uncaught QuotaExceededError). On quota,
+  // evict OTHER cached photo groups (re-fetchable from cloud) and retry once.
+  _safeStore: function(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e) {
+      if (e && (e.name === 'QuotaExceededError' || e.code === 22) && typeof window.BM_freePhotoStorage === 'function') {
+        window.BM_freePhotoStorage(key);
+        try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch(e2) {}
+      }
+      console.warn('[Photos] local cache write skipped (storage full):', key);
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast('Storage full — photo saved to the cloud, not cached on this device.', 'error');
+      return false;
+    }
+  },
+
   // Capture GPS once, reuse across uploads in the same batch (saves prompts + battery)
   _lastGps: null,
   _lastGpsTime: 0,
@@ -550,7 +566,7 @@ var Photos = {
         });
       });
       Object.keys(groups).forEach(function(k) {
-        localStorage.setItem(k, JSON.stringify(groups[k]));
+        Photos._safeStore(k, groups[k]);
       });
       if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('Photos.syncFromCloud: cached ' + data.length + ' photos across ' + Object.keys(groups).length + ' records');
     } catch (e) {
@@ -593,7 +609,7 @@ var Photos = {
     try { photos = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
     photo.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
     photos.push(photo);
-    localStorage.setItem(key, JSON.stringify(photos));
+    Photos._safeStore(key, photos);
   },
 
   getPhotos: function(recordType, recordId) {
@@ -717,7 +733,7 @@ var Photos = {
       stored[photoIndex].tags = merged;
       stored[photoIndex].label = merged.join(', ');
       stored[photoIndex].ai_tags = (stored[photoIndex].ai_tags || []).concat(addedTags);
-      localStorage.setItem(key, JSON.stringify(stored));
+      Photos._safeStore(key, stored);
 
       // Sync to cloud
       if (stored[photoIndex].id && SupabaseDB && SupabaseDB.ready) {
@@ -812,7 +828,7 @@ var Photos = {
     if (!photos[index]) return null;
     photos[index].tags = tags;
     photos[index].label = tags.join(', '); // mirror for legacy compat
-    localStorage.setItem(key, JSON.stringify(photos));
+    Photos._safeStore(key, photos);
     if (photos[index].id && SupabaseDB && SupabaseDB.ready) {
       var payload = { tags: tags, label: tags.join(', ') };
       // v874: also sync ai_tags if present (filter out any user-removed AI tags
@@ -820,7 +836,7 @@ var Photos = {
       if (Array.isArray(photos[index].ai_tags)) {
         payload.ai_tags = photos[index].ai_tags.filter(function(t) { return tags.indexOf(t) !== -1; });
         photos[index].ai_tags = payload.ai_tags;
-        localStorage.setItem(key, JSON.stringify(photos));
+        Photos._safeStore(key, photos);
       }
       SupabaseDB.client.from('photos').update(payload).eq('id', photos[index].id).then(function(res) {
         if (res.error) console.warn('Photos tags sync failed:', res.error.message);
@@ -1106,7 +1122,7 @@ var Photos = {
     var photos = [];
     try { photos = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
     var removed = photos.splice(index, 1)[0];
-    localStorage.setItem(key, JSON.stringify(photos));
+    Photos._safeStore(key, photos);
     // Sync delete to cloud (storage object + metadata row)
     if (removed && SupabaseDB && SupabaseDB.ready) {
       if (removed.storage_path) {

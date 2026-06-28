@@ -1,5 +1,5 @@
 {
-  "version": 978,
+  "version": 979,
   "released": "2026-06-27",
-  "notes": "v978: full reload (Cmd+R / pull-to-refresh) always lands on dashboard — ignore preserved hash + last-saved page + saved detail on reload; fresh navigations still resume. (Refresh-goes-to-dashboard per Doug.)"
+  "notes": "v979: FIX QuotaExceededError — base64 photos in bm-photos-* localStorage keys blow mobile Safari's quota. On quota, auto-evict cached photo blobs (re-fetchable from cloud) and retry (db.js _set + Photos._safeStore). Stops the uncaught QuotaExceeded + protects data saves; freeing space also lets the PWA update (fixes the stale UI.field error)."
 }
