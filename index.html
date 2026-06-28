@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 980; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 981; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -342,6 +342,19 @@
   body.ui-jobber .badge:not(.nav-item .badge),
   body.ui-jobber .pill, body.ui-jobber .tag, body.ui-jobber .status-pill {
     border-radius:12px; font-weight:400; font-size:12px; padding:6px 10px;
+  }
+  /* v981: the class-based theme only reaches .card/.stat-card/.data-table, but most
+     BM screens build cards with INLINE styles (hundreds of them) the CSS can't touch.
+     The one reliable signal every BM inline card shares is its soft drop-shadow —
+     target that and flatten to Jobber's look (no shadow, #DADFE2 hairline, 8px). This
+     reaches the Requests/Quotes/Jobs/Invoices/Clients/Schedule/Settings inline cards
+     app-wide in jobber-mode without editing every call site. Scoped to .content. */
+  body.ui-jobber .content div[style*="box-shadow:0 1px 3px rgba(0,0,0,0.04)"],
+  body.ui-jobber .content div[style*="box-shadow:0 1px 3px rgba(0,0,0,0.06)"],
+  body.ui-jobber .content div[style*="box-shadow:0 1px 3px rgba(0,0,0,.04)"],
+  body.ui-jobber .content details[style*="box-shadow:0 1px 3px rgba(0,0,0,0.04)"],
+  body.ui-jobber .content section[style*="box-shadow:0 1px 3px rgba(0,0,0,0.04)"] {
+    box-shadow:none !important; border:1px solid #DADFE2 !important; border-radius:8px !important;
   }
   [data-theme="dark"] {
     --green-bg: #1a2e23;
@@ -1281,7 +1294,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v980.min.js"></script>
+<script defer src="dist/bm.bundle.v981.min.js"></script>
 
 
 

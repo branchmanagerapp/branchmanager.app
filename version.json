@@ -1,5 +1,5 @@
 {
-  "version": 980,
+  "version": 981,
   "released": "2026-06-27",
-  "notes": "v980: reword client-notes placeholder from 'Anything Doug or future-Doug should know... Saves on blur' to crew/client-facing guidance ('Notes the crew (and client) may see — access, gate code, preferences... Saves automatically')."
+  "notes": "v981: jobber-mode flattens the hundreds of INLINE-styled BM cards the class-based theme couldn't reach — targets the shared inline card drop-shadow via attribute selector and removes shadow + sets #DADFE2 hairline + 8px radius across Requests/Quotes/Jobs/Invoices/Clients/Schedule/Settings. Closes the biggest remaining 'looks like BM not Jobber' gap on list/detail screens."
 }
