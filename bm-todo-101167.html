@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doug — Master To-Do</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#f5f3ee; --ink:#2c2a25; --muted:#6f6a60; --line:#e3ded3; --card:#fffdf8; --green:#3f6b3a; --green-d:#2c4f29; --amber:#b07a1e; --red:#a23b2d; --blue:#3a5a7a; }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Inter",-apple-system,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;}
+  .wrap{max-width:780px;margin:0 auto;padding:0 22px 80px;}
+  h1{font-family:"Fraunces",serif;font-size:34px;font-weight:600;margin:42px 0 2px;letter-spacing:-.01em;}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 6px;}
+  .breathe{background:#eef3ea;border:1px solid #cfe0c6;border-radius:12px;padding:14px 16px;font-size:14px;color:#37502f;margin:18px 0 26px;}
+  .breathe b{color:var(--green-d);}
+  h2{font-family:"Fraunces",serif;font-size:21px;font-weight:600;margin:34px 0 4px;display:flex;align-items:center;gap:9px;}
+  .cap{font-size:12.5px;color:var(--muted);margin:0 0 10px;}
+  .group{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 4px;margin-top:8px;}
+  .item{display:flex;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:flex-start;}
+  .item:last-child{border-bottom:none;}
+  .item input{width:19px;height:19px;margin-top:1px;flex:none;cursor:pointer;accent-color:var(--green);}
+  .item label{font-size:14.5px;cursor:pointer;}
+  .item .why{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .done label{text-decoration:line-through;color:var(--muted);}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:7px;vertical-align:1px;}
+  .p-today{background:#f7e6e2;color:var(--red);}
+  .p-week{background:#f3ead6;color:var(--amber);}
+  .p-soon{background:#e6ecf3;color:var(--blue);}
+  .p-mine{background:#ece8f3;color:#5a4e7a;}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+  .doneblock{opacity:.92;}
+  .doneblock .item label{color:var(--green-d);}
+  .foot{margin-top:30px;font-size:12px;color:var(--muted);}
+  .count{font-size:12.5px;color:var(--muted);font-weight:600;}
+  .legend{font-size:12px;color:var(--muted);margin:4px 0 0;}
+  .legend span{margin-right:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Master to-do</h1>
+  <p class="sub">Everything in one place — Branch Manager, SmartLawn, books, equipment. <span class="count" id="prog"></span></p>
+
+  <div class="breathe">
+    <b>Read this first.</b> You are not behind — you're running four things at once and they're all moving. Most of the hard stuff (2025 books, sales tax, the app perf + Jobber match) is <b>already done</b> — see the green section at the bottom. Today you only owe yourself the <b>three things in red</b>. Ignore the rest until those are clear. One at a time.
+  </div>
+
+  <p class="legend"><span>🔴 <b>Today</b></span><span>🟡 <b>This week</b></span><span>🔵 <b>When you can</b></span><span>🟣 <b>Yours / decisions</b></span></p>
+
+  <h2>🔴 Today — just these three</h2>
+  <p class="cap">If only these get done, today was a win.</p>
+  <div class="group">
+    <div class="item"><input type="checkbox" id="t1"><label for="t1"><b>Get Yvonne Davies' quote out.</b> <span class="pill p-today">today</span><span class="why">Her request ("large tree that needs trimming," 35 Lounsbury Rd Croton) is overdue. In BM: open her request → Convert to Quote → send. Oldest waiting client = first.</span></label></div>
+    <div class="item"><input type="checkbox" id="t2"><label for="t2"><b>Restart Claude app + sign into Robinhood.</b> <span class="pill p-today">today</span><span class="why">Cmd+Q, relaunch, approve the Robinhood login. 60 seconds. Then I pull your portfolio and your net worth is finished.</span></label></div>
+    <div class="item"><input type="checkbox" id="t3"><label for="t3"><b>Send the 3 SmartLawn invoices that are sitting.</b> <span class="pill p-today">today</span><span class="why">Money already earned, just not billed. Getting them out = cash in. (Tell me which jobs and I'll draft them.)</span></label></div>
+  </div>
+
+  <h2>🌳 Branch Manager — the business</h2>
+  <p class="cap">Clients & work to move.</p>
+  <div class="group">
+    <div class="item"><input type="checkbox" id="bm1"><label for="bm1">Work the other 3 overdue requests <span class="pill p-week">this week</span><span class="why">derek brumleve · Alan Katz · colby moore — respond / quote each, or archive if dead. Clears the red off your Requests board.</span></label></div>
+    <div class="item"><input type="checkbox" id="bm2"><label for="bm2">Send Graymoor invoice #384 ($500) <span class="pill p-week">this week</span><span class="why">Drafted but never sent. Add Graymoor's email → Send to Client. $500 you've already done the work for.</span></label></div>
+    <div class="item"><input type="checkbox" id="bm3"><label for="bm3">Get upcoming jobs onto the BM schedule <span class="pill p-soon">when you can</span><span class="why">0 forward-scheduled jobs right now, so the Budget/cash-forecast tools read $0. Once the Jobber pull populates bookings, the forecasting actually works.</span></label></div>
+  </div>
+  <p class="cap" style="margin-top:14px;">The app itself (for selling BM to other operators).</p>
+  <div class="group">
+    <div class="item"><input type="checkbox" id="app1"><label for="app1">Jobber-match: remaining screens <span class="pill p-soon">when you can</span><span class="why">Requests ✅ done (v983). Left: Schedule chips/filters, Settings layout, list-screen extras.</span></label></div>
+    <div class="item"><input type="checkbox" id="app2"><label for="app2">Perf: consolidate the two sync systems + lazy-load <span class="pill p-soon">when you can</span><span class="why">Cold-load + churn already fixed (v974/v982). Bigger cleanup left for snappier load.</span></label></div>
+    <div class="item"><input type="checkbox" id="app3"><label for="app3">Pre-ship blockers before other operators use BM <span class="pill p-soon">when you can</span><span class="why">Auth gate · job# collision · tenant data-isolation (PII leak) · crew roster sync. These matter only when you onboard outside crews.</span></label></div>
+    <div class="item"><input type="checkbox" id="app4"><label for="app4">Plaid balance auto-sync <span class="pill p-soon">when you can</span><span class="why">Transactions sync; balances don't. Blocked on a real Supabase token — low priority.</span></label></div>
+  </div>
+
+  <h2>🤖 SmartLawn</h2>
+  <div class="group">
+    <div class="item"><input type="checkbox" id="sl1"><label for="sl1">Send outstanding SmartLawn invoices <span class="pill p-today">today</span><span class="why">(Same as the red item above — listed here so it lives with its category too.)</span></label></div>
+    <div class="item"><input type="checkbox" id="sl2"><label for="sl2">Reconcile SmartLawn books / inventory <span class="pill p-week">this week</span><span class="why">Match the Navimow units on hand + the Yarbo purchase ($6,448) against what's been billed/installed. Keep it separate from the tree books.</span></label></div>
+    <div class="item"><input type="checkbox" id="sl3"><label for="sl3">Finalize + send the Lucente proposal <span class="pill p-week">this week</span><span class="why">Draft is built (all Navimow). Install/service prices are still placeholders — set real numbers, then send to Dennis.</span></label></div>
+    <div class="item"><input type="checkbox" id="sl4"><label for="sl4">Publish smartlawnny.com/lucente <span class="pill p-soon">when you can</span><span class="why">Blocked on write access to the smartlawnny-cloud repo. I'll push it the moment access is sorted.</span></label></div>
+  </div>
+
+  <h2>📒 Books & taxes</h2>
+  <p class="cap">The big lifts are done. These are the loose ends.</p>
+  <div class="group">
+    <div class="item"><input type="checkbox" id="tx1"><label for="tx1">Confirm the 2025 package actually reached Kevin Fay <span class="pill p-week">this week</span><span class="why">Package + portal done; Gmail draft prepared. Just confirm it sent (or hit send).</span></label></div>
+    <div class="item"><input type="checkbox" id="tx2"><label for="tx2">Confirm NYS assessment $877.38 posted as paid <span class="pill p-week">this week</span><span class="why">Paid 6/13 (L-063124453-4). Check it cleared so interest stopped.</span></label></div>
+    <div class="item"><input type="checkbox" id="tx3"><label for="tx3">CT sales tax on the $28,182.75 CT job <span class="pill p-soon">when you can</span><span class="why">Likely owes CT (~6.35%) unless capital-improvement/exempt. Flag Kevin re CT registration.</span></label></div>
+    <div class="item"><input type="checkbox" id="tx4"><label for="tx4">ERC: confirm credit + amend 2020/21 <span class="pill p-soon">when you can</span><span class="why">The $76k COVID/ERC refund was mis-booked as 2025 sales. Kevin confirms ERC eligibility + amends the old years.</span></label></div>
+  </div>
+
+  <h2>🚜 Equipment & ventures <span class="tag" style="color:var(--muted);font-size:11px;">decisions</span></h2>
+  <p class="cap">No rush — these are choices, not fires.</p>
+  <div class="group">
+    <div class="item"><input type="checkbox" id="eq1"><label for="eq1">Giant loader: do the ~$1,500 head-gasket fix, keep as backup <span class="pill p-mine">yours</span><span class="why">Far cheaper than the $25k engine or a new machine. Fix + keep running as the spare.</span></label></div>
+    <div class="item"><input type="checkbox" id="eq2"><label for="eq2">Westchester Tractor claim — pursue the demand <span class="pill p-mine">yours</span><span class="why">$10,612.82 over the botched Bandit 200XP anvil repair. Files are on your Desktop.</span></label></div>
+    <div class="item"><input type="checkbox" id="eq3"><label for="eq3">Northeast Intrepid — next step is just buying your own KM100 <span class="pill p-mine">yours</span><span class="why">Then lock Ron & Kevin as service partners, then ask Chris for the 6-mo consignment. One step at a time — nothing due now.</span></label></div>
+  </div>
+
+  <h2 class="doneblock">✅ Already done — proof you're moving</h2>
+  <p class="cap">Look here when it feels like nothing's getting finished.</p>
+  <div class="group doneblock">
+    <div class="item done"><input type="checkbox" checked disabled><label>2025 tree books fully cleaned + reconciled to the penny → CPA package built</label></div>
+    <div class="item done"><input type="checkbox" checked disabled><label>NY sales tax brought current — Mar–May 2026 filed & paid (conf# SW2620897727)</label></div>
+    <div class="item done"><input type="checkbox" checked disabled><label>2026 YTD books audited & clean</label></div>
+    <div class="item done"><input type="checkbox" checked disabled><label>BM Requests page rebuilt to match Jobber (v983) — verified live</label></div>
+    <div class="item done"><input type="checkbox" checked disabled><label>BM load speed fixed — cold-load + sync churn (v974 / v982)</label></div>
+    <div class="item done"><input type="checkbox" checked disabled><label>Net worth worksheet built (just waiting on the Robinhood number)</label></div>
+    <div class="item done"><input type="checkbox" checked disabled><label>Quote cloud-save + storage-quota bugs fixed</label></div>
+  </div>
+
+  <div class="foot">
+    Private working file. Checks save in this browser automatically. Update anything — nothing here is locked.
+  </div>
+</div>
+<script>
+  var KEY='doug-master-todo-v1';
+  function load(){ try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};} }
+  function save(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
+  function prog(){
+    var boxes=[].slice.call(document.querySelectorAll('.item input:not([disabled])'));
+    var done=boxes.filter(function(b){return b.checked;}).length;
+    document.getElementById('prog').textContent=done+' of '+boxes.length+' active items done';
+  }
+  var state=load();
+  [].forEach.call(document.querySelectorAll('.item input:not([disabled])'),function(b){
+    if(state[b.id]){ b.checked=true; b.closest('.item').classList.add('done'); }
+    b.addEventListener('change',function(){
+      state[b.id]=b.checked; save(state);
+      b.closest('.item').classList.toggle('done', b.checked);
+      prog();
+    });
+  });
+  prog();
+</script>
+</body>
+</html>
