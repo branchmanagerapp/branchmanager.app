@@ -1,5 +1,5 @@
 {
-  "version": 981,
-  "released": "2026-06-27",
-  "notes": "v981: jobber-mode flattens the hundreds of INLINE-styled BM cards the class-based theme couldn't reach — targets the shared inline card drop-shadow via attribute selector and removes shadow + sets #DADFE2 hairline + 8px radius across Requests/Quotes/Jobs/Invoices/Clients/Schedule/Settings. Closes the biggest remaining 'looks like BM not Jobber' gap on list/detail screens."
+  "version": 982,
+  "released": "2026-06-28",
+  "notes": "v982 (perf): parallelize cold-load cloud pull — _pullFromCloud now fetches all tables concurrently (Promise.all) instead of sequentially, so cold-load wall-clock drops from sum-of-tables to slowest-single-table. Each table writes its own localStorage key (no race); per-table error handling unchanged."
 }

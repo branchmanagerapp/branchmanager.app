@@ -341,15 +341,18 @@ var SupabaseDB = {
     var tenantId = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
 
     var totalPulled = 0;
-    for (var i = 0; i < tables.length; i++) {
-      var t = tables[i];
+    // v982 (perf): pull all tables CONCURRENTLY instead of one-after-another. Each
+    // table writes its own localStorage key (no shared-state race), and per-table
+    // errors are isolated — so the cold-load wall-clock drops from sum-of-tables to
+    // slowest-single-table. (Was a sequential for-loop with `await` per table.)
+    await Promise.all(tables.map(async function(t) {
       try {
         var q = sb.from(t.remote).select('*').order('created_at', { ascending: false }).limit(5000);
         if (tenantId) q = q.eq('tenant_id', tenantId);
         var { data, error } = await q;
         if (error) {
           console.warn('Pull error for ' + t.remote + ':', error.message);
-          continue;
+          return;
         }
         if (data && data.length > 0) {
           // Convert snake_case to camelCase for local storage
@@ -384,7 +387,7 @@ var SupabaseDB = {
       } catch (e) {
         console.warn('Pull failed for ' + t.remote + ':', e);
       }
-    }
+    }));
 
     SupabaseDB.startPaymentPolling();
     SupabaseDB.startLiveSync();
