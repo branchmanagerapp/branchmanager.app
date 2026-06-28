@@ -259,6 +259,7 @@ var RequestsPage = {
       + '</div>'
       + '</div>';
 
+    var _jb = !(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic()); // v983: Jobber-match Requests list
     var filtered = self._getFiltered();
 
     // ── Header: title + count + chips on left, search on right ──
@@ -268,12 +269,21 @@ var RequestsPage = {
       +   '<span style="font-size:13px;color:var(--text-light);">(' + filtered.length + ' results)</span>';
 
     var filters = [['all','All'],['new','New'],['quoted','Quoted'],['converted','Converted'],['archived','Archived']];
-    filters.forEach(function(f) {
-      var isActive = self._filter === f[0];
-      html += '<button onclick="RequestsPage._setFilter(\'' + f[0] + '\')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid '
-        + (isActive ? '#2e7d32' : 'var(--border)') + ';background:' + (isActive ? '#2e7d32' : 'var(--white)') + ';color:'
-        + (isActive ? '#fff' : 'var(--text)') + ';cursor:pointer;font-weight:' + (isActive ? '600' : '500') + ';">' + f[1] + '</button>';
-    });
+    if (_jb) {
+      // v983: Jobber-style single "Status | All ▾" dropdown instead of pill row.
+      html += '<div style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #DADFE2;border-radius:8px;padding:7px 12px;font-size:13px;">'
+        + '<span style="color:#49646F;">Status</span><span style="color:#DADFE2;">|</span>'
+        + '<select onchange="RequestsPage._setFilter(this.value)" style="border:none;background:transparent;font-weight:700;color:#032B3A;font-size:13px;cursor:pointer;outline:none;">'
+        + filters.map(function(f){ return '<option value="' + f[0] + '"' + (self._filter === f[0] ? ' selected' : '') + '>' + f[1] + '</option>'; }).join('')
+        + '</select></div>';
+    } else {
+      filters.forEach(function(f) {
+        var isActive = self._filter === f[0];
+        html += '<button onclick="RequestsPage._setFilter(\'' + f[0] + '\')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid '
+          + (isActive ? '#2e7d32' : 'var(--border)') + ';background:' + (isActive ? '#2e7d32' : 'var(--white)') + ';color:'
+          + (isActive ? '#fff' : 'var(--text)') + ';cursor:pointer;font-weight:' + (isActive ? '600' : '500') + ';">' + f[1] + '</button>';
+      });
+    }
 
     html += '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
@@ -302,8 +312,8 @@ var RequestsPage = {
       + '<table class="data-table"><thead><tr>'
       + '<th style="width:32px;"><input type="checkbox" onchange="document.querySelectorAll(\'.req-check\').forEach(function(cb){cb.checked=event.target.checked;});RequestsPage._updateBulk();" title="Select all"></th>'
       + self._sortTh('Client', 'clientName')
-      + '<th>Phone</th>'
-      + self._sortTh('Description', 'service')
+      + '<th>' + (_jb ? 'Contact' : 'Phone') + '</th>'
+      + (_jb ? '<th>Title</th>' : self._sortTh('Description', 'service'))
       + self._sortTh('Property', 'property')
       + self._sortTh('Requested', 'createdAt')
       + self._sortTh('Status', 'status')
@@ -344,9 +354,9 @@ var RequestsPage = {
 
         html += '<tr style="cursor:pointer;' + rowBg + '" onclick="RequestsPage.showDetail(\'' + r.id + '\')">'
           + '<td onclick="event.stopPropagation()"><input type="checkbox" class="req-check" value="' + r.id + '" onchange="RequestsPage._updateBulk()" style="width:16px;height:16px;"></td>'
-          + '<td><strong>' + UI.esc(r.clientName || 'Unknown') + '</strong></td>'
+          + '<td><strong>' + UI.esc(r.clientName || 'Unknown') + '</strong>' + (_jb && desc ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(desc) + '</div>' : '') + '</td>'
           + '<td>' + phCell + '</td>'
-          + '<td style="font-size:13px;color:var(--text-light);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(desc) + '">' + UI.esc(desc || '—') + '</td>'
+          + '<td style="font-size:13px;color:var(--text-light);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + UI.esc(desc) + '">' + (_jb ? '<span style="color:var(--text-light);">—</span>' : UI.esc(desc || '—')) + '</td>'
           + '<td style="font-size:13px;">' + propCell + '</td>'
           + '<td style="white-space:nowrap;">' + UI.dateShort(r.createdAt) + '</td>'
           + '<td>' + UI.statusBadge(displayStatus) + '</td>'

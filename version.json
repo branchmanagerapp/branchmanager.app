@@ -1,5 +1,5 @@
 {
-  "version": 982,
+  "version": 983,
   "released": "2026-06-28",
-  "notes": "v982 (perf): parallelize cold-load cloud pull — _pullFromCloud now fetches all tables concurrently (Promise.all) instead of sequentially, so cold-load wall-clock drops from sum-of-tables to slowest-single-table. Each table writes its own localStorage key (no race); per-table error handling unchanged."
+  "notes": "Jobber-match Requests list (jobber-mode only): request title now shows as a sub-line under the client name (Jobber's signature), filter pills replaced by a single 'Status | All' dropdown, Phone column relabeled 'Contact' and Description column relabeled 'Title' (content moved to the client sub-line). Classic UI unchanged. No column-count change (safe)."
 }
