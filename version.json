@@ -1,5 +1,5 @@
 {
-  "version": 977,
+  "version": 978,
   "released": "2026-06-27",
-  "notes": "v977: remove green 'New requests' box from Home dashboard (per Doug)."
+  "notes": "v978: full reload (Cmd+R / pull-to-refresh) always lands on dashboard — ignore preserved hash + last-saved page + saved detail on reload; fresh navigations still resume. (Refresh-goes-to-dashboard per Doug.)"
 }

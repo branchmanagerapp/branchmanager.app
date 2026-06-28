@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 977; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 978; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1281,7 +1281,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v977.min.js"></script>
+<script defer src="dist/bm.bundle.v978.min.js"></script>
 
 
 
@@ -2454,10 +2454,21 @@ if (checkAuth()) {
     hashPage = 'socialbranch';
     if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
   }
-  // Priority: URL hash > saved page > default
-  var targetPage = (hashPage && pageRenderers[hashPage])
-    ? hashPage
-    : ((savedPage && pageRenderers[savedPage]) ? savedPage : defaultPage);
+  // v978: a full RELOAD (Cmd+R / pull-to-refresh) always lands on the dashboard —
+  // ignore the preserved hash, last-saved page, and any saved detail. Genuine
+  // fresh navigations / deep-links (type 'navigate') still resume where you left off.
+  var _navType = '';
+  try { _navType = (performance.getEntriesByType('navigation')[0] || {}).type || ''; } catch(e) {}
+  var targetPage;
+  if (_navType === 'reload') {
+    targetPage = defaultPage;
+    savedDetail = null;
+  } else {
+    // Priority: URL hash > saved page > default
+    targetPage = (hashPage && pageRenderers[hashPage])
+      ? hashPage
+      : ((savedPage && pageRenderers[savedPage]) ? savedPage : defaultPage);
+  }
   // TEMP (Books hang, Jun 2026): the Books page currently hangs the renderer
   // (RESULT_CODE_HUNG). Never AUTO-boot into it on a cold load, or a reopen gets
   // trapped on a dead page ("no page loads"). Fall back to dashboard and clear the
