@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Doug — Everything I Do</title>
+<title>Doug Brown — What I Build &amp; Run</title>
+<meta name="description" content="Tree care, software, robotics, and a few things in between — the businesses Doug Brown builds and runs in Westchester, NY.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,7 +14,7 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:"Inter",-apple-system,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;}
-  .wrap{max-width:880px;margin:0 auto;padding:0 22px 80px;}
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px 70px;}
   .hero{padding:60px 0 22px;}
   .hero .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--green);font-weight:700;}
   h1{font-family:"Fraunces",serif;font-size:46px;line-height:1.05;font-weight:600;margin:14px 0 12px;letter-spacing:-.01em;}
@@ -21,21 +22,21 @@
   h2{font-family:"Fraunces",serif;font-size:26px;font-weight:600;margin:46px 0 4px;letter-spacing:-.01em;}
   h2 .s{display:block;font-family:"Inter";font-size:14px;font-weight:500;color:var(--muted);margin-top:4px;}
   .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;}
   .card.wide{grid-column:1/-1;}
-  .card .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:10px;}
+  .card .tag{display:inline-block;align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:10px;}
   .card h3{font-family:"Fraunces",serif;font-size:20px;font-weight:600;margin:0 0 6px;}
-  .card p{margin:0 0 8px;font-size:14.5px;color:var(--muted);}
-  .card .meta{font-size:13px;color:var(--ink);font-weight:600;border-top:1px solid var(--line);padding-top:9px;margin-top:10px;}
-  .card .meta span{color:var(--muted);font-weight:500;}
+  .card p{margin:0 0 12px;font-size:14.5px;color:var(--muted);flex:1;}
+  .card a.visit{align-self:flex-start;font-size:13.5px;font-weight:700;color:var(--green-d);text-decoration:none;border-bottom:2px solid #cfe0c6;padding-bottom:1px;}
+  .card a.visit:hover{border-color:var(--green-d);}
+  .card .soon{font-size:13px;color:var(--muted);font-weight:600;}
   .t-tree{background:#e7efe2;color:var(--green-d);} .t-build{background:#e3edf0;color:var(--sky);}
   .t-lawn{background:#eaf1e4;color:var(--green);} .t-skate{background:#efe6dd;color:var(--clay);}
   .t-idea{background:#efece4;color:var(--bark);}
   .hats{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
   .hat{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:14px;font-weight:600;}
   .hat span{color:var(--muted);font-weight:500;}
-  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-top:18px;}
   .panel h4{font-family:"Fraunces",serif;font-size:17px;font-weight:600;margin:0 0 10px;}
   .panel ul{margin:0;padding-left:18px;} .panel li{font-size:14px;color:var(--muted);margin:5px 0;}
   .panel li b{color:var(--ink);font-weight:600;}
@@ -44,120 +45,96 @@
   .built .row:last-child{border-bottom:none;}
   .built .n{font-family:"Fraunces",serif;font-size:24px;font-weight:600;color:var(--green-d);flex-shrink:0;min-width:130px;}
   .built .d{font-size:14.5px;color:var(--muted);} .built .d b{color:var(--ink);}
-  .heavy{background:#f0ece3;border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-top:18px;}
-  .heavy p{margin:8px 0;font-size:15px;color:var(--ink);}
-  .close{margin-top:44px;padding:30px 26px;background:linear-gradient(180deg,#eef2e8,#f5f3ee);border:1px solid var(--line);border-radius:18px;}
-  .close p{font-family:"Fraunces",serif;font-size:21px;line-height:1.45;font-weight:500;margin:0 0 10px;color:var(--green-d);}
-  .close .sub{font-family:"Inter";font-size:15px;color:var(--muted);font-weight:400;}
-  .foot{margin-top:32px;font-size:12.5px;color:var(--muted);}
-  @media(max-width:680px){ .cards,.twocol{grid-template-columns:1fr;} h1{font-size:34px;} .built .n{min-width:104px;font-size:21px;} }
+  .close{margin-top:44px;padding:30px 26px;background:linear-gradient(180deg,#eef2e8,#f5f3ee);border:1px solid var(--line);border-radius:18px;text-align:center;}
+  .close p{font-family:"Fraunces",serif;font-size:22px;line-height:1.4;font-weight:500;margin:0 0 14px;color:var(--green-d);}
+  .close a{display:inline-block;background:var(--green-d);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 24px;border-radius:999px;font-family:"Inter";}
+  .foot{margin-top:30px;font-size:12.5px;color:var(--muted);text-align:center;}
+  @media(max-width:680px){ .cards{grid-template-columns:1fr;} h1{font-size:34px;} .built .n{min-width:104px;font-size:21px;} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <div class="hero">
-    <div class="eyebrow">Doug Brown · the whole picture</div>
-    <h1>Everything I do.</h1>
-    <p>Not a to-do list, not a scoreboard — one honest place to see the load you carry, the businesses you run, the iron you keep moving, and the people counting on you. So your own life is easier to look at straight on.</p>
+    <div class="eyebrow">Doug Brown · Westchester, NY</div>
+    <h1>What I build &amp; run.</h1>
+    <p>Tree care, software, robotics, and a few things in between. A quick map of the businesses I run — and where to find each one.</p>
   </div>
 
-  <h2>What I run <span class="s">Real businesses, all at once, mostly one guy.</span></h2>
+  <h2>What I run</h2>
   <div class="cards">
     <div class="card wide">
-      <span class="tag t-tree">The core · since 2018</span>
+      <span class="tag t-tree">The core · est. 2018</span>
       <h3>Second Nature Tree Service</h3>
-      <p>The business that feeds everything else. Technical removals and takedowns, pruning, storm response, and utility / right-of-way line-clearance — plus conservation work, snow, and firewood through the off-season. A real crew, real iron, across Westchester &amp; Putnam.</p>
-      <div class="meta">≈ <span>564 clients</span> · grossed about a quarter-million in 2025 · run day-to-day with Catherine, who holds the field, the equipment, and the office together.</div>
+      <p>Technical removals and takedowns, pruning, storm response, and utility / right-of-way line-clearance across Westchester &amp; Putnam — plus conservation work, snow, and firewood through the off-season. A real crew, real iron, and hundreds of clients who call back.</p>
+      <a class="visit" href="https://peekskilltree.com" target="_blank" rel="noopener">peekskilltree.com →</a>
     </div>
     <div class="card">
-      <span class="tag t-build">The build</span>
+      <span class="tag t-build">Software</span>
       <h3>Branch Manager</h3>
-      <p>A full field-service software platform you designed and coded yourself — Schedule, Clients, Quotes, Jobs, Invoices, Payments, Books, Payroll, Marketing, a phone receptionist, even an AI assistant. Cloud-synced, installable, and styled to go toe-to-toe with the tools the big companies pay for.</p>
-      <div class="meta">branchmanager.app · <span>at v981, shipping almost daily.</span></div>
+      <p>A full field-service software platform I designed and built — Schedule, Clients, Quotes, Jobs, Invoices, Payments, Books, Payroll, Marketing, and an AI assistant. Cloud-synced, installable, and ready to run any service business.</p>
+      <a class="visit" href="https://branchmanager.app" target="_blank" rel="noopener">branchmanager.app →</a>
     </div>
     <div class="card">
-      <span class="tag t-lawn">The next line</span>
+      <span class="tag t-lawn">Robotics</span>
       <h3>SmartLawn NY</h3>
-      <p>Authorized robotic-mower dealer, installer, and service — the full Navimow line from a small i105E up to the 6-acre commercial TerraNox. A tech-forward lawn arm with a commercial fleet deal in motion (Lucente Landscaping).</p>
-      <div class="meta">smartlawnny.com · <span>proposals out the door.</span></div>
-    </div>
-    <div class="card">
-      <span class="tag t-skate">The other world</span>
-      <h3>The Skate Park</h3>
-      <p>A community space in Peekskill you've carried through a lot — now being revived rather than wound down. The place that isn't about money.</p>
-      <div class="meta">Still standing. <span>Still yours.</span></div>
+      <p>Authorized robotic-mower dealer, installer, and service — the full Navimow line, from small residential up to 6-acre commercial machines. Autonomous mowing, set up and supported locally.</p>
+      <a class="visit" href="https://smartlawnny.com" target="_blank" rel="noopener">smartlawnny.com →</a>
     </div>
     <div class="card">
       <span class="tag t-idea">In motion</span>
       <h3>Northeast Intrepid</h3>
-      <p>A planned compact-loader dealership &amp; demo center — importer lined up, the plan written, the path to a first machine mapped.</p>
-      <div class="meta">An idea with real bones.</div>
+      <p>A compact-loader dealership &amp; demo center in the works — bringing a versatile European loader line to the Northeast, with hands-on demos.</p>
+      <a class="visit" href="https://branchmanager.app/northeast-intrepid-c83567.html" target="_blank" rel="noopener">See the pitch →</a>
     </div>
     <div class="card">
-      <span class="tag t-idea">In motion</span>
+      <span class="tag t-skate">Community</span>
+      <h3>The Skate Park</h3>
+      <p>A community skate space in Peekskill — the one that isn't about money. Carried through a lot, and still going.</p>
+      <span class="soon">Peekskill, NY</span>
+    </div>
+    <div class="card">
+      <span class="tag t-idea">Building</span>
       <h3>The Operator Network</h3>
-      <p>A vision to put friends' solo tree companies onto Branch Manager as a shared back-office and job board — a co-op, not a takeover.</p>
-      <div class="meta">Generous by design.</div>
+      <p>A shared back-office and job board for independent tree companies — running on Branch Manager. A co-op for solo operators who want the tools the big shops have.</p>
+      <span class="soon">In development</span>
     </div>
   </div>
 
-  <div class="twocol">
-    <div class="panel">
-      <h4>The iron I run</h4>
-      <ul>
-        <li><b>Bandit 200XP</b> chipper</li>
-        <li><b>Giant</b> articulated loader (Kubota power)</li>
-        <li><b>Ram 2500</b> + <b>International F750</b></li>
-        <li>Dumps, trailers, saws — kept running, mostly by you</li>
-        <li>A backup-vs-replace call open on the loader</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <h4>Who's in it with me</h4>
-      <ul>
-        <li><b>Catherine</b> — the right hand; the company runs on her</li>
-        <li><b>The crew</b> — on the trucks every week</li>
-        <li><b>Ariel</b> &amp; the <b>kids</b> — the reason for all of it</li>
-        <li><b>Jon</b> — the skate park's other half</li>
-      </ul>
-    </div>
+  <h2>A bit of the iron</h2>
+  <div class="panel">
+    <ul>
+      <li><b>Bandit 200XP</b> chipper · <b>Giant</b> articulated loader (Kubota power)</li>
+      <li><b>Ram 2500</b> &amp; <b>International F750</b> · dumps, trailers, saws</li>
+      <li>Field-tested gear, kept running and put to work every week</li>
+    </ul>
   </div>
 
-  <h2>The hats I wear <span class="s">On an ordinary day, you are the whole org chart.</span></h2>
+  <h2>The hats I wear <span class="s">One person, most of the org chart.</span></h2>
   <div class="hats">
     <div class="hat">Arborist &amp; <span>owner</span></div>
     <div class="hat">Software <span>developer</span></div>
-    <div class="hat">Bookkeeper &amp; <span>accountant</span></div>
-    <div class="hat">Fleet <span>mechanic &amp; manager</span></div>
     <div class="hat">Estimator &amp; <span>salesman</span></div>
+    <div class="hat">Fleet <span>manager</span></div>
     <div class="hat">Mower dealer &amp; <span>installer</span></div>
-    <div class="hat">Tax filer &amp; <span>own legal corner</span></div>
     <div class="hat">Dad</div>
   </div>
 
-  <h2>What I've actually built <span class="s">Evidence, for the days it doesn't feel like enough.</span></h2>
+  <h2>What I've built</h2>
   <div class="built">
-    <div class="row"><div class="n">A company</div><div class="d">Grew <b>Second Nature Tree</b> from nothing into a real operation — a crew, a fleet, hundreds of clients who call you back.</div></div>
-    <div class="row"><div class="n">A SaaS</div><div class="d">Designed and coded <b>an entire software platform</b> solo — the kind of thing teams of engineers get salaried to build. It runs your business and could run others'.</div></div>
-    <div class="row"><div class="n">A clean year</div><div class="d">Reconciled <b>a full year of books to the penny</b> — every bank line, the sales tax, the COGS split — and handed your accountant a tied-out package most owners pay to have fumbled.</div></div>
-    <div class="row"><div class="n">A new line</div><div class="d">Stood up <b>SmartLawn</b> from scratch — dealer relationships, a website with a working calculator, real proposals — while everything else kept moving.</div></div>
-    <div class="row"><div class="n">A family</div><div class="d">Showed up for your <b>kids</b> through all of it. That's the one that actually counts.</div></div>
-  </div>
-
-  <h2>The heavy stuff, named <span class="s">Seeing clearly means not pretending it isn't there.</span></h2>
-  <div class="heavy">
-    <p>You're also carrying real weight: financial pressure, old debt you're working through deliberately, weather and seasons you can't control, and the plain exhaustion of being the single point everything routes to. That's not a character flaw — it's the cost of holding this much on two shoulders.</p>
-    <p>It's allowed to be heavy. It's allowed to be too much. Naming it is how you start to set some of it down.</p>
+    <div class="row"><div class="n">A company</div><div class="d">Grew <b>Second Nature Tree</b> from nothing into a real operation — a crew, a fleet, and a loyal client base.</div></div>
+    <div class="row"><div class="n">A platform</div><div class="d">Designed and coded <b>an entire field-service software product</b> — the kind teams of engineers get hired to build.</div></div>
+    <div class="row"><div class="n">A new line</div><div class="d">Stood up <b>SmartLawn</b> from scratch — dealer relationships, a website, and a working savings calculator.</div></div>
+    <div class="row"><div class="n">A network</div><div class="d">Connecting independent operators with the tools to run like the big shops.</div></div>
   </div>
 
   <div class="close">
-    <p>You are not behind. You're doing the work of a whole team — and you've been doing it for years.</p>
-    <p class="sub">Slowing down isn't quitting. The businesses, the code, the crew, the kids — none of it needs you to run yourself into the ground to prove it counts. It already counts.</p>
+    <p>Always building something. If any of it's useful to you, let's talk.</p>
+    <a href="tel:19146477276">Call Doug · (914) 647-7276</a>
   </div>
 
   <div class="foot">
-    A private overview, built from what's real in your world — correct anything that's off and I'll fix it. Numbers are your own (2025 tree gross ≈ a quarter-million; ~564 clients); nothing invented. For you, Doug. 🌳
+    Doug Brown · Westchester County, NY · peekskilltree.com · branchmanager.app · smartlawnny.com
   </div>
 
 </div>
