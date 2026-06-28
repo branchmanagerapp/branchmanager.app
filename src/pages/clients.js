@@ -1161,7 +1161,7 @@ var ClientsPage = {
       +     '<strong style="font-size:13px;color:var(--text);">Notes</strong>'
       +     '<span id="notes-status-' + id + '" style="font-size:11px;color:var(--text-light);"></span>'
       +   '</div>'
-      +   '<textarea id="client-notes-' + id + '" placeholder="Anything Doug or future-Doug should know about this client. Saves on blur." onblur="ClientsPage._saveNotes(\'' + id + '\', this.value)" rows="' + Math.max(3, ((c.notes || '').match(/\n/g) || []).length + 2) + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.5;resize:vertical;box-sizing:border-box;">' + UI.esc(c.notes || '') + '</textarea>'
+      +   '<textarea id="client-notes-' + id + '" placeholder="Notes the crew (and client) may see — access, gate code, dog warning, scheduling preferences, anything helpful. Saves automatically." onblur="ClientsPage._saveNotes(\'' + id + '\', this.value)" rows="' + Math.max(3, ((c.notes || '').match(/\n/g) || []).length + 2) + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;line-height:1.5;resize:vertical;box-sizing:border-box;">' + UI.esc(c.notes || '') + '</textarea>'
       + '</div>'
 
       // ── Primary action row ──
