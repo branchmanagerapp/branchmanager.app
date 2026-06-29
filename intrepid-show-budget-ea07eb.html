@@ -1,0 +1,142 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Intrepid — Show Circuit Budget</title><style>
+:root{--ink:#16241c;--green:#2e7d32;--green2:#1f3b2c;--amber:#a04400;--red:#c62828;--line:#e3e8e3;--muted:#5b6b60;--bg:#f6f8f6;--card:#fff;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2620;background:var(--bg);line-height:1.5;}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 70px;}
+header{background:linear-gradient(135deg,#2e7d32,#16241c);color:#fff;padding:28px 16px 24px;text-align:center;}
+.kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:700;}
+h1{font-size:25px;margin:6px 0 4px;font-weight:800;}
+header p{font-size:13.5px;opacity:.92;margin:6px auto 0;max-width:560px;}
+h2{font-size:13px;color:var(--green);margin:26px 0 8px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0;}
+.hero-num{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0;}
+.hero-num .b{flex:1;min-width:150px;background:#f3faf4;border:1px solid #cfe6d2;border-radius:12px;padding:14px;text-align:center;}
+.hero-num .v{font-size:26px;font-weight:800;color:var(--green2);}
+.hero-num .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line);}
+th{background:#eef4ee;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr.off{opacity:.4;}
+input.n{width:74px;text-align:right;font:inherit;font-weight:600;border:1px solid var(--line);border-radius:6px;padding:4px 6px;}
+input.n:focus{outline:2px solid #9bc48e;}
+.asm{display:flex;gap:12px;flex-wrap:wrap;}
+.asm label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px;font-weight:600;}
+.tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:1px 5px;border-radius:10px;}
+.real{background:#eef7ef;color:var(--green2);}.est{background:#eef0f4;color:#5a6472;}.demo{background:#fff3e0;color:#a04400;}
+.note{font-size:12.5px;color:var(--muted);}
+.tot{background:#1f3b2c;color:#fff;border-radius:14px;padding:18px 20px;margin-top:14px;text-align:center;}
+.tot .v{font-size:34px;font-weight:800;}
+.tot .be{font-size:14px;margin-top:6px;opacity:.95;}
+.cal{display:grid;grid-template-columns:70px 1fr;gap:0;}
+.cal .m{font-weight:800;color:var(--green2);padding:8px 0;border-top:1px solid var(--line);font-size:13px;}
+.cal .e{padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;}
+.foot{font-size:11.5px;color:var(--muted);text-align:center;margin-top:30px;}
+.legend{font-size:11.5px;color:var(--muted);margin-top:8px;}
+</style></head><body>
+<header>
+<div class="kick">Northeast Intrepid · Doug Brown</div>
+<h1>Show Circuit Budget — 2026</h1>
+<p>What it costs to take the KM100 on the road — driving it out in the Ram 2500 diesel — and how many sales pay for it. Edit any blue number.</p>
+</header>
+<div class="wrap">
+
+<h2>The math that matters</h2>
+<div class="card">
+  <div class="hero-num">
+    <div class="b"><div class="v">$60,000</div><div class="l">KM100 sale price</div></div>
+    <div class="b"><div class="v">30%</div><div class="l">profit margin</div></div>
+    <div class="b"><div class="v" id="perUnit">$18,000</div><div class="l">profit per unit sold</div></div>
+  </div>
+  <p class="note" style="margin-top:6px;"><b>The whole point:</b> at <b>$18,000 profit a machine</b>, the entire in-region show circuit below costs <b>less than one sale</b>. One KM100 sold off the circuit covers the year and leaves money over. The shows don't need to be home runs — they need to move <b>one or two machines.</b></p>
+</div>
+
+<h2>Assumptions <span class="tag est">edit these</span></h2>
+<div class="card">
+  <div class="asm">
+    <label>Diesel $/gal <input class="n" id="diesel" type="number" value="4.10" step="0.05"></label>
+    <label>Towing MPG <input class="n" id="mpg" type="number" value="11"></label>
+    <label>Lodging $/night <input class="n" id="lodge" type="number" value="160"></label>
+    <label>Meals $/day <input class="n" id="meals" type="number" value="60"></label>
+    <label>Profit / unit $ <input class="n" id="margin" type="number" value="18000"></label>
+  </div>
+  <p class="note" style="margin-top:8px;">Diesel, MPG (towing a loader + trailer), lodging and meals are <span class="tag est">estimates</span> — tweak to your real numbers. <b>Booth costs are the big unknown</b> — no show publishes them, so they're flagged <span class="tag est">est</span> placeholders below. <b>Replace each with the real rate sheet</b> when you call the show.</p>
+</div>
+
+<h2>The shows — drive-out budget</h2>
+<div class="card">
+<table>
+<thead><tr><th>✓</th><th>Show</th><th class="r">RT mi</th><th class="r">Fuel</th><th class="r">Nights</th><th class="r">Lodge+Meals</th><th class="r">Booth <span class="tag est">est</span></th><th class="r">Total</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+<p class="legend">RT mi = round-trip drive from Peekskill <span class="tag est">approx</span> · <span class="tag demo">DEMO</span> = outdoor demo yard, where a loader actually sells · fuel auto-calcs from distance × your diesel/MPG.</p>
+</div>
+
+<div class="tot">
+  <div class="l" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.85;">Circuit cost — checked shows</div>
+  <div class="v" id="grand">$0</div>
+  <div class="be" id="breakeven"></div>
+</div>
+<p class="note" style="margin-top:8px;">Plus a one-time <b>booth kit</b> (banner, tent, table, brochures) ≈ <b>$1,500</b> <span class="tag est">est</span>, year one only. Trailer assumed already owned — <b>confirm the KM100 fits your 7×12</b> (weight + length); if not, an equipment trailer is a one-time add.</p>
+
+<h2>The realistic 2026 calendar — what actually makes sense</h2>
+<div class="card">
+  <p style="margin-top:0;" class="note">Driving the machine only makes sense for shows you can reach in a day or two. The <b>far national shows get cut</b> (towing a loader to Florida or Kentucky burns a week and ~$900–$930 in fuel each way — not worth it as a new dealer). Anchor the year on the <b>in-region demo shows</b>:</p>
+  <div class="cal" id="calbody"></div>
+  <p class="note" style="margin-top:10px;"><b>Cut from the drive list:</b> <b>TCI EXPO</b> (Ft. Lauderdale, Nov) and <b>Equip Expo</b> (Louisville, Oct) — best buyers and demo yards, but 1,200+ mi each way. Fly to TCI without the machine <i>only</i> once you're established. <b>Paul Bunyan</b> (OH, ~445 mi) is the one borderline drive — include it if a fall trip pencils out.</p>
+</div>
+
+<p class="legend"><span class="tag real">real</span> = sale price, margin, distances (approx driving) · <span class="tag est">est</span> = your editable assumption or a placeholder to replace with a real rate sheet. No invented booth prices presented as fact.</p>
+<div class="foot">Northeast Intrepid — show-circuit budget · built for Doug Brown · figures editable · booth costs pending real rate sheets.</div>
+</div>
+
+<script>
+// owMi = one-way driving miles from Peekskill (approx); nights; boothEst placeholder; demo=outdoor demo; on=included by default
+var SHOWS = [
+  {n:'NYS Arborists ISA — Conf & Expo', p:'Monticello, NY', d:'Jan 25–26', ow:55,  nights:1, booth:1200, demo:false, on:true},
+  {n:'Total Pro Expo',                  p:'Edison, NJ',     d:'Feb 18',    ow:55,  nights:0, booth:1000, demo:false, on:true},
+  {n:'Garden State Tree Conf (NJ ISA)', p:'Atlantic City, NJ', d:'Feb 26–27', ow:165, nights:1, booth:1200, demo:false, on:true},
+  {n:'ArborEXPO',                       p:'W. Springfield, MA', d:'Mar 26–27', ow:115, nights:1, booth:1800, demo:true,  on:true},
+  {n:'Loggers’ Expo',                   p:'Essex Junction, VT', d:'May 1–2',  ow:245, nights:2, booth:1200, demo:true,  on:true},
+  {n:'NJ Contractors Showcase',         p:'Lambertville, NJ', d:'Aug 5',     ow:85,  nights:0, booth:800,  demo:true,  on:true},
+  {n:'Paul Bunyan Show',                p:'Old Washington, OH', d:'Oct 4–6', ow:445, nights:3, booth:1000, demo:true,  on:false},
+  {n:'Equip Exposition',                p:'Louisville, KY', d:'Oct 20–23', ow:750, nights:4, booth:5000, demo:true,  on:false},
+  {n:'TCI EXPO (TCIA)',                 p:'Ft. Lauderdale, FL', d:'Nov 12–14', ow:1250, nights:5, booth:4000, demo:true, on:false}
+];
+function $(id){return document.getElementById(id);}
+function money(n){return '$'+Math.round(n).toLocaleString();}
+function calc(){
+  var diesel=+$('diesel').value||0, mpg=+$('mpg').value||1, lodge=+$('lodge').value||0, meals=+$('meals').value||0, margin=+$('margin').value||1;
+  $('perUnit').textContent=money(60000*0.30);
+  var html='', grand=0;
+  SHOWS.forEach(function(s,i){
+    var rt=s.ow*2, fuel=rt/mpg*diesel, lm=s.nights*lodge+(s.nights+1)*meals, total=fuel+lm+s.booth;
+    if(s.on) grand+=total;
+    html+='<tr class="'+(s.on?'':'off')+'">'
+      +'<td><input type="checkbox" data-i="'+i+'" '+(s.on?'checked':'')+'></td>'
+      +'<td><b>'+s.n+'</b>'+(s.demo?' <span class="tag demo">demo</span>':'')+'<br><span class="note">'+s.p+' · '+s.d+'</span></td>'
+      +'<td class="r">'+rt+'</td>'
+      +'<td class="r">'+money(fuel)+'</td>'
+      +'<td class="r">'+s.nights+'</td>'
+      +'<td class="r">'+money(lm)+'</td>'
+      +'<td class="r"><input class="n" type="number" data-booth="'+i+'" value="'+s.booth+'"></td>'
+      +'<td class="r"><b>'+money(total)+'</b></td></tr>';
+  });
+  $('rows').innerHTML=html;
+  $('grand').textContent=money(grand);
+  var be=Math.ceil(grand/margin);
+  $('breakeven').innerHTML='Pays for itself with <b>'+be+'</b> machine sale'+(be===1?'':'s')+' &mdash; '+money(margin)+' profit each. One sale nets <b>'+money(margin-grand)+'</b> after the whole circuit.';
+  $('rows').querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.onchange=function(){SHOWS[+cb.dataset.i].on=cb.checked;calc();};});
+  $('rows').querySelectorAll('input[data-booth]').forEach(function(inp){inp.onchange=function(){SHOWS[+inp.dataset.booth].booth=+inp.value||0;calc();};});
+  // calendar = the ON shows, in order
+  var cal='';
+  SHOWS.filter(function(s){return s.on;}).forEach(function(s){
+    cal+='<div class="m">'+s.d.split(' ')[0]+'</div><div class="e"><b>'+s.n+'</b> — '+s.p+(s.demo?' <span class="tag demo">demo yard</span>':' <span class="tag est">booth</span>')+'</div>';
+  });
+  $('calbody').innerHTML=cal;
+}
+document.querySelectorAll('#diesel,#mpg,#lodge,#meals,#margin').forEach(function(i){i.addEventListener('input',calc);});
+calc();
+</script>
+</body></html>
