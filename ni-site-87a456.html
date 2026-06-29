@@ -3,27 +3,38 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2620;background:var(--bg);line-height:1.55;}
-.wrap{max-width:980px;margin:0 auto;padding:0 20px;}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px;}
 nav{position:sticky;top:0;z-index:50;background:rgba(20,48,25,.97);backdrop-filter:saturate(140%) blur(6px);color:#fff;}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;}
 nav .brand{font-weight:800;letter-spacing:-.01em;font-size:16px;}
-nav .links{display:flex;gap:18px;font-size:13.5px;}
+nav .links{display:flex;gap:16px;font-size:13.5px;}
 nav a{color:#dbe9dd;text-decoration:none;}nav a:hover{color:#fff;}
-@media(max-width:760px){nav .links{display:none;}}
+@media(max-width:820px){nav .links{display:none;}}
 .cta{display:inline-block;background:var(--amber);color:#fff;text-decoration:none;font-weight:700;padding:9px 16px;border-radius:8px;font-size:14px;}
 .cta:hover{background:#8a3a00;}
-.hero{background:linear-gradient(150deg,#143019,#2e7d32);color:#fff;padding:54px 0 48px;}
-.hero h1{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:0 0 10px;max-width:680px;}
-.hero p{font-size:17px;opacity:.94;max-width:600px;margin:0 0 22px;}
+.hero{position:relative;color:#fff;padding:78px 0 66px;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:url('ni-hero.jpg') center 40%/cover;}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,rgba(13,30,16,.92),rgba(20,48,25,.72) 55%,rgba(46,125,50,.45));}
+.hero .wrap{position:relative;z-index:2;}
+.hero h1{font-size:38px;font-weight:800;letter-spacing:-.02em;margin:0 0 12px;max-width:720px;line-height:1.12;text-shadow:0 2px 14px rgba(0,0,0,.35);}
+.hero p{font-size:17.5px;opacity:.96;max-width:600px;margin:0 0 24px;text-shadow:0 1px 6px rgba(0,0,0,.3);}
 .hero .btns{display:flex;gap:12px;flex-wrap:wrap;}
-.btn2{display:inline-block;border:1.5px solid rgba(255,255,255,.6);color:#fff;text-decoration:none;font-weight:600;padding:9px 16px;border-radius:8px;font-size:14px;}
+.btn2{display:inline-block;border:1.5px solid rgba(255,255,255,.65);color:#fff;text-decoration:none;font-weight:600;padding:9px 16px;border-radius:8px;font-size:14px;}
 h2{font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0 0 6px;}
-.sec{padding:42px 0;border-top:1px solid var(--line);}
-.sec h3{font-size:25px;font-weight:800;margin:2px 0 12px;letter-spacing:-.01em;}
-.lead{font-size:16px;color:#33433a;max-width:680px;}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
+.sec{padding:46px 0;border-top:1px solid var(--line);}
+.sec h3{font-size:26px;font-weight:800;margin:2px 0 12px;letter-spacing:-.01em;}
+.lead{font-size:16px;color:#33433a;max-width:690px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;}
 @media(max-width:760px){.grid3,.grid2{grid-template-columns:1fr;}}
+.mcard{background:var(--cream);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.mcard img{width:100%;height:170px;object-fit:cover;display:block;background:#dde6dd;}
+.mcard .b{padding:15px 17px;}
+.mcard h4{margin:0 0 5px;font-size:18px;color:var(--green2);}
+.mcard p{margin:0;font-size:14px;color:var(--muted);}
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px;}
+@media(max-width:760px){.gallery{grid-template-columns:1fr 1fr;}}
+.gallery img{width:100%;height:150px;object-fit:cover;border-radius:12px;display:block;background:#dde6dd;}
 .card{background:var(--cream);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
 .card h4{margin:0 0 6px;font-size:17px;color:var(--green2);}
 .card p{margin:0;font-size:14px;color:var(--muted);}
@@ -37,19 +48,41 @@ h2{font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.08
 .step:last-child{border-bottom:none;}
 .step .n{counter-increment:s;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .step .n::before{content:counter(s);}
-.step b{display:block;}
-.step .t{font-size:14.5px;}
+.step b{display:block;}.step .t{font-size:14.5px;}
 ul.clean{list-style:none;padding:0;margin:14px 0 0;}
 ul.clean li{padding:8px 0 8px 26px;position:relative;font-size:14.5px;border-bottom:1px solid var(--line);}
 ul.clean li:last-child{border-bottom:none;}
 ul.clean li::before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:800;}
 .note{font-size:12.5px;color:var(--muted);}
 .tbd{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--amber);background:#fff8f1;border:1px solid #f0d9c4;border-radius:5px;padding:1px 6px;vertical-align:middle;}
-.fin{background:var(--green2);color:#fff;border-radius:16px;padding:26px 26px;margin-top:20px;}
+.fee{background:#fff8ec;border:1px solid #f0d9a8;border-radius:12px;padding:12px 15px;font-size:13.5px;color:#7a5512;margin-top:14px;}
+.fin{background:var(--green2);color:#fff;border-radius:16px;padding:26px;margin-top:20px;}
 .fin h3{color:#fff;}
 .fin .pill{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:30px;padding:6px 13px;margin:5px 6px 0 0;font-size:13.5px;font-weight:600;}
-.contact{background:linear-gradient(150deg,#2e7d32,#143019);color:#fff;border-radius:16px;padding:28px;text-align:center;margin-top:22px;}
-.contact a{color:#fff;}
+/* booking widget */
+.bk{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 10px 34px rgba(20,40,28,.12);display:grid;grid-template-columns:1fr 1.05fr;margin-top:6px;}
+@media(max-width:720px){.bk{grid-template-columns:1fr;}}
+.bk-l{padding:22px;border-right:1px solid var(--line);}
+@media(max-width:720px){.bk-l{border-right:none;border-bottom:1px solid var(--line);}}
+.bk-brand{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--green);}
+.bk-h{font-size:23px;font-weight:800;margin:6px 0 14px;color:var(--ink);}
+.bk-opt{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+.bk-opt.on{border-color:var(--green);background:#eef7ef;}
+.bk-opt b{font-size:14.5px;}.bk-opt span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;}
+.bk-r{padding:22px;}
+.bk-cal-head{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;}
+.bk-nav{color:var(--green);font-weight:800;font-size:18px;}
+.bk-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;font-size:11px;color:var(--muted);text-align:center;margin-bottom:5px;}
+.bk-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.bk-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;border-radius:50%;color:#c2cbc4;}
+.bk-day.avail{color:var(--green2);background:#eef7ef;font-weight:700;cursor:pointer;}
+.bk-day.avail:hover{background:#dcefdd;}
+.bk-day.sel{background:var(--green);color:#fff;font-weight:800;}
+.bk-slots{margin-top:14px;}
+.bk-slot{display:inline-block;font-size:13px;font-weight:600;padding:7px 13px;margin:0 6px 6px 0;border:1px solid #cfe6d2;border-radius:8px;color:var(--green2);cursor:pointer;}
+.bk-slot.on{background:var(--green);color:#fff;border-color:var(--green);}
+.bk-cta{margin-top:12px;display:block;text-align:center;background:var(--amber);color:#fff;font-weight:800;padding:12px;border-radius:9px;text-decoration:none;}
+.contact{background:linear-gradient(150deg,#2e7d32,#143019);color:#fff;border-radius:16px;padding:24px;text-align:center;margin-top:22px;}
 footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
 </style></head><body>
 
@@ -58,14 +91,14 @@ footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
   <div class="links">
     <a href="#machines">Machines</a><a href="#demo">Demo</a><a href="#rentals">Rentals</a><a href="#service">Service</a><a href="#parts">Parts</a><a href="#financing">Financing</a>
   </div>
-  <a class="cta" href="#contact">Book a Demo</a>
+  <a class="cta" href="#book">Book a Demo</a>
 </div></nav>
 
 <header class="hero"><div class="wrap">
   <h1>Intrepid compact loaders — demo'd, delivered, and serviced right here in the Hudson Valley.</h1>
   <p>The Northeast's home for Intrepid tele loaders. Run one on your own material before you buy, get it delivered, and have real local people keep it running. No shipping a machine — or a part — across the country.</p>
   <div class="btns">
-    <a class="cta" href="#contact">Book a working demo</a>
+    <a class="cta" href="#book">Book a working demo</a>
     <a class="btn2" href="#machines">See the machines</a>
   </div>
 </div></header>
@@ -75,11 +108,14 @@ footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
   <h3>Compact, tele-reach, won't tear up a lawn</h3>
   <p class="lead">Articulated tracked loaders built for people who actually run them — tree, landscape, and farm work. Telescoping reach to place material, articulated steering that's easy on turf, and a footprint that fits where a skid steer won't.</p>
   <div class="grid3">
-    <div class="card"><h4>KM85</h4><p>The nimble small one — tight tree jobs, backyards, gates and gaps.</p></div>
-    <div class="card"><h4>KM100 Tele</h4><p>The tree-care sweet spot — compact with real reach. The one that's caught on with crews.</p></div>
-    <div class="card"><h4>KM130 Tele</h4><p>The step up — farms, estates, heavier material, more lift and reach.</p></div>
+    <div class="mcard"><img src="ni-km85.jpg" alt="Intrepid KM85"><div class="b"><h4>KM85</h4><p>The nimble small one — tight tree jobs, backyards, gates and gaps.</p></div></div>
+    <div class="mcard"><img src="ni-km100.jpg" alt="Intrepid KM100 Tele"><div class="b"><h4>KM100 Tele</h4><p>The tree-care sweet spot — compact with real reach. The one that's caught on with crews.</p></div></div>
+    <div class="mcard"><img src="ni-km130.jpg" alt="Intrepid KM130 Tele"><div class="b"><h4>KM130 Tele</h4><p>The step up — farms, estates, heavier material, more lift and reach.</p></div></div>
   </div>
   <p class="note" style="margin-top:14px;">Bigger TELE models and a full attachment line — grapples, pallet forks, buckets — available. Tell us the job and we'll size the machine.</p>
+  <div class="gallery">
+    <img src="ni-g1.jpg" alt="Intrepid loader working"><img src="ni-g2.jpg" alt="Intrepid loader"><img src="ni-hero.jpg" alt="Intrepid loading"><img src="ni-km100.jpg" alt="Intrepid KM100">
+  </div>
 </div></section>
 
 <section class="sec" id="demo"><div class="wrap">
@@ -87,10 +123,11 @@ footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
   <h3>Run it on your own work before you spend a dime</h3>
   <p class="lead">These machines sell themselves once you feel one move material — so we make that easy. Bring your toughest task to our demo yard, or we'll bring a machine to your jobsite and put it to work on the real thing.</p>
   <div class="grid2">
+    <div class="card"><h4>At our Peekskill shop — free</h4><p>A working demo area in the Route 9 corridor near Peekskill — logs to load, material to move, room to dig in. No charge.</p></div>
     <div class="card"><h4>At your jobsite</h4><p>We deliver a machine and you run it on your actual material — logs, mulch, dirt, a hill — not a parking-lot lap.</p></div>
-    <div class="card"><h4>At our yard</h4><p>A working demo area in the Route 9 corridor near Peekskill — logs to load, material to move, room to dig in.</p></div>
   </div>
-  <p style="margin-top:16px;"><a class="cta" href="#contact">Book a demo →</a></p>
+  <div class="fee">🚚 <b>On-site demos are billed $3/mile each way</b> from our Peekskill shop to cover the haul. Want it free? Come run it at our shop — same machine, same material, no travel. (On-site travel is fully credited if you buy.)</div>
+  <p style="margin-top:16px;"><a class="cta" href="#book">Book a demo →</a></p>
 </div></section>
 
 <section class="sec" id="rentals"><div class="wrap">
@@ -102,33 +139,17 @@ footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
     <div class="card"><h4>By the week</h4><p>~$1,200/week — the value play for a real project.</p></div>
     <div class="card"><h4>Rent-to-own credit</h4><p>Buy after you rent and we credit part of the rental toward the purchase.</p></div>
   </div>
-  <p class="note" style="margin-top:14px;">KM100 to start — bigger machines as the fleet grows. Rates are starting estimates; call for a quote on your dates and we'll sort delivery.</p>
+  <p class="note" style="margin-top:14px;">KM100 to start — bigger machines as the fleet grows. Rates are starting estimates; call for a quote on your dates.</p>
 </div></section>
 
 <section class="sec" id="service"><div class="wrap">
   <h2>Service &amp; repair</h2>
   <h3>The part that's usually missing on an imported machine — solved</h3>
   <p class="lead">A loader only earns its keep when it's running. We back every machine with real local coverage — mobile for the everyday, a full shop for the heavy stuff — so warranty and repairs happen here, not at the end of a cross-country shipping ticket.</p>
-
   <div class="grid2" style="margin-top:18px;">
-    <div class="mech">
-      <div class="av">RK</div>
-      <div>
-        <h4>Ron Kopyscianski</h4>
-        <div class="role">Ron's Rescue Repair · Mobile mechanic</div>
-        <p>Your front line — a mobile mechanic who comes to the machine for setup, engine, hydraulic, and routine service. Certified in small-engine, powersports &amp; equipment. Based in Lake Peekskill.</p>
-      </div>
-    </div>
-    <div class="mech">
-      <div class="av">KC</div>
-      <div>
-        <h4>Kevin Christiana</h4>
-        <div class="role">Kevin's Heavy Trucking · Full shop &amp; transport</div>
-        <p>The backup and the heavy shop behind Ron — a local repair shop with the lift for the bigger jobs, plus hauling and transport for delivery and the heavy iron.</p>
-      </div>
-    </div>
+    <div class="mech"><div class="av">RK</div><div><h4>Ron Kopyscianski</h4><div class="role">Ron's Rescue Repair · Mobile mechanic</div><p>Your front line — a mobile mechanic who comes to the machine for setup, engine, hydraulic, and routine service. Certified in small-engine, powersports &amp; equipment. Based in Lake Peekskill.</p></div></div>
+    <div class="mech"><div class="av">KC</div><div><h4>Kevin Christiana</h4><div class="role">Kevin's Heavy Trucking · Full shop &amp; transport</div><p>The backup and the heavy shop behind Ron — a local repair shop with the lift for the bigger jobs, plus hauling and transport for delivery and the heavy iron.</p></div></div>
   </div>
-
   <h2 style="margin-top:30px;">How repair works</h2>
   <div class="steps">
     <div class="step"><div class="n"></div><div class="t"><b>Call us first</b>We triage it — a lot gets solved over the phone or with a mobile visit.</div></div>
@@ -141,16 +162,14 @@ footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
 <section class="sec" id="parts"><div class="wrap">
   <h2>Parts department</h2>
   <h3>Genuine parts, stocked local, shipped fast</h3>
-  <p class="lead">The engines are <b>Kubota diesels</b> — proven, and parts are everywhere. We keep the common service and wear items on the shelf and ship them out the same or next day from our own bench, so a buyer who's down a filter or a fitting isn't waiting weeks on an overseas order.</p>
+  <p class="lead">The engines are <b>Kubota diesels</b> — proven, and parts are everywhere. We keep the common service and wear items on the shelf and ship them out the same or next day, so a buyer who's down a filter or a fitting isn't waiting weeks on an overseas order.</p>
   <ul class="clean">
-    <li><b>Proven Kubota power</b> — the KM85 runs a Kubota D902, the KM100 a D1105, the KM130 a V1505 — all from Kubota's most common small-diesel family, so filters and parts are everywhere and never a special order.</li>
+    <li><b>Proven Kubota power</b> — KM85 runs a D902, KM100 a D1105, KM130 a V1505 — all from Kubota's most common small-diesel family, so parts are everywhere and never a special order.</li>
     <li><b>On the shelf:</b> oil, fuel, and air filters, belts, glow plugs, hydraulic filters, and the common wear items.</li>
     <li><b>Shipped fast</b> — order it, it ships same or next day from our parts bench.</li>
-    <li><b>Genuine parts, matched to your exact engine</b> — no guessing on fitment.</li>
     <li><b>Service kits</b> for routine maintenance so you keep the machine, not the downtime.</li>
   </ul>
   <p style="margin-top:14px;"><a class="cta" href="km100-parts-423a29.html">Browse KM100 parts →</a></p>
-  <p class="note" style="margin-top:10px;">Need a part now? Call or email and we'll tell you if it's on the shelf — most common items are.</p>
 </div></section>
 
 <section class="sec" id="financing"><div class="wrap">
@@ -170,26 +189,68 @@ footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
   </div>
 </div></section>
 
-<section class="sec"><div class="wrap">
-  <h2>Why local</h2>
-  <h3>The machine is great. The support is what's been missing.</h3>
-  <div class="grid3">
-    <div class="card"><h4>Try before you buy</h4><p>A real working demo on your own material — not a brochure and a deposit.</p></div>
-    <div class="card"><h4>Service that comes to you</h4><p>Mobile-first repair and a full shop behind it, right in the Hudson Valley.</p></div>
-    <div class="card"><h4>Parts on the shelf</h4><p>Common Kubota and Intrepid parts shipped fast — no overseas wait.</p></div>
+<section class="sec" id="book"><div class="wrap">
+  <h2>Book a working demo</h2>
+  <h3>Pick where and when</h3>
+  <div class="bk">
+    <div class="bk-l">
+      <div class="bk-brand">Northeast Intrepid</div>
+      <div class="bk-h">Book a Demo</div>
+      <div class="bk-opt on" id="optShop" onclick="pickOpt('shop')"><b>🏠 At our Peekskill shop — free</b><span>Run it on real material at our yard. No charge.</span></div>
+      <div class="bk-opt" id="optSite" onclick="pickOpt('site')"><b>🚚 At your jobsite — $3/mile each way</b><span>We bring a machine to you. Travel is credited if you buy.</span></div>
+      <div class="fee" id="feeNote" style="display:none;">On-site demos are billed <b>$3/mile each way</b> from Peekskill to cover the haul — fully credited toward your purchase if you buy.</div>
+      <p class="note" style="margin-top:12px;">45-minute working demo. Bring your toughest task — we'll put a machine on it.</p>
+    </div>
+    <div class="bk-r">
+      <div class="bk-cal-head"><span class="bk-nav">&lsaquo;</span><b>July 2026</b><span class="bk-nav">&rsaquo;</span></div>
+      <div class="bk-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+      <div class="bk-days" id="days"></div>
+      <div class="bk-slots">
+        <div class="note" style="font-weight:700;color:var(--ink);margin-bottom:6px;" id="slotHead">Wednesday, July 8</div>
+        <span class="bk-slot" onclick="pickSlot(this)">8:00 am</span>
+        <span class="bk-slot on" onclick="pickSlot(this)">9:30 am</span>
+        <span class="bk-slot" onclick="pickSlot(this)">11:00 am</span>
+        <span class="bk-slot" onclick="pickSlot(this)">1:00 pm</span>
+        <span class="bk-slot" onclick="pickSlot(this)">3:00 pm</span>
+      </div>
+      <a class="bk-cta" href="tel:9146477276">Request this time →</a>
+    </div>
   </div>
-</div></section>
-
-<section class="sec" id="contact"><div class="wrap">
   <div class="contact">
-    <h2 style="color:#bfe3c6;">Get started</h2>
-    <h3 style="color:#fff;font-size:26px;margin:4px 0 10px;">Book a demo or ask us anything</h3>
-    <p style="opacity:.92;max-width:520px;margin:0 auto 16px;">Tell us the work you do and we'll get a machine in front of you. Demos, delivery, service, parts, and financing — all from one local shop.</p>
-    <p style="font-size:18px;font-weight:700;margin:6px 0;">📞 (914) 647-7276</p>
+    <p style="opacity:.92;max-width:520px;margin:0 auto 12px;">Or just call — tell us the work you do and we'll get a machine in front of you.</p>
+    <p style="font-size:19px;font-weight:700;margin:6px 0;">📞 (914) 647-7276</p>
     <p style="font-size:15px;margin:4px 0;">✉️ info@peekskilltree.com</p>
-    <p class="note" style="color:rgba(255,255,255,.75);margin-top:10px;">Northeast Intrepid · Hudson Valley / Tri-State · Second Nature Tree Service</p>
+    <p class="note" style="color:rgba(255,255,255,.75);margin-top:8px;">Northeast Intrepid · Hudson Valley / Tri-State · Second Nature Tree Service</p>
   </div>
 </div></section>
 
 <footer>Northeast Intrepid — the Northeast's Intrepid demo, sales, service &amp; parts center · operated by Doug Brown, Second Nature Tree Service · Intrepid® and Kubota® are trademarks of their respective owners.</footer>
+<script>
+var AVAIL=[8,9,10,15,16,17,22,23,24,29,30];
+var DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+// July 2026 starts on a Wednesday (Jul 1 2026 = Wed)
+function buildCal(){
+  var html='',start=3; // Jul 1 is Wed (index 3)
+  for(var i=0;i<start;i++)html+='<span class="bk-day"></span>';
+  for(var d=1;d<=31;d++){
+    var av=AVAIL.indexOf(d)>=0;
+    html+='<span class="bk-day'+(av?' avail':'')+(d===8?' sel':'')+'" '+(av?'onclick="pickDay(this,'+d+')"':'')+'>'+d+'</span>';
+  }
+  document.getElementById('days').innerHTML=html;
+}
+function pickDay(el,d){
+  document.querySelectorAll('.bk-day.sel').forEach(function(x){x.classList.remove('sel');});
+  el.classList.add('sel');
+  var dow=DOW[(2+d)%7]; // Jul 1=Wed(3); day d weekday = (3-1+d)%7 ... compute: Jul 1 index3 → day d index=(3+(d-1))%7
+  var idx=(3+(d-1))%7;
+  document.getElementById('slotHead').textContent=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][idx]+', July '+d;
+}
+function pickSlot(el){document.querySelectorAll('.bk-slot.on').forEach(function(x){x.classList.remove('on');});el.classList.add('on');}
+function pickOpt(which){
+  document.getElementById('optShop').classList.toggle('on',which==='shop');
+  document.getElementById('optSite').classList.toggle('on',which==='site');
+  document.getElementById('feeNote').style.display=which==='site'?'block':'none';
+}
+buildCal();
+</script>
 </body></html>
