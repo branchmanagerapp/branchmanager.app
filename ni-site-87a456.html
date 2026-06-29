@@ -1,0 +1,179 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>Northeast Intrepid — Compact Loaders, Demo'd, Delivered &amp; Serviced</title><style>
+:root{--ink:#16241c;--green:#2e7d32;--green2:#143019;--amber:#a04400;--line:#e3e8e3;--muted:#5b6b60;--bg:#f6f8f6;--cream:#fbfdfb;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2620;background:var(--bg);line-height:1.55;}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px;}
+nav{position:sticky;top:0;z-index:50;background:rgba(20,48,25,.97);backdrop-filter:saturate(140%) blur(6px);color:#fff;}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;}
+nav .brand{font-weight:800;letter-spacing:-.01em;font-size:16px;}
+nav .links{display:flex;gap:18px;font-size:13.5px;}
+nav a{color:#dbe9dd;text-decoration:none;}nav a:hover{color:#fff;}
+@media(max-width:760px){nav .links{display:none;}}
+.cta{display:inline-block;background:var(--amber);color:#fff;text-decoration:none;font-weight:700;padding:9px 16px;border-radius:8px;font-size:14px;}
+.cta:hover{background:#8a3a00;}
+.hero{background:linear-gradient(150deg,#143019,#2e7d32);color:#fff;padding:54px 0 48px;}
+.hero h1{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:0 0 10px;max-width:680px;}
+.hero p{font-size:17px;opacity:.94;max-width:600px;margin:0 0 22px;}
+.hero .btns{display:flex;gap:12px;flex-wrap:wrap;}
+.btn2{display:inline-block;border:1.5px solid rgba(255,255,255,.6);color:#fff;text-decoration:none;font-weight:600;padding:9px 16px;border-radius:8px;font-size:14px;}
+h2{font-size:13px;color:var(--green);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0 0 6px;}
+.sec{padding:42px 0;border-top:1px solid var(--line);}
+.sec h3{font-size:25px;font-weight:800;margin:2px 0 12px;letter-spacing:-.01em;}
+.lead{font-size:16px;color:#33433a;max-width:680px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;}
+@media(max-width:760px){.grid3,.grid2{grid-template-columns:1fr;}}
+.card{background:var(--cream);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.card h4{margin:0 0 6px;font-size:17px;color:var(--green2);}
+.card p{margin:0;font-size:14px;color:var(--muted);}
+.mech{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.mech .av{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0;}
+.mech h4{margin:0 0 2px;font-size:17px;}
+.mech .role{color:var(--green);font-weight:700;font-size:13px;margin-bottom:6px;}
+.mech p{margin:0;font-size:14px;color:var(--muted);}
+.steps{counter-reset:s;margin-top:18px;}
+.step{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);}
+.step:last-child{border-bottom:none;}
+.step .n{counter-increment:s;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step .n::before{content:counter(s);}
+.step b{display:block;}
+.step .t{font-size:14.5px;}
+ul.clean{list-style:none;padding:0;margin:14px 0 0;}
+ul.clean li{padding:8px 0 8px 26px;position:relative;font-size:14.5px;border-bottom:1px solid var(--line);}
+ul.clean li:last-child{border-bottom:none;}
+ul.clean li::before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:800;}
+.note{font-size:12.5px;color:var(--muted);}
+.tbd{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--amber);background:#fff8f1;border:1px solid #f0d9c4;border-radius:5px;padding:1px 6px;vertical-align:middle;}
+.fin{background:var(--green2);color:#fff;border-radius:16px;padding:26px 26px;margin-top:20px;}
+.fin h3{color:#fff;}
+.fin .pill{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:30px;padding:6px 13px;margin:5px 6px 0 0;font-size:13.5px;font-weight:600;}
+.contact{background:linear-gradient(150deg,#2e7d32,#143019);color:#fff;border-radius:16px;padding:28px;text-align:center;margin-top:22px;}
+.contact a{color:#fff;}
+footer{padding:26px 0 50px;color:var(--muted);font-size:12px;text-align:center;}
+</style></head><body>
+
+<nav><div class="wrap">
+  <div class="brand">🌲 Northeast Intrepid</div>
+  <div class="links">
+    <a href="#machines">Machines</a><a href="#demo">Demo</a><a href="#service">Service</a><a href="#parts">Parts</a><a href="#financing">Financing</a>
+  </div>
+  <a class="cta" href="#contact">Book a Demo</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <h1>Intrepid compact loaders — demo'd, delivered, and serviced right here in the Hudson Valley.</h1>
+  <p>The Northeast's home for Intrepid tele loaders. Run one on your own material before you buy, get it delivered, and have real local people keep it running. No shipping a machine — or a part — across the country.</p>
+  <div class="btns">
+    <a class="cta" href="#contact">Book a working demo</a>
+    <a class="btn2" href="#machines">See the machines</a>
+  </div>
+</div></header>
+
+<section class="sec" id="machines"><div class="wrap">
+  <h2>The machines</h2>
+  <h3>Compact, tele-reach, won't tear up a lawn</h3>
+  <p class="lead">Articulated tracked loaders built for people who actually run them — tree, landscape, and farm work. Telescoping reach to place material, articulated steering that's easy on turf, and a footprint that fits where a skid steer won't.</p>
+  <div class="grid3">
+    <div class="card"><h4>KM85</h4><p>The nimble small one — tight tree jobs, backyards, gates and gaps.</p></div>
+    <div class="card"><h4>KM100 Tele</h4><p>The tree-care sweet spot — compact with real reach. The one that's caught on with crews.</p></div>
+    <div class="card"><h4>KM130 Tele</h4><p>The step up — farms, estates, heavier material, more lift and reach.</p></div>
+  </div>
+  <p class="note" style="margin-top:14px;">Bigger TELE models and a full attachment line — grapples, pallet forks, buckets — available. Tell us the job and we'll size the machine.</p>
+</div></section>
+
+<section class="sec" id="demo"><div class="wrap">
+  <h2>Demo center</h2>
+  <h3>Run it on your own work before you spend a dime</h3>
+  <p class="lead">These machines sell themselves once you feel one move material — so we make that easy. Bring your toughest task to our demo yard, or we'll bring a machine to your jobsite and put it to work on the real thing.</p>
+  <div class="grid2">
+    <div class="card"><h4>At your jobsite</h4><p>We deliver a machine and you run it on your actual material — logs, mulch, dirt, a hill — not a parking-lot lap.</p></div>
+    <div class="card"><h4>At our yard</h4><p>A working demo area in the Route 9 corridor near Peekskill — logs to load, material to move, room to dig in.</p></div>
+  </div>
+  <p style="margin-top:16px;"><a class="cta" href="#contact">Book a demo →</a></p>
+</div></section>
+
+<section class="sec" id="service"><div class="wrap">
+  <h2>Service &amp; repair</h2>
+  <h3>The part that's usually missing on an imported machine — solved</h3>
+  <p class="lead">A loader only earns its keep when it's running. We back every machine with real local coverage — mobile for the everyday, a full shop for the heavy stuff — so warranty and repairs happen here, not at the end of a cross-country shipping ticket.</p>
+
+  <div class="grid2" style="margin-top:18px;">
+    <div class="mech">
+      <div class="av">RK</div>
+      <div>
+        <h4>Ron Kopyscianski</h4>
+        <div class="role">Ron's Rescue Repair · Mobile mechanic</div>
+        <p>Your front line — a mobile mechanic who comes to the machine for setup, engine, hydraulic, and routine service. Certified in small-engine, powersports &amp; equipment. Based in Lake Peekskill.</p>
+      </div>
+    </div>
+    <div class="mech">
+      <div class="av">KC</div>
+      <div>
+        <h4>Kevin Christiana</h4>
+        <div class="role">Kevin's Heavy Trucking · Full shop &amp; transport</div>
+        <p>The backup and the heavy shop behind Ron — a local repair shop with the lift for the bigger jobs, plus hauling and transport for delivery and the heavy iron.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:30px;">How repair works</h2>
+  <div class="steps">
+    <div class="step"><div class="n"></div><div class="t"><b>Call us first</b>We triage it — a lot gets solved over the phone or with a mobile visit.</div></div>
+    <div class="step"><div class="n"></div><div class="t"><b>Ron comes to you</b>Most service and repairs happen on-site so your machine isn't off the job longer than it has to be.</div></div>
+    <div class="step"><div class="n"></div><div class="t"><b>Heavy jobs go to the shop</b>Bigger work goes to Kevin's lift — and we handle the haul both ways.</div></div>
+    <div class="step"><div class="n"></div><div class="t"><b>Warranty handled locally</b>Covered work is sorted out here, not shipped across the country.</div></div>
+  </div>
+</div></section>
+
+<section class="sec" id="parts"><div class="wrap">
+  <h2>Parts department</h2>
+  <h3>Genuine parts, stocked local, shipped fast</h3>
+  <p class="lead">The engines are <b>Kubota diesels</b> — proven, and parts are everywhere. We keep the common service and wear items on the shelf and ship them out the same or next day from our own bench, so a buyer who's down a filter or a fitting isn't waiting weeks on an overseas order.</p>
+  <ul class="clean">
+    <li><b>On the shelf:</b> oil, fuel, air, and hydraulic filters, belts, glow plugs, and the common wear items <span class="tbd">parts list being finalized</span></li>
+    <li><b>Shipped fast</b> — create the order, it ships same/next day from our parts bench</li>
+    <li><b>Genuine Kubota engine parts</b> plus Intrepid machine parts — no guessing on fitment</li>
+    <li><b>Service kits</b> for routine maintenance so you keep the machine, not the downtime</li>
+  </ul>
+  <p class="note" style="margin-top:12px;">Need a part now? Call or email and we'll tell you if it's on the shelf — most common items are.</p>
+</div></section>
+
+<section class="sec" id="financing"><div class="wrap">
+  <h2>Financing</h2>
+  <h3>Own one without the whole price up front</h3>
+  <p class="lead">Most buyers finance, and we make it simple — competitive equipment financing through established lenders, with promotional rates when they're available.</p>
+  <div class="fin">
+    <h3>Options we can line up</h3>
+    <span class="pill">0% promotional financing (when available)</span>
+    <span class="pill">Terms 24–72 months</span>
+    <span class="pill">Low / $0-down options</span>
+    <span class="pill">Lease-to-own</span>
+    <span class="pill">Fast credit decisions</span>
+    <p class="note" style="color:rgba(255,255,255,.8);margin-top:14px;">Through equipment-finance partners <span class="tbd">specific lenders + current rates being confirmed</span>. Tell us your budget and we'll find the structure that fits — monthly payment first, machine second.</p>
+  </div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <h2>Why local</h2>
+  <h3>The machine is great. The support is what's been missing.</h3>
+  <div class="grid3">
+    <div class="card"><h4>Try before you buy</h4><p>A real working demo on your own material — not a brochure and a deposit.</p></div>
+    <div class="card"><h4>Service that comes to you</h4><p>Mobile-first repair and a full shop behind it, right in the Hudson Valley.</p></div>
+    <div class="card"><h4>Parts on the shelf</h4><p>Common Kubota and Intrepid parts shipped fast — no overseas wait.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="contact"><div class="wrap">
+  <div class="contact">
+    <h2 style="color:#bfe3c6;">Get started</h2>
+    <h3 style="color:#fff;font-size:26px;margin:4px 0 10px;">Book a demo or ask us anything</h3>
+    <p style="opacity:.92;max-width:520px;margin:0 auto 16px;">Tell us the work you do and we'll get a machine in front of you. Demos, delivery, service, parts, and financing — all from one local shop.</p>
+    <p style="font-size:18px;font-weight:700;margin:6px 0;">📞 (914) 647-7276</p>
+    <p style="font-size:15px;margin:4px 0;">✉️ info@peekskilltree.com</p>
+    <p class="note" style="color:rgba(255,255,255,.75);margin-top:10px;">Northeast Intrepid · Hudson Valley / Tri-State · Second Nature Tree Service</p>
+  </div>
+</div></section>
+
+<footer>Northeast Intrepid — the Northeast's Intrepid demo, sales, service &amp; parts center · operated by Doug Brown, Second Nature Tree Service · Intrepid® and Kubota® are trademarks of their respective owners.</footer>
+</body></html>
