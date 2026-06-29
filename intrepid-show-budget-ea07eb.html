@@ -46,10 +46,10 @@ input.n:focus{outline:2px solid #9bc48e;}
 <div class="card">
   <div class="hero-num">
     <div class="b"><div class="v">$60,000</div><div class="l">KM100 sale price</div></div>
-    <div class="b"><div class="v">30%</div><div class="l">profit margin</div></div>
-    <div class="b"><div class="v" id="perUnit">$18,000</div><div class="l">profit per unit sold</div></div>
+    <div class="b"><div class="v">15%</div><div class="l">profit margin</div></div>
+    <div class="b"><div class="v" id="perUnit">$9,000</div><div class="l">profit per unit sold</div></div>
   </div>
-  <p class="note" style="margin-top:6px;"><b>The whole point:</b> at <b>$18,000 profit a machine</b>, the entire in-region show circuit below costs <b>less than one sale</b>. One KM100 sold off the circuit covers the year and leaves money over. The shows don't need to be home runs — they need to move <b>one or two machines.</b></p>
+  <p class="note" style="margin-top:6px;"><b>The whole point:</b> at <b>$9,000 profit a machine</b>, the entire in-region show circuit below costs <b>less than one sale</b>. One KM100 sold off the circuit covers the year and leaves money over. The shows don't need to be home runs — they need to move <b>one or two machines.</b></p>
 </div>
 
 <h2>Assumptions <span class="tag est">edit these</span></h2>
@@ -59,7 +59,7 @@ input.n:focus{outline:2px solid #9bc48e;}
     <label>Towing MPG <input class="n" id="mpg" type="number" value="11"></label>
     <label>Lodging $/night <input class="n" id="lodge" type="number" value="160"></label>
     <label>Meals $/day <input class="n" id="meals" type="number" value="60"></label>
-    <label>Profit / unit $ <input class="n" id="margin" type="number" value="18000"></label>
+    <label>Profit / unit $ <input class="n" id="margin" type="number" value="9000"></label>
   </div>
   <p class="note" style="margin-top:8px;">Diesel, MPG (towing a loader + trailer), lodging and meals are <span class="tag est">estimates</span> — tweak to your real numbers. <b>Booth costs are the big unknown</b> — no show publishes them, so they're flagged <span class="tag est">est</span> placeholders below. <b>Replace each with the real rate sheet</b> when you call the show.</p>
 </div>
@@ -110,7 +110,7 @@ function $(id){return document.getElementById(id);}
 function money(n){return '$'+Math.round(n).toLocaleString();}
 function calc(){
   var diesel=+$('diesel').value||0, mpg=+$('mpg').value||1, lodge=+$('lodge').value||0, meals=+$('meals').value||0, margin=+$('margin').value||1;
-  $('perUnit').textContent=money(60000*0.30);
+  $('perUnit').textContent=money(60000*0.15);
   var html='', grand=0;
   SHOWS.forEach(function(s,i){
     var rt=s.ow*2, fuel=rt/mpg*diesel, lm=s.nights*lodge+(s.nights+1)*meals, total=fuel+lm+s.booth;
