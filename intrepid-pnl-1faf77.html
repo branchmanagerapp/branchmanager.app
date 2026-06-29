@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Intrepid — Year-1 P&L Projection</title><style>
+:root{--ink:#16241c;--green:#2e7d32;--green2:#1f3b2c;--amber:#a04400;--red:#c62828;--line:#e3e8e3;--muted:#5b6b60;--bg:#f6f8f6;--card:#fff;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2620;background:var(--bg);line-height:1.5;}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 70px;}
+header{background:linear-gradient(135deg,#2e7d32,#16241c);color:#fff;padding:26px 16px 22px;text-align:center;}
+.kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:700;}
+h1{font-size:24px;margin:6px 0 4px;font-weight:800;}
+header p{font-size:13px;opacity:.92;margin:6px auto 0;max-width:520px;}
+h2{font-size:12px;color:var(--green);margin:24px 0 6px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 16px;margin:8px 0;}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eef1ee;font-size:14px;}
+.row:last-child{border-bottom:none;}
+.row .lab{color:#1c2620;}
+.row .lab small{color:var(--muted);font-size:11.5px;display:block;}
+input.n{width:96px;text-align:right;font:inherit;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:5px 7px;color:var(--green2);}
+input.n:focus{outline:2px solid #9bc48e;}
+.sub{display:flex;justify-content:space-between;padding:9px 0;font-weight:800;border-top:2px solid var(--line);margin-top:2px;}
+.sub .v{font-variant-numeric:tabular-nums;}
+.exp input.n{color:var(--red);}
+.tot{background:#1f3b2c;color:#fff;border-radius:14px;padding:18px 20px;margin-top:14px;text-align:center;}
+.tot .v{font-size:36px;font-weight:800;}
+.tot .l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.85;}
+.tot .m{font-size:13px;opacity:.95;margin-top:5px;}
+.tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:1px 5px;border-radius:10px;}
+.est{background:#eef0f4;color:#5a6472;}.real{background:#eef7ef;color:var(--green2);}
+.note{font-size:12.5px;color:var(--muted);}
+.foot{font-size:11.5px;color:var(--muted);text-align:center;margin-top:28px;}
+</style></head><body>
+<header>
+<div class="kick">Northeast Intrepid · Doug Brown</div>
+<h1>Year-1 P&amp;L Projection</h1>
+<p>Revenue minus expenses → realistic net profit. Built on the conservative 3–4 machine year. Every blue number is editable.</p>
+</header>
+<div class="wrap">
+
+<h2>Machine sales</h2>
+<div class="card">
+  <div class="row"><span class="lab">Machines sold <small>conservative new-dealer year</small></span><input class="n" id="units" type="number" value="3"></div>
+  <div class="row"><span class="lab">Sale price each</span><input class="n" id="price" type="number" value="60000"></div>
+  <div class="row"><span class="lab">Your margin %</span><input class="n" id="marg" type="number" value="30"></div>
+  <div class="sub"><span>Gross profit on machines</span><span class="v" id="machGP">$0</span></div>
+</div>
+
+<h2>Other revenue <span class="tag est">est</span></h2>
+<div class="card">
+  <div class="row"><span class="lab">Parts (net) <small>shipped through the skate-shop bench</small></span><input class="n" id="parts" type="number" value="2000"></div>
+  <div class="row"><span class="lab">Rentals <small>demo unit out by day/week</small></span><input class="n" id="rental" type="number" value="3000"></div>
+  <div class="row"><span class="lab">Service markup <small>mostly pass-through to Ron/Kevin</small></span><input class="n" id="svc" type="number" value="1000"></div>
+  <div class="sub"><span>Total revenue (your take)</span><span class="v" id="totRev">$0</span></div>
+</div>
+
+<h2>Operating expenses <span class="tag est">est</span></h2>
+<div class="card exp">
+  <div class="row"><span class="lab">Show circuit <small>6 in-region shows + booth kit</small></span><input class="n" id="shows" type="number" value="10700"></div>
+  <div class="row"><span class="lab">Insurance <small>dealer/garage liability, added</small></span><input class="n" id="ins" type="number" value="4000"></div>
+  <div class="row"><span class="lab">Rent <small>yr 1 mostly outdoor/shared lot</small></span><input class="n" id="rent" type="number" value="3000"></div>
+  <div class="row"><span class="lab">Marketing / web / brochures</span><input class="n" id="mkt" type="number" value="2500"></div>
+  <div class="row"><span class="lab">Fuel / delivery <small>beyond the shows</small></span><input class="n" id="fuel" type="number" value="2000"></div>
+  <div class="row"><span class="lab">Software / phone / booking</span><input class="n" id="soft" type="number" value="1200"></div>
+  <div class="row"><span class="lab">Misc / contingency</span><input class="n" id="misc" type="number" value="2000"></div>
+  <div class="sub"><span>Total operating expenses</span><span class="v" id="totExp">$0</span></div>
+</div>
+
+<div class="tot">
+  <div class="l">Projected year-1 net profit</div>
+  <div class="v" id="net">$0</div>
+  <div class="m" id="netm"></div>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <p class="note" style="margin:6px 0;"><b>Not counted above (capital, not expense):</b> your own <b>KM100 (~$60k)</b> is the anchor demo asset, bought once. Per the deal, the <b>first sale&rsquo;s profit reinvests into the next floor model</b>, then half of each sale after — so the demo fleet bootstraps itself out of sales, not out of pocket. That&rsquo;s cash flow, not a hit to net profit.</p>
+</div>
+
+<p class="note" style="margin-top:10px;"><span class="tag real">real</span> machine price, margin · <span class="tag est">est</span> everything else is a conservative editable estimate — drop in real numbers as you lock rent, insurance, and show booth costs. This is a planning model, not a guarantee.</p>
+<div class="foot">Northeast Intrepid — year-1 P&amp;L projection · built for Doug Brown · all figures editable.</div>
+</div>
+<script>
+function $(id){return document.getElementById(id);}
+function money(n){return (n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString();}
+function calc(){
+  var units=+$('units').value||0, price=+$('price').value||0, marg=(+$('marg').value||0)/100;
+  var machGP=units*price*marg;
+  $('machGP').textContent=money(machGP);
+  var parts=+$('parts').value||0, rental=+$('rental').value||0, svc=+$('svc').value||0;
+  var totRev=machGP+parts+rental+svc;
+  $('totRev').textContent=money(totRev);
+  var exp=['shows','ins','rent','mkt','fuel','soft','misc'].reduce(function(s,id){return s+(+$(id).value||0);},0);
+  $('totExp').textContent=money(exp);
+  var net=totRev-exp;
+  $('net').textContent=money(net);
+  var m=totRev>0?Math.round(net/totRev*100):0;
+  $('netm').innerHTML='on '+money(totRev)+' revenue · '+m+'% net margin · ≈ '+money(units?net/units:0)+' per machine sold';
+}
+document.querySelectorAll('input.n').forEach(function(i){i.addEventListener('input',calc);});
+calc();
+</script>
+</body></html>
