@@ -1,0 +1,135 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>KM100 Parts & Shipping Center</title><style>
+:root{--ink:#16241c;--green:#2e7d32;--green2:#143019;--amber:#a04400;--blue:#1d6fd6;--line:#e3e8e3;--muted:#5b6b60;--bg:#f6f8f6;--card:#fff;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2620;background:var(--bg);line-height:1.5;}
+.wrap{max-width:920px;margin:0 auto;padding:0 16px 70px;}
+header{background:linear-gradient(135deg,#2e7d32,#143019);color:#fff;padding:24px 16px;text-align:center;}
+.kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:700;}
+h1{font-size:23px;margin:6px 0 2px;font-weight:800;}
+header p{font-size:13px;opacity:.92;margin:4px 0 0;}
+h2{font-size:13px;color:var(--green);margin:24px 0 8px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;}
+.cols{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start;}
+@media(max-width:760px){.cols{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th,td{padding:8px 7px;text-align:left;border-bottom:1px solid #eef1ee;}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);}
+td.r,th.r{text-align:right;white-space:nowrap;}
+.pn{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);}
+.add{background:var(--green);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-weight:700;font-size:12.5px;cursor:pointer;}
+.add:hover{background:var(--green2);}
+.cart-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f4f1;font-size:13px;gap:6px;}
+.cart-row:last-child{border-bottom:none;}
+.qty{width:42px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:3px;font:inherit;}
+.x{color:#c0392b;cursor:pointer;font-weight:800;border:none;background:none;font-size:15px;}
+.tot{display:flex;justify-content:space-between;font-weight:800;font-size:16px;padding-top:8px;border-top:2px solid var(--line);margin-top:6px;}
+label{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin:8px 0 2px;}
+input.f{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 8px;font:inherit;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.shipbtn{display:block;width:100%;text-align:center;background:#11A24A;color:#fff;text-decoration:none;font-weight:800;padding:12px;border-radius:9px;margin-top:10px;font-size:15px;}
+.shipbtn:hover{background:#0d8a3e;}
+.printbtn{display:block;width:100%;text-align:center;background:#fff;color:var(--green2);border:1.5px solid var(--green);font-weight:700;padding:10px;border-radius:9px;margin-top:8px;font-size:14px;cursor:pointer;}
+.note{font-size:12px;color:var(--muted);}
+.tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:1px 5px;border-radius:10px;background:#eef0f4;color:#5a6472;}
+.why{background:#eef4fb;border:1px solid #cfe0f5;border-radius:12px;padding:14px 16px;}
+.why summary{font-weight:800;cursor:pointer;color:#2b4a6f;}
+.why ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;}
+.foot{font-size:11.5px;color:var(--muted);text-align:center;margin-top:26px;}
+@media print{nav,header,.add,.shipbtn,.printbtn,.why,.catalog,h2.noprint,#shiphead{display:none!important;}}
+</style></head><body>
+<header>
+<div class="kick">Northeast Intrepid · Parts</div>
+<h1>KM100 Parts &amp; Shipping Center</h1>
+<p>Kubota D1105 engine · build an order, print a packing slip, ship it in one click</p>
+</header>
+<div class="wrap">
+
+<div class="cols">
+  <div>
+    <h2 class="noprint">Catalog — KM100 / Kubota D1105</h2>
+    <div class="card catalog">
+    <table>
+      <thead><tr><th>Part</th><th class="r">Price</th><th></th></tr></thead>
+      <tbody id="catalog"></tbody>
+    </table>
+    <p class="note" style="margin-top:8px;">Prices are representative genuine/OE retail (Kubota "KU-" numbers) — <span class="tag">verify by serial</span>. Glow plugs sold each (KM100 needs 3). Hydraulic filter is an Intrepid-chassis part — price from the importer.</p>
+    </div>
+  </div>
+
+  <div>
+    <h2>Order</h2>
+    <div class="card">
+      <div id="cart"><p class="note" id="empty">No parts added yet.</p></div>
+      <div class="tot" id="totrow" style="display:none;"><span>Total</span><span id="total">$0.00</span></div>
+    </div>
+
+    <h2 id="shiphead">Ship to</h2>
+    <div class="card">
+      <label>Customer name</label><input class="f" id="cName" placeholder="Name">
+      <label>Address</label><input class="f" id="cAddr" placeholder="Street">
+      <div class="two">
+        <div><label>City</label><input class="f" id="cCity"></div>
+        <div><label>State / ZIP</label><input class="f" id="cZip" placeholder="NY 10566"></div>
+      </div>
+      <label>Package weight (lb)</label><input class="f" id="cWt" type="number" value="2" step="0.5" style="width:90px;">
+      <a class="shipbtn" id="ship" href="https://ship.pirateship.com/ship" target="_blank" rel="noopener">📦 Create label in Pirate Ship →</a>
+      <button class="printbtn" onclick="window.print()">🖨 Print packing slip</button>
+      <p class="note" style="margin-top:8px;">The label itself is created in Pirate Ship (free, deepest USPS + UPS rates). This page builds the order &amp; packing slip; Pirate Ship prints the label — drop it at USPS/UPS or schedule a free pickup.</p>
+    </div>
+  </div>
+</div>
+
+<h2 class="noprint">How shipping works (and why Pirate Ship)</h2>
+<details class="why noprint" open>
+  <summary>Why Pirate Ship instead of going straight to USPS — and does it do UPS?</summary>
+  <ul>
+    <li><b>Same USPS, lower price.</b> Going direct (USPS Click-N-Ship) charges you <i>retail / Commercial Base</i> rates. Pirate Ship is <b>free</b> and unlocks <b>Commercial Plus Pricing</b> — the deepest USPS discounts, normally reserved for huge-volume shippers — at no cost and no minimum. Same trucks, same network, you just pay less.</li>
+    <li><b>No fees, no markup, no subscription.</b> You pay only the postage on each label. That's the whole bill.</li>
+    <li><b>How it works:</b> free account → enter the box size/weight + from/to → it shows discounted <b>USPS and UPS</b> rates side by side → pay per label → print → drop at USPS/UPS or schedule a <b>free pickup</b> so you never leave the yard.</li>
+    <li><b>Yes — UPS too.</b> Pirate Ship added discounted <b>UPS</b> alongside USPS, so both carriers are in one place. USPS Priority is usually cheapest for small heavy parts (filters, fittings); UPS Ground can win on bigger/heavier boxes.</li>
+    <li><b>You may already have it:</b> the Skatepark runs <b>Shopify</b>, and <b>Shopify Shipping</b> does the same thing (discounted USPS/UPS/FedEx labels) inside the system you already use. Either works — Pirate Ship if you want a free standalone, Shopify if you'd rather keep parts in one place.</li>
+  </ul>
+</details>
+
+<div class="foot">Northeast Intrepid — KM100 parts &amp; shipping · internal tool · prices representative, verify by serial · labels via Pirate Ship / Shopify Shipping.</div>
+</div>
+<script>
+var PARTS=[
+  {n:'Engine oil filter',           pn:'KU-HH150-32094', p:18.68},
+  {n:'Fuel filter — element',       pn:'KU-1T021-43560', p:12.18},
+  {n:'Fuel filter — cartridge',     pn:'KU-16271-43562', p:16.98},
+  {n:'Air filter — inner element',  pn:'KU-17351-11083', p:115.74},
+  {n:'Air filter — outer',          pn:'KU-T0070-16324', p:93.87},
+  {n:'Fan / drive belt',            pn:'1G062-97012',    p:26.00},
+  {n:'Glow plug (each — need 3)',   pn:'D1105 GP',       p:45.21},
+  {n:'Service kit (oil+fuel+air)',  pn:'SVC-KIT',        p:146.60},
+  {n:'Hydraulic filter',            pn:'Intrepid',       p:0, callfor:true}
+];
+var cart={};
+function money(n){return '$'+n.toFixed(2);}
+function renderCatalog(){
+  document.getElementById('catalog').innerHTML=PARTS.map(function(p,i){
+    return '<tr><td><b>'+p.n+'</b><br><span class="pn">'+p.pn+'</span></td>'
+      +'<td class="r">'+(p.callfor?'<span class="note">call</span>':money(p.p))+'</td>'
+      +'<td class="r">'+(p.callfor?'':'<button class="add" onclick="addPart('+i+')">Add</button>')+'</td></tr>';
+  }).join('');
+}
+function addPart(i){var k=''+i;cart[k]=(cart[k]||0)+1;renderCart();}
+function renderCart(){
+  var keys=Object.keys(cart);
+  var box=document.getElementById('cart');
+  if(!keys.length){box.innerHTML='<p class="note" id="empty">No parts added yet.</p>';document.getElementById('totrow').style.display='none';return;}
+  var total=0,html='';
+  keys.forEach(function(k){var p=PARTS[+k],q=cart[k];total+=p.p*q;
+    html+='<div class="cart-row"><span>'+p.n+'</span>'
+      +'<span><input class="qty" type="number" min="0" value="'+q+'" onchange="setQty('+k+',this.value)"> × '+money(p.p)
+      +' <button class="x" onclick="setQty('+k+',0)">×</button></span></div>';
+  });
+  box.innerHTML=html;
+  document.getElementById('total').textContent=money(total);
+  document.getElementById('totrow').style.display='flex';
+}
+function setQty(k,v){v=parseInt(v)||0;if(v<=0)delete cart[''+k];else cart[''+k]=v;renderCart();}
+renderCatalog();renderCart();
+</script>
+</body></html>
