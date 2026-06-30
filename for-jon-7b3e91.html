@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Second Nature — for Jon</title>
+<style>
+  :root{--ink:#16201a;--muted:#5f6b62;--line:#e2e8e2;--bg:#f5f8f5;--green:#2e7d32;--green-d:#10401a;--green-l:#e8f5e9;--blue:#1d6fd6;--blue-d:#0f3f7d;--amber:#9a5a00;--amber-bg:#fff8ec;--red:#b0413b;--card:#fff;--ink2:#13202b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.62}
+  .wrap{max-width:720px;margin:0 auto;padding:0 18px}
+  header{background:linear-gradient(160deg,#0c3012,#2e7d32 92%);color:#fff;padding:42px 0 34px;text-align:center}
+  .kicker{letter-spacing:3px;font-size:12px;font-weight:800;text-transform:uppercase;opacity:.85;margin-bottom:8px}
+  header h1{margin:0 auto;font-size:28px;line-height:1.18;font-weight:800;max-width:540px}
+  header .tag{margin:12px auto 0;font-size:16px;opacity:.96;max-width:540px}
+  nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  nav .wrap{display:flex;flex-wrap:wrap;gap:6px 14px;padding-top:11px;padding-bottom:11px;font-size:13.5px}
+  nav a{color:var(--green-d);text-decoration:none;font-weight:700}
+  nav a:active{opacity:.6}
+  .lead{font-size:16.5px}
+  .muted{color:var(--muted)}
+  .sec{padding:30px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin:0 0 4px}
+  h2{font-size:23px;margin:0 0 4px;color:var(--green-d);line-height:1.2}
+  h3{font-size:16px;margin:18px 0 6px;color:var(--green-d)}
+  .sub{color:var(--muted);margin:0 0 14px;font-size:15px}
+  p{margin:0 0 12px}
+  ul{margin:0 0 12px;padding-left:20px}li{margin:6px 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:620px){.two{grid-template-columns:1fr}nav .wrap{font-size:13px}}
+  .does{background:#fff;border:1px solid #c8e6c9;border-radius:14px;padding:16px 18px}
+  .does h3{margin:0 0 8px;color:var(--green-d);font-size:15px}
+  .doesnt{background:#fff;border:1px solid #f0d2cf;border-radius:14px;padding:16px 18px}
+  .doesnt h3{margin:0 0 8px;color:var(--red);font-size:15px}
+  .does li::marker{content:"✓  ";color:var(--green);font-weight:800}
+  .doesnt li::marker{content:"⚠  ";color:var(--amber);font-weight:800}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}
+  .flag{background:var(--amber-bg);border:1px solid #f0d9a8;border-left:4px solid var(--amber);border-radius:10px;padding:13px 16px;margin:14px 0;font-size:14.5px}
+  .flag b{color:var(--amber)}
+  .win{background:var(--green-l);border:1px solid #c8e6c9;border-left:4px solid var(--green);border-radius:10px;padding:13px 16px;margin:14px 0;font-size:14.5px}
+  .disc{background:#eef3f7;border:1px solid #d4e0ea;border-radius:12px;padding:14px 16px;font-size:13.5px;color:#3a4a59;margin-top:10px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:9px 10px;border:1px solid var(--line);vertical-align:top}
+  th{background:#eef3ef;color:var(--green-d);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .rec{background:#f0f8f1}
+  .path{display:flex;gap:13px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:10px 0}
+  .path .n{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .path h3{margin:1px 0 4px;font-size:16px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:10px 0;font-size:14px}
+  .flow .step{background:var(--green-l);border:1px solid #c8e6c9;border-radius:8px;padding:6px 10px;font-weight:600}
+  .flow .arr{color:var(--green);font-weight:800}
+  /* incident form */
+  .form .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .form .field{flex:1 1 200px}
+  .form label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:3px}
+  .form .fill{border:none;border-bottom:1px solid #c9d2c9;min-height:24px;width:100%;font-size:14px;padding:2px 1px;outline:none;background:transparent}
+  .form textarea.fill{border:1px solid #c9d2c9;border-radius:6px;min-height:80px;resize:vertical}
+  .form .checks{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px}
+  .form .checks label{display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;color:var(--ink);font-size:13.5px;margin:0}
+  .form .checks input{width:15px;height:15px}
+  .headbox{border:1px solid var(--red);border-radius:10px;padding:13px 15px;margin:10px 0}
+  .headbox .eyebrow{color:var(--red)}
+  .btn{font-size:14px;padding:9px 18px;border:1px solid var(--green-d);background:var(--green-d);color:#fff;border-radius:7px;cursor:pointer}
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:28px 0 50px}
+  @media print{nav{display:none}.btn{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Second Nature · Private</div>
+    <h1>Everything in one place, Jon</h1>
+    <div class="tag">The recap and every doc we put together — all on this one page, so you can read it from your phone.</div>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <a href="#recap">Recap</a>
+    <a href="#deal">① Your side of the deal</a>
+    <a href="#door">② The door decision</a>
+    <a href="#automation">③ Entry automation</a>
+    <a href="#incident">④ Incident form</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- RECAP -->
+  <section class="sec" id="recap">
+    <p class="eyebrow">The recap</p>
+    <h2>The short version</h2>
+    <p class="lead muted">Read at your own pace. Nothing's signed and nothing moves until you've been through it and we've got the right terms in writing.</p>
+    <p><b>The opportunity —</b> you coming in as a co-owner of an established operation: the name, the customers, the equipment, the reputation. Not starting from zero.</p>
+    <p><b>The honest part —</b> there's real debt attached, laid out straight below so you go in with eyes open: what's on the business, what is and isn't tied to anyone personally, and how to keep yourself off the hook.</p>
+    <p><b>Before you sign —</b> the protections are in <a href="#deal">your deal doc</a>: stay off the SBA guarantee, get the debt in writing as the company's/Doug's, see the real books, and have your own attorney read it.</p>
+    <p><b>The park itself —</b> we've worked out the unstaffed pay-to-enter <a href="#door">door system</a> and the <a href="#automation">automation</a> behind it, plus a proper <a href="#incident">incident/injury form</a> since liability is shared.</p>
+  </section>
+
+  <!-- DEAL -->
+  <section class="sec" id="deal">
+    <p class="eyebrow">① For Jon · private</p>
+    <h2>Your side of the deal — straight</h2>
+    <p class="sub">What you'd be buying into, how to keep yourself off the hook, and what to get in writing before you sign.</p>
+    <p>Jon — this is laid out from your side, not Doug's. You're looking at buying into Second Nature Tree (2nd Nature 3, Inc.) as a co-owner. There's real upside here, and there's real debt. Here's the honest version of both so you go in with eyes open.</p>
+
+    <h3>What you'd be getting</h3>
+    <ul>
+      <li>A piece of an established business — the name, the customer base, the equipment, the reputation. Not starting from zero.</li>
+      <li>Real gear: two Bandit chippers, a chip truck, the bucket-truck setup — the iron it takes to do the big jobs.</li>
+      <li>A working operation you can grow, with Doug's experience alongside you.</li>
+    </ul>
+
+    <h3>What you'd also be taking on (the honest part)</h3>
+    <p>The company carries an SBA loan of about <b>$160,000</b> (cheap money at 3.75%, but it's there), plus equipment financing. The plan is that the business pays the SBA back as part of your buy-in — meaning a chunk of the company's cash flow goes to debt service before anyone takes profit.</p>
+    <p class="muted"><i>Translation for you:</i> the business has to earn enough to run and cover ~$741+/month of SBA payments before it's truly making money for the owners. That's doable on a healthy operation — but it's the thing to size up honestly before you put money in.</p>
+
+    <h3>Your no-liability position — and how to make it real</h3>
+    <p>You don't want personal responsibility for the debt. Good instinct. But "I didn't sign" only protects you if it's done right.</p>
+    <div class="two">
+      <div class="does">
+        <h3>What keeps you protected</h3>
+        <ul>
+          <li>Never sign the SBA guarantee (or any personal guarantee on the existing debt). That liability stays with Doug.</li>
+          <li>Get it in writing that the SBA loan is the company's obligation and Doug's guarantee — not yours.</li>
+          <li>Make the buy-in docs say you take no personal liability for any pre-existing debt.</li>
+          <li>Have your own attorney read the agreement before you sign — not Doug's.</li>
+        </ul>
+      </div>
+      <div class="doesnt">
+        <h3>Where you could get exposed anyway</h3>
+        <ul>
+          <li>If a lender later asks you to personally guarantee a refinance to get Doug off — that would put it on you. Decide that consciously.</li>
+          <li>The SBA has a lien on the equipment. The gear isn't free-and-clear until that's paid/released — so you don't fully "own" it yet.</li>
+          <li>As a co-owner, if the business can't pay, the SBA can pursue the company's assets (the gear) — though not you personally.</li>
+          <li>Your buy-in money and sweat are at risk if the turnaround doesn't work — no personal debt, but you can still lose what you put in.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>What to get in the documents before you sign</h3>
+    <ul>
+      <li>Your exact ownership % and what your buy-in (money and/or work) actually buys.</li>
+      <li>Clear statement that the SBA loan + existing debts are the company's/Doug's, and you carry no personal liability for them.</li>
+      <li>The real books — last 2–3 years of financials, the SBA balance and status, the equipment liens. Don't buy in blind.</li>
+      <li>How debt service affects distributions — when owners actually get paid, after the SBA is covered.</li>
+      <li>Roles, decisions, and an exit — who runs what, how big calls get made, and how you'd get out if it doesn't work.</li>
+    </ul>
+
+    <div class="win"><b>Bottom line:</b> this can be a good deal for you — an established business with the tools and a partner who knows the work — as long as the paperwork keeps the debt off your back and you've seen the real numbers first. The structure (business pays the SBA, you stay off the guarantee) is fair to you on paper; just make sure it's actually written that way, and run it past your own attorney before you sign anything.</div>
+
+    <div class="disc">Note: this is a plain-English summary to help you understand the deal — not legal or financial advice, and not a substitute for your own attorney reviewing the actual agreement.</div>
+  </section>
+
+  <!-- DOOR -->
+  <section class="sec" id="door">
+    <p class="eyebrow">② Internal decision memo</p>
+    <h2>Skate Park Door — let's decide together</h2>
+    <p class="sub">How we let paying riders in — let's pick the right way.</p>
+    <p>John &amp; Nick — here's the whole thing in plain English, my honest recommendation, and the one call we need to make together. There's a clear decision at the bottom.</p>
+
+    <div class="flag"><b>The 30-second version:</b> we want the door to unlock automatically when someone pays — no staff needed. The hardware to do that (<b>Brivo</b>) is already on the door. The problem isn't the door — it's that we've ended up building the "pay → unlock" logic <b>two different ways</b>, and we need to commit to one. My recommendation: finish it inside SkateOS, tie the unlock to the <b>signed waiver</b> (not just the payment), and hand out a <b>time-limited code</b> instead of a live remote-unlock. That's the version that's safe, reliable, and won't strand a paying rider at a locked door.</div>
+
+    <h3>Step 1 — How the door actually works</h3>
+    <p><b>Brivo</b> is the access-control system on the door — the brain behind the lock. Software can tell it things like "let this person in for the next 4 hours" or "open right now." The goal: rider pays → the door opens for them automatically, nobody at the desk.</p>
+
+    <h3>Step 2 — The real issue: we built it twice</h3>
+    <p>Two separate systems can both talk to the same door. Running both is the thing most likely to break on us.</p>
+    <table>
+      <tr><th>System</th><th>Strength</th><th>Weakness</th></tr>
+      <tr><td><b>SkateOS</b> — the full platform (Carson-built): payments (Helcim), waivers (Smartwaiver), cameras (Frigate) and the Brivo door, all connected, with member accounts and an access log.</td><td>Already knows who's a member, who signed a waiver, and logs every door event. Door's already wired in.</td><td>More to maintain; changes may depend on Carson.</td></tr>
+      <tr><td><b>Door Connector</b> — the simple standalone (built Jun 15): one thing only — Square payment → open Brivo door.</td><td>Dead simple, fully ours, nothing fancy to break.</td><td>Opens for <b>anyone who pays</b> — doesn't check for a signed waiver, doesn't know members, barely keeps a record.</td></tr>
+    </table>
+    <p class="muted">Two systems = two sets of keys to the same door, and two things to debug when a paying rider is stuck outside at 8pm. The single most important move is to pick one and retire the other.</p>
+
+    <h3>Step 3 — What I recommend, and why</h3>
+    <p><b>Finish it in SkateOS — and gate the door on the waiver.</b> Three things make this <i>right</i> instead of just working:</p>
+    <ul>
+      <li><b>Unlock on signed waiver + payment</b>, not payment alone. Opening for someone who hasn't signed our liability release is a real exposure at a skate park.</li>
+      <li><b>Hand out a time-limited code</b>, don't do a live "remote unlock." A pre-loaded code means a brief internet hiccup won't lock out a paying rider.</li>
+      <li><b>A manual backup code that always works, plus outage alerts</b> — so if the system goes down, we find out, not the customer.</li>
+    </ul>
+
+    <h3>Step 4 — The smaller technical call: "Seam" vs. Brivo direct</h3>
+    <table>
+      <tr><th>Option</th><th>Upside</th><th>Downside</th></tr>
+      <tr><td><b>Brivo direct</b></td><td>One fewer company in the middle. No monthly fee.</td><td>We keep the connection healthy ourselves — if it quietly expires, the door stops until someone fixes it.</td></tr>
+      <tr><td><b>Seam middleman</b></td><td>A service keeps the Brivo connection alive for us — less to babysit.</td><td>Monthly fee, one more dependency. If Seam has a bad day, so does our door.</td></tr>
+    </table>
+    <p class="muted"><i>Honest read:</i> for how little time we have to babysit things, Seam's "they keep it running" is a fair trade — but this is smaller than which system we keep.</p>
+
+    <h3>Step 5 — The question that decides it</h3>
+    <p>Can we get into SkateOS and change it ourselves — or are we stuck waiting on Carson?</p>
+    <div class="path"><div class="n">A</div><div><h3>If we control SkateOS → Finish it in SkateOS</h3><p class="muted" style="margin:0">Waiver-gated, member-aware, fully logged, cameras tied in. Retire the standalone. The right long-term home. <b>My recommendation.</b></p></div></div>
+    <div class="path"><div class="n">B</div><div><h3>If Carson is a bottleneck → Harden the standalone</h3><p class="muted" style="margin:0">Keep the simple connector we fully own, but add a waiver check, a backup code, and outage alerts. A system we control beats a better one we can't touch.</p></div></div>
+    <p>Either way the door uses a time-limited code, gates on the waiver, and has a manual fallback. The choice above is just where the brains live.</p>
+
+    <div class="flag"><b>What I need from the three of us:</b> (1) Option A or B — which comes down to how reliably we can change SkateOS ourselves; and (2) the door reader type — does it take a typed code/keypad, or a phone/badge tap? (If we're not sure, I'll confirm it from the hardware.) Once we pick, I finish the build and we test with a real $1 payment before opening to riders.</div>
+  </section>
+
+  <!-- AUTOMATION -->
+  <section class="sec" id="automation">
+    <p class="eyebrow">③ HV Skate · operations</p>
+    <h2>Automating the front door</h2>
+    <p class="sub">Run the door off payments and check-ins — open more hours with less front-desk.</p>
+    <p>Tie the Brivo door access we already have to <b>payments / check-in</b>, so a paying customer or active member gets in automatically. That lets us run unstaffed or extended hours and cut front-desk cost — without changing the systems we already use.</p>
+
+    <h3>What we already have</h3>
+    <ul>
+      <li><b>Brivo</b> — the door-access system on the building. Open, developer-friendly: it can unlock, issue temporary PIN codes, and turn member access on/off via its API.</li>
+      <li><b>Square</b> — payments / point of sale.</li>
+      <li><b>SkateOS</b> — sessions, memberships, check-in.</li>
+    </ul>
+    <p class="muted">All three are already in place and paid for. The only question is what connects them to the door.</p>
+
+    <h3>How it would actually work</h3>
+    <div class="flow"><span class="muted" style="width:100%;font-weight:700;color:var(--green-d)">Day-pass / drop-in</span><span class="step">Customer pays (Square / SkateOS)</span><span class="arr">→</span><span class="step">System issues a time-limited PIN</span><span class="arr">→</span><span class="step">Door unlocks for their session</span></div>
+    <div class="flow"><span class="muted" style="width:100%;font-weight:700;color:var(--green-d)">Members</span><span class="step">Membership active in SkateOS/Square</span><span class="arr">→</span><span class="step">Their Brivo badge/app turns on automatically</span><span class="arr">→</span><span class="step">They let themselves in; lapsed = auto shut off</span></div>
+    <p class="muted">No one has to be at the desk to let people in or check whether they paid — the payment is the key.</p>
+
+    <h3>The three ways to connect it</h3>
+    <table>
+      <tr><th>Path</th><th>Talks to Square?</th><th>Cost</th><th>Verdict</th></tr>
+      <tr><td><b>Carson</b></td><td>No — built for apartment rent systems (Yardi/ClickPay), not POS</td><td>Enterprise/per-building (sized for 300-unit towers)</td><td>Wrong category</td></tr>
+      <tr><td><b>SkateOS-native</b></td><td>It's our check-in; works alongside Square</td><td>Included <i>if</i> the access feature exists — confirm</td><td>Cleanest if it supports access — check first</td></tr>
+      <tr class="rec"><td><b>Build: Square → Brivo (direct)</b></td><td>Yes — Square webhooks</td><td>One-time build, then $0 per-door</td><td><b>Recommended</b> — works now, no SkateOS needed</td></tr>
+    </table>
+    <p class="muted"><i>On Carson:</i> it's apartment-building software (virtual doorman for residential towers). It can drive a Brivo door, but it does not integrate with Square and is priced for landlords — an expensive middleman doing something we can do ourselves. If anyone there says it connects to Square, ask them to show it live before believing it.</p>
+
+    <div class="win"><b>Recommendation:</b> connect Square straight to Brivo — no SkateOS switch needed. Both have open APIs, so the link is a small piece of software: pay in Square → it issues a Brivo PIN / unlocks the door; membership active → Brivo access on, lapsed → off. No monthly per-door fee, tailored to how we run the park, and we can start now. Skip Carson.</div>
+
+    <div class="flag"><b>One thing to confirm:</b> the door reader type. A keypad (or QR) reader means we can text a one-time PIN to a drop-in — perfect for unstaffed entry. A badge/mobile-only reader makes members easy but drop-ins clunky, so we'd add a small keypad/QR reader or use remote buzz-in.</div>
+
+    <h3>Next steps</h3>
+    <ul>
+      <li>Pull a Brivo API key + Square API access for our account (both self-serve).</li>
+      <li>Confirm the door reader type (keypad/QR vs badge/mobile) — decides the drop-in flow.</li>
+      <li>Build the small Square → Brivo connector; start with the simplest win — day-pass payment → time-limited door PIN — then add automatic member access.</li>
+    </ul>
+  </section>
+
+  <!-- INCIDENT FORM -->
+  <section class="sec" id="incident">
+    <p class="eyebrow">④ 2nd Nature Skate Park · confidential</p>
+    <h2>Incident / Injury Report Form</h2>
+    <p class="sub">The form we use any time someone gets hurt at the park. Liability is shared, so worth knowing it exists.</p>
+    <p class="muted">Complete for ANY injury, near-miss, or equipment incident — even minor. Fill it out the same day. Record observed facts only; don't admit or assign fault. <button class="btn" onclick="window.print()">Print / Save as PDF</button></p>
+
+    <div class="form">
+      <div class="row">
+        <div class="field"><label>Date of incident</label><input class="fill" type="date"></div>
+        <div class="field"><label>Time</label><input class="fill" type="time"></div>
+        <div class="field"><label>Location in park (ramp / feature)</label><input class="fill"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Injured person — full name</label><input class="fill"></div>
+        <div class="field"><label>Date of birth / age</label><input class="fill"></div>
+        <div class="field"><label>Phone</label><input class="fill"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>If minor — parent / guardian</label><input class="fill"></div>
+        <div class="field"><label>Guardian phone</label><input class="fill"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Status</label>
+          <div class="checks"><label><input type="checkbox"> Waiver on file</label><label><input type="checkbox"> Member</label><label><input type="checkbox"> Day pass</label><label><input type="checkbox"> Helmet worn</label><label><input type="checkbox"> Pads worn</label></div>
+        </div>
+      </div>
+      <div class="row"><div class="field"><label>What happened (facts only)</label><textarea class="fill" placeholder="Sequence of events as observed or reported. Avoid opinion or fault."></textarea></div></div>
+      <div class="row">
+        <div class="field"><label>Body part(s) injured</label><input class="fill"></div>
+        <div class="field"><label>Nature of injury</label><input class="fill"></div>
+      </div>
+
+      <div class="headbox">
+        <p class="eyebrow">Head injury / concussion screen — if head was involved</p>
+        <div class="row" style="margin-bottom:6px">
+          <div class="field"><label>Head contact?</label><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label><label><input type="checkbox"> Unsure</label></div></div>
+          <div class="field"><label>Loss of consciousness?</label><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+        </div>
+        <label>Signs / symptoms (check all that apply)</label>
+        <div class="checks" style="margin-top:4px">
+          <label><input type="checkbox"> Headache</label><label><input type="checkbox"> Dizziness</label><label><input type="checkbox"> Nausea</label><label><input type="checkbox"> Confusion</label><label><input type="checkbox"> Blurred vision</label><label><input type="checkbox"> Memory loss</label><label><input type="checkbox"> Slurred speech</label><label><input type="checkbox"> Balance problems</label><label><input type="checkbox"> No symptoms</label>
+        </div>
+        <p class="muted" style="color:var(--red);margin:8px 0 0;font-size:13px">If a concussion is suspected: stop them skating, don't let them leave alone, advise medical evaluation, notify guardian if a minor. When in doubt, call 911.</p>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>First aid given (what / by whom)</label><input class="fill"></div>
+        <div class="field"><label>911 / EMS called?</label><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label><label><input type="checkbox"> Declined</label></div></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Taken to (hospital / urgent care)</label><input class="fill"></div>
+        <div class="field"><label>Witnesses (name & phone)</label><input class="fill"></div>
+        <div class="field"><label>Staff on duty</label><input class="fill"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Photos / video taken?</label><div class="checks"><label><input type="checkbox"> Yes</label><label><input type="checkbox"> No</label></div></div>
+        <div class="field"><label>Carrier notified (Tooher-Ferraris)</label><input class="fill"></div>
+      </div>
+      <div class="row" style="margin-top:18px">
+        <div class="field"><label>Staff signature & date</label><div style="border-bottom:1px solid #555;height:30px"></div></div>
+        <div class="field"><label>Injured / guardian signature & date (acknowledges facts; not an admission of fault)</label><div style="border-bottom:1px solid #555;height:30px"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Second Nature · Put together for Jon · Private — please don't forward.
+  </footer>
+</div>
+</body>
+</html>
