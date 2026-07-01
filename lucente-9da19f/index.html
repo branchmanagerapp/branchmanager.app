@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Lawn NY × Lucente Landscaping | Build Your Navimow Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d1d1f; --muted:#86868b; --muted2:#636366; --bg:#f5f5f7; --card:#ffffff;
+    --line:#e5e7eb; --line2:#d2d2d7; --green:#6abb1e; --green-dark:#4a8a10; --green-bg:#f0f8e8;
+    --teal:#1a5c5c; --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px;}
+  a{color:var(--green-dark);}
+  /* header */
+  header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line);}
+  .nav{max-width:1040px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.02em;}
+  .brand img{width:34px;height:34px;border-radius:50%;display:block;}
+  .brand .leaf{width:30px;height:30px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .navcall{font-weight:700;font-size:14px;text-decoration:none;color:var(--ink);background:var(--green-bg);padding:8px 16px;border-radius:980px;border:1px solid #d8ecc4;}
+  /* hero */
+  .hero{text-align:center;padding:62px 22px 48px;background:radial-gradient(120% 90% at 50% 0%, #eef8e2 0%, var(--bg) 60%);}
+  .eyebrow{color:var(--green-dark);font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;}
+  .hero h1{font-size:48px;line-height:1.05;letter-spacing:-.03em;font-weight:900;margin:14px auto 14px;max-width:760px;}
+  .hero h1 .g{color:var(--green-dark);}
+  .hero .sub{font-size:20px;color:var(--muted2);max-width:640px;margin:0 auto;}
+  .hero .for{margin-top:22px;font-size:14px;color:var(--muted);}
+  .btn{display:inline-block;background:var(--green);color:#15330a;text-decoration:none;font-weight:800;padding:13px 26px;border-radius:980px;border:none;cursor:pointer;font-size:15px;transition:transform .12s,background .15s;}
+  .btn:hover{background:var(--green-dark);color:#fff;transform:translateY(-1px);}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line2);}
+  .btn.ghost:hover{background:#fff;border-color:var(--muted);color:var(--ink);}
+  /* sections */
+  section{padding:18px 0;}
+  h2{font-size:30px;letter-spacing:-.02em;font-weight:900;margin:40px 0 6px;}
+  h2 .sub{display:block;font-size:15px;font-weight:500;color:var(--muted);margin-top:6px;letter-spacing:0;}
+  h3{font-size:17px;font-weight:700;margin:14px 0 6px;letter-spacing:-.01em;}
+  p{margin:10px 0;color:var(--muted2);}
+  p strong, li strong{color:var(--ink);}
+  .lead{font-size:18px;color:var(--ink);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px;margin:14px 0;}
+  ul{margin:10px 0;padding-left:20px;color:var(--muted2);} li{margin:7px 0;}
+  /* feature grid */
+  .feat{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px;}
+  .feat .f{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  .feat .ic{width:44px;height:44px;border-radius:12px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;}
+  .feat .f h3{margin-top:0;}
+  /* configurator */
+  .cfg{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .cfg-row{display:grid;grid-template-columns:1fr 92px 100px 136px 116px;gap:12px;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
+  .cfg-head{background:#fafafa;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:12px 20px;}
+  .cfg-row:last-child{border-bottom:none;}
+  .cfg-row .m{font-weight:700;letter-spacing:-.01em;} .cfg-row .m small{display:block;font-weight:500;color:var(--muted);font-size:12.5px;}
+  .cfg-row .cov,.cfg-row .pr{font-variant-numeric:tabular-nums;color:var(--muted2);font-size:14px;text-align:right;}
+  .cfg-row .pr{color:var(--ink);font-weight:700;}
+  .cfg-row .lt{font-variant-numeric:tabular-nums;text-align:right;font-weight:800;color:var(--green-dark);}
+  .badge.com{display:inline-block;background:#eaf1fb;color:#2563eb;border-radius:980px;padding:2px 9px;font-size:11px;font-weight:700;}
+  .stepper{display:flex;align-items:center;gap:6px;justify-content:center;}
+  .stepper button{width:32px;height:32px;border-radius:980px;border:1px solid var(--line2);background:#fff;color:var(--green-dark);font-size:18px;font-weight:800;cursor:pointer;line-height:1;}
+  .stepper button:hover{background:var(--green-bg);}
+  .stepper input{width:44px;height:34px;text-align:center;border:1px solid var(--line2);border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;}
+  /* summary + calc panels */
+  .panel{background:#10261c;color:#eef7ea;border-radius:var(--radius);padding:18px 22px;margin:16px 0;}
+  .summary{position:sticky;bottom:14px;box-shadow:0 12px 40px rgba(16,38,28,.28);}
+  .summary .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .summary .k,.calc .k{font-size:11.5px;opacity:.75;text-transform:uppercase;letter-spacing:.04em;}
+  .summary .v{font-size:23px;font-weight:800;margin-top:3px;} .summary .v.big{font-size:29px;color:#9be37e;}
+  .calc{background:#10261c;color:#eef7ea;border-radius:var(--radius);padding:26px;margin:18px 0;}
+  .calc h2{color:#fff;margin:0 0 6px;}
+  .calc .row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.13);}
+  .calc label{font-size:15px;color:#eef7ea;} .calc label small{display:block;opacity:.65;font-size:12px;}
+  .calc input{width:120px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.10);color:#fff;font-size:15px;font-weight:700;text-align:right;font-family:inherit;}
+  .calc input:focus,.stepper input:focus{outline:2px solid var(--green);}
+  .out{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+  .out .box{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:16px 18px;}
+  .out .v{font-size:27px;font-weight:800;margin-top:4px;} .out .v.green{color:#9be37e;}
+  .out .note{font-size:12.5px;opacity:.82;margin-top:8px;grid-column:1/-1;}
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .step{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;}
+  .step .num{width:30px;height:30px;border-radius:980px;background:var(--green);color:#15330a;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:10px;}
+  .cta{background:linear-gradient(135deg,#eef8e2,#f0f8e8);border:1px solid #d8ecc4;border-radius:24px;padding:34px 26px;margin:26px 0;text-align:center;}
+  .src{font-size:12.5px;color:var(--muted);}
+  footer{border-top:1px solid var(--line);margin-top:30px;padding:24px 0 60px;font-size:12.5px;color:var(--muted);}
+  @media (max-width:760px){
+    .hero h1{font-size:33px;} .hero .sub{font-size:17px;} h2{font-size:24px;}
+    .feat{grid-template-columns:1fr;} .steps{grid-template-columns:1fr;} .out{grid-template-columns:1fr;}
+    .summary .grid{grid-template-columns:1fr 1fr;}
+    .cfg-row{grid-template-columns:1fr 88px 116px;grid-template-areas:"m m m" "cov pr lt" "step step step";gap:8px 10px;}
+    .cfg-row .m{grid-area:m;} .cfg-row .cov{grid-area:cov;text-align:left;} .cfg-row .pr{grid-area:pr;} .cfg-row .lt{grid-area:lt;} .cfg-row .stepper{grid-area:step;justify-content:flex-start;}
+    .cfg-head{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">
+      <img src="https://smartlawnny.com/smartlawn-profile-circle.png" alt="" onerror="this.outerHTML='&lt;span class=\'leaf\'&gt;🌱&lt;/span&gt;'">
+      <span>Smart Lawn NY</span>
+    </div>
+    <a class="navcall" href="tel:19146477276">(914) 647-7276</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="eyebrow">Authorized Navimow Dealer · Installer · Service</div>
+  <h1>Build your <span class="g">Navimow</span> fleet.</h1>
+  <p class="sub">Pick how many of each model you need for the properties you maintain — coverage, cost, and savings tally up live. We source, install, and service every unit.</p>
+  <div style="margin-top:24px;"><a class="btn" href="#configure">Build your order</a> <a class="btn ghost" href="#why-daily">Why it wins</a></div>
+  <div class="for">Prepared for <b>Dennis Lucente</b> · Lucente Landscaping, New Rochelle NY · June 2026</div>
+</div>
+
+<div class="wrap">
+
+  <p class="lead" style="margin-top:26px;">Dennis — match a model to each property by lot size, set the quantity, and watch the totals build. Every unit is wire-free RTK navigation, handles slopes, and mows on its own schedule. Install &amp; setup is a flat <b>$300 per unit</b>.</p>
+
+  <section>
+    <h2>Why this fits Lucente <span class="sub">A quick word on the opportunity</span></h2>
+    <div class="card">
+      <p>And your customers will love them even more — quieter mornings, no weekly mower disruption, and a lawn that always looks freshly cut. It makes the "Love Your Home, Inside &amp; Out" promise even easier to keep.</p>
+      <ul>
+        <li><strong>Labor leverage.</strong> Every property a robot covers is a weekly mow your crew skips — skilled labor redeployed to higher-margin work, and one less seat to hire for in a tight market.</li>
+        <li><strong>You already think this way.</strong> You put your own service and estimates in an app. Autonomous mowing is the same instinct — a premium differentiator competitors down here can't match, on residential estates and commercial property-management accounts alike.</li>
+        <li><strong>Fleet visibility, built in.</strong> We'll work on app integration that pushes real-time notifications from every mower in the fleet — live status, alerts, and progress across all your properties in one place, right alongside the tools you already run.</li>
+        <li><strong>Consistency protects the brand.</strong> A robot cuts the same every day — no skipped weeks, no rushed Friday cuts. That's exactly the standard your name carries.</li>
+        <li><strong>It scales with your book.</strong> Start with a pilot on a few properties, prove the hours saved, then roll it across the accounts that fit.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="why-daily">
+    <h2>Why mowing <em>every day</em> beats once a week <span class="sub">This is the part that puts Lucente even further ahead</span></h2>
+    <p>A weekly crew cut and a robot that grooms the lawn a little every day are not the same product. Daily, autonomous, electric mowing is simply a <strong>better, cleaner, quieter result</strong> — and that's a story you can sell.</p>
+    <div class="feat">
+      <div class="f">
+        <div class="ic">🌱</div>
+        <h3>A visibly better lawn</h3>
+        <p>Cutting a little every day follows the agronomic "one-third rule" — never taking off too much at once. Frequent light cuts thicken the turf, crowd out weeds, and the fine clippings drop back as free fertilizer (grasscycling) instead of being hauled away. A once-a-week cut shaves off too much and stresses the grass. The lawn itself becomes the advertisement.</p>
+      </div>
+      <div class="f">
+        <div class="ic">🔇</div>
+        <h3>Whisper-quiet</h3>
+        <p>Battery robots run at roughly conversation-level volume — a fraction of the 95+ dB roar of a gas mowing crew. No 7 a.m. engine noise on high-end streets, no disruption at offices, HOAs, or schools. As Westchester towns keep tightening rules on gas-powered equipment, quiet electric mowing keeps your accounts ahead of the restrictions.</p>
+      </div>
+      <div class="f">
+        <div class="ic">🍃</div>
+        <h3>Zero emissions — the green edge</h3>
+        <p>No gas, no oil, no fumes. Gas lawn equipment is a well-documented source of air pollution; swapping it for electric robots removes that entirely and runs on a few cents of electricity a day. For commercial property managers and municipalities chasing sustainability goals, that's not a nice-to-have — it's a reason to pick Lucente.</p>
+      </div>
+      <div class="f">
+        <div class="ic">🏆</div>
+        <h3>Further ahead of competitors</h3>
+        <p>Daily, silent, emission-free, always-perfect lawns are a premium tier the gas-crew-on-Friday competition can't offer. It's a concrete differentiator when you bid high-end residential and commercial work — and it reinforces the tech-forward, "Love Your Home" brand you've already built.</p>
+      </div>
+    </div>
+    <p class="src">Cut-quality, noise, and emissions points reflect well-established differences between daily battery-robot mowing and weekly gas mowing; exact dB and emissions figures vary by equipment.</p>
+  </section>
+
+  <section id="configure">
+    <h2>Configure your order <span class="sub">Set a quantity for each model — totals update instantly</span></h2>
+    <div class="cfg" id="cfg">
+      <div class="cfg-row cfg-head">
+        <div>Model</div><div style="text-align:right;">Coverage</div><div style="text-align:right;">Unit price</div><div style="text-align:center;">Quantity</div><div style="text-align:right;">Line total</div>
+      </div>
+    </div>
+
+    <div class="panel summary">
+      <div class="grid">
+        <div><div class="k">Total units</div><div class="v" id="s-units">0</div></div>
+        <div><div class="k">Coverage</div><div class="v" id="s-cov">0 ac</div></div>
+        <div><div class="k">Equipment</div><div class="v" id="s-equip">$0</div></div>
+        <div><div class="k">Install ($300/unit)</div><div class="v" id="s-install">$0</div></div>
+        <div><div class="k">Turnkey total</div><div class="v big" id="s-total">$0</div></div>
+      </div>
+    </div>
+    <p class="src">Coverage is the combined managed area of the selected units. Multi-unit / fleet orders qualify for preferred unit pricing and combined install — ask for a fleet quote once the list is set.</p>
+  </section>
+
+  <div class="calc">
+    <h2 style="margin-top:0;">What this fleet saves you <span class="sub" style="color:#bfe0bd;">"One guy not mowing" — across every unit, per season. Edit the assumptions.</span></h2>
+    <div class="row"><label>Loaded labor cost / hour<small>wage + taxes + overhead, one crew member</small></label><div>$<input id="rate" type="number" value="35" min="0" step="1"></div></div>
+    <div class="row"><label>Avg hours to mow a property / week<small>drive + mow + trim + cleanup, one visit</small></label><div><input id="hours" type="number" value="2" min="0" step="0.25"></div></div>
+    <div class="row"><label>Mowing weeks / season<small>typical Apr–Oct in Westchester</small></label><div><input id="weeks" type="number" value="28" min="0" step="1"></div></div>
+    <div class="out">
+      <div class="box"><div class="k">Fleet labor saved / season</div><div class="v green" id="o-season">$0</div></div>
+      <div class="box"><div class="k">Fleet pays for itself in</div><div class="v" id="o-payback">—</div></div>
+      <div class="note">Each robot replaces one weekly mow visit on its property. After payback that's labor you keep saving every season — while you keep billing the accounts. Units run on a few dollars of electricity a month.</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Why partner with Smart Lawn NY</h2>
+    <div class="card">
+      <p><strong>The partnership is clean and complementary.</strong> You keep the client, the contract, and the billing — we're the technology-and-service layer behind your brand. We source units at the best price, install and map each property, and handle local same-week service so your fleet never sits. You add autonomous mowing across your accounts without taking on equipment headaches.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 style="font-size:24px;">And let's make some noise about it <span class="sub">A joint marketing + free-press play</span></h2>
+    <div class="card">
+      <p><strong>Co-marketing:</strong> we capture demo footage on installs, co-produce social clips, and cross-promote — Lucente as flagship partner, Smart Lawn behind the tech. Both brands win the "innovative &amp; green" halo.</p>
+      <p><strong>Free press, worked together:</strong> a family landscaper going autonomous and emission-free is a real local story — and we both pitch it: News 12 Westchester, The Journal News / lohud, Westchester Magazine, the Westchester County Business Journal, New Rochelle Patch, Talk of the Sound. One flagship demo gives every outlet something to film — earned coverage is advertising neither of us pays for.</p>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2 style="margin:0 0 6px;">Lock in your list and we'll schedule a demo.</h2>
+    <p style="margin:0 auto 16px;max-width:560px;">Build the order above, then send it over or call — we'll confirm models per property and set up a live run on a Lucente site.</p>
+    <button class="btn" id="email-btn">Email this configuration</button>
+    <a class="btn ghost" href="tel:19146477276">Call Doug · (914) 647-7276</a>
+  </div>
+
+  <section id="answers" style="max-width:960px;margin:0 auto;padding:8px 20px 40px">
+  <h2 style="font-size:1.6rem;font-weight:800;color:#1d1d1f;margin:24px 0 4px">Your questions — answered</h2>
+  <p style="color:#636366;margin:0 0 20px">Dennis, here's everything you asked, straight.</p>
+
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px 24px;margin-bottom:20px">
+    <h3 style="margin:0 0 4px;font-size:1.15rem;font-weight:800">X430 vs X450 — same machine, and heads-up: the 450 is the bigger one</h3>
+    <p style="color:#636366;margin:0 0 14px;font-size:.95rem">You had it flipped — the <b>X450</b> is the larger-capacity unit, not the 430. They're otherwise the exact same machine: identical chassis, AWD + dual suspension, RTK + vision navigation, and 17″ dual-disc cutting. The only differences:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.94rem">
+      <tr style="background:#1a5c5c;color:#fff"><th style="text-align:left;padding:10px 12px">&nbsp;</th><th style="text-align:left;padding:10px 12px">X430</th><th style="text-align:left;padding:10px 12px;background:#4a8a10">X450 (bigger)</th></tr>
+      <tr><td style="padding:9px 12px;font-weight:700;background:#f0f8e8">Yard coverage</td><td style="padding:9px 12px;border-bottom:1px solid #eee">Up to ~1.0 acre</td><td style="padding:9px 12px;border-bottom:1px solid #eee">Up to ~1.5 acres</td></tr>
+      <tr><td style="padding:9px 12px;font-weight:700;background:#f0f8e8">Per charge</td><td style="padding:9px 12px;border-bottom:1px solid #eee">~0.22 ac</td><td style="padding:9px 12px;border-bottom:1px solid #eee">~0.27 ac</td></tr>
+      <tr><td style="padding:9px 12px;font-weight:700;background:#f0f8e8">Cellular (Connect+)</td><td style="padding:9px 12px;border-bottom:1px solid #eee">1 year included</td><td style="padding:9px 12px;border-bottom:1px solid #eee">2 years included</td></tr>
+      <tr><td style="padding:9px 12px;font-weight:700;background:#f0f8e8">Price (mower)</td><td style="padding:9px 12px;border-bottom:1px solid #eee"><b>$2,099</b></td><td style="padding:9px 12px;border-bottom:1px solid #eee"><b>$2,539</b></td></tr>
+      <tr><td style="padding:9px 12px;font-weight:700;background:#f0f8e8">Chassis · nav · cut</td><td style="padding:9px 12px" colspan="2"><b>Identical</b> — that's why the specs look the same</td></tr>
+    </table>
+    <p style="color:#636366;margin:8px 0 0;font-size:.82rem">With garage/charge dock bundle: X430 $2,349 · X450 $2,839. Partner pricing available.</p>
+    <div style="margin-top:16px">
+      <figure style="margin:0"><img src="assets/X4_Bottom.png" alt="Navimow X4 undercarriage — same on X430 and X450" style="width:100%;max-width:420px;border-radius:12px;border:1px solid #eee;background:#111"><figcaption style="color:#86868b;font-size:.8rem;margin-top:6px">Undercarriage — identical on the X430 and X450 (dual cutting discs + AWD wheels)</figcaption></figure>
+    </div>
+  </div>
+
+  <div style="background:#f0f8e8;border:1px solid #cfe6b8;border-radius:18px;padding:20px 24px;margin-bottom:20px">
+    <h3 style="margin:0 0 6px;font-size:1.1rem;font-weight:800">What the "cellular / Connect+" is actually for</h3>
+    <p style="color:#3a4a2a;margin:0 0 8px;font-size:.94rem">Each mower has its own built-in LTE — like a phone — so it stays online <b>anywhere on a property, even out of WiFi range.</b> For a landscaper running units at customers' houses, that's the whole point:</p>
+    <ul style="color:#3a4a2a;margin:0;padding-left:20px;font-size:.94rem">
+      <li><b>Theft protection</b> — GPS tracks it, alerts you if it's lifted or leaves the yard, and you can locate/lock it. Real insurance on a machine sitting outside.</li>
+      <li><b>Remote fleet monitoring</b> — status, start/stop, and "stuck / done / error" alerts on your phone from any site, without driving there.</li>
+      <li><b>Over-the-air updates</b> — no plugging in.</li>
+    </ul>
+    <p style="color:#636366;margin:10px 0 0;font-size:.85rem">Included free — 1 yr on the X430, 2 yrs on the X450 — then a small annual subscription to keep it connected.</p>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px 24px">
+    <h3 style="margin:0 0 4px;font-size:1.15rem;font-weight:800">CM120 (Terranox) — the commercial 3-acre unit</h3>
+    <p style="color:#636366;margin:0 0 16px;font-size:.95rem">Up to <b>3 acres</b>, 17″ cut, 4-wheel drive, handles <b>40° slopes</b>, no boundary wires or antenna. The "big one" for the properties where you'd otherwise put a crew.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <figure style="margin:0"><img src="assets/CM120_Top.jpg" alt="Navimow CM120 top view" style="width:100%;border-radius:12px;border:1px solid #eee"><figcaption style="text-align:center;color:#86868b;font-size:.8rem;margin-top:6px">Top</figcaption></figure>
+      <figure style="margin:0"><img src="assets/CM120_Bottom.jpg" alt="Navimow CM120 undercarriage" style="width:100%;border-radius:12px;border:1px solid #eee"><figcaption style="text-align:center;color:#86868b;font-size:.8rem;margin-top:6px">Undercarriage — dual-disc deck</figcaption></figure>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <span style="font-size:1.7rem;font-weight:800;color:#4a8a10">$5,499</span>
+      <span style="color:#636366;font-size:.9rem">retail · <b>partner/fleet pricing available</b> — ask Doug for your number</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+    <p><strong>Smart Lawn NY</strong> · Doug Brown · (914) 647-7276 · smartlawnny@gmail.com · authorized Navimow dealer, installer &amp; service · Peekskill, NY · smartlawnny.com</p>
+    <p style="margin-top:8px;">Model coverage and prices are Smart Lawn NY's current Navimow catalog. The savings figure is an editable estimate from the numbers you enter — not a guaranteed amount.</p>
+  </footer>
+
+</div>
+
+<script>
+  var MODELS=[
+    {id:'i105e', name:'Navimow i105E', fit:'Small residential lawns — entry', cov:0.13, covLabel:'5,500 sq ft', price:799},
+    {id:'i210', name:'Navimow i210-AWD', fit:'AWD for slopes & uneven ground', cov:0.5, covLabel:'0.5 ac', price:948},
+    {id:'i215', name:'Navimow i215 LiDAR', fit:'Obstacle-heavy / complex yards', cov:0.37, covLabel:'0.37 ac', price:1599},
+    {id:'h220', name:'Navimow H220', fit:'Premium nav & finish, ½ acre', cov:0.5, covLabel:'0.5 ac', price:2199},
+    {id:'x430', name:'Navimow X430', fit:'Larger residential estates', cov:1.0, covLabel:'1.0 ac', price:2499},
+    {id:'x450', name:'Navimow X450', fit:'Large residential / small commercial', cov:1.5, covLabel:'1.5 ac', price:2999},
+    {id:'cm120', name:'TerraNox CM120M1', fit:'Commercial grounds, HOAs, campuses', cov:3, covLabel:'3 ac', price:5499, com:true},
+    {id:'cm240', name:'TerraNox CM240M1', fit:'Largest commercial sites', cov:6, covLabel:'6 ac', price:6999, com:true}
+  ];
+  var INSTALL=300;
+  var qty={}; MODELS.forEach(function(m){qty[m.id]=0;});
+  function money(n){return '$'+Math.round(n).toLocaleString();}
+  var cfg=document.getElementById('cfg');
+  MODELS.forEach(function(m){
+    var row=document.createElement('div'); row.className='cfg-row';
+    row.innerHTML=
+      '<div class="m">'+m.name+(m.com?' <span class="badge com">Commercial</span>':'')+'<small>'+m.fit+'</small></div>'+
+      '<div class="cov">'+m.covLabel+'</div>'+
+      '<div class="pr">'+money(m.price)+'</div>'+
+      '<div class="stepper">'+
+        '<button data-act="dec" data-id="'+m.id+'" aria-label="decrease">–</button>'+
+        '<input type="number" min="0" value="0" data-id="'+m.id+'" id="q-'+m.id+'">'+
+        '<button data-act="inc" data-id="'+m.id+'" aria-label="increase">+</button>'+
+      '</div>'+
+      '<div class="lt" id="lt-'+m.id+'">$0</div>';
+    cfg.appendChild(row);
+  });
+  function recalc(){
+    var units=0, equip=0, cov=0;
+    MODELS.forEach(function(m){
+      var q=qty[m.id]||0; units+=q; equip+=q*m.price; cov+=q*m.cov;
+      document.getElementById('lt-'+m.id).textContent=money(q*m.price);
+    });
+    var install=units*INSTALL, total=equip+install;
+    document.getElementById('s-units').textContent=units;
+    document.getElementById('s-cov').textContent=(Math.round(cov*100)/100)+' ac';
+    document.getElementById('s-equip').textContent=money(equip);
+    document.getElementById('s-install').textContent=money(install);
+    document.getElementById('s-total').textContent=money(total);
+    var rate=+document.getElementById('rate').value||0, hours=+document.getElementById('hours').value||0, weeks=+document.getElementById('weeks').value||0;
+    var season=rate*hours*weeks*units;
+    document.getElementById('o-season').textContent=money(season);
+    document.getElementById('o-payback').textContent = (season>0) ? ((total/season)<1 ? Math.round((total/season)*12)+' months' : (Math.round((total/season)*10)/10)+' seasons') : '—';
+    return {units:units, equip:equip, install:install, total:total, cov:cov, season:season};
+  }
+  cfg.addEventListener('click',function(e){
+    var b=e.target.closest('button[data-act]'); if(!b) return;
+    var id=b.getAttribute('data-id');
+    qty[id]=Math.max(0,(qty[id]||0)+(b.getAttribute('data-act')==='inc'?1:-1));
+    document.getElementById('q-'+id).value=qty[id]; recalc();
+  });
+  cfg.addEventListener('input',function(e){
+    var inp=e.target.closest('input[data-id]'); if(!inp) return;
+    var id=inp.getAttribute('data-id'); qty[id]=Math.max(0,parseInt(inp.value||'0',10)); recalc();
+  });
+  ['rate','hours','weeks'].forEach(function(i){document.getElementById(i).addEventListener('input',recalc);});
+  document.getElementById('email-btn').addEventListener('click',function(){
+    var s=recalc(); var lines=[];
+    MODELS.forEach(function(m){ if(qty[m.id]>0) lines.push('  '+qty[m.id]+' x '+m.name+' ('+m.covLabel+') @ '+money(m.price)+' = '+money(qty[m.id]*m.price)); });
+    if(!lines.length){ alert('Add at least one unit first.'); return; }
+    var body='My Navimow fleet configuration:%0D%0A%0D%0A'+lines.join('%0D%0A').replace(/ /g,'%20')+
+      '%0D%0A%0D%0ATotal units: '+s.units+'%0D%0ACoverage: '+(Math.round(s.cov*100)/100)+'%20acres'+
+      '%0D%0AEquipment: '+money(s.equip)+'%0D%0AInstall%20($300/unit): '+money(s.install)+
+      '%0D%0ATurnkey%20total: '+money(s.total)+'%0D%0A%0D%0AProperties / notes:%0D%0A';
+    window.location.href='mailto:smartlawnny@gmail.com?subject=Navimow%20Fleet%20Configuration%20-%20Lucente&body='+body;
+  });
+  recalc();
+</script>
+</body>
+</html>
