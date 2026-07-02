@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Smart Lawn NY · Lucente Landscaping — Your Fleet Quote</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌱%3C/text%3E%3C/svg%3E">
+<style>
+:root{--green:#1b7f3b;--ink:#16181d;--mut:#6b7280;--line:#e6e8ec;--bg:#f5f7f5;--card:#fff;--gold:#b45309}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+.top{background:var(--green);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 18px}
+.top h1{margin:0;font-size:19px;font-weight:800}
+.top p{margin:4px 0 0;font-size:13px;opacity:.92}
+.wrap{max-width:780px;margin:0 auto;padding:18px 16px 140px}
+.banner{background:#eaf5ee;border:1px solid #cfe8d8;border-radius:12px;padding:14px 16px;margin:0 0 18px;font-size:14px}
+.banner b{color:var(--green)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 12px;display:flex;align-items:center;gap:14px}
+.card .info{flex:1;min-width:0}
+.card .nm{font-weight:800;font-size:15px}
+.card .fit{color:var(--mut);font-size:12.5px;margin-top:2px}
+.card .price .retail{color:var(--mut);text-decoration:line-through;font-size:12.5px;margin-right:6px}
+.card .price .yours{color:var(--green);font-weight:800;font-size:15px}
+.card .price .lbl{color:var(--gold);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:34px;height:34px;border:1px solid var(--line);background:#fafbfc;border-radius:9px;font-size:19px;font-weight:700;cursor:pointer;color:var(--ink)}
+.stepper button:active{transform:scale(.95)}
+.stepper .q{min-width:22px;text-align:center;font-weight:800;font-size:16px}
+.summary{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.06)}
+.summary .row{max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.summary .tot{font-size:13px;color:var(--mut)}
+.summary .tot b{display:block;font-size:22px;color:var(--ink)}
+.summary .save{color:var(--green);font-size:12.5px;font-weight:700}
+.pay{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:800;cursor:pointer;white-space:nowrap}
+.pay:disabled{background:#9bbfa8;cursor:default}
+.note{font-size:12px;color:var(--mut);margin-top:10px;text-align:center}
+h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:20px 0 8px}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>🌱 Smart Lawn NY × Lucente Landscaping</h1>
+  <p>Prepared exclusively for Dennis Lucente · Lucente Landscaping, New Rochelle NY</p>
+</div>
+<div class="wrap">
+  <div class="banner">
+    Dennis — this is <b>your</b> pricing: every unit is <b>5% under retail</b> and <b>install is on us ($0)</b>. Pick your quantities below; your total and savings update live. We source, deliver, and service every mower.
+  </div>
+
+  <h2 class="sec">Build your fleet</h2>
+  <div id="models"></div>
+
+  <div class="note">Wire-free RTK navigation · handles slopes · mows on its own schedule · full dealer install &amp; service included. Prices exclude NY sales tax where applicable.</div>
+</div>
+
+<div class="summary">
+  <div class="row">
+    <div class="tot">Your total <b id="total">$0</b><span class="save" id="save"></span></div>
+    <button class="pay" id="payBtn" disabled>Reserve &amp; pay</button>
+  </div>
+</div>
+
+<script>
+// Dennis Lucente pricing = 5% under retail, no install fee.
+const MODELS = [
+  {id:'i105e', nm:'Navimow i105E',      fit:'Small residential lawns — entry',        retail:799},
+  {id:'i210',  nm:'Navimow i210-AWD',   fit:'AWD for slopes & uneven ground',          retail:948},
+  {id:'i215',  nm:'Navimow i215 LiDAR', fit:'Obstacle-heavy / complex yards',          retail:1599},
+  {id:'h220',  nm:'Navimow H220',       fit:'Premium nav & finish, ½ acre',            retail:2199},
+  {id:'x430',  nm:'Navimow X430',       fit:'Larger residential estates, 1 acre',      retail:2499},
+  {id:'x450',  nm:'Navimow X450',       fit:'Large residential / small commercial',    retail:2999},
+  {id:'cm120', nm:'TerraNox CM120M1',   fit:'Commercial grounds, HOAs, campuses — 3 ac',retail:5499},
+  {id:'cm240', nm:'TerraNox CM240M1',   fit:'Largest commercial sites — 6 ac',         retail:6999},
+];
+const yours = r => Math.round(r * 0.95);   // 5% under retail
+const qty = {};
+// Set this to a Stripe Payment Link (or leave null → button emails the quote to Smart Lawn to send a secure link).
+const PAYMENT_LINK = null;
+
+const fmt = n => '$' + n.toLocaleString();
+const el = document.getElementById('models');
+MODELS.forEach(m => {
+  qty[m.id] = 0;
+  const c = document.createElement('div');
+  c.className = 'card';
+  c.innerHTML = `
+    <div class="info">
+      <div class="nm">${m.nm}</div>
+      <div class="fit">${m.fit}</div>
+      <div class="price"><span class="retail">${fmt(m.retail)}</span><span class="yours">${fmt(yours(m.retail))}</span><div class="lbl">Your Lucente price</div></div>
+    </div>
+    <div class="stepper">
+      <button aria-label="remove" data-m="${m.id}" data-d="-1">−</button>
+      <span class="q" id="q-${m.id}">0</span>
+      <button aria-label="add" data-m="${m.id}" data-d="1">+</button>
+    </div>`;
+  el.appendChild(c);
+});
+
+function recalc(){
+  let yoursTot = 0, retailTot = 0, units = 0;
+  MODELS.forEach(m => { yoursTot += qty[m.id]*yours(m.retail); retailTot += qty[m.id]*m.retail; units += qty[m.id]; });
+  document.getElementById('total').textContent = fmt(yoursTot);
+  const saved = retailTot - yoursTot;
+  document.getElementById('save').textContent = saved > 0 ? `  ·  you save ${fmt(saved)} + $0 install` : '';
+  document.getElementById('payBtn').disabled = units === 0;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-m]');
+  if(!b) return;
+  const id = b.dataset.m, d = +b.dataset.d;
+  qty[id] = Math.max(0, qty[id] + d);
+  document.getElementById('q-'+id).textContent = qty[id];
+  recalc();
+});
+document.getElementById('payBtn').addEventListener('click', () => {
+  const lines = MODELS.filter(m=>qty[m.id]>0).map(m=>`${qty[m.id]}× ${m.nm} @ ${fmt(yours(m.retail))}`).join('%0A');
+  const total = document.getElementById('total').textContent;
+  if(PAYMENT_LINK){ window.location.href = PAYMENT_LINK; return; }
+  // No live payment link set yet → hand the itemized order to Smart Lawn to send a secure Stripe link.
+  window.location.href = `sms:+19146477276&body=Lucente order — ${total}:%0A${lines}`;
+});
+recalc();
+</script>
+</body>
+</html>
