@@ -1,0 +1,147 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>2nd Nature — Planner</title>
+<style>
+:root{--ink:#15181d;--mut:#697079;--line:#e4e7ea;--bg:#f4f6f5;--card:#fff;
+--tree:#1b7f3b;--lawn:#2f9e44;--skate:#c026a3;--fin:#0b5c8a;--misc:#8a8f98;--amber:#b45309}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;-webkit-text-size-adjust:100%}
+.top{background:#111;color:#fff;padding:calc(16px + env(safe-area-inset-top)) 16px 12px;position:sticky;top:0;z-index:20}
+.top h1{margin:0;font-size:18px;font-weight:800}
+.top p{margin:3px 0 0;font-size:12px;opacity:.72}
+.add{display:flex;gap:6px;padding:10px 12px;background:#1b1b1b;position:sticky;top:0;z-index:19}
+.add input{flex:1;min-width:0;border:1px solid #333;background:#262626;color:#fff;border-radius:9px;padding:9px 11px;font-size:14px}
+.add select{border:1px solid #333;background:#262626;color:#fff;border-radius:9px;padding:0 6px;font-size:13px}
+.add button{border:none;background:#fff;color:#111;font-weight:800;border-radius:9px;padding:0 14px;font-size:14px;cursor:pointer}
+.wrap{max-width:760px;margin:0 auto;padding:12px 12px 80px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:9px 0;overflow:hidden}
+.day.today{border-color:var(--tree);box-shadow:0 0 0 1px var(--tree)}
+.day.weekend{background:#f7f8f7}
+.dayhead{padding:9px 13px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.dayhead .dow{color:var(--mut);font-weight:600}
+.dayhead .todaytag{margin-left:auto;font-size:10px;font-weight:800;background:var(--tree);color:#fff;padding:2px 8px;border-radius:20px;text-transform:uppercase}
+.tray{background:#eef1f4;border:1px dashed #b9c0c8}
+.tray .dayhead{border-bottom:1px dashed #cfd5db;background:transparent}
+.list{min-height:38px;padding:8px 10px;display:flex;flex-direction:column;gap:7px}
+.list:empty::after{content:"drag here";color:#b3b9c0;font-size:12px;font-style:italic;padding:4px 2px}
+.card{background:#fff;border:1px solid var(--line);border-left:4px solid var(--misc);border-radius:9px;padding:9px 11px;font-size:14px;display:flex;align-items:center;gap:9px;cursor:grab;touch-action:none;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card.b-tree{border-left-color:var(--tree)}.card.b-lawn{border-left-color:var(--lawn)}
+.card.b-skate{border-left-color:var(--skate)}.card.b-fin{border-left-color:var(--fin)}
+.card .tt{flex:1;min-width:0}
+.card .ty{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#fff;background:var(--misc);border-radius:20px;padding:2px 7px;flex:0 0 auto}
+.card.b-tree .ty{background:var(--tree)}.card.b-lawn .ty{background:var(--lawn)}.card.b-skate .ty{background:var(--skate)}.card.b-fin .ty{background:var(--fin)}
+.card .x{color:#c0392b;font-weight:800;font-size:16px;cursor:pointer;padding:0 2px;flex:0 0 auto;opacity:.55}
+.card .x:hover{opacity:1}
+.sortable-ghost{opacity:.4}.sortable-chosen{box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.foot{color:var(--mut);font-size:12px;text-align:center;margin-top:18px}
+</style></head><body>
+<div class="top">
+  <h1>🗓️ 2nd Nature — Planner</h1>
+  <p>Drag jobs &amp; to-dos onto a day · drag between days to reschedule · saved on this device</p>
+</div>
+<div class="add">
+  <input id="ttl" placeholder="Add a job or to-do…" enterkeyhint="done">
+  <select id="biz"><option value="tree">🌳 Tree</option><option value="lawn">🌱 Lawn</option><option value="skate">🛹 Skate</option><option value="fin">💰 Admin</option></select>
+  <select id="typ"><option value="job">Job</option><option value="todo">To-do</option></select>
+  <button id="addbtn">Add</button>
+</div>
+<div class="wrap" id="wrap"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script>
+const KEY='snt-planner-v1';
+const DAYS=14;
+const dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function todayISO(){const d=new Date();d.setHours(0,0,0,0);return iso(d);}
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function addDays(n){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+n);return d;}
+
+let items = load();
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(s))return s;}catch(e){}
+  // first-run seed — current open work
+  return [
+    {id:id(),title:'CADCO — pay down + unfreeze ordering',biz:'lawn',type:'job',day:'tray'},
+    {id:id(),title:'Call Marissa + send missed $5k',biz:'lawn',type:'todo',day:'tray'},
+    {id:id(),title:'Order Ted Haber X430',biz:'lawn',type:'job',day:'tray'},
+    {id:id(),title:'Close Dennis Lucente fleet order',biz:'lawn',type:'job',day:'tray'},
+    {id:id(),title:'Verify GL insurance $3,279.54 paid',biz:'tree',type:'todo',day:'tray'},
+    {id:id(),title:'Brivo — follow up on API access (door)',biz:'skate',type:'todo',day:'tray'},
+    {id:id(),title:'(845) 987-0553 — hot climb/removal lead',biz:'tree',type:'job',day:'tray'},
+    {id:id(),title:'Colby Moore quote',biz:'tree',type:'job',day:'tray'},
+    {id:id(),title:'Katz estimate',biz:'tree',type:'job',day:'tray'},
+    {id:id(),title:'App Store: publish BM + SkateOS',biz:'fin',type:'todo',day:'tray'},
+  ];
+}
+function id(){return 'i'+Math.random().toString(36).slice(2,9);}
+function save(){localStorage.setItem(KEY,JSON.stringify(items));}
+
+function cardHTML(it){
+  const d=document.createElement('div');
+  d.className='card b-'+it.biz; d.dataset.id=it.id;
+  d.innerHTML=`<span class="tt"></span><span class="ty">${it.type==='job'?'Job':'To-do'}</span><span class="x" title="delete">×</span>`;
+  d.querySelector('.tt').textContent=it.title;
+  d.querySelector('.x').addEventListener('click',e=>{e.stopPropagation();items=items.filter(x=>x.id!==it.id);save();d.remove();});
+  return d;
+}
+
+function makeList(day){
+  const l=document.createElement('div'); l.className='list'; l.dataset.day=day;
+  items.filter(x=>x.day===day).forEach(it=>l.appendChild(cardHTML(it)));
+  return l;
+}
+
+function render(){
+  const w=document.getElementById('wrap'); w.innerHTML='';
+  // tray
+  const tray=document.createElement('div'); tray.className='day tray';
+  tray.innerHTML='<div class="dayhead">📥 Unscheduled</div>';
+  tray.appendChild(makeList('tray')); w.appendChild(tray);
+  // days
+  const t=todayISO();
+  for(let i=0;i<DAYS;i++){
+    const d=addDays(i); const ds=iso(d); const wd=d.getDay();
+    const box=document.createElement('div');
+    box.className='day'+(ds===t?' today':'')+((wd===0||wd===6)?' weekend':'');
+    box.innerHTML=`<div class="dayhead">${d.getDate()} <span class="dow">${dow[wd]} ${mon[d.getMonth()]}</span>${ds===t?'<span class="todaytag">Today</span>':''}</div>`;
+    box.appendChild(makeList(ds)); w.appendChild(box);
+  }
+  // any items whose day is a past/expired date → pull back to tray
+  const valid=new Set(['tray']); for(let i=0;i<DAYS;i++)valid.add(iso(addDays(i)));
+  let moved=false;
+  items.forEach(it=>{if(!valid.has(it.day)){it.day='tray';moved=true;}});
+  if(moved){save();return render();}
+  // wire Sortable on every list
+  document.querySelectorAll('.list').forEach(l=>{
+    new Sortable(l,{group:'plan',animation:150,delay:120,delayOnTouchOnly:true,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',
+      onEnd:syncFromDOM});
+  });
+}
+
+function syncFromDOM(){
+  const order=[];
+  document.querySelectorAll('.list').forEach(l=>{
+    const day=l.dataset.day;
+    l.querySelectorAll('.card').forEach(c=>{
+      const it=items.find(x=>x.id===c.dataset.id); if(it){it.day=day;order.push(it);}
+    });
+  });
+  // keep any items not currently in DOM (shouldn't happen) then commit ordered
+  items=order.concat(items.filter(x=>!order.includes(x)));
+  save();
+}
+
+document.getElementById('addbtn').addEventListener('click',()=>{
+  const t=document.getElementById('ttl');
+  const v=t.value.trim(); if(!v)return;
+  items.unshift({id:id(),title:v,biz:document.getElementById('biz').value,type:document.getElementById('typ').value,day:'tray'});
+  t.value=''; save(); render();
+});
+document.getElementById('ttl').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('addbtn').click();});
+
+render();
+</script>
+</body></html>
