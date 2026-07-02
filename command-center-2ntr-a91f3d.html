@@ -4,7 +4,7 @@
 <title>2nd Nature — Command Center</title>
 <style>
 :root{--ink:#15181d;--mut:#697079;--line:#e6e8ec;--bg:#f4f6f5;--card:#fff;
---tree:#1b7f3b;--lawn:#2f9e44;--skate:#c026a3;--fin:#0b5c8a;--red:#c0392b;--amber:#9a6a00}
+--tree:#1b7f3b;--lawn:#2f9e44;--skate:#c026a3;--fin:#0b5c8a;--red:#c0392b;--amber:#9a6a00;--green:#1b7f3b}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-text-size-adjust:100%}
 .top{background:#111;color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 14px;position:sticky;top:0;z-index:20}
@@ -19,31 +19,37 @@ summary{list-style:none;cursor:pointer;padding:14px 16px;font-size:16px;font-wei
 summary::-webkit-details-marker{display:none}
 summary .cnt{margin-left:auto;font-size:12px;font-weight:700;color:var(--mut)}
 summary .chev{transition:transform .2s;color:var(--mut);font-size:13px}
-details[open] summary .chev{transform:rotate(90deg)}
+details[open]>summary .chev{transform:rotate(90deg)}
 .body{padding:0 16px 14px}
+/* nested folder */
+details.sub{border-radius:11px;margin:9px 0;background:#fafbfc}
+details.sub>summary{font-size:14.5px;padding:11px 13px}
+details.sub .body{padding:0 13px 11px}
 .grp{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:12px 0 3px}
 a.link{display:flex;gap:8px;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:14px;color:var(--fin);text-decoration:none;font-weight:600}
 a.link:first-child{border-top:0}
 a.link .d{color:var(--mut);font-weight:400;font-size:12.5px}
 .dotb{flex:0 0 auto;width:8px;height:8px;border-radius:50%;margin-top:6px}
 .b-tree{background:var(--tree)}.b-lawn{background:var(--lawn)}.b-skate{background:var(--skate)}.b-fin{background:var(--fin)}.b-all{background:#8a8f98}
-.item{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.item{display:flex;gap:9px;padding:8px 0;border-top:1px solid var(--line);font-size:13.8px}
 .item:first-child{border-top:0}
 .item b{color:#000}
+.st{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:1px 7px;border-radius:20px;color:#fff;flex:0 0 auto;margin-top:1px}
+.s-live{background:var(--green)}.s-work{background:var(--amber)}.s-block{background:var(--red)}
+.mini{font-size:12.5px;color:var(--mut);margin:2px 0 6px}
 .btn{display:inline-block;background:var(--tree);color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:11px 16px;border-radius:11px;margin:8px 8px 0 0}
-.btn.alt{background:#111}
-iframe{width:100%;height:460px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#fff}
+iframe{width:100%;height:440px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#fff}
 .hide{display:none !important}
 .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:20px}
 .k{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#eef0f3;padding:1px 5px;border-radius:5px}
 </style></head><body>
 <div class="top">
   <h1>🧭 2nd Nature — Command Center</h1>
-  <p>Everything in one place · calendar · to-do · pages · money · updated Jul 2, 2026 · private</p>
+  <p>Everything in one place · status · calendar · to-do · pages · updated Jul 2, 2026 · private</p>
 </div>
 <div class="chips" id="chips">
   <div class="chip on" data-f="all">Everything</div>
-  <div class="chip" data-f="tree">🌳 Tree</div>
+  <div class="chip" data-f="tree">🌳 Tree / BM</div>
   <div class="chip" data-f="lawn">🌱 SmartLawn</div>
   <div class="chip" data-f="skate">🛹 Skate</div>
   <div class="chip" data-f="fin">💰 Finance / Admin</div>
@@ -51,51 +57,96 @@ iframe{width:100%;height:460px;border:1px solid var(--line);border-radius:12px;m
 <div class="wrap">
 
   <details open data-sec>
-    <summary><span class="chev">▶</span>💵 Money &amp; what to work on <span class="cnt">top priorities</span></summary>
+    <summary><span class="chev">▶</span>💵 Money &amp; what to work on <span class="cnt">priorities</span></summary>
     <div class="body">
-      <div class="item" data-biz="lawn"><span class="dotb b-lawn"></span><span><b>CADCO — ~$22,878 past due.</b> Pay to unfreeze ordering → get <b>Ted Haber's X430</b> ($1,715 cost, already sold) + other units. Pay the missed $5k + call Marissa with a dated plan; prepay new orders.</span></div>
-      <div class="item" data-biz="lawn"><span class="dotb b-lawn"></span><span><b>Close Dennis Lucente's fleet order.</b> Custom quote page is live. Needs the SmartLawn Stripe key in <span class="k">smartlawn-keys.txt</span> → then the payable link + webhook verify. Big order? Take ACH/check, not card.</span></div>
-      <div class="item" data-biz="tree"><span class="dotb b-tree"></span><span><b>Jobber invoices:</b> Hope ✅ · Kendra ✅ ($400) · Hector ✅ · Bynum ✅ PAID ($3,355).</span></div>
-      <div class="item" data-biz="skate"><span class="dotb b-skate"></span><span><b>Skate door auto-unlock</b> — Square side live; waiting only on Brivo API approval (you emailed them). ~2-min finish when they reply.</span></div>
-      <div class="item" data-biz="tree"><span class="dotb b-tree"></span><span>⚠ Verify <b>GL insurance $3,279.54</b> is actually paid (policy cancels 9/18/26 if not).</span></div>
+      <div class="item" data-biz="lawn"><span class="st s-block">do</span><span><b>CADCO — ~$22,878 past due.</b> Pay to unfreeze ordering → get <b>Ted Haber's X430</b> ($1,715 cost, already sold) + other units. Pay the missed $5k, call Marissa with a dated plan, prepay new orders.</span></div>
+      <div class="item" data-biz="lawn"><span class="st s-work">do</span><span><b>Close Dennis Lucente's fleet order.</b> Custom quote page live. Needs the SmartLawn Stripe key in <span class="k">smartlawn-keys.txt</span> → payable link + webhook verify. Big order → take ACH/check.</span></div>
+      <div class="item" data-biz="skate"><span class="st s-work">wait</span><span><b>Skate door auto-unlock</b> — Square side live; waiting only on Brivo API approval (you emailed them).</span></div>
+      <div class="item" data-biz="tree"><span class="st s-block">do</span><span>⚠ Verify <b>GL insurance $3,279.54</b> is actually paid (policy cancels 9/18/26 if not).</span></div>
+      <div class="item" data-biz="tree"><span class="st s-live">done</span><span><b>Jobber invoices:</b> Hope ✅ · Kendra ✅ ($400) · Hector ✅ · Bynum ✅ PAID ($3,355).</span></div>
+    </div>
+  </details>
+
+  <details open data-sec>
+    <summary><span class="chev">▶</span>📦 Deployment status — where each product stands <span class="cnt">3 products</span></summary>
+    <div class="body">
+
+      <details class="sub" data-biz="tree">
+        <summary><span class="chev">▶</span>🌳 Branch Manager <span class="cnt">LIVE · v983</span></summary>
+        <div class="body">
+          <div class="mini">Live at branchmanager.app · v983 (Jun 28 2026) · the Jobber-replacement field-service app.</div>
+          <div class="item"><span class="st s-live">built</span><span>Jobber-mode UI theme (Requests rebuilt), multi-tenant Phase 1 RLS, Bouncie realtime crew GPS (v966), smart call filter, mobile create flows, payroll/timesheets, marketing-site module, 10X tools.</span></div>
+          <div class="item"><span class="st s-work">needs</span><span><b>Multi-tenant Phase 2</b> (add <span class="k">tenant_id</span> to every write) + <b>Phase 3</b> (strict RLS) — required before beta testers.</span></div>
+          <div class="item"><span class="st s-block">needs</span><span><b>Tenant leak:</b> <span class="k">owner_email</span> still readable by anon — finish the SECURITY DEFINER RPC + revoke.</span></div>
+          <div class="item"><span class="st s-work">needs</span><span>Split <span class="k">quotes.js</span> (~140KB); fix the failing "Daily BM Audit" workflow; clear npm CVEs (1 critical + HIGH).</span></div>
+          <div class="item"><span class="st s-work">needs</span><span><b>App Store</b> publish (wrap the app or the RN shell).</span></div>
+          <a class="btn" href="https://branchmanager.app" target="_blank">Open Branch Manager ↗</a>
+        </div>
+      </details>
+
+      <details class="sub" data-biz="skate">
+        <summary><span class="chev">▶</span>🛹 SkateOS <span class="cnt">LIVE · door pending</span></summary>
+        <div class="body">
+          <div class="mini">skateos.com live · POS on Square · member door system working · one blocker left.</div>
+          <div class="item"><span class="st s-live">built</span><span>skateos.com (marketing + shop + admin + booking workers); POS on Square; <b>Brivo Mobile Pass</b> door for members (tap-in works); /tutorial, /door, /j2, /for-jon pages.</span></div>
+          <div class="item"><span class="st s-live">built</span><span>Square → skateOS product sync at <b>parity (1,409 items)</b>; prod Square token recovered + placed.</span></div>
+          <div class="item"><span class="st s-block">blocked</span><span><b>Door auto-unlock on paid day-pass</b> — entire Square side is wired + live; waiting only on <b>Brivo enabling API access</b> (Nick / Brivo). ~2-min finish when they reply.</span></div>
+          <div class="item"><span class="st s-work">needs</span><span><b>App Store</b> publish (Expo shell — check-in, members, POS).</span></div>
+          <a class="btn" href="https://skateos.com/tutorial" target="_blank" style="background:#c026a3">Staff tutorial ↗</a>
+          <a class="btn" href="https://skateos.com/door" target="_blank" style="background:#111">Door status ↗</a>
+        </div>
+      </details>
+
+      <details class="sub" data-biz="lawn">
+        <summary><span class="chev">▶</span>🌱 SmartLawn <span class="cnt">LIVE · payments to verify</span></summary>
+        <div class="body">
+          <div class="mini">smartlawnny.com live · Navimow dealer · POS on Supabase + Stripe.</div>
+          <div class="item"><span class="st s-live">built</span><span>smartlawnny.com storefront; POS backend; <b>Dennis Lucente custom quote</b> page live (his pricing baked in).</span></div>
+          <div class="item"><span class="st s-work">fixed</span><span>Checkout price bug + webhook (<span class="k">UNIQUE(sale_id)</span>) fixed Jul 1 — but not yet live-verified.</span></div>
+          <div class="item"><span class="st s-block">needs</span><span><b>SmartLawn Stripe key</b> in <span class="k">smartlawn-keys.txt</span> → run a live payment test, confirm the webhook records, reconcile the other pending sales.</span></div>
+          <div class="item"><span class="st s-work">needs</span><span>Ship the redesigned homepage to <span class="k">smartlawnny-cloud</span> (add peekskilltree as WRITE collaborator).</span></div>
+          <a class="btn" href="https://branchmanager.app/smartlawn-lucente-d4e91b.html" target="_blank" style="background:#2f9e44">Dennis quote ↗</a>
+        </div>
+      </details>
+
     </div>
   </details>
 
   <details open data-sec>
     <summary><span class="chev">▶</span>📅 Calendar — what you did (Apr–Jun) <span class="cnt">439 activities</span></summary>
     <div class="body">
-      <p style="font-size:13.5px;color:var(--mut);margin:6px 0 0">93 active days · 159 tree · 74 equipment · 53 skate · 13 SmartLawn · reconstructed from your texts.</p>
-      <a class="btn" href="https://branchmanager.app/calendar-apr-jun-b7e21c.html" target="_blank">Open the full calendar ↗</a>
-      <iframe src="https://branchmanager.app/calendar-apr-jun-b7e21c.html" title="Activity Calendar Apr-Jun 2026" loading="lazy"></iframe>
+      <p class="mini">93 active days · 159 tree · 74 equipment · 53 skate · 13 SmartLawn · rebuilt from your texts.</p>
+      <a class="btn" href="https://branchmanager.app/calendar-apr-jun-b7e21c.html" target="_blank">Open full calendar ↗</a>
+      <iframe src="https://branchmanager.app/calendar-apr-jun-b7e21c.html" title="Activity Calendar" loading="lazy"></iframe>
     </div>
   </details>
 
-  <details open data-sec>
+  <details data-sec>
     <summary><span class="chev">▶</span>✅ To-Do <span class="cnt">live list</span></summary>
     <div class="body">
-      <p style="font-size:13.5px;color:var(--mut);margin:6px 0 8px">Your live, always-current to-do (password <span class="k">snt2026</span>). Bookmark it on your phone.</p>
+      <p class="mini">Your live, always-current to-do (password <span class="k">snt2026</span>). Bookmark it on your phone.</p>
       <a class="btn" href="https://branchmanager.app/todo-snt-7c21f4.html" target="_blank">Open the to-do ↗</a>
     </div>
   </details>
 
-  <details open data-sec>
-    <summary><span class="chev">▶</span>🔗 Pages &amp; apps — everything we built <span class="cnt" id="linkcnt"></span></summary>
+  <details data-sec>
+    <summary><span class="chev">▶</span>🔗 Pages &amp; apps — everything built <span class="cnt" id="linkcnt"></span></summary>
     <div class="body">
       <div class="grp" data-biz="skate">🛹 Skate</div>
       <a class="link" data-biz="skate" href="https://skateos.com/tutorial"><span class="dotb b-skate"></span><span>Staff Tutorial <span class="d">· door, register, members, daily flow</span></span></a>
-      <a class="link" data-biz="skate" href="https://skateos.com/door"><span class="dotb b-skate"></span><span>Door setup + how it works <span class="d">· for John &amp; Nick</span></span></a>
-      <a class="link" data-biz="skate" href="https://skateos.com/j2"><span class="dotb b-skate"></span><span>Inventory → Square import <span class="d">· CSV + photos</span></span></a>
+      <a class="link" data-biz="skate" href="https://skateos.com/door"><span class="dotb b-skate"></span><span>Door setup + how it works</span></a>
+      <a class="link" data-biz="skate" href="https://skateos.com/j2"><span class="dotb b-skate"></span><span>Inventory → Square import</span></a>
       <a class="link" data-biz="skate" href="https://skateos.com/for-jon"><span class="dotb b-skate"></span><span>Jon partner recap</span></a>
       <a class="link" data-biz="skate" href="https://skateos.com"><span class="dotb b-skate"></span><span>skateos.com <span class="d">· main site</span></span></a>
 
       <div class="grp" data-biz="lawn">🌱 SmartLawn</div>
-      <a class="link" data-biz="lawn" href="https://branchmanager.app/smartlawn-lucente-d4e91b.html"><span class="dotb b-lawn"></span><span>Dennis Lucente custom quote <span class="d">· his pricing, live</span></span></a>
-      <a class="link" data-biz="lawn" href="https://branchmanager.app/smartlawn-fleet.html"><span class="dotb b-lawn"></span><span>Generic fleet pitch <span class="d">· ?to=Company to personalize</span></span></a>
-      <a class="link" data-biz="lawn" href="https://smartlawnny.com"><span class="dotb b-lawn"></span><span>smartlawnny.com <span class="d">· main site</span></span></a>
+      <a class="link" data-biz="lawn" href="https://branchmanager.app/smartlawn-lucente-d4e91b.html"><span class="dotb b-lawn"></span><span>Dennis Lucente custom quote</span></a>
+      <a class="link" data-biz="lawn" href="https://branchmanager.app/smartlawn-fleet.html"><span class="dotb b-lawn"></span><span>Generic fleet pitch <span class="d">· ?to=Company</span></span></a>
+      <a class="link" data-biz="lawn" href="https://smartlawnny.com"><span class="dotb b-lawn"></span><span>smartlawnny.com</span></a>
 
       <div class="grp" data-biz="tree">🌳 Tree / Branch Manager</div>
       <a class="link" data-biz="tree" href="https://branchmanager.app/fleet-budget-b1e454.html"><span class="dotb b-tree"></span><span>Fleet &amp; budget dashboard</span></a>
-      <a class="link" data-biz="tree" href="https://branchmanager.app/northeast-intrepid-kevin-995ead.html"><span class="dotb b-tree"></span><span>Intrepid — Kevin partner pitch</span></a>
+      <a class="link" data-biz="tree" href="https://branchmanager.app/northeast-intrepid-kevin-995ead.html"><span class="dotb b-tree"></span><span>Intrepid — Kevin pitch</span></a>
       <a class="link" data-biz="tree" href="https://branchmanager.app/northeast-intrepid-c83567.html"><span class="dotb b-tree"></span><span>Intrepid — Chris demo-center</span></a>
       <a class="link" data-biz="tree" href="https://branchmanager.app"><span class="dotb b-tree"></span><span>branchmanager.app <span class="d">· the app</span></span></a>
       <a class="link" data-biz="tree" href="https://peekskilltree.com"><span class="dotb b-tree"></span><span>peekskilltree.com</span></a>
@@ -106,27 +157,25 @@ iframe{width:100%;height:460px;border:1px solid var(--line);border-radius:12px;m
   </details>
 
   <details data-sec>
-    <summary><span class="chev">▶</span>🤖 Agents &amp; tools <span class="cnt">Mac mini / voice</span></summary>
+    <summary><span class="chev">▶</span>🤖 Agents &amp; tools <span class="cnt">Mac / voice</span></summary>
     <div class="body">
-      <div class="item" data-biz="fin"><span class="dotb b-fin"></span><span><b>Fazm + Hermes</b> installed on this MacBook (<span class="k">~/Desktop/agents</span>). Not yet phone-controllable — needs each to be running + a remote trigger wired.</span></div>
-      <div class="item" data-biz="fin"><span class="dotb b-fin"></span><span><b>Voice (George)</b> — ElevenLabs TTS now wired to speak replies.</span></div>
-      <div class="item" data-biz="fin"><span class="dotb b-fin"></span><span>Buy <b>Anker PowerConf S330</b> mic for the Mac mini (~$100).</span></div>
+      <div class="item" data-biz="fin"><span class="st s-work">setup</span><span><b>Fazm + Hermes</b> installed on the MacBook (<span class="k">~/Desktop/agents</span>). Not yet phone-controllable — each needs to be running + a remote trigger wired.</span></div>
+      <div class="item" data-biz="fin"><span class="st s-live">on</span><span><b>Voice (George)</b> — ElevenLabs TTS wired to speak replies.</span></div>
+      <div class="item" data-biz="fin"><span class="st s-work">buy</span><span><b>Anker PowerConf S330</b> mic for the Mac mini (~$100).</span></div>
     </div>
   </details>
 
-  <div class="foot">Private · noindex · filter by business up top · every section collapses</div>
+  <div class="foot">Private · noindex · filter by business up top · tap any folder to expand</div>
 </div>
 
 <script>
 const chips = document.querySelectorAll('.chip');
 function apply(f){
-  // links + items carry data-biz; group labels too
   document.querySelectorAll('[data-biz]').forEach(n=>{
     n.classList.toggle('hide', f!=='all' && n.dataset.biz!==f && n.dataset.biz!=='all');
   });
-  // update pages count
-  const vis = [...document.querySelectorAll('a.link')].filter(a=>!a.classList.contains('hide')).length;
-  document.getElementById('linkcnt').textContent = vis + ' pages';
+  const vis=[...document.querySelectorAll('a.link')].filter(a=>!a.classList.contains('hide')).length;
+  const lc=document.getElementById('linkcnt'); if(lc) lc.textContent=vis+' pages';
 }
 chips.forEach(c=>c.addEventListener('click',()=>{
   chips.forEach(x=>x.classList.toggle('on', x===c));
