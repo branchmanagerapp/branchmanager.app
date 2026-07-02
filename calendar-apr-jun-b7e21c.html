@@ -1,0 +1,885 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Doug — Activity Calendar · Apr–Jun 2026</title>
+<style>
+:root{--ink:#16201a;--muted:#6b7280;--line:#e5e9e5;--bg:#f6f8f6;--card:#fff;--green-d:#10401a}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
+.wrap{max-width:920px;margin:0 auto;padding:0 18px}
+header{background:linear-gradient(160deg,#0c2c52,#1d6fd6 95%);color:#fff;padding:38px 0 30px}
+header h1{margin:0;font-size:27px;font-weight:800}
+header .tag{margin-top:8px;font-size:16px;opacity:.95}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.stat{background:rgba(255,255,255,.14);border-radius:10px;padding:9px 14px;font-size:14px}
+.stat b{font-size:19px;display:block}
+.legend{position:sticky;top:0;background:rgba(246,248,246,.97);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 0;z-index:5}
+.legend .wrap{display:flex;flex-wrap:wrap;gap:7px 9px}
+.chip{display:inline-block;font-size:11.5px;font-weight:700;color:#fff;background:var(--c);border-radius:20px;padding:2px 10px;white-space:nowrap}
+.chip.sm{font-size:11px;padding:1px 8px}
+.legend .chip .n{opacity:.8;font-weight:600;margin-left:3px}
+h2.month{font-size:21px;color:var(--green-d);margin:30px 0 6px;border-bottom:2px solid var(--line);padding-bottom:6px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 16px;margin:11px 0;display:flex;gap:15px}
+.day .date{flex:0 0 86px;text-align:center;border-right:1px solid var(--line);padding-right:12px}
+.day .date .num{font-size:25px;font-weight:800;color:var(--green-d);line-height:1}
+.day .date .dow{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+.day .date .mon{font-size:11px;color:var(--muted);margin-top:1px}
+.day .body{flex:1;min-width:0}
+.day .note{display:inline-block;font-size:11.5px;font-weight:700;background:#fff3cd;color:#92660a;border-radius:6px;padding:1px 8px;margin-bottom:6px}
+.item{display:flex;gap:9px;align-items:flex-start;margin:5px 0;font-size:14.5px}
+.item .chips{flex:0 0 auto;display:flex;gap:4px;flex-wrap:wrap;max-width:150px}
+.item .txt{flex:1;min-width:0}
+@media(max-width:620px){
+ .day{flex-direction:column;gap:6px}
+ .day .date{flex:none;text-align:left;border-right:none;border-bottom:1px solid var(--line);padding:0 0 7px;display:flex;align-items:baseline;gap:8px}
+ .day .date .num{font-size:20px}.day .date .dow,.day .date .mon{margin-top:0}
+ .item{flex-direction:column;gap:3px}.item .chips{max-width:none}
+}
+footer{color:var(--muted);font-size:12.5px;text-align:center;padding:26px 0 50px}
+.print{position:fixed;right:16px;bottom:16px;background:#1d6fd6;color:#fff;border:none;border-radius:30px;padding:11px 18px;font-size:14px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.2);cursor:pointer}
+@media print{.print,.legend{position:static}.print{display:none}header{background:#0c2c52}}
+</style></head><body>
+<header><div class="wrap"><h1>What you did — Activity Calendar</h1>
+<div class="tag">Reconstructed from your text messages · March 30 – June 30, 2026</div>
+<div class="stats">
+<div class="stat"><b>93</b>active days</div>
+<div class="stat"><b>439</b>logged activities</div>
+<div class="stat"><b>159</b>tree-work items</div>
+<div class="stat"><b>53</b>skate-park items</div>
+<div class="stat"><b>74</b>equipment items</div>
+</div></div></header>
+<div class="legend"><div class="wrap">
+<span class="chip" style="--c:#2e7d32">Tree work<span class="n">159</span></span>
+<span class="chip" style="--c:#b9770f">Equipment<span class="n">74</span></span>
+<span class="chip" style="--c:#e8472b">Skate park<span class="n">53</span></span>
+<span class="chip" style="--c:#1d6fd6">Money<span class="n">18</span></span>
+<span class="chip" style="--c:#0891b2">Crew/hiring<span class="n">30</span></span>
+<span class="chip" style="--c:#7c3aed">Meeting<span class="n">14</span></span>
+<span class="chip" style="--c:#6b7280">Errand<span class="n">24</span></span>
+<span class="chip" style="--c:#15803d">SmartLawn<span class="n">13</span></span>
+<span class="chip" style="--c:#db2777">Personal<span class="n">45</span></span>
+<span class="chip" style="--c:#475569">Other/build<span class="n">20</span></span>
+</div></div>
+<div class="wrap">
+<h2 class="month">March 30 – April 30, 2026</h2>
+<div class="day">
+<div class="date"><div class="num">30</div><div class="dow">Mon</div><div class="mon">Mar</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Easy cleanup job (Catherine): chipper + machine, 4 cuts to a dead ash tree, grapple 3 existing debris piles + some saplings into chipper; driveway easy to back into; pairing with another Putnam Valley cleanup she was trying to sell</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon Dico working on Greens bearings packaging/website; Nick at the shop installing a door</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Doug set up Claude on his phone to remote-build a Park Square POS / bearings info page</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">31</div><div class="dow">Tue</div><div class="mon">Mar</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Catherine spoke with client Chloe and her fiance in the AM</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Estimate referral: Cecile buying a house in Pound Ridge (Catherine to follow up; not available that day, went next day)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Doug pushing to get client &quot;Matt&quot; to pay half up front and start payroll; chasing Beacon payment</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug on family Florida trip (texts re long lines)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">1</div><div class="dow">Wed</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New request entered: Paulette wants a quote to clear brush/clean up a Peekskill lot she owns (for prospective builders)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug at Universal (prior day) and at the beach in Florida</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Ryan out sick; Catherine recovering from illness; Catherine sold 2 jobs (in Jobber), did 3 estimates</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">2</div><div class="dow">Thu</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">SmartLawn property analysis posted (543 Byram Lake Rd, Mt Kisco, 48.2 mowable acres)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Jon ran payroll, found a warning that November taxes weren&#x27;t paid; Doug to write a check on return</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">FJ Mowers (Brian Waworski) + Shea confirmed for Monday demo/visit; Doug can&#x27;t attend (still in FL)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Still in Florida</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">3</div><div class="dow">Fri</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Estimate referral: Kelsey Beck, 11 Orchard St, Cold Spring — pruning neighbor&#x27;s branches over her house; Monday 9-11 set</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Doug reports Branch Manager app nearly finished, testing, pointing lead sources to it; Jobber lockout coming</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Ryan: needs Thursday off for Bronx VA testing/compensation reevaluation; still very sick</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">4</div><div class="dow">Sat</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Family road trip north from FL — heading to Myrtle Beach, then DC/Aunt Reg&#x27;s; planned back by Tuesday</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Crew planning: back on job Wednesday; Catherine got Ryan on antibiotics; Catherine has root canal Thursday; she sold 2 more jobs, 3 more estimates that day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Braxton Climberson lined up to work Thursday (and maybe Friday) in Wilton; agreed to W2/payroll since he has no workers comp cert</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">5</div><div class="dow">Sun</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="note">Easter</div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Easter; family drove through Virginia, visited an aquarium; booked a ~$120 hotel with a pool; Aunt Reg sent an anniversary check</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">6</div><div class="dow">Mon</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Estimate referral: Marion Derham, 622 Kissam Rd, Peekskill (Hillcrest Park) — one removal + some prunes; Doug called her</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine scheduled: Waccabuc (Chuckles/Charles DiCarlo) estimate for next afternoon; Putnam Valley debris removal; PV 3x removal; 37 John Cava Lane, Cortlandt Manor</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Family drove home — arrived home safe ~11am; Doug &quot;back and down to work tomorrow&quot;</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">7</div><div class="dow">Tue</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked Wilton job (350 Nod Hill Rd, Wilton CT — Matt&#x27;s property): getting last trees down and starting cleanup; Doug took pickup, Ryan rode with him (started ~9 to let Ryan&#x27;s meds kick in)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine did the big Waccabuc/Charles DiCarlo estimate (estimated min. 3 days of work; &quot;carnage&quot; from Clearway&#x27;s prior work)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">A stick caught a wire on the front of the bucket truck (Doug noted/reattached)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Doug pushing crew to enter quotes directly into Branch Manager; synced Jobber data again</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">8</div><div class="dow">Wed</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Wilton job continued (Doug + Catherine); Catherine brought Doug a large breakfast burrito</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Doug arranged Braxton to join Wilton job next day; mentioned a 20yo BOCES-trained climber (Colin) free to start, and &quot;Kenny&quot; (met collecting cans) as possible hires</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Matt added another cedar to the Wilton scope (Catherine relayed)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">9</div><div class="dow">Thu</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Wilton job continued — Doug + Braxton (Braxton arrived ~9:29/9:48); &quot;got a lot done,&quot; not finished</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Catherine: 4 estimates set up, all Dialpad voicemails returned, 2 more estimates coming from Frank</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Catherine&#x27;s root-canal appointment 1 done (temp cap)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Doug stopped for pizza by Acme on the way home</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">10</div><div class="dow">Fri</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Wilton job — planned to wrap (prune oak, pack out, send log truck); Doug + Catherine went; Ryan stayed back (on phone with VA all day)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Doug under financial strain: bucket-truck payment failed, credit card over $10k, buying gas on personal card; chasing the $20k owed, Beacon payment, and a deposit check from Matt (Matt traveling, no check)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Tension/blowup with Ryan over flaking; Doug threatening to make him move out of the skate park</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine: Tree of Heaven / Jessica estimate being scheduled (fall best for treatment)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">11</div><div class="dow">Sat</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug went to urgent care for antibiotics (poison ivy)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Saw/chainsaw maintenance discussion: new bar + Pico chain for the 500/Husky, sorting bars/sprockets across the 201s/500/661; new chains staged in bucket truck; Ryan tossed a bad Husky 200 battery</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Wilton (Matt) job planning: bring log splitter Monday, buck logs on-site, finish splitting later; Matt convinced to install a wood stove and buy the wood pile; stump-grinding scope being priced</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Doug arranged to pick up the log splitter from Anthony Merola (Merola has a check ready for Doug)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">12</div><div class="dow">Sun</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Doug went to Merola&#x27;s to pick up the log splitter; also got the check</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Storage unit issue: Spare Cube unit M106 unpaid (card declined &quot;pick up card&quot;); Doug arranged to go to the storage office (Shaun) to resolve</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Mower battery dead (in Catherine&#x27;s car / jump pack needed); Doug needed to move a mower so Emory could play ball</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine pricing Matt Hait stump grinding (~$2,000; 2x cherry + maple, ~$20/inch + rental); backyard deferred</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">13</div><div class="dow">Mon</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked (Doug + Ryan, ~8am start); fueled up; Cameron mentioned (possible crew)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New estimate referral: Linda Travis, 107 Lake St, Cortlandt Manor</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Putnam Valley cleanup noted as ~1 hour</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Nick finished/working on the door (came that day; Doug left a check); discussion of dropping admission $20→$15 and 25% off memberships</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug realized he has a dentist appointment Wed 10am</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">14</div><div class="dow">Tue</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Crew headed to Wilton (&quot;chopper&#x27;s done, no access, do it manually later&quot;); Braxton&#x27;s pole saw left at the Wilton job</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine: small removal scheduled Friday in Cortlandt Manor; rescheduled her dentist to Thursday</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Discussion vetting Sam Selber (former worker) with Braxton; Braxton rented a car, lining up work</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Colin (BOCES) to come in next morning at 10 to change chipper knives with Ryan/Catherine before a short noon job</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">15</div><div class="dow">Wed</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked: Colin came in (~10am), changed chipper knives (&quot;white&quot; started, knives sharpened); short job at noon</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New estimate referral: Natalie, 15 Elena Court, Cortlandt Manor — pruning trees (free that morning)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine: went to Linda in Cortlandt Manor; picked up another Cortlandt Manor estimate; 2 more estimate requests in CT (Danbury + Wilton)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Chipper-knife problem: only had blades for the small chipper; flipped/sharpened current blades; need to order knives + hardware (Stephenson vs Westchester Tractor)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">16</div><div class="dow">Thu</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked (with Colin coming in 8am); patty/property-line prune jobs discussed</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Back-pay reckoning: Ryan claims ~$6k owed (Catherine skeptical, tallying hours); Doug to get Ryan $1,000 (&quot;a g&quot;) from the bank; plan to meet next day to &quot;hash out numbers&quot; + equity agreements</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Braxton couldn&#x27;t rent a car, couldn&#x27;t come; Colin&#x27;s planned visit canceled (no one at shop) — rescheduled to next day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug temporarily lost his wallet (found later in the day)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">17</div><div class="dow">Fri</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked the Wilton (Matt&#x27;s) area / &quot;Sarah&#x27;s&quot; and Patty (2290 Maple Ave, Cortlandt Manor — 2-person, white + chipper, no machine); Doug dropping chips; Armand Brunelle and Nick (Mr. Tree) involved/around</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug went to ER/urgent care — dislocated something, X-ray, popped back in, soft cast</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">White (truck) couldn&#x27;t be fully locked (need other key); chipper knives still need to be ordered</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">18</div><div class="dow">Sat</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Doug home working on Branch Manager most of the day (fixed a client-display bug; found/imported more Jobber history; Maps + call/text from client cards working)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine scheduling next week; played her game at Holy Child</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Doug went to the park to meet Jon; Jon ordered skate decks at $13.67/deck (shipped); paying the supplier via Venmo/bank transfer</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">19</div><div class="dow">Sun</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Heavy Branch Manager work day (quote functions cleaner, many bugs fixed, v271); set up Branch Manager logins for Colin/Catherine/Ryan</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine: scheduling/doing 4 estimates next day; upcoming jobs set — Tue: Tree of Heaven on Sprout Brook Rd ($4,300); Thu: oak limb removal, Croton-on-Hudson ($4,500)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">20</div><div class="dow">Mon</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Maintenance day at the yard (changing batteries, machine repair); equipment issues — &quot;white&quot; dump truck barely dumping (low hydraulic fluid), a hose on the machine needs Loctite/wrenches</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Doug gave estimate at 19 Donald Lane, Ossining (4:30pm) — large silver maple (other companies quoted ~$6k), for Luis Fernandes&#x27; parents; permit issue to take it down</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New estimate referral: Michael Mule, 38 Mountainside Trail, Cortlandt Manor (free Friday)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine: dropped dog Seamus at Somers Animal Hospital, then estimates in Pound Ridge, Yorktown, Peekskill, Cortlandt Manor (Dan in Put Valley, Blair Jarvis, Portuguese dad on Partridge Lane)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Doug picked up a cheesesteak</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Outreach: texted Luis re Ossining tree; Verizon past-due $226.12 reminder</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">21</div><div class="dow">Tue</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Got paid from the CT (Wilton) job — has money for the crew</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Called Stephenson (gave serial #) re chipper knives; machine overheating fast at the top, coolant/overflow level noted</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Braxton came by the park (rented car) to pick up his tools; Doug gave him a free gate (and earlier discussed selling a mower); met at the lot (red Impreza / grey Ram 2500)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Paid the past-due Verizon bill; found wallet</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">22</div><div class="dow">Wed</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">On the Sprout Brook job (Jennifer, 420 Sprout Brook owner) — Catherine + Doug; dumped chips (with a yard of rounds), +$400 added for debris removal; client thrilled; ~4 yards of logs to bring back</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Doug sold a mower the night before; Navimow/Cadco net-30 credit-extension discussion</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Permit info: town Building Dept said full permit required for the Ossining maple — $100 for two trees + $10 each additional</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Major Branch Manager work — discovered new website-form leads were going into Jobber&#x27;s backend (scraped) not BM; emailed Catherine the last 21 clients; considered re-subscribing to Jobber ($140) to verify; Catherine got a new $2k-limit credit card as backup</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">23</div><div class="dow">Thu</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked (Doug, Catherine, Ryan); Catherine wrapped a job, headed to park, dropped chips</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Decided to let Colin go (not a good fit); Catherine coached Doug through firing; plan to give Colin some cash for his time</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Jake Colyard added to the crew thread (referred by Ryan); discussion of new hires</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Trailer won&#x27;t dump (gone through two batteries — wiring not recharging from truck); Doug texted Kevin Christiana to have his guys look at it (leave truck overnight)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Doug took chipper-in-truck to the park in one shot; trailer issues; dropping logs</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">24</div><div class="dow">Fri</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked the Grabowski job (Croton-on-Hudson, no cars at house, ready whenever)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">New trailer battery installed; waiting on Kevin&#x27;s guys to look at trailer wiring (no response)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">New BM request came in overnight; Doug fixing the &quot;new requests not saving to server&quot; bug and the Google form</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Doug venting about the Ram 2500 being useless without a plow/hook lift, costing money on jobs</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">25</div><div class="dow">Sat</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Giant loader still overheating after replacing the radiator; Doug emailed Dan (dealer) asking for new thermostat/water pump and whether to plug the overflow tube; asked about the KM130 demo</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Possible urgent removal in Stamford Monday (Catherine talking to the foreman; a &quot;lollipop&quot; tree, possible rigging); Catherine quoted $3,800 (job ultimately went to someone else for $1,500 — learned 4/26)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Confirmed David Dilworth&#x27;s tree removal for the coming Saturday ($3,800 offer accepted)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Doug working on the app most of the day (shortened it); SmartLawn site referenced</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">26</div><div class="dow">Sun</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Argument with Catherine over Westchester Tractor having had their chipper ~a month for repair (turns out Tractor is doing ~$9k of repair free and DID offer a loaner chipper they hadn&#x27;t taken); Catherine to call for an update</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug got severely ill — vomiting, severe abdominal pain at the skate park (left, Ariel&#x27;s family cleaned up); went to Westchester Medical Center; possible ulcer; CT scan ordered (came back clear ~11:30pm)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine collecting checks from clients; the Stamford job lost to a $1,500 competitor</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">27</div><div class="dow">Mon</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug discharged from WMC overnight, Ubered home ~12:30am (CT clear), home tired/recovering</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine reported 420 Sprout Brook (Jennifer) work completed (check being written); Grabowski (Croton) invoiced w/ sales tax (check being mailed); Matt brought coffee/donuts in Wilton; bucking the cherry; Scott Sans coming next week to top-dress lawn + lay wildflower seed</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New chip-drop request: Bobby Bertrand, 9 Priscilla Ct, Cortlandt Manor (drop behind house off Skylark Dr)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Doug texted Wyatt — done with the scaffolding</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">28</div><div class="dow">Tue</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Admin day decided (instead of moving machine); plan set for the Wilton stump-grinding (Thu/Fri) + likely a Stamford pickup</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Scott Sans (partner/collaborator) coordinating: Christine Hart job in Rexford NY (#3904 — invasives + dead-tree-on-barn removal, no chemicals; ~$6k split, client declined — no money); and a new white-oak job in Southampton (proposed taking the ferry over with equipment)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Tom Brown (Pocantico) following up on a cleanup Catherine promised</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Ariel got 4 Yankees tickets for Sat May 23 (day game); planning family vs. inviting Kathleen &amp; Bill</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">29</div><div class="dow">Wed</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Plan: get truck/trailer to Wilton next day after rain, buck/split, get stump grinder Friday to finish; grinder confirmed for Friday</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Doug met Fred at the lake to look at winching a tree across the lake to the beach (water lowered for weeds); needs to give a price for that one, gave his number for the rest of the work</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Quote sent for the Luis Fernandes / Ossining large silver maple job: $6,800 + tax (excluding neighbor&#x27;s trees); crane planned</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine: completed Rachel Sloane job (scraped/flattened pile, mixed grass seed, top-dressed, straw); left Kerry Scala a voicemail to schedule remaining 2 trees + grinding a large stump</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New referral: Jack Feeley sent photos of trees needing removal (20 Hitchcock Hill Rd, Mahopac)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon: German fingerboard company (est. 1999, 160k followers) visiting the park at 1pm; rollerblading lesson inquiry</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug got a WMC ED post-discharge digital checkup link (recovering); dealing with daughter Emory being difficult over homework</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">30</div><div class="dow">Thu</div><div class="mon">Apr</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">In Wilton most of the day (Nod Rd) bucking/loading logs; coordinating with Ravi Gudhka about milling maple/cherry/oak logs (need to be straight)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Quote details for Luis/Ossining maple finalized: $6,000 of the $6,800 is the large tree (neighbor splits), $800 for brush/small trees; crane (~$3k) + possible log truck</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New referral confirmed: Jack Feeley, 20 Hitchcock Hill Rd, Mahopac (Catherine to look in person)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Southampton white-oak job (Scott Sans): job details/video received; planning the trip (drive ~2h32 vs ferry; dad has a Hampton Bays house)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Chain shortage noted — no more 25&quot; chains for the 500; a 32&quot; somewhere for the 661</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Heavy Branch Manager / app work overnight; sent test quote #496 ($120.30) via branchmanager.app; offered to set Nick Esposito (ASAPT) up as the first white-label client; SkateOS.com (Square-replacement POS) being built; discussing self-hosting servers with Scott Sans; bought a MasterClass membership</span></div>
+</div></div>
+<h2 class="month">May 2026</h2>
+<div class="day">
+<div class="date"><div class="num">1</div><div class="dow">Fri</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Discussion of a tractor wheel grinder rental (wheels not tracks, 36+ hp); reminded to bring a mat; radiator lid left not tight, venting</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Doug picked up Bryon in the morning; Catherine and Matt working in Wilton (Matt providing sandwiches/coffee)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Brook/&quot;420 Sprout&quot; client dropped a check at skate park; Doug to cash it; Grabowski put check in the mail</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Jack Feeley scheduling Catherine to come by 20 Hitchcock Hill Rd, Mahopac (his dad home all week)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Planning next-day job with David Dilworth (&quot;Wildlife Dave&quot;); David to clear a path to driveway</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Asked Luke for photos/info on a truck (Facebook listing)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">2</div><div class="dow">Sat</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked for &quot;Wildlife Dave&quot; Dilworth on corner-tree removal (515 Decatur Ave, Peekskill); set a pulley off a deck post, ran logs up the hill; started ~11 due to neck tweak (used heating pad)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">David&#x27;s truck wouldn&#x27;t start (lost key fob); he disconnected battery to reset; got it running ~12</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Paid a job/contractor he&#x27;d needed to pay (&quot;finally did&quot;)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Listed VINs: F-750 Bucket, F-550 Chip Truck, Ram 2500</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Texted Corey at Yarbo to lock down dealer area; Corey to send dealer-map email</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Catherine had Chipotle catering leftovers at the park</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Mulling truck strategy: sell pickup, sell white truck, finance a machine/log truck, hook-lift vs. chipper drop</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">3</div><div class="dow">Sun</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Looked at multiple commercial trucks online (2023 Chevy Silverado 6500HD, 2012 Freightliner M2 106, 2020 Peterbilt 337 switch-and-go); debating hook-lift vs. log truck, CDL implications</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Got both corner trees down at Dave&#x27;s the prior day; nearly wrapped up; cedar log jammed in chipper feed wheels</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Applied for financing with Ryan (Yarbo); asked Daniel Wojick about a km130 demo (gone) and tele Giants (tariff issues)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Catherine started Gusto onboarding</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Planned next day: clear jam, do maintenance, grease everything incl. bucket, chains/sharpening, reorganize storage bins</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">SmartLawn: long pitch to Shea about Navimow/Yarbo/Pandag mowers for properties</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">4</div><div class="dow">Mon</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Westchester Tractor still hadn&#x27;t finished the Bandit chipper (waiting on Bandit parts + ~6 hrs work); Doug pressed for a rental or work credit; proposed dropping 254 loader for ~$1,800 service (Jim Reeds estimate) plus rental until chipper returns</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Catherine completed Gusto onboarding/company setup; accidentally linked her bank as company account</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Home Depot run for bar oil; impulse-bought ~$400 of supplies (chains/files, T25 bit, plastic cases); considered a $130 battery jumper/maintainer</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Picked up small saw/chainsaw tool + blue wrench from Dave&#x27;s (515 Decatur Ave), left Dave&#x27;s echo</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Left a quote for Tom Brown at &quot;the old house&quot;; stopped by old house</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Had a few panic attacks in the morning; napped in a parking lot</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Kevin (Fay, CPA) came by; wants to set time to finalize pricing/scope; Doug needs to get to accountant to finish prior year</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Coordinated with Armand Brunelle (call back later)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">5</div><div class="dow">Tue</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Referral from David Dilworth: Donna Condido (Croton); another company looked the day before</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Bobcat E35 rental quoted $375/day + $300 delivery &amp; pickup (split $150 each way for this job, mileage-based)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Quoted Ravi a new splitting job at $2,800; planning to do planting with the machine + put mower to bed at Doug&#x27;s house; mower deck needs sledge to fix bend, weedwacker needs a bolt</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Garone job identified — old couple, big oak over the house (their first job together); oak previously rigged off now needs full removal</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Dialpad SMS/API still misconfigured; tested ported number; spam hang-ups on recordings</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Catherine took dog Seamus for ACL/knee surgery (dropped at vet)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">6</div><div class="dow">Wed</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">At Colin Cotter&#x27;s place cleaning up a limb (decided not to charge)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New estimate logged: Vincent Cestone, 44 Aqueduct Rd, Garrison — removal, estimate Thursday AM</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Jobber no longer letting Doug add pictures to quotes; adding jobs as &quot;requests&quot; instead</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Movie/free-skate night that evening (Jack planned screening, Es video, trivia, trick contest); Jon couldn&#x27;t come (mother&#x27;s doctor appointment fallout)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Asked about booking cleaning ladies for a deep house clean</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">7</div><div class="dow">Thu</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine did 4 estimates; Scott (Carey) hadn&#x27;t replied to tree-work quote</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New big job at Greg Ellison&#x27;s: remove birch + ornamentals &amp; grind, silver/Norway maple removal &amp; grind stumps, clear rocks</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Parts hunt: found some parts via Messicks; coolant thermostat ordered came in wrong (too small for the d902 vs Giant); contacting Dan/Giant</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">&quot;Smoking Skate 2&quot; officially scheduled for June 27; DGK board project</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Texted Andrew O&#x27;Mahony (Brink Connection / Graymoor job) — to find a rainy day this week</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Arranged with Dominic (Highland Welding) to bring truck + chipper to shop early next morning (~7am) for fixes (door issue)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">8</div><div class="dow">Fri</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">At Highland Welding shop: chipper fixed while waiting, then returned truck/chipper; &quot;white&quot; truck tailgate/body damage from a tree-of-heaven round that fell back in when dumping the 420 Sprout job — decided to leave white as-is and sell it</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Truck-fleet planning: estimate ~$30k each for white truck and pickup to fund a hook-lift/grapple truck; Intrepid financing stalled because lender wants real financials</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Listed white truck for sale (Catherine to post; photos/videos ready)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Coordinating June 20 (bands, 3pm–10pm) and June 27 (all-day) events with landlord Flavio; DGK board graphic</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New job booked: Monday, 10 acres — 1 oak, 2 ailanthus near house, 40–50 ailanthus/Norway maple on hill (Garrison estate)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Free-skate night was a hit but cut into movie night</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">9</div><div class="dow">Sat</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Stayed home; Emory lacrosse game at 3 (likely canceled)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon came to park; Doug went over</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Built preorder.skateos.com (AI-scanned dealer availability emails from info@2ntr.com into an order site); discussed preorder/wishlist model, shoe orders (Natalie wants Emerica Wino 5.5 &amp; 12)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Tom Brown approved pricing (Pocantico) — bucket truck, chipper, &quot;log mover,&quot; haul debris incl. prior-job wood; date TBD</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Natalie organizing girls&#x27; night, June 6 5–8pm (girls band + all-girls skate)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Priced a kids&#x27;-party request (6 kids/2 instructors, May 24 ~2pm) at ~$250–340</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">10</div><div class="dow">Sun</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Shopping list: Drano, 3 bins w/ lids, stereo light, weedwacker knob</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Started planning threads: All-Girls event (June 6, 4–8pm finalized) and &quot;Touch a Truck Day&quot; (bucket truck, 15-min activity stations, possibly w/ Kevin&#x27;s vehicles, John at Funtime)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Plan to do CPR day before camp</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Mother&#x27;s Day texts (Ariel, Catherine)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">11</div><div class="dow">Mon</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Dentist appointment at 10am (later rescheduled)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine did the Garrison 10-acre estimate; another estimate (&quot;Denning Hill&quot;) — client on a crusade against tree-of-heaven, gets an Open Space Institute grant, works with Brendan Murphy</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New estimate quoted: Anthony Merola job, Doug told him $4–5k; Catherine to look on her way back</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Stump grinder + trailer reserved in Mamaroneck; Kerry Scala (Port Chester) job targeted for next day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Thermostat part still not in stock from Dan/Giant; also chasing Abraham Kraus job (mowing, tree removal, prune lawn trees, firewood space) and Kevin snowplowing</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Bought T25 bit + small plastic cases</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">12</div><div class="dow">Tue</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Stump-grinding job in Port Chester (Kerry Scala): hauled rented Stump Grinder + trailer from Mamaroneck; Catherine ran it; furniture moved, grinder loaded, backyard cleaned; long day, traffic/police road closure in Port Chester on return</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Rented a tilt trailer w/ the stump grinder; DEF needed in pickup</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon at shop with Nick troubleshooting a door (electrical short/buzzing); got AliPay from &quot;bearing lady&quot;; mice got into a clothing box; placed Toy Machine sock order; organized backstock</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New request: Marilyn Santos added (free after 4pm); Sara DelRosso (20 Old Aspetong Rd, Katonah) SmartLawn lead</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Dentist rescheduled to next day 3pm</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">13</div><div class="dow">Wed</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Dropped the rented stump grinder back; Catherine did final cleanup, picked up the machine in Port Chester</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Bank run; wired money for the Yarbo units</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine ran estimates in Yorktown (incl. Merola — confirmed big live ash, bucket-accessible, owner has excavator, cut to 18&quot; into his truck, 2ntr chips only); stopped at Jon Dico&#x27;s neighbor&#x27;s (oak removal, competitor quoted $2,500)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">SmartLawn: followed up with Sara; Yarbo dealer training Friday; account named &quot;Smart Lawn&quot;; units shipping in 7–10 days after funds clear, to 1 Industrial Park (skate park)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Holy Child pays $7,500/month Nov–Mar snow removal (referenced for plowing exploration)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Dentist appointment at 3pm</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">14</div><div class="dow">Thu</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Resolved Bidnet login; 2ntrSkate! password</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked a job moving wood with the machine; Catherine scoping a winch-across-lake job (14+ trees, needs laser distance finder)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Built/shared Peekskilltree.com/dinner app (meal-planning app, references Earthtone Farm/Armand)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Need to Venmo/pay Rick (Rich) from &quot;shop deck sales&quot; for blank grey decks; Lane sent invoice for OG-logo decks; Deluxe boards up 10% (Anti-Hero Eagle $46→$51); Jaccuzi/DGK board video work</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Yarbo payment received; first order shipping to 1 Industrial Park</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">15</div><div class="dow">Fri</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon sick; Doug met the &quot;smoke and skate&quot; guys at the park at 2pm for a walk-through (they rescheduled to next week)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Lined up skydiver &quot;Jeff&quot; to potentially skydive into Smoke &amp; Skate (pending landlord permission); Jeff connected to Red Bull skaters / Jiro</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Met Nick to set up key fob; installed thermostat (looks too small again); spent ~$200 on two wrong Giant parts; got correct part number from Dan; Catherine on phone with MTE</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Bank run to pay for bearings (Ellen) — arrived after 3pm cutoff for international wire; Ron there picking up Cub Cadet mower</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Roger needs 5 cords of wood (rounds fine), flagged for upcoming jobs</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Sold 40 OG-logo decks YTD (~100/yr avg)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">16</div><div class="dow">Sat</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Home Depot run (flap disc, cut-off wheels, bits); worked on the machine (metal-grinding) at the park; cleanup of junk under quarter pipe; threw scrap in metal bin</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Call with a Colorado tree-business owner / robot-mower dealer (303 number) — talked shop on DBH calculators; reschedule of a Yarbo demo</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New request logged: Mary Ann (found via Nextdoor)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon creating individual employee discount codes (concern over a 30%-off board at 1:30am); mice issue</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Extra $0.25/gal off at Shell on Wed May 20 — plan to fill fleet</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">17</div><div class="dow">Sun</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Staffing scramble (Jack Rund showed at 9 and left; Lucas en route; Ryan opened); Jon stuck home with baby</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Big lacrosse event at Somers High (Emory/Compass Navigators)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Planning Diana Castro job (Ferris Drive, near park); chipper knives not back on; postponed to Friday</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Garone meeting set for next day ~2pm; wire at bank next day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Jimmy Cottrell to rent the bucket truck Saturday May 30</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Park needs petty cash (8 envelopes, mostly large bills)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">18</div><div class="dow">Mon</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Garone job confirmed (added pruning magnolia &amp; dogwood); Catherine met with Maureen; discussed working out of neighbor&#x27;s wide driveway (28 Jean Drive) for crane access</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Jon: Jack Rund will work Sundays w/ Lucas; &quot;Dave&quot; starting Saturday for on-the-job training; Jack Feeley now unavailable</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Offered Braxton (Family Tree Arborist) a loaner chipper from Westchester (he needs it June 6–7)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Payment-method shuffle: PayPal/Venmo/Cash App to pay Rich and to take park payments</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Park closed (everyone sick); spray-paint freight delivery coming next day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Colin (BOCES climber) asked for feedback; Doug gave candid notes — relationship ended</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Discussion of municipal bid pricing sheet ($100/in DBH removal, ~$60/in pruning) for Pleasantville bid</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">19</div><div class="dow">Tue</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Dumped logs at Roger&#x27;s (5 cords); did a removal/chipping job; grabbed a hollowed cant for skate park ledge idea; Ravi used the splitter</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Chipper shovels missing; a different (hopefully correct) thermostat part number arrived</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Tried (and failed via Wise) to pay &quot;greens&quot;/bearings; Jon researching running for Peekskill Common Council (not a resident); plan to start having park pay a loan monthly</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">BM new-request alert path fixed; backfilled: Kim Furphy, Tree Removal, 12 Galloway Lane, Cortlandt Manor; repeat client with a wind-downed cherry</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Geo not available next day</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">20</div><div class="dow">Wed</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked Tom Brown / Pocantico job (brought new thermostat piece); big cedar in Town right-of-way left to the Town</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Stopped at 309 Sprout Brook (2 trees front, 2 back + maybe, 3 stumps to grind); Catherine to Torres</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Evening emergency: tree down in Croton blocking a driveway — Catherine + Ryan went out (machine, truck, chipper, white); cleared enough for homeowner to get out; machine overheating; to finish next day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">David Dilworth offered his American-made wood splitter (carburetor needs work) to fix/sell; client = Donna Condido, Croton</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Carvel run; left a cone across from Tom Brown&#x27;s driveway</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">21</div><div class="dow">Thu</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Crew finished Croton storm job, looked at downed trees in Yorktown Heights &amp; Amawalk, Rosie&#x27;s cherry (Cortlandt Manor), 17 cedar ledges for chips (Putnam Valley); chip drop near Continental Village</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Returned wrong assy to MTE Equipment Solutions (Derry, NH); fueled fleet at Shell off Bear Mountain</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Doug at the field house (Putnam County Health Dept event w/ Ariel)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New referral via Brendan Kennedy (Shrub Oak); gave Catherine&#x27;s estimate line</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Ryan&#x27;s court finally over</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">22</div><div class="dow">Fri</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Estimates: 309/310 Corliss; new request Hugo Eastmond (Huested St, stump grind); a sketchy locust on Sprout Brook flagged</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Doug hauled logs to Roger&#x27;s</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Luis Fernandes&#x27;s parents passed on the job; Luis wants a quote for trees at his own house</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">SmartLawn: scheduling demo with Sara DelRosso for Saturday (Navimow x430 $2,500 / x450 $3,000); confirmed Katonah Monday 9am</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Nick Sassa called re: a Long Island contest w/ Woodward free-week prize</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">23</div><div class="dow">Sat</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Game canceled; girls went to Queens aquarium; Doug to park after</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Set up Yarbo demo at park; Yarbo missing antenna on machine + no remote (contacting Corey)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New request: Robert Kane (came via BM email)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Need new grill/grate (~under $200); bus leaking</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Armand (excavator) finishing road work, weather-delayed; back to John&#x27;s Monday</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">24</div><div class="dow">Sun</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Site walk-through at the park at 1pm for next month&#x27;s &quot;DTR Fest&quot; (Doug covered for Jon); action item = waiver language re: show/moshing liability</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Mice problem — discussed traps/exterminator/cat</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">All-girls June 6 event finalized as &quot;no boys allowed&quot;; food = bulk pizza; Natalie ordered 500 stickers; Ken (130 BBQ) confirmed for June 6</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">Mused about a white-label SaaS/AI implementation business with Jon</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Canceled on a mower-showing lady (rescheduled)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">25</div><div class="dow">Mon</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">SmartLawn demo at Sara DelRosso&#x27;s (Old Aspetong Rd, Katonah) ~10:30 — dropped x430 LiDAR demo to map yard under tree cover</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Camp/party day: ~15 kids; Doug, Lucas, Jermey, Jon working; bus leaking</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Texted Scott Carey re: rental trees; mentioned now selling Navimow/Yarbo</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">26</div><div class="dow">Tue</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Giant loader overheating badly — now suspected head gasket; declined to rent it to &quot;Family Tree Arborist&quot;; pointed him to Bobcat/Westchester Tractor</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Picked up a chipper in Carmel; Ron (small-engine mechanic) returned the zero-turn mower to Doug&#x27;s house — paid $300</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span><span class="chip" style="--c:#666">legal</span></span><span class="txt">Pursuing Westchester Tractor small-claims: confirmed chipper dropped off March 6; went to courthouse to do the paperwork; Westchester Tractor hung up — Doug drove up</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Tommy Conforti sent a sub job (client &quot;Chrysalis Hawk&quot;)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Lacrosse at 6pm (Emory)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Elizabeth Bynum requested meeting w/ Patrick in Rye, Friday 5pm</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Scott Carey already bought a Yarbo — lost sale</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">27</div><div class="dow">Wed</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine did 2 estimates (incl. 118 Wilson St, Beacon) then took the machine to MTE for diagnostics (pre-authorized 2 hrs @ $175/hr; shop mgr Jessica, MTE)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Westchester Bobcat has a grapple-hook unit available starting Monday at $1,600/week</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Braxton asked Doug to bring the bucket truck to Hopewell Junction — 2 dead oaks</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Texted 988 crisis line (engaged briefly)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Camp scheduling: parent wants to move Josephine Clark from Aug to June 29</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">28</div><div class="dow">Thu</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Agreed $1,000 to help Braxton with the Hopewell Junction bucket job; Braxton ended up not needing it sooner; Anthony Turner has a bucket job next week</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Returned a ladder to Jon Dico&#x27;s house</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Westchester confirmed no wheel-loader rentals except very large ones; planning around the Bobcat L28 rental</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine reworking Elizabeth Murphy quote (pair w/ Beacon/Cold Spring trip); Blair Jarvis budgeting a $2k prune</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Catherine took Seamus to vet follow-up, then Verizon w/ Ryan</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Offered rental chipper to Jimmy (Cottrell) for the weekend</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">29</div><div class="dow">Fri</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span></span><span class="txt">SmartLawn demo at Sara DelRosso&#x27;s again ~10:30 — concluded she needs 3 smaller units + weed-whacking; demo &quot;went well&quot;</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Met Rye client (Bank/SmartLawn) — &quot;send videos&quot;</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Catherine test-drove the Bobcat L28 at Westchester Bobcat; Zack holding it</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Bank run to pay Wise/AliPay for bearings; sent $289 (the bearing-lady amount)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Picked up Mike Voight call (Mohegan Lake, tree)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Ariel at Emory&#x27;s band concert; Doug home</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">30</div><div class="dow">Sat</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Chipper mix-up: Ryan gave Jimmy Correll *their* chipper instead of the rental; bucket truck&#x27;s serpentine belt blew (got fixed); Bouncie geo-alerts tracking the white dump truck</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Week scheduling: Monday Garone ($7,000), Marquad (Peekskill) Thu/Fri pending, Jessica (Cortlandt Manor) Wed pending</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Frustration that the dispensary/cannabis event was blocked by city; sticking with Valley Greens</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">John Voelp: tree down in front yard, wants Doug to take trees down + still owes a legal-fee bill (dispute begins)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span><span class="chip" style="--c:#666">strategic</span></span><span class="txt">Emailed SavATree&#x27;s mergers contact re: next steps; weighing selling/joining</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Fred wants a price to clean/restore &quot;the island&quot; (Michael Phelan) using coir logs + planting</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">31</div><div class="dow">Sun</div><div class="mon">May</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Sent Carlucci quote in Jobber; sent Eric a follow-up</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span><span class="chip" style="--c:#666">strategic</span></span><span class="txt">Extended deliberation about keeping Second Nature Tree (~$1,500/wk) vs. SavATree (~$1,600/wk); possible scale-down to 50/50 partnership with Catherine + mower sales</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Quote #513 to Fred Romer in BM for &quot;the island&quot;: $37k</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Cash handoffs: Jimmy&#x27;s cash from the bucket job ($750 + another $750); Catherine retrieved Jimmy cash, went to storage</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#666">legal</span></span><span class="txt">Extended argument with John Voelp over legal billing; agreed to sit down/talk and Doug to do the tree job for him</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Lemonade stand day with Emory at the house</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Confirmed 8am start next morning (Garone)</span></div>
+</div></div>
+<h2 class="month">June 2026</h2>
+<div class="day">
+<div class="date"><div class="num">1</div><div class="dow">Mon</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine took the truck out and got 4 estimates; sold the Garrone job. Detailed quotes: a pruning/removal job (magnolia/weeping cherry prune, volunteer maples, birch removal, hemlocks removed — up to ~$4,650) and Michael Voight job in Cortlandt Colony (all climbs)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Finished a local job, then did a dump run; loaded oak chips for Armand Brunelle</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon got new business card; discussed Go Skateboarding Day vendor pricing (~$50, ~20 vendors); inflatable mini-ramp to Mascoot trial</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Ariel&#x27;s birthday; a gift for Emory arrived; Doug at Emory&#x27;s lacrosse</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#475569">Other/build</span><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Elizabeth Bynum committed to Navimow H220 + garage with all-in service plan</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">2</div><div class="dow">Tue</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine added magnolia, dogwood, ash ($500 on top of quote)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Picked up borrowed log splitter from Ravi Gudhka; arranged to return chipper</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Braxton arranged to pick up the chipper Friday for a weekend job in Hopewell Jct</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Broke a window on a machine (slight user error); noted insurance was worth the $186</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Hope Bogart (St. Christopher&#x27;s Inn / Graymoor) called: install 1 outdoor tile in breezeway w/ bucket truck + paint rusted track; agreed for next morning ~8am at 21 Franciscan Way</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Coordinated with Jack Meaney about borrowing a KM130 hedge trimmer + tree/firewood work</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Dump run</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Emory dance recital coming up (June 5)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">3</div><div class="dow">Wed</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Drove bucket truck to Graymoor (~8am) to install the breezeway tile at St. Christopher&#x27;s Inn; provided Hope Bogart a tree-pricing list</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Planned to go to Robert Higgins, 303 Sprout Brook Rd; Catherine quoting Sprout Brook addresses (277, 302, 303)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Catherine talked to MTE about the Giant loader: &gt;$25k for new hydraulics/electrical/joystick; asked about 1200&#x27;s in stock</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Split oak at the yard; unloaded Bobcat; took excavator</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New leads: Natalie/Keenan Kunzelman (31 Woodland Dr, Walden — pine trim for insurance); storm-debris cleanup w/ 48&quot; eastern white pine</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Home Depot</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jack Palmiotti drafted Go Skateboarding Day 2026 (June 21) post</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">4</div><div class="dow">Thu</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Cashed a customer check; discrepancy noted (client paid for new estimate, not completed work)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked at 239 Smith Street, Peekskill (stump grinding); grinder ran out of oil/smoking after ~1 hr; ran to Save More for 2 quarts 10W-30; Jack Meaney came by</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Entered &quot;Dottie&quot; + others into Jobber</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Researched 2024 Intrepid KM100 wheel loader</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Anthony to come with his chipper next day</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Left ~6pm for Emory&#x27;s dance recital</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">5</div><div class="dow">Fri</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Conflict with Corey/Yarbo over missing antennas/snowblower; pushed to return units and get refund</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked at/around 239 Smith St; Braxton picked up the chipper; Catherine to get the grinder and finish Smith St</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Negotiated the Dion Lum job (Fort Montgomery): $6,500 cash; Tuesday preferred; Braxton to be brought in</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Hope Bogart requested invoice + W9 for the SCI breezeway tile, plus quote for 3 trees at the Friars</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon pulled the next-morning lesson (no signups)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Emory&#x27;s dance recital that evening (7pm)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">6</div><div class="dow">Sat</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Priced an orchard-ladder prune + removals (~$1,800)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Lined up climbers for Tuesday Fort Montgomery (Dion) job: Anthony coming</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Heavy app/business-dev day — Branch Manager landing page, SkateOS, multi-agent &quot;Jarvis&quot;/n8n plan; asked Nick (Brivo/Asapt) for API access for skateOS door</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Family heading out ~1pm; then at the park</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">7</div><div class="dow">Sun</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Navimow mower demo for Chris Viltaggio — out-of-area trip; mapped a pond</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Jessica cancelled (found a quote $2k cheaper)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Coordinated chipper/pickup return with Braxton; Catherine to get the grinder from Bobcat in Mamaroneck and finish Smith St</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">8</div><div class="dow">Mon</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Went to Dominic&#x27;s (Highland Welding) in the morning to cut/clear something</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Smith Street stump job: Catherine drove to Bobcat in Mamaroneck (~2 hr round trip) for the rented stump grinder; grinder was a fuel-pump issue; finished</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Loader shopping — Daniel Wojick (Giant): new ones &quot;just under $60k&quot;; Catherine on phone with MTE sales; contacted Chipper LLC Trailers &amp; Equipment</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Braxton overslept/late returning truck+chipper; agreed on a 9am standard start time</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Quoted Navimow models to Austin (1.5-acre $3,000, CM120 3-acre ~$4,500)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">9</div><div class="dow">Tue</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked at 20 Pecoho Rd, Lake Peekskill (Laura Zagarell) — 2 border trees; Ryan sick</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Sent Fred Romer quote #513 ($35,339.50) for &quot;the island&quot;; Fred also wants a trimming estimate behind the clubhouse</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Reconsidered the Dion Lum oak — didn&#x27;t want anyone climbing it; proposed pulling whole tree backwards / liability waiver</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Delivered a &quot;bad letter&quot; to Catherine (Putnam County Sheriff wage-garnishment notice ~$17,918); accidentally shared on the Ryan thread; began going over the 2025 books</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">10</div><div class="dow">Wed</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Started ~10am (everyone stiff/sick); Catherine met &quot;Dan&quot; at Cortlandt Town Center; add-on $900 cash to Cortlandt Colony job</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New lead: 5 Berkley Ln, Rye Brook (look as subcontractor to PH Tree)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Installed a Navimow (H220 + garage) for Elizabeth Bynum (Kelly residence); sold/priced Chris Viltaggio a Navimow X4 (~$2,499)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Loader: emailed Dennis Lucente; discussed Bouncie trackers for equipment</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#7c3aed">Meeting</span></span><span class="txt">Set Monday 4pm estimate — Scott Manner, 3 Marissa Court, Montrose</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">11</div><div class="dow">Thu</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked in extreme heat — close to heat stroke; got &quot;a tree done,&quot; will return; Catherine cleaned up/chipped</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine looked at a downed tree in Yorktown; Jack Meaney confirmed (weed-whacking + hedge trimming at Dottie)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Elizabeth Bynum&#x27;s Navimow ran ~2 hrs, ~54%; troubleshooting zones/charge; declined a likely-scam lead (130 Depew St)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Anthony to finish grinding 239 Smith St; $200 for knife sharpening</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Family Tree Arborist confirmed Friday job (9:30am)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">12</div><div class="dow">Fri</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Job at 28 Wolz Rd, Hopewell Junction (bucket, white truck, chipper) with Family Tree Arborist</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Bucket truck overheating badly (every ~10 min); limped it to Hopewell and back; keep under 2000 rpm; likely sensor/thermostat/dirty radiator</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Catherine dumped 2 yards of vines at CRP; got diesel at App Deli ($100 cash)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Tree branch fell on a powerline near the Sotos&#x27;; Doug on &quot;Em duty&quot; that night</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">13</div><div class="dow">Sat</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Diagnosed bucket truck (2011 F-750, 5.9L Cummins) overheating — researched thermostat (Cummins 3947315); texted Eric (HBA), advised shop Monday or tow</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine at the yard from ~1pm: fixed oilers on the 500/&quot;silver cap,&quot; made chains, restocked trucks, tuned saws; Doug bought chain from Loggerchain.net ($329 + $327)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Crane job planning at Sprout Brook (302/303/308/309 — 3 shared crane setups)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Toaster-shopping debate with Ariel; Knicks championship</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">14</div><div class="dow">Sun</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Worked on SkateOS pages (mixture ordering form); loaded scaffold to return to Wyatt Soto; drop at Darren&#x27;s yard ~8:30 next morning</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Scheduled Dottie 9am</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span><span class="chip" style="--c:#666">dev</span></span><span class="txt">Pushed Branch Manager &quot;join&quot; pages</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Best Buy order (later partially canceled)</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">15</div><div class="dow">Mon</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Began the Intrepid KM100 financing paperwork — Justin at Chipper LLC (gave info@peekskilltree.com, 663 Sprout Brook Rd)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Met Wyatt Soto ~8:30 to drop the scaffolding at Darren&#x27;s yard</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Catherine hooked up chipper; made saw mix; new lead Colby Moore (1275 Williams Dr, Shrub Oak); Eric Romanaschyn wants more clearing (climb)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">New lead: Henry, 56 Old Orchard Ln, Scarsdale; Corey listing Doug as a Yarbo dealer (Smart Lawn NY)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Worked on Brivo/skateOS door page; Nick to send API</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">16</div><div class="dow">Tue</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Dottie job; Catherine taking pickup to make saw mix; new lead Colby Moore; set up estimate for KATZ</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Looking at a truck from &quot;Manny&quot;</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Coordinated bigger show with Shane Medanich (referred to Jon); Rosy confirmed Sunday for Fort Montgomery tree</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">17</div><div class="dow">Wed</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Bucket truck went to Eric/HBA — radiator cleaned out (full of sawdust/wood chips); Ram also at Eric&#x27;s</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Reviewing/uploading 2025 books to CPA Kevin</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Continued Chris Viltaggio mower sale; first skateOS &quot;consult&quot; leads (Beacon/Hermitage, Kindred Canine dog-walking)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Best Buy — Mac mini to set up a server; placed an order</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon out — doctor visit, has a cyst, needs surgery; big show set for Saturday</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">18</div><div class="dow">Thu</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">John Voelp tree work pending; planned Dominic&#x27;s (Highland Welding) ~11</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Geneva Capital (Paige) working Chipper/Intrepid loan docs — needed equipment-location address</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Elizabeth Bynum found rope around the &quot;sickly&quot; Norway spruce</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Camp filling (week 8); Jon: apparel half-delivered; Nick sent the Brivo API key (still needs OAuth Client ID + Secret); got pizza at Amici&#x27;s for the crew</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">19</div><div class="dow">Fri</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Drove to Westchester Tractor re the Bandit Chipper dispute — left ultimatum (rebuild &quot;brand new&quot; or get sued); rejected their trade-in bluff; Catherine confirmed she never signed</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Ran to a job in Montrose; subbed for &quot;Nick / Mr Tree&quot; — limb down near a house; went to John Voelp&#x27;s (dead tree) on the way to an estimate</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Returned the rental chipper (got own chipper back)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Discussed pricing/collaboration with Dennis Lucente; got Aunt Reg&#x27;s check</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span><span class="chip" style="--c:#666">dev</span></span><span class="txt">Met Heather (skatepark developer mom); pitched the local-business custom-software idea</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">20</div><div class="dow">Sat</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Big show day — 48 presale tickets (record), ~$600 already; camp signups up; the new front-door handle was ripped off/broken — need a security camera</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Told someone $3,400 to split all the wood under tarp; Rosy: homeowner asked not to work Sunday (Father&#x27;s Day)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Garlic-knot chicken sandwiches from Amici&#x27;s for Ariel</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">21</div><div class="dow">Sun</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="note">Father&#x27;s Day</div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#1d6fd6">Money</span></span><span class="txt">Disputed fraudulent Apple Card charges (two $70 Substack, &quot;Neal Conlon&quot; fraud) via Apple/Goldman Sachs; virtual card cancelled</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Got approved to buy the Intrepid KM100 loader (~$1,000+/mo for 5 yrs); pitched Braxton, Andrew Brink, Chad on the Branch Manager &quot;collective&quot;/co-op idea</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#6b7280">Errand</span></span><span class="txt">Drove Catherine to the airport ~1:30; Catherine + Ryan away; took Emory to the skate park</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Texted Doug Bradley (MTE) for a Giant 254T buyout/trade number</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Father&#x27;s Day — at park with Emory; Aunt Reg call</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">22</div><div class="dow">Mon</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">MTE (Doug Bradley) offered $5,000 trade on the Giant 254T; Doug leaning toward the Intrepid deal; Geneva Capital chasing the signed Intrepid docs</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Show finances: owe promoters $2,099; total ticket sales $4,165; wrote a character-witness letter for Alex Mosley; Jon found a cheap ramp (15x9ft) on Marketplace</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Ryan headed to detox before rehab (2 days); Doug may pick him up</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">New lead Ted Haber (33 Daffodil Hill Rd, Garrison) — Navimow demo request</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">23</div><div class="dow">Tue</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Drove to MTE in Connecticut (~2-3pm) to pick up the dead Giant 254T loader (head gasket, cracked block, ~1500 hrs); lined up mechanics (Tim via Todd Hill; Ron); heavily considering the 2024 Intrepid KM100 ($50k vs $60k)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Coordinated Jack Meaney for Thursday/Friday (log removal + weed-whacking)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Jon paying vendor &quot;Rich&quot; (boards) via PayPal/Zelle; battle-of-the-bands idea for July 25; screen-printing classes</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span><span class="chip" style="--c:#666">biz</span></span><span class="txt">Reached out to Chris (Intrepid importer) re a NE Intrepid dealership opportunity</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">24</div><div class="dow">Wed</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Cleaned up a job on Country Lane, Garrison (bucket truck); Jack Meaney to help ~4pm; then to 13 Locust Lane, Fort Montgomery to meet Dion&#x27;s climber for the sketchy oak — didn&#x27;t want to climb it; returned truck + chipper</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Built the Giant loader diagnostic webpage + the NE Intrepid dealer pitch page (branchmanager.app)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Dion Lum went with another company (limb fell through his roof during delay); Doug offered to help tarp the roof</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Shirt order finalized with Chris (printer); cameras to be bought/installed; Jon sick</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">25</div><div class="dow">Thu</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Worked in Garrison (Kevin O&#x27;Brien context); went to John Voelp&#x27;s at 10:13; confirmed Dion&#x27;s quote #524 approved (signed in Jobber); plan to finish Dion next Wednesday with Rosy</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Picked up the dead Giant; mechanic Ron (Lake Peekskill) looked — head/gasket + hydraulic lines, needs parts; comparing repair vs. buying the Intrepid</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Ryan in detox/rehab (no visitors); Braxton can&#x27;t make next-day Shrub Oak job</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">David Dilworth wants the log splitter out of his place; arranged pickup</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Ariel in Nashville; last day of school for Emory next day</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">26</div><div class="dow">Fri</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="note">Emory&#x27;s last day of school</div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Insurance job (tree in shed) pushed — homeowner wants full insurance approval first; dumped a half-load at Kakyung; lined up Kevin O&#x27;Brien&#x27;s small Mahopac job (25 Trout Place, 8am next day)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Loader decisions: Ron&#x27;s repair vs. Kubota D902 from Jim Reed&#x27;s (~$7,000) vs. the Intrepid (~$1,062/mo × 60 = $63,720, 9%)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Sold Chris Viltaggio a Navimow — drove to 199 Denniston Rd, Wallkill ~7pm to deliver/take a check; setting up CM120 demo at Dennis Lucente&#x27;s</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Ariel landed back in NY; Coach Bill Rund picked up Emory</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">27</div><div class="dow">Sat</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Climbed/worked Kevin O&#x27;Brien&#x27;s job (Mahopac) — small pine + maple; then a 9-10am estimate at 66 Winston Lane; left climbing line at Kevin&#x27;s</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Coordinated with Todd Hill/Rosy on the Dion job cleanup (machine to grab/winch limbs)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Advised Jon on non-profit voucher credit vs. P&amp;L deduction for giveaways</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Ice cream with Ariel/Emory</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">28</div><div class="dow">Sun</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Last estimate of the morning, then picked up his rope from Kevin O&#x27;Brien (30 Fox Hill Rd, Cortlandt Manor)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Coordinated camp help with Jon (Mon + Thurs; grab the big tub/dunk tanks from Jon&#x27;s house; ~100° Thursday); insurance (shed) job fell through</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Aunt Reg Sunday note</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">29</div><div class="dow">Mon</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="note">Skate camp week 1 begins</div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">First day of Skate Camp — at the park; camp logistics (Liquid Death sponsorship idea; Lucas wants a raise); Jack Palmiotti made a promo</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Chris (Intrepid importer) confirmed dealership not happening; Doug signing the deal for the KM100 from Georgia for $50k; Andrew Brink helping ID a bucket-truck part</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#0891b2">Crew/hiring</span></span><span class="txt">Sent Ryan money via Zelle (in rehab); gave Andrew Brink Ryan&#x27;s number</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Set Dennis Lucente CM120 setup for next morning 10:30 (108 Lakeshore Dr, Eastchester); cold-pitched &quot;Anil&quot; on robotic mowers</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Braxton lined up a future bucket job in New Paltz — 100ft white pine; Doug to quote ~$2,000-4,000 for the climb</span></div>
+</div></div>
+<div class="day">
+<div class="date"><div class="num">30</div><div class="dow">Tue</div><div class="mon">Jun</div></div>
+<div class="body">
+<div class="item"><span class="chips"><span class="chip" style="--c:#15803d">SmartLawn</span></span><span class="txt">Drove to Eastchester — set up the CM120 robotic mower demo at Dennis Lucente&#x27;s (108 Lakeshore Dr, ~9-10:30am)</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Stopped to do a little work with Armand Brunelle; picked up a dunk tank/big tub for skate camp</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Confirmed Ted Haber Navimow demo for next day 8am (33 Daffodil Hill Rd, Garrison); Jon&#x27;s neighbor wants a price on two big trees</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#b9770f">Equipment</span></span><span class="txt">Andrew Brink still fixing his bucket truck electrical; Doug offered to bring his truck Friday</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#2e7d32">Tree work</span></span><span class="txt">Reworked/published peekskilltree.com/rates internal rate page</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#e8472b">Skate park</span></span><span class="txt">Skate camp ongoing (dunk tanks); at the park later</span></div>
+<div class="item"><span class="chips"><span class="chip" style="--c:#db2777">Personal</span></span><span class="txt">Browsing boats with Ariel</span></div>
+</div></div>
+</div>
+<button class="print" onclick="window.print()">Print / Save PDF</button>
+<footer>Built from 5,811 decoded text messages across 93 days. Activities reflect what the texts support; planned vs. completed noted where clear. Private — not indexed.</footer>
+</body></html>
