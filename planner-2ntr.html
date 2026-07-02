@@ -130,7 +130,7 @@ function pill(it){
   d.querySelector('.x').addEventListener('click',e=>{e.stopPropagation();items=items.filter(x=>x.id!==it.id);save();render();});
   return d;
 }
-function fill(el){const day=el.dataset.day;items.filter(x=>x.day===day&&show(x)).forEach(it=>el.appendChild(pill(it)));}
+function fill(el){const day=el.dataset.day;items.filter(x=>x.day===day&&show(x)&&!x.done).forEach(it=>el.appendChild(pill(it)));}
 
 function cell(d,out){
   const ds=iso(d),wd=d.getDay();
