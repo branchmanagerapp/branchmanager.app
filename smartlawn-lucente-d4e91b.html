@@ -45,7 +45,7 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--m
 </div>
 <div class="wrap">
   <div class="banner">
-    Dennis — this is <b>your</b> pricing: every unit is <b>5% under retail</b> and <b>install is on us ($0)</b>. Pick your quantities below; your total and savings update live. We source, deliver, and service every mower. <b>These are your held Lucente Landscaping partner prices</b> — text Smart Lawn at (914) 647-7276 with any questions.
+    Dennis — here's the quote you asked for: <b>1× X430, 2× X450, and 1× CM120</b>, already loaded below (adjust any quantity if you like). Every unit is <b>5% under retail</b>, <b>setup + training your crew is included</b>, and there's <b>no install fee</b>. I also dropped in a price for <b>the bigger CM240</b> in case a large property comes up — just bump it to 1 if you want it. Your total and savings update live. <b>Held Lucente Landscaping partner prices</b> — text Smart Lawn at (914) 647-7276 with any questions.
   </div>
 
   <h2 class="sec">Build your fleet</h2>
@@ -63,12 +63,12 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--m
 
 <script>
 // Dennis Lucente pricing = 5% under retail, no install fee.
+// Dennis's order from his Jul 2 text: 1× X430, 2× X450, 1× CM120, + CM240 priced "just in case".
 const MODELS = [
-  {id:'h220',  nm:'Navimow H220',       fit:'Premium residential — ½ acre',            retail:2199},
-  {id:'x430',  nm:'Navimow X430',       fit:'Residential estates — 1 acre',            retail:2499},
-  {id:'x450',  nm:'Navimow X450',       fit:'Large residential / small commercial — 1.5 ac', retail:2999},
-  {id:'cm120', nm:'TerraNox CM120M1',   fit:'Commercial grounds, HOAs, campuses — 3 ac',retail:5499},
-  {id:'cm240', nm:'TerraNox CM240M1',   fit:'Largest commercial sites — 6 ac',         retail:6999},
+  {id:'x430',  nm:'Navimow X430',       fit:'Residential estates — 1 acre',            retail:2499, init:1},
+  {id:'x450',  nm:'Navimow X450',       fit:'Large residential / small commercial — 1.5 ac', retail:2999, init:2},
+  {id:'cm120', nm:'TerraNox CM120M1',   fit:'Commercial grounds, HOAs, campuses — 3 ac',retail:5499, init:1},
+  {id:'cm240', nm:'TerraNox CM240M1',   fit:'The bigger one — largest commercial, 6 ac (add if a big property comes up)', retail:6999, init:0},
 ];
 const yours = r => Math.round(r * 0.95);   // 5% under retail
 const qty = {};
@@ -78,7 +78,7 @@ const PAYMENT_LINK = null;
 const fmt = n => '$' + n.toLocaleString();
 const el = document.getElementById('models');
 MODELS.forEach(m => {
-  qty[m.id] = 0;
+  qty[m.id] = m.init || 0;
   const c = document.createElement('div');
   c.className = 'card';
   c.innerHTML = `
@@ -89,7 +89,7 @@ MODELS.forEach(m => {
     </div>
     <div class="stepper">
       <button aria-label="remove" data-m="${m.id}" data-d="-1">−</button>
-      <span class="q" id="q-${m.id}">0</span>
+      <span class="q" id="q-${m.id}">${m.init || 0}</span>
       <button aria-label="add" data-m="${m.id}" data-d="1">+</button>
     </div>`;
   el.appendChild(c);
