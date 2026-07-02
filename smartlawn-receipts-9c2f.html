@@ -54,17 +54,18 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)
     <div class="note" style="margin-top:10px"><b>To finalize the receipt:</b> the $3,355.29 is the all-in total. I need the <b>line split</b> (H220 price, garage price, install fee, 1-yr service) from the original quote so the receipt itemizes correctly and the taxable vs non-taxable lines are right. Service plans are often non-taxable in NY; install of tangible goods usually is — Kevin to confirm.</div>
   </div>
 
-  <div class="sale flag">
-    <div class="top"><div class="cust">Chris Viltaggio</div><span class="tag t-check">confirm tax</span></div>
+  <div class="sale paid">
+    <div class="top"><div class="cust">Chris Viltaggio</div><span class="tag t-paid">paid ✓</span></div>
     <div class="grid">
       <div class="k">Model</div><div class="v">Navimow X430</div>
       <div class="k">Serial</div><div class="v mono">1 of: …1911 / …1944 / …1959 / …1985 — NEED which one</div>
-      <div class="k">Address</div><div class="v">199 Denniston Rd, Wallkill NY 12589 · Ulster (8%)</div>
-      <div class="k">Paid</div><div class="v">~$2,099 · check · delivered Jun 26 2026</div>
-      <div class="k">Tax question</div><div class="v">Was $2,099 tax-INCLUDED or PLUS tax?</div>
+      <div class="k">Address</div><div class="v">199 Denniston Rd, Wallkill NY 12589</div>
+      <div class="k">Subtotal</div><div class="v">$2,099.00</div>
+      <div class="k">Sales tax (8.375%)</div><div class="v">$175.79</div>
+      <div class="k">Total paid</div><div class="v">$2,274.79 · check · delivered Jun 26 2026</div>
     </div>
-    <a class="btn g" href="#" onclick="rc('chris');return false">🧾 Draft receipt (both tax scenarios)</a>
-    <div class="flagbox" style="margin-top:10px"><b>Two possibilities</b> (your call): if $2,099 was <b>tax-inclusive</b> → pre-tax $1,943.52 + $155.48 tax = $2,099.00. If it was <b>+ tax</b> → $2,099 + $167.92 = <b>$2,266.92 total</b> (and you're short the tax if you only collected $2,099). Tell me which and I'll lock the receipt. Also file the <b>Navimow Prime Day rebate</b> (100%) on this one.</div>
+    <a class="btn" href="#" onclick="rc('chris');return false">🧾 Print receipt</a>
+    <div class="note" style="margin-top:10px"><b>Locked per Doug:</b> $2,099 + 8.375% = $2,274.79. Still need the exact <b>X430 serial</b> Chris got. File the <b>Navimow Prime Day rebate</b> (100%) on this one. (Couldn't match the check on disk — June/July 2026 statement not saved yet.)</div>
   </div>
 
   <h2>🔴 Sales that need your numbers</h2>
@@ -98,7 +99,7 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)
 <script>
 var R={
  bynum:{who:'Elizabeth Bynum',addr:'1 Club Rd, Rye NY 10580',date:'June 15, 2026',lines:[['Navimow H220 + garage + 1-yr service + install (all-in, as paid)','$3,355.29']],total:'$3,355.29',pay:'Paid in full — Stripe, Jun 15 2026',note:'Itemized split pending original quote. Tax included in all-in total.'},
- chris:{who:'Chris Viltaggio',addr:'199 Denniston Rd, Wallkill NY 12589',date:'June 26, 2026',lines:[['Navimow X430 (serial TBD)','$1,943.52'],['NY sales tax — Ulster 8%','$155.48']],total:'$2,099.00',pay:'Paid by check · delivered Jun 26 2026',note:'Shown as the TAX-INCLUDED scenario. If it was +tax, total = $2,266.92. Confirm before sending.'}
+ chris:{who:'Chris Viltaggio',addr:'199 Denniston Rd, Wallkill NY 12589',date:'June 26, 2026',lines:[['Navimow X430 (serial TBD)','$2,099.00'],['NY sales tax (8.375%)','$175.79']],total:'$2,274.79',pay:'Paid by check · delivered Jun 26 2026',note:'Need the exact X430 serial before final send.'}
 };
 function rc(id){var d=R[id];var w=window.open('','_blank');
  var rows=d.lines.map(function(l){return '<tr><td>'+l[0]+'</td><td style="text-align:right">'+l[1]+'</td></tr>';}).join('');
