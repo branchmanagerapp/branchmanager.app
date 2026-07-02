@@ -1,0 +1,159 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>SNT · To-Do</title>
+<link rel="apple-touch-icon" href="https://smartlawnny.com/smartlawn-profile-circle.png">
+<style>
+:root{--ink:#16181d;--mut:#6b7280;--line:#e6e8ec;--green:#1b7f3b;--bg:#f5f6f8;--card:#fff;--amber:#b45309;}
+*{box-sizing:border-box;-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;padding:0 0 60px}
+.top{position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 18px;z-index:10}
+.top h1{font-size:18px;margin:0;font-weight:800}
+.top .u{font-size:12px;color:var(--mut);margin-top:2px}
+.wrap{max-width:720px;margin:0 auto;padding:18px 16px}
+h1{font-size:22px;margin:22px 0 4px}
+h2{font-size:19px;margin:30px 0 10px;padding-top:14px;border-top:2px solid var(--line);font-weight:800}
+h3{font-size:15px;margin:16px 0 6px;color:var(--mut);font-weight:700;text-transform:none}
+hr{border:none;border-top:1px solid var(--line);margin:6px 0}
+p{margin:8px 0;color:#33373d;font-size:15px}
+.task{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;font-size:15px}
+.task.sub{margin-left:20px;background:#fafbfc;font-size:14px}
+.task .box{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;margin-top:1px}
+.task.todo .box{border:2px solid #c3c8cf;color:transparent}
+.task.done .box{background:var(--green);color:#fff}
+.task.done .txt{color:var(--mut)}
+.task.wip .box{background:var(--amber);color:#fff}
+.bullet{margin:6px 0;font-size:14.5px;color:#33373d}
+.bullet.sub{margin-left:18px;color:var(--mut);font-size:14px}
+.num{margin:7px 0;font-size:15px}
+code{background:#eef0f3;border-radius:5px;padding:1px 5px;font-size:13px;font-family:ui-monospace,Menlo,monospace}
+a{color:var(--green);word-break:break-word}
+strong{color:var(--ink)}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin:8px 0}
+summary{cursor:pointer;padding:10px 0;font-size:15px}
+</style></head><body>
+<div class="top"><h1>🌿 Second Nature · To-Do</h1><div class="u">Live dashboard · updated Jul 1, 2026 (late night) · private</div></div>
+<div class="wrap">
+<h1>To-Do — Jul 1, 2026 (consolidated &amp; current)</h1>
+<p>*Merges the Jun 16 / Jun 22 / Jun 30 lists + everything from the Jul 1 session. Old lists archived in <code>To-Do Archive/</code>.*</p>
+<hr>
+<h2>🔴 Revenue / urgent</h2>
+<div class="task done"><span class="box">✓</span><span class="txt"><strong>SmartLawn checkout FIXED (Jul 1).</strong> Real bug was NOT an empty products table (table has 28 rows). Storefront sent price under key <code>price</code>; the <code>stripe-checkout</code> edge fn only read <code>amount</code>/<code>unit_price</code> → saw every item as $0 → &quot;No valid items in cart&quot; → 100% of online sales failed. Added <code>?? item.price</code> fallback, redeployed via mgmt token, verified with the exact storefront payload → live Stripe URL returns. <strong>Online sales work now.</strong></span></div>
+<div class="bullet sub">• ⚠ <strong>Still open — catalog vs site mismatch:</strong> site advertises H220 $2199 &amp; i215 $1599 that DON&#x27;T exist in the POS (POS has H800 $2499, i108 $1199); X430 $2499 site vs $3499 POS; X450 $2999 vs $4999. Need to reconcile which prices/models are the real ones.</div>
+<div class="bullet sub">• ⚠ <strong>Proper fix (backlog):</strong> storefront should send <code>product_id</code> UUIDs so prices come from the DB (trusted), not the browser — one-liner in <code>cartBuyNow</code>, but needs smartlawnny-cloud WRITE access (Doug&#x27;s info@2ntr.com side).</div>
+<div class="task done"><span class="box">✓</span><span class="txt"><strong>BIGGER BUG FOUND + FIXED (Jul 1): Stripe webhook could NEVER record a payment.</strong> The <code>queue<em>review</em>request()</code> trigger did <code>INSERT … ON CONFLICT (sale<em>id)</code> but <code>review</em>requests</code> had NO unique constraint on <code>sale<em>id</code> → every attempt to set a sale <code>status=&#x27;paid&#x27;</code> threw + rolled back. So paid Stripe payments never wrote to the DB (sales stuck <code>pending</em>payment</code>). <strong>Fixed:</strong> added <code>UNIQUE(review<em>requests.sale</em>id)</code>. Paid orders now record.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">⚠ <strong>RECONCILE other pending sales vs Stripe.</strong> Besides Bynum&#x27;s 8, there were ~10 other <code>pending<em>payment</code> rows. Some may be REAL payments that never recorded (same trigger bug). <strong>Check Stripe for succeeded payments matching the remaining pending sales → mark the real ones paid.</strong> (Needs a read-only <code>rk</em>live_</code> Stripe key in <code>~/Desktop/smartlawn-keys.txt</code>, or Doug spot-checks the Dashboard.)</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>CADCO — $22,878 past due</strong>, incl. <strong>$16,303.55 from March (69 days over)</strong>. Pay to unfreeze shipments + order the <strong>X430</strong>. Reply to <strong>Marissa</strong> is drafted in <strong>info@peekskilltree Gmail → Drafts</strong> (payment amount, Net-30, dealer-website listing). Marissa: (908) 213-0303 / ar@cadcodist.com.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Jobber invoices to create + send (Tree account, drafts for review):</strong></span></div>
+<div class="bullet sub">• <strong>Hope Bogart</strong> — $500 — &quot;Installing ceiling tile&quot;</div>
+<div class="bullet sub">• <strong>Elizabeth Bynum</strong> — ✅ <strong>PAID &amp; CLOSED (verified in Stripe Jul 1).</strong> She paid <strong>$3,355.29</strong> via Stripe Link <strong>Jun 15</strong> (<code>pi<em>3TiQbrPXMBPhg4sK2yAmPCCz</code>). DB fixed: <strong>REC-00018 → paid</strong> (linked to the payment intent, paid</em>at set); the 7 duplicate Jun-13 attempts (REC-00011→00017) <strong>voided</strong>; auto review-request skipped. <strong>DO NOT re-collect — she&#x27;s square.</strong> (H220 + garage + install + 1yr service + NY tax; installed at her house; homeowner Patrick, Elizabeth = property mgr.)</div>
+<h2>🔑 Unblockers (credentials / other account)</h2>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Brivo door — CONFIRMED: MFA is blocking the API</strong> (not a password). Client/secret/api-key all proven valid; you did a *fresh* password reset (2ntrSkate!) and the API still returned &quot;Bad credentials&quot; — a just-set password can&#x27;t be wrong, so it&#x27;s an account-level block. <strong>Fix, pick one:</strong> (a) <strong>Nick</strong> creates a dedicated API user (password grant ON, MFA OFF) → drops into the built worker as-is; or (b) enable <strong>authorization_code</strong> flow + redirect on the integration (Brivo dashboard) → I add a <code>/callback</code> to the worker → you log in once (MFA and all) → permanent token. Everything else is built &amp; deployed.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Bring from OTHER Claude account (info@2ntr.com side):</strong> SmartLawn POS creds (fixes checkout + pulls Bynum&#x27;s invoice) and any working Brivo creds.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Square PRODUCTION token</strong> → paste into <code>~/Desktop/square-token.txt</code> (still the Sandbox one). Finishes the door connector&#x27;s Square side.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Cloudflare multi-account</strong> → one token per account into <code>~/Desktop/REMOTE-AGENT-CREDS.txt</code> (for the Mac mini / Hermes). Optional: member-invite consolidation under one hub login.</span></div>
+<h2>💬 EXPORT REGULAR claude.ai CHATS — BOTH accounts (do when up)</h2>
+<p><em>Claude only has the Code sessions, NOT the regular claude.ai app chats. Export bundles every conversation into a file Claude can then ingest. <strong>Do this once per account</strong> — exports are per-login.</em></p>
+<p><strong>Account 1 — info@peekskilltree.com:</strong></p>
+<div class="num"><b>1.</b> Log into <strong>https://claude.ai</strong> as <strong>info@peekskilltree.com</strong>.</div>
+<div class="num"><b>2.</b> Go to <strong>https://claude.ai/settings/data-privacy-controls</strong> (or: profile pic → <strong>Settings → Privacy</strong>) → click <strong>&quot;Export data.&quot;</strong></div>
+<div class="num"><b>3.</b> Confirm. Anthropic <strong>emails a download link</strong> to info@peekskilltree.com (arrives minutes → up to 24h).</div>
+<div class="num"><b>4.</b> Open the email → download the <strong>.zip</strong> → rename it <strong><code>claude-export-peekskilltree.zip</code></strong> → drop it on the <strong>Desktop</strong>.</div>
+<p><strong>Account 2 — info@2ntr.com</strong> (the one with a lot on it):</p>
+<div class="num"><b>5.</b> <strong>Log out</strong>, then log into <strong>https://claude.ai</strong> as <strong>info@2ntr.com</strong>.</div>
+<div class="num"><b>6.</b> Same path: <strong>Settings → Privacy → Export data</strong> → confirm.</div>
+<div class="num"><b>7.</b> Download link is emailed to <strong>info@2ntr.com</strong> → download the <strong>.zip</strong> → rename <strong><code>claude-export-2ntr.zip</code></strong> → drop on the <strong>Desktop</strong>.</div>
+<div class="num"><b>8.</b> Tell Claude &quot;chats are on the Desktop&quot; → Claude ingests both <code>conversations.json</code> files and folds every regular chat into the master index alongside the 39 Code sessions.</div>
+<p><em>(Directions also saved as a DRAFT email in the peekskilltree Gmail → Drafts.)</em></p>
+<h2>🤖 AI agents (Mac mini)</h2>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Hermes</strong> — installed + running (v0.17.0); needs <code>hermes setup</code> → model + API key.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Fazm</strong> — cloned, Claude bridge built; needs <code>./run.sh</code> (Apple ID sign-in + Screen Recording/Accessibility/Mic permissions).</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Buy Anker PowerConf S330 (~$100)</strong> — mic for the mini (Mac mini has no built-in mic). Skip the pricier BT model.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">Setup prompts: emailed to info@peekskilltree (Gmail draft) + <code>~/Desktop/agent-setup-prompts.md</code>.</span></div>
+<h2>🌱 SmartLawn / Lucente</h2>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Text Dennis</strong> — X430 vs X450 (same machine, 450 bigger), CM120 = $5,499 + your partner price.</span></div>
+<div class="task done"><span class="box">✓</span><span class="txt"><strong>Generic SmartLawn fleet/partner PITCH — LIVE (Jul 1):</strong> <a href="https://branchmanager.app/smartlawn-fleet.html" target="_blank" rel="noopener">https://branchmanager.app/smartlawn-fleet.html</a> — full configurator+savings+why-daily+partnership+press+Q&amp;A, genericized from the Lucente pitch, <strong>URL-personalized</strong>: append <code>?to=Company</code> (+ optional <code>&amp;contact=Name</code>) to personalize per prospect. Send to any landscaper/HOA/property-mgr. (Lucente-specific version still at smartlawn-fleet-e1360eb1.html.)</span></div>
+<div class="task wip"><span class="box">◐</span><span class="txt"><strong>SmartLawn site redo — homepage REBUILT (Jul 1).</strong> New <code>index-redesign.html</code> (in the site folder): Navimow-style image+video-forward layout, product grid w/ current everyday prices, 3 official video embeds, service plans, benefits; the Google-Maps property tool DEMOTED to a &quot;Measure your lawn&quot; section (no longer dominates the page). Working cart→checkout wired to the fixed edge fn (sends price+amount) w/ correct CRM anon key. Previewable locally + in Launch panel. <strong>SHIP-BLOCKED:</strong> <code>smartlawnny-cloud/smartlawnny.com</code> push = 403 (this Mac&#x27;s <code>gh</code> = peekskilltree, READ only; recovered tokens dead). <strong>Unblock = add <code>peekskilltree</code> as WRITE collaborator on that repo</strong> (from whatever login owns smartlawnny-cloud), then I push index-redesign.html → index.html.</span></div>
+<div class="bullet">• <strong>PRICE DECISION (Doug, Jul 1):</strong> the CURRENT site prices are correct (they&#x27;re MSRP; selling at/below is fine). The higher &quot;POS official&quot; numbers were just MSRP confusion. Build w/ current prices. My checkout fix (charges site price) is therefore correct — no undercharge risk.</div>
+<h2>🔒 BM / infrastructure</h2>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>BM tenants leak — finish it.</strong> <code>config</code>/names/plan now sealed ✅, but <code>owner<em>email</code> still readable by anon. Close it: build <code>SECURITY DEFINER get</em>tenant<em>id</em>by<em>email()</code> RPC → repoint the app&#x27;s signup lookup → <code>REVOKE SELECT (owner</em>email)</code>. (Needs app change + redeploy.)</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Text Kevin the Intrepid pitch</strong> — LIVE at branchmanager.app/northeast-intrepid-kevin-995ead.html.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">CPA portal correct URL (my notes had a dead one): <strong>branchmanager.app/cpa2025-1aefb4.html</strong> (pw Fay25).</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">GitHub &quot;Daily BM Audit&quot; workflow was failing (Jun 12) — fix when in the code.</span></div>
+<h2>🌳 Tree — verify handled (from Jun 13–22; may already be done)</h2>
+<div class="task todo"><span class="box">○</span><span class="txt">Confirm these got worked: <strong>(845) 987-0553</strong> hot climb/removal lead · <strong>Colby Moore</strong> quote (860-416-2557) · <strong>Katz</strong> estimate · <strong>John Voelp</strong> trees (845-815-0284) · <strong>crane multi-neighbor day</strong> (302/303/308/309 + 2 silver maples) · <strong>firewood $3,400</strong> quote · <strong>Mr. Tree/Nick</strong> limb cleanup → invoice · <strong>Braxton</strong> chipper rental (845-337-7943) · <strong>Giant 254T</strong> buyout number.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Geneva Capital financing</strong> (wheel-loader / chipper) — don&#x27;t complete until price/rate/payment in writing AND booked work covers the ~$22,500/yr break-even.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">⚠ <strong>Verify GL insurance audit ($3,279.54) is actually PAID</strong> — records conflict (Jun 22 note says paid; insurance memory says unpaid → GL cancels 9/18/26 if not). Confirm with Tooher-Ferraris.</span></div>
+<h2>✅ Done Jul 1</h2>
+<div class="bullet">• Full <strong>site audit</strong> — all 4 sites up + fast; surfaced the SmartLawn checkout bug + BM tenants leak.</div>
+<div class="bullet">• <strong>BM tenants data leak SEALED</strong> (config/names/plan hidden from anon; verified live; no regression; rollback armed).</div>
+<div class="bullet">• <strong>Brivo narrowed</strong> to just the login/password (client proven valid).</div>
+<div class="bullet">• <strong>Kevin Intrepid pitch page</strong> built + deployed live.</div>
+<div class="bullet">• <strong>Fazm + Hermes</strong> installed on this Mac; agent setup prompts staged + emailed.</div>
+<div class="bullet">• <strong>CADCO</strong> balance read; <strong>Marissa</strong> reply drafted.</div>
+<h3>✅ Done Jul 1 (late night)</h3>
+<div class="bullet">• <strong>SmartLawn checkout FIXED</strong> — price-key mismatch in <code>stripe-checkout</code> edge fn (deployed <code>?? item.price</code> fallback, verified live).</div>
+<div class="bullet">• <strong>BIGGER webhook bug FIXED</strong> — <code>review<em>requests</code> missing <code>UNIQUE(sale</em>id)</code> made every paid-webhook roll back → no payment ever recorded. Added the constraint.</div>
+<div class="bullet">• <strong>Elizabeth Bynum = PAID</strong> (verified in Stripe: $3,355.29, Jun 15). Marked REC-00018 paid, voided 7 dupes. <strong>Do not chase.</strong></div>
+<div class="bullet">• <strong>Generic SmartLawn fleet PITCH LIVE</strong> → <a href="https://branchmanager.app/smartlawn-fleet.html" target="_blank" rel="noopener">https://branchmanager.app/smartlawn-fleet.html</a> (URL-personalize with <code>?to=Company&amp;contact=Name</code>).</div>
+<div class="bullet">• <strong>SmartLawn homepage REBUILT</strong> (Navimow-style, image+video, map demoted) — <code>index-redesign.html</code>, staged; ship-blocked on repo write.</div>
+<div class="bullet">• <strong>Robinhood</strong> connected + <strong>backed up</strong> → <code>~/Desktop/robinhood-snapshot-2026-07-01.md</code> (backed up (figures in local snapshot only)).</div>
+<div class="bullet">• <strong>Voice LIVE</strong> — ElevenLabs &quot;George&quot; via <code>~/.el_key</code>.</div>
+<div class="bullet">• <strong>Prices confirmed:</strong> current site prices are correct (MSRP; sells at/below).</div>
+<h2>🔌 Connections status</h2>
+<div class="bullet">• ✅ <strong>Robinhood</strong> — connected, portfolio backed up.</div>
+<div class="bullet">• ✅ <strong>Gmail</strong> — connector holds ONE account; staying on <strong>info@peekskilltree.com</strong> (no urgent 2ntr-mail need; swap only when something specific requires it). Real fix = multi-account mail tool (backlog).</div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Ship SmartLawn site</strong> → add <code>peekskilltree</code> as WRITE collaborator: <a href="https://github.com/smartlawnny-cloud/smartlawnny.com/settings/access" target="_blank" rel="noopener">https://github.com/smartlawnny-cloud/smartlawnny.com/settings/access</a> → &quot;Add people.&quot;</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Reconcile other pending SmartLawn payments</strong> → drop a read-only <code>rk<em>live</em></code> Stripe key in <code>~/Desktop/smartlawn-keys.txt</code> (same webhook bug may have hidden other real payments).</span></div>
+<h2>🚫 Ignore</h2>
+<div class="bullet">• MCA / &quot;funding department&quot; cold-calls (e.g. 914-569-8018).</div>
+<h2>🔑 OTHER-ACCOUNT ACCESS MAP (discovered Jul 1 from the Jun 29 migration email)</h2>
+<div class="bullet">• <strong>skatepark914/skateOS</strong> = accessible ✅ (cloned; has BRIVO.md, HANDOFF-PARK-BRIVO.md, Supabase fns, SMARTLAWN_PATTERNS.md). anon keys only.</div>
+<div class="bullet">• <strong>skatepark914/claude-sessions</strong> (chat history+memory) = PRIVATE 404 → <strong>ADD peekskilltree as collaborator</strong> to unlock all creds.</div>
+<div class="bullet">• <strong>skatepark914/popcut</strong> = private 404.</div>
+<div class="bullet">• SUPABASE<em>ACCESS</em>TOKEN → LaCie dot-zprofile.txt (or regen at supabase.com/account/tokens).</div>
+<div class="bullet">• Brivo API keys → Supabase secrets, skate project <code>zecurmlenxyxanqucrga</code>.</div>
+<div class="bullet">• SmartLawn CRM → Supabase <code>zjqpzqpvovvuaxikyksq</code> (grab service_role from Settings→API).</div>
+<div class="bullet">• <strong>DOOR REALITY:</strong> skateOS already has a full working Brivo system (edge functions + Mobile Passes; opened on first tap). Today&#x27;s Square→worker may be redundant — decide which approach.</div>
+<h2>📞 DIALPAD LEADS — call back (from voicemails, Jun 11–29) — CALL THESE</h2>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Scott Manner</strong> — (914) 737-8522 · 3 Marissa Ct, Montrose NY — called TWICE (Jun 11 + 19). Persistent → call first.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Allen Katz</strong> — (845) 320-3100 · Yorktown — (&quot;KATZ estimate&quot; from earlier list). Real lead.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Kendra Parker</strong> — (914) 645-6181 · 4 Ridge Rd, Garrison — tree lead.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Henry</strong> — (914) 275-7065 · 16 Rose(?), Shambo — tree lead w/ address.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Mike</strong> — (917) 295-5623 · 32 Moff Dr — &quot;Doug &amp; Catherine came…&quot; (return customer).</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Laura</strong> — (914) 552-7354 · Lake Peekskill — called last week, following up.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Port Chester</strong> — (914) 253-1464 — asking about getting a quote.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Wood chips inquiry</strong> — (914) 218-7295 — wants wood chips/mulch. Sell it.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>Hector Arroyo (&quot;Teyo&quot;)</strong> — (646) 235-7809 — referral via Victor; VM Jun 26 (already quoted outside system — close it).</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt"><strong>(845) 265-3663</strong> — &quot;calling again&quot; for Doug (Jun 23) — persistent, unknown ask.</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">Maybe: <strong>Alex/Frost</strong> (914) 299-0645 · <strong>Ryan</strong> (801) 404-2668 — likely vendors, screen.</span></div>
+<div class="bullet">• 🚫 Ignore: BBB (516) 420-0500 · &quot;Mary/engage&quot; (701) 291-0700 · &quot;Jennifer/funding&quot; (914) 569-8018 · &quot;Brianna/sig&quot; (516) 329-9565 · NYSEG auto (888) 315-1755 · CADCO Marissa/Tamra (908) 213-0303 (in CADCO item).</div>
+<div class="bullet">• ⚠️ <strong>Connect Dialpad</strong> for the full picture — voicemails come via Gmail, but texts + no-voicemail calls only live in Dialpad (cloud). Weekly reports show ~32 missed calls/wk = more leads not captured here.</div>
+<h2>🍎 APP STORE — publish the apps (makes it feel finished)</h2>
+<p><em>All three are web apps today → need a native shell (Expo/Capacitor) to list. Steps collapsible per app.</em></p>
+<details><summary><b>0) One-time Apple setup (do first, covers all apps)</b></summary>
+<div class="bullet">• Enroll <strong>Apple Developer Program</strong> — $99/yr (developer.apple.com, ~24–48h approval).</div>
+<div class="bullet">• Create <strong>App Store Connect</strong> account; agree to agreements; add banking/tax for paid (free apps skip banking).</div>
+<div class="bullet">• Install <strong>Xcode</strong> on a Mac.</div>
+</details>
+<details><summary><b>1) Tap-to-Share Card app (easiest — ship first)</b></summary>
+<div class="bullet">• Wrap <code>card.html</code> in a native shell (Capacitor: <code>npm i @capacitor/core @capacitor/cli</code>, <code>npx cap init</code>, <code>npx cap add ios</code>).</div>
+<div class="bullet">• Icon (1024px) + name (&quot;2NTR Card&quot; / white-label name), splash.</div>
+<div class="bullet">• App Store listing: name, subtitle, description, keywords, 3–5 screenshots, privacy policy URL, support URL.</div>
+<div class="bullet">• Privacy: declare &quot;no data collected&quot; (it only builds a local vCard) → fast review.</div>
+<div class="bullet">• <code>npx cap open ios</code> → set bundle id → Archive → upload → submit.</div>
+</details>
+<details><summary><b>2) SkateOS</b></summary>
+<div class="bullet">• Already has an <strong>Expo/React Native</strong> mobile shell (check-in, members, POS) — build for iOS via EAS: <code>eas build -p ios</code>.</div>
+<div class="bullet">• Icon/splash, App Store listing, privacy policy (collects customer data → fill the privacy questionnaire).</div>
+<div class="bullet">• Screenshots of check-in + POS; submit via EAS Submit or App Store Connect.</div>
+</details>
+<details><summary><b>3) Branch Manager</b></summary>
+<div class="bullet">• Field-service app — wrap the web app (Capacitor) or build the RN shell.</div>
+<div class="bullet">• Multi-tenant privacy disclosure; camera/location usage strings (dispatch, geofence, before/after photos).</div>
+<div class="bullet">• Icon/listing/screenshots; submit.</div>
+</details>
+<div class="task todo"><span class="box">○</span><span class="txt">Enroll Apple Developer ($99/yr) — Doug</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">Ship the <strong>Card app</strong> first (simplest, no-data privacy = fast approval)</span></div>
+<div class="task todo"><span class="box">○</span><span class="txt">SkateOS + Branch Manager after</span></div>
+</div></body></html>
