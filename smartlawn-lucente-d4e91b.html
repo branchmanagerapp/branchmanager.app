@@ -56,6 +56,70 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--m
 
   <div class="note">Full dealer install, setup &amp; crew training included. Prices exclude NY sales tax where applicable.</div>
 
+  <h2 class="sec">Coverage &amp; 24-hour cutting power</h2>
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0 0 10px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:580px">
+      <thead><tr>
+        <th style="text-align:left;padding:10px 12px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)">Model</th>
+        <th style="text-align:center;padding:10px 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)">Cut width</th>
+        <th style="text-align:center;padding:10px 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)">Runtime / charge</th>
+        <th style="text-align:center;padding:10px 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)">Recharge</th>
+        <th style="text-align:center;padding:10px 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)">Cut / charge</th>
+        <th style="text-align:center;padding:10px 5px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)">Max lawn</th>
+        <th style="text-align:center;padding:10px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--green)">Cut in 24 hrs</th>
+      </tr></thead>
+      <tbody id="specRows"></tbody>
+    </table>
+  </div>
+
+  <div style="background:#eef5f0;border:1px solid #cfe3d7;border-radius:14px;padding:14px 15px;margin:0 0 14px">
+    <div style="font-weight:800;font-size:15px;margin-bottom:8px">📐 How fast will it finish a yard?</div>
+    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+      <span style="font-size:14px">Lawn size:</span>
+      <input id="lawnAc" type="text" inputmode="decimal" placeholder="e.g. 0.8" style="width:96px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-size:15px;font-family:inherit">
+      <span style="font-size:14px">acres</span>
+    </div>
+    <div id="calcOut" style="margin-top:11px;font-size:13.5px"></div>
+    <div style="font-size:11.5px;color:var(--mut);margin-top:11px;line-height:1.5">Runtime, cut width &amp; area-per-charge are Navimow's published specs; <b>CM120/CM240 recharge times are estimated</b> pending Navimow's figure. "Cut in 24 hrs" assumes it runs around the clock — cut, dock, recharge, repeat. Real coverage varies with grass height, slope &amp; yard shape. All four run the wide <b>17″ deck</b>.</div>
+  </div>
+<script>
+(function(){
+  const SPECS=[
+    {nm:'Navimow X430', cut:'17″', run:110, chg:90,  per:0.22, max:1.0, maxL:'1.0 ac'},
+    {nm:'Navimow X450', cut:'17″', run:130, chg:100, per:0.27, max:1.5, maxL:'1.5 ac'},
+    {nm:'Navimow CM120',cut:'17″', run:145, chg:90,  per:0.37, max:3.0, maxL:'3 ac'},
+    {nm:'Navimow CM240',cut:'17″', run:180, chg:90,  per:0.5,  max:6.0, maxL:'6 ac'},
+  ];
+  const per24 = s => (1440/(s.run+s.chg))*s.per;   // cut-and-recharge cycles in 24h × area per charge
+  const rows=document.getElementById('specRows');
+  SPECS.forEach((s,i)=>{
+    const tr=document.createElement('tr');
+    if(i) tr.style.borderTop='1px solid var(--line)';
+    tr.innerHTML=
+      '<td style="padding:11px 12px;font-weight:700">'+s.nm+'</td>'+
+      '<td style="text-align:center">'+s.cut+'</td>'+
+      '<td style="text-align:center">'+s.run+' min</td>'+
+      '<td style="text-align:center">~'+s.chg+' min</td>'+
+      '<td style="text-align:center">'+s.per+' ac</td>'+
+      '<td style="text-align:center">'+s.maxL+'</td>'+
+      '<td style="text-align:center;font-weight:800;color:var(--green)">'+per24(s).toFixed(2)+' ac</td>';
+    rows.appendChild(tr);
+  });
+  const inp=document.getElementById('lawnAc'), out=document.getElementById('calcOut');
+  function calc(){
+    const a=parseFloat((inp.value||'').replace(/[^0-9.]/g,''));
+    if(!a||a<=0){ out.innerHTML='<span style="color:var(--mut)">Enter a lawn size to see how fast each mower gets through it.</span>'; return; }
+    out.innerHTML=SPECS.map(function(s){
+      const d=per24(s); const hrs=(a/d)*24;
+      const t = hrs<=24 ? Math.max(1,Math.round(hrs))+' hr' : (hrs/24).toFixed(1)+' days';
+      const flag = a>s.max ? ' <span style="color:var(--gold)">· above its rated lawn</span>' : '';
+      return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #dcebe1"><span><b>'+s.nm+'</b> · '+d.toFixed(2)+' ac/day</span><span style="text-align:right">'+a+' ac in ~<b>'+t+'</b>'+flag+'</span></div>';
+    }).join('');
+  }
+  inp.addEventListener('input',calc); calc();
+})();
+</script>
+
   <div class="card" id="coForm" style="display:none;flex-direction:column;gap:9px;align-items:stretch;margin-top:10px">
     <div style="font-weight:800;font-size:15px">Your info</div>
     <input id="coName" value="Dennis Lucente" placeholder="Your name" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
