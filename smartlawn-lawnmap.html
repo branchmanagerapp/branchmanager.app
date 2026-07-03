@@ -1,0 +1,115 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Smart Lawn — Property Mapper</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+<style>
+:root{--ink:#15181d;--mut:#697079;--line:#e4e7ea;--bg:#f4f6f5;--card:#fff;--green:#1b7f3b;--gold:#b45309}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+.hd{background:#14532d;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 14px 12px}
+.hd h1{margin:0;font-size:17px;font-weight:800}.hd p{margin:2px 0 0;font-size:12px;opacity:.85}
+.bar{display:flex;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.bar input{flex:1;min-width:180px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+.bar button{background:var(--green);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap}
+.bar button.g{background:#8a8f98}
+#map{height:56vh;width:100%}
+.panel{padding:12px 14px 40px;max-width:900px;margin:0 auto}
+.hint{background:#eef5f0;border:1px solid #cfe3d7;border-radius:11px;padding:11px 13px;font-size:13px;margin-bottom:12px}
+.hint b{color:var(--green)}
+.tot{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+.tot .n{font-size:34px;font-weight:800}.tot .u{font-size:14px;color:var(--mut)}
+.tot .sq{font-size:13px;color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{padding:10px 12px;text-align:left;border-top:1px solid var(--line)}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);background:#fafbfc;border-top:none}
+td.c,th.c{text-align:center}
+.fit{color:var(--green);font-weight:800}.nofit{color:var(--gold);font-weight:700}
+.zones{font-size:12.5px;color:var(--mut);margin-top:10px}
+.err{color:#c0392b;font-size:13px;margin-top:6px}
+</style></head><body>
+<div class="hd"><h1>🛰️ Smart Lawn — Property Mapper</h1><p>Search an address · trace the lawn · get the acreage + which Navimow fits. No Google needed.</p></div>
+<div class="bar">
+  <input id="q" placeholder="Paste a property address (e.g. 108 Lakeshore Dr, Eastchester NY)" />
+  <button id="go">Find</button>
+  <button id="clear" class="g">Clear zones</button>
+</div>
+<div id="map"></div>
+<div class="panel">
+  <div class="hint">▶ Click the <b>polygon tool</b> (top-left of the map) and click around the lawn edges; double-click to close it. Draw several for multiple lawns/properties — they add up. <b>Total mowable area:</b></div>
+  <div class="tot"><span class="n" id="acres">0.00</span><span class="u">acres</span><span class="sq" id="sqft"></span></div>
+  <table>
+    <thead><tr><th>Navimow</th><th class="c">Cut in 24h</th><th class="c">Fits this lawn?</th><th class="c">Time to cut</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="zones" id="zones"></div>
+  <div class="err" id="err"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script>
+const SPECS=[
+  {nm:'Navimow X430', run:110, chg:90,  per:0.22, max:1.0},
+  {nm:'Navimow X450', run:130, chg:100, per:0.27, max:1.5},
+  {nm:'Navimow CM120',run:145, chg:90,  per:0.37, max:3.0},
+  {nm:'Navimow CM240',run:180, chg:90,  per:0.5,  max:6.0},
+];
+const per24 = s => (1440/(s.run+s.chg))*s.per;
+
+const map = L.map('map',{zoomControl:true}).setView([41.03,-73.78],17); // Westchester default
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:21,maxNativeZoom:19,attribution:'Imagery © Esri'}).addTo(map);
+
+const drawn = new L.FeatureGroup().addTo(map);
+map.addControl(new L.Control.Draw({
+  edit:{featureGroup:drawn},
+  draw:{polygon:{showArea:true,shapeOptions:{color:'#1b7f3b',weight:3,fillOpacity:.25}},
+        polyline:false,rectangle:true,circle:false,marker:false,circlemarker:false}
+}));
+
+function m2ToAcres(m2){return m2/4046.8564224;}
+function m2ToSqft(m2){return m2*10.76391041671;}
+function areaOf(layer){
+  const ll = layer.getLatLngs()[0] || layer.getLatLngs();
+  return L.GeometryUtil.geodesicArea(ll);
+}
+function refresh(){
+  let totalM2=0, n=0, zoneLines=[];
+  drawn.eachLayer(l=>{ n++; const a=areaOf(l); totalM2+=a; zoneLines.push('Zone '+n+': '+m2ToAcres(a).toFixed(2)+' ac'); });
+  const acres=m2ToAcres(totalM2);
+  document.getElementById('acres').textContent=acres.toFixed(2);
+  document.getElementById('sqft').textContent = totalM2>0 ? '('+Math.round(m2ToSqft(totalM2)).toLocaleString()+' sq ft across '+n+' zone'+(n>1?'s':'')+')' : '';
+  document.getElementById('zones').textContent = n>1 ? zoneLines.join('  ·  ') : '';
+  const rows=document.getElementById('rows');
+  rows.innerHTML=SPECS.map(s=>{
+    const d=per24(s);
+    const fit = acres>0 && acres<=s.max;
+    const hrs = acres>0 ? (acres/d)*24 : 0;
+    const t = acres<=0 ? '—' : (hrs<=24 ? Math.max(1,Math.round(hrs))+' hr' : (hrs/24).toFixed(1)+' days');
+    const fitCell = acres<=0 ? '—' : (fit?'<span class="fit">✓ yes</span>':'<span class="nofit">over '+s.max+' ac</span>');
+    return '<tr><td>'+s.nm+'</td><td class="c">'+d.toFixed(2)+' ac</td><td class="c">'+fitCell+'</td><td class="c">'+t+'</td></tr>';
+  }).join('');
+}
+map.on(L.Draw.Event.CREATED, e=>{ drawn.addLayer(e.layer); refresh(); });
+map.on(L.Draw.Event.EDITED, refresh);
+map.on(L.Draw.Event.DELETED, refresh);
+document.getElementById('clear').onclick=()=>{ drawn.clearLayers(); refresh(); };
+refresh();
+
+// Address search via OpenStreetMap Nominatim (free, no key)
+async function geocode(){
+  const q=document.getElementById('q').value.trim();
+  const err=document.getElementById('err'); err.textContent='';
+  if(!q) return;
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});
+    const j=await r.json();
+    if(j&&j[0]){ map.setView([+j[0].lat,+j[0].lon],19); }
+    else err.textContent='Address not found — try adding town + state, or just zoom the map there manually.';
+  }catch(e){ err.textContent='Lookup failed — pan/zoom to the property manually and trace it.'; }
+}
+document.getElementById('go').onclick=geocode;
+document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter') geocode(); });
+</script>
+</body></html>
