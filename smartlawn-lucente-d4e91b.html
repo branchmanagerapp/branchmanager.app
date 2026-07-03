@@ -87,12 +87,13 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--m
 // Dennis Lucente pricing = 5% under retail, no install fee.
 // Dennis's order from his Jul 2 text: 1× X430, 2× X450, 1× CM120, + CM240 priced "just in case".
 const MODELS = [
-  {id:'x430',  nm:'Navimow X430',       fit:'Residential estates — 1 acre',            retail:2499, init:1},
-  {id:'x450',  nm:'Navimow X450',       fit:'Large residential / small commercial — 1.5 ac', retail:2999, init:2},
+  {id:'x430',  nm:'Navimow X430',       fit:'Residential estates — 1 acre',            retail:2499, sale:2099, init:1},
+  {id:'x450',  nm:'Navimow X450',       fit:'Large residential / small commercial — 1.5 ac', retail:2999, sale:2539, init:2},
   {id:'cm120', nm:'TerraNox CM120M1',   fit:'Commercial grounds, HOAs, campuses — 3 ac',retail:5499, init:1},
   {id:'cm240', nm:'TerraNox CM240M1',   fit:'The bigger one — 6 ac. Add if a big property comes up.', retail:6999, init:0},
 ];
-const yours = r => Math.round(r * 0.90);   // 10% under MSRP
+// Match Navimow's current Prime Day sale where set (sale:), else 10% under MSRP.
+const yours = m => m.sale || Math.round(m.retail * 0.90);
 const qty = {};
 // Set this to a Stripe Payment Link (or leave null → button emails the quote to Smart Lawn to send a secure link).
 const PAYMENT_LINK = null;
@@ -107,7 +108,7 @@ MODELS.forEach(m => {
     <div class="info">
       <div class="nm">${m.nm}</div>
       <div class="fit">${m.fit}</div>
-      <div class="price"><span class="retail">${fmt(m.retail)}</span><span class="yours">${fmt(yours(m.retail))}</span></div>
+      <div class="price"><span class="retail">${fmt(m.retail)}</span><span class="yours">${fmt(yours(m))}</span></div>
     </div>
     <div class="stepper">
       <button aria-label="remove" data-m="${m.id}" data-d="-1">−</button>
@@ -129,7 +130,7 @@ MODELS.forEach(m => {
 
 function recalc(){
   let yoursTot = 0, retailTot = 0, units = 0;
-  MODELS.forEach(m => { yoursTot += qty[m.id]*yours(m.retail); retailTot += qty[m.id]*m.retail; units += qty[m.id]; });
+  MODELS.forEach(m => { yoursTot += qty[m.id]*yours(m); retailTot += qty[m.id]*m.retail; units += qty[m.id]; });
   document.getElementById('total').textContent = fmt(yoursTot);
   const saved = retailTot - yoursTot;
   document.getElementById('save').textContent = saved > 0 ? `  ·  you save ${fmt(saved)} + $0 install` : '';
@@ -181,7 +182,7 @@ document.getElementById('coPay').addEventListener('click', async () => {
   const addr = document.getElementById('coAddr').value.trim();
   if (phone.replace(/\D/g,'').length < 7 || !addr) { alert('Please add your mobile and billing address.'); return; }
   const items = [];
-  MODELS.forEach(m => { for (let i=0;i<qty[m.id];i++) items.push({sku:m.id.toUpperCase(), name:m.nm+' — Lucente partner price', price:yours(m.retail), qty:1, image:null}); });
+  MODELS.forEach(m => { for (let i=0;i<qty[m.id];i++) items.push({sku:m.id.toUpperCase(), name:m.nm+' — Lucente partner price', price:yours(m), qty:1, image:null}); });
   if (!items.length) { alert('Add at least one unit first.'); return; }
   const installs = [];
   document.querySelectorAll('#installRows .inst').forEach(box => {
