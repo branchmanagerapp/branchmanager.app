@@ -108,6 +108,16 @@ MODELS.forEach(m => {
       <button aria-label="add" data-m="${m.id}" data-d="1">+</button>
     </div>`;
   el.appendChild(c);
+  if (m.id === 'x430') {
+    const cmp = document.createElement('div');
+    cmp.style.cssText = 'background:#eef5f0;border:1px solid #cfe3d7;border-radius:12px;padding:13px 15px;margin:2px 0 10px;font-size:13.5px;line-height:1.5';
+    cmp.innerHTML = '<div style="font-weight:800;margin-bottom:4px">X430 vs X450 — which to pick?</div>'
+      + 'Same machine — identical chassis, AWD + dual suspension, RTK + vision navigation, and 17″ dual-disc cutting. The <b>X450 is simply the bigger-capacity one</b>:'
+      + '<div style="margin-top:7px"><b>Coverage:</b> X430 up to ~1.0 acre · X450 up to ~1.5 acres</div>'
+      + '<div><b>Per charge:</b> X430 ~0.22 ac · X450 ~0.27 ac</div>'
+      + '<div style="margin-top:6px;color:#3a5a48">Rule of thumb: lots under an acre → X430; larger estates → X450.</div>';
+    el.appendChild(cmp);
+  }
 });
 
 function recalc(){
