@@ -35,6 +35,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,san
 .pay{background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:800;cursor:pointer;white-space:nowrap}
 .pay:disabled{background:#9bbfa8;cursor:default}
 .note{font-size:12px;color:var(--mut);margin-top:10px;text-align:center}
+details.inst summary{list-style:none}
+details.inst summary::-webkit-details-marker{display:none}
+details.inst[open] summary .caret{transform:rotate(180deg)}
 h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:20px 0 8px}
 </style>
 </head>
@@ -129,15 +132,22 @@ const CO_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const CO_TENANT='9ca9340a-bbea-4945-a656-35187423d509';
 function buildInstallRows(){
   const c = document.getElementById('installRows'); c.innerHTML = ''; let n = 0;
+  const ip = 'padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px';
   MODELS.forEach(m => { for (let i=0;i<qty[m.id];i++) { n++;
-    const box = document.createElement('div');
-    box.className = 'inst'; box.dataset.unit = m.nm;
-    box.style.cssText = 'border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin:6px 0;display:flex;flex-direction:column;gap:6px';
-    box.innerHTML = '<div style="font-size:12.5px;font-weight:700;color:var(--mut)">'+n+'. '+m.nm+'</div>'
-      + '<input class="ins-name" placeholder="Homeowner name" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px">'
-      + '<input class="ins-phone" placeholder="Homeowner mobile (we text them on the way)" inputmode="tel" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px">'
-      + '<input class="ins-addr" placeholder="Install address" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px">';
-    c.appendChild(box);
+    const d = document.createElement('details');
+    d.className = 'inst'; d.dataset.unit = m.nm;
+    d.style.cssText = 'border:1px solid var(--line);border-radius:10px;margin:6px 0;overflow:hidden;background:#fafbfc';
+    d.innerHTML =
+      '<summary style="cursor:pointer;padding:11px 12px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px">'
+        + '<span style="color:var(--green)">📍</span> Install location · ' + n + '. ' + m.nm
+        + '<span style="margin-left:auto;color:var(--mut);font-size:12px;font-weight:500">optional <span class="caret" style="display:inline-block;transition:transform .2s">▾</span></span>'
+      + '</summary>'
+      + '<div style="padding:0 12px 11px;display:flex;flex-direction:column;gap:6px">'
+        + '<input class="ins-name" placeholder="Homeowner name" style="' + ip + '">'
+        + '<input class="ins-phone" placeholder="Homeowner mobile (we text them on the way)" inputmode="tel" style="' + ip + '">'
+        + '<input class="ins-addr" placeholder="Install address" style="' + ip + '">'
+      + '</div>';
+    c.appendChild(d);
   }});
 }
 document.getElementById('payBtn').addEventListener('click', () => {
