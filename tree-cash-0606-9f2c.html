@@ -1,0 +1,131 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>0606 Checking — Navimow Payoff Plan</title>
+<style>
+:root{--ink:#15181d;--mut:#697079;--line:#e4e7ea;--bg:#f4f6f5;--card:#fff;--green:#1b7f3b;--red:#c0392b;--amber:#b45309;--blue:#1f5fb0}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;-webkit-text-size-adjust:100%}
+.hd{background:#14532d;color:#fff;padding:calc(16px + env(safe-area-inset-top)) 16px 14px}
+.hd h1{margin:0;font-size:19px;font-weight:800}.hd p{margin:4px 0 0;font-size:12.5px;opacity:.85}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 60px}
+.big{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;text-align:center}
+.big .l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.big .n{font-size:34px;font-weight:800;margin:3px 0 2px}
+.big .s{font-size:12.5px;color:var(--mut)}
+.big.owe{border-color:#f3c0c0;background:#fdeaea}.big.owe .n{color:var(--red)}
+.balbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin:12px 0}
+.balbox .l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.balrow{display:flex;align-items:center;gap:8px;margin-top:4px}
+.balrow .d{font-size:30px;font-weight:800;color:var(--mut)}
+#bal{font-size:30px;font-weight:800;width:100%;border:none;border-bottom:2px dashed var(--line);background:transparent;color:var(--ink);padding:2px 0;font-family:inherit}
+#bal:focus{outline:none;border-bottom-color:var(--green)}
+.balbox .s{font-size:12px;color:var(--amber);margin-top:6px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:22px 2px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;margin:8px 0}
+.li{display:flex;align-items:center;gap:10px;padding:10px 15px;border-top:1px solid var(--line);font-size:14px}
+.li:first-child{border-top:none}
+.li .nm{flex:1}.li .dt{color:var(--mut);font-size:12px;min-width:56px}
+.li .amt{font-weight:700;text-align:right;min-width:82px}
+.li.pending{color:var(--mut)}
+.li .tag{font-size:9.5px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;color:#fff;background:#8a8f98}
+.li .tag.due{background:var(--red)}
+.step{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:12px 14px;margin:9px 0;display:flex;gap:12px}
+.step .num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+.step.done{border-left-color:var(--green)}.step.done .num{background:var(--green)}
+.step .b{flex:1}.step .t{font-weight:800;font-size:14.5px}.step .x{font-size:13px;color:#3a3f45;margin-top:2px}
+.step .when{font-size:11.5px;color:var(--amber);font-weight:700;margin-top:3px}
+.res{background:#eef6f0;border:1px solid #cfe8d8;border-radius:14px;padding:14px 16px;margin:14px 0}
+.res .l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--green);font-weight:800}
+.res .n{font-size:22px;font-weight:800;margin-top:3px}
+.res.gap{background:#fdeaea;border-color:#f3c0c0}.res.gap .l{color:var(--red)}.res.gap .n{color:var(--red)}
+.res.ok .n{color:var(--green)}
+.note{background:#fff7e6;border:1px solid #f6dca0;border-radius:12px;padding:12px 14px;font-size:12.5px;margin:12px 0}.note b{color:var(--amber)}
+.foot{color:var(--mut);font-size:11.5px;text-align:center;margin-top:20px}
+</style></head><body>
+<div class="hd"><h1>💰 0606 Checking → Navimow Payoff Plan</h1><p>M&amp;T Simple Business #…0606 · what's in, what's due, and how Dennis's order clears the Navimow bill</p></div>
+<div class="wrap">
+
+  <div class="big owe">
+    <div class="l">You owe Navimow (CADCO #108833)</div>
+    <div class="n">$16,303.55</div>
+    <div class="s">$0 paid · <b style="color:#c0392b">past due since Apr 23</b> · the 2 X450s for Dennis are backordered on this invoice and won't ship until it's paid</div>
+  </div>
+
+  <div class="balbox">
+    <div class="l">Your 0606 balance today — tap to update</div>
+    <div class="balrow"><span class="d">$</span><input id="bal" type="text" inputmode="decimal" value="10747.72"></div>
+    <div class="s">⚠ Pre-filled with the <b>May 31 closing balance</b>. Open M&amp;T and type today's real number — everything below recalculates.</div>
+  </div>
+
+  <h2>📉 Fixed charges still coming (this cycle)</h2>
+  <div class="card" id="bills"></div>
+  <div style="text-align:right;font-size:13px;color:var(--mut);margin:2px 6px 0">Reserve for bills: <b id="billsum" style="color:var(--ink)"></b></div>
+
+  <h2>🟢 Safe to send Navimow right now</h2>
+  <div class="res ok"><div class="l">Balance − bills − a $2,000 cushion</div><div class="n" id="safe"></div>
+  <div style="font-size:12px;color:var(--mut);margin-top:4px" id="safenote"></div></div>
+
+  <h2>🔑 How Dennis's order clears the rest</h2>
+  <div class="card">
+    <div class="li"><div class="nm">Dennis fleet order (X430 + 2×X450 + CM120)</div><div class="amt">$12,126</div></div>
+    <div class="li"><div class="nm">+ NY sales tax (8.375%, Westchester)</div><div class="amt">$1,015</div></div>
+    <div class="li" style="font-weight:800"><div class="nm">Dennis pays via checkout link</div><div class="amt" style="color:var(--green)">$13,141</div></div>
+  </div>
+  <div class="res" id="afterdennis"></div>
+
+  <h2>🗺️ The plan — in order</h2>
+  <div class="step done"><div class="num">✓</div><div class="b"><div class="t">Already collected</div><div class="x">Bynum $3,355.29 (paid Jun 15) + Chris $2,274.79 (check) = <b>~$5,630 in from sales.</b></div></div></div>
+  <div class="step"><div class="num">1</div><div class="b"><div class="t">Send Navimow a good-faith payment now</div><div class="x">Wire/ACH the "safe to send" amount above to CADCO today — it's 10 weeks past due; a partial payment + a note that Dennis's order lands this week keeps the dealer line open.</div><div class="when">Today</div></div></div>
+  <div class="step"><div class="num">2</div><div class="b"><div class="t">Text Dennis his checkout link — he pays</div><div class="x">His page already matches Navimow's Prime Day price. That X430 deal ends <b>July 8</b>, so this week is the moment. His $13,141 is the funding event.</div><div class="when">This week — before Jul 8</div></div></div>
+  <div class="step"><div class="num">3</div><div class="b"><div class="t">Pay CADCO #108833 in full</div><div class="x">Dennis's payment + what you sent in step 1 clears the whole $16,303.55.</div><div class="when">Same day Dennis pays</div></div></div>
+  <div class="step"><div class="num">4</div><div class="b"><div class="t">CADCO releases the 2 backordered X450s</div><div class="x">Deliver Dennis's fleet, set them up, train his crew. Chris's check + remaining sales are your cushion back.</div><div class="when">After payment clears</div></div></div>
+
+  <div class="note"><b>Reality check:</b> between Bynum + Chris already in ($5,630) and Dennis's $13,141, you've effectively <b>already sold more than the $16,303.55 you owe CADCO.</b> This isn't a money problem — it's a <b>timing</b> problem through the 0606 account. Get Dennis to pay this week and the whole thing clears with cash to spare.</div>
+
+  <div class="foot">Balance is the only live-entry field — update it from M&amp;T. All other figures from CADCO invoice #108833 + the May M&amp;T statement. Not tax/financial advice; confirm remittance with Kevin (CPA).</div>
+</div>
+<script>
+const fmt=n=>'$'+Math.round(n).toLocaleString();
+// Recurring fixed charges seen on the May M&T statement (amounts/dates approximate month to month)
+const BILLS=[
+  {nm:'Erie Insurance',            dt:'~1st',  amt:1114.58},
+  {nm:'Blue Bridge equip. lease',  dt:'~1st',  amt:1912.56},
+  {nm:'NYSIF workers comp',        dt:'~6th',  amt:85.88},
+  {nm:'Optimum internet',          dt:'~11th', amt:107.03},
+  {nm:'Chase — Ram 2500 truck',    dt:'~27th', amt:1004.91},
+];
+const CUSHION=2000, OWE=16303.55, DENNIS=13141;
+const bhost=document.getElementById('bills');
+let bsum=0;
+BILLS.forEach(b=>{bsum+=b.amt;
+  const d=document.createElement('div');d.className='li';
+  d.innerHTML=`<div class="nm">${b.nm}</div><div class="dt">${b.dt}</div><div class="amt">${fmt(b.amt)}</div>`;
+  bhost.appendChild(d);});
+document.getElementById('billsum').textContent=fmt(bsum);
+
+function recalc(){
+  let bal=parseFloat((document.getElementById('bal').value||'0').replace(/[^0-9.]/g,''))||0;
+  const safe=Math.max(0, bal - bsum - CUSHION);
+  document.getElementById('safe').textContent=fmt(safe);
+  document.getElementById('safenote').textContent=
+    `From ${fmt(bal)} balance, hold ${fmt(bsum)} for bills + ${fmt(CUSHION)} cushion → ${fmt(safe)} you can send CADCO now.`;
+  const afterStep1 = OWE - safe;                 // still owed after today's payment
+  const finalGap = afterStep1 - DENNIS;          // after Dennis pays
+  const el=document.getElementById('afterdennis');
+  if(finalGap<=0){
+    el.className='res ok';
+    el.innerHTML=`<div class="l">Navimow fully covered</div><div class="n">✓ CADCO paid in full — ${fmt(-finalGap)} to spare</div>
+      <div style="font-size:12px;color:var(--mut);margin-top:4px">Send ${fmt(safe)} now + Dennis's ${fmt(DENNIS)} = ${fmt(safe+DENNIS)} vs ${fmt(OWE)} owed.</div>`;
+  }else{
+    el.className='res gap';
+    el.innerHTML=`<div class="l">Still short after Dennis pays</div><div class="n">${fmt(finalGap)} gap</div>
+      <div style="font-size:12px;color:var(--mut);margin-top:4px">Cover it from Chris's $2,274.79 check + the next sale.</div>`;
+  }
+  try{localStorage.setItem('tree0606bal',bal)}catch(e){}
+}
+document.getElementById('bal').addEventListener('input',recalc);
+try{const s=localStorage.getItem('tree0606bal');if(s)document.getElementById('bal').value=s;}catch(e){}
+recalc();
+</script>
+</body></html>
