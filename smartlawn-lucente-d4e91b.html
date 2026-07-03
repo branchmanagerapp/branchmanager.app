@@ -54,11 +54,13 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--m
   <div class="note">Wire-free RTK navigation · handles slopes · mows on its own schedule · full dealer install &amp; service included. Prices exclude NY sales tax where applicable.</div>
 
   <div class="card" id="coForm" style="display:none;flex-direction:column;gap:9px;align-items:stretch;margin-top:10px">
-    <div style="font-weight:800;font-size:15px">Almost done — where do we install &amp; set up?</div>
-    <input id="coName" value="Dennis Lucente" placeholder="Name" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
-    <input id="coPhone" placeholder="Mobile phone (for updates)" inputmode="tel" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
+    <div style="font-weight:800;font-size:15px">Your info</div>
+    <input id="coName" value="Dennis Lucente" placeholder="Your name" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
+    <input id="coPhone" placeholder="Your mobile (order updates)" inputmode="tel" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
     <input id="coEmail" placeholder="Email (for your receipt)" inputmode="email" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
-    <input id="coAddr" placeholder="Install address" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
+    <input id="coAddr" placeholder="Billing address" style="padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px">
+    <div style="font-weight:800;font-size:15px;margin-top:6px">Install locations <span style="font-weight:500;color:var(--mut);font-size:12.5px">— optional. Add a homeowner + address per mower and we'll text them when we're on the way.</span></div>
+    <div id="installRows"></div>
     <button id="coPay" class="pay" style="width:100%">Pay securely by card →</button>
     <div style="font-size:12px;color:var(--mut);text-align:center">Secure Stripe checkout · setup &amp; crew training included</div>
   </div>
@@ -125,10 +127,24 @@ document.addEventListener('click', e => {
 const CO_URL='https://zjqpzqpvovvuaxikyksq.supabase.co/functions/v1/stripe-checkout';
 const CO_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqcXB6cXB2b3Z2dWF4aWt5a3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNDM4NDYsImV4cCI6MjA5NDgxOTg0Nn0.T6s7o38wKFVPn6XPmJSMQxSflPFV4bjI7oGOqo7dOJg';
 const CO_TENANT='9ca9340a-bbea-4945-a656-35187423d509';
+function buildInstallRows(){
+  const c = document.getElementById('installRows'); c.innerHTML = ''; let n = 0;
+  MODELS.forEach(m => { for (let i=0;i<qty[m.id];i++) { n++;
+    const box = document.createElement('div');
+    box.className = 'inst'; box.dataset.unit = m.nm;
+    box.style.cssText = 'border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin:6px 0;display:flex;flex-direction:column;gap:6px';
+    box.innerHTML = '<div style="font-size:12.5px;font-weight:700;color:var(--mut)">'+n+'. '+m.nm+'</div>'
+      + '<input class="ins-name" placeholder="Homeowner name" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px">'
+      + '<input class="ins-phone" placeholder="Homeowner mobile (we text them on the way)" inputmode="tel" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px">'
+      + '<input class="ins-addr" placeholder="Install address" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:14px">';
+    c.appendChild(box);
+  }});
+}
 document.getElementById('payBtn').addEventListener('click', () => {
   const f = document.getElementById('coForm');
   f.style.display = 'flex';
-  f.scrollIntoView({behavior:'smooth', block:'center'});
+  buildInstallRows();
+  f.scrollIntoView({behavior:'smooth', block:'start'});
   const p = document.getElementById('coPhone'); if(p) p.focus();
 });
 document.getElementById('coPay').addEventListener('click', async () => {
@@ -136,15 +152,22 @@ document.getElementById('coPay').addEventListener('click', async () => {
   const phone = document.getElementById('coPhone').value.trim();
   const email = document.getElementById('coEmail').value.trim();
   const addr = document.getElementById('coAddr').value.trim();
-  if (phone.replace(/\D/g,'').length < 7 || !addr) { alert('Please add a mobile number we can text and the install address.'); return; }
+  if (phone.replace(/\D/g,'').length < 7 || !addr) { alert('Please add your mobile and billing address.'); return; }
   const items = [];
   MODELS.forEach(m => { for (let i=0;i<qty[m.id];i++) items.push({sku:m.id.toUpperCase(), name:m.nm+' — Lucente partner price', price:yours(m.retail), qty:1, image:null}); });
   if (!items.length) { alert('Add at least one unit first.'); return; }
+  const installs = [];
+  document.querySelectorAll('#installRows .inst').forEach(box => {
+    const h=box.querySelector('.ins-name').value.trim(), p=box.querySelector('.ins-phone').value.trim(), a=box.querySelector('.ins-addr').value.trim();
+    if (h||p||a) installs.push({unit:box.dataset.unit, homeowner:h, phone:p, address:a});
+  });
+  const notes = installs.length ? ('INSTALL LOCATIONS: ' + installs.map(x=>x.unit+' → '+(x.homeowner||'?')+' '+(x.phone||'')+' @ '+(x.address||'?')).join(' | ')) : '';
   const btn = document.getElementById('coPay'); btn.disabled = true; btn.textContent = 'Opening secure checkout…';
   try {
     const res = await fetch(CO_URL, {method:'POST', headers:{'Content-Type':'application/json','apikey':CO_KEY,'Authorization':'Bearer '+CO_KEY}, body:JSON.stringify({
       tenant_id: CO_TENANT, items: items,
       customer: {first_name:name, last_name:'', email:email||null, phone:phone, address:addr},
+      install_details: installs, notes: notes,
       success_url: 'https://smartlawnny.com/success.html?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: location.href
     })});
