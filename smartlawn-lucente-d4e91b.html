@@ -45,7 +45,7 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--m
 </div>
 <div class="wrap">
   <div class="banner">
-    Dennis — here's your quote: <b>1× X430, 2× X450, and 1× CM120</b>, loaded below. Adjust any quantity if you like. Setup and crew training are included, and the bigger <b>CM240</b> is priced in case you want it. Questions? Text (914) 647-7276.
+    Dennis — here's your quote: <b>1× X430, 2× X450, and 1× CM120</b>, loaded below. Adjust any quantity if you like. <b>Installation, setup, and crew training are all included — free.</b> The bigger <b>CM240</b> is priced in case you want it. Questions? Text (914) 647-7276.
   </div>
 
   <h2 class="sec">Build your fleet</h2>
@@ -82,7 +82,7 @@ const MODELS = [
   {id:'cm120', nm:'TerraNox CM120M1',   fit:'Commercial grounds, HOAs, campuses — 3 ac',retail:5499, init:1},
   {id:'cm240', nm:'TerraNox CM240M1',   fit:'The bigger one — 6 ac. Add if a big property comes up.', retail:6999, init:0},
 ];
-const yours = r => Math.round(r * 0.95);   // 5% under retail
+const yours = r => Math.round(r * 0.90);   // 10% under MSRP
 const qty = {};
 // Set this to a Stripe Payment Link (or leave null → button emails the quote to Smart Lawn to send a secure link).
 const PAYMENT_LINK = null;
