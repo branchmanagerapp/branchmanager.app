@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#16232e">
+<title>The CapCut Playbook — iPhone + GoPro to Posted</title>
+</head><body>
+<style>
+  :root {
+    --paper: #f3f5f6;
+    --paper-2: #ffffff;
+    --ink: #14202a;
+    --ink-soft: #45555f;
+    --ink-faint: #7a8892;
+    --line: rgba(20, 32, 42, 0.12);
+    --line-soft: rgba(20, 32, 42, 0.07);
+    --accent: #0f7a86;
+    --accent-bright: #17b3c2;
+    --go: #1c7f4f;
+    --go-bg: #e4f1e9;
+    --wait: #9a6a17;
+    --wait-bg: #f4ead4;
+    --slate: #16232e;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: "Helvetica Neue", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 72px) clamp(18px, 5vw, 40px) 80px;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 50px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .lede {
+    font-size: clamp(17px, 2.4vw, 20px);
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 34px;
+  }
+  .lede strong { color: var(--ink); font-weight: 700; }
+
+  /* setup strip — good news */
+  .rig {
+    background: var(--slate);
+    color: #dbe4e8;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 0 0 48px;
+    font-family: var(--mono);
+  }
+  .rig-top {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #86c7a4;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .rig-top .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #35c17e; box-shadow: 0 0 0 3px rgba(53,193,126,0.25);
+  }
+  .rig-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px 20px;
+  }
+  .rig-cell .k { font-size: 11px; color: #6f959c; letter-spacing: 0.05em; }
+  .rig-cell .v { font-size: 15px; color: #f2f7f8; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .rig-note {
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-family: var(--sans); font-size: 14px; color: #b7c6cc; line-height: 1.55;
+  }
+  .rig-note b { color: #fff; }
+
+  h2 {
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 22px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .h2num { color: var(--accent); }
+
+  section { margin-bottom: 54px; }
+
+  /* numbered workflow steps */
+  .steps { display: flex; flex-direction: column; gap: 2px; }
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 20px;
+    padding: 22px 0;
+    border-top: 1px solid var(--line-soft);
+    align-items: start;
+  }
+  .step:first-child { border-top: none; padding-top: 4px; }
+  .step .num {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 600;
+    padding-top: 4px;
+    letter-spacing: 0.03em;
+  }
+  .step h4 { margin: 0 0 6px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  .step p { margin: 0 0 8px; font-size: 15.5px; color: var(--ink-soft); }
+  .step p:last-child { margin-bottom: 0; }
+  .step ul { margin: 8px 0 0; padding-left: 18px; }
+  .step li { font-size: 15px; color: var(--ink-soft); margin-bottom: 5px; }
+  .step b { color: var(--ink); }
+  .kbd {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: rgba(20,32,42,0.06);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .pin {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(15,122,134,0.08);
+    padding: 2px 8px; border-radius: 5px;
+    margin-left: 4px; vertical-align: 2px;
+  }
+
+  /* GoPro tip cards */
+  .tips { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .tip {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .tip h5 { margin: 0 0 6px; font-size: 15px; font-weight: 700; }
+  .tip p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+  /* export preset table */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 460px; }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600;
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+  }
+  tbody td { padding: 13px 18px; border-bottom: 1px solid var(--line-soft); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child { color: var(--ink); font-weight: 650; }
+  .use { font-size: 13px; color: var(--ink-faint); }
+
+  .callout {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 15.5px;
+    color: var(--ink-soft);
+  }
+  .callout b { color: var(--ink); }
+  .callout ul { margin: 10px 0 0; padding-left: 20px; }
+  .callout li { margin-bottom: 6px; }
+
+  .bottomline {
+    background: var(--slate);
+    color: #eaf1f2;
+    border-radius: 14px;
+    padding: 26px 28px;
+    font-size: 18px;
+    line-height: 1.5;
+  }
+  .bottomline .tag {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent-bright);
+    display: block; margin-bottom: 12px;
+  }
+  .bottomline b { color: #fff; }
+
+  /* footnote */
+  .footnote {
+    margin-top: 48px;
+    padding: 22px 24px;
+    background: transparent;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+  }
+  .footnote h6 {
+    margin: 0 0 12px;
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600;
+  }
+  .footnote p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-faint); line-height: 1.55; }
+  .footnote p:last-child { margin-bottom: 0; }
+  .footnote b { color: var(--ink-soft); }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 520px) {
+    .step { grid-template-columns: 34px 1fr; gap: 14px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Second Nature · Content Ops · Playbook</p>
+  <h1>The CapCut playbook: <em>iPhone + GoPro &rarr; posted.</em></h1>
+  <p class="lede">A start-to-finish workflow for turning raw phone and GoPro footage into clean marketing clips &mdash; skate reels, tree before/afters, brand promos. <strong>Free, runs on your Mac, nothing to build.</strong> Follow it top to bottom the first few times; after that it's muscle memory.</p>
+
+  <div class="rig">
+    <div class="rig-top"><span class="dot"></span>Your setup — good to go</div>
+    <div class="rig-grid">
+      <div class="rig-cell"><div class="k">macOS</div><div class="v">15.7.7 — Sequoia</div></div>
+      <div class="rig-cell"><div class="k">CapCut desktop</div><div class="v">Runs fine (Intel OK)</div></div>
+      <div class="rig-cell"><div class="k">Cost</div><div class="v">$0 — editing + export</div></div>
+    </div>
+    <div class="rig-note">CapCut runs great on your Intel Sequoia machine — no hardware change, no subscription for the core editor. Grab the desktop app from <b>capcut.com</b> (and the iPhone app from the App Store for quick edits on the go).</div>
+  </div>
+
+  <section>
+    <h2><span class="h2num">A</span> Get your footage in one place</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="num">01</div>
+        <div>
+          <h4>Make one project folder before you touch CapCut</h4>
+          <p>Everything editing starts with knowing where the clips are. Make a folder per shoot &mdash; e.g. <span class="kbd">~/Desktop/Footage/2026-07-04 Tree Job</span> &mdash; and pull both cameras into it.</p>
+          <ul>
+            <li><b>iPhone:</b> AirDrop the clips to the Mac, or let iCloud Photos sync and drag them out of Photos into the folder.</li>
+            <li><b>GoPro:</b> pop the SD card into a reader (or use the GoPro Quik app) and copy the <span class="kbd">.MP4</span> files over. GoPro also drops <span class="kbd">.LRV</span>/<span class="kbd">.THM</span> sidecar files &mdash; ignore those, you only need the MP4s.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="h2num">B</span> The edit — step by step</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="num">02</div>
+        <div>
+          <h4>New project &amp; import</h4>
+          <p>Open CapCut &rarr; <b>New project</b>. Drag your whole shoot folder into the <b>Media</b> panel (top-left). Then drag the clips you want down onto the <b>timeline</b> at the bottom, in rough order.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <div>
+          <h4>Set your shape first <span class="pin">do this early</span></h4>
+          <p>Pick the aspect ratio <b>before</b> you fine-tune, so you're framing for the real output. Top toolbar &rarr; <b>Ratio</b>:</p>
+          <ul>
+            <li><b>9:16 vertical</b> &mdash; Reels, TikTok, Shorts, Stories. This is most of your marketing.</li>
+            <li><b>16:9 horizontal</b> &mdash; YouTube, website hero, before/after showcases.</li>
+            <li><b>1:1 square</b> &mdash; feed posts if you want them.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">04</div>
+        <div>
+          <h4>Rough cut — kill the dead weight</h4>
+          <p>Move the white <b>playhead</b> to where a bad take starts, hit the <b>Split</b> tool (the scissors icon above the timeline), split again where it ends, click the junk chunk and <b>Delete</b>. Repeat until only the good stuff is left. Drag clip edges inward to trim tighter. Don't polish yet &mdash; just get to a clean spine.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">05</div>
+        <div>
+          <h4>Tighten &amp; add motion</h4>
+          <ul>
+            <li><b>Speed:</b> select a clip &rarr; <b>Speed</b> panel. Slow-mo a trick landing or a saw cut; speed up the boring setup 2&ndash;4&times;.</li>
+            <li><b>Stabilize</b> shaky GoPro/handheld: select clip &rarr; <b>Video &rarr; Stabilization</b>.</li>
+            <li><b>Transitions:</b> keep it simple &mdash; a hard cut on the beat beats a fancy wipe. Add sparingly from the <b>Transitions</b> tab between clips.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">06</div>
+        <div>
+          <h4>Auto-captions <span class="pin">the killer feature</span></h4>
+          <p>If anyone's talking: <b>Text &rarr; Auto captions</b> &rarr; generate. CapCut transcribes the whole thing in seconds. <b>Always read them back</b> &mdash; it'll mishear names and jargon (&ldquo;Peekskill,&rdquo; tree species, &ldquo;chipper&rdquo;). Double-click any caption to fix it, then style once and it applies to all. Captions matter: most people watch social with sound off.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">07</div>
+        <div>
+          <h4>Sound</h4>
+          <ul>
+            <li><b>Music:</b> <b>Audio</b> tab has a royalty-free library &mdash; pick a track, drag it under your clips, trim to length.</li>
+            <li>Duck the music under talking: lower the music clip's <b>Volume</b> so voices cut through.</li>
+            <li>GoPro wind noise? Select the clip's audio &rarr; <b>Reduce noise</b>.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">08</div>
+        <div>
+          <h4>Titles &amp; brand</h4>
+          <p><b>Text &rarr; Add text</b> for a hook in the first second (&ldquo;60ft Oak Removal &mdash; Peekskill&rdquo;) and a call-to-action at the end. Drop your logo in via <b>Media</b> if you want it cornered. Keep it clean &mdash; one hook, one CTA.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">09</div>
+        <div>
+          <h4>Export</h4>
+          <p>Top-right <b>Export</b>. Match the preset table below, keep format <b>MP4</b>, then upload. That's a posted clip.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="h2num">C</span> GoPro-specific fixes</h2>
+    <div class="tips">
+      <div class="tip">
+        <h5>Flat / washed-out color</h5>
+        <p>GoPro footage looks dull raw. Select clip &rarr; <b>Adjust</b> &rarr; nudge Contrast + Saturation up a touch, or drop a light <b>Filter</b>. Don't overcook it.</p>
+      </div>
+      <div class="tip">
+        <h5>Fisheye warp</h5>
+        <p>Wide-angle bends straight lines. If it bugs you, GoPro's <b>Quik</b> app can flatten it on export, or crop in slightly in CapCut.</p>
+      </div>
+      <div class="tip">
+        <h5>Match the frame rate</h5>
+        <p>Shooting GoPro at 60fps for slow-mo but iPhone at 30? Fine to mix &mdash; just export at <b>30fps</b> so playback is consistent.</p>
+      </div>
+      <div class="tip">
+        <h5>Big files</h5>
+        <p>GoPro 4K clips are huge. Copy them to the Mac's drive first; editing off the SD card is slow and risks dropouts.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="h2num">D</span> Export presets — just copy these</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>For</th><th>Ratio</th><th>Resolution</th><th>FPS</th><th>Bitrate</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reels / TikTok / Shorts<div class="use">most marketing clips</div></td><td>9:16</td><td>1080p</td><td>30</td><td>Recommended</td></tr>
+          <tr><td>YouTube / website<div class="use">longer, landscape</div></td><td>16:9</td><td>1080p&ndash;4K</td><td>30</td><td>Higher</td></tr>
+          <tr><td>Feed post<div class="use">square</div></td><td>1:1</td><td>1080p</td><td>30</td><td>Recommended</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="h2num">E</span> Where I plug in</h2>
+    <div class="callout">
+      I can't move CapCut's timeline for you, but I do everything <b>around</b> the edit so you sit down to assembly, not a blank screen:
+      <ul>
+        <li><b>Pull the best clips</b> from your skate pipeline and hand you a shortlist to drop in.</li>
+        <li><b>Write the words</b> &mdash; hooks, on-screen titles, captions, CTAs, and the post caption + hashtags per brand.</li>
+        <li><b>Batch-organize</b> footage into dated project folders so step 01 is already done.</li>
+        <li><b>Repurpose</b> one edit into per-brand versions (tree / skate / SmartLawn).</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="bottomline">
+    <span class="tag">The one-line version</span>
+    <b>One folder &rarr; import &rarr; set the shape &rarr; cut the junk &rarr; auto-caption &rarr; music &rarr; hook + CTA &rarr; export MP4.</b> Do that loop a few times and you're posting in under an hour a clip.
+  </div>
+
+  <div class="footnote">
+    <h6>Footnote — the tools we didn't pick</h6>
+    <p><b>Palmier</b> (the agent-driven editor where Claude edits the timeline directly) is the one to watch, but it needs macOS 26 Tahoe + Apple Silicon — it can't run on this Intel Mac. Park it until/unless you're on new hardware for other reasons.</p>
+    <p><b>Descript</b> is worth a look <i>if</i> you start doing talking-head / testimonial videos — it lets you edit video by editing the transcript like a doc. <b>DaVinci Resolve</b> (free) is the pro step-up if you ever outgrow CapCut. <b>Building our own (&ldquo;PopCut&rdquo;)</b> stays shelved — a video editor is a huge build and not worth the debt.</p>
+  </div>
+
+  <footer>
+    <span>Second Nature Content Ops · 2026-07-04</span>
+    <span>capcut.com · GoPro Quik</span>
+  </footer>
+
+</div>
+</body></html>
