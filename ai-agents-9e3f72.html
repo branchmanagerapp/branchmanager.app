@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>AI Agents — Status &amp; To-Do</title>
+<style>
+  :root {
+    --bg: #0f1411;
+    --card: #1a221c;
+    --card2: #151c17;
+    --ink: #e8ede9;
+    --dim: #9db3a4;
+    --line: #2a352e;
+    --green: #4caf7d;
+    --amber: #e0a94f;
+    --red: #e06c5f;
+    --blue: #6fa8dc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    padding: 20px 16px calc(40px + env(safe-area-inset-bottom));
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .sub { color: var(--dim); font-size: .9rem; margin-bottom: 24px; }
+  h2 {
+    font-size: 1.05rem; margin: 28px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .card h3 { font-size: .98rem; margin-bottom: 4px; }
+  .card p { font-size: .88rem; color: var(--dim); }
+  .card p b { color: var(--ink); font-weight: 600; }
+  .pill {
+    display: inline-block; font-size: .7rem; font-weight: 700;
+    padding: 2px 9px; border-radius: 999px; letter-spacing: .03em;
+    vertical-align: middle; margin-left: 6px;
+  }
+  .pill.done { background: rgba(76,175,125,.15); color: var(--green); }
+  .pill.wait { background: rgba(224,169,79,.15); color: var(--amber); }
+  .pill.blocked { background: rgba(224,108,95,.15); color: var(--red); }
+  .pill.spec { background: rgba(111,168,220,.15); color: var(--blue); }
+  ul.todo { list-style: none; }
+  ul.todo li {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    font-size: .9rem; display: flex; gap: 10px; align-items: flex-start;
+  }
+  ul.todo li .box {
+    flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px;
+    border: 2px solid var(--dim); border-radius: 6px;
+  }
+  ul.todo li.doug { border-left: 3px solid var(--amber); }
+  ul.todo li.build { border-left: 3px solid var(--blue); }
+  ul.todo li .who {
+    font-size: .68rem; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; display: block; margin-bottom: 2px;
+  }
+  ul.todo li.doug .who { color: var(--amber); }
+  ul.todo li.build .who { color: var(--blue); }
+  ul.todo li small { color: var(--dim); display: block; margin-top: 2px; }
+  .guard {
+    background: var(--card2); border: 1px solid var(--line);
+    border-left: 3px solid var(--green);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    font-size: .88rem;
+  }
+  .guard b { color: var(--green); }
+  .fires .card { border-left: 3px solid var(--red); }
+  .verdict { display: grid; gap: 8px; }
+  .verdict .card { margin-bottom: 0; }
+  .foot { color: var(--dim); font-size: .75rem; margin-top: 32px; text-align: center; }
+  code {
+    background: var(--card2); border: 1px solid var(--line);
+    border-radius: 5px; padding: 1px 6px; font-size: .82em;
+  }
+</style>
+</head>
+<body>
+
+<h1>🤖 AI Agents — Status &amp; To-Do</h1>
+<div class="sub">Fazm · Hermes · Mac mini · Morning Briefing — updated Jul 4, 2026</div>
+
+<h2>📼 The verdicts (three influencer clips)</h2>
+<div class="verdict">
+  <div class="card">
+    <h3>Tool tier list <span class="pill blocked">SKIP</span></h3>
+    <p>Engagement bait. Rankings without use-cases are worthless — your whole stack was built with the tool he called "overhyped."</p>
+  </div>
+  <div class="card">
+    <h3>"Chief of staff" morning briefing <span class="pill done">BUILD</span></h3>
+    <p>The keeper. Daily read-and-summarize of jobs, leads, threads, anomalies + queued reply drafts. Spec is written (below).</p>
+  </div>
+  <div class="card">
+    <h3>"4 AI employees run your business while you sleep" <span class="pill blocked">SKIP</span></h3>
+    <p>Same architecture with the safety inverted. Steal ONE idea: everything reports to one hub. Reject the unsupervised autonomy — you've already paid tuition on those failure modes (May 6 emails, Dialpad silent breakage).</p>
+  </div>
+</div>
+
+<h2>📍 Where we're at</h2>
+<div class="card">
+  <h3>Hermes Agent (Nous) <span class="pill done">INSTALLED</span></h3>
+  <p>v0.17.0 verified running on the MacBook Air under <code>~/.hermes</code>. Run via the <code>hermes</code> wrapper (login shell), not the inner launcher. Remaining: model + API key via <code>hermes setup</code>. Role: headless / parallel / scheduled work. Note: sub-agents run isolated — they can't talk to each other.</p>
+</div>
+<div class="card">
+  <h3>Fazm (voice agent) <span class="pill wait">STAGED</span></h3>
+  <p>Repo cloned to <code>~/Desktop/agents/fazm</code>, acp-bridge npm-installed + built. Remaining: <code>./run.sh</code> needs you present — Apple ID sign-in + Screen Recording / Accessibility / Mic permissions. This is the "talk to the room" agent; its real home is the Mac mini.</p>
+</div>
+<div class="card">
+  <h3>Mac mini (the real target) <span class="pill wait">WAITING ON YOU</span></h3>
+  <p>Full copy-paste setup prompts are staged at <code>~/Desktop/agents/agent-setup-prompts.md</code> <b>and sitting as a Gmail draft in info@peekskilltree.com</b>. Plan: mini on the TV = Fazm voice in the room + headless overnight jobs + kiosk-browser dashboard of existing BM pages. Do NOT build a new "TV app."</p>
+</div>
+<div class="card">
+  <h3>Morning Briefing <span class="pill spec">SPEC'D</span></h3>
+  <p>Logged on BM-TODO Jul 4. Scheduled morning job → private BM page you read with coffee: today's jobs/requests, people waiting on you (reply drafts pre-queued), 24h anomalies, yesterday's open items. Tone: "3 things that matter" — direct, not drill-sergeant. ~1–2 sessions of work, zero customer-facing risk.</p>
+</div>
+
+<h2>✅ What needs to be done</h2>
+<ul class="todo">
+  <li class="doug"><span class="box"></span><div><span class="who">Doug — at the Mac mini</span>Open the Gmail draft (Fazm/Hermes setup prompts, info@peekskilltree.com drafts) and paste it into Claude Code on the mini. Everything runs itself except Apple ID sign-in + permission toggles.</div></li>
+  <li class="doug"><span class="box"></span><div><span class="who">Doug — 2 min</span>Run <code>hermes setup</code> once to pick a model + paste an API key (works on the Air now, or do it on the mini).</div></li>
+  <li class="build"><span class="box"></span><div><span class="who">Build — Claude</span>Morning Briefing v1: scheduled job → private BM page + reply drafts in the draft queue. <small>Say "build the morning briefing" — that's the whole spec. Check pg_cron state first.</small></div></li>
+  <li class="build"><span class="box"></span><div><span class="who">Build — Claude</span>TV kiosk mode: auto-open browser on the mini full-screen to the briefing / fleet-budget pages. <small>Trivial once the mini is set up.</small></div></li>
+  <li class="build"><span class="box"></span><div><span class="who">Build — later</span>Move overnight headless jobs (lead triage drafts, Bouncie check, books flags) onto the mini once briefing v1 proves out.</div></li>
+</ul>
+
+<h2>🛡️ Guardrails (non-negotiable)</h2>
+<div class="guard">
+  Agents <b>read, analyze, draft, and stage</b> — all night if useful. Anything that touches a <b>customer, production code, or money</b> lands in the draft queue and waits for Doug. <b>Nothing sends, ships, spends, or posts unsupervised.</b> One reporting hub: the briefing page + draft queue.
+</div>
+
+<h2>🔥 Ahead of this in line (dollar deadlines)</h2>
+<div class="fires">
+  <div class="card">
+    <h3>GL audit balance — $3,279.54</h3>
+    <p>Unpaid Atlantic/Tooher audit → policy <b>cancels 9/18/26</b> if not resolved.</p>
+  </div>
+  <div class="card">
+    <h3>BM security remediation (RLS)</h3>
+    <p>Remediation package built; blocked on PAT + a supervised window.</p>
+  </div>
+  <div class="card">
+    <h3>CADCO invoice #108833 — $16,303.55</h3>
+    <p>Past due since Apr 23; blocks Dennis's backordered X450s.</p>
+  </div>
+</div>
+
+<div class="foot">Unlisted page · noindex · Second Nature internal</div>
+
+</body>
+</html>
