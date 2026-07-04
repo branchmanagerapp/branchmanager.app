@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Second Nature Tree Service — Marketing Plan</title>
+<style>
+  :root{
+    --bg:#0e1210; --panel:#161c19; --panel2:#1d251f; --line:#2a352d;
+    --ink:#eef3ef; --mut:#9bb0a3; --grn:#5fbf6a; --grn-dim:#2f5a37;
+    --gold:#e8c15a; --sky:#6cc2e8; --amber:#e79a5c;
+    --certain:#5fbf6a; --likely:#e8c15a; --guessing:#e79a5c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 20px 100px}
+  a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+  header{padding:64px 0 28px;border-bottom:1px solid var(--line)}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--grn);font-weight:700;margin-bottom:14px}
+  h1{font-size:clamp(30px,6vw,46px);line-height:1.08;margin:0 0 14px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:17px;max-width:640px}
+  .meta{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12.5px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);padding:5px 11px;border-radius:999px}
+  .chip b{color:var(--ink);font-weight:600}
+  .legend{margin:26px 0 8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;font-size:13.5px;color:var(--mut)}
+  .legend .row{display:flex;flex-wrap:wrap;gap:16px;margin-top:8px}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:2px 9px;border-radius:6px;color:#0e1210}
+  .tag.c{background:var(--certain)} .tag.l{background:var(--likely)} .tag.g{background:var(--guessing)}
+  section{padding:40px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--grn);font-weight:700;margin:0 0 6px}
+  h2 + .lead{font-size:24px;font-weight:800;letter-spacing:-.01em;margin:0 0 20px;line-height:1.22}
+  h3{font-size:17px;margin:26px 0 8px;font-weight:700}
+  p{margin:0 0 14px} .mut{color:var(--mut)}
+  ul{margin:0 0 14px;padding-left:20px} li{margin:6px 0}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:680px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h4{margin:0 0 6px;font-size:16px} .card p{font-size:14.5px;color:var(--mut);margin:0 0 8px}
+  .card .who{font-size:12px;color:var(--grn);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+  .callout{background:var(--grn-dim);border:1px solid var(--grn);border-radius:12px;padding:14px 16px;color:#eafaec;font-size:14.5px;margin:14px 0}
+  .warn{background:#3a2a1a;border:1px solid var(--amber);border-radius:12px;padding:14px 16px;color:#fbeede;font-size:14.5px;margin:14px 0}
+  .pillars{counter-reset:p}
+  .pillar{display:flex;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+  .pillar:before{counter-increment:p;content:counter(p);flex:0 0 34px;height:34px;background:var(--grn);color:#0e1210;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:15px}
+  .pillar h4{margin:2px 0 4px;font-size:16.5px} .pillar p{margin:0;color:var(--mut);font-size:14.5px}
+  .flywheel{background:linear-gradient(180deg,var(--panel),#101813);border:1px solid var(--grn-dim);border-radius:16px;padding:22px;margin-top:8px}
+  .flywheel ol{margin:12px 0 0;padding-left:0;list-style:none;counter-reset:f}
+  .flywheel li{counter-increment:f;position:relative;padding:10px 0 10px 40px;font-size:15px}
+  .flywheel li:before{content:counter(f);position:absolute;left:0;top:8px;width:26px;height:26px;background:var(--grn);color:#0e1210;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800}
+  .flywheel li:not(:last-child):after{content:"";position:absolute;left:12.5px;top:34px;bottom:-2px;width:1px;background:var(--grn-dim)}
+  .cal{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  .cal th{text-align:left;color:var(--mut);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+  .cal td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .cal td:first-child{color:var(--grn);font-weight:700;white-space:nowrap}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;color:#0e1210}
+  .p-rev{background:var(--grn)} .p-proof{background:var(--sky)} .p-com{background:var(--gold)} .p-storm{background:var(--amber)}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-top:1px solid var(--line);gap:12px}
+  .metric .n{font-weight:800;font-size:19px;white-space:nowrap}
+  .ph{color:var(--guessing);font-weight:700;font-size:12px;border:1px dashed var(--guessing);padding:1px 7px;border-radius:5px;white-space:nowrap}
+  .todo{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 18px}
+  .todo .item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .todo .item:last-child{border-bottom:none}
+  .box{flex:0 0 18px;height:18px;border:2px solid var(--grn);border-radius:5px;margin-top:2px}
+  .todo b{display:block;margin-bottom:2px} .todo small{color:var(--mut)}
+  footer{padding:34px 0 0;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="kicker">Internal Strategy · Not customer-facing</span>
+  <h1>Second Nature Tree Service<br>Marketing Plan</h1>
+  <p class="sub">A plan that starts from the books, not from a template. The goal isn't more jobs — it's more <em>margin</em>, and marketing pointed at the right kind of work.</p>
+  <div class="meta">
+    <span class="chip">Peekskill &amp; lower Westchester / Putnam</span>
+    <span class="chip">2025 gross <b>~$257k</b></span>
+    <span class="chip">2025 net <b>~$12.5k (~5%)</b></span>
+    <span class="chip">Drafted <b>Jul 4, 2026</b></span>
+  </div>
+  <div class="legend">
+    Every forward-looking claim is tagged so an assumption never reads as a fact:
+    <div class="row">
+      <span><span class="tag c">Certain</span> from your 2025 books / systems</span>
+      <span><span class="tag l">Likely</span> strong market inference</span>
+      <span><span class="tag g">Guessing</span> placeholder — needs your number</span>
+    </div>
+  </div>
+</header>
+
+<!-- THE TRUTH -->
+<section>
+  <h2>00 · Read this first</h2>
+  <div class="lead">More marketing is not your problem. Thin margin is.</div>
+  <p><span class="tag c">Certain</span> In 2025 you grossed ~$257k and kept ~$12.5k — about 5%. Booking a pile of new residential removals doesn't fix that; if anything, more low-margin work through a fleet that already lost <span class="tag c">~16 field-days</span> to breakdowns can dig the hole deeper.</p>
+  <div class="warn"><b>So this plan is deliberately NOT "post 30 times and run Facebook ads."</b> It has one job: use marketing to <b>change the mix and the price</b> — steer toward commercial/recurring and utility line-clearance work, and earn the trust that lets you stop competing on price with the cheapest guy in the parking lot.</div>
+  <p class="mut">If a tactic below doesn't move margin or mix, it's not in here.</p>
+</section>
+
+<!-- POSITIONING -->
+<section>
+  <h2>01 · Positioning</h2>
+  <div class="lead">The insured, credentialed, doesn't-vanish tree company.</div>
+  <p><span class="tag l">Likely</span> Homeowners hiring tree work are scared of two things: property damage and fly-by-night crews. Most of your local competition <em>is</em> a guy with a saw and no insurance. Your edge isn't being cheapest — it's being the one a nervous homeowner (and a property manager who'll get fired for a bad vendor) can trust with a crane near their roof.</p>
+  <div class="callout"><b>Positioning line:</b> <em>Fully insured, credentialed tree care that shows up, does it right, and cleans up — serving Peekskill and Westchester since day one.</em></div>
+  <div class="grid g3">
+    <div class="card"><h4>Insured &amp; legit</h4><p>GL + workers comp, DOT, real business. Lead with it — it's the #1 fear-killer and it disqualifies the cheap crews you don't want to compete with anyway.</p></div>
+    <div class="card"><h4>Credentialed</h4><p><span class="tag l">Likely</span> ISA / TCIA-track credentials matter most to commercial &amp; municipal buyers — the higher-margin ones. Put them where those buyers look.</p></div>
+    <div class="card"><h4>Local &amp; accountable</h4><p>Owner-run, Peekskill-rooted, named crew. The company that's still here next season. This is what property managers actually buy.</p></div>
+  </div>
+</section>
+
+<!-- AUDIENCE -->
+<section>
+  <h2>02 · Audiences — ranked by margin, not volume</h2>
+  <div class="lead">Point the effort up the list, not down it.</div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="who">Highest margin · B2B recurring</div>
+      <h4>Utility / telecom line-clearance ROW</h4>
+      <p><span class="tag c">Certain</span> You've booked ROW work before (~$6.1k via the old ASG/Verizon channel). <span class="tag l">Likely</span> the real path now is subbing under <b>Clearway Industries</b> / <b>Lewis Tree</b> with QLCA-qualified crews.</p>
+      <p>Not won by ads — won by prequalification, credentials, and relationships. "Marketing" here = a credentials one-pager and getting on their sub list.</p>
+    </div>
+    <div class="card">
+      <div class="who">Steady margin · Commercial</div>
+      <h4>Property managers, HOAs, municipal</h4>
+      <p><span class="tag l">Likely</span> Recurring, schedulable, keeps the iron busy in shoulder seasons, and they don't price-shop like homeowners — they buy reliability and insurance.</p>
+      <p>The single best fix for your winter under-break-even months.</p>
+    </div>
+    <div class="card">
+      <div class="who">Bread &amp; butter · Residential</div>
+      <h4>Homeowner removals &amp; pruning</h4>
+      <p>Your base — but the price-shopping tier. Goal here isn't <em>more</em>, it's <b>better-qualified &amp; higher-priced</b>, won on reviews and trust so you're not the low bid.</p>
+      <p><span class="tag l">Likely</span> Reviews do this job (see §3).</p>
+    </div>
+    <div class="card">
+      <div class="who">Premium spikes · Emergency</div>
+      <h4>Storm &amp; emergency response</h4>
+      <p>Highest per-job price, least price-sensitive (tree on a house at 6am). <span class="tag l">Likely</span> Owning "storm response, insured, fast" locally is pure margin.</p>
+      <p>Won by being top of Google the morning after a storm.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FLYWHEEL -->
+<section>
+  <h2>03 · The growth engine</h2>
+  <div class="lead">Reviews are the tree business's flywheel. Build the machine that makes them.</div>
+  <p>Tree service is a trust-and-fear purchase researched on Google. The company with the most recent, specific 5-star reviews wins the click and holds the higher price. You do dozens of jobs a month and almost certainly ask for a review on approximately none of them. That's the leak.</p>
+  <div class="flywheel">
+    <b style="color:var(--grn)">The review flywheel</b>
+    <ol>
+      <li>Crew finishes a job → before/after photos taken on-site (many already exist in job records).</li>
+      <li>Same day, an automatic text asks the happy customer for a Google review, with a one-tap link. <span class="tag l">Likely</span> Branch Manager can fire this off the completed-job event.</li>
+      <li>Fresh reviews + photos push you up "tree service near me" and let you quote above the cheap crews.</li>
+      <li>Better-qualified leads who already trust you call → higher close rate, less haggling → more reviews.</li>
+    </ol>
+    <p class="mut" style="margin:14px 0 0;font-size:13.5px"><span class="tag l">Likely</span> This is worth more than any ad budget and costs almost nothing — it's the tree equivalent of the skate park's clip pipeline. <b>Priority #1: wire the post-job review request into Branch Manager.</b></p>
+  </div>
+</section>
+
+<!-- PILLARS -->
+<section>
+  <h2>04 · Content pillars</h2>
+  <div class="lead">Four buckets. Proof over promotion.</div>
+  <div class="pillars">
+    <div class="pillar"><div><h4>Before / after job proof</h4><p>The big removal, the crane job, the clean cleanup. Photos you already take. This is 40% of everything and it sells competence + insurance without saying a price.</p></div></div>
+    <div class="pillar"><div><h4>Reviews &amp; trust signals</h4><p>Screenshot real 5-star reviews, "insured &amp; credentialed" reminders, crew in proper gear. Fear-killers on repeat.</p></div></div>
+    <div class="pillar"><div><h4>Storm &amp; safety</h4><p>Before a storm: "we're on call." After: fast response photos. Seasonal, high-intent, premium-priced.</p></div></div>
+    <div class="pillar"><div><h4>The people &amp; the iron</h4><p>Named crew, the equipment, owner-operated story. Local and accountable — what commercial buyers want to see before they call.</p></div></div>
+  </div>
+  <p class="warn" style="margin-top:20px"><b>Hard rule:</b> customer-facing marketing (peekskilltree.com, social, ads) <b>never shows rates</b>. Pricing strategy lives internally (§7). Proof and trust sell; numbers only invite price-shopping.</p>
+</section>
+
+<!-- CHANNELS -->
+<section>
+  <h2>05 · Channels — where to actually spend</h2>
+  <div class="lead">Google first. It's where tree jobs are bought.</div>
+  <div class="grid g2">
+    <div class="card"><h4>Google Business Profile</h4><p><span class="tag l">Likely</span> your #1 channel by far. "Tree removal near me" + "emergency tree service" is exactly how these jobs start. Complete profile, photos, and a steady review drip win it. Nearly free.</p></div>
+    <div class="card"><h4>Local Service Ads / Google Ads</h4><p><span class="tag g">Guessing</span> a modest, measured budget on high-intent storm/removal searches — but ONLY once reviews are flowing, or you're paying to send clicks to a weak profile.</p></div>
+    <div class="card"><h4>B2B credentials outreach</h4><p>A one-page insured-&amp;-credentialed capabilities sheet → property managers, HOAs, and Clearway/Lewis sub lists. This is the margin channel; it's email + relationships, not ads.</p></div>
+    <div class="card"><h4>peekskilltree.com</h4><p>The trust-closer. Reviews, before/afters, insurance/credentials, service area, easy quote request. No prices. It exists to convert the Google click.</p></div>
+    <div class="card"><h4>Neighborhood presence</h4><p><span class="tag l">Likely</span> yard signs on visible completed jobs + local FB groups. Cheap, hyper-local, and neighbors literally see the work.</p></div>
+    <div class="card"><h4>Existing-customer re-marketing</h4><p><span class="tag c">Certain</span> Branch Manager holds your past customers. Seasonal reminders (storm prep, winter pruning) to people who already trust you = the cheapest revenue there is.</p></div>
+  </div>
+</section>
+
+<!-- CALENDAR -->
+<section>
+  <h2>06 · A workable weekly rhythm</h2>
+  <div class="lead">Light enough to actually sustain in-season.</div>
+  <p class="mut" style="font-size:14px"><span class="tag l">Likely</span> In peak season the crew is slammed, so the cadence is intentionally modest — 3 posts/week + the always-on review engine beats an ambitious plan you abandon in May.</p>
+  <div class="scroll">
+  <table class="cal">
+    <thead><tr><th>Day</th><th>Post / action</th><th>Pillar</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Mon</td><td>Before/after from last week's biggest job</td><td><span class="pill p-proof">Proof</span></td><td>Competence + insurance, no price</td></tr>
+      <tr><td>Wed</td><td>Reshare a fresh 5-star review + crew photo</td><td><span class="pill p-rev">Trust</span></td><td>Fear-killer; feeds the flywheel</td></tr>
+      <tr><td>Fri</td><td>Seasonal tip / storm readiness / the iron</td><td><span class="pill p-storm">Seasonal</span></td><td>Stays useful; primes premium storm calls</td></tr>
+      <tr><td>Every job</td><td><b>Auto post-job review request text</b></td><td><span class="pill p-rev">Engine</span></td><td>The single highest-leverage habit</td></tr>
+      <tr><td>Monthly</td><td>Credentials sheet → 5 new commercial/PM contacts</td><td><span class="pill p-com">B2B</span></td><td>Builds the margin pipeline</td></tr>
+      <tr><td>Storm days</td><td>"On call, insured, fast" + response photos</td><td><span class="pill p-storm">Premium</span></td><td>Highest-margin work there is</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- PRICING (internal) -->
+<section>
+  <h2>07 · Pricing &amp; mix (internal only)</h2>
+  <div class="lead">The lever that actually moves the 5%.</div>
+  <p><span class="tag c">Certain</span> Break-even ≈ $14,025/mo; winter nut ≈ $7,500/mo; Dec–Mar runs under break-even. Marketing's job in the numbers:</p>
+  <ul>
+    <li><b>Shift mix toward recurring commercial/PM work</b> to flatten the winter losses (Aug, Dec, Feb, Mar were loss months in 2025-26). <span class="tag l">Likely</span> the biggest single margin fix.</li>
+    <li><b>Use trust signals to hold price</b> on residential instead of matching the low bid — reviews let you be the $X, not the $X-minus-20%.</li>
+    <li><b>Chase line-clearance/ROW</b> where bill rates (market $120–180/hr arborist, crews $225–500+) dwarf residential.</li>
+    <li><span class="tag g">Guessing</span> your current average-ticket and close-rate — send them and I'll model what a 5→10% margin looks like in dollars.</li>
+  </ul>
+  <p class="warn"><b>Reminder:</b> none of this pricing detail ever appears on a customer-facing page. Internal hub only.</p>
+</section>
+
+<!-- METRICS -->
+<section>
+  <h2>08 · What to measure</h2>
+  <div class="lead">A few numbers that tie to margin, checked monthly.</div>
+  <div>
+    <div class="metric"><span>Net margin % (the real scoreboard)</span><span class="n">~5% <span class="mut" style="font-weight:400;font-size:13px">(2025 base)</span></span></div>
+    <div class="metric"><span>Google reviews — total &amp; new/month</span><span class="ph">your baseline</span></div>
+    <div class="metric"><span>Google Business "how to get there" + calls</span><span class="ph">your baseline</span></div>
+    <div class="metric"><span>% revenue from commercial/recurring</span><span class="ph">your baseline</span></div>
+    <div class="metric"><span>Average job ticket</span><span class="ph">your baseline</span></div>
+    <div class="metric"><span>Quote → booked close rate</span><span class="ph">your baseline</span></div>
+    <div class="metric"><span>Months under break-even ($14,025)</span><span class="n">4 <span class="mut" style="font-weight:400;font-size:13px">(2025-26)</span></span></div>
+  </div>
+  <p class="mut" style="margin-top:14px;font-size:13.5px"><span class="tag c">Certain</span> values are from your books; blanks are real numbers I won't fabricate — fill them and this becomes a live dashboard alongside <a href="fleet-budget-b1e454.html">fleet-budget</a>.</p>
+</section>
+
+<!-- NEXT 7 -->
+<section style="border-bottom:none">
+  <h2>09 · The next 7 days</h2>
+  <div class="lead">Five moves. All point at margin.</div>
+  <div class="todo">
+    <div class="item"><span class="box"></span><span><b>Wire the auto post-job review request into Branch Manager</b><small>Completed-job → same-day text with one-tap Google review link. Priority zero — the flywheel is dead without it.</small></span></div>
+    <div class="item"><span class="box"></span><span><b>Fully build the Google Business Profile</b><small>Photos, service area, categories, hours. It's where tree jobs are actually bought. Free.</small></span></div>
+    <div class="item"><span class="box"></span><span><b>Make a one-page "insured &amp; credentialed" capabilities sheet</b><small>For property managers, HOAs, and Clearway/Lewis sub lists. The margin channel starts here.</small></span></div>
+    <div class="item"><span class="box"></span><span><b>Send me your average ticket + close rate</b><small>So I can model the dollars behind a 5→10% margin and set real targets.</small></span></div>
+    <div class="item"><span class="box"></span><span><b>Pick 5 commercial/PM prospects to contact this month</b><small>Start the recurring-revenue pipeline that flattens the winter losses.</small></span></div>
+  </div>
+</section>
+
+<footer>
+  <p><b>Note on numbers:</b> Figures tagged <span class="tag c">Certain</span> come from your 2025 full-year books (gross ~$257k, net ~$12.5k, break-even ~$14,025/mo, ~16 lost field-days) and the line-clearance research. <span class="tag l">Likely</span> = inference; <span class="tag g">Guessing</span> = placeholder awaiting your real data. Nothing here is a fabricated metric.</p>
+  <p style="margin-top:10px">Internal document · Second Nature Tree Service · branchmanager.app/marketing-plan · not indexed, not customer-facing.</p>
+</footer>
+
+</div>
+</body>
+</html>
