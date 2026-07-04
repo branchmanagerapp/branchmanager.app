@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Three-Business Operating Architecture</title>
+<style>
+  :root{
+    --bg:#0c0e12; --panel:#14171e; --panel2:#1b1f28; --line:#282e3a;
+    --ink:#eef1f6; --mut:#98a2b3;
+    --tree:#5fbf6a; --skate:#ff4d6d; --lawn:#6abb1e; --hub:#6ca8e8;
+    --sky:#5cc2ff; --gold:#e8c15a; --amber:#e79a5c;
+    --ok:#4ddb9a; --warn:#e79a5c; --bad:#ff5c72;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px 100px}
+  a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+  header{padding:60px 0 26px;border-bottom:1px solid var(--line)}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky);font-weight:700;margin-bottom:14px}
+  h1{font-size:clamp(28px,5.5vw,44px);line-height:1.08;margin:0 0 14px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:17px;max-width:680px}
+  section{padding:38px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);font-weight:700;margin:0 0 6px}
+  h2 + .lead{font-size:23px;font-weight:800;letter-spacing:-.01em;margin:0 0 18px;line-height:1.22}
+  h3{font-size:17px;margin:24px 0 8px;font-weight:700}
+  p{margin:0 0 14px} .mut{color:var(--mut)}
+  ul{margin:0 0 14px;padding-left:20px} li{margin:7px 0}
+  .principle{background:linear-gradient(180deg,var(--panel),#0e1a16);border:1px solid var(--tree);border-radius:16px;padding:22px;margin:8px 0}
+  .principle .big{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-bottom:10px}
+  .principle .big span{color:var(--tree)}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:680px){.split{grid-template-columns:1fr}}
+  .halfcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .halfcard h4{margin:0 0 8px;font-size:15px} .halfcard.sep h4{color:var(--skate)} .halfcard.con h4{color:var(--gold)}
+  .halfcard ul{margin:0;padding-left:18px;font-size:14px;color:var(--mut)} .halfcard li{margin:5px 0}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  th{text-align:left;color:var(--mut);font-weight:600;padding:9px 10px;border-bottom:1px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child{font-weight:700;white-space:nowrap}
+  .b-tree{color:var(--tree)} .b-skate{color:var(--skate)} .b-lawn{color:var(--lawn)}
+  .st{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap;display:inline-block}
+  .st.ok{background:rgba(77,219,154,.16);color:var(--ok);border:1px solid var(--ok)}
+  .st.q{background:rgba(231,154,92,.14);color:var(--warn);border:1px solid var(--warn)}
+  .st.no{background:rgba(255,92,114,.14);color:var(--bad);border:1px solid var(--bad)}
+  .tag{display:inline-flex;font-weight:700;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;padding:1px 7px;border-radius:5px;color:#0c0e12}
+  .tag.c{background:var(--ok)} .tag.l{background:var(--gold)} .tag.g{background:var(--amber)}
+  .prob{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:0 12px 12px 0;padding:14px 16px;margin:10px 0}
+  .prob b{color:var(--bad)}
+  .fix{border-left-color:var(--ok)} .fix b{color:var(--ok)}
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:10px}
+  .flow .step{display:flex;gap:14px;padding:11px 0;border-top:1px solid var(--line);align-items:flex-start}
+  .flow .step:first-child{border-top:none}
+  .flow .n{flex:0 0 28px;height:28px;background:var(--sky);color:#0c0e12;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .flow b{display:block;margin-bottom:2px} .flow small{color:var(--mut);font-size:13.5px}
+  .warnbox{background:#2a1f14;border:1px solid var(--amber);border-radius:12px;padding:14px 16px;color:#fbeede;font-size:14.5px;margin:14px 0}
+  .seq{counter-reset:s}
+  .seq .row{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+  .seq .row:before{counter-increment:s;content:counter(s);flex:0 0 30px;height:30px;background:var(--ink);color:var(--bg);border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .seq b{display:block} .seq small{color:var(--mut)}
+  footer{padding:30px 0 0;color:var(--mut);font-size:13px}
+  .legend{margin-top:16px;font-size:13px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="kicker">Internal · Macro operating map · Doug only</span>
+  <h1>Three-Business<br>Operating Architecture</h1>
+  <p class="sub">How Second Nature Tree, 2nd Nature Skateboarding, and Smart Lawn NY should run as three clean brands on one back office — what's tangled today, and the build order to untangle it.</p>
+  <p class="legend"><span class="tag c">Certain</span> verified this session &nbsp; <span class="tag l">Likely</span> strong inference &nbsp; <span class="tag g">Guessing</span> needs your confirm</p>
+</header>
+
+<!-- PRINCIPLE -->
+<section>
+  <h2>00 · The core principle</h2>
+  <div class="lead">You asked two things that sound opposite. They're not.</div>
+  <p>On <b>Jul 3</b> the call was <em>consolidate</em> everything into one account (one M&amp;T, one Plaid, one admin login). Today you're asking to keep the three businesses <em>separate</em> — own accounts, own posting, nothing crossing over. Those only conflict if you mix up two different layers:</p>
+  <div class="principle">
+    <div class="big">Three storefronts. <span>One back office.</span></div>
+    <p class="mut" style="margin:0">Separate everything a <b>customer</b> sees. Consolidate everything <b>you</b> operate behind the curtain. That single distinction resolves the whole tension.</p>
+    <div class="split">
+      <div class="halfcard sep">
+        <h4>SEPARATE — customer-facing (per brand)</h4>
+        <ul>
+          <li>Domain &amp; brand site</li>
+          <li>Google Business Profile</li>
+          <li>Social handles (IG / TikTok / FB)</li>
+          <li>Customer email identity &amp; lists</li>
+          <li>Content calendar &amp; posting queue</li>
+          <li>Reviews &amp; local presence</li>
+        </ul>
+      </div>
+      <div class="halfcard con">
+        <h4>CONSOLIDATE — back office (shared)</h4>
+        <ul>
+          <li>Banking (one M&amp;T) &amp; Plaid</li>
+          <li>Bookkeeping / CPA handoff</li>
+          <li>Dev + hosting ownership (GitHub / Cloudflare)</li>
+          <li>This ops hub (Branch Manager)</li>
+          <li>Admin logins &amp; secrets</li>
+          <li>Claude / automation tooling</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="mut">Rule of thumb: if a customer would ever see it, it's separate and brand-pure. If only you touch it, it's shared and boring on purpose.</p>
+</section>
+
+<!-- BRAND MAP -->
+<section>
+  <h2>01 · The three brands, mapped</h2>
+  <div class="lead">One row per brand. This is the checklist for "in the right spot."</div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Layer</th><th class="b-tree">🌳 Second Nature Tree</th><th class="b-skate">🛹 2nd Nature Skateboarding</th><th class="b-lawn">🌱 Smart Lawn NY</th></tr></thead>
+    <tbody>
+      <tr><td>Domain</td><td>peekskilltree.com</td><td>2ntr.com + skateos.com</td><td>smartlawnny.com</td></tr>
+      <tr><td>Customer site</td><td><span class="st ok">live</span></td><td><span class="st ok">live</span></td><td><span class="st ok">live</span></td></tr>
+      <tr><td>Backend / hub</td><td>Branch Manager</td><td>skateOS</td><td>smartlawnny.com + POS</td></tr>
+      <tr><td>Marketing plan</td><td><span class="st ok">/marketing-plan</span></td><td><span class="st ok">/marketing-plan</span></td><td><span class="st ok">/marketing-plan</span></td></tr>
+      <tr><td>Google Business</td><td><span class="st q">audit</span></td><td><span class="st q">likely exists (est. 2004)</span></td><td><span class="st q">audit</span></td></tr>
+      <tr><td>Social handles</td><td><span class="st q">confirm</span></td><td>@2ndnatureskate <span class="st q">confirm</span></td><td><span class="st q">confirm</span></td></tr>
+      <tr><td>Customer email</td><td>info@peekskilltree.com</td><td>info@2ntr.com</td><td>smartlawnny@gmail.com</td></tr>
+      <tr><td>Content calendar</td><td><span class="st no">build</span></td><td><span class="st no">build</span></td><td><span class="st no">build</span></td></tr>
+      <tr><td>Posting queue</td><td><span class="st no">build</span></td><td><span class="st no">build</span></td><td><span class="st no">build</span></td></tr>
+      <tr><td>Content engine</td><td>Review flywheel + job photos</td><td>Auto-clip pipeline</td><td>Install/demo video + map tool</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="mut" style="margin-top:12px"><span class="tag l">Likely</span>/<span class="tag g">Guessing</span> on the <span class="st q">audit</span>/<span class="st q">confirm</span> cells — those need a logged-in look I can't do remotely. <span class="tag c">Certain</span> on the <span class="st no">build</span> cells: verified this session that no posting/calendar module exists in any backend.</p>
+</section>
+
+<!-- CROSSOVER -->
+<section>
+  <h2>02 · Where it crosses over today</h2>
+  <div class="lead">The tangles that break the "nothing crosses over" rule.</div>
+  <div class="prob"><b>SmartLawn content has landed on branchmanager.app.</b> Historically SmartLawn pages (quote, promos, audit) lived on the tree domain because SmartLawn push-access was blocked. That's a brand leak — a lawn customer shouldn't ever touch a tree URL. <span class="tag c">Certain</span> (fixed Jul 4 — SL now has its own push access; migrate any stragglers home).</div>
+  <div class="prob"><b>Cloudflare is split across 3 separate accounts under different logins.</b> skateOS (info@2ntr.com), branchmanager/peekskilltree (info@peekskilltree.com), smartlawn (separate). This login can only reach one at a time — fragile and easy to deploy to the wrong place. <span class="tag c">Certain</span></div>
+  <div class="prob"><b>GitHub is already consolidating — quietly, under one owner.</b> The <code>smartlawnny-cloud</code> account owns smartlawnny.com AND peekskilltree.com AND branchmanager.app repos. Good for the "one back office" plumbing goal — but it means repo hygiene (clear names, no shared secrets) is what keeps the brands logically separate. <span class="tag c">Certain</span></div>
+  <div class="prob"><b>Email can't multi-account.</b> The Gmail connector reaches only peekskilltree; info@2ntr.com and smartlawnny@gmail.com aren't reachable together. So per-brand customer email is siloed by necessity, not design. <span class="tag l">Likely</span></div>
+  <div class="prob fix"><b>The clean end state:</b> one Cloudflare account (invite the others as members), repos logically named under one GitHub owner, each brand's pages served only from its own domain, each brand's social/Google/email pure to that brand. Back office merges; storefronts stay pure.</div>
+</section>
+
+<!-- POSTING SYSTEM -->
+<section>
+  <h2>03 · Automated posting — the honest design</h2>
+  <div class="lead">It doesn't exist yet. Here's how to build it so it never becomes another May 6.</div>
+  <p><span class="tag c">Certain</span> There is no "social pilot" system in any backend today — this is a build. And it must be built with one non-negotiable guardrail, because of the marketing-email incident:</p>
+  <div class="warnbox"><b>Draft-and-approve, never auto-fire.</b> The system <em>drafts</em> and <em>schedules</em> posts into each brand's calendar. Nothing publishes to a customer channel until you approve it. No cron that blindly posts. This mirrors the standing rule that all customer-facing messages hit an approval queue first — social is no exception.</p>
+  <h3>Per-brand, identical shape, zero shared queue</h3>
+  <div class="flow">
+    <div class="step"><span class="n">1</span><span><b>Content in</b><small>Each brand's engine feeds it: skate = auto-clips, tree = job before/afters + reviews, lawn = install/demo clips. Brand-pure — clips never cross businesses.</small></span></div>
+    <div class="step"><span class="n">2</span><span><b>Calendar drafts</b><small>Each backend (skateOS / Branch Manager / SmartLawn) has its own Content Calendar tab. The weekly rhythm from each brand's marketing plan is the template. Drafts auto-populate; Claude can write captions.</small></span></div>
+    <div class="step"><span class="n">3</span><span><b>You approve</b><small>You review the week's queue in that brand's hub and approve/edit. One brand, one queue — no chance of a tree post going out on the lawn account.</small></span></div>
+    <div class="step"><span class="n">4</span><span><b>Publish to that brand only</b><small>Approved posts publish to that brand's connected accounts (its IG/TikTok/FB via each platform's API or a per-brand scheduler seat). Separate credentials per brand = structurally impossible to cross.</small></span></div>
+  </div>
+  <p class="mut" style="margin-top:12px">Build once as a shared component, deploy three isolated instances — each wired to its own brand's accounts. Same code, separate wiring. That's how you get "each has its own" without building it three times from scratch.</p>
+</section>
+
+<!-- SEQUENCE -->
+<section style="border-bottom:none">
+  <h2>04 · Build order</h2>
+  <div class="lead">Cheapest, highest-leverage first. Don't build the posting engine before the accounts are clean.</div>
+  <div class="seq">
+    <div class="row"><div><b>Audit the 3 Google Business Profiles (logged in)</b><small>Claim status, category, photos, hours. Free, ~10 min each, biggest free local-search win. Needs your Google logins — I can't see backend status remotely.</small></div></div>
+    <div class="row"><div><b>Confirm each brand's social handles + email, one list</b><small>So we know exactly what accounts exist per brand before wiring anything. Kills the crossover risk at the source.</small></div></div>
+    <div class="row"><div><b>Migrate any SmartLawn stragglers off branchmanager.app</b><small>Every lawn page on its own domain. Close the oldest brand leak.</small></div></div>
+    <div class="row"><div><b>Consolidate Cloudflare to one account (member invites)</b><small>One place to deploy, no wrong-account mistakes. Plumbing, not brand.</small></div></div>
+    <div class="row"><div><b>Build the Content Calendar component once</b><small>Draft-and-approve. Then deploy three isolated instances, each wired to its own brand's accounts.</small></div></div>
+    <div class="row"><div><b>Fix the Square→skateOS sync (schedule it)</b><small>Separate track, but it's the same theme: a manual thing that should be an automated, reliable one. Nightly job at minimum.</small></div></div>
+  </div>
+</section>
+
+<footer>
+  <p><b>Verified this session:</b> no posting/calendar module in any backend; Square→skateOS sync is manual (no cron); skate park operating since 2004 with existing public presence; SmartLawn push-access resolved Jul 4; GitHub <code>smartlawnny-cloud</code> owns all three site repos; Cloudflare split across 3 accounts.</p>
+  <p style="margin-top:10px">Internal · branchmanager.app/operating-architecture · not indexed, not customer-facing · drafted Jul 4 2026.</p>
+</footer>
+
+</div>
+</body>
+</html>
