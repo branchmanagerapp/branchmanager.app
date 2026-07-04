@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>System Map — Everything, Separated</title>
+<style>
+  :root{
+    --bg:#0c0e12; --panel:#14171e; --panel2:#1b1f28; --line:#282e3a;
+    --ink:#eef1f6; --mut:#98a2b3; --sky:#5cc2ff; --ok:#4ddb9a; --warn:#e79a5c; --bad:#ff5c72;
+    --tree:#5fbf6a; --skate:#ff4d6d; --lawn:#6abb1e; --shared:#c8a24a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px 90px}
+  a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+  header{padding:54px 0 22px;border-bottom:1px solid var(--line);position:relative}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky);font-weight:700;margin-bottom:12px}
+  h1{font-size:clamp(28px,5.5vw,42px);line-height:1.06;margin:0 0 12px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:16px;max-width:700px}
+  .printbtn{position:absolute;top:56px;right:0;background:var(--sky);color:#0c0e12;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer}
+  @media(max-width:700px){.printbtn{position:static;margin-top:14px}}
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);font-weight:700;margin:0 0 6px}
+  h2 + .lead{font-size:22px;font-weight:800;letter-spacing:-.01em;margin:0 0 18px;line-height:1.2}
+  p{margin:0 0 12px} .mut{color:var(--mut)}
+  .tag{display:inline-flex;font-weight:700;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:5px;color:#0c0e12}
+  .tag.c{background:var(--ok)} .tag.l{background:var(--warn)}
+
+  /* LAYERED DIAGRAM */
+  .diagram{margin-top:8px}
+  .drow{display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+  @media(max-width:760px){.drow{grid-template-columns:84px 1fr 1fr 1fr;gap:5px}}
+  .rlabel{display:flex;align-items:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding-right:6px}
+  .cell{border-radius:10px;padding:10px 12px;font-size:13px;border:1px solid var(--line);background:var(--panel)}
+  @media(max-width:760px){.cell{font-size:11.5px;padding:8px 9px}}
+  .cell b{display:block;font-size:13.5px;margin-bottom:2px}
+  .cell small{color:var(--mut);font-size:11.5px;display:block;line-height:1.4}
+  .head-tree,.head-skate,.head-lawn{font-weight:800;font-size:16px;padding:12px;border-radius:10px;text-align:center;letter-spacing:-.01em}
+  .head-tree{background:#0e1210;border:1px solid var(--tree);color:var(--tree)}
+  .head-skate{background:#0d0d10;border:1px solid var(--skate);color:var(--skate)}
+  .head-lawn{background:#ffffff;border:1px solid var(--lawn);color:#4a8a10}
+  .c-tree{border-left:3px solid var(--tree)} .c-skate{border-left:3px solid var(--skate)} .c-lawn{border-left:3px solid var(--lawn)}
+  code{font:12px ui-monospace,Menlo,monospace;color:var(--sky);background:rgba(92,194,255,.08);padding:0 4px;border-radius:4px}
+
+  .sharedband{margin-top:14px;border:1px dashed var(--shared);border-radius:12px;padding:16px;background:rgba(200,162,74,.06)}
+  .sharedband h3{margin:0 0 4px;color:var(--shared);font-size:14px;text-transform:uppercase;letter-spacing:.08em}
+  .sharedgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  @media(max-width:760px){.sharedgrid{grid-template-columns:1fr 1fr}}
+  .schip{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px}
+  .schip b{display:block} .schip small{color:var(--mut);font-size:11px}
+
+  /* CROSSOVER REGISTER */
+  .cross{border-left:3px solid var(--bad);background:var(--panel);border-radius:0 12px 12px 0;padding:13px 16px;margin:10px 0}
+  .cross.crit{border-left-width:5px;background:#241318}
+  .cross.fixed{border-left-color:var(--ok);background:#12261c}
+  .cross b{color:var(--ink)} .cross .sev{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:1px 7px;border-radius:5px;margin-left:6px}
+  .sev.crit{background:var(--bad);color:#fff} .sev.med{background:var(--warn);color:#0c0e12} .sev.ok{background:var(--ok);color:#0c0e12}
+  .cross small{color:var(--mut);display:block;margin-top:3px}
+
+  .legend{margin-top:16px;font-size:12.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:14px}
+  .lgi{display:flex;align-items:center;gap:6px} .sq{width:12px;height:12px;border-radius:3px;display:inline-block}
+  footer{padding:28px 0 0;color:var(--mut);font-size:12.5px}
+
+  @media print{
+    :root{--bg:#fff;--ink:#111;--mut:#555;--panel:#fff;--panel2:#fff;--line:#ccc}
+    body{background:#fff;color:#111} .printbtn{display:none}
+    .cell,.schip{border:1px solid #bbb} a{color:#111;text-decoration:none}
+    section{border-color:#ddd;padding:18px 0} .head-lawn{border:1px solid #4a8a10}
+    .cross.crit{background:#fbeaee} .cross.fixed{background:#eafaef}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <button class="printbtn" onclick="window.print()">⎙ Print / Save PDF</button>
+  <span class="kicker">Internal · Master system map · Doug only</span>
+  <h1>Everything, Separated</h1>
+  <p class="sub">The full stack across all three businesses — entities, domains, hosting, backends, integrations, money — laid out so you can see what's clean, what's shared on purpose, and where things cross over that shouldn't.</p>
+  <div class="legend">
+    <span class="lgi"><span class="sq" style="background:var(--tree)"></span>Tree</span>
+    <span class="lgi"><span class="sq" style="background:var(--skate)"></span>Skate</span>
+    <span class="lgi"><span class="sq" style="background:var(--lawn)"></span>Lawn</span>
+    <span class="lgi"><span class="sq" style="background:var(--shared);border:1px dashed var(--shared)"></span>Shared back office</span>
+    <span class="lgi"><span class="tag c">C</span>verified this session</span>
+    <span class="lgi"><span class="tag l">L</span>from memory</span>
+  </div>
+</header>
+
+<!-- DIAGRAM -->
+<section>
+  <h2>01 · The stack, three columns</h2>
+  <div class="lead">Read top-to-bottom per brand. Everything above the dashed band is storefront-separate.</div>
+  <div class="diagram">
+    <div class="drow">
+      <div class="rlabel"></div>
+      <div class="head-tree">🌳 Second Nature Tree</div>
+      <div class="head-skate">🛹 2nd Nature Skate</div>
+      <div class="head-lawn">🌱 Smart Lawn NY</div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Entity</div>
+      <div class="cell c-tree"><b>Second Nature Tree LLC</b><small>Doug 100%</small></div>
+      <div class="cell c-skate"><b>2nd Nature 3, Inc.</b><small>S-corp · <b style="color:var(--skate)">Doug + Jon 50/50</b></small></div>
+      <div class="cell c-lawn"><b>Smart Lawn NY</b><small>Add-on under SNT · smartlawnny@gmail.com</small></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Customer domain</div>
+      <div class="cell c-tree"><b>peekskilltree.com</b><small>+ /llm-info</small></div>
+      <div class="cell c-skate"><b>2ntr.com</b><small>+ skateos.com (app hub)</small></div>
+      <div class="cell c-lawn"><b>smartlawnny.com</b></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Hosting / repo</div>
+      <div class="cell c-tree"><b>GitHub Pages</b><small><code>smartlawnny-cloud/peekskilltree.com</code></small></div>
+      <div class="cell c-skate"><b>CF Workers</b><small>subpath workers (j2, door, camprates…)</small></div>
+      <div class="cell c-lawn"><b>GitHub Pages</b><small><code>smartlawnny-cloud/smartlawnny.com</code></small></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">App / backend</div>
+      <div class="cell c-tree"><b>Branch Manager</b><small>branchmanager.app · CF Worker proxy → GH Pages <code>branchmanagerapp/branchmanager.app</code></small></div>
+      <div class="cell c-skate"><b>skateOS</b><small>Square-replacement POS + door + inventory</small></div>
+      <div class="cell c-lawn"><b>SmartLawn POS + site</b><small>admin UI · "Analyze My Lawn" map tool</small></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Database</div>
+      <div class="cell c-tree"><b>Supabase</b><small><code>ltpivkqahvplapyagljt</code> <span class="tag c">C</span></small></div>
+      <div class="cell c-skate"><b>Supabase</b><small><code>zecurmlenxyxanqucrga</code> <span class="tag l">L</span></small></div>
+      <div class="cell c-lawn"><b>Supabase</b><small><code>zjqpzqpvovvuaxikyksq</code> <span class="tag c">C</span></small></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Integrations</div>
+      <div class="cell c-tree"><b>Plaid · Bouncie · Dialpad</b><small>+ Resend, Stripe, SendJim, Jobber-sync <span class="tag c">C</span></small></div>
+      <div class="cell c-skate"><b>Square POS · Brivo door</b><small>Square→skateOS sync (⚠ manual) <span class="tag c">C</span></small></div>
+      <div class="cell c-lawn"><b>Google Maps API · Stripe</b><small>Navimow/CADCO dealer · GCloud smartlawnny@ <span class="tag l">L</span></small></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Social scheduler</div>
+      <div class="cell c-tree"><b>SocialBranch ✅</b><small>native, replaces SocialPilot; GMB/Meta/IG/TikTok; draft→scheduled→posted <span class="tag c">C</span></small></div>
+      <div class="cell c-skate"><b>SocialBranch ⏳</b><small>port from BM · own accounts</small></div>
+      <div class="cell c-lawn"><b>SocialBranch ⏳</b><small>port from BM · own accounts</small></div>
+    </div>
+
+    <div class="drow">
+      <div class="rlabel">Google Business</div>
+      <div class="cell c-tree"><b>audit</b><small>claim / category / photos</small></div>
+      <div class="cell c-skate"><b>likely exists</b><small>est. 2004, public presence</small></div>
+      <div class="cell c-lawn"><b>audit</b><small>"robotic mower installer"</small></div>
+    </div>
+  </div>
+
+  <!-- SHARED -->
+  <div class="sharedband">
+    <h3>⌗ Shared back office — consolidated on purpose</h3>
+    <p class="mut" style="font-size:13px;margin:4px 0 0">Things only you touch. Merging these is the Jul 3 decision — <b>except money, which has one wall (below).</b></p>
+    <div class="sharedgrid">
+      <div class="schip"><b>Banking</b><small>1 M&amp;T + 1 Plaid — <b style="color:var(--bad)">tree + lawn ONLY</b></small></div>
+      <div class="schip"><b>Bookkeeping</b><small>Kevin Fay CPA · portal on BM</small></div>
+      <div class="schip"><b>Automation tooling</b><small>Claude · this session</small></div>
+      <div class="schip"><b>Ops hub</b><small>Branch Manager (marketing-hub, this map)</small></div>
+      <div class="schip"><b>GitHub owners</b><small>⚠ 2: branchmanagerapp + smartlawnny-cloud <span class="tag c">C</span></small></div>
+      <div class="schip"><b>Cloudflare</b><small>⚠ 3 separate accounts <span class="tag l">L</span></small></div>
+      <div class="schip"><b>Email identities</b><small>3, can't multi-account</small></div>
+      <div class="schip"><b>Robinhood</b><small>personal · read-only</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- CROSSOVER REGISTER -->
+<section>
+  <h2>02 · Crossover register — where it bleeds</h2>
+  <div class="lead">You asked to find the crossover. Here it is, worst first.</div>
+
+  <div class="cross crit">
+    <b>Skate money must NOT merge with tree + lawn <span class="sev crit">critical</span></b>
+    <small>2nd Nature 3, Inc. is an S-corp <b>Jon co-owns 50/50</b>. The Jul 3 "one M&amp;T + one Plaid" consolidation is right for tree + lawn (both yours) but <b>skate has to stay walled off</b> — merging Jon's half into your accounts commingles a partnership. Skate keeps its own bank + books. <span class="tag c">C</span> (from Jon partnership record)</small>
+  </div>
+
+  <div class="cross">
+    <b>GitHub is split across two owners <span class="sev med">medium</span></b>
+    <small><code>branchmanagerapp</code> owns Branch Manager; <code>smartlawnny-cloud</code> owns the tree AND lawn sites. Two accounts to log into, two credential sets, easy to push to the wrong one. Consolidate ownership or at least document which is which. <span class="tag c">C</span> (live-verified — corrects an earlier note that said smartlawnny-cloud owned BM)</small>
+  </div>
+
+  <div class="cross">
+    <b>Cloudflare is three separate accounts <span class="sev med">medium</span></b>
+    <small>info@2ntr.com → skateOS only; info@peekskilltree.com → BM + peekskilltree; SmartLawn separate. No single login manages all three; deploys go to whichever you're logged into. Fix = member invites into one account. <span class="tag l">L</span></small>
+  </div>
+
+  <div class="cross">
+    <b>SocialBranch lives only in Branch Manager (tree) <span class="sev med">medium</span></b>
+    <small>The scheduler exists for tree but not skate or lawn — so those two have no post-in-advance engine yet. This is the active build: port SocialBranch into skateOS + SmartLawn, each wired to its own brand's accounts. <span class="tag c">C</span></small>
+  </div>
+
+  <div class="cross">
+    <b>Square→skateOS sync is manual <span class="sev med">medium</span></b>
+    <small>No cron; skateOS inventory is only as fresh as the last hand-run of <code>square_sync.py</code>. Schedule it (nightly at minimum). <span class="tag c">C</span></small>
+  </div>
+
+  <div class="cross fixed">
+    <b>SmartLawn pages on branchmanager.app <span class="sev ok">resolved</span></b>
+    <small>Lawn content used to land on the tree domain (a brand leak) because SL push-access was blocked. Access fixed Jul 4 — migrate any stragglers home so a lawn customer never touches a tree URL. <span class="tag c">C</span></small>
+  </div>
+</section>
+
+<!-- SOCIALBRANCH ROLLOUT -->
+<section style="border-bottom:none">
+  <h2>03 · SocialBranch rollout — one engine, three brands</h2>
+  <div class="lead">Port what already works in BM into the other two apps.</div>
+  <p>SocialBranch is a self-contained module (<code>src/pages/socialbranch.js</code>) — post store + compose/calendar UI + a pluggable publish backend (Zapier/Make webhook today, GMB/Meta OAuth as it comes online). Same code, three isolated instances:</p>
+  <ul>
+    <li><b>🌳 Tree — done.</b> Live in Branch Manager, managing peekskilltree posting (GMB + socials).</li>
+    <li><b>🛹 Skate — port into skateOS.</b> Its own post store + 2nd Nature Skate's IG/TikTok/FB. Feeds off the clip pipeline.</li>
+    <li><b>🌱 Lawn — port into SmartLawn.</b> Its own store + Smart Lawn's accounts. Feeds off install/demo clips + the map tool.</li>
+  </ul>
+  <p class="mut">Separate post store + separate connected accounts per instance = a post structurally cannot cross brands. Each is modifiable independently (different networks, cadence, voice per the brand themes). Publishing stays <b>draft → approve-batch → scheduled</b>; nothing fires unapproved.</p>
+</section>
+
+<footer>
+  <p><b>Verified this session (<span class="tag c">C</span>):</b> BM Supabase <code>ltpivkqahvplapyagljt</code> (66 refs); SmartLawn Supabase <code>zjqpzqpvovvuaxikyksq</code>; GitHub owners branchmanagerapp (BM) + smartlawnny-cloud (tree+lawn sites); SocialBranch exists in BM (<code>socialbranch.js</code>, "replaces SocialPilot"); Square→skateOS sync manual; skate = Jon 50/50 S-corp. <span class="tag l">L</span> items are from memory, verify before betting on them.</p>
+  <p style="margin-top:8px">Internal · branchmanager.app/system-map · not indexed · drafted Jul 4 2026 · print for the wall.</p>
+</footer>
+
+</div>
+</body>
+</html>

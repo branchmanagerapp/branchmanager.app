@@ -125,8 +125,7 @@
       <tr><td>Google Business</td><td><span class="st q">audit</span></td><td><span class="st q">likely exists (est. 2004)</span></td><td><span class="st q">audit</span></td></tr>
       <tr><td>Social handles</td><td><span class="st q">confirm</span></td><td>@2ndnatureskate <span class="st q">confirm</span></td><td><span class="st q">confirm</span></td></tr>
       <tr><td>Customer email</td><td>info@peekskilltree.com</td><td>info@2ntr.com</td><td>smartlawnny@gmail.com</td></tr>
-      <tr><td>Content calendar</td><td><span class="st no">build</span></td><td><span class="st no">build</span></td><td><span class="st no">build</span></td></tr>
-      <tr><td>Posting queue</td><td><span class="st no">build</span></td><td><span class="st no">build</span></td><td><span class="st no">build</span></td></tr>
+      <tr><td>Social scheduler</td><td><span class="st ok">SocialBranch ✅</span></td><td><span class="st q">port</span></td><td><span class="st q">port</span></td></tr>
       <tr><td>Content engine</td><td>Review flywheel + job photos</td><td>Auto-clip pipeline</td><td>Install/demo video + map tool</td></tr>
     </tbody>
   </table>
@@ -148,8 +147,8 @@
 <!-- POSTING SYSTEM -->
 <section>
   <h2>03 · Automated posting — the honest design</h2>
-  <div class="lead">It doesn't exist yet. Here's how to build it so it never becomes another May 6.</div>
-  <p><span class="tag c">Certain</span> There is no "social pilot" system in any backend today — this is a build. And it must be built with one non-negotiable guardrail, because of the marketing-email incident:</p>
+  <div class="lead">It already exists in Branch Manager (SocialBranch). Port it to the other two.</div>
+  <p><span class="tag c">Certain</span> <b>Correction:</b> BM has <code>socialbranch.js</code> — a native scheduler ("replaces SocialPilot"): draft→scheduled→posted, GMB/Meta/IG/TikTok, webhook + OAuth backends. So tree is covered; skate and lawn need their own ported instances. It runs with one non-negotiable guardrail, because of the marketing-email incident:</p>
   <div class="warnbox"><b>Draft-and-approve, never auto-fire.</b> The system <em>drafts</em> and <em>schedules</em> posts into each brand's calendar. Nothing publishes to a customer channel until you approve it. No cron that blindly posts. This mirrors the standing rule that all customer-facing messages hit an approval queue first — social is no exception.</p>
   <h3>Per-brand, identical shape, zero shared queue</h3>
   <div class="flow">
