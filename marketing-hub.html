@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Marketing Hub — Three Brands</title>
+<style>
+  :root{
+    --bg:#0c0e12; --panel:#14171e; --panel2:#1b1f28; --line:#282e3a;
+    --ink:#eef1f6; --mut:#98a2b3; --sky:#5cc2ff; --ok:#4ddb9a; --warn:#e79a5c; --bad:#ff5c72;
+    --tree:#5fbf6a; --skate:#ff4d6d; --lawn:#6abb1e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px 100px}
+  a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+  header{padding:60px 0 24px;border-bottom:1px solid var(--line)}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky);font-weight:700;margin-bottom:14px}
+  h1{font-size:clamp(30px,6vw,46px);line-height:1.06;margin:0 0 14px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:17px;max-width:680px}
+  section{padding:38px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--sky);font-weight:700;margin:0 0 6px}
+  h2 + .lead{font-size:23px;font-weight:800;letter-spacing:-.01em;margin:0 0 20px;line-height:1.22}
+  h3{font-size:17px;margin:22px 0 8px;font-weight:700}
+  p{margin:0 0 14px} .mut{color:var(--mut)}
+  ul{margin:0 0 14px;padding-left:20px} li{margin:7px 0}
+
+  /* Brand cards — each rendered IN ITS OWN THEME */
+  .brands{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:8px}
+  @media(max-width:820px){.brands{grid-template-columns:1fr}}
+  .brand{border-radius:18px;padding:22px;border:1px solid transparent;display:flex;flex-direction:column;gap:12px;min-height:100%}
+  .brand .top{display:flex;align-items:center;gap:10px}
+  .brand .emoji{font-size:26px} .brand .name{font-weight:800;font-size:18px;letter-spacing:-.01em;line-height:1.1}
+  .brand .themelabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.75}
+  .brand .voice{font-size:14px;opacity:.85}
+  .swatches{display:flex;gap:6px;margin-top:2px}
+  .sw{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.15)}
+  .tokens{font:12px/1.5 ui-monospace,Menlo,monospace;opacity:.7} .tokens b{opacity:1}
+  .brand a.plan{margin-top:auto;font-weight:700;font-size:14px;padding:9px 14px;border-radius:980px;text-align:center;text-decoration:none;display:block}
+
+  /* TREE — Rugged Field */
+  .b-tree{background:#0e1210;border-color:#2a352d;color:#eef3ef}
+  .b-tree .themelabel,.b-tree .name{color:var(--tree)} .b-tree a.plan{background:var(--tree);color:#0e1210}
+  /* SKATE — Street Bold */
+  .b-skate{background:#0d0d10;border-color:#2b2b36;color:#f2f2f5}
+  .b-skate .themelabel,.b-skate .name{color:var(--skate)} .b-skate a.plan{background:var(--skate);color:#fff}
+  /* LAWN — Clean Tech (light!) */
+  .b-lawn{background:#ffffff;border-color:#e5e5ea;color:#1d1d1f}
+  .b-lawn .themelabel,.b-lawn .name{color:var(--lawn)} .b-lawn .voice{color:#86868b;opacity:1} .b-lawn a.plan{background:var(--lawn);color:#fff}
+
+  .rule{background:linear-gradient(180deg,var(--panel),#0e1a16);border:1px solid var(--tree);border-radius:16px;padding:20px;margin:8px 0}
+  .rule .big{font-size:20px;font-weight:800;margin-bottom:8px} .rule .big span{color:var(--tree)}
+
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:10px}
+  .flow .step{display:flex;gap:14px;padding:11px 0;border-top:1px solid var(--line);align-items:flex-start}
+  .flow .step:first-child{border-top:none}
+  .flow .n{flex:0 0 28px;height:28px;background:var(--sky);color:#0c0e12;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .flow b{display:block;margin-bottom:2px} .flow small{color:var(--mut);font-size:13.5px}
+  .warnbox{background:#2a1f14;border:1px solid var(--warn);border-radius:12px;padding:14px 16px;color:#fbeede;font-size:14.5px;margin:14px 0}
+  .okbox{background:#12261c;border:1px solid var(--ok);border-radius:12px;padding:14px 16px;color:#e3fbee;font-size:14.5px;margin:14px 0}
+
+  .cal{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;min-width:620px}
+  .cal th{text-align:left;color:var(--mut);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .cal td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .cal td:first-child{font-weight:700;white-space:nowrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .d-tree{background:var(--tree)} .d-skate{background:var(--skate)} .d-lawn{background:var(--lawn)}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  .links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  @media(max-width:680px){.links{grid-template-columns:1fr}}
+  .lk{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:block}
+  .lk b{display:block;color:var(--ink)} .lk small{color:var(--mut)}
+  .st{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-block}
+  .st.ok{background:rgba(77,219,154,.16);color:var(--ok);border:1px solid var(--ok)}
+  .st.no{background:rgba(255,92,114,.14);color:var(--bad);border:1px solid var(--bad)}
+  footer{padding:30px 0 0;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="kicker">Internal · Back office · Marketing command</span>
+  <h1>Marketing Hub</h1>
+  <p class="sub">One place to run marketing across all three brands — each with its own look, its own plan, its own calendar. Back office here; storefronts stay separate. See <a href="operating-architecture">operating-architecture</a>.</p>
+</header>
+
+<!-- BRANDS + THEMES -->
+<section>
+  <h2>01 · The three brands &amp; their themes</h2>
+  <div class="lead">Every page built for a brand uses that brand's theme — no exceptions.</div>
+  <p class="mut">These cards are each rendered in their own theme so the difference is visible at a glance. The tokens below are the house style — future pages, emails, and graphics for a brand pull from these.</p>
+  <div class="brands">
+
+    <div class="brand b-tree">
+      <div class="top"><span class="emoji">🌳</span><div><div class="themelabel">Rugged Field</div><div class="name">Second Nature Tree</div></div></div>
+      <div class="voice">Grounded, insured, competent. Safety-forward. The company that shows up and doesn't vanish.</div>
+      <div class="swatches"><span class="sw" style="background:#0e1210"></span><span class="sw" style="background:#161c19"></span><span class="sw" style="background:#5fbf6a"></span><span class="sw" style="background:#eef3ef"></span></div>
+      <div class="tokens"><b>bg</b> #0e1210 · <b>panel</b> #161c19<br><b>accent</b> #5fbf6a · <b>ink</b> #eef3ef<br><b>font</b> system sans · dark, earthy</div>
+      <a class="plan" href="marketing-plan">Tree marketing plan →</a>
+    </div>
+
+    <div class="brand b-skate">
+      <div class="top"><span class="emoji">🛹</span><div><div class="themelabel">Street Bold</div><div class="name">2nd Nature Skate</div></div></div>
+      <div class="voice">Raw, local, high-energy. Skater-owned since 2004. Community and clips over polish.</div>
+      <div class="swatches"><span class="sw" style="background:#0d0d10"></span><span class="sw" style="background:#16161c"></span><span class="sw" style="background:#ff4d6d"></span><span class="sw" style="background:#f2f2f5"></span></div>
+      <div class="tokens"><b>bg</b> #0d0d10 · <b>panel</b> #16161c<br><b>accent</b> #ff4d6d · <b>ink</b> #f2f2f5<br><b>font</b> bold sans · near-black, punchy</div>
+      <a class="plan" href="https://skateos.com/marketing-plan">Skate marketing plan →</a>
+    </div>
+
+    <div class="brand b-lawn">
+      <div class="top"><span class="emoji">🌱</span><div><div class="themelabel">Clean Tech</div><div class="name">Smart Lawn NY</div></div></div>
+      <div class="voice">Premium, calm, educational. Apple-clean. Tech that makes the chore disappear.</div>
+      <div class="swatches"><span class="sw" style="background:#ffffff"></span><span class="sw" style="background:#f5f5f7"></span><span class="sw" style="background:#6abb1e"></span><span class="sw" style="background:#1d1d1f"></span></div>
+      <div class="tokens"><b>bg</b> #ffffff · <b>surface</b> #f5f5f7<br><b>accent</b> #6abb1e · <b>ink</b> #1d1d1f<br><b>font</b> Inter · light, airy</div>
+      <a class="plan" href="https://smartlawnny.com/marketing-plan">Lawn marketing plan →</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ACCOUNTABILITY -->
+<section>
+  <h2>02 · The accountability system</h2>
+  <div class="lead">Posting happens when it's already done. So we post in advance.</div>
+  <p>The plans are worthless if nobody posts. The fix isn't willpower — it's <b>batching a month of content ahead of time</b>, so posting doesn't depend on anyone remembering on a Tuesday. Content that exists before the week starts goes out. Content that doesn't, doesn't.</p>
+  <div class="okbox"><b>This is safe — it's the opposite of May 6.</b> That was auto-generated email blasting customers with no human gate. This is a <b>human-approved batch</b> that publishes on a schedule. The approval just moves up front. Nothing hits a customer channel that you didn't sign off on in the batch.</div>
+  <div class="warnbox"><b>Don't over-build.</b> You don't need a custom posting engine. <b>Meta Business Suite is free</b> and schedules Instagram + Facebook ~75 days out, per account; TikTok schedules natively too. The system is: our calendar decides <em>what</em>, Business Suite holds <em>when</em>, separate account per brand keeps them from ever crossing.</div>
+  <h3>The monthly ritual (≈90 min, once a month, per brand)</h3>
+  <div class="flow">
+    <div class="step"><span class="n">1</span><span><b>Pull the month's content</b><small>Each brand's engine feeds it: skate = clips, tree = job before/afters + reviews, lawn = install/demo clips + the map tool. Brand-pure.</small></span></div>
+    <div class="step"><span class="n">2</span><span><b>Fill the calendar from the plan's rhythm</b><small>Each marketing plan already defines the weekly cadence. Drop the month's posts into the grid below (Claude can draft the captions).</small></span></div>
+    <div class="step"><span class="n">3</span><span><b>Approve the batch</b><small>One review pass. This is the gate — after this it's hands-off.</small></span></div>
+    <div class="step"><span class="n">4</span><span><b>Load into each brand's Business Suite</b><small>Schedule all 30 days into that brand's own IG/FB (+ TikTok). Separate logins = structurally can't cross brands.</small></span></div>
+  </div>
+</section>
+
+<!-- CALENDAR TEMPLATE -->
+<section>
+  <h2>03 · Weekly content calendar (the batch template)</h2>
+  <div class="lead">The skeleton you fill each month. Straight from each brand's plan.</div>
+  <div class="scroll">
+  <table class="cal">
+    <thead><tr><th>Day</th><th><span class="dot d-tree"></span>Tree — Rugged Field</th><th><span class="dot d-skate"></span>Skate — Street Bold</th><th><span class="dot d-lawn"></span>Lawn — Clean Tech</th></tr></thead>
+    <tbody>
+      <tr><td>Mon</td><td>Before/after — biggest job</td><td>Weekend clip reel</td><td>Install / mowing demo clip</td></tr>
+      <tr><td>Tue</td><td>—</td><td>Camp / lesson transformation</td><td>—</td></tr>
+      <tr><td>Wed</td><td>Fresh 5★ review + crew photo</td><td>Mid-week session, room alive</td><td>Education card (noise / turf / emissions)</td></tr>
+      <tr><td>Thu</td><td>—</td><td>Meet an instructor / owner</td><td>—</td></tr>
+      <tr><td>Fri</td><td>Seasonal tip / storm ready</td><td>Weekend hype + event</td><td>"Analyze My Lawn" push + fit example</td></tr>
+      <tr><td>Sat/Sun</td><td>—</td><td>Live stories + reshare tagged clips</td><td>—</td></tr>
+      <tr><td>Always-on</td><td>Auto post-job review text</td><td>Branded clip handed to every skater</td><td>Weekly: contact 5 landscapers/PMs</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="mut" style="margin-top:12px">Tree runs a lighter 3×/week (crew's slammed in-season); skate posts daily off the clip pipeline; lawn is education-forward 3×/week + the B2B outreach beat. Fill 4 of these weeks = a month batched.</p>
+</section>
+
+<!-- EVERYTHING -->
+<section style="border-bottom:none">
+  <h2>04 · Everything, in one place</h2>
+  <div class="lead">The marketing assets across all three brands.</div>
+  <div class="links">
+    <a class="lk" href="marketing-plan"><b>🌳 Tree marketing plan <span class="st ok">live</span></b><small>branchmanager.app/marketing-plan</small></a>
+    <a class="lk" href="https://skateos.com/marketing-plan"><b>🛹 Skate marketing plan <span class="st ok">live</span></b><small>skateos.com/marketing-plan</small></a>
+    <a class="lk" href="https://smartlawnny.com/marketing-plan"><b>🌱 Lawn marketing plan <span class="st ok">live</span></b><small>smartlawnny.com/marketing-plan</small></a>
+    <a class="lk" href="operating-architecture"><b>🧭 Operating architecture <span class="st ok">live</span></b><small>Three storefronts, one back office</small></a>
+    <a class="lk" style="cursor:default"><b>📅 Per-brand Business Suite scheduling <span class="st no">to set up</span></b><small>Batch a month into each brand's IG/FB — free, native</small></a>
+    <a class="lk" style="cursor:default"><b>🔍 Google Business Profile audit <span class="st no">needs your login</span></b><small>Claim / category / photos, per brand</small></a>
+  </div>
+</section>
+
+<footer>
+  <p><b>Themes are now house rules:</b> Tree = Rugged Field, Skate = Street Bold, Lawn = Clean Tech. Every future page, graphic, or email for a brand uses its tokens above. Internal ops pages (this hub, architecture) use the neutral back-office theme.</p>
+  <p style="margin-top:10px">Internal · branchmanager.app/marketing-hub · not indexed · drafted Jul 4 2026.</p>
+</footer>
+
+</div>
+</body>
+</html>
