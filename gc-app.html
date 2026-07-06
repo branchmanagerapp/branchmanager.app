@@ -132,20 +132,26 @@ function render(){
   } else {
     var openN=a.filter(function(x){return !x.done;}).length;
     v.innerHTML=
-      '<div class="stat">💵 <b>Do now:</b> Pay CADCO to unfreeze Ted Haber’s X430 · close Dennis Lucente · call Marissa (missed $5k).</div>'
-      +'<div class="stat">🟡 <b>Waiting:</b> Skate door (Brivo API) · SmartLawn Stripe key to verify payments · SmartLawn site repo write.</div>'
+      '<div class="stat">💵 <b>Do now:</b> Cloudflare purge (30s) → send Dennis his invoice · storm jobs w/ Braxton · quote Jon’s neighbor’s two trees.</div>'
+      +'<div class="stat">🟡 <b>This month:</b> GL insurance $3,279.54 (cancels 9/18) · CADCO call ($16.3k + unlocks NavimowFleet) · backup drive · Brivo + Composio logins.</div>'
       +'<h2 class="sec">Open tasks: '+openN+' <span class="badge" onclick="go(\'todo\')">view</span></h2>'
+      +'<h2 class="sec">Command</h2>'
+      +'<div class="linkc">'
+      +'<a href="https://branchmanager.app/plan-snt-8c31d7.html">📋 THE PLAN — start here</a>'
+      +'<a href="https://branchmanager.app/estimates-snt-4b8e2f.html">🧾 Estimate board</a>'
+      +'<a href="https://branchmanager.app/ops">⌗ Back Office (/ops) — maps, hub, toolbox</a>'
+      +'</div>'
       +'<h2 class="sec">Pages</h2>'
       +'<div class="linkc">'
+      +'<a href="https://branchmanager.app">🌳 Branch Manager app</a>'
+      +'<a href="https://branchmanager.app/fleet-budget-b1e454.html">🌳 Fleet &amp; budget</a>'
+      +'<a href="https://smartlawnny.com/admin/social.html">🌱 SmartLawn social scheduler</a>'
+      +'<a href="https://branchmanager.app/smartlawn-lucente-d4e91b.html">🌱 Dennis Lucente quote</a>'
       +'<a href="https://skateos.com/tutorial">🛹 SkateOS staff tutorial</a>'
       +'<a href="https://skateos.com/door">🛹 Door status</a>'
       +'<a href="https://skateos.com/j2">🛹 Inventory → Square</a>'
-      +'<a href="https://branchmanager.app/smartlawn-lucente-d4e91b.html">🌱 Dennis Lucente quote</a>'
-      +'<a href="https://branchmanager.app/smartlawn-redesign-preview.html">🌱 SmartLawn redesign preview</a>'
-      +'<a href="https://branchmanager.app">🌳 Branch Manager app</a>'
-      +'<a href="https://branchmanager.app/fleet-budget-b1e454.html">🌳 Fleet &amp; budget</a>'
-      +'<a href="https://branchmanager.app/cpa2025-1aefb4.html">💰 CPA portal <span class="d">· pw Fay25</span></a>'
-      +'<a href="https://branchmanager.app/todo-snt-7c21f4.html">✅ Encrypted to-do <span class="d">· pw snt2026</span></a>'
+      +'<a href="https://branchmanager.app/cpa2025-1aefb4.html">💰 CPA portal</a>'
+      +'<a href="https://branchmanager.app/todo-snt-7c21f4.html">✅ Encrypted to-do</a>'
       +'</div>';
   }
 }
