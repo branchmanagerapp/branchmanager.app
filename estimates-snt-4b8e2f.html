@@ -10,99 +10,75 @@
         --ok:#4ddb9a;--warn:#e79a5c;--bad:#ff5c72;--tree:#5fbf6a;--lawn:#6abb1e}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:840px;margin:0 auto;padding:0 18px 80px}
-  header{padding:44px 0 18px;border-bottom:1px solid var(--line)}
+  .wrap{max-width:900px;margin:0 auto;padding:0 18px 80px}
+  header{padding:40px 0 16px;border-bottom:1px solid var(--line)}
   .kicker{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--sky);font-weight:700}
-  h1{font-size:clamp(26px,5vw,38px);margin:6px 0 6px;font-weight:800;letter-spacing:-.02em}
-  .sub{color:var(--mut);font-size:14.5px}
-  h2{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;margin:30px 0 10px}
-  h2.t{color:var(--tree)} h2.l{color:var(--lawn)} h2.d{color:var(--mut)}
-  .it{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:0 12px 12px 0;padding:13px 15px;margin:9px 0}
-  .it.hot{border-left-color:var(--bad)} .it.owe{border-left-color:var(--warn)} .it.done{border-left-color:var(--ok);opacity:.6}
-  .it b{font-size:15px} .it small{display:block;color:var(--mut);margin-top:3px;font-size:13.5px;line-height:1.5}
-  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle}
-  .when{display:inline-block;font-size:10.5px;font-weight:800;font-family:ui-monospace,Menlo,monospace;padding:2px 8px;border-radius:5px;margin-right:8px;vertical-align:middle;background:#1b1f28;border:1px solid var(--line);color:var(--mut)}
-  .when.today{background:var(--bad);border-color:var(--bad);color:#fff}
-  .when.fresh{background:rgba(231,154,92,.15);border-color:var(--warn);color:var(--warn)}
-  .when.old{background:rgba(255,92,114,.12);border-color:var(--bad);color:var(--bad)}
-  .tag.hot{background:var(--bad);color:#fff} .tag.owe{background:var(--warn);color:#0c0e12} .tag.done{background:var(--ok);color:#0c0e12}
-  .age{color:var(--bad);font-weight:700}
-  footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
-  .printbtn{position:fixed;top:14px;right:16px;background:var(--sky);color:#0c0e12;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer;z-index:60}
-  @media print{
-    :root{--bg:#fff;--panel:#fff;--line:#ccc;--ink:#111;--mut:#555;--sky:#155e86;--ok:#2f7a3a;--warn:#9a6a1e;--bad:#a3273a;--tree:#2f7a3a;--lawn:#4a8a10}
-    body{background:#fff;color:#111;font-size:12.5px} .printbtn{display:none}
-    .it{break-inside:avoid;background:#fff;border-color:#ccc}
-    .when.today{background:#a3273a;border-color:#a3273a;color:#fff} .when{background:#fff}
-    a{color:#111;text-decoration:none} @page{margin:12mm}
-  }
+  h1{font-size:clamp(26px,5vw,36px);margin:6px 0 6px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:14px}
+  h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;margin:28px 0 4px;padding:8px 12px;border-radius:8px}
+  h2.send{background:rgba(255,92,114,.14);color:var(--bad)} h2.run{background:rgba(92,194,255,.12);color:var(--sky)} h2.done{background:rgba(77,219,154,.12);color:var(--ok)}
+  h3{font-size:13px;color:var(--sky);margin:16px 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .it{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:0 10px 10px 0;padding:11px 14px;margin:7px 0}
+  .it.hot{border-left-color:var(--bad)} .it.go{border-left-color:var(--sky)} .it.done{border-left-color:var(--ok);opacity:.62}
+  .it b{font-size:14.5px} .it .meta{color:var(--mut);font-size:12.5px;margin-top:2px}
+  .it .want{font-size:13px;margin-top:3px}
+  .q{display:inline-block;font-size:10px;font-weight:800;background:#1b1f28;border:1px solid var(--line);color:var(--sky);padding:1px 6px;border-radius:4px;margin-right:6px;font-family:ui-monospace,Menlo,monospace}
+  a{color:var(--sky)} .ph{color:var(--ink);font-weight:600;font-family:ui-monospace,Menlo,monospace}
+  .note{background:rgba(231,154,92,.1);border:1px solid var(--warn);border-radius:8px;padding:10px 13px;font-size:13px;color:#f6ddc4;margin:12px 0}
+  footer{margin-top:32px;color:var(--mut);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+  .printbtn{position:fixed;top:12px;right:14px;background:var(--sky);color:#0c0e12;border:none;font-weight:700;font-size:13px;padding:8px 15px;border-radius:980px;cursor:pointer;z-index:60}
+  @media print{:root{--bg:#fff;--panel:#fff;--line:#ccc;--ink:#111;--mut:#555;--sky:#155e86;--bad:#a3273a;--ok:#2f7a3a}
+    body{background:#fff;color:#111;font-size:12px}.printbtn{display:none}.it{break-inside:avoid;background:#fff}@page{margin:11mm}}
 </style>
 </head>
 <body>
 <button class="printbtn" onclick="window.print()">⎙ Print</button>
 <div class="wrap">
 <header>
-  <span class="kicker">Private · Unlisted · Bookmark this</span>
-  <h1>Estimate Board</h1>
-  <p class="sub">Every open estimate and quote across the businesses, mined from your texts (names verified via Address Book). Updated <b>Jul 5, 2026 evening</b>. This page is the living board — updates land here, not in chat.</p>
+  <span class="kicker">Private · Bookmark · Built for Doug + Catherine</span>
+  <h1>Estimate Board &amp; Run Sheet</h1>
+  <p class="sub">Every open estimate + lead, from photos / texts / Dialpad voicemails. Two parts: <b>send from BM today</b>, and the <b>estimate run</b> grouped by area for going out. Updated <b>Jul 6, 2026 PM</b> — all in Branch Manager as quotes #514–532.</p>
 </header>
 
-<h2 class="t">📤 TRIAGE — send these out, in this order</h2>
-<p style="color:var(--mut);font-size:13px;margin:0 0 10px"><b style="color:var(--ink)">Ordering rule:</b> fresh storm work first (storm quotes decay in ~48h), then money that's agreed, then aging quotes — with the age shown so old never masquerades as urgent.</p>
-<div class="it hot"><b><span class="when today">DRAFT #514 · Jul 5</span>Oswald Roche — INSURANCE-GRADE rebuild in BM — price &amp; send</b><small>Built in Branch Manager as quote #514: Silver Maple 29" DBH + Elm 40" DBH (both storm-compromised, hazard language, July 5 storm event cited) + a fully documented debris-remediation line (carrier signaling ~$500 — line written high-and-defensible, multiple loads noted). ALL PRICES TBD BY DOUG — draft won't send until priced. 26 N 2nd St · (516) 424-8896 · he called back 8:07pm = engaged.</small></div>
-<div class="it hot"><b><span class="when today">DRAFT #515 · Jul 5</span>Tanisha — (917) 921-8962 — 24 N 2nd St — price the two pines &amp; send</b><small>Phone CONFIRMED from your note photo ✓. Quote #515: ground debris = <b>$1,000</b> (set ✓) + Pine 33" DBH + Pine 29" DBH (TBD — note marks the 29" as "neighbor pine @ 24 N 2nd," worth clarifying whose tree when you price). Follow-up tracking is ON.</small></div>
-<div class="it owe"><b><span class="when today">SHELL #516 · Jul 5</span>Arlene Richie — (914) 912-5237 — large tree, Shrub Oak</b><small>3723 Sunnyside Road. Client + quote shell created in BM; Doug adds scope/details after site info. Waiting on Doug's specifics.</small></div>
-<div class="it"><b>🔁 Jobber entry — queued for morning</b><small>Jobber has no API; the moment Doug's Chrome connects (open Chrome + the Claude extension), Claude drives Jobber's UI and enters all three quotes there too. BM versions are the masters meanwhile.</small></div>
-<div class="it hot"><b><span class="when today">LIVE · Jul 6</span>Dennis Lucente — invoice READY: branchmanager.app/dennis-invoice-7c4a.html</b><small>4 units · $13,195.74 (or CM120 add-on) · verified live. Send right after today's remap at his properties — "both units confirmed running" + the link in one text.</small></div>
-<div class="it hot"><b><span class="when today">TODAY · Jul 5</span>Chris Viltaggio — mower receipt + RECEIPTS FOR ALL SmartLawn sales</b><small>Chris asked 2:53pm (insurance; his mom's the agent). Bigger truth: ZERO SmartLawn receipts have ever gone out. Unlock = paste the SmartLawn service_role key into _Credentials/smartlawn-keys.txt (cutover list #1, step 4) → Claude generates proper receipts for every sale, Chris first, + reconciles pending Stripe payments.</small></div>
-<div class="it hot"><b><span class="when fresh">5d · Jun 30</span>Jon Dico's neighbor — two big trees</b><small>Your plan: drop toward woods vs. bucket pieces. Jon has nudged once.</small></div>
-<div class="it hot"><b><span class="when old">38d · May 28</span>Liz — FINISH the estimate — 12 Barger Hill Rd, Putnam Valley</b><small>Address per Doug Jul 5 ("think Liz was 12 Barger Hill Rd PV"). [Likely] Elizabeth Murphy — Catherine was reworking her quote May 28 (leave chips + log wood, pair w/ Beacon/Cold Spring trip). Finish &amp; send, or hand to Catherine when she lands. ⚠️ DON'T CONFUSE with tomorrow's storm job at <b>8 Barger St, Cortlandt Manor</b> — two different addresses, two different jobs. And NOT Elizabeth Bynum (paid &amp; closed).</small></div>
+<h2 class="send">🔴 Send from Branch Manager today — storm quotes, photos matched</h2>
+<p class="note"><b>These 4 are built and photo-matched</b> (folders in Desktop/Storm Photos). In BM: open the quote → drag its photos onto the lines → price → send (email is ready; SMS from your business line 914-391-5233 once tested).</p>
+<div class="it hot"><b><span class="q">#514</span>Oswald Roche — 26 N 2nd St, Crompond</b><div class="meta"><span class="ph">(516) 424-8896</span> · 8 photos matched · called back = engaged</div><div class="want">Silver Maple 29" + Elm 40" (both storm-compromised) + heavy debris. Debris carrier only offering $500 → price it high &amp; defensible.</div></div>
+<div class="it hot"><b><span class="q">#515</span>Tanisha — 24 N 2nd St, Crompond</b><div class="meta"><span class="ph">(917) 921-8962</span> · 10 photos matched · debris priced $1,000</div><div class="want">Ground debris $1,000 ✓ + Pine 33" + Pine 29" (price the two pines).</div></div>
+<div class="it hot"><b><span class="q">#518</span>Steve Quinn — 144 Putnam Rd, Continental Village</b><div class="meta"><span class="ph">(914) 473-2015</span> · 8 photos matched</div><div class="want">Large multi-stem tree, storm-failed leader hung in canopy + debris. Confirm DBH on site.</div></div>
+<div class="it hot"><b><span class="q">#519</span>Dan Zlotkin — 2801 Sarles Dr, Yorktown</b><div class="meta"><span class="ph" style="color:var(--bad)">need phone</span> · 11 photos matched</div><div class="want">Storm-failed limb hung over rear fence + debris. Get his phone before sending.</div></div>
 
-<h2 class="t">🌳 Tree — scheduled &amp; hot</h2>
-<div class="it hot"><b>8 Barger St, Cortlandt Manor — CONFIRMED, tomorrow ~10am w/ Braxton</b><span class="tag hot">Jul 6</span><small>Start after camp check-in for Jon. Rain risk (you flagged possible rain-out → fallback: quote-running day). Harder than it looks: compromised back lead goes over the neighbor's fence. Austin standing by if needed.</small></div>
-<div class="it hot"><b>Braxton's New Paltz white pine — SOLD at $3k for your service</b><span class="tag hot">schedule bucket</span><small>Update Jul 5: Braxton used your estimator and closed it — $3,000 for your bucket work. No longer a quote; it's a scheduling item — pick the day to drive the bucket north.</small></div>
+<h2 class="run">🚗 Estimate run — go see these, grouped by area (for Catherine)</h2>
+<p class="note">Leads with an address but no scope yet — need eyes on the trees. Grouped so you can run a route. Each is quote #520–532 in BM (shells ready to fill on site).</p>
 
-<h2 class="t">🌳 Tree — quotes owed</h2>
-<div class="it owe"><b>Jon Dico's neighbor — two big trees</b><span class="tag owe">quote owed</span><small>Asked <span class="age">Jun 30</span>. Your plan: drop the big one toward the woods, or bucket-truck pieces. Jon has nudged once.</small></div>
-<div class="it owe"><b>Matt Green — Country Ln / Rt 9 downed tree</b><span class="tag owe">assess</span><small>Asked Jul 3. County won't touch it; Matt offered to mark the tree; he's traveling — call when on site.</small></div>
-<div class="it owe"><b>Braxton's New Paltz white pine</b><span class="tag owe">need photos</span><small>Sold; quote floor $2,500, your cut ≥$2,000 (homeowner hit the primary; rival quoted $10k+). Waiting on Braxton's photos — nudge him.</small></div>
-<div class="it owe"><b>Rocanbeau — prune</b><span class="tag owe">later</span><small>After the construction crew clears. Cleanup on the fence-fall was Jul 3.</small></div>
-<div class="it done"><b>Kevin O'Brien (Everything Outdoors) — small pine + little maple</b><span class="tag done">done</span><small>Closed Jul 5 (Doug: "Kevin done").</small></div>
+<h3>📍 Yorktown / Shrub Oak / Amawalk</h3>
+<div class="it go"><b><span class="q">#516</span>Arlene Richie — 3723 Sunnyside Rd, Shrub Oak</b><div class="meta"><span class="ph">(914) 912-5237</span></div><div class="want">Large tree — details to follow.</div></div>
+<div class="it go"><b><span class="q">#521</span>Alan Katz — Yorktown</b><div class="meta"><span class="ph">(845) 320-3100</span></div><div class="want">"Katz estimate" — real lead, get exact address.</div></div>
+<div class="it go"><b><span class="q">#529</span>Pat Brandt — Shrub Oak</b><div class="meta"><span class="ph">(914) 274-7453</span> · Dialpad Jul 6</div><div class="want">New tree lead — get address.</div></div>
+<div class="it go"><b><span class="q">#530</span>Michael Voigt — 11 Brandice Ave (Amawalk?)</b><div class="meta"><span class="ph">(914) 557-7892</span> · Dialpad May 28</div><div class="want">Tree work at the address.</div></div>
 
-<h2 class="l">🌱 SmartLawn — quotes owed</h2>
-<div class="it owe"><b>Dennis Lucente — INVOICE ONLY</b><span class="tag owe">send invoice</span><small>Quote conversation DONE (Jul 5, Doug). Remaining: send the invoice. Note: invoice LIVE at branchmanager.app/dennis-invoice-7c4a.html — 4 units, $13,195.74; send after today's remap. ⚠️ CM units route through CADCO — same knot as the $16.3k invoice.</small></div>
-<div class="it owe"><b>Jon Dico — mower for his own lawn</b><span class="tag owe">easy win</span><small>Asked Jul 4: "how much for the right size lawnmower to do my lawn?" Size it, quote it, keep the partner happy.</small></div>
-<div class="it done"><b>Chris Viltaggio — new unit for existing client</b><span class="tag done">done</span><small>Closed Jul 5 (Doug: "chris v done").</small></div>
+<h3>📍 Cortlandt / Crompond / Montrose</h3>
+<div class="it go"><b><span class="q">#532</span>Ricardo — 8 Barger St, Cortlandt Manor</b><div class="meta"><span class="ph">(914) 223-9067</span> · THE storm job you're doing w/ Braxton</div><div class="want">Confirmed job — homeowner contact captured.</div></div>
+<div class="it go"><b><span class="q">#520</span>Scott Manner — 3 Marissa Ct, Montrose</b><div class="meta"><span class="ph">(914) 737-8522</span> · called TWICE</div><div class="want">Persistent — tree work.</div></div>
 
-<h2 class="t">🌳 Phone leads — FRESH (Dialpad, found Jul 5 double-check)</h2>
-<div class="it done"><b><span class="when today">LOST · Jul 5</span>Tracy Anderman — (914) 420-0917 ✗</b><small>Called 8:53am; by evening she'd already found someone (Doug). The lesson is structural: same-day lead response or the job walks — this is what the Dialpad connection fixes.</small></div>
-<div class="it hot"><b><span class="when today">TONIGHT · 10:48pm</span>Unknown 914 — (914) 645-8937 — SCREEN FIRST</b><small>Called BM's line at 10:48pm (not in contacts). A call that late on a storm weekend = likely emergency work. Call back first thing.</small></div>
-<div class="it"><b><span class="when today">TONIGHT</span>Also called: Billy Waldman 10:20pm · unknown (845) 216-1995 at 4:24pm · Oswald Roche 8:07pm</b><small>Roche calling after the estimate = engaged. The 845 needs a screen.</small></div>
-<div class="it hot"><b><span class="when today">INVOICE · resolved Jul 5</span>Harry Wallen — job DONE → send the invoice</b><small>Doug confirmed: Harry Wallen (914) 275-7065, Mrs. Cleveland's "Mister Harry" call, and "Tonya/Tanya Garrison" were all the SAME job — it's complete. Only the invoice remains. (Three voicemails, one job — the consolidation caught it.)</small></div>
-<div class="it"><b>Also in Dialpad since Jun 29:</b><small>Marissa/CADCO chasing payment Jul 2 (on the plan) · "Spring Lake NJ" (848) 420-8712 asking about your agent — screen · Alex/Frost Jun 29 "you said you'd…" — screen. Weekly report: 32 missed calls again Jun 21–27.</small></div>
+<h3>📍 Peekskill / Putnam Valley / Continental Village</h3>
+<div class="it go"><b><span class="q">#528</span>Rob McCray — 418 Union Ave</b><div class="meta"><span class="ph">(347) 724-4338</span> · WARM — chasing you, called Thu/Fri</div><div class="want">Tree/ash evaluation. Confirm town (Peekskill/Croton).</div></div>
+<div class="it go"><b><span class="q">#517</span>Elizabeth (Liz) Murphy — 12 Barger Hill Rd, Putnam Valley</b><div class="meta"><span class="ph" style="color:var(--bad)">need phone</span> · worked w/ you before</div><div class="want">Finish Catherine's May 28 rework: leave chips + log wood, pair w/ Beacon/Cold Spring trip. ⚠️ NOT the 8 Barger St job.</div></div>
+<div class="it go"><b><span class="q">#523</span>Laura — Lake Peekskill</b><div class="meta"><span class="ph">(914) 552-7354</span></div><div class="want">Tree work — get exact address.</div></div>
 
-<h2 class="t">🌳 Phone leads — AGING (older voicemails; after the fresh work, or hand to Catherine)</h2>
-<p style="color:var(--mut);font-size:13px;margin:0 0 10px">These are 1–3 weeks old — worth calls, but they don't outrank today's storm money. Ages shown so nothing masquerades as urgent.</p>
-<div class="it owe"><b><span class="when old">24d/16d · Jun 11+19</span>Scott Manner — (914) 737-8522</b><small>3 Marissa Ct, Montrose. Called TWICE — most persistent of the old batch.</small></div>
-<div class="it owe"><b><span class="when old">~3wk · Jun lists</span>Allen Katz — (845) 320-3100</b><small>Yorktown — the "Katz estimate." Real lead.</small></div>
-<div class="it owe"><b><span class="when old">~2-3wk</span>Mike — (917) 295-5623</b><small>32 Moff Dr — return customer ("Doug &amp; Catherine came…") — easiest close of the batch.</small></div>
-<div class="it owe"><b><span class="when old">~1-2wk</span>Laura — (914) 552-7354</b><small>Lake Peekskill — followed up on her own.</small></div>
-<div class="it owe"><b><span class="when old">~2-3wk</span>Port Chester — (914) 253-1464</b><small>Asking for a quote.</small></div>
-<div class="it owe"><b><span class="when old">~2-3wk</span>Wood chips — (914) 218-7295</b><small>Wants chips/mulch — you have them.</small></div>
-<div class="it owe"><b><span class="when old">12d · Jun 23</span>(845) 265-3663 — persistent unknown</b><small>"Calling again" for Doug. Screen it.</small></div>
-<div class="it"><b>Also confirm handled (from Jun lists):</b><small>Crane multi-neighbor day (302/303/308/309 + 2 silver maples) · firewood $3,400 quote · Mr. Tree/Nick limb cleanup → invoice · Colby Moore (860-416-2557). ⚠️ Dialpad shows ~32 missed calls/wk — more leads exist than this board captures; connecting Dialpad is on the system plan.</small></div>
+<h3>📍 Other / need address</h3>
+<div class="it go"><b><span class="q">#525</span>Matt Green — 11 Country Lane, Philipstown</b><div class="meta"><span class="ph">(914) 325-1040</span></div><div class="want">Rt 9 downed tree — county won't touch (on Country Ln).</div></div>
+<div class="it go"><b><span class="q">#522</span>Mike Moff — 32 Moff Dr</b><div class="meta"><span class="ph">(917) 295-5623</span> · return customer</div><div class="want">"Doug &amp; Catherine came before" — get town.</div></div>
+<div class="it go"><b><span class="q">#526</span>Jon Dico's neighbor — two big trees</b><div class="meta">via Jon · <span class="ph">no phone</span></div><div class="want">Drop toward woods vs bucket pieces. Ask Jon for the address/contact.</div></div>
+<div class="it go"><b><span class="q">#524</span>Eric Roman</b><div class="meta"><span class="ph">(845) 987-0553</span> · hot climb/removal</div><div class="want">Get address.</div></div>
+<div class="it go"><b><span class="q">#527</span>Port Chester lead</b><div class="meta"><span class="ph">(914) 253-1464</span></div><div class="want">Asked for a quote — get name + address.</div></div>
+<div class="it go"><b><span class="q">#531</span>Unknown — "few trees on property"</b><div class="meta"><span class="ph">(845) 558-1683</span> · Dialpad May 27</div><div class="want">Call to identify name/address.</div></div>
 
-<h2 class="d">Also from today's texts (Jul 5) — not estimates, don't lose them</h2>
-<div class="it owe"><b>Nick Esposito (Brivo): "we need to get on a call"</b><small>9:35am — he's confused too. This call IS the door unblock. Take it.</small></div>
-<div class="it owe"><b>Jon: outside camera on the shop door — urgent to him</b><small>"Second time this has happened… ski mask" — he wants battery cams (two, swap batteries), no electrician needed. Cheap, keeps the partner sane.</small></div>
-<div class="it"><b>Dennis at 41 Park tomorrow — remap carefully</b><small>He's unhappy with the mapping (stepping stones / pool perimeter, "lazy mapping"). He said leave the unit on base until he's there. The fleet relationship rides on this remap being tight.</small></div>
-<div class="it"><b>Catherine lands tomorrow afternoon</b><small>Flight chaos but inbound. Estimates throughput returns with her — hand her Liz Murphy + the phone-leads list above.</small></div>
-<div class="it"><b>Armand wants Marc's fs-board clip from the park</b><small>Clip pipeline demand happening organically — the flywheel wants to spin.</small></div>
+<h2 class="done">✅ Recently closed — don't re-chase</h2>
+<div class="it done"><b>Dennis Lucente</b> — invoice ready ($13,195.74) at branchmanager.app/dennis-invoice-7c4a.html · send after remap</div>
+<div class="it done"><b>Chris Viltaggio</b> — mower sold; receipt drafted (in Gmail Drafts)</div>
+<div class="it done"><b>Harry Wallen</b> — job done → send invoice · <b>Kevin O'Brien</b> ✓ · <b>Kendra Parker</b> ($400) ✓ · <b>Hector Arroyo</b> ✓ · <b>Braxton's white pine</b> — sold $3k (your estimator)</div>
 
-<h2 class="d">Notes</h2>
-<div class="it"><b>Field photo → quote pipeline</b><small>Snap the job → Share → Save to Files → iCloud Drive → Desktop → Screenshots → text Claude "look at the photos." Quote drafted before you're back in the truck.</small></div>
-
-<footer>Unlisted hash URL — not linked from /ops or anywhere else, bookmark-only (same convention as the to-do dashboard). Sources: Messages (chat.db) Jun 14–Jul 5 + Address Book. Nothing here is fabricated; ages and quotes come from the texts.</footer>
+<footer>Unlisted, bookmark-only. Sources: Messages + 201 Dialpad voicemails + install/storm photos (GPS-matched). Every entry is a BM quote #514–532. Ages/prices from live data — nothing fabricated. Say "today sheet" or "morning recap" for the daily views.</footer>
 </div>
 </body>
 </html>
