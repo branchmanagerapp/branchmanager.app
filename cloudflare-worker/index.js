@@ -28,6 +28,13 @@ const BUST_PATHS = new Set([
 
 const ORIGIN = 'https://branchmanagerapp.github.io/branchmanager.app';
 
+// Cache epoch appended to every origin fetch so the Worker's internal fetch
+// cache is keyed by (path + epoch). Bumping this string forces a fresh origin
+// fetch for ALL paths — the ONLY way to evict a stale entry cached under the
+// github.io key (zone "Purge Everything" can't reach it; it's not our zone).
+// Bump when a bad/failed Pages deploy has poisoned a URL with a stuck 404.
+const CACHE_EPOCH = '20260704a';
+
 // Phase 2 — subdomain → tenant_id map. Adding a new tenant: register
 // {subdomain}.branchmanager.app DNS at Cloudflare, add a row here, seed
 // `tenants` row with matching slug. Worker stamps `X-Tenant-ID` header
@@ -61,6 +68,7 @@ function tenantForHost(hostname) {
 // the current CSP catches the common XSS injection attempts (no inline
 // eval, no untrusted scripts) without breaking the integrations.
 const SECURITY_HEADERS = {
+  'X-BM-Proxy-Rev': CACHE_EPOCH,
   'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -117,7 +125,8 @@ export default {
     }
 
     // ── Main BM domain (apex) or tenant subdomain ──
-    const target = ORIGIN + url.pathname + url.search;
+    const target = ORIGIN + url.pathname + url.search
+      + (url.search ? '&' : '?') + '__e=' + CACHE_EPOCH;
     const upstreamReq = new Request(target, request);
     upstreamReq.headers.set('Host', 'branchmanagerapp.github.io');
     if (tenantId) {
@@ -134,9 +143,16 @@ export default {
     // For SW + version metadata, tell Cloudflare's Worker fetch to skip its
     // internal cache. Without this, the Worker would serve a 4hr-old GH Pages
     // response even when the origin had the latest version.
+    // Jul 4 2026: never cache non-200s. A newly-pushed page 404s at the GH
+    // Pages edge for a brief window during deploy; without this the Worker's
+    // internal fetch cached that 404 and kept serving it long after the file
+    // went live (zone-level Purge Everything does NOT clear the Worker's own
+    // fetch cache — same reason /sw.js needed the bust below). Caching 200s
+    // for 600s (matches GH Pages max-age) keeps the perf win; 404/redirect/5xx
+    // are never cached, so transient origin misses can't stick.
     const fetchOpts = isCacheBust
       ? { redirect: 'manual', cf: { cacheTtl: 0, cacheEverything: false } }
-      : { redirect: 'manual' };
+      : { redirect: 'manual', cf: { cacheTtlByStatus: { '200-299': 600, '300-399': 0, '400-499': 0, '500-599': 0 } } };
 
     const upstream = await fetch(upstreamReq, fetchOpts);
 
