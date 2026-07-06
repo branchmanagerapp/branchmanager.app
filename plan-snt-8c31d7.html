@@ -30,9 +30,18 @@
   .breathe{background:#12261c;border:1px solid var(--ok);border-radius:14px;padding:15px 17px;color:#dff7e8;font-size:14.5px;margin:20px 0 0}
   footer{margin-top:38px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
   a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+  .printbtn{position:fixed;top:14px;right:16px;background:var(--sky);color:#0c0e12;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer;z-index:60}
+  @media print{
+    :root{--bg:#fff;--panel:#fff;--line:#ccc;--ink:#111;--mut:#555;--sky:#155e86;--ok:#2f7a3a;--warn:#9a6a1e;--bad:#a3273a;--tree:#2f7a3a;--lawn:#4a8a10;--skate:#a3273a}
+    body{background:#fff;color:#111;font-size:13px} .printbtn{display:none}
+    .one{border:2px solid #111;background:#fff} .breathe{background:#fff;border:1px solid #2f7a3a;color:#111}
+    .it,.card{break-inside:avoid;background:#fff;border-color:#ccc} header{padding-top:10px}
+    a{color:#111;text-decoration:none} @page{margin:12mm}
+  }
 </style>
 </head>
 <body>
+<button class="printbtn" onclick="window.print()">⎙ Print</button>
 <div class="wrap">
 
 <header>
@@ -61,6 +70,7 @@
 <div class="it"><span class="n">💰</span><span><b>GL audit — PAID ✅ — one follow-up left</b><span class="pill">confirm reinstatement</span><small>You paid the $3,279.54 on 6/22 and told Maria Trombetta. The follow-up: get Maria (mtrombetta@toofer.com) to confirm in writing that Atlantic pulled the policy out of cancellation/collections. Email draft is in your peekskilltree Gmail drafts — just hit send.</small></span></div>
 <div class="it"><span class="n">📞</span><span><b>The CADCO call — $22,878 past due total</b><small>($16,303.55 of it from March.) One call, two payoffs: settle terms AND unlock NavimowFleet for Dennis's mowers. A reply to Marissa is already drafted in your peekskilltree Gmail — send or call (908) 213-0303.</small></span></div>
 <div class="it"><span class="n">💾</span><span><b>External drive backup</b><small>~133 GB of job videos + kids' footage exists ONLY on iCloud. Buy/plug in a drive; Claude does the rest in 10 minutes.</small></span></div>
+<div class="it"><span class="n">💚</span><span><b>Find a therapist on the Cigna network — for you</b><small>Your plan makes this easy: Cigna OAP In-Network (Group 00633176), <b>no referral needed</b> — you can book directly. Pre-filtered lists: <a href="https://www.psychologytoday.com/us/therapists/ny/westchester-county?category=cigna">Psychology Today — Westchester, Cigna filter</a> · <a href="https://zencare.co/us/new-york/westchester-county/therapists/insurance/cigna">Zencare — Cigna, Westchester</a>. Pick two, message both (they expect it), take whoever answers first — telehealth counts and fits the schedule. This item outranks every business item on this page.</small></span></div>
 <div class="it"><span class="n">🔑</span><span><b>Two 5-minute logins, whenever</b><small>(a) Brivo: access.brivo.com → create API user "skateos-api" w/ 2FA OFF → paste into _Credentials/brivo-keys.txt → door goes live. (b) Email: Gmail (peekskilltree) → Settings → Accounts and Import → "Check mail from other accounts" → add doug@2ntr.com. (Composio failed twice Jul 4 — abandoned; this is the no-third-party fix.)</small></span></div>
 </div>
 
@@ -88,7 +98,7 @@
   <b>The honest read:</b> the businesses are okay. Estimates are getting answered (3 closed this weekend), the storm work pays, the systems now remember instead of you. The list above looks long but your part this week is <b>one purge, one invoice, two jobs, one text, one form</b>. Everything else is delegated or parked. That's the whole job.
 </div>
 
-<footer>Unlisted, bookmark-only — same convention as the estimate board. The three bookmarks that run everything: <b>this page</b> (the plan) · <a href="estimates-snt-4b8e2f.html">estimate board</a> (customers) · <a href="ops">/ops</a> (tools &amp; maps). When priorities shift, this page gets updated — not a new one.</footer>
+<footer>Unlisted, bookmark-only — same convention as the estimate board. The bookmarks that run everything: <b>this page</b> (the plan) · <a href="today-snt-9d4b1e.html">today's one-pager (printable)</a> · <a href="estimates-snt-4b8e2f.html">estimate board</a> · <a href="ops">/ops</a>. When priorities shift, this page gets updated — not a new one.</footer>
 
 </div>
 </body>

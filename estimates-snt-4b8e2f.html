@@ -28,9 +28,18 @@
   .tag.hot{background:var(--bad);color:#fff} .tag.owe{background:var(--warn);color:#0c0e12} .tag.done{background:var(--ok);color:#0c0e12}
   .age{color:var(--bad);font-weight:700}
   footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  .printbtn{position:fixed;top:14px;right:16px;background:var(--sky);color:#0c0e12;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer;z-index:60}
+  @media print{
+    :root{--bg:#fff;--panel:#fff;--line:#ccc;--ink:#111;--mut:#555;--sky:#155e86;--ok:#2f7a3a;--warn:#9a6a1e;--bad:#a3273a;--tree:#2f7a3a;--lawn:#4a8a10}
+    body{background:#fff;color:#111;font-size:12.5px} .printbtn{display:none}
+    .it{break-inside:avoid;background:#fff;border-color:#ccc}
+    .when.today{background:#a3273a;border-color:#a3273a;color:#fff} .when{background:#fff}
+    a{color:#111;text-decoration:none} @page{margin:12mm}
+  }
 </style>
 </head>
 <body>
+<button class="printbtn" onclick="window.print()">⎙ Print</button>
 <div class="wrap">
 <header>
   <span class="kicker">Private · Unlisted · Bookmark this</span>
