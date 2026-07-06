@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Estimate Board</title>
+<style>
+  :root{--bg:#0c0e12;--panel:#14171e;--line:#282e3a;--ink:#eef1f6;--mut:#98a2b3;--sky:#5cc2ff;
+        --ok:#4ddb9a;--warn:#e79a5c;--bad:#ff5c72;--tree:#5fbf6a;--lawn:#6abb1e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:840px;margin:0 auto;padding:0 18px 80px}
+  header{padding:44px 0 18px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--sky);font-weight:700}
+  h1{font-size:clamp(26px,5vw,38px);margin:6px 0 6px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:14.5px}
+  h2{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;margin:30px 0 10px}
+  h2.t{color:var(--tree)} h2.l{color:var(--lawn)} h2.d{color:var(--mut)}
+  .it{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:0 12px 12px 0;padding:13px 15px;margin:9px 0}
+  .it.hot{border-left-color:var(--bad)} .it.owe{border-left-color:var(--warn)} .it.done{border-left-color:var(--ok);opacity:.6}
+  .it b{font-size:15px} .it small{display:block;color:var(--mut);margin-top:3px;font-size:13.5px;line-height:1.5}
+  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .tag.hot{background:var(--bad);color:#fff} .tag.owe{background:var(--warn);color:#0c0e12} .tag.done{background:var(--ok);color:#0c0e12}
+  .age{color:var(--bad);font-weight:700}
+  footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="kicker">Private · Unlisted · Bookmark this</span>
+  <h1>Estimate Board</h1>
+  <p class="sub">Every open estimate and quote across the businesses, mined from your texts (names verified via Address Book). Updated <b>Jul 5, 2026 evening</b>. This page is the living board — updates land here, not in chat.</p>
+</header>
+
+<h2 class="t">🌳 Tree — hot (storm weekend)</h2>
+<div class="it hot"><b>Barger St, Yorktown — storm call</b><span class="tag hot">confirmed</span><small>Confirmed Jul 5 — "not that big of a job." You went out on it.</small></div>
+<div class="it hot"><b>Second storm call — tree off house</b><span class="tag hot">awaiting OK</span><small>Waiting on the homeowner's approval as of Jul 5.</small></div>
+<div class="it hot"><b>Tomorrow's booked job (priced, client responded)</b><span class="tag hot">scheduled</span><small>Doing it Jul 6. Braxton said he's free to help — plus the couple-hour add-on (cherry-tree climb + fallen atlas cleanup).</small></div>
+
+<h2 class="t">🌳 Tree — quotes owed</h2>
+<div class="it owe"><b>Jon Dico's neighbor — two big trees</b><span class="tag owe">quote owed</span><small>Asked <span class="age">Jun 30</span>. Your plan: drop the big one toward the woods, or bucket-truck pieces. Jon has nudged once.</small></div>
+<div class="it owe"><b>Matt Green — Country Ln / Rt 9 downed tree</b><span class="tag owe">assess</span><small>Asked Jul 3. County won't touch it; Matt offered to mark the tree; he's traveling — call when on site.</small></div>
+<div class="it owe"><b>Braxton's New Paltz white pine</b><span class="tag owe">need photos</span><small>Sold; quote floor $2,500, your cut ≥$2,000 (homeowner hit the primary; rival quoted $10k+). Waiting on Braxton's photos — nudge him.</small></div>
+<div class="it owe"><b>Rocanbeau — prune</b><span class="tag owe">later</span><small>After the construction crew clears. Cleanup on the fence-fall was Jul 3.</small></div>
+<div class="it done"><b>Kevin O'Brien (Everything Outdoors) — small pine + little maple</b><span class="tag done">done</span><small>Closed Jul 5 (Doug: "Kevin done").</small></div>
+
+<h2 class="l">🌱 SmartLawn — quotes owed</h2>
+<div class="it owe"><b>Dennis Lucente — fleet quote (the big one)</b><span class="tag owe">top priority</span><small>Asked Jul 2, followed up twice: best price incl. setup + training on <b>1× X430, 2× X450, 1× CM120</b>, plus a price on the <b>CM240</b> "just in case." Also asked <b>runtime per charge</b> (430 / 450 / C120 / C240) — spec pull in progress so nothing gets invented. ⚠️ CM units route through CADCO — same knot as the $16.3k invoice.</small></div>
+<div class="it owe"><b>Jon Dico — mower for his own lawn</b><span class="tag owe">easy win</span><small>Asked Jul 4: "how much for the right size lawnmower to do my lawn?" Size it, quote it, keep the partner happy.</small></div>
+<div class="it owe"><b>Chris Viltaggio — new unit for existing client</b><span class="tag owe">quote owed</span><small>Asked <span class="age">Jun 26</span> — "want to work out a price on a new one too?" Warmest kind of buyer: already owns one.</small></div>
+
+<h2 class="d">Notes</h2>
+<div class="it"><b>Field photo → quote pipeline</b><small>Snap the job → Share → Save to Files → iCloud Drive → Desktop → Screenshots → text Claude "look at the photos." Quote drafted before you're back in the truck.</small></div>
+
+<footer>Unlisted hash URL — not linked from /ops or anywhere else, bookmark-only (same convention as the to-do dashboard). Sources: Messages (chat.db) Jun 14–Jul 5 + Address Book. Nothing here is fabricated; ages and quotes come from the texts.</footer>
+</div>
+</body>
+</html>
