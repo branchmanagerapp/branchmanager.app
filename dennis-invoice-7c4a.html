@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Dennis Lucente — Invoice &amp; Payment · Smart Lawn</title>
+<style>
+  :root{--ink:#1d1d1f;--grey:#f5f5f7;--mut:#86868b;--green:#6abb1e;--greend:#4a8a10;--line:#e5e5ea;--gold:#b8860b;--red:#c0392b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--grey);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+  .sheet{background:#fff;border-radius:22px;padding:30px 30px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:22px}
+  .sec-tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);margin-bottom:14px}
+  /* header */
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .brand .logo{font-size:24px;font-weight:800;letter-spacing:-.4px}
+  .brand .logo span{color:var(--green)}
+  .brand .sub{color:var(--mut);font-size:12.5px;margin-top:3px}
+  .invmeta{text-align:right}
+  .invmeta .big{font-size:24px;font-weight:800;letter-spacing:-.3px}
+  .invmeta div{font-size:12.5px;color:var(--mut);margin-top:2px}
+  .invmeta b{color:var(--ink)}
+  .parties{display:flex;gap:14px;margin:24px 0 6px;flex-wrap:wrap}
+  .party{flex:1;min-width:230px;background:var(--grey);border-radius:16px;padding:15px 17px}
+  .party .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--greend);margin-bottom:6px}
+  .party .nm{font-weight:800;font-size:15px}
+  .party div{font-size:12.5px;color:#3a3a3c}
+  /* invoice table */
+  table.items{width:100%;border-collapse:collapse;margin-top:16px}
+  table.items thead th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);text-align:left;padding:8px 8px;border-bottom:2px solid var(--ink)}
+  table.items thead th.r,table.items td.r{text-align:right}
+  table.items tbody td{padding:14px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .item-nm{font-weight:800;font-size:14.5px}
+  .item-fit{color:var(--greend);font-size:12px;font-weight:600;margin-top:1px}
+  .item-detail{color:var(--mut);font-size:12px;margin-top:5px;line-height:1.55}
+  .retail{color:var(--mut);text-decoration:line-through;font-size:12px;display:block}
+  .yours{font-weight:800;font-size:14.5px}
+  .totals{margin-top:8px;display:flex;justify-content:flex-end}
+  .totals table{width:340px}
+  .totals td{padding:7px 8px;font-size:14px}
+  .totals tr.sub td{border-top:1px solid var(--line)}
+  .totals tr.grand td{border-top:2px solid var(--ink);font-size:19px;font-weight:800;padding-top:11px}
+  .totals .r{text-align:right}
+  .save{color:var(--greend);font-weight:700;font-size:12.5px}
+  #taxRow td{transition:color .2s}
+  .tax-waived{color:var(--green);font-weight:700}
+  .waivedbadge{display:none;align-items:center;gap:7px;background:#eef7e6;color:var(--greend);font-weight:700;font-size:12.5px;border-radius:12px;padding:9px 13px;margin-top:12px}
+  .waivedbadge.show{display:flex}
+  /* ACH panel */
+  .ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .ach-cell{background:var(--grey);border-radius:14px;padding:13px 15px}
+  .ach-cell.full{grid-column:1/-1}
+  .ach-cell .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);font-weight:700}
+  .ach-cell .v{font-size:16px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .copy{font-size:11px;font-weight:700;color:var(--greend);background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px 9px;cursor:pointer}
+  .copy:active{transform:scale(.96)}
+  .ach-note{font-size:12.5px;color:#3a3a3c;line-height:1.6;margin-top:14px;background:#eef7e6;border-radius:14px;padding:13px 15px}
+  .ach-note b{color:var(--ink)}
+  .ach-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+  .ach-step{display:flex;gap:13px;align-items:flex-start;font-size:13.5px;color:#3a3a3c;line-height:1.55}
+  .ach-step b{color:var(--ink)}
+  .ach-step .n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .fieldflag{color:var(--red);font-weight:700;font-size:11.5px}
+  /* ST-120 */
+  .st-intro{font-size:13.5px;color:#3a3a3c;line-height:1.6;margin-bottom:16px}
+  .st-intro b{color:var(--ink)}
+  .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .fld{flex:1;min-width:200px}
+  .fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:5px}
+  .fld input,.fld select{width:100%;font-family:inherit;font-size:14.5px;padding:11px 13px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+  .fld input:focus,.fld select:focus{outline:none;border-color:var(--green)}
+  .fld .req{color:var(--red)}
+  .cert-body{background:var(--grey);border-radius:16px;padding:16px 18px;font-size:13px;line-height:1.65;color:#3a3a3c;margin:6px 0 16px}
+  .cert-body b{color:var(--ink)}
+  .radio-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .radio-opt{flex:1;min-width:200px;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;font-size:13.5px}
+  .radio-opt.on{border-color:var(--green);background:#f4fbee}
+  .radio-opt input{margin-right:8px}
+  .radio-opt b{display:block;font-size:14px;margin-bottom:2px}
+  .affirm{display:flex;gap:11px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;cursor:pointer}
+  .affirm input{margin-top:3px;width:18px;height:18px;flex-shrink:0}
+  .affirm span{font-size:12.5px;color:#3a3a3c;line-height:1.55}
+  .sig-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .sig-box .sig-input{font-family:'Snell Roundhand','Brush Script MT',cursive;font-size:26px;padding:8px 13px;height:52px}
+  .btn{font-family:inherit;font-weight:700;font-size:15px;border:none;border-radius:980px;padding:14px 26px;cursor:pointer}
+  .btn-green{background:var(--green);color:#fff}
+  .btn-green:disabled{background:#c8e3ac;cursor:not-allowed}
+  .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .st-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .done-panel{display:none;background:#eef7e6;border-radius:16px;padding:20px;margin-top:16px}
+  .done-panel.show{display:block}
+  .done-panel .chk{font-size:15px;font-weight:800;color:var(--greend);display:flex;align-items:center;gap:9px}
+  .done-panel p{font-size:13px;color:#3a5a48;margin-top:8px;line-height:1.6}
+  .foot{text-align:center;color:var(--mut);font-size:12px;margin-top:8px}
+  @media (max-width:560px){.ach-grid{grid-template-columns:1fr}.sheet{padding:22px 18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ INVOICE ============ -->
+  <div class="sheet" id="invoiceSheet">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">Smart<span>Lawn</span> NY</div>
+        <div class="sub">Second Nature Tree LLC dba Smart Lawn</div>
+        <div class="sub">smartlawnny@gmail.com · (914) 647-7276 · smartlawnny.com</div>
+      </div>
+      <div class="invmeta">
+        <div class="big">Invoice</div>
+        <div>Invoice # <b>INV-20260704-01</b></div>
+        <div>Date <b>July 4, 2026</b></div>
+        <div>Terms <b>Due upon receipt</b></div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div class="party">
+        <div class="lbl">Bill to</div>
+        <div class="nm">Lucente Landscaping — Dennis Lucente</div>
+        <div>1 Askins Pl, New Rochelle, NY 10801</div>
+        <div>(914) 337-6111 · info@lucentelandscaping.com</div>
+      </div>
+      <div class="party">
+        <div class="lbl">Delivered &amp; installed</div>
+        <div class="nm">July 3, 2026 — first 2 units installed &amp; mowing · 2 more on the way</div>
+        <div>Both units activated, connected &amp; mowing.</div>
+        <div>Dealer install, setup &amp; crew training included.</div>
+      </div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr><th>Item</th><th class="r">Retail</th><th class="r">Qty</th><th class="r">Your price</th><th class="r">Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="item-nm">Navimow CM240 (CM240M1)</div>
+            <div class="item-fit">17″ wide cut · commercial · up to 6 acres</div>
+            <div class="item-detail">Serial <b>22HBE2551Y0125</b> · Site: <b>Heathcote property</b><br>Activated 07/03/2026 · Factory warranty through 07/03/2028</div>
+          </td>
+          <td class="r"><span class="retail">$6,999</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$6,299</span></td>
+          <td class="r"><span class="yours">$6,299.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Navimow X450</div>
+            <div class="item-fit">17″ wide cut · large residential / small commercial · up to 1.5 acres</div>
+            <div class="item-detail">Serial <b>22FBD2611Y0029</b> · Site: <b>park property</b><br>Activated 07/03/2026 · Factory warranty through 07/03/2029</div>
+          </td>
+          <td class="r"><span class="retail">$2,999</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$2,539</span></td>
+          <td class="r"><span class="yours">$2,539.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Navimow X450 — second unit</div>
+            <div class="item-fit">17″ wide cut · large residential / small commercial · up to 1.5 acres</div>
+            <div class="item-detail">Serial added at delivery · Site: <b>per Dennis</b> · Factory warranty from activation</div>
+          </td>
+          <td class="r"><span class="retail">$2,999</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$2,539</span></td>
+          <td class="r"><span class="yours">$2,539.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Navimow i105E</div>
+            <div class="item-fit">Compact · up to 5,500 sq ft — small/tight lawns</div>
+            <div class="item-detail">Serial added at delivery · Factory warranty from activation</div>
+          </td>
+          <td class="r"><span class="retail">$799</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$799</span></td>
+          <td class="r"><span class="yours">$799.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Dealer installation, setup &amp; crew training — all units</div>
+            <div class="item-detail">On-site install at each property, RTK setup, app onboarding &amp; crew walkthrough.</div>
+          </td>
+          <td class="r"></td>
+          <td class="r">4</td>
+          <td class="r"><span class="yours" style="color:var(--greend)">Included</span></td>
+          <td class="r"><span class="yours" style="color:var(--greend)">$0.00</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <table>
+        <tr class="sub"><td>Subtotal</td><td class="r"><b>$12,176.00</b></td></tr>
+        <tr><td colspan="2" class="save">You save $1,620 vs retail — plus $0 install on every unit.</td></tr>
+        <tr id="taxRow"><td id="taxLabel">NY sales tax (8.375%)</td><td class="r" id="taxAmt">$1,019.74</td></tr>
+        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$13,195.74</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-top:16px;border:1.5px dashed var(--line);border-radius:12px;padding:14px 16px">
+      <div style="font-weight:800;font-size:14px;margin-bottom:4px">➕ Optional add-on — Navimow CM120 (CM120M1)</div>
+      <div style="font-size:13px;color:#666;line-height:1.55">AWD commercial · up to 3 acres · retail <b>$5,499</b> — <b>partner price on request</b>. Not included in this invoice's total; text Doug at (914) 647-7276 to add it and we'll deliver with the next units.</div>
+    </div>
+  </div>
+
+  <!-- ============ ACH PAYMENT ============ -->
+  <div class="sheet">
+    <div class="sec-tag">Pay by bank transfer (ACH) — no fees</div>
+    <div class="ach-steps">
+      <div class="ach-step"><div class="n">1</div><div><b>Tap “Send me the secure ACH link.”</b> We'll email you a private bank-transfer link for this invoice.</div></div>
+      <div class="ach-step"><div class="n">2</div><div><b>Choose your bank &amp; confirm.</b> You pay straight from your business checking — <b>$0 fee, no card surcharge.</b></div></div>
+      <div class="ach-step"><div class="n">3</div><div><b>Done.</b> Funds clear in 1–3 business days. You'll get a receipt automatically.</div></div>
+    </div>
+    <button class="btn btn-green" id="achBtn" style="margin-top:6px">Send me the secure ACH link →</button>
+    <div class="ach-note">
+      Bank transfer keeps <b>100% of your payment fee-free</b> — no 3% card charge. Prefer a paper check? Make it payable to <b>Second Nature Tree LLC dba Smart Lawn</b> and we'll pick it up. Questions: text <b>(914) 647-7276</b>. <span style='color:#86868b'>(Registered NY resale vendor re-billing these units to your clients? Ask about a resale certificate for future orders.)</span>
+    </div>
+  </div>
+
+  <div class="foot">Smart Lawn NY · Partner pricing per your July quote · Thank you, Dennis.</div>
+</div>
+
+<script>
+  var ACH_LINK = null;
+  document.getElementById('achBtn').addEventListener('click',function(){
+    if(ACH_LINK){ window.location.href=ACH_LINK; return; }
+    var subj=encodeURIComponent('Send me the secure ACH link — Invoice INV-20260704-01 (Lucente)');
+    var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoice INV-20260704-01. Thanks, Dennis.');
+    window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
+  });
+</script>
+</body>
+</html>
