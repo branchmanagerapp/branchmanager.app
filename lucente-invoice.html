@@ -124,7 +124,7 @@
       </div>
       <div class="party">
         <div class="lbl">Delivered &amp; installed</div>
-        <div class="nm">July 3, 2026 — 2 units, on site</div>
+        <div class="nm">July 3, 2026 — first 2 units installed &amp; mowing · 2 more on the way</div>
         <div>Both units activated, connected &amp; mowing.</div>
         <div>Dealer install, setup &amp; crew training included.</div>
       </div>
@@ -159,11 +159,33 @@
         </tr>
         <tr>
           <td>
-            <div class="item-nm">Dealer installation, setup &amp; crew training — 2 units</div>
-            <div class="item-detail">On-site install at both properties, RTK setup, app onboarding &amp; crew walkthrough.</div>
+            <div class="item-nm">Navimow X450 — second unit</div>
+            <div class="item-fit">17″ wide cut · large residential / small commercial · up to 1.5 acres</div>
+            <div class="item-detail">Serial added at delivery · Site: <b>per Dennis</b> · Factory warranty from activation</div>
+          </td>
+          <td class="r"><span class="retail">$2,999</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$2,539</span></td>
+          <td class="r"><span class="yours">$2,539.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Navimow i105E</div>
+            <div class="item-fit">Compact · up to 5,500 sq ft — small/tight lawns</div>
+            <div class="item-detail">Serial added at delivery · Factory warranty from activation</div>
+          </td>
+          <td class="r"><span class="retail">$799</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$799</span></td>
+          <td class="r"><span class="yours">$799.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Dealer installation, setup &amp; crew training — all units</div>
+            <div class="item-detail">On-site install at each property, RTK setup, app onboarding &amp; crew walkthrough.</div>
           </td>
           <td class="r"></td>
-          <td class="r">2</td>
+          <td class="r">4</td>
           <td class="r"><span class="yours" style="color:var(--greend)">Included</span></td>
           <td class="r"><span class="yours" style="color:var(--greend)">$0.00</span></td>
         </tr>
@@ -172,13 +194,18 @@
 
     <div class="totals">
       <table>
-        <tr class="sub"><td>Subtotal</td><td class="r"><b>$8,838.00</b></td></tr>
-        <tr><td colspan="2" class="save">You save $1,160 vs retail — plus $0 install.</td></tr>
-        <tr id="taxRow"><td id="taxLabel">NY sales tax (8.375%)</td><td class="r" id="taxAmt">$740.18</td></tr>
-        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$9,578.18</td></tr>
+        <tr class="sub"><td>Subtotal</td><td class="r"><b>$12,176.00</b></td></tr>
+        <tr><td colspan="2" class="save">You save $1,620 vs retail — plus $0 install on every unit.</td></tr>
+        <tr id="taxRow"><td id="taxLabel">NY sales tax (8.375%)</td><td class="r" id="taxAmt">$1,019.74</td></tr>
+        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$13,195.74</td></tr>
       </table>
     </div>
-    <div class="waivedbadge" id="waivedBadge">✓ Resale certificate on file — sales tax waived. New total $8,838.00.</div>
+    <div class="waivedbadge" id="waivedBadge">✓ Resale certificate on file — sales tax waived. New total $12,176.00.</div>
+
+    <div style="margin-top:16px;border:1.5px dashed var(--line);border-radius:12px;padding:14px 16px">
+      <div style="font-weight:800;font-size:14px;margin-bottom:4px">➕ Optional add-on — Navimow CM120 (CM120M1)</div>
+      <div style="font-size:13px;color:#666;line-height:1.55">AWD commercial · up to 3 acres · retail <b>$5,499</b> — <b>partner price on request</b>. Not included in this invoice's total; text Doug at (914) 647-7276 to add it and we'll deliver with the next units.</div>
+    </div>
   </div>
 
   <!-- ============ ACH PAYMENT ============ -->
@@ -199,7 +226,7 @@
   <div class="sheet">
     <div class="sec-tag">NY ST-120 Resale Certificate — waive the sales tax</div>
     <div class="st-intro">
-      Buying these units to <b>resell or re-deploy to your own clients</b>? Complete New York Form <b>ST-120</b> below and your <b>sales tax drops to $0</b> — the total becomes <b>$8,838.00</b>. This is a self-certification: by signing, you certify you're a registered NY sales-tax vendor purchasing for resale. Takes 30 seconds, fully digital — no printing.
+      Buying these units to <b>resell or re-deploy to your own clients</b>? Complete New York Form <b>ST-120</b> below and your <b>sales tax drops to $0</b> — the total becomes <b>$12,176.00</b>. This is a self-certification: by signing, you certify you're a registered NY sales-tax vendor purchasing for resale. Takes 30 seconds, fully digital — no printing.
     </div>
 
     <form id="st120">
@@ -281,7 +308,7 @@
   function waive(){
     document.getElementById('taxLabel').innerHTML='NY sales tax <span class="tax-waived">— waived (ST-120 on file)</span>';
     document.getElementById('taxAmt').innerHTML='<span class="tax-waived">$0.00</span>';
-    document.getElementById('grandTotal').textContent='$8,838.00';
+    document.getElementById('grandTotal').textContent='$12,176.00';
     document.getElementById('waivedBadge').classList.add('show');
   }
 
@@ -305,6 +332,8 @@
       'Property purchased for resale: Navimow robotic mowing equipment',
       '  - Navimow CM240 (CM240M1), SN 22HBE2551Y0125',
       '  - Navimow X450, SN 22FBD2611Y0029',
+      '  - Navimow X450 (second unit, serial at delivery)',
+      '  - Navimow i105E (serial at delivery)',
       '',
       'Certification: Purchaser certifies it is a registered NY sales-tax vendor',
       'purchasing the above for resale/rental/lease in its present form. Willfully',
@@ -322,7 +351,7 @@
     signBtn.disabled=true;
     var cert=buildCert();
     var dp=document.getElementById('donePanel'); dp.classList.add('show');
-    document.getElementById('doneMsg').innerHTML='Your sales tax has been waived — new total <b>$8,838.00</b>. A copy of your completed ST-120 is ready to send to Smart Lawn for our records.';
+    document.getElementById('doneMsg').innerHTML='Your sales tax has been waived — new total <b>$12,176.00</b>. A copy of your completed ST-120 is ready to send to Smart Lawn for our records.';
     // open a prefilled email so the signed cert reaches Smart Lawn
     var subj=encodeURIComponent('Signed ST-120 Resale Certificate — Lucente (INV-20260704-01)');
     var body=encodeURIComponent(cert+'\n\n(Completed digitally on the Smart Lawn invoice page.)');
