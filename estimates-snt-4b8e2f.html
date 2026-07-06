@@ -21,6 +21,10 @@
   .it.hot{border-left-color:var(--bad)} .it.owe{border-left-color:var(--warn)} .it.done{border-left-color:var(--ok);opacity:.6}
   .it b{font-size:15px} .it small{display:block;color:var(--mut);margin-top:3px;font-size:13.5px;line-height:1.5}
   .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .when{display:inline-block;font-size:10.5px;font-weight:800;font-family:ui-monospace,Menlo,monospace;padding:2px 8px;border-radius:5px;margin-right:8px;vertical-align:middle;background:#1b1f28;border:1px solid var(--line);color:var(--mut)}
+  .when.today{background:var(--bad);border-color:var(--bad);color:#fff}
+  .when.fresh{background:rgba(231,154,92,.15);border-color:var(--warn);color:var(--warn)}
+  .when.old{background:rgba(255,92,114,.12);border-color:var(--bad);color:var(--bad)}
   .tag.hot{background:var(--bad);color:#fff} .tag.owe{background:var(--warn);color:#0c0e12} .tag.done{background:var(--ok);color:#0c0e12}
   .age{color:var(--bad);font-weight:700}
   footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
@@ -34,12 +38,13 @@
   <p class="sub">Every open estimate and quote across the businesses, mined from your texts (names verified via Address Book). Updated <b>Jul 5, 2026 evening</b>. This page is the living board — updates land here, not in chat.</p>
 </header>
 
-<h2 class="t">📤 SEND THESE OUT — estimates &amp; docs owed (Jul 5 evening)</h2>
-<div class="it hot"><b>1. Yorktown storm-call estimate — WRITE &amp; SEND</b><span class="tag hot">from today</span><small>You went out ~6:45pm and were mid-estimate at 7:08 ("Westinate one sec" to Ariel). Finish it and send tonight/first thing — storm quotes go stale in days.</small></div>
-<div class="it hot"><b>2. Liz's estimate — [Likely] Elizabeth Murphy</b><span class="tag hot">send</span><small>Catherine's May 28 text: reworking Murphy's quote "to leave chips and log wood, pair with another Beacon/Cold Spring adventure like last time." With Catherine traveling it may never have gone out. ⚠️ NOT Elizabeth Bynum — she's PAID &amp; CLOSED, do not touch. If Liz = someone else, say so and I'll re-target.</small></div>
-<div class="it hot"><b>3. Jon Dico's neighbor — two big trees</b><span class="tag hot">oldest quote owed</span><small>Asked Jun 30. Your plan: drop toward woods vs. bucket pieces. Jon has nudged.</small></div>
-<div class="it hot"><b>4. Chris Viltaggio — mower RECEIPT (insurance)</b><span class="tag hot">promised today</span><small>Asked 2:53pm for a receipt for his homeowner's policy (his mom is his agent, pushing him). You said "I'll get it to you soon" — pull it proper from the POS.</small></div>
-<div class="it hot"><b>5. Dennis Lucente — invoice</b><span class="tag hot">after purge</span><small>Quote agreed; run the Cloudflare purge, then text the pay link.</small></div>
+<h2 class="t">📤 TRIAGE — send these out, in this order</h2>
+<p style="color:var(--mut);font-size:13px;margin:0 0 10px"><b style="color:var(--ink)">Ordering rule:</b> fresh storm work first (storm quotes decay in ~48h), then money that's agreed, then aging quotes — with the age shown so old never masquerades as urgent.</p>
+<div class="it hot"><b><span class="when today">TODAY · Jul 5</span>Yorktown storm-call estimate — FINISH &amp; SEND</b><small>Went out ~6:45pm, mid-write at 7:08. This is the hottest revenue on the board — storm quotes are won by whoever quotes first.</small></div>
+<div class="it hot"><b><span class="when today">TODAY · Jul 5</span>Dennis Lucente — invoice</b><small>Quote agreed today. 30-second purge → text the pay link. Money already earned.</small></div>
+<div class="it hot"><b><span class="when today">TODAY · Jul 5</span>Chris Viltaggio — mower receipt (insurance)</b><small>Promised at 3:22pm; his mom is his insurance agent and pushing. Pull it proper from the POS.</small></div>
+<div class="it hot"><b><span class="when fresh">5d · Jun 30</span>Jon Dico's neighbor — two big trees</b><small>Your plan: drop toward woods vs. bucket pieces. Jon has nudged once.</small></div>
+<div class="it hot"><b><span class="when old">38d · May 28</span>Liz (Elizabeth Murphy) — FINISH the estimate</b><small>Confirmed by Doug Jul 5: it's the older one. Catherine was reworking it (leave chips + log wood, pair w/ another Beacon/Cold Spring trip like last time) — finish &amp; send, or hand to Catherine when she lands. ⚠️ NOT Elizabeth Bynum (paid &amp; closed — do not touch).</small></div>
 
 <h2 class="t">🌳 Tree — scheduled &amp; hot</h2>
 <div class="it hot"><b>8 Barger St, Cortlandt Manor — CONFIRMED, tomorrow ~10am w/ Braxton</b><span class="tag hot">Jul 6</span><small>Start after camp check-in for Jon. Rain risk (you flagged possible rain-out → fallback: quote-running day). Harder than it looks: compromised back lead goes over the neighbor's fence. Austin standing by if needed.</small></div>
@@ -57,15 +62,16 @@
 <div class="it owe"><b>Jon Dico — mower for his own lawn</b><span class="tag owe">easy win</span><small>Asked Jul 4: "how much for the right size lawnmower to do my lawn?" Size it, quote it, keep the partner happy.</small></div>
 <div class="it done"><b>Chris Viltaggio — new unit for existing client</b><span class="tag done">done</span><small>Closed Jul 5 (Doug: "chris v done").</small></div>
 
-<h2 class="t">🌳 Phone leads — call back (Dialpad voicemails, Jun 11–29)</h2>
-<div class="it owe"><b>Scott Manner — (914) 737-8522</b><span class="tag owe">call first</span><small>3 Marissa Ct, Montrose. Called TWICE (Jun 11 + 19) — persistence = intent.</small></div>
-<div class="it owe"><b>Allen Katz — (845) 320-3100</b><span class="tag owe">call</span><small>Yorktown — the "Katz estimate." Real lead.</small></div>
-<div class="it owe"><b>Mike — (917) 295-5623</b><span class="tag owe">return customer</span><small>32 Moff Dr — "Doug &amp; Catherine came…" — easiest close on this list.</small></div>
-<div class="it owe"><b>Henry — (914) 275-7065</b><span class="tag owe">call</span><small>16 Rose(?), Shambo — tree lead with address.</small></div>
-<div class="it owe"><b>Laura — (914) 552-7354</b><span class="tag owe">call</span><small>Lake Peekskill — followed up on her own.</small></div>
-<div class="it owe"><b>Port Chester — (914) 253-1464</b><span class="tag owe">call</span><small>Asking for a quote.</small></div>
-<div class="it owe"><b>Wood chips — (914) 218-7295</b><span class="tag owe">easy sale</span><small>Wants chips/mulch — you have them.</small></div>
-<div class="it owe"><b>(845) 265-3663 — persistent unknown</b><span class="tag owe">screen</span><small>"Calling again" for Doug (Jun 23).</small></div>
+<h2 class="t">🌳 Phone leads — AGING (Dialpad voicemails; call after the fresh work, or hand to Catherine)</h2>
+<p style="color:var(--mut);font-size:13px;margin:0 0 10px">These are 1–3 weeks old — worth calls, but they don't outrank today's storm money. Ages shown so nothing masquerades as urgent.</p>
+<div class="it owe"><b><span class="when old">24d/16d · Jun 11+19</span>Scott Manner — (914) 737-8522</b><small>3 Marissa Ct, Montrose. Called TWICE — most persistent of the old batch.</small></div>
+<div class="it owe"><b><span class="when old">~3wk · Jun lists</span>Allen Katz — (845) 320-3100</b><small>Yorktown — the "Katz estimate." Real lead.</small></div>
+<div class="it owe"><b><span class="when old">~2-3wk</span>Mike — (917) 295-5623</b><small>32 Moff Dr — return customer ("Doug &amp; Catherine came…") — easiest close of the batch.</small></div>
+<div class="it owe"><b><span class="when old">~2-3wk</span>Henry — (914) 275-7065</b><small>16 Rose(?), Shambo — tree lead with address.</small></div>
+<div class="it owe"><b><span class="when old">~1-2wk</span>Laura — (914) 552-7354</b><small>Lake Peekskill — followed up on her own.</small></div>
+<div class="it owe"><b><span class="when old">~2-3wk</span>Port Chester — (914) 253-1464</b><small>Asking for a quote.</small></div>
+<div class="it owe"><b><span class="when old">~2-3wk</span>Wood chips — (914) 218-7295</b><small>Wants chips/mulch — you have them.</small></div>
+<div class="it owe"><b><span class="when old">12d · Jun 23</span>(845) 265-3663 — persistent unknown</b><small>"Calling again" for Doug. Screen it.</small></div>
 <div class="it"><b>Also confirm handled (from Jun lists):</b><small>Crane multi-neighbor day (302/303/308/309 + 2 silver maples) · firewood $3,400 quote · Mr. Tree/Nick limb cleanup → invoice · Colby Moore (860-416-2557). ⚠️ Dialpad shows ~32 missed calls/wk — more leads exist than this board captures; connecting Dialpad is on the system plan.</small></div>
 
 <h2 class="d">Also from today's texts (Jul 5) — not estimates, don't lose them</h2>
