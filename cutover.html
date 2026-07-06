@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>BM Cutover — to 99.999%</title>
+<style>
+  :root{--bg:#0c0e12;--panel:#14171e;--line:#282e3a;--ink:#eef1f6;--mut:#98a2b3;--sky:#5cc2ff;--ok:#4ddb9a;--warn:#e79a5c;--bad:#ff5c72;--tree:#5fbf6a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:0 18px 90px}
+  header{padding:46px 0 20px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--sky);font-weight:700}
+  h1{font-size:clamp(27px,5.5vw,40px);margin:6px 0 8px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:15px}
+  h2{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;margin:32px 0 10px;color:var(--sky)}
+  p{margin:0 0 13px} .mut{color:var(--mut)}
+  .it{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:0 12px 12px 0;padding:13px 15px;margin:9px 0}
+  .it.blk{border-left-color:var(--bad)} .it.doug{border-left-color:var(--warn)} .it.me{border-left-color:var(--ok)} .it.done{border-left-color:var(--ok);opacity:.6}
+  .it b{font-size:15px} .it small{display:block;color:var(--mut);margin-top:3px;font-size:13.5px;line-height:1.5}
+  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .tag.blk{background:var(--bad);color:#fff} .tag.doug{background:var(--warn);color:#0c0e12} .tag.me{background:var(--ok);color:#0c0e12}
+  .callout{background:#12261c;border:1px solid var(--ok);border-radius:14px;padding:15px 17px;color:#dff7e8;font-size:14.5px;margin:14px 0}
+  footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="kicker">Internal · The migration · Jul 5 2026</span>
+  <h1>Branch Manager Cutover</h1>
+  <p class="sub">Everything between today and "BM only, trusted 99.999%, Catherine never opens Jobber again" — plus the media system (BranchCam) and the daily recap. Honest statuses; nothing hand-waved.</p>
+</header>
+
+<h2>0 · Where it actually stands</h2>
+<p class="mut">The Jobber-look theme is real and default (v983; Requests page rebuilt to component fidelity). The blockers to trust are NOT cosmetic — they're the four pre-ship items below plus the unexplained server errors. The "CompanyCam we built" is a landing page (branchcam.html, 167 lines, no storage) + a 937-line before/after module — the real capture system is a build.</p>
+
+<h2>1 · Trust blockers — the road to 99.999%</h2>
+<div class="it blk"><b>Tenant data leak — one step left</b><span class="tag blk">security</span><small>Config/names/plan sealed ✅ (Jul 1); <b>owner_email is still anon-readable</b>. Fix: SECURITY DEFINER lookup RPC → repoint signup → REVOKE. Claude builds; needs one supervised deploy window.</small></div>
+<div class="it blk"><b>Auth gate</b><span class="tag blk">security</span><small>From the pre-ship audit: the app's auth gating has a known hole. Must close before staff live in it daily.</small></div>
+<div class="it blk"><b>Job-number collision</b><span class="tag blk">correctness</span><small>Two jobs can mint the same number — poison for invoicing trust. Fix = unique constraint + safe allocator.</small></div>
+<div class="it blk"><b>Crew roster not synced</b><span class="tag blk">ops</span><small>Crew data desync from the pre-ship audit — staff can't trust dispatch until this is closed.</small></div>
+<div class="it doug"><b>Server errors — diagnose from YOUR screenshots</b><span class="tag doug">Doug habit</span><small>Every time BM throws an error: screenshot it (⌘⇧4) — it lands in the Screenshots folder and Claude reads it. Pattern emerges in days; likely candidates: Supabase free-tier limits, edge-fn cold starts, the dual-sync churn. No guessing — evidence.</small></div>
+<div class="it doug"><b>Supabase Pro + backups</b><span class="tag doug">Doug 10 min</span><small>99.999% needs paid-tier reliability + point-in-time recovery on project ltpivkqahvplapyagljt. This is the single biggest trust purchase available (~$25/mo). Claude verifies backup config after.</small></div>
+<div class="it me"><b>Dual-sync consolidation (perf)</b><span class="tag me">Claude</span><small>Known remaining perf debt (cloud-sync churn). Merge the two sync paths; snappier app = more staff trust.</small></div>
+
+<h2>2 · Jobber-parity UI — for Catherine's zero-friction switch</h2>
+<div class="it done"><b>Theme + Requests page</b><small>jobber-mode is the default; Requests rebuilt at component fidelity (v983).</small></div>
+<div class="it doug"><b>Per-screen parity — needs your Jobber screenshots</b><span class="tag doug">Doug 10 min</span><small>Screenshot every Jobber screen Catherine actually uses (Home, Schedule/Calendar, Clients, a Client page, Quotes + one open quote, Jobs, Invoices) → they land in the Screenshots folder → say "jobber screens." Claude rebuilds each BM screen to match, one at a time, pixel-measured like the Requests page was.</small></div>
+
+<h2>3 · Data cutover — the actual switch</h2>
+<div class="it doug"><b>Fresh Jobber CSV export — THE unlock</b><span class="tag doug">Doug 10 min</span><small>Jobber has no API. In Jobber: Settings → Export data → export <b>Clients, Quotes, Jobs, Invoices</b> CSVs → drop into ~/Desktop/jobber-archive/. (Current CSVs are May 8/19 — two months stale.)</small></div>
+<div class="it me"><b>Import + reconcile</b><span class="tag me">Claude</span><small>Dedupe against existing BM clients (by phone/address), import quotes/jobs/invoices, produce a reconciliation report: what came over, what conflicted, what needs your eye. Then Jobber → read-only reference; cancel when comfortable.</small></div>
+
+<h2>4 · BranchCam — CompanyCam-grade media (the key)</h2>
+<p class="mut">Research (Jul 5): CompanyCam = auto GPS+timestamp filing to projects, live project timelines, before/after tool, AI photo reports + voice-walkthrough→report, LiDAR measure, unlimited storage — $99–249/user/mo. Their gap: <b>no native photo→quote AI</b> (they bought an estimating company Mar 2026; not shipped). That gap is exactly Claude — our edge.</p>
+<div class="it me"><b>Phase A — Capture that files itself</b><span class="tag me">Claude builds</span><small>PWA camera page in BM: shoot → uploads to Supabase Storage with GPS + timestamp → auto-attached to the nearest client/job (geo-match against the now-geocoded client map). Works from the truck.</small></div>
+<div class="it me"><b>Phase B — Project timeline + before/after</b><span class="tag me">Claude builds</span><small>Per-job photo timeline (shareable read-only link for clients/insurance), fold in the existing beforeafter.js pairing. Every photo on a job's page, newest first.</small></div>
+<div class="it me"><b>Phase C — The edge: talk → estimate</b><span class="tag me">Claude + Doug's voice</span><small>You narrate at the job ("silver maple 29 DBH compromised, elm 40, big debris field") + photos → Claude drafts the BM quote with insurance language — exactly what we did manually for Oswald #514 tonight, automated. CompanyCam can't do this. Phone flow: Claude app → speak → draft quote appears in BM for your price + send.</small></div>
+
+<h2>5 · Daily recap — automated</h2>
+<div class="it me"><b>Morning digest, read-only, no sends</b><span class="tag me">Claude builds</span><small>One private page (+ optional morning text to YOU only): yesterday's calls/texts (BM comms), quotes sent/approved, jobs done, photos captured, money in, today's schedule, aging alerts from the estimate board. Pulled from every source on a schedule. Customer-facing sends stay human-approved forever.</small></div>
+
+<h2>6 · Order of operations</h2>
+<div class="callout"><b>Week 1:</b> your 3 unlocks (Jobber CSVs · Jobber screenshots · Supabase Pro) + Claude closes the 4 security/correctness blockers + starts error-screenshot diagnosis.<br><b>Week 2:</b> data import + reconciliation; per-screen parity rebuilds; Catherine works BM-only with Jobber open as reference.<br><b>Week 3:</b> BranchCam Phase A+B; daily recap live; server-error rate measured at zero for 7 straight days → cancel Jobber.<br><b>Then:</b> Phase C voice-estimates — the thing nobody else has.</div>
+
+<footer>Internal · branchmanager.app/cutover · linked from <a href="ops">/ops</a> · statuses from the live pre-ship audit, security memory, and tonight's code inspection — not aspiration.</footer>
+
+</div>
+</body>
+</html>
