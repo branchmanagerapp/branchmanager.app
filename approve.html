@@ -229,6 +229,17 @@
       } else {
         lineRows = '<tr><td colspan="' + (allowSelection ? 6 : 5) + '" style="color:#999;font-size:13px;padding:16px 0;">See description above for scope of work.</td></tr>';
       }
+      // ── Full photo gallery: flatten ALL line-item photos, dedupe, show every one at the bottom ──
+      var _seen = {}, _allPhotos = [];
+      items.forEach(function(it){ (it.photos||[]).forEach(function(u){ if(u && !_seen[u]){ _seen[u]=1; _allPhotos.push(u); } }); if(it.photo && !_seen[it.photo]){ _seen[it.photo]=1; _allPhotos.push(it.photo); } });
+      var galleryHtml = '';
+      if (_allPhotos.length) {
+        galleryHtml = '<div style="margin-top:26px;padding-top:18px;border-top:1px solid #e2e8f0;">'
+          + '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1a3c12;margin-bottom:10px;">📸 Site &amp; Damage Photos (' + _allPhotos.length + ')</div>'
+          + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">'
+          + _allPhotos.map(function(u){ var s=esc(u); return '<a href="'+s+'" target="_blank" rel="noopener" style="display:block;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;"><img src="'+s+'" loading="lazy" alt="site photo" style="width:100%;height:110px;object-fit:cover;display:block;"></a>'; }).join('')
+          + '</div></div>';
+      }
       window._allowSelection = allowSelection;
       // Banner above table when selection is enabled
       if (allowSelection) {
@@ -414,6 +425,7 @@
               + '<tr class="total-row"><td colspan="' + (allowSelection ? 5 : 4) + '">Total</td><td id="ft-total">' + money(q.total) + '</td></tr>'
               + '</tfoot>' : '')
         +     '</table>'
+        +     galleryHtml
         +     actionHtml
         +   '</div>' // .doc-pad
         + '</div>' // .doc-card
