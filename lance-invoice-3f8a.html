@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Invoice — Second Nature Tree</title>
+<style>
+  :root{--ink:#14241a;--grn:#2f7a3a;--grnd:#1e5427;--mut:#6b7d70;--line:#e2e8e2;--grey:#f4f7f4;--bad:#c0392b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;color:var(--ink);background:var(--grey);font-size:15px;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+  .sheet{background:#fff;border-radius:20px;padding:30px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:20px}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .logo{font-size:23px;font-weight:800;letter-spacing:-.4px} .logo span{color:var(--grn)}
+  .sub{color:var(--mut);font-size:12.5px;margin-top:3px}
+  .invmeta{text-align:right} .invmeta .big{font-size:23px;font-weight:800}
+  .invmeta div{font-size:12.5px;color:var(--mut);margin-top:2px} .invmeta b{color:var(--ink)}
+  .fill{background:#fff7d6;color:#8a6d00;border:1px solid #e6cf5a;border-radius:5px;padding:0 5px;font-size:12px;font-weight:700}
+  .parties{display:flex;gap:14px;margin:22px 0 6px;flex-wrap:wrap}
+  .party{flex:1;min-width:230px;background:var(--grey);border-radius:14px;padding:14px 16px}
+  .party .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--grnd);margin-bottom:6px}
+  .party .nm{font-weight:800;font-size:15px} .party div{font-size:12.5px;color:#3a4a3f}
+  table.items{width:100%;border-collapse:collapse;margin-top:18px}
+  table.items th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);text-align:left;padding:8px;border-bottom:2px solid var(--ink)}
+  table.items th.r,table.items td.r{text-align:right}
+  table.items td{padding:14px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .item-nm{font-weight:800;font-size:14.5px} .item-detail{color:var(--mut);font-size:12.5px;margin-top:5px;line-height:1.55}
+  .totals{margin-top:10px;display:flex;justify-content:flex-end}
+  .totals table{width:320px} .totals td{padding:7px 8px;font-size:14px} .totals .r{text-align:right}
+  .totals tr.sub td{border-top:1px solid var(--line)}
+  .totals tr.grand td{border-top:2px solid var(--ink);font-size:19px;font-weight:800;padding-top:11px}
+  .sec-tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--grnd);margin-bottom:12px}
+  .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+  .gal a{border-radius:10px;overflow:hidden;border:1px solid var(--line);display:block}
+  .gal img{width:100%;height:110px;object-fit:cover;display:block}
+  .galempty{color:var(--mut);font-size:13px;background:var(--grey);border-radius:12px;padding:20px;text-align:center}
+  .pay{font-size:13.5px;color:#3a4a3f;line-height:1.7}
+  @media(max-width:560px){.sheet{padding:22px 18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="sheet">
+    <div class="top">
+      <div><div class="logo">Second<span> Nature</span> Tree</div>
+        <div class="sub">Second Nature Tree LLC &middot; Peekskill, NY</div>
+        <div class="sub">info@peekskilltree.com &middot; (914) 391-5233 &middot; peekskilltree.com</div></div>
+      <div class="invmeta"><div class="big">Invoice</div>
+        <div>Invoice # <b>INV-20260706-LANCE</b></div>
+        <div>Date <b>July 6, 2026</b></div>
+        <div>Terms <b>Due on receipt</b></div></div>
+    </div>
+
+    <div class="parties">
+      <div class="party"><div class="lbl">Bill to</div>
+        <div class="nm">Lance <span class="fill">[last name]</span></div>
+        <div><span class="fill">[address]</span></div>
+        <div><span class="fill">[phone / email]</span></div></div>
+      <div class="party"><div class="lbl">Job site &amp; date</div>
+        <div class="nm"><span class="fill">[job address]</span></div>
+        <div>Storm/tree removal &mdash; completed July 6, 2026</div>
+        <div>Bucket truck + crew (w/ Andrew Brink's crew)</div></div>
+    </div>
+
+    <table class="items">
+      <thead><tr><th>Description</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>
+          <div class="item-nm">Tree removal &mdash; bucket truck job, July 6, 2026</div>
+          <div class="item-detail">Large tree removal at the job site using bucket truck + ground crew; rigging, controlled dismantling, cut-up, and cleanup. Performed July 6, 2026. <span class="fill">[confirm scope / add line detail]</span></div>
+        </td><td class="r"><b>$50,000.00</b></td></tr>
+      </tbody>
+    </table>
+
+    <div class="totals"><table>
+      <tr class="sub"><td>Subtotal</td><td class="r">$50,000.00</td></tr>
+      <tr><td>NY sales tax (8.375%)</td><td class="r">$4,187.50</td></tr>
+      <tr class="grand"><td>Total due</td><td class="r">$54,187.50</td></tr>
+    </table></div>
+  </div>
+
+  <div class="sheet">
+    <div class="sec-tag">📸 Job photos — July 6, 2026</div>
+    <div class="gal" id="gal"></div>
+    <div class="galempty" id="galempty">Photos from today are still syncing from iCloud (storage was cleared) &mdash; they'll load here automatically. Claude will attach them once they're down.</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sec-tag">Payment</div>
+    <div class="pay">
+      <b>Bank transfer (ACH)</b> &mdash; no fees. Text (914) 391-5233 for the secure ACH link.<br>
+      <b>Check</b> &mdash; payable to <b>Second Nature Tree LLC</b>, Peekskill NY.<br>
+      Questions? Call/text <b>(914) 391-5233</b> or email <b>info@peekskilltree.com</b>.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
