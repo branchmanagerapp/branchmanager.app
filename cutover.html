@@ -24,6 +24,14 @@
   .callout{background:#12261c;border:1px solid var(--ok);border-radius:14px;padding:15px 17px;color:#dff7e8;font-size:14.5px;margin:14px 0}
   footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
   a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+  details summary{cursor:pointer;padding:14px 16px;font-weight:700;font-size:15px;list-style:none;display:flex;gap:10px;align-items:center}
+  details summary::before{content:"▸";color:var(--sky);transition:transform .15s}
+  details[open] summary::before{transform:rotate(90deg)}
+  details .body{padding:0 16px 14px 36px;color:var(--mut);font-size:13.5px;line-height:1.6}
+  details .body ol{margin:6px 0;padding-left:18px} details .body li{margin:5px 0}
+  .rank{flex:0 0 26px;height:26px;border-radius:8px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:800;font-size:13px}
+  .mins{margin-left:auto;font-size:11px;color:var(--mut);font-weight:600;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -34,6 +42,58 @@
   <h1>Branch Manager Cutover</h1>
   <p class="sub">Everything between today and "BM only, trusted 99.999%, Catherine never opens Jobber again" — plus the media system (BranchCam) and the daily recap. Honest statuses; nothing hand-waved.</p>
 </header>
+
+<h2>⭐ YOUR LIST — in order of importance, steps inside each</h2>
+<p class="mut">Tap a task to open its steps. Do them top to bottom; each is self-contained. Claude's parallel work is further down — none of it needs you.</p>
+
+<details open><summary><span class="rank">1</span> Money out the door — Dennis + receipts unlock <span class="mins">~10 min</span></summary><div class="body"><ol>
+<li><b>Cloudflare purge:</b> <a href="https://dash.cloudflare.com/?to=/:account/branchmanager.app/caching/configuration">this link</a> (login info@peekskilltree.com) → Caching → <b>Purge Everything</b>.</li>
+<li><b>Eyeball Dennis's invoice</b> at lucente-invoice.html — it totals <b>$9,578.18</b> ($8,838 + $740.18 tax; incl. CM240 @ $6,299). Confirm it matches your handshake — the line-up differs from his original fleet ask.</li>
+<li><b>Text Dennis the link.</b></li>
+<li><b>Paste the SmartLawn service key</b> into ~/Desktop/_Credentials/smartlawn-keys.txt (SmartLawn Supabase → Settings → API → service_role). → Claude then generates receipts for EVERY SmartLawn sale (Chris Viltaggio first — he asked today) and reconciles pending Stripe payments. You've sent zero receipts to date; this closes all of them at once.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">2</span> Fresh Jobber export — the data cutover unlock <span class="mins">~10 min</span></summary><div class="body"><ol>
+<li>Jobber → Settings → <b>Export data</b>.</li>
+<li>Export <b>Clients, Quotes, Jobs, Invoices</b> (CSV each).</li>
+<li>Drop all files into <b>~/Desktop/jobber-archive/</b> and tell Claude "jobber files are in."</li>
+<li>Claude imports, dedupes against BM, and hands you a reconciliation report. After that, Jobber is read-only reference.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">3</span> Jobber screenshots — so BM looks identical for Catherine <span class="mins">~10 min</span></summary><div class="body"><ol>
+<li>Open Jobber, visit each screen Catherine uses: <b>Home, Schedule/Calendar, Clients list, one Client page, Quotes list, one open Quote, Jobs, Invoices</b>.</li>
+<li>⌘⇧4 each one (they land in the Screenshots folder automatically).</li>
+<li>Say <b>"jobber screens"</b> — Claude rebuilds each BM screen to match, pixel-measured, one at a time.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">4</span> Supabase Pro + backups — the trust purchase <span class="mins">~10 min · ~$25/mo</span></summary><div class="body"><ol>
+<li>supabase.com → project <b>ltpivkqahvplapyagljt</b> → Settings → Billing → upgrade to <b>Pro</b>.</li>
+<li>Enable <b>Point-in-Time Recovery</b> if offered on the plan.</li>
+<li>Tell Claude — backup config gets verified from here.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">5</span> The error habit — every server error gets screenshotted <span class="mins">2 sec each</span></summary><div class="body"><ol>
+<li>BM throws an error → <b>⌘⇧4 it immediately</b> (even mid-job).</li>
+<li>That's it — screenshots auto-land where Claude reads them; the pattern diagnosis builds itself. No error report survives memory; screenshots do.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">6</span> Brivo door — the 5-minute self-service unlock <span class="mins">~5 min</span></summary><div class="body"><ol>
+<li>access.brivo.com → create API user <b>"skateos-api"</b> with a password, door access, <b>2FA OFF</b>.</li>
+<li>Paste username/password into ~/Desktop/_Credentials/brivo-keys.txt.</li>
+<li>Claude sets the secrets, deploys, fires the unlock — door opens ~2 min later.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">7</span> All inboxes into one Gmail — kills the multi-account wall <span class="mins">~5 min</span></summary><div class="body"><ol>
+<li>Gmail as info@peekskilltree.com → ⚙ → See all settings → <b>Accounts and Import</b>.</li>
+<li>"Check mail from other accounts" → <b>Add doug@2ntr.com</b> (take Gmailify if offered).</li>
+<li>Optionally add it under "Send mail as." → Claude then sees all your mail through the one connected account.</li>
+</ol></div></details>
+
+<details><summary><span class="rank">8</span> Dialpad API key — texts flow again + lead alerts <span class="mins">~5 min · needs Pro plan</span></summary><div class="body"><ol>
+<li>dialpad.com → Admin Settings → My Company → Authentication → <b>API Keys</b> → create.</li>
+<li>Paste into ~/Desktop/_Credentials/dialpad-key.txt.</li>
+<li>Claude repairs the SMS subscription (dead since May 3), backfills two months of texts, and wires same-day lead alerts — no more lost Tracys.</li>
+</ol></div></details>
 
 <h2>0 · Where it actually stands</h2>
 <p class="mut">The Jobber-look theme is real and default (v983; Requests page rebuilt to component fidelity). The blockers to trust are NOT cosmetic — they're the four pre-ship items below plus the unexplained server errors. The "CompanyCam we built" is a landing page (branchcam.html, 167 lines, no storage) + a 937-line before/after module — the real capture system is a build.</p>
