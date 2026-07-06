@@ -94,6 +94,17 @@
   .done-panel p{font-size:13px;color:#3a5a48;margin-top:8px;line-height:1.6}
   .foot{text-align:center;color:var(--mut);font-size:12px;margin-top:8px}
   @media (max-width:560px){.ach-grid{grid-template-columns:1fr}.sheet{padding:22px 18px}}
+
+  @media print{
+    body{background:#fff;font-size:12px}
+    .wrap{padding:0;max-width:100%}
+    .sheet{box-shadow:none;border-radius:0;padding:14px 8px;margin-bottom:10px;page-break-inside:avoid}
+    table.items tbody td{padding:8px 6px}
+    .item-detail{font-size:10.5px}
+    .ach-steps,.ach-note{font-size:11px}
+    .btn{display:none}
+    @page{margin:11mm}
+  }
 </style>
 </head>
 <body>
