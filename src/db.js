@@ -281,6 +281,35 @@ var DB = (function() {
     } catch(e) {}
   }
 
+  // v984: a 4xx cloud rejection means the save did NOT land and retrying the
+  // same payload will keep failing (stale-app schema mismatch, bad payload).
+  // That must NEVER be silent — Jul 7 2026 Tanisha #515 incident: Doug priced
+  // a quote 3× on a phone running a pre-v976 cached build; every save 400'd
+  // ("Could not find the 'lead_source' column") into the write-queue while the
+  // UI toasted "saved". Loud toast + persistent red banner, once per session.
+  // 401/403 excluded (CloudSync's "cloud signed out" badge already owns those);
+  // 5xx/network excluded (transient — the queue retry genuinely fixes them).
+  function _loudPushFail(table, status) {
+    try {
+      if (status === 401 || status === 403) return;
+      if (!(status >= 400 && status < 500)) return;
+      var msg = '⚠️ Save did NOT reach the cloud (' + table + ', error ' + status + '). Fully close and reopen the app. If this repeats, delete the home-screen icon and re-add it from branchmanager.app.';
+      if (typeof UI !== 'undefined' && UI.toast) UI.toast(msg);
+      if (!document.getElementById('bm-pushfail-banner')) {
+        var b = document.createElement('div');
+        b.id = 'bm-pushfail-banner';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#c62828;color:#fff;font:600 13px -apple-system,system-ui,sans-serif;padding:10px 40px 10px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35);';
+        b.textContent = msg;
+        var x = document.createElement('span');
+        x.textContent = '✕';
+        x.style.cssText = 'position:absolute;right:12px;top:9px;cursor:pointer;font-weight:800;font-size:15px;';
+        x.onclick = function() { b.remove(); };
+        b.appendChild(x);
+        (document.body || document.documentElement).appendChild(b);
+      }
+    } catch (e) {}
+  }
+
   // ── Poison-pill guard — refuse to upload demo/fixture data to cloud ──
   // Last line of defense against the Apr 23 / Apr 30 / May 5 fabricate-data
   // incidents. If a row in clients/jobs/invoices/requests/quotes carries the
@@ -378,6 +407,7 @@ var DB = (function() {
               CloudSync._markCloudSignedOut('Cloud rejected ' + table + ' write (' + r.status + ') — re-sign in to sync.');
             }
           }).catch(function(){});
+          _loudPushFail(table, r.status);  // v984: never let a rejected save be silent
           _queueAdd({ key: key, table: table, id: record.id, method: method, payload: snakeRow, queuedAt: Date.now(), lastStatus: r.status });
         }
       }).catch(function(e) {
@@ -453,6 +483,7 @@ var DB = (function() {
               CloudSync._markCloudSignedOut('Cloud rejected ' + table + ' patch (' + r.status + ') — re-sign in to sync.');
             }
           }).catch(function(){});
+          _loudPushFail(table, r.status);  // v984: never let a rejected save be silent
           _queueAdd({ key: key, table: table, id: id, method: 'update', payload: snakeChanges, queuedAt: Date.now(), lastStatus: r.status });
           return;
         }

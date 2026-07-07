@@ -1,5 +1,5 @@
 {
-  "version": 983,
-  "released": "2026-06-28",
-  "notes": "Jobber-match Requests list (jobber-mode only): request title now shows as a sub-line under the client name (Jobber's signature), filter pills replaced by a single 'Status | All' dropdown, Phone column relabeled 'Contact' and Description column relabeled 'Title' (content moved to the client sub-line). Classic UI unchanged. No column-count change (safe)."
+  "version": 984,
+  "released": "2026-07-07",
+  "notes": "Loud save-failure alert: rejected cloud writes (4xx) now show an unmissable red banner + toast instead of silently queueing. Root-caused from Tanisha #515 stale-phone incident (pre-v976 cache sent dead columns, every save 400'd silently)."
 }
