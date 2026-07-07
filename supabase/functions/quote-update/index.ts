@@ -45,6 +45,13 @@ serve(async (req: Request) => {
   }
   if (req.method !== 'POST')    return j(405, { ok: false, error: 'POST only' });
 
+  // SERVER-SIDE IP capture — the trustworthy audit-trail signal. A client-sent IP is
+  // spoofable; the edge proxy's cf-connecting-ip / x-forwarded-for cannot be faked by the
+  // browser. Strengthens e-signature acceptance per ESIGN / NY ESRA (Doug idea, Jul 6 2026).
+  const serverIp = (req.headers.get('cf-connecting-ip')
+    || (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+    || req.headers.get('x-real-ip') || '').slice(0, 64);
+
   let body: any = {};
   try { body = await req.json(); } catch { return j(400, { ok: false, error: 'Bad JSON' }); }
   const id     = String(body.id || '').trim();
@@ -88,7 +95,7 @@ serve(async (req: Request) => {
     patch.status = 'approved';
     patch.signed_name = trunc(body.signed_name, 200);
     patch.signed_at = now;
-    patch.signed_ip = trunc(body.signed_ip, 64);
+    patch.signed_ip = serverIp || trunc(body.signed_ip, 64);  // prefer trustworthy server IP
     patch.signed_user_agent = trunc(body.signed_user_agent, 500);
     patch.signed_quote_hash = trunc(body.signed_quote_hash, 128);
     patch.signed_quote_snapshot = body.signed_quote_snapshot ? trunc(body.signed_quote_snapshot, 50000) : null;
