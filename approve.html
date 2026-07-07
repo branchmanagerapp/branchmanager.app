@@ -125,18 +125,30 @@
       .header h1 { font-size: 22px; }
     }
 
-    /* Download PDF button (screen only) */
-    .pdf-btn { display:inline-flex; align-items:center; gap:6px; margin:6px 0 4px; background:#1a3c12; color:#fff; border:none; border-radius:980px; padding:10px 18px; font-size:14px; font-weight:700; cursor:pointer; }
+    /* Download / Print buttons (screen only) */
+    .pdf-row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 4px; }
+    .pdf-btn { display:inline-flex; align-items:center; gap:6px; background:#1a3c12; color:#fff; border:none; border-radius:980px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer; }
     .pdf-btn:hover { background:#245219; }
+    .pdf-btn-alt { background:#fff; color:#1a3c12; border:1.5px solid #1a3c12; }
+    .pdf-btn-alt:hover { background:#f0f7ed; }
 
     /* ── PRINT / SAVE-AS-PDF: clean one-page estimate, no photos, no buttons ── */
     @media print {
       @page { size: letter; margin: 14mm; }
       html, body { background: #fff !important; font-size: 11px !important; }
       body * { visibility: visible; }
-      .no-print, .pdf-btn, .q-gallery, .actions, .already-approved, .footer,
+      .no-print, .pdf-row, .actions, .already-approved, .footer,
       .sig-pad, .sig-typed-input, .sig-toggle, #err-msg,
       button, input, textarea, canvas { display: none !important; }
+      /* COMPACT (default print): no photos at all → clean 1-pager */
+      .q-gallery, .li-photos { display: none !important; }
+      /* FULL PDF mode (data-print="full"): bring photos back, one per line, sized right */
+      body[data-print="full"] .li-photos { display: block !important; float: right; margin: 0 0 6px 10px; }
+      body[data-print="full"] .li-photos a { width: 96px !important; height: 96px !important; }
+      body[data-print="full"] .li-photos a:not(:first-child) { display: none !important; }  /* one photo per line item */
+      body[data-print="full"] .li-photos img { width: 96px !important; height: 96px !important; }
+      body[data-print="full"] .q-gallery { display: block !important; }
+      body[data-print="full"] .q-gallery img { height: 92px !important; }
       .doc-card { box-shadow: none !important; border: 1px solid #ccc !important; border-radius: 0 !important; margin: 0 !important; page-break-inside: avoid; }
       .doc-pad { padding: 0 !important; }
       .doc-accent { display: none !important; }
@@ -409,7 +421,10 @@
         +       '<div class="header-status">' + statusBadge + '</div>'
         +     '</div>'
         +     '<h1>' + docTerm + ' #' + esc(q.quote_number || '') + '</h1>'
-        +     '<button class="pdf-btn no-print" onclick="window.print()" title="Downloads a clean 1-page estimate (no photos) for insurance or printing">⬇️ Download PDF <span style="opacity:.75;font-weight:500;">— 1 page, for insurance / printing</span></button>'
+        +     '<div class="pdf-row no-print">'
+        +       '<button class="pdf-btn" onclick="var b=document.body;b.removeAttribute(\'data-print\');window.print();" title="Clean 1-page estimate, no photos — for insurance or printing">🖨️ Print <span style="opacity:.75;font-weight:500;">1-page, no photos</span></button>'
+        +       '<button class="pdf-btn pdf-btn-alt" onclick="var b=document.body;b.setAttribute(\'data-print\',\'full\');window.print();b.removeAttribute(\'data-print\');" title="Full estimate with photos — for emailing or records">⬇️ Save PDF <span style="opacity:.75;font-weight:500;">with photos</span></button>'
+        +     '</div>'
         +     expiryHtml
 
         // 2-card meta — client info left, quote meta right
