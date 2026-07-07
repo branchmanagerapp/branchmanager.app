@@ -80,6 +80,17 @@
   // NOTE: requires migrate-tenants-public-branding.sql to be applied first —
   // until then this RPC 404s and we fall back to the legacy table read so
   // branding never breaks mid-rollout.
+  // Jul 7 2026 audit: BOTH rungs of this ladder were dead in prod — the
+  // tenant_branding RPC was never migrated (PGRST202) AND the legacy anon
+  // tenants read was revoked by the June PII fix (42501). Result: every
+  // customer-facing quote/pay page rendered "Your Company" with a blank
+  // phone (Oswald #514 report). Third rung added: a static id→slug map for
+  // known tenants → the DEPLOYED tenant-by-slug edge fn (safe public
+  // branding only). Update the map when a tenant is provisioned; the RPC
+  // migration (migrate-tenants-public-branding.sql) remains the real fix.
+  var KNOWN_TENANT_SLUGS = {
+    '93af4348-8bba-4045-ac3e-5e71ec1cc8c5': 'snt'   // Second Nature Tree Service
+  };
   window.bmApplyTenantBranding = function(tenantId) {
     if (!tenantId) return Promise.resolve(null);
     if (window.bmResolvedTenant) return Promise.resolve(window.bmResolvedTenant);
@@ -92,6 +103,16 @@
         // existing customer pages keep rendering until the migration lands.
         return fetch(SB_URL + '/rest/v1/tenants?select=name,config&id=eq.' + encodeURIComponent(tenantId) + '&limit=1',
             { headers: hdrs }).then(function(r2) { return r2.ok ? r2.json().then(function(rows){ return rows && rows[0]; }) : null; });
+      })
+      .then(function(t) {
+        // Rung 3: known-tenant slug → tenant-by-slug edge fn (works today).
+        if (!t && KNOWN_TENANT_SLUGS[tenantId]) {
+          return fetch(FN_URL + '/tenant-by-slug?slug=' + KNOWN_TENANT_SLUGS[tenantId], { headers: { apikey: ANON } })
+            .then(function(r3) { return r3.ok ? r3.json() : null; })
+            .then(function(t3) { return (t3 && t3.ok) ? t3 : null; })
+            .catch(function() { return null; });
+        }
+        return t;
       })
       .then(function(t) {
         if (t) applyBranding(t);
