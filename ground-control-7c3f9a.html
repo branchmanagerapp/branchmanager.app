@@ -1,0 +1,254 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#0a2e18">
+<title>Ground Control — Second Nature</title>
+<style>
+:root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#5b6660;--faint:#8a94a0;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--gold:#e0a63a;--goldbg:#fff6e6;--red:#b3452f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto;padding:0 14px 60px}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 0 18px;text-align:center}
+.kick{letter-spacing:2px;font-size:10.5px;font-weight:800;text-transform:uppercase;opacity:.82}
+header h1{margin:5px 0 2px;font-size:23px;font-weight:800;letter-spacing:-.01em}
+header .sub{font-size:13px;opacity:.9}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 12px rgba(20,50,30,.06);padding:14px;margin:16px 0}
+
+/* calendar */
+.calhd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.calhd .mo{font-size:18px;font-weight:800;color:var(--green-d)}
+.nav{display:flex;gap:6px}
+.nav button,.seg button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;height:38px;min-width:38px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px}
+.nav button:active,.seg button:active{background:var(--green-l)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:none;border-radius:0;height:34px;font-size:13px;font-weight:800;color:var(--muted);background:#fff;padding:0 14px}
+.seg button.on{background:var(--green);color:#fff}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.dow span{text-align:center;font-size:10.5px;font-weight:800;color:var(--faint);text-transform:uppercase}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;touch-action:pan-y}
+.cell{aspect-ratio:1/1;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:5px 4px 4px;position:relative;cursor:pointer;display:flex;flex-direction:column;overflow:hidden}
+.cell:active{background:var(--green-l)}
+.cell.oth{opacity:.35}
+.cell .n{font-size:13px;font-weight:700;line-height:1}
+.cell.today{border-color:var(--ink);border-width:2px}
+.cell.today .n{color:var(--ink)}
+.cell.morrow{background:var(--goldbg);border-color:var(--gold);border-width:2px}
+.cell.sel{box-shadow:0 0 0 2px var(--green) inset}
+.dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:auto}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.dot.big{background:var(--gold)}.dot.done{background:var(--faint)}.dot.task{background:var(--green)}
+.lbl{display:none}
+@media(min-width:620px){
+  .cell{aspect-ratio:auto;min-height:82px}
+  .dots{display:none}
+  .lbl{display:block;font-size:10px;line-height:1.2;margin-top:3px;background:var(--green-l);color:var(--green-d);border-radius:5px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lbl.big{background:#f6c667;color:#5b4413;font-weight:800}
+  .lbl.done{background:#eef1f2;color:#69727a}
+}
+
+/* day agenda panel */
+.day-panel{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.day-panel h3{margin:0 0 8px;font-size:14px;color:var(--green-d)}
+.ev{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.ev:last-child{border-bottom:none}
+.ev .ic{flex:0 0 26px;height:26px;border-radius:8px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:14px}
+.ev.big .ic{background:#f6c667}.ev.done .ic{background:#eef1f2}
+.ev b{font-size:14.5px;font-weight:700}
+.ev small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+.ev .go{margin-left:auto;color:var(--green);font-weight:800;font-size:18px;align-self:center}
+.empty{color:var(--faint);font-size:13px;padding:10px 0}
+
+/* agenda list view */
+.agenda .agday{font-size:12px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px}
+
+/* section + tiles */
+h2{color:var(--green-d);font-size:13px;margin:24px 4px 8px;text-transform:uppercase;letter-spacing:.06em}
+.grid{display:grid;grid-template-columns:1fr;gap:9px}
+@media(min-width:620px){.grid{grid-template-columns:1fr 1fr}}
+a.tile{display:flex;gap:11px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 15px;text-decoration:none;color:var(--ink)}
+a.tile:active{background:var(--green-l)}
+@media(hover:hover){a.tile:hover{border-color:var(--green)}}
+a.tile .em{font-size:20px;flex:0 0 24px;text-align:center}
+a.tile .t{font-weight:700;font-size:15px}
+a.tile .d{color:var(--muted);font-size:12.5px;margin-top:1px}
+a.tile.hot{border-color:var(--green);background:var(--green-l)}
+a.tile.lock{opacity:.9}
+.tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:1px 6px;border-radius:20px;margin-left:5px;vertical-align:1px;background:#fde9c8;color:#8a5512}
+.tag.due{background:#f7dcd4;color:#9a3115}.tag.lk{background:#13251a;color:#cfe9d9}
+/* open list */
+.open .o{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.open .o:last-child{border:none}
+.open .bx{flex:0 0 18px;height:18px;border:2px solid var(--ink);border-radius:5px;margin-top:1px}
+.open b{font-size:14.5px}.open small{display:block;color:var(--muted);font-size:12.5px}
+.who{flex:0 0 58px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--faint);padding-top:3px}
+footer{text-align:center;color:var(--faint);font-size:11.5px;padding:22px 0}
+footer a{color:var(--green)}
+</style></head>
+<body>
+<header>
+  <div class="kick">Second Nature · Doug &amp; Catherine</div>
+  <h1>🛰️ Ground Control</h1>
+  <div class="sub" id="today-str">—</div>
+</header>
+<div class="wrap">
+
+  <!-- CALENDAR -->
+  <div class="card">
+    <div class="calhd">
+      <div class="nav"><button id="prev" aria-label="Previous">‹</button><button id="next" aria-label="Next">›</button></div>
+      <div class="mo" id="molabel">—</div>
+      <div class="seg"><button id="vMonth" class="on">Month</button><button id="vAgenda">Agenda</button></div>
+    </div>
+    <div id="monthview">
+      <div class="dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+      <div class="cal" id="cal"></div>
+      <div class="day-panel" id="daypanel"></div>
+    </div>
+    <div id="agendaview" class="agenda" style="display:none"></div>
+  </div>
+
+  <!-- RIGHT NOW -->
+  <h2>🔴 Right now</h2>
+  <div class="grid">
+    <a class="tile hot" href="today-snt-9d4b1e.html"><span class="em">📨</span><span><span class="t">Send Amanda's $750 invoice</span><span class="d">Queued in Branch Manager — just needs her number. Your BM test.</span></span></a>
+    <a class="tile" href="lucente.html"><span class="em">🚜</span><span><span class="t">Tomorrow: see Dennis Lucente</span><span class="d">With Catherine · time TBD. Bring the Navimow proposal.</span></span></a>
+  </div>
+
+  <!-- DAILY -->
+  <h2>📋 Daily</h2>
+  <div class="grid">
+    <a class="tile" href="today-snt-9d4b1e.html"><span class="em">🌳</span><span><span class="t">Today sheet</span><span class="d">Done · waiting on you · new leads</span></span></a>
+    <a class="tile" href="plan-snt-8c31d7.html"><span class="em">🗺️</span><span><span class="t">The Plan</span><span class="d">Right-now → this-week → this-month</span></span></a>
+    <a class="tile" href="estimates-snt-4b8e2f.html"><span class="em">📝</span><span><span class="t">Estimate board</span><span class="d">Every open quote, triage-ordered</span></span></a>
+    <a class="tile" href="https://branchmanager.app"><span class="em">🌿</span><span><span class="t">Branch Manager</span><span class="d">The app — clients, jobs, schedule, books</span></span></a>
+  </div>
+
+  <!-- MONEY & DECISIONS -->
+  <h2>💰 Money &amp; decisions</h2>
+  <div class="grid">
+    <a class="tile" href="northeast-intrepid-c83567.html"><span class="em">🚜</span><span><span class="t">Intrepid KM100 <span class="tag">financed · ready</span></span><span class="d">$1,100/mo · 5-yr · Geneva. Reply to Jessica → DocuSign.</span></span></a>
+    <a class="tile" href="dialpad-alternatives-4c81a2.html"><span class="em">📞</span><span><span class="t">Get off Dialpad <span class="tag">research</span></span><span class="d">OpenPhone wins — keeps AI, feeds BM</span></span></a>
+    <a class="tile" href="lucente.html"><span class="em">🌱</span><span><span class="t">SmartLawn — Lucente</span><span class="d">Navimow fleet proposal</span></span></a>
+    <a class="tile" href="cpa2025-1aefb4.html"><span class="em">📊</span><span><span class="t">CPA 2025 package</span><span class="d">Books for Kevin Fay (locked)</span></span></a>
+  </div>
+
+  <!-- THIS WEEK OPEN -->
+  <h2>✅ This week — open</h2>
+  <div class="card open">
+    <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>Amanda $750 invoice</b><small>Needs her phone number.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>KM100 — say "go" to Jessica</b><small>Financing approved; she sends DocuSign to secure it.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Either</span><span><b>Call back new leads</b><small>Barbara · Regina Clarkin · Rob McCrane · Chris Cannon.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Catherine</span><span><b>Chase aging leads</b><small>Hatzmann · Sullivan (735 Requa) · Pat Brandt.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>CADCO invoice #108833</b><small>$16,303.55 past due — blocks Dennis's X450s.</small></span></div>
+  </div>
+
+  <!-- MORE -->
+  <h2>🗂️ More</h2>
+  <div class="grid">
+    <a class="tile" href="hub-570301.html"><span class="em">📚</span><span><span class="t">Full index</span><span class="d">Every page we've built — the complete list</span></span></a>
+    <a class="tile lock" href="vault-0e5a3f.html"><span class="em">🔒</span><span><span class="t">Private Vault <span class="tag lk">locked</span></span><span class="d">Doug only — portfolio, net worth, debt</span></span></a>
+  </div>
+
+  <footer>🛰️ Ground Control · Second Nature · shared with Catherine · <a href="hub-570301.html">full index</a></footer>
+</div>
+
+<script>
+(function(){
+  var EVENTS = [
+    {d:'2026-07-06', t:'Storm work', k:'done', ic:'⛈️'},
+    {d:'2026-07-07', t:'Amanda job — complete', k:'done', ic:'✓'},
+    {d:'2026-07-07', t:'Ricardo (8 Barger) paid — cash', k:'done', ic:'✓'},
+    {d:'2026-07-08', t:'See Dennis Lucente — with Catherine', k:'big', ic:'🚜', note:'Time TBD — confirm with Dennis. Bring the Navimow/Lucente proposal + know the CADCO status.', link:'lucente.html'},
+    {d:'2026-07-08', t:'Send Amanda her $750 invoice', k:'task', ic:'📨', note:'Needs her phone number.', link:'today-snt-9d4b1e.html'},
+    {d:'2026-07-08', t:'Return new-lead calls', k:'task', ic:'📞', note:'Barbara · Regina Clarkin · Rob McCrane · Chris Cannon.'},
+    {d:'2026-07-09', t:'Chase aging leads (Catherine)', k:'task', ic:'📇', note:'Hatzmann · Sullivan · Pat Brandt.'}
+  ];
+  var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var pad=function(n){return (n<10?'0':'')+n;};
+  var key=function(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);};
+  var now=new Date();
+  var todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
+  var tmr=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+  var morrowKey=key(tmr.getFullYear(),tmr.getMonth(),tmr.getDate());
+  var view=new Date(now.getFullYear(),now.getMonth(),1);
+  var selKey=todayKey;
+
+  var elToday=document.getElementById('today-str');
+  var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  elToday.textContent=days[now.getDay()]+', '+MON[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+
+  function evFor(k){return EVENTS.filter(function(e){return e.d===k;});}
+
+  function renderMonth(){
+    document.getElementById('molabel').textContent=MON[view.getMonth()]+' '+view.getFullYear();
+    var cal=document.getElementById('cal'); cal.innerHTML='';
+    var y=view.getFullYear(), m=view.getMonth();
+    var first=new Date(y,m,1).getDay();
+    var dim=new Date(y,m+1,0).getDate();
+    var prevDim=new Date(y,m,0).getDate();
+    var cells=[];
+    for(var i=0;i<first;i++){cells.push({d:prevDim-first+1+i,oth:true,mm:m-1});}
+    for(var d=1;d<=dim;d++){cells.push({d:d,oth:false,mm:m});}
+    while(cells.length%7!==0||cells.length<42){var nd=cells.length-(first+dim)+1;cells.push({d:nd,oth:true,mm:m+1});if(cells.length>=42)break;}
+    cells.forEach(function(c){
+      var cy=y, cm=c.mm; if(cm<0){cm=11;cy--;} if(cm>11){cm=0;cy++;}
+      var k=key(cy,cm,c.d);
+      var evs=c.oth?[]:evFor(k);
+      var div=document.createElement('div');
+      div.className='cell'+(c.oth?' oth':'')+(k===todayKey?' today':'')+(k===morrowKey?' morrow':'')+(k===selKey?' sel':'');
+      var html='<span class="n">'+c.d+'</span>';
+      if(evs.length){
+        var dots='';
+        evs.slice(0,4).forEach(function(e){dots+='<span class="dot '+e.k+'"></span>';});
+        html+='<span class="dots">'+dots+'</span>';
+        evs.slice(0,2).forEach(function(e){html+='<span class="lbl '+e.k+'">'+e.t+'</span>';});
+      }
+      div.innerHTML=html;
+      if(!c.oth){div.addEventListener('click',function(){selKey=k;renderMonth();renderPanel();});}
+      cal.appendChild(div);
+    });
+  }
+  function fmtDay(k){var p=k.split('-');var dt=new Date(+p[0],+p[1]-1,+p[2]);return days[dt.getDay()]+', '+MON[dt.getMonth()]+' '+(+p[2]);}
+  function renderPanel(){
+    var p=document.getElementById('daypanel');
+    var evs=evFor(selKey);
+    var label=selKey===todayKey?'Today — '+fmtDay(selKey):(selKey===morrowKey?'Tomorrow — '+fmtDay(selKey):fmtDay(selKey));
+    var h='<h3>'+label+'</h3>';
+    if(!evs.length){h+='<div class="empty">Nothing scheduled. Tap another day, or it’s open.</div>';}
+    evs.forEach(function(e){
+      var tag=e.link?'<a class="ev '+e.k+'" href="'+e.link+'">':'<div class="ev '+e.k+'">';
+      var end=e.link?'<span class="go">›</span></a>':'</div>';
+      h+=tag+'<span class="ic">'+(e.ic||'•')+'</span><span><b>'+e.t+'</b>'+(e.note?'<small>'+e.note+'</small>':'')+'</span>'+end;
+    });
+    p.innerHTML=h;
+  }
+  function renderAgenda(){
+    var v=document.getElementById('agendaview');
+    var up=EVENTS.filter(function(e){return e.d>=todayKey;}).sort(function(a,b){return a.d<b.d?-1:1;});
+    if(!up.length){v.innerHTML='<div class="empty">No upcoming items.</div>';return;}
+    var h='',cur='';
+    up.forEach(function(e){
+      if(e.d!==cur){cur=e.d;var lab=e.d===todayKey?'Today':(e.d===morrowKey?'Tomorrow':fmtDay(e.d));h+='<div class="agday">'+lab+'</div>';}
+      var tag=e.link?'<a class="ev '+e.k+'" href="'+e.link+'">':'<div class="ev '+e.k+'">';
+      var end=e.link?'<span class="go">›</span></a>':'</div>';
+      h+=tag+'<span class="ic">'+(e.ic||'•')+'</span><span><b>'+e.t+'</b>'+(e.note?'<small>'+e.note+'</small>':'')+'</span>'+end;
+    });
+    v.innerHTML=h;
+  }
+
+  document.getElementById('prev').onclick=function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);renderMonth();};
+  document.getElementById('next').onclick=function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);renderMonth();};
+  document.getElementById('vMonth').onclick=function(){this.classList.add('on');document.getElementById('vAgenda').classList.remove('on');document.getElementById('monthview').style.display='';document.getElementById('agendaview').style.display='none';};
+  document.getElementById('vAgenda').onclick=function(){this.classList.add('on');document.getElementById('vMonth').classList.remove('on');document.getElementById('monthview').style.display='none';document.getElementById('agendaview').style.display='';renderAgenda();};
+
+  // swipe to change month
+  var cal=document.getElementById('cal'),sx=0,sy=0;
+  cal.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  cal.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){view=new Date(view.getFullYear(),view.getMonth()+(dx<0?1:-1),1);renderMonth();}},{passive:true});
+
+  renderMonth();renderPanel();
+})();
+</script>
+</body></html>
