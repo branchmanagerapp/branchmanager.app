@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Today — One Pager</title>
+<link rel="stylesheet" href="assets/site.css">
 <style>
   :root{--ink:#111;--mut:#666;--line:#ddd;--accent:#2f7a3a;--warn:#8a5512;--warnbg:#fdf3e3}
   *{box-sizing:border-box}
@@ -17,23 +18,17 @@
   h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:22px 0 8px;font-weight:800}
   .row{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #eee}
   .bx{flex:0 0 17px;height:17px;border:2px solid var(--ink);border-radius:4px;margin-top:2px}
-  .done .bx{background:var(--accent);border-color:var(--accent);position:relative}
-  .done .bx::after{content:"✓";position:absolute;top:-3px;left:2px;color:#fff;font-size:13px;font-weight:900}
-  .done b{color:var(--mut);font-weight:600}
   .row b{font-size:15px} .row small{display:block;color:var(--mut);font-size:12.5px;line-height:1.45}
   .tm{flex:0 0 62px;font:700 11.5px/1.3 ui-monospace,Menlo,monospace;color:var(--accent);padding-top:3px}
-  .tm.age{color:#b06a1a}
   .callout{background:var(--warnbg);border:1px solid #f0d9a8;border-radius:10px;padding:12px 15px;margin:8px 0 4px}
   .callout b{color:var(--warn)}
   .callout small{display:block;color:#7a5512;font-size:12.5px;margin-top:2px}
-  .lead{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #eee}
-  .lead .tm{flex:0 0 74px}
-  .lead a{color:var(--accent);text-decoration:none;font-weight:700}
+  .tools{background:#eef4ef;border:1px solid #cfe3d5;border-radius:10px;padding:10px 14px;font-size:13px;margin:6px 0}
   .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--mut);font-size:11.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
   .printbtn{position:fixed;top:14px;right:16px;background:var(--ink);color:#fff;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer}
   @media print{
     body{background:#fff} .sheet{margin:0;border:none;box-shadow:none;border-radius:0;padding:12px 6px;max-width:100%}
-    .printbtn{display:none} .row,.lead{break-inside:avoid}
+    .printbtn{display:none} .row{break-inside:avoid}
     @page{margin:14mm}
   }
 </style>
@@ -41,37 +36,36 @@
 <body>
 <button class="printbtn" onclick="window.print()">⎙ Print</button>
 <div class="sheet">
-  <div class="top"><h1>🌳 Today</h1><div class="date">Tuesday, July 7, 2026</div></div>
+  <div class="top"><h1>🌳 Today</h1><div class="date">Wednesday, July 8, 2026</div></div>
 
-  <h2>✅ Done today — nothing to do here</h2>
-  <div class="row done"><span class="bx"></span><span class="tm">done</span><span><b>Amanda job — complete</b></span></div>
-  <div class="row done"><span class="bx"></span><span class="tm">done</span><span><b>Ricardo, 8 Barger — paid (cash). No invoice needed.</b></span></div>
+  <h2>🗓️ The run (from your morning text)</h2>
+  <div class="row"><span class="bx"></span><span class="tm">8:30</span><span><b>Park</b><small>Get there by 8:30 — check-in.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">9:30</span><span><b>418 Union Ave — Rob McCrane</b><small>The storm callback (quote #528 started). Look it over / get it moving.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">PM</span><span><b>Dennis Lucente — SmartLawn / Navimow</b><small>The afternoon meeting. This is the robotic-mower fleet deal.</small></span></div>
+  <div class="tools">🧰 <b>Load the truck:</b> spade shovel · levels · landscape fabric · Allen drill</div>
 
-  <h2>⏳ The one thing waiting on you</h2>
+  <h2>🔴 Don't-forget today</h2>
   <div class="callout">
-    <b>Amanda — send her the $750 invoice (your Branch Manager test)</b>
-    <small>Everything's queued. I just need her phone # or address — her real record is in Jobber (logged out), and the two "Amanda" records already in BM are old ones. Give me her number and I build it; you tap Send.</small>
+    <b>Get through to M&amp;T about the card</b>
+    <small>Flagged this morning — the card still isn't working. They said you have to talk to your actual banker at M&amp;T. Call today.</small>
   </div>
+  <div class="row"><span class="bx"></span><span class="tm">CADCO</span><span><b>Pay CADCO #108833 — it's blocking sales</b><small>$16,303.55 past due. Blocks Ted Haver's X430 AND Dennis's X450s — and you're seeing Dennis today.</small></span></div>
 
-  <h2>🆕 New leads that came in — freshest first</h2>
-  <div class="lead"><span class="tm">Today 1:41p</span><span><b>Barbara</b> — <a href="tel:+16463915099">(646) 391-5099</a> · 132 Hunt Dr<br><small>Voicemail. Call back.</small></span></div>
-  <div class="lead"><span class="tm">Today 12:25p</span><span><b>Regina Clarkin</b> — <a href="tel:+19143826259">(914) 382-6259</a> · Peekskill<br><small>Voicemail. Call back.</small></span></div>
-  <div class="lead"><span class="tm">Today 9:48a</span><span><b>Rob McCrane</b> — <a href="tel:+13477244338">(347) 724-4338</a> · 418 Union Ave<br><small>Voicemail. Draft quote #528 already started in BM.</small></span></div>
-  <div class="lead"><span class="tm">Today</span><span><b>Christopher Cannon</b> — email<br><small>Chasing: "Should I still expect a callback?" — warm, going cold. Reply or call.</small></span></div>
-  <div class="lead"><span class="tm age">1 day</span><span><b>Mrs Hatzmann</b> — <a href="tel:+19147376285">(914) 737-6285</a> · Hillcrest Ave<br><small>Large limb over a tall pine. Web request Jul 6.</small></span></div>
-  <div class="lead"><span class="tm age">1 day</span><span><b>John M. Sullivan</b> — <a href="tel:+19144842811">(914) 484-2811</a> · 735 Requa St<br><small>Brush pile ~10×10. Web request Jul 6.</small></span></div>
-  <div class="lead"><span class="tm age">1 day</span><span><b>Pat Brandt</b> — <a href="tel:+19142747453">(914) 274-7453</a> · Shrub Oak<br><small>Voicemail Jul 6. Draft quote #529 started.</small></span></div>
+  <h2>📨 Estimates ready to send (in Branch Manager)</h2>
+  <div class="row"><span class="bx"></span><span class="tm">#533</span><span><b>Adam Melish — $3,800 / $4,600 w/ stump</b><small>68 Cedar Ave, Poughkeepsie. Job Thursday w/ Armand. Review tax, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">#516</span><span><b>Arlene Richie — $5,500 hickory</b><small>3723 Sunnyside Rd, Shrub Oak. Attach her photos, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">#534</span><span><b>Amanda — $3,500 silver maple</b><small>100 Nassau, Peekskill. Attach photos + add her number, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">#535</span><span><b>Syed — Yarbo (add prices)</b><small>Pro head + reprogram + setup. Fill prices + his address, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">$750</span><span><b>Amanda — $750 invoice</b><small>Still needs her number.</small></span></div>
 
-  <h2>🔬 I'm handling (Claude) — no action from you</h2>
-  <div class="row"><span class="bx" style="border-style:dashed"></span><span class="tm">wip</span><span><b>Dialpad replacement — deep research</b><small>Done gathering. OpenPhone leading: keeps the AI transcripts you liked, far simpler, ~$15/seat, and can auto-push new callers into Branch Manager. Full ranked report coming to you.</small></span></div>
-  <div class="row done"><span class="bx"></span><span class="tm">done</span><span><b>This hub + today sheet rebuilt</b></span></div>
+  <h2>🌿 Still owed / open</h2>
+  <div class="row"><span class="bx"></span><span class="tm">ASAP</span><span><b>Hector Arroyo — job not done</b><small>Confirm which Hector / what work.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">Country</span><span><b>Matt Green — Country Lane tree cleanup</b><small>11 Country Lane (Armand's street).</small></span></div>
 
-  <h2>💰 This week — money &amp; decisions (not tonight)</h2>
-  <div class="row"><span class="bx"></span><span class="tm">wk</span><span><b>CADCO invoice #108833 — $16,303.55 past due</b><small>Blocks Dennis's backordered X450 mowers. Needs a call/plan.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">wk</span><span><b>Intrepid KM100 — financed &amp; ready, say "go"</b><small>Approved: $1,100/mo, 5-yr, Geneva Capital. Reply to Jessica (jessica@gogc.com) to proceed → DocuSign secures the order. Chris Sleurink's quote is in your inbox.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">wk</span><span><b>Maria Trombetta — confirm GL reinstatement</b><small>Last open insurance thread. GL audit $3,279.54 already paid 6/22.</small></span></div>
+  <h2>⏳ Waiting on you (quick wins)</h2>
+  <div class="row"><span class="bx"></span><span class="tm">KM100</span><span><b>Reply to Jessica → DocuSign</b><small>$1,100/mo, 5-yr approved. Prior contract was voided; this is the live one.</small></span></div>
 
-  <div class="foot"><span>☀️ <a href="hub-570301.html" style="color:#2f7a3a;font-weight:700">Hub</a> · <a href="plan-snt-8c31d7.html" style="color:#2f7a3a;font-weight:700">The Plan</a> · <a href="estimates-snt-4b8e2f.html" style="color:#2f7a3a;font-weight:700">Estimates</a></span><span>Say "today sheet" any morning for a fresh one</span></div>
+  <div class="foot"><span>🛰️ <a href="ground-control-7c3f9a.html" style="color:#2f7a3a;font-weight:700">Ground Control</a> · <a href="estimates-map-3f9c21.html" style="color:#2f7a3a;font-weight:700">Map</a> · <a href="hub-570301.html" style="color:#2f7a3a;font-weight:700">Full index</a></span><span>Say "today sheet" any morning for a fresh one</span></div>
 </div>
 </body>
 </html>
