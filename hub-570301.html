@@ -25,6 +25,29 @@ details.scrap a{display:block;color:var(--muted);font-size:12.5px;text-decoratio
 details.scrap a:hover{color:var(--green)}
 .parkline{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;text-decoration:none;color:var(--ink);margin-top:8px}
 .parkline:hover{border-color:var(--green)} .parkline .t{font-weight:700;font-size:14px} .parkline .d{color:var(--muted);font-size:12px;margin-top:2px}
+.hero{background:var(--card);border:2px solid var(--green);border-radius:16px;padding:18px 18px 16px;margin:6px 0 18px;box-shadow:0 3px 14px rgba(20,60,30,.08)}
+.hero h2{border:none;margin:0 0 10px;padding:0;color:var(--green-d)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .day{border:1px solid var(--line);border-radius:9px;padding:7px 6px;min-height:74px;background:var(--bg)}
+.cal .dow{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
+.cal .dnum{font-size:15px;font-weight:800;margin:1px 0 4px}
+.cal .ev{font-size:10px;line-height:1.25;color:var(--ink);background:var(--green-l);border-radius:5px;padding:2px 4px;margin-top:3px;display:block}
+.cal .today{background:#fff;border-color:var(--ink)} .cal .today .dnum{color:var(--ink)}
+.cal .morrow{background:#fff6e6;border-color:#e0a63a} .cal .morrow .dnum{color:#b06a1a}
+.cal .ev.big{background:#f6c667;color:#5b4413;font-weight:800}
+@media(max-width:600px){.cal{grid-template-columns:1fr;gap:4px}.cal .day{min-height:0;display:flex;gap:8px;align-items:baseline}.cal .dnum{margin:0}.cal .ev{flex:1}}
+.itin{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.itin .ihd{font-weight:800;font-size:13.5px;color:var(--green-d);margin-bottom:6px}
+.irow{display:flex;gap:11px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.irow .it{flex:0 0 62px;font:700 12px/1.4 ui-monospace,Menlo,monospace;color:var(--green)}
+.irow small{display:block;color:var(--muted);font-size:12px}
+.todo .trow{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+.todo .bx{flex:0 0 16px;height:16px;border:2px solid var(--ink);border-radius:4px;margin-top:2px}
+.todo .who{flex:0 0 62px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--faint);padding-top:3px}
+.todo b{font-size:14px} .todo small{display:block;color:var(--muted);font-size:12px}
+.recap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 18px 14px}
+.recap h4{margin:14px 0 4px;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--green-d)}
+.recap ul{margin:2px 0;padding-left:18px} .recap li{font-size:13px;margin:3px 0;color:var(--ink)}
 .vault{display:block;background:linear-gradient(135deg,#0d1b12,#1f7a43);color:#fff;border-radius:14px;padding:16px 18px;text-decoration:none;border:1px solid var(--green-d);box-shadow:0 4px 14px rgba(13,27,18,.25)}
 .vault:hover{transform:translateY(-1px)}
 .vault .t{font-weight:800;font-size:16px}
@@ -37,25 +60,48 @@ details.scrap a:hover{color:var(--green)}
 footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px}
 </style></head><body>
 <header><div class="wrap">
-<div class="kick">Second Nature Tree · Doug Brown</div>
-<h1>Command Center</h1>
-<p>The supplement to Branch Manager — the extras that live here for now, until they get built into the app. Start with Today.</p>
+<div class="kick">Second Nature Tree · Doug &amp; Catherine</div>
+<h1>Our Command Center</h1>
+<p>The shared supplement to Branch Manager — the calendar, the week, and everything that isn't in the app yet. Start with the week below.</p>
 </div></header>
 <div class="wrap">
 
-<div class="note">🔒 <b>Private index.</b> Unlisted page — anyone with the link can open it, so keep it to yourself. Your most sensitive files (portfolio, net worth, debt) live behind the password-locked Vault below.</div>
+<div class="note">🔒 <b>Shared, but safe.</b> This page is shared between Doug &amp; Catherine. Anything truly private (portfolio, net worth, debt) stays locked behind the Vault password at the bottom — Catherine can use this whole page without it.</div>
+
+<div class="hero">
+  <h2>📅 This week — Mon Jul 6 → Sun Jul 12</h2>
+  <div class="cal">
+    <div class="day"><div class="dow">Mon</div><div class="dnum">6</div><span class="ev">Storm work</span></div>
+    <div class="day today"><div class="dow">Tue</div><div class="dnum">7</div><span class="ev">Mercado ✓</span><span class="ev">Amanda job ✓</span><span class="ev">Today</span></div>
+    <div class="day morrow"><div class="dow">Wed</div><div class="dnum">8</div><span class="ev big">🚜 See Dennis Lucente</span><span class="ev">w/ Catherine</span></div>
+    <div class="day"><div class="dow">Thu</div><div class="dnum">9</div><span class="ev">Lead callbacks</span></div>
+    <div class="day"><div class="dow">Fri</div><div class="dnum">10</div></div>
+    <div class="day"><div class="dow">Sat</div><div class="dnum">11</div></div>
+    <div class="day"><div class="dow">Sun</div><div class="dnum">12</div></div>
+  </div>
+
+  <div class="itin">
+    <div class="ihd">🚜 Tomorrow — Wed Jul 8 · itinerary</div>
+    <div class="irow"><span class="it">AM</span><span><b>Morning at the shop / return lead calls</b><small>Barbara (132 Hunt Dr), Regina Clarkin, Rob McCrane (418 Union) — freshest first. Send Amanda her $750 invoice.</small></span></div>
+    <div class="irow"><span class="it">TBD</span><span><b>Drive to see Dennis Lucente — with Catherine</b><small>Confirm the time with Dennis first. Bring: the SmartLawn/Lucente Navimow fleet proposal (in the SmartLawn section below) + the CADCO mower status. Goal: firm up the robotic-mower fleet deal.</small></span></div>
+    <div class="irow"><span class="it">note</span><span><b>Heads-up on CADCO before the visit</b><small>Invoice #108833 ($16,303.55) is past due and blocks Dennis's backordered X450s — know where that stands before you sit down with him.</small></span></div>
+  </div>
+
+  <div class="itin todo">
+    <div class="ihd">✅ Our to-do — Doug &amp; Catherine</div>
+    <div class="trow"><span class="bx"></span><span class="who">Doug</span><span><b>Send Amanda's $750 invoice</b><small>Claude has it queued — just needs her number to finish it.</small></span></div>
+    <div class="trow"><span class="bx"></span><span class="who">Either</span><span><b>Call back today's leads</b><small>Barbara · Regina Clarkin · Rob McCrane · Chris Cannon (chasing a callback — going cold).</small></span></div>
+    <div class="trow"><span class="bx"></span><span class="who">Catherine</span><span><b>Chase the aging leads</b><small>Hatzmann (Hillcrest), Sullivan (735 Requa brush pile), Pat Brandt (Shrub Oak).</small></span></div>
+    <div class="trow"><span class="bx"></span><span class="who">Doug</span><span><b>Prep for Dennis Lucente (Wed)</b><small>Pull up the Navimow proposal + know the CADCO status.</small></span></div>
+    <div class="trow"><span class="bx"></span><span class="who">Doug</span><span><b>Decide on the Intrepid KM100 financing</b><small>Approved at $1,100/mo — Jessica's waiting. Not urgent.</small></span></div>
+  </div>
+</div>
 
 <h2>⭐ Start here</h2>
 <div class="grid">
   <a class="tile" href="https://branchmanager.app/today-snt-9d4b1e.html" target="_blank" style="border-color:var(--green);background:var(--green-l)"><div class="t">🌳 Today — new leads &amp; to-dos <span class="tag new">updated</span></div><div class="d">Jul 7: what's done, the one thing waiting on you, and every new lead — freshest first</div></a>
   <a class="tile" href="https://branchmanager.app/plan-snt-8c31d7.html" target="_blank"><div class="t">The Plan</div><div class="d">Master priorities — right-now → this-week → this-month</div></a>
   <a class="tile" href="https://branchmanager.app/dialpad-alternatives-4c81a2.html" target="_blank"><div class="t">Getting off Dialpad <span class="tag new">research</span></div><div class="d">Ranked replacement — OpenPhone wins; keeps AI, feeds Branch Manager</div></a>
-</div>
-
-<h2>🔒 Private — one login</h2>
-<div class="grid">
-  <a class="vault" href="https://branchmanager.app/vault-0e5a3f.html" target="_blank"><div class="t">Private Vault <span class="tag lock">locked</span></div><div class="d">Portfolio · Net Worth · Debt · Jon deal · Everything-I-Do · Fleet · Equipment — all AES-encrypted under one password</div></a>
-  <a class="tile" href="https://branchmanager.app/portfolio-7e21a9.html" target="_blank"><div class="t">Portfolio Sheet <span class="tag lock">locked</span></div><div class="d">Live holdings + margin gauges (same password)</div></a>
 </div>
 
 <h2>Branch Manager — the app</h2>
@@ -124,6 +170,29 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <a class="tile" href="https://branchmanager.app/hooklift-8a6720.html" target="_blank"><div class="t">Hook-lift truck — buy or not</div><div class="d">The acquisition analysis</div></a>
 </div>
 
+<h2>📈 Last 2 weeks — what we shipped</h2>
+<div class="recap">
+  <h4>Branch Manager (the app)</h4>
+  <ul>
+    <li>Pushed the app to ~v984 — the big one: a loud red alert when a save fails, so nothing silently gets dropped again.</li>
+    <li>Made the whole app look &amp; feel like Jobber (v969–v983) so the switch off Jobber feels familiar — forms, sidebar, home screen, requests list.</li>
+    <li>Fixed the cash-losing bugs: quotes failing to save to the cloud, quote-storage overflow, and cold-load speed (killed ~85 redundant sync calls/90s).</li>
+  </ul>
+  <h4>Getting organized (this command center)</h4>
+  <ul>
+    <li>Built The Plan, the Estimate Board, the daily Today sheet, and this Command Center — one home for everything that isn't in the app yet.</li>
+    <li>Mined every open lead out of texts, calls, and email into the Estimate Board so nothing gets lost in the chats.</li>
+    <li>Deep-researched replacing Dialpad → OpenPhone is the pick (keeps AI transcripts, feeds Branch Manager).</li>
+  </ul>
+  <h4>Money &amp; the businesses</h4>
+  <ul>
+    <li>Paid the GL insurance audit ($3,279.54, 6/22) and finished the 2025 CPA package for Kevin Fay.</li>
+    <li>Built the SmartLawn / Lucente Navimow fleet proposal (the reason for tomorrow's visit).</li>
+    <li>Storm week: Mercado, Amanda, and Ricardo jobs done; storm quotes #514–532 built from the callers.</li>
+    <li>Locked the private Vault (portfolio, net worth, debt) behind one password so this page is safe to share.</li>
+  </ul>
+</div>
+
 <h2>Parked — not happening right now</h2>
 <a class="parkline" href="https://branchmanager.app/ni-walkthrough-e77eaa.html" target="_blank"><div class="t">Northeast Intrepid — the dealership pitch</div><div class="d">Full plan, P&amp;L, show budget & customer site all live behind this one link. On ice unless it revives.</div></a>
 <a class="parkline" href="https://branchmanager.app/hvskate-door-a04a13.html" target="_blank"><div class="t">HV Skate — park entry automation</div><div class="d">Skate-side door/entry page</div></a>
@@ -133,7 +202,11 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <a class="tile" href="https://peekskilltree.com" target="_blank"><div class="t">peekskilltree.com <span class="tag live">live</span></div><div class="d">Your public tree-service website</div></a>
 </div>
 
-<h2>Private — local only (not web-hosted)</h2>
+<h2>🔒 Private — Doug only (locked / local)</h2>
+<div class="grid">
+  <a class="vault" href="https://branchmanager.app/vault-0e5a3f.html" target="_blank"><div class="t">Private Vault <span class="tag lock">locked</span></div><div class="d">Portfolio · Net Worth · Debt · Jon deal · Everything-I-Do — all AES-encrypted under one password</div></a>
+  <a class="tile" href="https://branchmanager.app/portfolio-7e21a9.html" target="_blank"><div class="t">Portfolio Sheet <span class="tag lock">locked</span></div><div class="d">Live holdings + margin gauges (same password)</div></a>
+</div>
 <div class="grid">
   <div class="priv"><div class="t">Business Records (VINs / DOT / EIN)</div><div class="p">~/Desktop/Personal/Second Nature Tree — Business Records (private).md</div></div>
 </div>
