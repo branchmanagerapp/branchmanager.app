@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Dennis Lucente — Invoice &amp; Payment · Smart Lawn</title>
+<title>Dennis Lucente — Invoice, Payment &amp; Resale Certificate · Smart Lawn</title>
 <style>
   :root{--ink:#1d1d1f;--grey:#f5f5f7;--mut:#86868b;--green:#6abb1e;--greend:#4a8a10;--line:#e5e5ea;--gold:#b8860b;--red:#c0392b}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -124,8 +124,8 @@
       </div>
       <div class="party">
         <div class="lbl">Delivered &amp; installed</div>
-        <div class="nm">July 3, 2026 — first 2 units installed &amp; mowing · 2 more on the way</div>
-        <div>Both units activated, connected &amp; mowing.</div>
+        <div class="nm">July 3, 2026 — 1 unit, on site</div>
+        <div>Unit activated, connected &amp; mowing.</div>
         <div>Dealer install, setup &amp; crew training included.</div>
       </div>
     </div>
@@ -135,17 +135,6 @@
         <tr><th>Item</th><th class="r">Retail</th><th class="r">Qty</th><th class="r">Your price</th><th class="r">Amount</th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td>
-            <div class="item-nm">Navimow CM240 (CM240M1)</div>
-            <div class="item-fit">17″ wide cut · commercial · up to 6 acres</div>
-            <div class="item-detail">Serial <b>22HBE2551Y0125</b> · Site: <b>Heathcote property</b><br>Activated 07/03/2026 · Factory warranty through 07/03/2028</div>
-          </td>
-          <td class="r"><span class="retail">$6,999</span></td>
-          <td class="r">1</td>
-          <td class="r"><span class="yours">$6,299</span></td>
-          <td class="r"><span class="yours">$6,299.00</span></td>
-        </tr>
         <tr>
           <td>
             <div class="item-nm">Navimow X450</div>
@@ -159,33 +148,11 @@
         </tr>
         <tr>
           <td>
-            <div class="item-nm">Navimow X450 — second unit</div>
-            <div class="item-fit">17″ wide cut · large residential / small commercial · up to 1.5 acres</div>
-            <div class="item-detail">Serial added at delivery · Site: <b>per Dennis</b> · Factory warranty from activation</div>
-          </td>
-          <td class="r"><span class="retail">$2,999</span></td>
-          <td class="r">1</td>
-          <td class="r"><span class="yours">$2,539</span></td>
-          <td class="r"><span class="yours">$2,539.00</span></td>
-        </tr>
-        <tr>
-          <td>
-            <div class="item-nm">Navimow i105E</div>
-            <div class="item-fit">Compact · up to 5,500 sq ft — small/tight lawns</div>
-            <div class="item-detail">Serial added at delivery · Factory warranty from activation</div>
-          </td>
-          <td class="r"><span class="retail">$799</span></td>
-          <td class="r">1</td>
-          <td class="r"><span class="yours">$799</span></td>
-          <td class="r"><span class="yours">$799.00</span></td>
-        </tr>
-        <tr>
-          <td>
-            <div class="item-nm">Dealer installation, setup &amp; crew training — all units</div>
-            <div class="item-detail">On-site install at each property, RTK setup, app onboarding &amp; crew walkthrough.</div>
+            <div class="item-nm">Dealer installation, setup &amp; crew training — 1 unit</div>
+            <div class="item-detail">On-site install, RTK setup, app onboarding &amp; crew walkthrough.</div>
           </td>
           <td class="r"></td>
-          <td class="r">4</td>
+          <td class="r">1</td>
           <td class="r"><span class="yours" style="color:var(--greend)">Included</span></td>
           <td class="r"><span class="yours" style="color:var(--greend)">$0.00</span></td>
         </tr>
@@ -194,17 +161,13 @@
 
     <div class="totals">
       <table>
-        <tr class="sub"><td>Subtotal</td><td class="r"><b>$12,176.00</b></td></tr>
-        <tr><td colspan="2" class="save">You save $1,620 vs retail — plus $0 install on every unit.</td></tr>
-        <tr id="taxRow"><td id="taxLabel">NY sales tax (8.375%)</td><td class="r" id="taxAmt">$1,019.74</td></tr>
-        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$13,195.74</td></tr>
+        <tr class="sub"><td>Subtotal</td><td class="r"><b>$2,539.00</b></td></tr>
+        <tr><td colspan="2" class="save">You save $460 vs retail — plus $0 install.</td></tr>
+        <tr id="taxRow"><td id="taxLabel">NY sales tax (8.375%)</td><td class="r" id="taxAmt">$212.64</td></tr>
+        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$2,751.64</td></tr>
       </table>
     </div>
-
-    <div style="margin-top:16px;border:1.5px dashed var(--line);border-radius:12px;padding:14px 16px">
-      <div style="font-weight:800;font-size:14px;margin-bottom:4px">➕ Optional add-on — Navimow CM120 (CM120M1)</div>
-      <div style="font-size:13px;color:#666;line-height:1.55">AWD commercial · up to 3 acres · retail <b>$5,499</b> — <b>partner price on request</b>. Not included in this invoice's total; text Doug at (914) 647-7276 to add it and we'll deliver with the next units.</div>
-    </div>
+    <div class="waivedbadge" id="waivedBadge">✓ Resale certificate on file — sales tax waived. New total $2,539.00.</div>
   </div>
 
   <!-- ============ ACH PAYMENT ============ -->
@@ -217,7 +180,56 @@
     </div>
     <button class="btn btn-green" id="achBtn" style="margin-top:6px">Send me the secure ACH link →</button>
     <div class="ach-note">
-      Bank transfer keeps <b>100% of your payment fee-free</b> — no 3% card charge. Prefer a paper check? Make it payable to <b>Second Nature Tree LLC dba Smart Lawn</b> and we'll pick it up. Questions: text <b>(914) 647-7276</b>. <span style='color:#86868b'>(Registered NY resale vendor re-billing these units to your clients? Ask about a resale certificate for future orders.)</span>
+      Bank transfer keeps <b>100% of your payment fee-free</b> — no 3% card charge. Prefer a paper check? Make it payable to <b>Second Nature Tree LLC dba Smart Lawn</b> and we'll pick it up. Questions: text <b>(914) 647-7276</b>.
+    </div>
+  </div>
+
+  <!-- ============ ST-120 RESALE CERTIFICATE ============ -->
+  <div class="sheet">
+    <div class="sec-tag">NY ST-120 Resale Certificate — waive the sales tax</div>
+    <div class="st-intro">
+      Buying these units to <b>resell or re-deploy to your own clients</b>? Complete New York Form <b>ST-120</b> below and your <b>sales tax drops to $0</b> — the total becomes <b>$2,539.00</b>. This is a self-certification: by signing, you certify you're a registered NY sales-tax vendor purchasing for resale. Takes 30 seconds, fully digital — no printing.
+    </div>
+
+    <form id="st120">
+      <div class="form-row">
+        <div class="fld"><label>Purchaser business name <span class="req">*</span></label><input id="pName" value="Lucente Landscaping" required></div>
+        <div class="fld"><label>Purchaser address <span class="req">*</span></label><input id="pAddr" value="1 Askins Pl, New Rochelle, NY 10801" required></div>
+      </div>
+      <div class="form-row">
+        <div class="fld"><label>NY Certificate of Authority # (sales-tax ID) <span class="req">*</span></label><input id="pCoa" placeholder="e.g. 12-3456789" required></div>
+        <div class="fld"><label>Type of business <span class="req">*</span></label><input id="pBiz" value="Landscape contracting &amp; equipment resale" required></div>
+      </div>
+
+      <div class="radio-row">
+        <label class="radio-opt on" id="optSingle"><input type="radio" name="certType" value="single" checked><b>Single-use certificate</b>Covers only this invoice (INV-20260704-01).</label>
+        <label class="radio-opt" id="optBlanket"><input type="radio" name="certType" value="blanket"><b>Blanket certificate</b>Covers this and future Smart Lawn purchases.</label>
+      </div>
+
+      <div class="cert-body">
+        I certify that I am a <b>registered New York State sales-tax vendor</b> (Certificate of Authority # above) and that the tangible personal property purchased on this invoice — <b>Navimow robotic mowing equipment</b> — is purchased <b>for resale, rental, or lease in its present form</b> in the regular course of my business. I understand this certificate cannot be used to purchase property or services for my own use, and that <b>willfully issuing a false or fraudulent certificate is a misdemeanor</b> subject to penalties under NY Tax Law.
+      </div>
+
+      <label class="affirm" id="affirmBox">
+        <input type="checkbox" id="affirm">
+        <span>I have read the above and certify that all statements are true. I am making this purchase <b>for resale</b>, and I authorize Smart Lawn to keep this certificate on file in place of collecting sales tax.</span>
+      </label>
+
+      <div class="sig-row">
+        <div class="fld sig-box" style="flex:2"><label>Signature (type your full name) <span class="req">*</span></label><input id="sig" class="sig-input" placeholder="Dennis Lucente" required></div>
+        <div class="fld" style="flex:1"><label>Title</label><input id="title" value="Owner"></div>
+        <div class="fld" style="flex:1"><label>Date</label><input id="sigDate" value="07/04/2026"></div>
+      </div>
+
+      <div class="st-actions">
+        <button type="submit" class="btn btn-green" id="signBtn" disabled>Sign &amp; waive tax</button>
+        <button type="button" class="btn btn-ghost" id="emailBtn">Email me a copy</button>
+      </div>
+    </form>
+
+    <div class="done-panel" id="donePanel">
+      <div class="chk">✓ Resale certificate completed</div>
+      <p id="doneMsg"></p>
     </div>
   </div>
 
@@ -225,6 +237,8 @@
 </div>
 
 <script>
+(function(){
+  // Optional: paste a Melio/Stripe ACH payment link here → button goes straight to it.
   var ACH_LINK = null;
   document.getElementById('achBtn').addEventListener('click',function(){
     if(ACH_LINK){ window.location.href=ACH_LINK; return; }
@@ -232,6 +246,83 @@
     var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoice INV-20260704-01. Thanks, Dennis.');
     window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
   });
+
+  // radio styling
+  var optS=document.getElementById('optSingle'), optB=document.getElementById('optBlanket');
+  document.querySelectorAll('input[name=certType]').forEach(function(r){
+    r.addEventListener('change',function(){
+      optS.classList.toggle('on', optS.querySelector('input').checked);
+      optB.classList.toggle('on', optB.querySelector('input').checked);
+    });
+  });
+
+  // enable sign only when affirmed + required filled
+  var affirm=document.getElementById('affirm'), signBtn=document.getElementById('signBtn');
+  var reqIds=['pName','pAddr','pCoa','pBiz','sig'];
+  function check(){
+    var ok=affirm.checked && reqIds.every(function(id){return document.getElementById(id).value.trim();});
+    signBtn.disabled=!ok;
+  }
+  affirm.addEventListener('change',function(){document.getElementById('affirmBox').style.borderColor=affirm.checked?'var(--green)':'var(--line)';check();});
+  reqIds.forEach(function(id){document.getElementById(id).addEventListener('input',check);});
+
+  // waive tax on sign
+  function waive(){
+    document.getElementById('taxLabel').innerHTML='NY sales tax <span class="tax-waived">— waived (ST-120 on file)</span>';
+    document.getElementById('taxAmt').innerHTML='<span class="tax-waived">$0.00</span>';
+    document.getElementById('grandTotal').textContent='$2,539.00';
+    document.getElementById('waivedBadge').classList.add('show');
+  }
+
+  function buildCert(){
+    var type=document.querySelector('input[name=certType]:checked').value;
+    return [
+      'NEW YORK STATE ST-120 RESALE CERTIFICATE',
+      '',
+      'Certificate type: '+(type==='blanket'?'Blanket':'Single-use (Invoice INV-20260704-01)'),
+      '',
+      'PURCHASER',
+      '  Business name: '+document.getElementById('pName').value,
+      '  Address: '+document.getElementById('pAddr').value,
+      '  NY Certificate of Authority #: '+document.getElementById('pCoa').value,
+      '  Type of business: '+document.getElementById('pBiz').value,
+      '',
+      'SELLER',
+      '  Second Nature Tree LLC dba Smart Lawn',
+      '  smartlawnny@gmail.com · (914) 647-7276',
+      '',
+      'Property purchased for resale: Navimow robotic mowing equipment',
+      '  - Navimow X450, SN 22FBD2611Y0029',
+      '',
+      'Certification: Purchaser certifies it is a registered NY sales-tax vendor',
+      'purchasing the above for resale/rental/lease in its present form. Willfully',
+      'issuing a false certificate is a misdemeanor under NY Tax Law.',
+      '',
+      'Signed: '+document.getElementById('sig').value+'    Title: '+document.getElementById('title').value+'    Date: '+document.getElementById('sigDate').value
+    ].join('\n');
+  }
+
+  document.getElementById('st120').addEventListener('submit',function(e){
+    e.preventDefault();
+    if(signBtn.disabled) return;
+    waive();
+    signBtn.textContent='✓ Signed — tax waived';
+    signBtn.disabled=true;
+    var cert=buildCert();
+    var dp=document.getElementById('donePanel'); dp.classList.add('show');
+    document.getElementById('doneMsg').innerHTML='Your sales tax has been waived — new total <b>$2,539.00</b>. A copy of your completed ST-120 is ready to send to Smart Lawn for our records.';
+    // open a prefilled email so the signed cert reaches Smart Lawn
+    var subj=encodeURIComponent('Signed ST-120 Resale Certificate — Lucente (INV-20260704-01)');
+    var body=encodeURIComponent(cert+'\n\n(Completed digitally on the Smart Lawn invoice page.)');
+    window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
+  });
+
+  document.getElementById('emailBtn').addEventListener('click',function(){
+    var subj=encodeURIComponent('My Smart Lawn invoice INV-20260704-01');
+    var body=encodeURIComponent('Please send me a copy of invoice INV-20260704-01.');
+    window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
+  });
+})();
 </script>
 </body>
 </html>
