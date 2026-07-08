@@ -16,6 +16,15 @@ a.tile:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:0 3
 a.tile .t{font-weight:700;font-size:14.5px}
 a.tile .d{color:var(--muted);font-size:12px;margin-top:2px}
 a.sm{padding:10px 13px}a.sm .t{font-size:13px}a.sm .d{font-size:11px}
+details.scrap{margin:24px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 16px}
+details.scrap summary{cursor:pointer;font-weight:800;color:var(--faint);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;padding:12px 0;list-style:none}
+details.scrap summary::-webkit-details-marker{display:none}
+details.scrap summary::before{content:"▸ "}
+details.scrap[open] summary::before{content:"▾ "}
+details.scrap a{display:block;color:var(--muted);font-size:12.5px;text-decoration:none;padding:6px 0;border-top:1px solid var(--line)}
+details.scrap a:hover{color:var(--green)}
+.parkline{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;text-decoration:none;color:var(--ink);margin-top:8px}
+.parkline:hover{border-color:var(--green)} .parkline .t{font-weight:700;font-size:14px} .parkline .d{color:var(--muted);font-size:12px;margin-top:2px}
 .vault{display:block;background:linear-gradient(135deg,#0d1b12,#1f7a43);color:#fff;border-radius:14px;padding:16px 18px;text-decoration:none;border:1px solid var(--green-d);box-shadow:0 4px 14px rgba(13,27,18,.25)}
 .vault:hover{transform:translateY(-1px)}
 .vault .t{font-weight:800;font-size:16px}
@@ -30,7 +39,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
 <header><div class="wrap">
 <div class="kick">Second Nature Tree · Doug Brown</div>
 <h1>Command Center</h1>
-<p>One link to everything you've built — every page, organized. Bookmark this.</p>
+<p>The supplement to Branch Manager — the extras that live here for now, until they get built into the app. Start with Today.</p>
 </div></header>
 <div class="wrap">
 
@@ -55,6 +64,12 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <a class="tile" href="https://branchmanager.app/bm-todo-101167.html" target="_blank"><div class="t">Master To-Do</div><div class="d">Today's 3 + the rest</div></a>
   <a class="tile" href="https://branchmanager.app/fleet-budget-b1e454.html" target="_blank"><div class="t">Fleet & Budget dashboard</div><div class="d">Live fleet + monthly budget picture</div></a>
   <a class="tile" href="https://branchmanager.app/snt-budget-9bfc05.html" target="_blank"><div class="t">SNT Budget</div><div class="d">What's really going on</div></a>
+</div>
+
+<h2>🌱 SmartLawn</h2>
+<div class="grid">
+  <a class="tile" href="https://branchmanager.app/lucente.html" target="_blank"><div class="t">SmartLawn — Lucente <span class="tag new">active</span></div><div class="d">Navimow robotic-mower fleet proposal for Lucente Landscaping</div></a>
+  <a class="tile" href="https://smartlawnny.com" target="_blank"><div class="t">smartlawnny.com <span class="tag live">live</span></div><div class="d">The SmartLawn public site</div></a>
 </div>
 
 <h2>Branch Manager — product & marketing</h2>
@@ -94,16 +109,6 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <a class="tile" href="https://branchmanager.app/snt-plan.html" target="_blank"><div class="t">SNT Business Plan — the hub</div><div class="d">The honest 8-part plan, start here</div></a>
   <a class="tile" href="https://branchmanager.app/cpa2025-1aefb4.html" target="_blank"><div class="t">CPA 2025 Package</div><div class="d">Year-end books for Kevin Fay, with drill-down</div></a>
 </div>
-<div class="grid3">
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-1-numbers.html" target="_blank"><div class="t">1 · The two numbers</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-2-cashflow.html" target="_blank"><div class="t">2 · Why it feels like failing</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-3-fleet.html" target="_blank"><div class="t">3 · Where money goes</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-4-trucks.html" target="_blank"><div class="t">4 · Truck & equip calculator</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-5-employees.html" target="_blank"><div class="t">5 · Min revenue / employee</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-6-fix.html" target="_blank"><div class="t">6 · Fix the cash flow</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-7-decision.html" target="_blank"><div class="t">7 · Chuck it / scale up</div></a>
-  <a class="tile sm" href="https://branchmanager.app/snt-plan-8-action.html" target="_blank"><div class="t">8 · Your action plan</div></a>
-</div>
 
 <h2>Operator Network & Rates</h2>
 <div class="grid">
@@ -117,30 +122,11 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <a class="tile" href="https://branchmanager.app/giant-loader-8fd740.html" target="_blank"><div class="t">Giant loader — fix or replace</div><div class="d">Head-gasket fix vs new machine</div></a>
   <a class="tile" href="https://branchmanager.app/ram2500-68c5d8.html" target="_blank"><div class="t">Ram 2500 — keep or let go</div><div class="d">The loan-vs-value call</div></a>
   <a class="tile" href="https://branchmanager.app/hooklift-8a6720.html" target="_blank"><div class="t">Hook-lift truck — buy or not</div><div class="d">The acquisition analysis</div></a>
-  <a class="tile" href="https://branchmanager.app/rons-rescue-repair-ed2dcd.html" target="_blank"><div class="t">Ron's Rescue Repair</div><div class="d">Small engine · powersports · equipment</div></a>
 </div>
 
-<h2>Northeast Intrepid (the dealership pitch)</h2>
-<div class="grid">
-  <a class="tile" href="https://branchmanager.app/ni-walkthrough-e77eaa.html" target="_blank"><div class="t">Chris walkthrough <span class="tag new">start here</span></div><div class="d">Guided tour of the whole plan — what to send Chris</div></a>
-  <a class="tile" href="https://branchmanager.app/northeast-intrepid-c83567.html" target="_blank"><div class="t">Dealer plan / proposal</div><div class="d">The full proposal to Chris</div></a>
-  <a class="tile" href="https://branchmanager.app/ni-site-87a456.html" target="_blank"><div class="t">Customer site</div><div class="d">Machines, demos, service+bios, parts, financing</div></a>
-  <a class="tile" href="https://branchmanager.app/intrepid-websites-63b284.html" target="_blank"><div class="t">Web-services pitch (for Chris) <span class="tag new">new</span></div><div class="d">Offer to build dealer + ordering sites for the network</div></a>
-  <a class="tile" href="https://branchmanager.app/km100-parts-423a29.html" target="_blank"><div class="t">KM100 Parts & Shipping</div><div class="d">Kubota D1105 catalog + order/ship center</div></a>
-  <a class="tile" href="https://branchmanager.app/intrepid-show-budget-ea07eb.html" target="_blank"><div class="t">Show Budget</div><div class="d">Drive-out show costs + break-even</div></a>
-  <a class="tile" href="https://branchmanager.app/intrepid-pnl-1faf77.html" target="_blank"><div class="t">Year-1 P&L</div><div class="d">Revenue − expenses → net</div></a>
-  <a class="tile" href="https://branchmanager.app/intrepid-5yr-448e0b.html" target="_blank"><div class="t">5-Year Plan</div><div class="d">¼→½→full ramp · ~$153k cumulative net</div></a>
-  <a class="tile" href="https://branchmanager.app/todd-intrepid-d1a2e1.html" target="_blank"><div class="t">Todd + Intrepid</div><div class="d">Demo his KM130 + Todd as inventory backstop</div></a>
-  <a class="tile" href="https://branchmanager.app/northeast-intrepid-ron-8ac4b8.html" target="_blank"><div class="t">Ron's service-partner page</div><div class="d">A spot for Ron's Rescue Repair</div></a>
-  <a class="tile" href="https://branchmanager.app/northeast-intrepid-8c3e8d.html" target="_blank"><div class="t">NI — Green Industry (older)</div><div class="d">Earlier general-market version</div></a>
-  <a class="tile" href="https://branchmanager.app/doug-d21f41.html" target="_blank"><div class="t">What I Build & Run (shareable)</div><div class="d">The overview of everything you run</div></a>
-</div>
-
-<h2>Other ventures</h2>
-<div class="grid">
-  <a class="tile" href="https://branchmanager.app/lucente.html" target="_blank"><div class="t">SmartLawn — Lucente</div><div class="d">Navimow fleet proposal for Lucente Landscaping</div></a>
-  <a class="tile" href="https://branchmanager.app/hvskate-door-a04a13.html" target="_blank"><div class="t">HV Skate — Park Entry Automation</div><div class="d">Skate-side door/entry page</div></a>
-</div>
+<h2>Parked — not happening right now</h2>
+<a class="parkline" href="https://branchmanager.app/ni-walkthrough-e77eaa.html" target="_blank"><div class="t">Northeast Intrepid — the dealership pitch</div><div class="d">Full plan, P&amp;L, show budget & customer site all live behind this one link. On ice unless it revives.</div></a>
+<a class="parkline" href="https://branchmanager.app/hvskate-door-a04a13.html" target="_blank"><div class="t">HV Skate — park entry automation</div><div class="d">Skate-side door/entry page</div></a>
 
 <h2>Public sites</h2>
 <div class="grid">
@@ -151,6 +137,22 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
 <div class="grid">
   <div class="priv"><div class="t">Business Records (VINs / DOT / EIN)</div><div class="p">~/Desktop/Personal/Second Nature Tree — Business Records (private).md</div></div>
 </div>
+
+<details class="scrap">
+  <summary>🗑️ Scrap — parked / ignore (kept only so links aren't lost)</summary>
+  <a href="https://branchmanager.app/rons-rescue-repair-ed2dcd.html" target="_blank">Ron's Rescue Repair</a>
+  <a href="https://branchmanager.app/northeast-intrepid-ron-8ac4b8.html" target="_blank">Ron's service-partner page</a>
+  <a href="https://branchmanager.app/doug-d21f41.html" target="_blank">What I Build & Run (shareable overview)</a>
+  <a href="https://branchmanager.app/northeast-intrepid-c83567.html" target="_blank">Intrepid — dealer plan / proposal</a>
+  <a href="https://branchmanager.app/ni-site-87a456.html" target="_blank">Intrepid — customer site</a>
+  <a href="https://branchmanager.app/intrepid-websites-63b284.html" target="_blank">Intrepid — web-services pitch</a>
+  <a href="https://branchmanager.app/km100-parts-423a29.html" target="_blank">Intrepid — KM100 parts & shipping</a>
+  <a href="https://branchmanager.app/intrepid-show-budget-ea07eb.html" target="_blank">Intrepid — show budget</a>
+  <a href="https://branchmanager.app/intrepid-pnl-1faf77.html" target="_blank">Intrepid — Year-1 P&L</a>
+  <a href="https://branchmanager.app/intrepid-5yr-448e0b.html" target="_blank">Intrepid — 5-year plan</a>
+  <a href="https://branchmanager.app/todd-intrepid-d1a2e1.html" target="_blank">Intrepid — Todd</a>
+  <a href="https://branchmanager.app/northeast-intrepid-8c3e8d.html" target="_blank">Intrepid — Green Industry (older)</a>
+</details>
 
 <footer>Private command center · unlisted · keep the link to yourself · sensitive financials live behind the Vault password</footer>
 </div></body></html>
