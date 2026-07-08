@@ -1,0 +1,94 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#0a2e18">
+<title>Tracking My Words — 24/7</title>
+<link rel="stylesheet" href="assets/site.css">
+<style>
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 60px}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:30px 18px 24px;text-align:center}
+header h1{margin:6px 0 4px;font-size:24px;font-weight:800}
+header p{margin:0 auto;max-width:520px;font-size:14px;opacity:.93}
+.kick{letter-spacing:2px;font-size:11px;font-weight:800;text-transform:uppercase;opacity:.82}
+h2{color:var(--green-d);font-size:16px;margin:26px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px;margin:11px 0}
+.card h3{margin:0 0 4px;font-size:16px}
+.card .tag{font-size:11px;font-weight:800;color:#fff;background:var(--green);border-radius:20px;padding:2px 9px;margin-left:6px}
+.card .tag.diy{background:#b06a1a}.card .tag.easy{background:#1d6fd6}
+.card p{margin:6px 0;font-size:14px}
+.card .pro{color:var(--green-d);font-size:13.5px}.card .con{color:#9a3115;font-size:13.5px}
+.pick{background:var(--green-l);border:2px solid var(--green);border-radius:14px;padding:16px 18px;margin:16px 0}
+ul{margin:6px 0;padding-left:20px}li{margin:4px 0;font-size:14px}
+.note{background:#fff8ec;border:1px solid #f0d9a8;color:#7a5512;border-radius:10px;padding:12px 15px;font-size:13px;margin:14px 0}
+a{color:var(--green)}
+footer{text-align:center;color:var(--faint);font-size:12px;padding:20px 0}
+</style></head>
+<body>
+<header>
+  <div class="kick">Second Nature · a page to review</div>
+  <h1>🎙️ Tracking my words — 24/7</h1>
+  <p>How many words I say in a day, and my share vs everyone else in a conversation. The real options, honestly compared.</p>
+</header>
+<div class="wrap">
+
+  <div class="note">Heads up: I searched your memory, the site, and your whole Mac — there wasn't an existing page on this in this account (might be on your other one). So this is a fresh build for you to react to.</div>
+
+  <h2>What you actually want to measure</h2>
+  <ul>
+    <li><b>Your daily word count</b> — total words you speak from wake to sleep.</li>
+    <li><b>Your share of the conversation</b> — you vs the other person(s). This is the interesting one.</li>
+  </ul>
+  <p>The tech that makes the second one possible is <b>speaker diarization</b> — software that separates "you" from "them" in a recording, so each person gets their own word count. Every option below lives or dies on how well it does that.</p>
+
+  <h2>The two capture routes</h2>
+  <p>To count words 24/7 you need audio running all day. Two ways: wear a dedicated little recorder, or carry an always-on phone (your "another iPhone" idea).</p>
+
+  <h2>Option 1 — a wearable AI recorder (least fuss)</h2>
+  <div class="card">
+    <h3>Limitless Pendant <span class="tag easy">easiest 24/7</span></h3>
+    <p>Clip-on pendant made for exactly this — records your day, transcribes, and separates speakers, with an app that shows who talked. All-day battery.</p>
+    <p class="pro">✓ Built for all-day wear + speaker separation out of the box · owns the "who said what" problem</p>
+    <p class="con">✗ Your data lives on their cloud · monthly plan for full features</p>
+  </div>
+  <div class="card">
+    <h3>Bee (AI wristband) <span class="tag easy">cheapest</span></h3>
+    <p>A ~wristband that always listens and builds a life-log with transcripts. Cheap entry point.</p>
+    <p class="pro">✓ Inexpensive · truly always-on · wrist-worn (easy to keep on)</p>
+    <p class="con">✗ Lighter on precise per-speaker word analytics · cloud-based</p>
+  </div>
+  <div class="card">
+    <h3>Plaud (NotePin / Note) <span class="tag">solid</span></h3>
+    <p>Wearable clip / card recorder with strong AI transcription + summaries; popular for meetings.</p>
+    <p class="pro">✓ Great transcription quality · discreet</p>
+    <p class="con">✗ More meeting-oriented than 24/7 life-logging · AI needs a subscription</p>
+  </div>
+
+  <h2>Option 2 — a spare iPhone as the recorder (your idea)</h2>
+  <div class="card">
+    <h3>Dedicated iPhone + Otter.ai <span class="tag easy">fast to try</span></h3>
+    <p>Put a recorder app on a spare iPhone, keep it in your pocket charged. <b>Otter</b> transcribes and already reports "talk time" per speaker — closest off-the-shelf thing to your words-vs-theirs metric.</p>
+    <p class="pro">✓ You may already have the phone · high mic quality · Otter shows talk-share</p>
+    <p class="con">✗ iOS limits true all-day background recording (works best foreground / screen-on) · battery + heat for 24/7 · you'll manage storage</p>
+  </div>
+  <div class="card">
+    <h3>Spare iPhone → your own pipeline <span class="tag diy">most control</span></h3>
+    <p>Phone records raw audio all day → each night it uploads → transcription with diarization (Whisper or AssemblyAI) → a simple daily dashboard: your word count + your % of the talking. Could even live inside Branch Manager.</p>
+    <p class="pro">✓ You own 100% of the data · exact custom metric (your words vs theirs, per day, per person) · no per-device subscription</p>
+    <p class="con">✗ It's a build (I'd set it up) · transcription has a per-hour cost · same iOS all-day-recording limits to design around</p>
+  </div>
+
+  <div class="pick">
+    <h3 style="margin:0 0 6px">My honest read</h3>
+    <ul>
+      <li><b>Want it working this week, hands-off?</b> Get a <b>Limitless Pendant</b> (or Bee if you want cheap) — it wears all day and separates speakers without you building anything.</li>
+      <li><b>Want to own the data and get the exact "my words vs theirs" number your way?</b> Use the <b>spare iPhone</b> + let me build the record→diarize→dashboard pipeline. More powerful, and it's yours.</li>
+      <li>Reasonable middle: spare iPhone + <b>Otter</b> now to see if the metric even tells you something useful, then graduate to the custom pipeline if you like it.</li>
+    </ul>
+  </div>
+
+  <div class="note">⚖️ Quick legal note (not legal advice): New York is a <b>one-party consent</b> state, so you may lawfully record conversations you're part of. Be considerate about others' privacy, especially where people expect it. Confirm current device prices/specs before buying — this is a review as of early 2026, not a live catalog.</div>
+
+  <footer>🎙️ For Doug · <a href="ground-control-7c3f9a.html">Ground Control</a></footer>
+</div>
+</body></html>
