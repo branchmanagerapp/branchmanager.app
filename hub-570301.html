@@ -1,41 +1,50 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Doug — Command Center</title><style>
 :root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#5b6660;--faint:#8a94a0;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--blue:#1d6fd6;--gold:#b88a2e;}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
-.wrap{max-width:880px;margin:0 auto;padding:0 16px}
-header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:28px 0 24px;text-align:center}
-.kick{letter-spacing:2.5px;font-size:11px;font-weight:800;text-transform:uppercase;opacity:.8}
-header h1{margin:6px 0 0;font-size:24px;font-weight:800}
-header p{margin:8px auto 0;font-size:13.5px;opacity:.92;max-width:520px}
-h2{color:var(--green-d);font-size:15px;margin:26px 0 4px;text-transform:uppercase;letter-spacing:.06em}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
-@media(max-width:600px){.grid,.grid3{grid-template-columns:1fr}}
-a.tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;text-decoration:none;color:var(--ink);transition:.15s;box-shadow:0 1px 2px rgba(20,40,20,.04)}
-a.tile:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:0 3px 10px rgba(20,40,20,.08)}
-a.tile .t{font-weight:700;font-size:14.5px}
-a.tile .d{color:var(--muted);font-size:12px;margin-top:2px}
-a.sm{padding:10px 13px}a.sm .t{font-size:13px}a.sm .d{font-size:11px}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5;font-size:16px;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:0 14px}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:30px 0 24px;text-align:center}
+.kick{letter-spacing:2px;font-size:11px;font-weight:800;text-transform:uppercase;opacity:.8}
+header h1{margin:6px 0 0;font-size:25px;font-weight:800}
+header p{margin:9px auto 0;font-size:14.5px;opacity:.92;max-width:560px}
+h2{color:var(--green-d);font-size:15px;margin:26px 0 6px;text-transform:uppercase;letter-spacing:.06em}
+/* mobile-first: single column by default, widen on bigger screens */
+.grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+.grid3{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr 1fr}}
+a.tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;text-decoration:none;color:var(--ink);transition:.15s;box-shadow:0 1px 2px rgba(20,40,20,.04)}
+a.tile:active{border-color:var(--green);background:var(--green-l)}
+@media(hover:hover){a.tile:hover{border-color:var(--green);transform:translateY(-1px);box-shadow:0 3px 10px rgba(20,40,20,.08)}}
+a.tile .t{font-weight:700;font-size:15.5px}
+a.tile .d{color:var(--muted);font-size:13px;margin-top:3px}
+a.sm{padding:13px 15px}a.sm .t{font-size:14.5px}a.sm .d{font-size:12px}
 details.scrap{margin:24px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 16px}
 details.scrap summary{cursor:pointer;font-weight:800;color:var(--faint);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;padding:12px 0;list-style:none}
 details.scrap summary::-webkit-details-marker{display:none}
 details.scrap summary::before{content:"▸ "}
 details.scrap[open] summary::before{content:"▾ "}
-details.scrap a{display:block;color:var(--muted);font-size:12.5px;text-decoration:none;padding:6px 0;border-top:1px solid var(--line)}
+details.scrap a{display:block;color:var(--muted);font-size:13.5px;text-decoration:none;padding:11px 0;border-top:1px solid var(--line)}
 details.scrap a:hover{color:var(--green)}
 .parkline{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;text-decoration:none;color:var(--ink);margin-top:8px}
 .parkline:hover{border-color:var(--green)} .parkline .t{font-weight:700;font-size:14px} .parkline .d{color:var(--muted);font-size:12px;margin-top:2px}
 .hero{background:var(--card);border:2px solid var(--green);border-radius:16px;padding:18px 18px 16px;margin:6px 0 18px;box-shadow:0 3px 14px rgba(20,60,30,.08)}
 .hero h2{border:none;margin:0 0 10px;padding:0;color:var(--green-d)}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.cal .day{border:1px solid var(--line);border-radius:9px;padding:7px 6px;min-height:74px;background:var(--bg)}
-.cal .dow{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
-.cal .dnum{font-size:15px;font-weight:800;margin:1px 0 4px}
-.cal .ev{font-size:10px;line-height:1.25;color:var(--ink);background:var(--green-l);border-radius:5px;padding:2px 4px;margin-top:3px;display:block}
-.cal .today{background:#fff;border-color:var(--ink)} .cal .today .dnum{color:var(--ink)}
-.cal .morrow{background:#fff6e6;border-color:#e0a63a} .cal .morrow .dnum{color:#b06a1a}
+/* mobile-first: calendar is a vertical day list on phones */
+.cal{display:flex;flex-direction:column;gap:6px}
+.cal .day{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cal .dow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);flex:0 0 34px}
+.cal .dnum{font-size:18px;font-weight:800;flex:0 0 24px}
+.cal .ev{font-size:12.5px;line-height:1.3;color:var(--ink);background:var(--green-l);border-radius:6px;padding:3px 8px;display:inline-block}
+.cal .today{background:#fff;border-color:var(--ink);border-width:2px} .cal .today .dnum{color:var(--ink)}
+.cal .morrow{background:#fff6e6;border-color:#e0a63a;border-width:2px} .cal .morrow .dnum{color:#b06a1a}
 .cal .ev.big{background:#f6c667;color:#5b4413;font-weight:800}
-@media(max-width:600px){.cal{grid-template-columns:1fr;gap:4px}.cal .day{min-height:0;display:flex;gap:8px;align-items:baseline}.cal .dnum{margin:0}.cal .ev{flex:1}}
+@media(min-width:700px){
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal .day{flex-direction:column;align-items:stretch;gap:0;min-height:82px;padding:7px 6px}
+  .cal .dow{flex:none;font-size:9.5px}
+  .cal .dnum{flex:none;font-size:15px;margin:1px 0 4px}
+  .cal .ev{display:block;font-size:10px;padding:2px 4px;margin-top:3px}
+}
 .itin{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
 .itin .ihd{font-weight:800;font-size:13.5px;color:var(--green-d);margin-bottom:6px}
 .irow{display:flex;gap:11px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -72,7 +81,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <h2>📅 This week — Mon Jul 6 → Sun Jul 12</h2>
   <div class="cal">
     <div class="day"><div class="dow">Mon</div><div class="dnum">6</div><span class="ev">Storm work</span></div>
-    <div class="day today"><div class="dow">Tue</div><div class="dnum">7</div><span class="ev">Mercado ✓</span><span class="ev">Amanda job ✓</span><span class="ev">Today</span></div>
+    <div class="day today"><div class="dow">Tue</div><div class="dnum">7</div><span class="ev">Ricardo ✓ paid</span><span class="ev">Amanda job ✓</span><span class="ev">Today</span></div>
     <div class="day morrow"><div class="dow">Wed</div><div class="dnum">8</div><span class="ev big">🚜 See Dennis Lucente</span><span class="ev">w/ Catherine</span></div>
     <div class="day"><div class="dow">Thu</div><div class="dnum">9</div><span class="ev">Lead callbacks</span></div>
     <div class="day"><div class="dow">Fri</div><div class="dnum">10</div></div>
@@ -93,7 +102,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
     <div class="trow"><span class="bx"></span><span class="who">Either</span><span><b>Call back today's leads</b><small>Barbara · Regina Clarkin · Rob McCrane · Chris Cannon (chasing a callback — going cold).</small></span></div>
     <div class="trow"><span class="bx"></span><span class="who">Catherine</span><span><b>Chase the aging leads</b><small>Hatzmann (Hillcrest), Sullivan (735 Requa brush pile), Pat Brandt (Shrub Oak).</small></span></div>
     <div class="trow"><span class="bx"></span><span class="who">Doug</span><span><b>Prep for Dennis Lucente (Wed)</b><small>Pull up the Navimow proposal + know the CADCO status.</small></span></div>
-    <div class="trow"><span class="bx"></span><span class="who">Doug</span><span><b>Decide on the Intrepid KM100 financing</b><small>Approved at $1,100/mo — Jessica's waiting. Not urgent.</small></span></div>
+    <div class="trow"><span class="bx"></span><span class="who">Doug</span><span><b>Intrepid KM100 — say "go" to secure the order</b><small>Financing fully approved: $1,100/mo, 5-yr, through Geneva Capital. Reply to Jessica (jessica@gogc.com) to proceed → she sends DocuSign. Quote from Chris Sleurink is in your inbox.</small></span></div>
   </div>
 </div>
 
@@ -168,6 +177,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <a class="tile" href="https://branchmanager.app/giant-loader-8fd740.html" target="_blank"><div class="t">Giant loader — fix or replace</div><div class="d">Head-gasket fix vs new machine</div></a>
   <a class="tile" href="https://branchmanager.app/ram2500-68c5d8.html" target="_blank"><div class="t">Ram 2500 — keep or let go</div><div class="d">The loan-vs-value call</div></a>
   <a class="tile" href="https://branchmanager.app/hooklift-8a6720.html" target="_blank"><div class="t">Hook-lift truck — buy or not</div><div class="d">The acquisition analysis</div></a>
+  <a class="tile" href="https://branchmanager.app/northeast-intrepid-c83567.html" target="_blank" style="border-color:var(--green)"><div class="t">🚜 Intrepid KM100 Tele <span class="tag new">financed · ready</span></div><div class="d">New machine. Financing approved: $1,100/mo · 5-yr · Geneva Capital. Reply to Jessica to secure via DocuSign. Quote (Chris Sleurink) in inbox.</div></a>
 </div>
 
 <h2>📈 Last 2 weeks — what we shipped</h2>
@@ -188,7 +198,7 @@ footer{text-align:center;color:var(--faint);font-size:11.5px;padding:20px 0 44px
   <ul>
     <li>Paid the GL insurance audit ($3,279.54, 6/22) and finished the 2025 CPA package for Kevin Fay.</li>
     <li>Built the SmartLawn / Lucente Navimow fleet proposal (the reason for tomorrow's visit).</li>
-    <li>Storm week: Mercado, Amanda, and Ricardo jobs done; storm quotes #514–532 built from the callers.</li>
+    <li>Storm week: Amanda and Ricardo jobs done; storm quotes #514–532 built from the callers.</li>
     <li>Locked the private Vault (portfolio, net worth, debt) behind one password so this page is safe to share.</li>
   </ul>
 </div>
