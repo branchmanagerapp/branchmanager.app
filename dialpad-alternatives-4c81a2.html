@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dialpad Replacement — Research</title>
+<style>
+  :root{--ink:#16201a;--mut:#5b6660;--faint:#8a94a0;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--warnbg:#fdf3e3;--warn:#8a5512}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px 60px}
+  header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:30px 0 26px;text-align:center}
+  .kick{letter-spacing:2.5px;font-size:11px;font-weight:800;text-transform:uppercase;opacity:.8}
+  header h1{margin:6px 0 4px;font-size:25px;font-weight:800}
+  header p{margin:6px auto 0;font-size:13.5px;opacity:.92;max-width:560px}
+  h2{color:var(--green-d);font-size:16px;margin:28px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
+  .pick{background:var(--card);border:2px solid var(--green);border-radius:14px;padding:18px 20px;margin:18px 0;box-shadow:0 2px 10px rgba(20,60,30,.06)}
+  .pick .badge{display:inline-block;background:var(--green);color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 10px;border-radius:20px}
+  .pick h3{margin:10px 0 4px;font-size:20px}
+  .pick .price{color:var(--mut);font-size:13.5px;margin-bottom:8px}
+  ul{margin:8px 0;padding-left:20px} li{margin:4px 0}
+  .callout{background:var(--warnbg);border:1px solid #f0d9a8;border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13.5px;color:#5b4413}
+  .callout b{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--green-l);color:var(--green-d);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .y{color:var(--green);font-weight:800}.n{color:#b33;font-weight:800}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 17px;margin:10px 0}
+  .card h3{margin:0 0 4px;font-size:16px}
+  .card .tag{font-size:11px;font-weight:700;color:var(--mut)}
+  .scroll{overflow-x:auto}
+  footer{text-align:center;color:var(--faint);font-size:11.5px;padding:18px 0}
+  a{color:var(--green)}
+</style>
+</head>
+<body>
+<header>
+  <div class="kick">Second Nature Tree · Research</div>
+  <h1>Getting off Dialpad</h1>
+  <p>The phone system to replace Dialpad — keeps AI transcripts, far simpler, and auto-feeds Branch Manager. Fact-checked across 15+ sources.</p>
+</header>
+<div class="wrap">
+
+<div class="pick">
+  <span class="badge">★ Top pick</span>
+  <h3>OpenPhone <span style="font-weight:500;font-size:15px;color:var(--mut)">(now branded "Quo")</span></h3>
+  <div class="price">~$23/seat/mo (Business, annual) · figure ~$46/mo for you + Catherine · free porting</div>
+  <p>It's the only option that hits all three of your needs at once:</p>
+  <ul>
+    <li><b>Keeps the AI you liked</b> — call summaries + full transcripts + voicemail-to-text, with far less notification noise than Dialpad. Highest user rating in the category (4.7/5), repeatedly called "very easy to use." The anti-Dialpad.</li>
+    <li><b>Closes your lead-capture gap</b> — "Sona," its built-in AI receptionist, answers when you can't, greets the caller, asks what they need, and captures the message. So a storm caller becomes a <i>named lead with context</i>, not a bare number.</li>
+    <li><b>Auto-feeds Branch Manager</b> — clean developer webhooks fire on every inbound call, voicemail, transcript, and summary (<code>call.completed</code>, <code>call.transcript.completed</code>, <code>call.summary.completed</code>). Simple API-key auth. I can wire it so every call drops into BM as a new lead automatically.</li>
+  </ul>
+  <div class="callout">
+    <b>The one catch to know:</b> the $15 Starter plan only transcribes calls that <i>Sona</i> answers — not your normal calls. To get AI transcripts + summaries on <b>every</b> call (which is what you want), you need the <b>Business plan at $23/seat</b>. Also budget ~25–40% over sticker for the usual telecom fees (a $19.50 registration fee, AI credits). Porting your number is free but takes about 5–7 business days — plan the switch, don't rush it.
+  </div>
+</div>
+
+<div class="pick" style="border-color:var(--line);box-shadow:none">
+  <span class="badge" style="background:var(--mut)">Runner-up</span>
+  <h3>Grasshopper</h3>
+  <div class="price">~$26/mo flat (not per-seat, covers both of you) · dead simple</div>
+  <p>If you decide you'd rather have <i>dead simple</i> than smart: Grasshopper is the cheapest and easiest (under 10-min setup, flat rate for up to 5 users). <b>But</b> it has no AI transcription and no real API — so it can't feed Branch Manager and can't keep the AI transcripts you like. It's the pick only if you drop those two wants.</p>
+</div>
+
+<h2>The rest — and why they're out for you</h2>
+
+<div class="card">
+  <h3>RingCentral <span class="tag">— too heavy</span></h3>
+  Deepest integrations (300+), and it does have webhooks. But its transcription API is <b>deprecated</b> / locked behind a separate "RingSense" license that developers struggle with, setup runs ~3 hours, and real cost balloons with per-feature add-ons. Overkill for 1–2 seats.
+</div>
+<div class="card">
+  <h3>Aircall <span class="tag">— blocked by seat minimum</span></h3>
+  Genuinely good API — webhooks for the full call lifecycle, transcripts + conversation AI over API. But it requires a <b>3-license minimum at $30 each = $90/mo floor</b>. You can't run it at 1–2 seats. Disqualified on price, not features.
+</div>
+<div class="card">
+  <h3>Google Voice <span class="tag">— too limited</span></h3>
+  $10/user but only voicemail-to-text (no call AI), weak call routing, no real webhooks. Fine as a cheap line, wrong for lead capture + BM.
+</div>
+<div class="card">
+  <h3>Nextiva / Ooma <span class="tag">— no edge over OpenPhone</span></h3>
+  Both put AI behind add-ons and have thinner developer APIs. Nothing they do beats OpenPhone for your case.
+</div>
+<div class="card">
+  <h3>AI-receptionist newcomers (NextPhone AI, Retell-style) <span class="tag">— layer later, maybe</span></h3>
+  Pure AI answering services (~$199/mo flat, unlimited 24/7 answering + booking). Overkill now — OpenPhone's built-in Sona covers this. Worth revisiting only if you later want the phone fully auto-answered.
+</div>
+
+<h2>Side-by-side</h2>
+<div class="scroll">
+<table>
+  <tr><th>Provider</th><th>AI transcripts</th><th>Lead capture (AI answer)</th><th>Feeds Branch Manager</th><th>1–2 seat price</th><th>Simple UX</th></tr>
+  <tr><td><b>OpenPhone/Quo</b></td><td class="y">Yes</td><td class="y">Yes (Sona)</td><td class="y">Yes — clean webhooks</td><td>$23/seat</td><td class="y">Best</td></tr>
+  <tr><td>Grasshopper</td><td class="n">No</td><td class="n">No</td><td class="n">No API</td><td>~$26 flat</td><td class="y">Very</td></tr>
+  <tr><td>RingCentral</td><td>Add-on/deprecated</td><td>Add-on</td><td>Yes (hard)</td><td>$20–35+/seat</td><td class="n">Heavy</td></tr>
+  <tr><td>Aircall</td><td class="y">Yes (API)</td><td>Add-on</td><td class="y">Yes</td><td class="n">$90 floor</td><td>OK</td></tr>
+  <tr><td>Google Voice</td><td class="n">VM only</td><td class="n">No</td><td class="n">No</td><td>$10/seat</td><td class="y">Simple</td></tr>
+  <tr><td>Dialpad (today)</td><td class="y">Yes</td><td class="n">No</td><td>Yes (I proved it)</td><td>$15–27/seat</td><td class="n">You hate it</td></tr>
+</table>
+</div>
+
+<h2>Bottom line</h2>
+<p><b>Move to OpenPhone (Quo), Business plan.</b> It keeps the AI transcripts you liked about Dialpad, it's dramatically simpler and quieter, and — the part that actually fixes your problem — it can push every inbound caller straight into Branch Manager as a named lead with a transcript, so nobody falls through the cracks again. When you're ready, I'll set up the trial, help port the number (5–7 days, so we time it), and wire the webhook into BM. Nothing here is urgent or irreversible — say the word and I'll start the trial side.</p>
+
+<footer>Second Nature Tree · private research · unlisted · Jul 7 2026</footer>
+</div>
+</body>
+</html>
