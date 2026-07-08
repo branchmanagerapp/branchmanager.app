@@ -4,8 +4,9 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="theme-color" content="#0a2e18">
 <title>Ground Control — Second Nature</title>
+<link rel="stylesheet" href="assets/site.css">
 <style>
-:root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#5b6660;--faint:#8a94a0;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--gold:#e0a63a;--goldbg:#fff6e6;--red:#b3452f}
+:root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#5b6660;--faint:#8a94a0;--line:#e6ebe6;--bg:#f6f7f6;--card:#fff;--gold:#e0a63a;--goldbg:#fff6e6;--red:#b3452f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
@@ -122,6 +123,9 @@ footer a{color:var(--green)}
     <a class="tile hot" href="https://branchmanager.app"><span class="em">🧾</span><span><span class="t">Adam Melish — quote #533 <span class="tag">ready to send</span></span><span class="d">68 Cedar Ave, Poughkeepsie. Draft built: $3,800 (or $4,600 w/ stump). Open BM → review → Send. Job Thu w/ Armand.</span></span></a>
     <a class="tile hot" href="https://branchmanager.app"><span class="em">🧾</span><span><span class="t">Amanda — quote #534 <span class="tag">ready to send</span></span><span class="d">100 Nassau, Peekskill. Silver maple cabling + reduction, $3,500. Attach your on-site photos in BM + add her phone, then Send.</span></span></a>
     <a class="tile hot" href="today-snt-9d4b1e.html"><span class="em">💵</span><span><span class="t">Amanda — $750 invoice <span class="tag">ready to send</span></span><span class="d">Queued — just needs her number, then Send from BM.</span></span></a>
+    <a class="tile hot" href="https://branchmanager.app"><span class="em">🌳</span><span><span class="t">Arlene Richie — quote #516 <span class="tag">ready to send</span></span><span class="d">3723 Sunnyside Rd, Shrub Oak. Hickory behind garage, $5,500. Attach her photos in BM, then Send.</span></span></a>
+    <a class="tile" href="https://branchmanager.app"><span class="em">🤖</span><span><span class="t">Syed — Yarbo quote #535 <span class="tag">needs prices</span></span><span class="d">Pro head + reprogram + setup/install — line items built, add your prices &amp; his address in BM.</span></span></a>
+    <a class="tile" href="estimates-map-3f9c21.html"><span class="em">🗺️</span><span><span class="t">Estimates &amp; jobs — map <span class="tag">new</span></span><span class="d">Every quote &amp; job plotted, color-coded by status</span></span></a>
     <a class="tile" href="estimates-snt-4b8e2f.html"><span class="em">📝</span><span><span class="t">Estimate board</span><span class="d">Every open quote, freshest first</span></span></a>
     <a class="tile" href="https://branchmanager.app"><span class="em">➕</span><span><span class="t">Price the storm drafts</span><span class="d">#516–532 captured in BM — add prices &amp; send</span></span></a>
   </div>
@@ -131,9 +135,12 @@ footer a{color:var(--green)}
   <div class="card open">
     <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>Send Adam's quote #533</b><small>Review scope + tax in BM, then Send. He's on for Thursday.</small></span></div>
     <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>Send Amanda's $750 invoice</b><small>Needs her phone number.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>🔴 Hector Arroyo — job not done, ASAP</b><small>Still open — get it done. (Confirm which Hector/what work so I can pin the address.)</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>Get to Armand's — clean up the tree</b><small>Cleanup still owed at Armand's.</small></span></div>
     <div class="o"><span class="bx"></span><span class="who">Either</span><span><b>Call back new leads</b><small>Barbara · Rob McCrane · Chris Cannon.</small></span></div>
     <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>Pay CADCO #108833 — it's blocking sales</b><small>$16,303.55 past due. Until it's paid you can't order <b>Ted Haver's X430</b> OR Dennis's backordered X450s.</small></span></div>
     <div class="o"><span class="bx"></span><span class="who">Doug</span><span><b>Order X430 for Ted Haver</b><small>Ready to place once CADCO is cleared.</small></span></div>
+    <div class="o" style="opacity:.6"><span class="bx" style="border-style:dashed"></span><span class="who">Hold</span><span><b>Timbyshire — declined for now</b><small>Wants to do it all at once, not piecemeal. Circle back when she's ready.</small></span></div>
   </div>
 
   <!-- DAILY -->
@@ -188,6 +195,9 @@ footer a{color:var(--green)}
     {d:'2026-07-08', t:'Return new-lead calls', k:'task', ic:'📞', note:'Barbara · Rob McCrane · Chris Cannon.'},
     {d:'2026-07-09', t:'Adam Melish job — with Armand', k:'big', ic:'🌳', note:'68 Cedar Ave, Poughkeepsie. ~$3,800 (or $4,600 w/ stump).'},
     // ---- to-do / blocked ----
+    {d:'2026-07-07', t:'Hector Arroyo — job NOT done, ASAP', k:'big', ic:'🔴', note:'Still open — get it done. Confirm which Hector / what work.'},
+    {d:'2026-07-08', t:'Get to Armand’s — clean up the tree', k:'task', ic:'🌳', note:'Cleanup still owed at Armand’s.'},
+    {d:'2026-07-08', t:'Send Arlene #516 + Syed #535 quotes', k:'task', ic:'🧾', note:'Arlene hickory $5,500 (attach photos) · Syed Yarbo (add prices + address).', link:'https://branchmanager.app'},
     {d:'2026-07-08', t:'Order X430 for Ted Haver', k:'task', ic:'🚜', note:'BLOCKED — need to pay CADCO invoice #108833 ($16,303.55) first. Same block as Dennis’s X450s.'},
     // ---- suggested (Claude) — move/confirm as you like ----
     {d:'2026-07-10', t:'Follow up: Oswald + Tanisha quotes', k:'sug', ic:'💡', note:'Suggested — both sent Jul 6, no reply yet. A nudge keeps storm work warm.'},

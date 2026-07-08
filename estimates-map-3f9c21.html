@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#0a2e18">
+<title>Estimates & Jobs — Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--green:#1f7a43;--green-d:#0d3a20;--ink:#16201a;--muted:#5b6660;--line:#e6ebe6;--bg:#fff}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:16px 16px 14px;text-align:center}
+header h1{margin:0;font-size:19px;font-weight:800}
+header a{color:#cfe9d9;font-size:13px;text-decoration:none}
+#map{height:62vh;width:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;padding:11px;font-size:13px;border-bottom:1px solid var(--line)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px #999}
+.list{padding:8px 14px 40px;max-width:760px;margin:0 auto}
+.row{display:flex;gap:10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.row .amt{margin-left:auto;font-weight:800;color:var(--green-d)}
+.row .nm{font-weight:700}.row .ad{color:var(--muted);font-size:13px}
+.pill{font-size:10px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;color:#fff}
+</style></head><body>
+<header><h1>🗺️ Estimates &amp; Jobs</h1><a href="ground-control-7c3f9a.html">‹ Ground Control</a></header>
+<div class="legend">
+  <span><i class="dot" style="background:#1f7a43"></i>Open quote</span>
+  <span><i class="dot" style="background:#1d6fd6"></i>Sent</span>
+  <span><i class="dot" style="background:#8a94a0"></i>Done</span>
+</div>
+<div id="map"></div>
+<div class="list" id="list"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var PINS=[{"name": "Adam Melish #533", "addr": "68 Cedar Ave, Poughkeepsie, NY 12603", "status": "quote", "amt": "$3,800", "lat": 41.6759422, "lng": -73.9052749}, {"name": "Oswald #514", "addr": "26 N 2nd St, Cortlandt Manor, NY", "status": "sent", "amt": "$7,300", "lat": 41.2859824, "lng": -73.8555983}, {"name": "Tanisha #515", "addr": "24 N 2nd St, Cortlandt Manor, NY", "status": "sent", "amt": "$1,000", "lat": 41.2862305, "lng": -73.8556446}, {"name": "Ricardo (paid)", "addr": "8 Barger St, Cortlandt Manor, NY", "status": "done", "amt": "cash", "lat": 41.329265, "lng": -73.8789479}, {"name": "144 Putnam Rd", "addr": "144 Putnam Rd, Continental Village, NY", "status": "done", "amt": "storm", "lat": 41.3327884, "lng": -73.9098627}, {"name": "2801 Sarles Dr", "addr": "2801 Sarles Dr, Yorktown Heights, NY", "status": "done", "amt": "storm", "lat": 41.3046204, "lng": -73.7803514}, {"name": "Amanda #534", "addr": "100 Nassau Ave, Peekskill, NY", "status": "quote", "amt": "$3,500", "lat": 41.289811, "lng": -73.9204922, "approx": true}, {"name": "Arlene Richie #516", "addr": "3723 Sunnyside Rd, Shrub Oak, NY", "status": "quote", "amt": "$5,500", "lat": 41.321508, "lng": -73.8298696, "approx": true}];
+var COLORS={quote:"#1f7a43",sent:"#1d6fd6",done:"#8a94a0"};
+var LABEL={quote:"Open quote",sent:"Sent",done:"Done"};
+var map=L.map("map");
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+var group=[];
+PINS.forEach(function(p){
+  var c=COLORS[p.status]||"#1f7a43";
+  var m=L.circleMarker([p.lat,p.lng],{radius:9,color:"#fff",weight:2,fillColor:c,fillOpacity:1}).addTo(map);
+  m.bindPopup("<b>"+p.name+"</b><br>"+p.addr+(p.approx?" <i>(approx)</i>":"")+"<br><b>"+p.amt+"</b>");
+  group.push([p.lat,p.lng]);
+});
+map.fitBounds(group,{padding:[40,40]});
+var lh="";
+PINS.slice().sort(function(a,b){return a.status<b.status?-1:1;}).forEach(function(p){
+  var c=COLORS[p.status]||"#1f7a43";
+  lh+='<div class="row"><span class="pill" style="background:'+c+'">'+LABEL[p.status]+'</span><span><span class="nm">'+p.name+'</span><br><span class="ad">'+p.addr+(p.approx?" (approx)":"")+'</span></span><span class="amt">'+p.amt+'</span></div>';
+});
+document.getElementById("list").innerHTML=lh;
+</script>
+</body></html>
