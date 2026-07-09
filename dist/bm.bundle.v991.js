@@ -4502,12 +4502,21 @@ var DashboardPage = {
         return ' · <span style="color:' + col + ';">' + mon + ' ' + d.getDate() + ' · ' + age + '</span>';
       };
 
-      var sendReady = [], writeThese = [], waiting = [], waitingOld = 0, schedule = [], changes = [];
+      var sendReady = [], writeThese = [], waiting = [], waitingOld = 0, schedule = [], changes = [], parked = [];
       // v987: 'waiting' only shows quotes sent in the last 90 days — years-old
       // Jobber-era sent quotes were burying live follow-ups (Doug 7/9: the
       // $35k Fred Romer follow-up was invisible under 2023 dead leads).
       var cutoff90 = Date.now() - 90 * 86400000;
+      // v991: "Parked" — a back-burner quote (real but deferred, e.g. Fred Romer's
+      // $35k waiting on town approval ~next year). Marked by archiving WITH a note
+      // containing "BACK BURNER" or "PARKED", so it stays visible-but-quiet instead
+      // of vanishing like a dead archived quote. Matches the today-sheet feature.
+      var parkedRe = /BACK BURNER|PARKED/i;
       quotes.forEach(function(q) {
+        if (q.status === 'archived') {
+          if (parkedRe.test(q.notes || '')) parked.push(q);
+          return;
+        }
         if (q.status === 'draft') { ((q.total || 0) > 0 ? sendReady : writeThese).push(q); }
         else if (q.status === 'sent' || q.status === 'awaiting') {
           var when = new Date(q.sentAt || q.createdAt || 0).getTime();
@@ -4516,6 +4525,7 @@ var DashboardPage = {
         else if (q.status === 'approved') { schedule.push(q); }
         else if (q.status === 'changes_requested') { changes.push(q); }
       });
+      parked.sort(function(a, b) { return (b.total || 0) - (a.total || 0); });
       var byTotal = function(a, b) { return (b.total || 0) - (a.total || 0); };
       sendReady.sort(byTotal); waiting.sort(byTotal); schedule.sort(byTotal);
       var invSend = invoices.filter(function(i) { return i.status === 'draft' && (i.total || 0) > 0; }).sort(byTotal);
@@ -4570,7 +4580,8 @@ var DashboardPage = {
         + (waitingOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + waitingOld + ' sent quotes older than 90 days (likely dead — review in Quotes)</div>' : '')
         + section('✅ Approved — schedule it', '#2e7d32', schedule, qRow('book it'), 'quotes')
         + section('🔄 Changes requested', '#e07c24', changes, qRow('respond'), 'quotes')
-        + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule');
+        + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule')
+        + section('💤 Parked — back burner', '#9e9e9e', parked, qRow('parked — un-archive when live'), 'quotes');
       if (!body) return '';
       return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--white);margin-bottom:20px;overflow:hidden;' + (_cl ? 'box-shadow:0 1px 3px rgba(0,0,0,0.04);' : '') + '">'
         + '<div style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:baseline;">'

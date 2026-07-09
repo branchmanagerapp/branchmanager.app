@@ -1,5 +1,5 @@
 {
-  "version": 990,
+  "version": 991,
   "released": "2026-07-09",
-  "notes": "FIX: quote/invoice SMS now actually goes through Dialpad (business line). The edge-fn POST was missing the Supabase anon key, so the gateway 401d it and the app silently fell back to the phone Messages app. Same fix applied to send-email."
+  "notes": "Today board: Parked / back-burner section — a real-but-deferred quote (archived with a BACK BURNER note) shows quietly at the bottom instead of vanishing."
 }
