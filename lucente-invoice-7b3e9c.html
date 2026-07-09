@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Dennis Lucente — Invoice, Payment &amp; Resale Certificate · Smart Lawn</title>
+<title>Dennis Lucente — Invoice &amp; Payment · Smart Lawn</title>
 <style>
   :root{--ink:#1d1d1f;--grey:#f5f5f7;--mut:#86868b;--green:#6abb1e;--greend:#4a8a10;--line:#e5e5ea;--gold:#b8860b;--red:#c0392b}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -44,9 +44,6 @@
   .totals .r{text-align:right}
   .save{color:var(--greend);font-weight:700;font-size:12.5px}
   #taxRow td{transition:color .2s}
-  .tax-waived{color:var(--green);font-weight:700}
-  .waivedbadge{display:none;align-items:center;gap:7px;background:#eef7e6;color:var(--greend);font-weight:700;font-size:12.5px;border-radius:12px;padding:9px 13px;margin-top:12px}
-  .waivedbadge.show{display:flex}
   /* ACH panel */
   .ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
   .ach-cell{background:var(--grey);border-radius:14px;padding:13px 15px}
@@ -62,37 +59,6 @@
   .ach-step b{color:var(--ink)}
   .ach-step .n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
   .fieldflag{color:var(--red);font-weight:700;font-size:11.5px}
-  /* ST-120 */
-  .st-intro{font-size:13.5px;color:#3a3a3c;line-height:1.6;margin-bottom:16px}
-  .st-intro b{color:var(--ink)}
-  .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-  .fld{flex:1;min-width:200px}
-  .fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:5px}
-  .fld input,.fld select{width:100%;font-family:inherit;font-size:14.5px;padding:11px 13px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
-  .fld input:focus,.fld select:focus{outline:none;border-color:var(--green)}
-  .fld .req{color:var(--red)}
-  .cert-body{background:var(--grey);border-radius:16px;padding:16px 18px;font-size:13px;line-height:1.65;color:#3a3a3c;margin:6px 0 16px}
-  .cert-body b{color:var(--ink)}
-  .radio-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-  .radio-opt{flex:1;min-width:200px;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;font-size:13.5px}
-  .radio-opt.on{border-color:var(--green);background:#f4fbee}
-  .radio-opt input{margin-right:8px}
-  .radio-opt b{display:block;font-size:14px;margin-bottom:2px}
-  .affirm{display:flex;gap:11px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;cursor:pointer}
-  .affirm input{margin-top:3px;width:18px;height:18px;flex-shrink:0}
-  .affirm span{font-size:12.5px;color:#3a3a3c;line-height:1.55}
-  .sig-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-  .sig-box .sig-input{font-family:'Snell Roundhand','Brush Script MT',cursive;font-size:26px;padding:8px 13px;height:52px}
-  .btn{font-family:inherit;font-weight:700;font-size:15px;border:none;border-radius:980px;padding:14px 26px;cursor:pointer}
-  .btn-green{background:var(--green);color:#fff}
-  .btn-green:disabled{background:#c8e3ac;cursor:not-allowed}
-  .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
-  .st-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-  .done-panel{display:none;background:#eef7e6;border-radius:16px;padding:20px;margin-top:16px}
-  .done-panel.show{display:block}
-  .done-panel .chk{font-size:15px;font-weight:800;color:var(--greend);display:flex;align-items:center;gap:9px}
-  .done-panel p{font-size:13px;color:#3a5a48;margin-top:8px;line-height:1.6}
-  .foot{text-align:center;color:var(--mut);font-size:12px;margin-top:8px}
   @media (max-width:560px){.ach-grid{grid-template-columns:1fr}.sheet{padding:22px 18px}}
 </style>
 </head>
@@ -200,7 +166,6 @@
         <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$8,643.99</td></tr>
       </table>
     </div>
-    <div class="waivedbadge" id="waivedBadge">✓ Resale certificate on file — sales tax waived. New total $7,976.00.</div>
   </div>
 
   <!-- ============ ACH PAYMENT ============ -->
@@ -217,56 +182,7 @@
     </div>
   </div>
 
-  <!-- ============ ST-120 RESALE CERTIFICATE ============ -->
-  <div class="sheet">
-    <div class="sec-tag">NY ST-120 Resale Certificate — waive the sales tax</div>
-    <div class="st-intro">
-      Buying these units to <b>resell or re-deploy to your own clients</b>? Complete New York Form <b>ST-120</b> below and your <b>sales tax drops to $0</b> — the total becomes <b>$7,976.00</b>. This is a self-certification: by signing, you certify you're a registered NY sales-tax vendor purchasing for resale. Takes 30 seconds, fully digital — no printing.
-    </div>
-
-    <form id="st120">
-      <div class="form-row">
-        <div class="fld"><label>Purchaser business name <span class="req">*</span></label><input id="pName" value="Lucente Landscaping" required></div>
-        <div class="fld"><label>Purchaser address <span class="req">*</span></label><input id="pAddr" value="1 Askins Pl, New Rochelle, NY 10801" required></div>
-      </div>
-      <div class="form-row">
-        <div class="fld"><label>NY Certificate of Authority # (sales-tax ID) <span class="req">*</span></label><input id="pCoa" placeholder="e.g. 12-3456789" required></div>
-        <div class="fld"><label>Type of business <span class="req">*</span></label><input id="pBiz" value="Landscape contracting &amp; equipment resale" required></div>
-      </div>
-
-      <div class="radio-row">
-        <label class="radio-opt on" id="optSingle"><input type="radio" name="certType" value="single" checked><b>Single-use certificate</b>Covers only this invoice (INV-20260704-01).</label>
-        <label class="radio-opt" id="optBlanket"><input type="radio" name="certType" value="blanket"><b>Blanket certificate</b>Covers this and future Smart Lawn purchases.</label>
-      </div>
-
-      <div class="cert-body">
-        I certify that I am a <b>registered New York State sales-tax vendor</b> (Certificate of Authority # above) and that the tangible personal property purchased on this invoice — <b>Navimow robotic mowing equipment</b> — is purchased <b>for resale, rental, or lease in its present form</b> in the regular course of my business. I understand this certificate cannot be used to purchase property or services for my own use, and that <b>willfully issuing a false or fraudulent certificate is a misdemeanor</b> subject to penalties under NY Tax Law.
-      </div>
-
-      <label class="affirm" id="affirmBox">
-        <input type="checkbox" id="affirm">
-        <span>I have read the above and certify that all statements are true. I am making this purchase <b>for resale</b>, and I authorize Smart Lawn to keep this certificate on file in place of collecting sales tax.</span>
-      </label>
-
-      <div class="sig-row">
-        <div class="fld sig-box" style="flex:2"><label>Signature (type your full name) <span class="req">*</span></label><input id="sig" class="sig-input" placeholder="Dennis Lucente" required></div>
-        <div class="fld" style="flex:1"><label>Title</label><input id="title" value="Owner"></div>
-        <div class="fld" style="flex:1"><label>Date</label><input id="sigDate" value="07/04/2026"></div>
-      </div>
-
-      <div class="st-actions">
-        <button type="submit" class="btn btn-green" id="signBtn" disabled>Sign &amp; waive tax</button>
-        <button type="button" class="btn btn-ghost" id="emailBtn">Email me a copy</button>
-      </div>
-    </form>
-
-    <div class="done-panel" id="donePanel">
-      <div class="chk">✓ Resale certificate completed</div>
-      <p id="doneMsg"></p>
-    </div>
-  </div>
-
-  <div class="foot">Smart Lawn NY · Partner pricing per your July quote · Thank you, Dennis.</div>
+    <div class="foot">Smart Lawn NY · Partner pricing per your July quote · Thank you, Dennis.</div>
 </div>
 
 <script>
@@ -277,78 +193,6 @@
     if(ACH_LINK){ window.location.href=ACH_LINK; return; }
     var subj=encodeURIComponent('Send me the secure ACH link — Invoice INV-20260704-01 (Lucente)');
     var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoice INV-20260704-01. Thanks, Dennis.');
-    window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
-  });
-
-  // radio styling
-  var optS=document.getElementById('optSingle'), optB=document.getElementById('optBlanket');
-  document.querySelectorAll('input[name=certType]').forEach(function(r){
-    r.addEventListener('change',function(){
-      optS.classList.toggle('on', optS.querySelector('input').checked);
-      optB.classList.toggle('on', optB.querySelector('input').checked);
-    });
-  });
-
-  // enable sign only when affirmed + required filled
-  var affirm=document.getElementById('affirm'), signBtn=document.getElementById('signBtn');
-  var reqIds=['pName','pAddr','pCoa','pBiz','sig'];
-  function check(){
-    var ok=affirm.checked && reqIds.every(function(id){return document.getElementById(id).value.trim();});
-    signBtn.disabled=!ok;
-  }
-  affirm.addEventListener('change',function(){document.getElementById('affirmBox').style.borderColor=affirm.checked?'var(--green)':'var(--line)';check();});
-  reqIds.forEach(function(id){document.getElementById(id).addEventListener('input',check);});
-
-  // waive tax on sign
-  function waive(){
-    document.getElementById('taxLabel').innerHTML='NY sales tax <span class="tax-waived">— waived (ST-120 on file)</span>';
-    document.getElementById('taxAmt').innerHTML='<span class="tax-waived">$0.00</span>';
-    document.getElementById('grandTotal').textContent='$7,976.00';
-    document.getElementById('waivedBadge').classList.add('show');
-  }
-
-  function buildCert(){
-    var type=document.querySelector('input[name=certType]:checked').value;
-    return [
-      'NEW YORK STATE ST-120 RESALE CERTIFICATE',
-      '',
-      'Certificate type: '+(type==='blanket'?'Blanket':'Single-use (Invoice INV-20260704-01)'),
-      '',
-      'PURCHASER',
-      '  Business name: '+document.getElementById('pName').value,
-      '  Address: '+document.getElementById('pAddr').value,
-      '  NY Certificate of Authority #: '+document.getElementById('pCoa').value,
-      '  Type of business: '+document.getElementById('pBiz').value,
-      '',
-      'SELLER',
-      '  Second Nature Tree LLC dba Smart Lawn',
-      '  smartlawnny@gmail.com · (914) 647-7276',
-      '',
-      'Property purchased for resale: Navimow robotic mowing equipment',
-      '  - Navimow X450 x2 (SN 22FBD2611Y0029 + 1 pending delivery)',
-      '  - Navimow X430 x1 (SN pending delivery)',
-      '  - Navimow i105E x1 (SN pending delivery)',
-      '',
-      'Certification: Purchaser certifies it is a registered NY sales-tax vendor',
-      'purchasing the above for resale/rental/lease in its present form. Willfully',
-      'issuing a false certificate is a misdemeanor under NY Tax Law.',
-      '',
-      'Signed: '+document.getElementById('sig').value+'    Title: '+document.getElementById('title').value+'    Date: '+document.getElementById('sigDate').value
-    ].join('\n');
-  }
-
-  document.getElementById('st120').addEventListener('submit',function(e){
-    e.preventDefault();
-    if(signBtn.disabled) return;
-    waive();
-    signBtn.textContent='✓ Signed — tax waived';
-    signBtn.disabled=true;
-    var cert=buildCert();
-    var dp=document.getElementById('donePanel'); dp.classList.add('show');
-    document.getElementById('doneMsg').innerHTML='Your sales tax has been waived — new total <b>$7,976.00</b>. A copy of your completed ST-120 is ready to send to Smart Lawn for our records.';
-    // open a prefilled email so the signed cert reaches Smart Lawn
-    var subj=encodeURIComponent('Signed ST-120 Resale Certificate — Lucente (INV-20260704-01)');
-    var body=encodeURIComponent(cert+'\n\n(Completed digitally on the Smart Lawn invoice page.)');
     window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
   });
 
