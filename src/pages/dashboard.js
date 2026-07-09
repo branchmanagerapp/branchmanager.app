@@ -356,6 +356,9 @@ var DashboardPage = {
     var __dashTodayStr = now.getFullYear() + '-' + (now.getMonth()+1<10?'0':'') + (now.getMonth()+1) + '-' + (now.getDate()<10?'0':'') + now.getDate();
     html += DashboardPage._renderMobileFocusBlock(now, __dashTodayStr);
 
+    // v986: Today board — named rows by status, the daily front door.
+    html += DashboardPage._renderTodayBoard();
+
     // Branch Cam widget removed from dashboard per user request — still accessible via Tools → Branch Cam.
 
     // Money-on-the-Table widget was permanently removed Apr 19, 2026 — same signals
@@ -1071,6 +1074,91 @@ var DashboardPage = {
   // Two states:
   //   1. Currently clocked in → live timer + Clock Out button (red)
   //   2. Not clocked in → big green Clock In button + first job hero card
+  // v986: Today board — the named to-do list Doug + Catherine actually work from.
+  // The Workflow grid below shows COUNTS; this shows WHO, bucketed by the exact
+  // statuses Doug thinks in: send-these / write-the-estimate / waiting-to-hear /
+  // approved-schedule-it / changes-requested / invoices. Every row taps straight
+  // into the record (same _pendingDetail mechanism the rest of the app uses).
+  // Replaces the external today-sheet HTML page as the daily front door.
+  _renderTodayBoard: function() {
+    try {
+      var quotes = DB.quotes.getAll();
+      var invoices = DB.invoices.getAll();
+      var jobs = DB.jobs.getAll();
+      var _cl = !!(window.BMUI && BMUI.isClassic && BMUI.isClassic());
+      var money = function(n) { return (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(n || 0) : '$' + Math.round(n || 0); };
+      var esc = function(s) { return (typeof UI !== 'undefined' && UI.esc) ? UI.esc(s || '') : String(s || ''); };
+
+      var sendReady = [], writeThese = [], waiting = [], schedule = [], changes = [];
+      quotes.forEach(function(q) {
+        if (q.status === 'draft') { ((q.total || 0) > 0 ? sendReady : writeThese).push(q); }
+        else if (q.status === 'sent' || q.status === 'awaiting') { waiting.push(q); }
+        else if (q.status === 'approved') { schedule.push(q); }
+        else if (q.status === 'changes_requested') { changes.push(q); }
+      });
+      var byTotal = function(a, b) { return (b.total || 0) - (a.total || 0); };
+      sendReady.sort(byTotal); waiting.sort(byTotal); schedule.sort(byTotal);
+      var invSend = invoices.filter(function(i) { return i.status === 'draft' && (i.total || 0) > 0; }).sort(byTotal);
+      var invCollect = invoices.filter(function(i) { return (Number(i.balance) || 0) > 0 && i.status !== 'paid' && i.status !== 'draft'; })
+        .sort(function(a, b) { return (Number(b.balance) || 0) - (Number(a.balance) || 0); });
+      var soon = Date.now() + 8 * 86400000;
+      var upcoming = jobs.filter(function(j) {
+        return j.status === 'scheduled' && j.scheduledDate && new Date(j.scheduledDate + 'T12:00').getTime() <= soon
+          && new Date(j.scheduledDate + 'T23:59').getTime() >= Date.now() - 86400000;
+      }).sort(function(a, b) { return String(a.scheduledDate).localeCompare(String(b.scheduledDate)); });
+
+      var open = function(page, obj, id) { return '"' + obj + '._pendingDetail=\'' + id + '\';loadPage(\'' + page + '\');"'; };
+      var CAP = 5;
+      var section = function(title, color, rows, renderRow, moreTarget) {
+        if (!rows.length) return '';
+        var h = '<div style="padding:10px 16px 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + color + ';">' + title + ' (' + rows.length + ')</div>';
+        rows.slice(0, CAP).forEach(function(r) { h += renderRow(r); });
+        if (rows.length > CAP) h += '<div onclick="loadPage(\'' + moreTarget + '\')" style="padding:6px 16px 10px;font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;">+ ' + (rows.length - CAP) + ' more →</div>';
+        return h;
+      };
+      var qRow = function(tag) {
+        return function(q) {
+          return '<div onclick=' + open('quotes', 'QuotesPage', q.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+            + '<div style="min-width:0;"><div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(q.clientName || ('Quote #' + q.quoteNumber)) + '</div>'
+            + (q.property ? '<div style="font-size:11.5px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(q.property) + '</div>' : '')
+            + '</div><div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;">' + ((q.total || 0) > 0 ? money(q.total) : '—') + '</div>'
+            + '<div style="font-size:10.5px;color:var(--text-light);">' + tag + '</div></div></div>';
+        };
+      };
+      var iRow = function(tag) {
+        return function(i) {
+          var amt = tag === 'collect' ? (Number(i.balance) || 0) : (i.total || 0);
+          return '<div onclick=' + open('invoices', 'InvoicesPage', i.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+            + '<div style="font-weight:700;font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(i.clientName || ('Invoice #' + i.invoiceNumber)) + '</div>'
+            + '<div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;' + (tag === 'collect' ? 'color:var(--red);' : '') + '">' + money(amt) + '</div>'
+            + '<div style="font-size:10.5px;color:var(--text-light);">' + (tag === 'collect' ? esc(i.status) : 'draft — send') + '</div></div></div>';
+        };
+      };
+      var jRow = function(j) {
+        return '<div onclick=' + open('jobs', 'JobsPage', j.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+          + '<div style="font-weight:700;font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(j.clientName || ('Job #' + j.jobNumber)) + '</div>'
+          + '<div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;">' + String(j.scheduledDate).slice(5) + '</div>'
+          + '<div style="font-size:10.5px;color:var(--text-light);">' + money(j.total) + '</div></div></div>';
+      };
+
+      var body = ''
+        + section('🚀 Send these — estimate done', '#2e7d32', sendReady, qRow('send it'), 'quotes')
+        + section('🧾 Invoices to send', '#1565c0', invSend, iRow('send'), 'invoices')
+        + section('💰 Collect', '#c62828', invCollect, iRow('collect'), 'invoices')
+        + section('✍️ Write the estimate', '#b26a00', writeThese, qRow('needs scope + price'), 'quotes')
+        + section('📨 Sent — waiting to hear back', '#8b2252', waiting, qRow('follow up'), 'quotes')
+        + section('✅ Approved — schedule it', '#2e7d32', schedule, qRow('book it'), 'quotes')
+        + section('🔄 Changes requested', '#e07c24', changes, qRow('respond'), 'quotes')
+        + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule');
+      if (!body) return '';
+      return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--white);margin-bottom:20px;overflow:hidden;' + (_cl ? 'box-shadow:0 1px 3px rgba(0,0,0,0.04);' : '') + '">'
+        + '<div style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:baseline;">'
+        + '<h3 style="margin:0;font-size:18px;font-weight:' + (_cl ? '700' : '800') + ';' + (_cl ? '' : 'font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;') + '">Today board</h3>'
+        + '<span style="font-size:11px;color:var(--text-light);">tap a row to open it</span></div>'
+        + body + '</div>';
+    } catch (e) { return ''; /* never break the dashboard */ }
+  },
+
   _renderMobileFocusBlock: function(now, todayStr) {
     var html = '<div class="dash-mobile-focus">';
 

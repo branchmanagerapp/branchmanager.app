@@ -1,5 +1,5 @@
 {
-  "version": 985,
-  "released": "2026-07-08",
-  "notes": "Record deep-links: external pages (today one-pager, run schedule) can link straight into a quote/job via ?rec=quote-<id> / ?rec=job-<id>. Defensive handler in index.html, no bundle change (still v984 bundle)."
+  "version": 986,
+  "released": "2026-07-09",
+  "notes": "Today board on the dashboard: named to-do rows by status (send-these / write-estimate / waiting / approved-schedule / changes / invoices to send+collect / next-7-days jobs). Tap a row to open the record. Replaces the external today-sheet as the daily front door."
 }
