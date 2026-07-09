@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>How We Work — Branch Manager Workflow</title>
+<style>
+  :root{--ink:#111;--mut:#666;--line:#ddd;--accent:#2f7a3a;--warn:#8a5512;--warnbg:#fdf3e3}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f6f7f6;color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+  .sheet{max-width:720px;margin:24px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:34px 38px;box-shadow:0 2px 14px rgba(0,0,0,.06)}
+  @media(max-width:600px){.sheet{margin:12px auto;padding:20px 16px;border-radius:10px}}
+  h1{font-size:24px;margin:0 0 4px;font-weight:800}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:18px}
+  h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:24px 0 8px;font-weight:800;border-top:1px solid #eee;padding-top:16px}
+  p,li{font-size:14px;color:#222}
+  li{margin:6px 0}
+  .rule{background:#eef4ef;border:1px solid #cfe3d5;border-radius:10px;padding:12px 15px;margin:10px 0;font-size:13.5px}
+  .rule b{color:var(--accent)}
+  .warn{background:var(--warnbg);border:1px solid #f0d9a8;border-radius:10px;padding:12px 15px;margin:10px 0;font-size:13.5px}
+  .warn b{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:6px 8px;border-bottom:2px solid var(--ink)}
+  td{padding:8px;border-bottom:1px solid #eee;vertical-align:top}
+  td b{white-space:nowrap}
+  .printbtn{position:fixed;top:14px;right:16px;background:var(--ink);color:#fff;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer}
+  a{color:var(--accent);font-weight:600}
+  @media print{body{background:#fff}.sheet{margin:0;border:none;box-shadow:none;padding:8px 2px;max-width:100%}.printbtn{display:none}@page{margin:13mm}}
+</style></head><body>
+<button class="printbtn" onclick="window.print()">⎙ Print</button>
+<div class="sheet">
+  <h1>🌳 How We Work — the Branch Manager workflow</h1>
+  <div class="sub">One system, three people: Doug, Catherine, Claude. Everything lives in <a href="https://branchmanager.app/">branchmanager.app</a>. Updated July 9, 2026.</div>
+
+  <h2>The one rule</h2>
+  <div class="rule"><b>If it happened, it goes in Branch Manager — same day, from your phone.</b> Visited a job? Update the quote. Finished work? Mark the job done. Got paid? Mark it paid. The app is only as smart as what we tell it. When the statuses are true, the Today board runs the whole business by itself.</div>
+
+  <h2>What each status means (the shared language)</h2>
+  <table>
+    <tr><th>Status</th><th>Means</th><th>Next action</th></tr>
+    <tr><td><b>Draft ($0)</b></td><td>Lead exists, estimate not written</td><td>Visit / price it → fill line items</td></tr>
+    <tr><td><b>Draft (priced)</b></td><td>Estimate done, not sent</td><td>Add photos → green <b>Send</b> button</td></tr>
+    <tr><td><b>Sent</b></td><td>Customer has it, no answer yet</td><td>Follow up after ~5 days</td></tr>
+    <tr><td><b>Changes requested</b></td><td>Customer wants edits</td><td>Respond, revise, re-send</td></tr>
+    <tr><td><b>Approved</b></td><td>They said yes</td><td>Schedule the job (pick the date)</td></tr>
+    <tr><td><b>Job scheduled</b></td><td>On the calendar</td><td>Do the work</td></tr>
+    <tr><td><b>Job completed</b></td><td>Work done</td><td>Invoice it — same day</td></tr>
+    <tr><td><b>Invoice sent</b></td><td>Waiting on money</td><td>Chase at 7 / 14 / 30 days</td></tr>
+    <tr><td><b>Paid</b></td><td>Money in</td><td>Nothing — done ✓</td></tr>
+  </table>
+
+  <h2>Daily worksheet — morning (5 minutes, in the app)</h2>
+  <ol>
+    <li><b>Open branchmanager.app → the Today board is the homepage.</b> It lists by name: Send these · Invoices to send · Collect · Write the estimate · Waiting to hear back · Approved—schedule it · Changes requested · This week's jobs.</li>
+    <li><b>Work top to bottom.</b> Send-these and Invoices first (that's money sitting still). Tap a row — it opens the record.</li>
+    <li><b>Anything new from calls/texts overnight?</b> Create the client + a $0 draft quote right then (30 seconds). It'll show under "Write the estimate" until priced.</li>
+  </ol>
+
+  <h2>Field rules — during the day</h2>
+  <ul>
+    <li><b>Gave a price on-site?</b> Put it in the quote before you drive away. Photos: tap 📸+ in the quote → pick all photos → tap each onto its tree.</li>
+    <li><b>Finished a job?</b> Mark it completed → tap "convert to invoice." A done job that isn't invoiced is invisible money.</li>
+    <li><b>Customer said yes by text/phone?</b> Flip the quote to Approved yourself — don't wait for the link click.</li>
+    <li><b>Never share a quote link from a draft.</b> Use the green <b>Send</b> button — it makes the link live and stamps it sent.</li>
+  </ul>
+
+  <h2>Who does what</h2>
+  <table>
+    <tr><th>Person</th><th>Owns</th></tr>
+    <tr><td><b>Doug</b></td><td>Pricing + sending quotes, scheduling approved work, the final Send on every customer message</td></tr>
+    <tr><td><b>Catherine</b></td><td>Same Today board, same login flow — new leads from calls, follow-ups on Sent quotes, chasing Collect, keeping statuses honest from the field</td></tr>
+    <tr><td><b>Claude</b></td><td>Everything mechanical: entering leads from Dialpad, reconciling Jobber, drafting quotes/invoices/emails, audits, fixing records, building the app. <b>Never sends anything to a customer</b> — everything lands as a draft for a human to fire.</td></tr>
+  </table>
+
+  <h2>Where Claude sits (so you can't break it from the back end)</h2>
+  <p>Claude works through the <b>same cloud API the app itself uses</b>, as the owner account — every change Claude makes shows up in the app instantly, exactly as if it was typed in. Nothing bypasses the app's rules: drafts stay drafts, tax defaults apply, customer sends stay human-only. You don't need to touch Supabase or the database — <b>if something looks wrong in the app, say it in chat and Claude fixes the record</b>; that's the supported path. The back end is Claude's job now.</p>
+  <div class="warn"><b>If a quote "reverts" or a save doesn't stick:</b> your phone is running an old cached version. Fully close and reopen the app; if it persists, delete the home-screen icon and re-add it from branchmanager.app. v984+ shows a red banner when a save fails — never ignore it.</div>
+
+  <h2>Weekly (Fridays, 10 minutes)</h2>
+  <ul>
+    <li>Claude runs the audit: stale Sent quotes → follow-up list, unpaid invoices → Collect, duplicate/orphan records → cleaned.</li>
+    <li>Anything still in Jobber gets exported → Claude reconciles → BM stays the single source of truth until cutover.</li>
+  </ul>
+
+  <div class="rule" style="margin-top:22px;">📄 Want paper? The <a href="https://branchmanager.app/today-snt-9d4b1e.html">printable Today sheet</a> still exists — but the app's Today board is the live one. The sheet is a snapshot; the board is the truth.</div>
+</div></body></html>
