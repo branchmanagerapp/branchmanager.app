@@ -668,6 +668,12 @@ var QuotesPage = {
       +   '<button type="button" onclick="QuotesPage._bulkAddPhotos()" title="Bulk add photos — drag onto line items" style="width:54px;height:54px;border-radius:10px;background:var(--white);color:var(--green-dark);border:2px solid var(--green-dark);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;">📸+</button>'
       + '</div>';
 
+    // v989: permanent Job Photos pool — always visible so the bulk flow is
+    // discoverable (Doug: "all the job photos in one section, then I drag and
+    // drop to the line items — very important"). Filled by _renderPhotoTray;
+    // accepts files dragged straight in from Finder/Photos on desktop.
+    html += '<div id="q-photo-pool" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:12px 14px;margin-bottom:14px;"></div>';
+
     // Line items list — newly-added items render expanded so user can fill in immediately.
     html += '<div id="q-items">';
     items.forEach(function(item, i) {
@@ -2955,16 +2961,51 @@ var QuotesPage = {
     input.click();
   },
 
+  // v989: photos dropped straight onto the pool (Finder/Photos drag-in).
+  _poolDrop: function(e) {
+    e.preventDefault();
+    var pool = document.getElementById('q-photo-pool');
+    if (pool) pool.style.borderColor = '#d4a017';
+    var files = Array.prototype.filter.call((e.dataTransfer && e.dataTransfer.files) || [], function(f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    Promise.all(files.map(function(f) {
+      return new Promise(function(resolve) {
+        var r = new FileReader();
+        r.onload = function(ev) { resolve({ url: ev.target.result, name: f.name || 'photo' }); };
+        r.readAsDataURL(f);
+      });
+    })).then(function(items) {
+      QuotesPage._photoTray = QuotesPage._photoTray.concat(items);
+      QuotesPage._renderPhotoTray();
+      UI.toast(items.length + ' photo' + (items.length === 1 ? '' : 's') + ' in the pool — drag onto a line item');
+    });
+  },
+
   _renderPhotoTray: function() {
     var existing = document.getElementById('q-photo-tray');
     if (existing) existing.remove();
     QuotesPage._unbindRowDrops(); // always unbind first to avoid double-binding
+    // v989: render into the permanent pool when present (quote editor).
+    var pool = document.getElementById('q-photo-pool');
+    if (pool && !QuotesPage._photoTray.length) {
+      pool.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
+        + '<button type="button" onclick="QuotesPage._bulkAddPhotos()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">📸 Add all job photos</button>'
+        + '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;">Every job photo lands here first — then <b>drag each onto its line item</b> (on your phone: tap the photo, tap the tree). Or drop files straight in.</div>'
+        + '</div>';
+      return;
+    }
     if (!QuotesPage._photoTray.length) return;
-    var itemsList = document.getElementById('q-items');
-    if (!itemsList) return;
-    var tray = document.createElement('div');
-    tray.id = 'q-photo-tray';
-    tray.style.cssText = 'background:#fff8e6;border:1px dashed #d4a017;border-radius:10px;padding:10px 12px;margin-bottom:14px;';
+    var tray;
+    if (pool) {
+      pool.innerHTML = '';
+      tray = pool;
+    } else {
+      var itemsList = document.getElementById('q-items');
+      if (!itemsList) return;
+      tray = document.createElement('div');
+      tray.id = 'q-photo-tray';
+      tray.style.cssText = 'background:#fff8e6;border:1px dashed #d4a017;border-radius:10px;padding:10px 12px;margin-bottom:14px;';
+    }
     var trayHtml = '<div style="font-size:12px;color:#7c5a00;margin-bottom:8px;font-weight:700;display:flex;justify-content:space-between;align-items:center;">'
       +   '<span>📸 ' + QuotesPage._photoTray.length + ' photo' + (QuotesPage._photoTray.length === 1 ? '' : 's') + ' to place — drag onto a line item (or tap on mobile)</span>'
       +   '<button type="button" onclick="QuotesPage._clearPhotoTray()" style="background:none;border:none;color:#7c5a00;font-size:11px;text-decoration:underline;cursor:pointer;padding:2px 6px;">clear all</button>'
@@ -2983,7 +3024,10 @@ var QuotesPage = {
     });
     trayHtml += '</div>';
     tray.innerHTML = trayHtml;
-    itemsList.parentNode.insertBefore(tray, itemsList);
+    if (tray.id !== 'q-photo-pool') {
+      var itemsList2 = document.getElementById('q-items');
+      if (itemsList2) itemsList2.parentNode.insertBefore(tray, itemsList2);
+    }
     QuotesPage._bindRowDrops();
   },
 
