@@ -1088,6 +1088,17 @@ var DashboardPage = {
       var _cl = !!(window.BMUI && BMUI.isClassic && BMUI.isClassic());
       var money = function(n) { return (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(n || 0) : '$' + Math.round(n || 0); };
       var esc = function(s) { return (typeof UI !== 'undefined' && UI.esc) ? UI.esc(s || '') : String(s || ''); };
+      // v988: date + age chip on EVERY row (Doug rule Jul 5: every list item
+      // carries an explicit date + age so old never masquerades as urgent).
+      var chip = function(iso) {
+        if (!iso) return '';
+        var d = new Date(iso); if (isNaN(d.getTime())) return '';
+        var days = Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
+        var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+        var age = days === 0 ? 'today' : days + 'd';
+        var col = days > 30 ? '#c62828' : 'var(--text-light)';
+        return ' · <span style="color:' + col + ';">' + mon + ' ' + d.getDate() + ' · ' + age + '</span>';
+      };
 
       var sendReady = [], writeThese = [], waiting = [], waitingOld = 0, schedule = [], changes = [];
       // v987: 'waiting' only shows quotes sent in the last 90 days — years-old
@@ -1129,7 +1140,7 @@ var DashboardPage = {
             + '<div style="min-width:0;"><div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(q.clientName || ('Quote #' + q.quoteNumber)) + '</div>'
             + (q.property ? '<div style="font-size:11.5px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(q.property) + '</div>' : '')
             + '</div><div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;">' + ((q.total || 0) > 0 ? money(q.total) : '—') + '</div>'
-            + '<div style="font-size:10.5px;color:var(--text-light);">' + tag + '</div></div></div>';
+            + '<div style="font-size:10.5px;color:var(--text-light);">' + tag + chip(q.sentAt || q.approvedAt || q.createdAt) + '</div></div></div>';
         };
       };
       var iRow = function(tag) {
@@ -1138,7 +1149,7 @@ var DashboardPage = {
           return '<div onclick=' + open('invoices', 'InvoicesPage', i.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
             + '<div style="font-weight:700;font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(i.clientName || ('Invoice #' + i.invoiceNumber)) + '</div>'
             + '<div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;' + (tag === 'collect' ? 'color:var(--red);' : '') + '">' + money(amt) + '</div>'
-            + '<div style="font-size:10.5px;color:var(--text-light);">' + (tag === 'collect' ? esc(i.status) : 'draft — send') + '</div></div></div>';
+            + '<div style="font-size:10.5px;color:var(--text-light);">' + (tag === 'collect' ? esc(i.status) : 'draft — send') + chip(i.dueDate || i.issuedDate || i.createdAt) + '</div></div></div>';
         };
       };
       var jRow = function(j) {
