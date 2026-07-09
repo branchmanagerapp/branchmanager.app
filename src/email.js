@@ -93,10 +93,16 @@ var Email = {
       } catch(e) {}
     }
 
+    // v990: send the anon key so the Supabase gateway doesn't 401 the POST
+    // before the function runs (same class of bug that broke Dialpad SMS).
+    var _anonE = (window.BM_CONFIG && window.BM_CONFIG.supabaseAnonKey)
+      || (function(){ try { return localStorage.getItem('bm-supabase-key'); } catch(e){ return null; } })();
     var attempt = async function() {
       return fetch(SUPA_URL + '/functions/v1/send-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _anonE
+          ? { 'Content-Type': 'application/json', 'apikey': _anonE, 'Authorization': 'Bearer ' + _anonE }
+          : { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
     };

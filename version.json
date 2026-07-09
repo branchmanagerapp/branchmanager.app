@@ -1,5 +1,5 @@
 {
-  "version": 989,
+  "version": 990,
   "released": "2026-07-09",
-  "notes": "Job Photos pool: permanent always-visible photo section at the top of every quote — add all job photos at once (or drop files straight in), then drag each onto its line item (tap-assign on phone)."
+  "notes": "FIX: quote/invoice SMS now actually goes through Dialpad (business line). The edge-fn POST was missing the Supabase anon key, so the gateway 401d it and the app silently fell back to the phone Messages app. Same fix applied to send-email."
 }

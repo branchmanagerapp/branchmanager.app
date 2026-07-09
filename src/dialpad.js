@@ -38,10 +38,19 @@ var Dialpad = {
       ? window.BM_CONFIG.supabaseFunctionsUrl
       : 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1';
 
+    // v990: the Supabase gateway rejects a headerless POST with 401
+    // (UNAUTHORIZED_NO_AUTH_HEADER) BEFORE the function runs — that 401 was
+    // landing in the catch below and silently opening the phone's Messages
+    // app instead of texting through Dialpad. Send the anon key so the edge
+    // function is actually reached.
+    var _anon = (window.BM_CONFIG && window.BM_CONFIG.supabaseAnonKey)
+      || (function(){ try { return localStorage.getItem('bm-supabase-key'); } catch(e){ return null; } })();
     try {
       var res = await fetch(FN_URL + '/dialpad-sms-send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _anon
+          ? { 'Content-Type': 'application/json', 'apikey': _anon, 'Authorization': 'Bearer ' + _anon }
+          : { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to: cleanPhone, message: message, clientId: clientId || null })
       });
       var data = await res.json();
