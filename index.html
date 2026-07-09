@@ -3504,6 +3504,38 @@ window.addEventListener('popstate', function(e) {
   }
 })();
 </script>
+<script>
+// Record deep-link: ?rec=quote-<id> / ?rec=job-<id> / ?rec=client-<id> / ?rec=invoice-<id>
+// Lets external pages (today one-pager, run schedule) link straight to a record.
+// Fully defensive: wrapped in try/catch, capped retry, never blocks boot. The
+// link also carries a #quotes/#jobs hash, so the list still opens as a fallback
+// even if the specific-record open can't run. Reuses the app's own _pendingDetail
+// path (same mechanism the dashboard cards use).
+(function(){
+  try {
+    var rec = new URLSearchParams(location.search).get('rec');
+    if (!rec) return;
+    var m = /^(quote|job|client|invoice)-(.+)$/.exec(rec);
+    if (!m) return;
+    var MAP = { quote:['quotes','QuotesPage'], job:['jobs','JobsPage'], client:['clients','ClientsPage'], invoice:['invoices','InvoicesPage'] };
+    var t = MAP[m[1]]; if (!t) return;
+    var id = m[2], page = t[0], objName = t[1], tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if (tries > 40) { clearInterval(iv); return; } // ~20s cap
+      try {
+        var P = window[objName];
+        if (typeof loadPage !== 'function' || !P || !P.showDetail) return; // wait for bundle/auth
+        clearInterval(iv);
+        try { P._pendingDetail = id; } catch(e){}
+        loadPage(page);
+        // Fallback for pages that don't consume _pendingDetail on render:
+        setTimeout(function(){ try { if (P._pendingDetail === id) { P._pendingDetail = null; P.showDetail(id); } } catch(e){} }, 700);
+      } catch(e){}
+    }, 500);
+  } catch(e){}
+})();
+</script>
 <button id="bm-fab" onclick="BM_contextCreate()" title="New…" aria-label="Create new">+</button>
 <nav id="bottom-nav">
   <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>

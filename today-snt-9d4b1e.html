@@ -21,7 +21,7 @@
   .row b{font-size:15px} .row small{display:block;color:var(--mut);font-size:12.5px;line-height:1.45}
   .row small a{color:var(--accent);font-weight:600}
   .tm{flex:0 0 62px;font:700 11.5px/1.3 ui-monospace,Menlo,monospace;color:var(--accent);padding-top:3px}
-  .done b{text-decoration:line-through;color:var(--mut)}
+  .tm a{color:inherit;text-decoration:none}
   .callout{background:var(--warnbg);border:1px solid #f0d9a8;border-radius:10px;padding:12px 15px;margin:8px 0 4px}
   .callout b{color:var(--warn)}
   .callout small{display:block;color:#7a5512;font-size:12.5px;margin-top:2px}
@@ -39,16 +39,17 @@
 <button class="printbtn" onclick="window.print()">⎙ Print</button>
 <div class="sheet">
   <div class="top"><h1>🌳 Today</h1><div class="date">Wednesday, July 8, 2026</div></div>
+  <div style="font-size:12px;color:#666;margin:-8px 0 4px;">Tap a <b style="color:#2f7a3a;">green #</b> to open that quote/job in Branch Manager.</div>
 
   <h2>🗓️ The run (from your morning text)</h2>
   <div class="row"><span class="bx"></span><span class="tm">8:30</span><span><b>Park</b><small>Get there by 8:30 — check-in.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">9:30</span><span><b>418 Union Ave — Rob McCrane</b><small>The storm callback (quote #528 started). Look it over / get it moving.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">PM</span><span><b>Dennis Lucente — SmartLawn / Navimow</b><small>Mower fleet deal. ✅ CM240 came back today — invoice re-cut for the X450 only (see below).</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-855ee1f0-b24b-4574-8aca-0405e31b3e28#quotes">#528</a></span><span><b>418 Union Ave — Rob McCray</b><small>Storm callback. <a href="https://branchmanager.app/?rec=quote-855ee1f0-b24b-4574-8aca-0405e31b3e28#quotes">Open #528 in BM ↗</a> — look it over / get it moving.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">PM</span><span><b>Dennis Lucente — SmartLawn / Navimow</b><small>Mower fleet deal. ✅ CM240 came back today — invoice re-cut for X450 only (below).</small></span></div>
   <div class="tools">🧰 <b>Load the truck:</b> spade shovel · levels · landscape fabric · Allen drill</div>
 
   <h2>⏭️ Tomorrow — Thu 7/9</h2>
-  <div class="row"><span class="bx"></span><span class="tm">Hector</span><span><b>Hector — 16 Parkway Dr, Cortlandt Manor</b><small>📞 646-235-7809. Vic Errico referral. Quoted $1,500 — two dead trees + log, all hauled. Confirm scope isn't bigger than the 2 trees before starting.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">Thu</span><span><b>Adam Melish job — w/ Armand</b><small>68 Cedar Ave, Poughkeepsie (#533, $4,600 w/ stump).</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">Hector</span><span><b>Hector — 16 Parkway Dr, Cortlandt Manor</b><small>📞 646-235-7809. Vic Errico referral. $1,500 — two dead trees + log, all hauled. Confirm scope isn't bigger before starting.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-547668a9-9b2e-404b-a137-871615aa3772#quotes">#533</a></span><span><b>Adam Melish job — w/ Armand</b><small>68 Cedar Ave, Poughkeepsie. <a href="https://branchmanager.app/?rec=quote-547668a9-9b2e-404b-a137-871615aa3772#quotes">Open #533 in BM ↗</a></small></span></div>
 
   <h2>🔴 Don't-forget today</h2>
   <div class="callout">
@@ -58,31 +59,31 @@
   <div class="row"><span class="bx"></span><span class="tm">CADCO</span><span><b>Pay CADCO #108833 — it's blocking sales</b><small>$16,303.55 past due. Blocks Ted Haver's X430 AND Dennis's X450s — and you saw Dennis today.</small></span></div>
 
   <h2>📨 Ready to send (in Branch Manager)</h2>
-  <div class="row"><span class="bx"></span><span class="tm">Dennis</span><span><b>Dennis Lucente invoice — X450 only, $2,751.64 (or $2,539 w/ ST-120)</b><small>CM240 removed. Send him the link: <a href="https://branchmanagerapp.github.io/branchmanager.app/lucente-invoice-7b3e9c.html">lucente invoice →</a></small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#533</span><span><b>Adam Melish — $3,800 / $4,600 w/ stump</b><small>68 Cedar Ave, Poughkeepsie. Job Thursday w/ Armand. Review tax, Send.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#516</span><span><b>Arlene Richie — $5,500 hickory</b><small>3723 Sunnyside Rd, Shrub Oak. Attach her photos, Send.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#534</span><span><b>Amanda — $3,500 silver maple</b><small>100 Nassau, Peekskill. Attach photos + add her number, Send.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#535</span><span><b>Syed — Yarbo (add prices)</b><small>Pro head + reprogram + setup. Fill prices + his address, Send.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">$750</span><span><b>Amanda — $750 invoice</b><small>Still needs her number.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">Dennis</span><span><b>Dennis Lucente invoice — X450 only, $2,751.64 (or $2,539 w/ ST-120)</b><small>CM240 removed. Send him: <a href="https://branchmanagerapp.github.io/branchmanager.app/lucente-invoice-7b3e9c.html">lucente invoice →</a></small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-547668a9-9b2e-404b-a137-871615aa3772#quotes">#533</a></span><span><b>Adam Melish — $3,800 / $4,600 w/ stump</b><small>68 Cedar Ave, Poughkeepsie. <a href="https://branchmanager.app/?rec=quote-547668a9-9b2e-404b-a137-871615aa3772#quotes">Open in BM ↗</a> — review tax, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-7d91b91d-65e2-45c3-b9ee-99359cca0241#quotes">#516</a></span><span><b>Arlene Richie — $5,500 hickory</b><small>3723 Sunnyside Rd, Shrub Oak. <a href="https://branchmanager.app/?rec=quote-7d91b91d-65e2-45c3-b9ee-99359cca0241#quotes">Open in BM ↗</a> — attach photos, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-d9e1480e-3c41-40a2-9eb6-0bd776c99ce8#quotes">#534</a></span><span><b>Amanda — $3,500 silver maple</b><small>100 Nassau, Peekskill. <a href="https://branchmanager.app/?rec=quote-d9e1480e-3c41-40a2-9eb6-0bd776c99ce8#quotes">Open in BM ↗</a> — photos + her number, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-678c8ff3-38a8-4ef2-aa72-48a4a1fc094a#quotes">#535</a></span><span><b>Syed — Yarbo (add prices)</b><small>Pro head + reprogram + setup. <a href="https://branchmanager.app/?rec=quote-678c8ff3-38a8-4ef2-aa72-48a4a1fc094a#quotes">Open in BM ↗</a> — fill prices + address, Send.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm">$750</span><span><b>Amanda — $750 invoice</b><small>Still needs her number. <a href="https://branchmanager.app/#invoices">Invoices in BM ↗</a></small></span></div>
 
   <h2>🌳 New quotes — price + add photos, then send</h2>
-  <div class="row"><span class="bx"></span><span class="tm">#536</span><span><b>Barbara Jones — $7,900</b><small>132 Highland Dr, Cortlandt Manor. Dogwoods prune · backyard cleanup · dead oak · leaning maple. Confirm tax.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#537</span><span><b>Birchie (Barbara's neighbor) — $7,900</b><small>Dead birch · tulip · Norway maple. ⚠️ needs a crane. Get her real name.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#538</span><span><b>Abraham Kraus — cleanup</b><small>Peekskill Park Estates. Price TBD ("Sparecube"/Lakewood — confirm site).</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#539</span><span><b>Julia Mack — hemlock</b><small>Price TBD (note said "800" — $ or address?).</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#540</span><span><b>Anza — dead ash</b><small>Price TBD. Confirm name (Anza vs Dana Lanza).</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">#541</span><span><b>Carlos — 15 Tommy Thurber Ln, Montrose</b><small>Scope + price TBD. Scheduled ~Thursday.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-dfb64575-fbad-43ce-b978-0690f570d235#quotes">#536</a></span><span><b>Barbara Jones — $7,900</b><small>132 Highland Dr, Cortlandt Manor. Dogwoods · cleanup · dead oak · leaning maple. <a href="https://branchmanager.app/?rec=quote-dfb64575-fbad-43ce-b978-0690f570d235#quotes">Open in BM ↗</a></small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-17d5bca1-7672-415c-b2aa-cc4a047b26fa#quotes">#537</a></span><span><b>Birchie (Barbara's neighbor) — $7,900</b><small>Dead birch · tulip · Norway maple. ⚠️ needs a crane. Get her real name. <a href="https://branchmanager.app/?rec=quote-17d5bca1-7672-415c-b2aa-cc4a047b26fa#quotes">Open in BM ↗</a></small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-29f6c361-428a-47ba-9e1f-f808ee34e92c#quotes">#538</a></span><span><b>Abraham Kraus — cleanup</b><small>Peekskill Park Estates. Price TBD (Sparecube/Lakewood — confirm). <a href="https://branchmanager.app/?rec=quote-29f6c361-428a-47ba-9e1f-f808ee34e92c#quotes">Open in BM ↗</a></small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-d57003ff-2490-4e1d-b323-e894ceeadbe8#quotes">#539</a></span><span><b>Julia Mack — hemlock</b><small>Price TBD (note said "800"). <a href="https://branchmanager.app/?rec=quote-d57003ff-2490-4e1d-b323-e894ceeadbe8#quotes">Open in BM ↗</a></small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-cba8911b-68f8-4f93-b1e9-322c3ac2b9cd#quotes">#540</a></span><span><b>Anza — dead ash</b><small>Price TBD. Confirm name (Anza vs Dana Lanza). <a href="https://branchmanager.app/?rec=quote-cba8911b-68f8-4f93-b1e9-322c3ac2b9cd#quotes">Open in BM ↗</a></small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=quote-f6310c25-5a43-42db-b1e3-37c7a5f809ff#quotes">#541</a></span><span><b>Carlos — 15 Tommy Thurber Ln, Montrose</b><small>Scope + price TBD. Scheduled ~Thursday. <a href="https://branchmanager.app/?rec=quote-f6310c25-5a43-42db-b1e3-37c7a5f809ff#quotes">Open in BM ↗</a></small></span></div>
   <div class="tools">📸 In each quote: tap <b>📸+</b> → pick all your tree photos → tap a photo → tap its line item (works on your phone).</div>
 
-  <h2>🌿 Still owed / open</h2>
-  <div class="row"><span class="bx"></span><span class="tm">$7,750</span><span><b>Scott Carey — never scheduled?</b><small>2373 Evergreen St, Yorktown Heights. 10-item tree job pulled from Jobber, was "unscheduled." Big one — chase it.</small></span></div>
-  <div class="row"><span class="bx"></span><span class="tm">$2,500</span><span><b>Christina Eckhart — was "late" in Jobber</b><small>7 East Willow St, Beacon. Norway maple removal. Confirm done/paid.</small></span></div>
+  <h2>🌿 Still owed / open (found in Jobber)</h2>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=job-9c74d333-2639-48e3-9f47-278c90814a13#jobs">$7,750</a></span><span><b>Scott Carey — never scheduled?</b><small>2373 Evergreen St, Yorktown Heights. 10-item tree job, was "unscheduled." <a href="https://branchmanager.app/?rec=job-9c74d333-2639-48e3-9f47-278c90814a13#jobs">Open job in BM ↗</a> — big one, chase it.</small></span></div>
+  <div class="row"><span class="bx"></span><span class="tm"><a href="https://branchmanager.app/?rec=job-3fa98d65-3b8c-4bae-aa04-26bd44c6fe22#jobs">$2,500</a></span><span><b>Christina Eckhart — was "late"</b><small>7 East Willow St, Beacon. Norway maple removal. <a href="https://branchmanager.app/?rec=job-3fa98d65-3b8c-4bae-aa04-26bd44c6fe22#jobs">Open job in BM ↗</a> — confirm done/paid.</small></span></div>
   <div class="row"><span class="bx"></span><span class="tm">Country</span><span><b>Matt Green — Country Lane tree cleanup</b><small>11 Country Lane (Armand's street).</small></span></div>
 
   <h2>⏳ Waiting on you (quick wins)</h2>
   <div class="row"><span class="bx"></span><span class="tm">KM100</span><span><b>Reply to Jessica → DocuSign</b><small>$1,100/mo, 5-yr approved. Prior contract was voided; this is the live one.</small></span></div>
 
-  <div class="foot"><span>🛰️ <a href="ground-control-7c3f9a.html" style="color:#2f7a3a;font-weight:700">Ground Control</a> · <a href="estimates-map-3f9c21.html" style="color:#2f7a3a;font-weight:700">Map</a> · <a href="hub-570301.html" style="color:#2f7a3a;font-weight:700">Full index</a></span><span>Say "today sheet" any morning for a fresh one</span></div>
+  <div class="foot"><span>🗒️ <a href="schedule-snt-c47a2e.html" style="color:#2f7a3a;font-weight:700">Run Schedule</a> · 🛰️ <a href="ground-control-7c3f9a.html" style="color:#2f7a3a;font-weight:700">Ground Control</a> · <a href="estimates-map-3f9c21.html" style="color:#2f7a3a;font-weight:700">Map</a></span><span>Say "today sheet" any morning for a fresh one</span></div>
 </div>
 </body>
 </html>
