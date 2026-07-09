@@ -1089,10 +1089,17 @@ var DashboardPage = {
       var money = function(n) { return (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(n || 0) : '$' + Math.round(n || 0); };
       var esc = function(s) { return (typeof UI !== 'undefined' && UI.esc) ? UI.esc(s || '') : String(s || ''); };
 
-      var sendReady = [], writeThese = [], waiting = [], schedule = [], changes = [];
+      var sendReady = [], writeThese = [], waiting = [], waitingOld = 0, schedule = [], changes = [];
+      // v987: 'waiting' only shows quotes sent in the last 90 days — years-old
+      // Jobber-era sent quotes were burying live follow-ups (Doug 7/9: the
+      // $35k Fred Romer follow-up was invisible under 2023 dead leads).
+      var cutoff90 = Date.now() - 90 * 86400000;
       quotes.forEach(function(q) {
         if (q.status === 'draft') { ((q.total || 0) > 0 ? sendReady : writeThese).push(q); }
-        else if (q.status === 'sent' || q.status === 'awaiting') { waiting.push(q); }
+        else if (q.status === 'sent' || q.status === 'awaiting') {
+          var when = new Date(q.sentAt || q.createdAt || 0).getTime();
+          if (when >= cutoff90) waiting.push(q); else waitingOld++;
+        }
         else if (q.status === 'approved') { schedule.push(q); }
         else if (q.status === 'changes_requested') { changes.push(q); }
       });
@@ -1146,7 +1153,8 @@ var DashboardPage = {
         + section('🧾 Invoices to send', '#1565c0', invSend, iRow('send'), 'invoices')
         + section('💰 Collect', '#c62828', invCollect, iRow('collect'), 'invoices')
         + section('✍️ Write the estimate', '#b26a00', writeThese, qRow('needs scope + price'), 'quotes')
-        + section('📨 Sent — waiting to hear back', '#8b2252', waiting, qRow('follow up'), 'quotes')
+        + section('📨 Sent — waiting to hear back (last 90 days)', '#8b2252', waiting, qRow('follow up'), 'quotes')
+        + (waitingOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + waitingOld + ' sent quotes older than 90 days (likely dead — review in Quotes)</div>' : '')
         + section('✅ Approved — schedule it', '#2e7d32', schedule, qRow('book it'), 'quotes')
         + section('🔄 Changes requested', '#e07c24', changes, qRow('respond'), 'quotes')
         + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule');

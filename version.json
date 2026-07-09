@@ -1,5 +1,5 @@
 {
-  "version": 986,
+  "version": 987,
   "released": "2026-07-09",
-  "notes": "Today board on the dashboard: named to-do rows by status (send-these / write-estimate / waiting / approved-schedule / changes / invoices to send+collect / next-7-days jobs). Tap a row to open the record. Replaces the external today-sheet as the daily front door."
+  "notes": "Today board: waiting-to-hear-back bucket limited to last 90 days; older sent quotes summarized in one line (dead Jobber-era leads were burying live follow-ups like the $35k Fred Romer quote)."
 }
