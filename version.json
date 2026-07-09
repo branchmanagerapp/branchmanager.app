@@ -1,5 +1,5 @@
 {
-  "version": 984,
-  "released": "2026-07-07",
-  "notes": "Loud save-failure alert: rejected cloud writes (4xx) now show an unmissable red banner + toast instead of silently queueing. Root-caused from Tanisha #515 stale-phone incident (pre-v976 cache sent dead columns, every save 400'd silently)."
+  "version": 985,
+  "released": "2026-07-08",
+  "notes": "Record deep-links: external pages (today one-pager, run schedule) can link straight into a quote/job via ?rec=quote-<id> / ?rec=job-<id>. Defensive handler in index.html, no bundle change (still v984 bundle)."
 }
