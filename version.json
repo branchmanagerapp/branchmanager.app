@@ -1,5 +1,5 @@
 {
-  "version": 994,
+  "version": 995,
   "released": "2026-07-10",
-  "notes": "Show-password (eye) reveal toggle added to every password field app-wide."
+  "notes": "Smart Lawn section: mower division of Second Nature Tree now has its own page in Branch Manager (read-only roll-up of Smart-Lawn clients/quotes/jobs/invoices)."
 }
