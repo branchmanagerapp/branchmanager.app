@@ -777,6 +777,7 @@ var QuotesPage = {
 
     // Property Map moved to Step 2
 
+    html += UI.formField('Line of Business', 'select', 'q-line', q.line_of_business || 'tree', { options: ['tree', 'snow', 'smartlawn', 'firewood'] });
     html += UI.formField('Internal Notes', 'textarea', 'q-notes', q.notes, { placeholder: 'Notes (not shown to client)' });
 
     // Equipment block (moved to after Internal Notes per user request)
@@ -2013,6 +2014,7 @@ var QuotesPage = {
       clientEmail: (client && client.email) || '',
       clientPhone: (client && client.phone) || '',
       property: document.getElementById('q-property').value.trim() || (client && client.address) || '',
+      line_of_business: (document.getElementById('q-line') || {}).value || 'tree',
       description: document.getElementById('q-description').value.trim(),
       lineItems: items,
       subtotal: subtotal,

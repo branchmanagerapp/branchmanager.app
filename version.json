@@ -1,5 +1,5 @@
 {
-  "version": 996,
+  "version": 997,
   "released": "2026-07-10",
-  "notes": "Invoice editor now has a Tree/Smart-Lawn/Snow/Firewood selector (jobs already had one). Tag an invoice Smart Lawn -> it pins to the Smart Lawn section + splits in Books."
+  "notes": "Quote + client editors now have the Tree/Smart-Lawn selector too. Phase 1 tagging complete across quotes, clients, jobs, invoices."
 }

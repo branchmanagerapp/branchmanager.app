@@ -860,6 +860,7 @@ var ClientsPage = {
           ] })
 
       + UI.formSection('Property address')
+      + UI.formField('Line of Business', 'select', 'c-line', c.line_of_business || 'tree', { options: ['tree', 'snow', 'smartlawn', 'firewood'] })
       + UI.formField('Property address', 'text', 'c-address', c.address, { noLabel: true, icon: 'map-pin', autocomplete: 'street-address' })
 
       // Less-used fields tucked behind a disclosure so the form looks shorter on mobile.
@@ -910,6 +911,7 @@ var ClientsPage = {
       address: document.getElementById('c-address').value.trim(),
       status: document.getElementById('c-status').value,
       source: (document.getElementById('c-source') || {}).value || '',
+      line_of_business: (document.getElementById('c-line') || {}).value || 'tree',
       tags: document.getElementById('c-tags').value.split(',').map(function(t) { return t.trim(); }).filter(Boolean),
       notes: document.getElementById('c-notes').value.trim()
     };
