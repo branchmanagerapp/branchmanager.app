@@ -1,5 +1,5 @@
 {
-  "version": 993,
+  "version": 994,
   "released": "2026-07-10",
-  "notes": "Fix dead buttons: Receptionist/Campaigns/Referrals filter+tab+search called App.render() which was undefined (threw, did nothing) — now re-render via loadPage. Caught by the new UI-handler audit."
+  "notes": "Show-password (eye) reveal toggle added to every password field app-wide."
 }

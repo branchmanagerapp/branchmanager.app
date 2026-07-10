@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 993; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 994; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1424,6 +1424,55 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
     loadPage(page);
   });
 });
+
+// Show-password toggle — adds a reveal (eye) button to EVERY password field
+// in the app, including ones the SPA renders later (login, set-password,
+// change-password, API-key fields). One global observer so no per-field edits.
+// Skips password inputs whose parent is a flex row (avoids breaking those
+// layouts). Toggling flips type between 'password' and 'text'.
+(function(){
+  function addToggle(inp){
+    if (inp.dataset.pwt) return;
+    try {
+      var pd = inp.parentNode && window.getComputedStyle(inp.parentNode).display;
+      if (pd === 'flex' || pd === 'inline-flex') { inp.dataset.pwt = 'skip'; return; }
+    } catch(e) {}
+    inp.dataset.pwt = '1';
+    var wrap = document.createElement('span');
+    wrap.style.cssText = 'position:relative;display:block;';
+    if (inp.parentNode) { inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp); }
+    else return;
+    try { inp.style.paddingRight = '40px'; } catch(e) {}
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Show password');
+    btn.setAttribute('tabindex', '-1');
+    btn.textContent = '\u{1F441}';
+    btn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;opacity:.55;padding:2px;line-height:1;z-index:2;';
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      var showing = inp.type === 'text';
+      inp.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? '\u{1F441}' : '\u{1F648}';
+      btn.style.opacity = showing ? '.55' : '1';
+      inp.focus();
+    });
+    wrap.appendChild(btn);
+  }
+  function scan(){
+    document.querySelectorAll('input[type="password"]:not([data-pwt])').forEach(addToggle);
+  }
+  function boot(){
+    scan();
+    var t;
+    try {
+      var mo = new MutationObserver(function(){ clearTimeout(t); t = setTimeout(scan, 150); });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
 
 // v723/v739: sidebar hover-expand. When the user has collapsed the sidebar,
 // hovering over the rail temporarily swaps to the full expanded state.
