@@ -1,5 +1,5 @@
 {
-  "version": 991,
-  "released": "2026-07-09",
-  "notes": "Today board: Parked / back-burner section — a real-but-deferred quote (archived with a BACK BURNER note) shows quietly at the bottom instead of vanishing."
+  "version": 992,
+  "released": "2026-07-10",
+  "notes": "Fix: left-nav button (Quotes/any page) now works even with a form open on that same page — a deliberate nav tap no longer swallowed by the open-form guard. Form still autosaves on nav."
 }

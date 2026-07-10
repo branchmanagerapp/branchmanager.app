@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 991; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 992; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1407,10 +1407,15 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
     if (!page) return;
     // Always close sidebar on mobile, even if same page
     if (window.innerWidth <= 768) toggleSidebar();
-    // Same page? Refresh it (scroll to top + reload content)
+    // Same page? Refresh it (scroll to top + reload content).
+    // force:true — a deliberate nav tap must win over loadPage's open-form
+    // guard (which blocks same-page reloads to protect a form from sync ticks).
+    // Without this, tapping "Quotes" while a quote form was open on the Quotes
+    // page did nothing — you were stuck in the form. The form is already
+    // autosaved on nav (QuotesPage._navFlushHandler), so forcing is safe.
     if (page === currentPage) {
       window.scrollTo(0, 0);
-      loadPage(page);
+      loadPage(page, { force: true });
       return;
     }
     currentPage = page;
