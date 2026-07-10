@@ -149,7 +149,7 @@ var QuotesPage = {
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
       +   '<button class="btn btn-primary" onclick="QuotesPage.showNewQuotePicker()" style="font-size:13px;font-weight:700;">New Quote</button>'
-      +   '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:var(--white);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ From walkthrough</button>'
+      +   ((window.BMUI && BMUI.isClassic && BMUI.isClassic()) ? '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:var(--white);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ From walkthrough</button>' : '')
       +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
       +     '<input type="text" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="QuotesPage._search=this.value;QuotesPage._page=0;loadPage(\'quotes\')">'
@@ -656,7 +656,7 @@ var QuotesPage = {
       +   '<div style="font-size:17px;font-weight:700;">Line items</div>'
       // v878: walkthrough-upload button on existing quotes — appends AI-extracted
       // line items rather than creating a new quote.
-      +   (q && q.id ? '<button type="button" onclick="QuotesPage.addWalkthroughTo(\'' + q.id + '\')" title="Record/upload a property video — AI extracts trees + adds line items to this quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><span>🎙️</span> Add walkthrough <span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:999px;font-size:9px;letter-spacing:.05em;">AI</span></button>' : '')
+      +   (q && q.id && !_jb ? '<button type="button" onclick="QuotesPage.addWalkthroughTo(\'' + q.id + '\')" title="Record/upload a property video — AI extracts trees + adds line items to this quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><span>🎙️</span> Add walkthrough <span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:999px;font-size:9px;letter-spacing:.05em;">AI</span></button>' : '')
       + '</div>'
       + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;">'
       +   '<select id="q-service-picker" onchange="QuotesPage._addItemFromPicker(this)" style="flex:1;padding:14px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--white);">'

@@ -1,5 +1,5 @@
 {
-  "version": 997,
+  "version": 998,
   "released": "2026-07-10",
-  "notes": "Quote + client editors now have the Tree/Smart-Lawn selector too. Phase 1 tagging complete across quotes, clients, jobs, invoices."
+  "notes": "Hide the AI walkthrough buttons on the quote list + form in Jobber mode (classic-only) to declutter. Photo drag-drop unchanged."
 }
