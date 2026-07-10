@@ -1179,6 +1179,8 @@ var InvoicesPage = {
     html += UI.formField('Property Address', 'text', 'inv-property', inv.property || (inv.clientId && DB.clients.getById(inv.clientId) ? DB.clients.getById(inv.clientId).address : ''), { placeholder: 'Property address' });
     html += UI.formField('Subject', 'text', 'inv-subject', inv.subject || 'For Services Rendered', { placeholder: 'Invoice subject' });
 
+    html += UI.formField('Line of Business', 'select', 'inv-line', inv.line_of_business || 'tree', { options: ['tree', 'snow', 'smartlawn', 'firewood'] });
+
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
       + UI.formField('Issue Date', 'date', 'inv-issueDate', inv.issuedDate ? inv.issuedDate.split('T')[0] : todayStr)
       + UI.formField('Due Date', 'date', 'inv-dueDate', inv.dueDate ? inv.dueDate.split('T')[0] : dueStr)
@@ -1408,6 +1410,7 @@ var InvoicesPage = {
       clientEmail: client ? client.email : '',
       property: (document.getElementById('inv-property') || {}).value || existingInv.property || (client ? client.address : '') || '',
       subject: document.getElementById('inv-subject').value.trim(),
+      line_of_business: (document.getElementById('inv-line') || {}).value || 'tree',
       issuedDate: document.getElementById('inv-issueDate').value,
       dueDate: document.getElementById('inv-dueDate').value,
       lineItems: items,

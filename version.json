@@ -1,5 +1,5 @@
 {
-  "version": 995,
+  "version": 996,
   "released": "2026-07-10",
-  "notes": "Smart Lawn section: mower division of Second Nature Tree now has its own page in Branch Manager (read-only roll-up of Smart-Lawn clients/quotes/jobs/invoices)."
+  "notes": "Invoice editor now has a Tree/Smart-Lawn/Snow/Firewood selector (jobs already had one). Tag an invoice Smart Lawn -> it pins to the Smart Lawn section + splits in Books."
 }
