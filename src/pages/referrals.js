@@ -75,11 +75,11 @@ var Referrals = {
     filters.forEach(function(f) {
       var active = Referrals._filter === f[0];
       html += '<button class="btn ' + (active ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:4px 12px;" '
-        + 'onclick="Referrals._filter=\'' + f[0] + '\';App.render()">' + f[1] + '</button>';
+        + 'onclick="Referrals._filter=\'' + f[0] + '\';loadPage(window._currentPage)">' + f[1] + '</button>';
     });
     html += '<div style="flex:1;"></div>';
     html += '<input type="text" placeholder="Search..." value="' + UI.esc(Referrals._search) + '" '
-      + 'oninput="Referrals._search=this.value;App.render()" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:180px;">';
+      + 'oninput="Referrals._search=this.value;loadPage(window._currentPage)" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:180px;">';
     html += '</div>';
 
     var filtered = referrals.filter(function(r) {
@@ -166,7 +166,7 @@ var Referrals = {
     });
     UI.closeModal();
     UI.toast('Referral saved!');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   edit: function(id) {
@@ -201,14 +201,14 @@ var Referrals = {
     });
     UI.closeModal();
     UI.toast('Referral updated');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   remove: function(id) {
     if (!confirm('Delete this referral?')) return;
     DB.remove('bm-referrals', id);
     UI.toast('Referral deleted');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   copyLink: function() {

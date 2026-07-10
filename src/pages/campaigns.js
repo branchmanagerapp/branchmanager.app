@@ -59,11 +59,11 @@ var Campaigns = {
     filters.forEach(function(f) {
       var active = Campaigns._filter === f[0];
       html += '<button class="btn ' + (active ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:4px 12px;" '
-        + 'onclick="Campaigns._filter=\'' + f[0] + '\';App.render()">' + f[1] + '</button>';
+        + 'onclick="Campaigns._filter=\'' + f[0] + '\';loadPage(window._currentPage)">' + f[1] + '</button>';
     });
     html += '<div style="flex:1;"></div>';
     html += '<input type="text" placeholder="Search campaigns..." value="' + UI.esc(Campaigns._search) + '" '
-      + 'oninput="Campaigns._search=this.value;App.render()" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:200px;">';
+      + 'oninput="Campaigns._search=this.value;loadPage(window._currentPage)" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:200px;">';
     html += '</div>';
 
     // Campaign table
@@ -158,7 +158,7 @@ var Campaigns = {
     });
     UI.closeModal();
     UI.toast('Campaign ' + (status === 'draft' ? 'saved as draft' : 'scheduled') + '!');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   detail: function(id) {
@@ -196,13 +196,13 @@ var Campaigns = {
     DB.update('bm-campaigns', id, c);
     UI.closeModal();
     UI.toast('Campaign marked as sent!');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   remove: function(id) {
     if (!confirm('Delete this campaign?')) return;
     DB.remove('bm-campaigns', id);
     UI.toast('Campaign deleted');
-    App.render();
+    loadPage(window._currentPage);
   }
 };

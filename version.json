@@ -1,5 +1,5 @@
 {
-  "version": 992,
+  "version": 993,
   "released": "2026-07-10",
-  "notes": "Fix: left-nav button (Quotes/any page) now works even with a form open on that same page — a deliberate nav tap no longer swallowed by the open-form guard. Form still autosaves on nav."
+  "notes": "Fix dead buttons: Receptionist/Campaigns/Referrals filter+tab+search called App.render() which was undefined (threw, did nothing) — now re-render via loadPage. Caught by the new UI-handler audit."
 }

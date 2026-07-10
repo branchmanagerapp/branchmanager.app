@@ -83,7 +83,7 @@ var Receptionist = {
     tabs.forEach(function(t) {
       var active = Receptionist._tab === t[0];
       html += '<button style="flex:1;padding:14px;border:none;background:' + (active ? 'var(--white)' : 'var(--bg)') + ';cursor:pointer;font-size:13px;font-weight:' + (active ? '700' : '500') + ';color:' + (active ? 'var(--accent)' : 'var(--text-light)') + ';border-bottom:2px solid ' + (active ? 'var(--accent)' : 'transparent') + ';" '
-        + 'onclick="Receptionist._tab=\'' + t[0] + '\';App.render()">' + t[2] + ' ' + t[1] + '</button>';
+        + 'onclick="Receptionist._tab=\'' + t[0] + '\';loadPage(window._currentPage)">' + t[2] + ' ' + t[1] + '</button>';
     });
     html += '</div>';
 
@@ -124,7 +124,7 @@ var Receptionist = {
     html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
     [['real','Real',sets.real.length],['clients','Clients',sets.clients.length],['missed','Missed',sets.missed.length],['all','All',calls.length],['spam','Spam',spamCount]].forEach(function(ch){
       var on = ch[0] === f;
-      html += '<button class="btn ' + (on ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 10px;" onclick="Receptionist._callFilter=\'' + ch[0] + '\';App.render()">' + ch[1] + ' (' + ch[2] + ')</button>';
+      html += '<button class="btn ' + (on ? 'btn-primary' : 'btn-outline') + '" style="font-size:12px;padding:5px 10px;" onclick="Receptionist._callFilter=\'' + ch[0] + '\';loadPage(window._currentPage)">' + ch[1] + ' (' + ch[2] + ')</button>';
     });
     html += '</div>';
     html += '<button class="btn btn-primary" style="font-size:12px;" onclick="Receptionist.logCall()">+ Log Call</button>';
@@ -501,7 +501,7 @@ var Receptionist = {
     localStorage.setItem('bm-receptionist-settings', JSON.stringify(settings));
     UI.closeModal();
     UI.toast('Dialpad connected! ✅');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   disconnect: function() {
@@ -510,14 +510,14 @@ var Receptionist = {
     settings.connected = false;
     localStorage.setItem('bm-receptionist-settings', JSON.stringify(settings));
     UI.toast('Dialpad disconnected');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   selectProvider: function(name) {
     var settings = JSON.parse(localStorage.getItem('bm-receptionist-settings') || '{}');
     settings.provider = name;
     localStorage.setItem('bm-receptionist-settings', JSON.stringify(settings));
-    App.render();
+    loadPage(window._currentPage);
   },
 
   toggleSetting: function(key, val) {
@@ -578,13 +578,13 @@ var Receptionist = {
     });
     UI.closeModal();
     UI.toast('Call logged');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   removeCall: function(id) {
     DB.remove('bm-call-log', id);
     UI.toast('Call removed');
-    App.render();
+    loadPage(window._currentPage);
   },
 
   // v964: bulk-remove the likely-spam calls (with confirm — this deletes)
@@ -594,7 +594,7 @@ var Receptionist = {
     UI.confirm('Clear ' + spam.length + ' likely-spam call' + (spam.length === 1 ? '' : 's') + '? (Unknown numbers, no client — this deletes them from the log.)', function() {
       spam.forEach(function(c){ DB.remove('bm-call-log', c.id); });
       UI.toast('Cleared ' + spam.length + ' spam call' + (spam.length === 1 ? '' : 's'));
-      App.render();
+      loadPage(window._currentPage);
     });
   },
 
