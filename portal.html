@@ -238,7 +238,7 @@ function renderDashboard() {
     {id:'quotes',   label:'Quotes ('+quotes.length+')'},
     {id:'jobs',     label:'Jobs ('+jobs.length+')'},
   ];
-  if (photos.length) tabs.push({id:'photos', label:'Photos ('+photos.length+')'});
+  tabs.push({id:'photos', label:'Photos ('+photos.length+')'});
   tabs.push({id:'profile', label:'Profile'});
 
   html += '<div class="tab-bar">';
@@ -454,13 +454,61 @@ function renderJobs(jobs) {
 
 // ── Photos ────────────────────────────────────────────────────────────────────
 function renderPhotos(photos) {
-  if (!photos.length) return '<div class="card"><div class="empty">No photos yet.</div></div>';
-  var html = '<div class="card"><h3>📸 Photos</h3><div class="photos-grid">';
-  photos.forEach(function(p) {
-    html += '<img src="' + esc(p.url) + '" loading="lazy" alt="' + esc(p.caption||'') + '" onclick="window.open(\'' + esc(p.url) + '\')" onerror="this.style.display=\'none\'">';
-  });
-  html += '</div></div>';
+  var UP = '<label style="display:inline-block;background:#2e7d32;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">+ Upload photos'
+    + '<input type="file" accept="image/*" multiple onchange="uploadPhotos(event)" style="display:none">'
+    + '</label>'
+    + '<div id="upload-status" style="font-size:13px;color:#555;margin:10px 0 0;display:none;"></div>';
+  var html = '<div class="card"><h3>\uD83D\uDCF8 Photos</h3>'
+    + '<p style="font-size:13px;color:#666;margin:0 0 12px;">Add photos of the trees or the area you\'re asking about \u2014 they go straight to our team.</p>'
+    + UP;
+  if (!photos.length) {
+    html += '<div class="empty" style="margin-top:14px;">No photos yet.</div>';
+  } else {
+    html += '<div class="photos-grid" style="margin-top:14px;">';
+    photos.forEach(function(p) {
+      html += '<img src="' + esc(p.url) + '" loading="lazy" alt="' + esc(p.caption||'') + '" onclick="window.open(\'' + esc(p.url) + '\')" onerror="this.style.display=\'none\'">';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
   return html;
+}
+
+// Customer photo upload (portal-upload edge fn — validates the login token
+// server-side, so the browser never writes to storage directly).
+function uploadPhotos(event) {
+  var files = event.target.files;
+  if (!files || !files.length) return;
+  var token = getToken();
+  var status = document.getElementById('upload-status');
+  if (!token) { if(status){status.style.display='block';status.textContent='Please sign in again.';} return; }
+  if (files.length > 10) { if(status){status.style.display='block';status.textContent='Up to 10 photos at a time, please.';} event.target.value=''; return; }
+  if (status) { status.style.display='block'; status.textContent='Reading ' + files.length + ' photo' + (files.length>1?'s':'') + '\u2026'; }
+  var images = [], read = 0, total = files.length;
+  for (var i=0;i<total;i++){
+    (function(file){
+      var fr = new FileReader();
+      fr.onload = function(e){ images.push({ name:file.name, dataUrl:e.target.result }); if(++read===total) doUploadPhotos(images, token, status); };
+      fr.onerror = function(){ if(++read===total) doUploadPhotos(images, token, status); };
+      fr.readAsDataURL(file);
+    })(files[i]);
+  }
+  event.target.value = '';
+}
+function doUploadPhotos(images, token, status) {
+  if (!images.length) { if(status) status.textContent='Could not read those photos \u2014 try again.'; return; }
+  if (status) status.textContent = 'Uploading ' + images.length + ' photo' + (images.length>1?'s':'') + '\u2026';
+  fetch(PORTAL_API + '/portal-upload', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ token: token, images: images })
+  }).then(function(r){return r.json();}).then(function(res){
+    if (res && res.ok) {
+      if (status) status.textContent = '\u2713 Uploaded ' + res.count + ' photo' + (res.count>1?'s':'') + '. Refreshing\u2026';
+      var t = getToken(); if (t) verifyAndLoad(t);
+    } else if (status) {
+      status.textContent = (res && res.errors && res.errors.length) ? ('Upload issue: ' + res.errors.join('; ')) : 'Upload failed \u2014 please try again.';
+    }
+  }).catch(function(){ if (status) status.textContent = 'Upload failed \u2014 check your connection and try again.'; });
 }
 
 // ── Pay All Outstanding (v767) ────────────────────────────────────────────────
