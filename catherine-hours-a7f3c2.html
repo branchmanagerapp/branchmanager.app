@@ -35,6 +35,8 @@ textarea{width:100%;min-height:90px;font:inherit;border:1px solid #cfd6dd;border
       <tr><td>April jobs</td><td class="r"><input class="f" id="h_april" value="76"></td></tr>
       <tr><td>May jobs</td><td class="r"><input class="f" id="h_may" value="80"></td></tr>
       <tr class="tot"><td>Total hours</td><td class="r" id="h_total">280</td></tr>
+      <tr><td>Rate (per hour)</td><td class="r">$<input class="f" id="rate" value="25" style="width:72px"></td></tr>
+      <tr class="tot"><td>Earned (hours &times; rate)</td><td class="r" id="earned">$7,000</td></tr>
     </table>
     <div class="hint">The total updates automatically as you edit.</div>
 
@@ -70,8 +72,10 @@ function recalc(){
   var ids=["h_winter","h_machine","h_witton","h_april","h_may"],t=0;
   ids.forEach(function(id){var v=parseFloat((document.getElementById(id).value||"").replace(/[^0-9.]/g,""));if(!isNaN(v))t+=v;});
   document.getElementById("h_total").textContent=t;
+  var rate=parseFloat((document.getElementById("rate").value||"").replace(/[^0-9.]/g,""))||0;
+  var er=document.getElementById("earned");if(er)er.textContent="$"+Math.round(t*rate).toLocaleString();
 }
-["h_winter","h_machine","h_witton","h_april","h_may"].forEach(function(id){document.getElementById(id).addEventListener("input",recalc);});
+["h_winter","h_machine","h_witton","h_april","h_may","rate"].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener("input",recalc);});recalc();
 function sendCorrections(){
   var b=document.getElementById("sendBtn");b.disabled=true;b.textContent="Sending…";
   var g=function(id){return (document.getElementById(id).value||"").trim();};
@@ -84,7 +88,8 @@ function sendCorrections(){
     "  Witton: "+g("h_witton"),
     "  April jobs: "+g("h_april"),
     "  May jobs: "+g("h_may"),
-    "  TOTAL: "+document.getElementById("h_total").textContent+" hrs","",
+    "  TOTAL: "+document.getElementById("h_total").textContent+" hrs",
+    "  Rate: $"+g("rate")+"/hr  ->  Earned: "+document.getElementById("earned").textContent,"",
     "PAYMENTS: "+["p1","p2","p3","p4","p5","p6","p7"].map(g).join(" · "),"",
     "Owed (Jan-May): "+g("owed"),
     "Balance still owed: "+g("balance"),"",
