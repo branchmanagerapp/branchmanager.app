@@ -1,0 +1,100 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Hours &amp; Pay — Please Review</title><style>
+:root{--green:#2e7d32;--green-d:#1f5c22;--ink:#1d1d1f;--muted:#6b7280;--line:#e6e6e6;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:#f5f5f7;line-height:1.55}
+.page{max-width:640px;margin:20px auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.hd{background:linear-gradient(135deg,#3a8f3e,#1f5c22);color:#fff;padding:22px 26px}
+.hd .co{font-size:21px;font-weight:800}
+.hd .sub{font-size:12.5px;opacity:.9;margin-top:2px}
+.body{padding:22px 26px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:22px 0 8px;font-weight:800}
+.intro{font-size:14px;background:#f3f8ec;border:1px solid #d8ebc2;border-radius:10px;padding:12px 14px;margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:8px 4px;border-bottom:1px solid var(--line)}
+td.r{text-align:right}
+tr.tot td{border-top:2px solid var(--ink);border-bottom:none;font-weight:800}
+input.f{width:110px;text-align:right;font:inherit;font-variant-numeric:tabular-nums;border:1px solid #cfd6dd;border-radius:6px;padding:6px 8px;background:#fffef7}
+input.f:focus{outline:none;border-color:var(--green);background:#fff}
+textarea{width:100%;min-height:90px;font:inherit;border:1px solid #cfd6dd;border-radius:8px;padding:10px 12px;background:#fffef7;resize:vertical}
+.btn{width:100%;margin-top:16px;background:var(--green);color:#fff;border:none;padding:15px;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer}
+.btn:active{background:var(--green-d)}
+.ok{display:none;margin-top:14px;padding:12px 14px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;color:#166534;font-weight:700;text-align:center}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.ft{padding:16px 26px 22px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line)}
+</style></head><body>
+<div class="page">
+  <div class="hd"><div class="co">Second Nature Tree</div><div class="sub">Your Hours &amp; Pay — 2026 · please review</div></div>
+  <div class="body">
+    <div class="intro">Hi Catherine — here's my catch-up on your hours and pay. <b>Tap any number to fix it</b>, add notes at the bottom, then tap <b>Send my corrections to Doug</b>. — Doug</div>
+
+    <h3>Hours</h3>
+    <table>
+      <tr><td>Winter — roof / ice dams</td><td class="r"><input class="f" id="h_winter" value="30"></td></tr>
+      <tr><td>Machine (mechanic / radiator)</td><td class="r"><input class="f" id="h_machine" value="22"></td></tr>
+      <tr><td>Witton</td><td class="r"><input class="f" id="h_witton" value="72"></td></tr>
+      <tr><td>April jobs</td><td class="r"><input class="f" id="h_april" value="76"></td></tr>
+      <tr><td>May jobs</td><td class="r"><input class="f" id="h_may" value="80"></td></tr>
+      <tr class="tot"><td>Total hours</td><td class="r" id="h_total">280</td></tr>
+    </table>
+    <div class="hint">The total updates automatically as you edit.</div>
+
+    <h3>Payments Doug made you</h3>
+    <table>
+      <tr><td>Payment 1</td><td class="r"><input class="f" id="p1" value="$1,000"></td></tr>
+      <tr><td>Payment 2</td><td class="r"><input class="f" id="p2" value="$1,900"></td></tr>
+      <tr><td>Payment 3</td><td class="r"><input class="f" id="p3" value="$2,500"></td></tr>
+      <tr><td>Payment 4</td><td class="r"><input class="f" id="p4" value="$1,500"></td></tr>
+      <tr><td>June 13</td><td class="r"><input class="f" id="p5" value="$500"></td></tr>
+      <tr><td>June 16</td><td class="r"><input class="f" id="p6" value="$900"></td></tr>
+      <tr><td>July 8</td><td class="r"><input class="f" id="p7" value="$900"></td></tr>
+    </table>
+
+    <h3>Where it stands (Doug's count — fix if wrong)</h3>
+    <table>
+      <tr><td>Owed for the year (Jan–May)</td><td class="r"><input class="f" id="owed" value="$6,200"></td></tr>
+      <tr class="tot"><td>Balance still owed to you</td><td class="r"><input class="f" id="balance" value="$1,375"></td></tr>
+    </table>
+
+    <h3>Notes / anything I got wrong</h3>
+    <textarea id="notes" placeholder="e.g. 'April was 80 hrs not 76', 'you still owe me for the Witton clean-up', etc."></textarea>
+
+    <button class="btn" id="sendBtn" onclick="sendCorrections()">Send my corrections to Doug</button>
+    <div class="ok" id="okMsg">✅ Sent to Doug — thank you, Catherine!</div>
+  </div>
+  <div class="ft">Second Nature Tree LLC · (914) 391-5233</div>
+</div>
+<script>
+var SB="https://ltpivkqahvplapyagljt.supabase.co";
+var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI";
+function recalc(){
+  var ids=["h_winter","h_machine","h_witton","h_april","h_may"],t=0;
+  ids.forEach(function(id){var v=parseFloat((document.getElementById(id).value||"").replace(/[^0-9.]/g,""));if(!isNaN(v))t+=v;});
+  document.getElementById("h_total").textContent=t;
+}
+["h_winter","h_machine","h_witton","h_april","h_may"].forEach(function(id){document.getElementById(id).addEventListener("input",recalc);});
+function sendCorrections(){
+  var b=document.getElementById("sendBtn");b.disabled=true;b.textContent="Sending…";
+  var g=function(id){return (document.getElementById(id).value||"").trim();};
+  recalc();
+  var lines=[
+    "CATHERINE'S CORRECTIONS — Hours & Pay 2026","",
+    "HOURS:",
+    "  Winter (roof/ice dams): "+g("h_winter"),
+    "  Machine (mech/radiator): "+g("h_machine"),
+    "  Witton: "+g("h_witton"),
+    "  April jobs: "+g("h_april"),
+    "  May jobs: "+g("h_may"),
+    "  TOTAL: "+document.getElementById("h_total").textContent+" hrs","",
+    "PAYMENTS: "+["p1","p2","p3","p4","p5","p6","p7"].map(g).join(" · "),"",
+    "Owed (Jan-May): "+g("owed"),
+    "Balance still owed: "+g("balance"),"",
+    "NOTES:","  "+(g("notes")||"(none)")
+  ].join("\n");
+  fetch(SB+"/functions/v1/send-email",{method:"POST",headers:{"apikey":ANON,"Authorization":"Bearer "+ANON,"Content-Type":"application/json"},
+    body:JSON.stringify({to:"info@peekskilltree.com",subject:"Catherine's corrections — Hours & Pay",text:lines,html:"<pre style=\"font:14px/1.5 -apple-system,Arial\">"+lines.replace(/</g,"&lt;")+"</pre>"})})
+   .then(function(r){return r.json();})
+   .then(function(d){ if(d&&(d.success||d.id)){document.getElementById("okMsg").style.display="block";b.textContent="Sent ✓";} else {throw new Error("fail");} })
+   .catch(function(){ b.disabled=false;b.textContent="Send my corrections to Doug"; alert("Couldn't send automatically — please screenshot this page and text it to Doug at (914) 391-5233."); });
+}
+</script>
+</body></html>
