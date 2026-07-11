@@ -35,6 +35,18 @@ const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')       ?? '';
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID' };
 
+const PHOTO_BUCKET = 'job-photos';
+function decodeDataUrl(dataUrl: string): { bytes: Uint8Array; contentType: string } | null {
+  try {
+    let b64 = dataUrl; let contentType = 'image/jpeg';
+    const m = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl);
+    if (m) { contentType = m[1]; b64 = m[2]; } else if (dataUrl.includes(',')) { b64 = dataUrl.split(',')[1]; }
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return { bytes, contentType };
+  } catch { return null; }
+}
+
 async function insertRequest(row: Record<string, unknown>) {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     console.warn('Supabase env missing; skipping DB insert');
@@ -143,6 +155,7 @@ serve(async (req: Request) => {
     const address = data.address || data.property || '';
     const service = data.service || '';
     const details = data.details || data.description || '';
+    const images = Array.isArray(data.images) ? data.images.slice(0, 10) : [];
 
     const nameClean = (name || '').toString().trim();
     const phoneDigits = (phone || '').toString().replace(/\D/g, '');
@@ -193,6 +206,28 @@ serve(async (req: Request) => {
       updated_at: nowIso
     });
 
+    // Upload any customer-attached photos to the shared job-photos bucket and
+    // tag them to this request (record_type 'request'), so they ride along with
+    // the request and land in the team notification email below.
+    const photoUrls: Array<{ url: string; name: string }> = [];
+    const reqId = (insertResult as any)?.id;
+    if (images.length && reqId && SUPABASE_URL && SERVICE_ROLE_KEY) {
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i] || {};
+        const dec = img.dataUrl ? decodeDataUrl(img.dataUrl) : null;
+        if (!dec || dec.bytes.length > 12 * 1024 * 1024) continue;
+        const ext = dec.contentType === 'image/png' ? 'png' : dec.contentType === 'image/webp' ? 'webp' : dec.contentType === 'image/heic' ? 'heic' : 'jpg';
+        const safe = (img.name || ('photo.' + ext)).replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '') + '.' + ext;
+        const path = `request/${reqId}/${Date.now()}_${i}_${safe}`;
+        const up = await sb.storage.from(PHOTO_BUCKET).upload(path, dec.bytes, { contentType: dec.contentType, upsert: false });
+        if (up.error) { console.warn('request-notify: photo upload failed:', up.error.message); continue; }
+        const { data: urlData } = sb.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+        photoUrls.push({ url: urlData.publicUrl, name: img.name || safe });
+        await sb.from('photos').insert({ record_type: 'request', record_id: reqId, url: urlData.publicUrl, storage_path: path, name: img.name || safe, label: '', taken_at: new Date().toISOString(), taken_by: 'Customer', tenant_id: tenantId });
+      }
+      if (photoUrls.length) { try { await sb.from('requests').update({ assessment_photos: photoUrls }).eq('id', reqId); } catch (_e) { /* column optional */ } }
+    }
+
     // 1. SMS to tenant owner(s). White-label: each tenant configures
     // their own alert phones in BM Settings → tenants.config.
     // owner_alert_phones (array, multi-recipient — Doug + Catherine,
@@ -233,7 +268,14 @@ serve(async (req: Request) => {
     // 2. Email alert to team
     const teamSubject = `🌳 New request — ${service || 'Service'} — ${name}`;
     const teamBody = `New service request submitted via website.\n\nName:    ${name || '—'}\nPhone:   ${phone || '—'}\nEmail:   ${email || '—'}\nAddress: ${address || '—'}\nService: ${service || '—'}\nDetails: ${details || '—'}\n\nView in Branch Manager:\nhttps://branchmanager.app/`;
-    await sendEmail(b, b.email, teamSubject, teamBody);
+    const teamPhotoText = photoUrls.length ? ('\n\nPhotos (' + photoUrls.length + '):\n' + photoUrls.map(function (p) { return '  ' + p.url; }).join('\n')) : '';
+    const teamHtml = photoUrls.length
+      ? ('<div style="font-family:-apple-system,sans-serif;max-width:580px;"><pre style="font:14px/1.5 -apple-system,Arial;white-space:pre-wrap;color:#333;">' + esc(teamBody) + '</pre>'
+        + '<p style="font-size:13px;color:#888;margin:12px 0 6px;">\uD83D\uDCF7 ' + photoUrls.length + ' customer photo' + (photoUrls.length > 1 ? 's' : '') + ':</p><div>'
+        + photoUrls.map(function (p) { return '<a href="' + esc(p.url) + '"><img src="' + esc(p.url) + '" style="width:120px;height:120px;object-fit:cover;border-radius:8px;margin:0 8px 8px 0;border:1px solid #ddd;"></a>'; }).join('')
+        + '</div></div>')
+      : undefined;
+    await sendEmail(b, b.email, teamSubject, teamBody + teamPhotoText, teamHtml);
 
     // 3. Confirmation email to customer
     if (email) {

@@ -92,6 +92,11 @@
           <textarea id="b-details" placeholder="Tell us about the trees, the situation, any concerns..."></textarea>
         </div>
       </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Add Photos <span style="font-weight:400;color:#888;">(optional)</span></label>
+        <input type="file" id="b-photos" accept="image/*" multiple>
+        <div style="font-size:12px;color:#888;margin-top:4px;">Attach photos of the trees or the area — helps us quote faster.</div>
+      </div>
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer;">
         <input type="checkbox" id="b-sms-consent" required style="width:18px;height:18px;flex-shrink:0;margin-top:2px;">
         <span id="sms-consent-text" style="font-size:11px;color:#888;line-height:1.6;"></span>
@@ -288,18 +293,32 @@ function submitRequest(e) {
   // SMS to Doug, email to team, and confirmation to customer.
   // Prior direct /rest/v1/requests POST was silently failing on RLS + schema mismatch
   // (see v366 fix — columns were wrong AND anon key couldn't INSERT).
-  Promise.all([
-    fetch(NOTIFY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).catch(function(err) { console.warn('Notify call:', err); })
-  ]).then(function() {
-    document.getElementById('form-view').style.display = 'none';
-    document.getElementById('success-view').style.display = 'block';
-  }).catch(function() {
-    document.getElementById('form-view').style.display = 'none';
-    document.getElementById('success-view').style.display = 'block';
+  function _post() {
+    Promise.all([
+      fetch(NOTIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(function(err) { console.warn('Notify call:', err); })
+    ]).then(function() {
+      document.getElementById('form-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+    }).catch(function() {
+      document.getElementById('form-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+    });
+  }
+  // Attach up to 10 customer photos (base64) if any were added, then post.
+  var pf = document.getElementById('b-photos');
+  var files = pf && pf.files ? Array.prototype.slice.call(pf.files, 0, 10) : [];
+  if (!files.length) { _post(); return; }
+  if (btn) btn.textContent = 'Uploading photos...';
+  var imgs = [], done = 0;
+  files.forEach(function(file) {
+    var fr = new FileReader();
+    fr.onload = function(ev) { imgs.push({ name: file.name, dataUrl: ev.target.result }); if (++done === files.length) { data.images = imgs; _post(); } };
+    fr.onerror = function() { if (++done === files.length) { data.images = imgs; _post(); } };
+    fr.readAsDataURL(file);
   });
 }
 
