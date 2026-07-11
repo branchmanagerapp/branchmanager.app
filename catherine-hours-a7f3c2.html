@@ -29,14 +29,13 @@ textarea{width:100%;min-height:90px;font:inherit;border:1px solid #cfd6dd;border
 
     <h3>Hours</h3>
     <table>
-      <tr><td>Winter — roof / ice dams</td><td class="r"><input class="f" id="h_winter" value="30"></td></tr>
-      <tr><td>Machine (mechanic / radiator)</td><td class="r"><input class="f" id="h_machine" value="22"></td></tr>
-      <tr><td>Witton</td><td class="r"><input class="f" id="h_witton" value="72"></td></tr>
-      <tr><td>April jobs</td><td class="r"><input class="f" id="h_april" value="76"></td></tr>
-      <tr><td>May jobs</td><td class="r"><input class="f" id="h_may" value="80"></td></tr>
-      <tr class="tot"><td>Total hours</td><td class="r" id="h_total">280</td></tr>
-      <tr><td>Rate (per hour)</td><td class="r">$<input class="f" id="rate" value="25" style="width:72px"></td></tr>
-      <tr class="tot"><td>Earned (hours &times; rate)</td><td class="r" id="earned">$7,000</td></tr>
+      <tr><td style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em">Job</td><td class="r" style="color:var(--muted);font-size:11px">Hrs</td><td class="r" style="color:var(--muted);font-size:11px">Rate</td><td class="r" style="color:var(--muted);font-size:11px">Total</td></tr>
+      <tr><td>Winter — roof / ice dams</td><td class="r"><input class="f" id="h_winter" value="30" style="width:56px"></td><td class="r">$<input class="f" id="r_winter" value="25" style="width:50px"></td><td class="r" id="t_winter">$750</td></tr>
+      <tr><td>Machine (mechanic / radiator)</td><td class="r"><input class="f" id="h_machine" value="22" style="width:56px"></td><td class="r">$<input class="f" id="r_machine" value="25" style="width:50px"></td><td class="r" id="t_machine">$550</td></tr>
+      <tr><td>Witton</td><td class="r"><input class="f" id="h_witton" value="72" style="width:56px"></td><td class="r">$<input class="f" id="r_witton" value="25" style="width:50px"></td><td class="r" id="t_witton">$1,800</td></tr>
+      <tr><td>April jobs</td><td class="r"><input class="f" id="h_april" value="76" style="width:56px"></td><td class="r">$<input class="f" id="r_april" value="25" style="width:50px"></td><td class="r" id="t_april">$1,900</td></tr>
+      <tr><td>May jobs</td><td class="r"><input class="f" id="h_may" value="80" style="width:56px"></td><td class="r">$<input class="f" id="r_may" value="25" style="width:50px"></td><td class="r" id="t_may">$2,000</td></tr>
+      <tr class="tot"><td>Total</td><td class="r" id="h_total">280</td><td></td><td class="r" id="earned">$7,000</td></tr>
     </table>
     <div class="hint">The total updates automatically as you edit.</div>
 
@@ -69,27 +68,26 @@ textarea{width:100%;min-height:90px;font:inherit;border:1px solid #cfd6dd;border
 var SB="https://ltpivkqahvplapyagljt.supabase.co";
 var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI";
 function recalc(){
-  var ids=["h_winter","h_machine","h_witton","h_april","h_may"],t=0;
-  ids.forEach(function(id){var v=parseFloat((document.getElementById(id).value||"").replace(/[^0-9.]/g,""));if(!isNaN(v))t+=v;});
-  document.getElementById("h_total").textContent=t;
-  var rate=parseFloat((document.getElementById("rate").value||"").replace(/[^0-9.]/g,""))||0;
-  var er=document.getElementById("earned");if(er)er.textContent="$"+Math.round(t*rate).toLocaleString();
+  var rows=[["h_winter","r_winter","t_winter"],["h_machine","r_machine","t_machine"],["h_witton","r_witton","t_witton"],["h_april","r_april","t_april"],["h_may","r_may","t_may"]];
+  var th=0,tt=0,num=function(id){return parseFloat((document.getElementById(id).value||"").replace(/[^0-9.]/g,""))||0;};
+  rows.forEach(function(rw){var h=num(rw[0]),rt=num(rw[1]),lt=Math.round(h*rt);document.getElementById(rw[2]).textContent="$"+lt.toLocaleString();th+=h;tt+=lt;});
+  document.getElementById("h_total").textContent=th;
+  document.getElementById("earned").textContent="$"+tt.toLocaleString();
 }
-["h_winter","h_machine","h_witton","h_april","h_may","rate"].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener("input",recalc);});recalc();
+["h_winter","r_winter","h_machine","r_machine","h_witton","r_witton","h_april","r_april","h_may","r_may"].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener("input",recalc);});recalc();
 function sendCorrections(){
   var b=document.getElementById("sendBtn");b.disabled=true;b.textContent="Sending…";
   var g=function(id){return (document.getElementById(id).value||"").trim();};
   recalc();
   var lines=[
     "CATHERINE'S CORRECTIONS — Hours & Pay 2026","",
-    "HOURS:",
-    "  Winter (roof/ice dams): "+g("h_winter"),
-    "  Machine (mech/radiator): "+g("h_machine"),
-    "  Witton: "+g("h_witton"),
-    "  April jobs: "+g("h_april"),
-    "  May jobs: "+g("h_may"),
-    "  TOTAL: "+document.getElementById("h_total").textContent+" hrs",
-    "  Rate: $"+g("rate")+"/hr  ->  Earned: "+document.getElementById("earned").textContent,"",
+    "HOURS  (hrs x rate = total):",
+    "  Winter (roof/ice dams): "+g("h_winter")+" x $"+g("r_winter")+" = "+document.getElementById("t_winter").textContent,
+    "  Machine (mech/radiator): "+g("h_machine")+" x $"+g("r_machine")+" = "+document.getElementById("t_machine").textContent,
+    "  Witton: "+g("h_witton")+" x $"+g("r_witton")+" = "+document.getElementById("t_witton").textContent,
+    "  April jobs: "+g("h_april")+" x $"+g("r_april")+" = "+document.getElementById("t_april").textContent,
+    "  May jobs: "+g("h_may")+" x $"+g("r_may")+" = "+document.getElementById("t_may").textContent,
+    "  TOTAL: "+document.getElementById("h_total").textContent+" hrs  ->  "+document.getElementById("earned").textContent,"",
     "PAYMENTS: "+["p1","p2","p3","p4","p5","p6","p7"].map(g).join(" · "),"",
     "Owed (Jan-May): "+g("owed"),
     "Balance still owed: "+g("balance"),"",
