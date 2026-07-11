@@ -146,7 +146,7 @@ const SNT_DEFAULTS: TenantBranding = {
   from_email: "info@peekskilltree.com",
   from_name: "Second Nature Tree",
   sms_from_number: "+19143915233",
-  google_review_url: "https://g.page/r/CcVkZHV_EKlEEBM/review",
+  google_review_url: "https://search.google.com/local/writereview?placeid=4947503805259605189",
 };
 
 /**

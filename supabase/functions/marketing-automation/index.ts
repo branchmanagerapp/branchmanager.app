@@ -33,7 +33,7 @@ const RESEND_API_KEY      = Deno.env.get("RESEND_API_KEY") ?? "";
 // SNT default fallback — only fires when tenants.config is missing the value
 const FALLBACK_FROM_EMAIL    = Deno.env.get("RESEND_FROM_EMAIL") ?? "Second Nature Tree <onboarding@resend.dev>";
 const FALLBACK_REPLY_TO      = "info@peekskilltree.com";
-const FALLBACK_REVIEW_URL    = "https://g.page/r/CcVkZHV_EKlEEBM/review";
+const FALLBACK_REVIEW_URL    = "https://search.google.com/local/writereview?placeid=4947503805259605189";
 const FALLBACK_COMPANY_NAME  = "Second Nature Tree Service";
 const FALLBACK_COMPANY_PHONE = "(914) 391-5233";
 const FALLBACK_OWNER_NAME    = "Owner";
