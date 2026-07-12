@@ -1,5 +1,5 @@
 {
-  "version": 1001,
+  "version": 1002,
   "released": "2026-07-10",
-  "notes": "Mobile: keep invoice action dropdowns (More/client) on-screen; were anchored right:0 and ran off the left edge on phones."
+  "notes": "Mobile: invoice line-item edit row no longer squishes Service/Description (was 6-col grid ~40px wide)."
 }

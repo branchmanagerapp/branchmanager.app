@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1001; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1002; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1138,6 +1138,14 @@
        on phones (the "More" menu in the invoice detail). Keep them on-screen. */
     .more-dd { left:0 !important; right:auto !important; }
     .more-dd, .client-dd { max-width:calc(100vw - 24px) !important; }
+  }
+  @media (max-width:600px) {
+    /* Line-item edit row was a 6-col grid that squished Service/Description to
+       ~40px on phones (wrapped after 2 words). Give Service + Description the
+       full width; Qty/Rate/Amount/remove sit on the row below. */
+    .inv-item-row { grid-template-columns: 1fr 1fr 1fr 40px !important; }
+    .inv-item-row > *:nth-child(1),
+    .inv-item-row > *:nth-child(2) { grid-column: 1 / -1 !important; }
   }
 
   /* ── Filter buttons ── */
