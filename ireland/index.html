@@ -4,210 +4,311 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Ireland Lacrosse — ideas &amp; observations</title>
+<title>Ireland Lacrosse — a digital growth pitch</title>
+<meta property="og:title" content="Ireland Lacrosse — a digital growth pitch">
+<meta property="og:description" content="What your site does well, where it's leaking opportunity, and how to grow participation and revenue.">
+<meta property="og:image" content="https://branchmanager.app/ireland/img/hero.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root{
-    --bg:#0c110d; --panel:#131a14; --panel2:#18211a; --line:#26332a;
-    --ink:#e9f1ea; --dim:#9fb3a5; --faint:#6d8175;
-    --grn:#3fb95a; --grn2:#2ea043; --orange:#ff883e; --org2:#e8712a;
-    --amb:#e3b341; --red:#f0645a;
-    --r:16px; --shadow:0 10px 34px rgba(0,0,0,.4);
+    --bg:#0a0f0b; --panel:#111a13; --panel2:#16211a; --line:#243328;
+    --ink:#eef4ee; --dim:#a6bcac; --faint:#6f8677;
+    --grn:#2fbf5b; --grn2:#28a44e; --grnd:#0b3a1f;
+    --orange:#ff8a3c; --orange2:#ff8a3c;
+    --amb:#e9b84b; --red:#f0645a;
+    --r:18px; --shadow:0 14px 46px rgba(0,0,0,.5);
+    --maxw:960px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
   html,body{margin:0;padding:0}
   body{
-    background:
-      radial-gradient(900px 480px at 15% -8%, #16281b 0%, transparent 60%),
-      radial-gradient(900px 480px at 90% -8%, #2a1a0e 0%, transparent 60%),
-      var(--bg) fixed;
-    color:var(--ink);
-    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    padding:0 0 90px;-webkit-font-smoothing:antialiased;
+    background:var(--bg); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
   }
-  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
-  header.hero{padding:38px 16px 8px;text-align:center}
-  .flag{font-size:34px;letter-spacing:4px;margin-bottom:8px}
-  .hero h1{margin:0 0 8px;font-size:27px;line-height:1.2;letter-spacing:-.4px;font-weight:800}
-  .hero .sub{color:var(--dim);font-size:15px;max-width:620px;margin:0 auto}
-  .tag{display:inline-block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);
-    border:1px solid var(--line);border-radius:999px;padding:4px 12px;margin-bottom:16px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+  .center{text-align:center}
+  h1,h2,h3{letter-spacing:-.5px;line-height:1.12}
+  p{margin:12px 0}
+  b,strong{color:#fff}
+  a{color:var(--orange2)}
+  .grn{color:var(--grn)}.org{color:var(--orange2)}.amb{color:var(--amb)}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin:16px 0;box-shadow:var(--shadow)}
-  .card.frame{background:linear-gradient(180deg,#12241a,#141d17);border-color:rgba(63,185,90,.3)}
-  .kicker{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:800;margin-bottom:6px}
-  .kicker.g{color:var(--grn)}
-  h2{margin:0 0 4px;font-size:20px;letter-spacing:-.2px}
-  .card .lead{color:var(--dim);font-size:14.5px;margin:4px 0 14px}
-  h3{margin:20px 0 8px;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
-  p{margin:10px 0}b,strong{color:#fff}
-  .em{color:var(--orange);font-weight:700}.emg{color:var(--grn);font-weight:700}
+  /* ---------- HERO ---------- */
+  .hero{position:relative;min-height:92vh;display:flex;align-items:flex-end;overflow:hidden}
+  .hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%;filter:saturate(1.05)}
+  .hero .scrim{position:absolute;inset:0;background:
+     linear-gradient(180deg, rgba(8,14,9,.55) 0%, rgba(8,14,9,.15) 32%, rgba(8,14,9,.55) 62%, rgba(8,14,9,.97) 100%)}
+  .hero .inner{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:0 20px 54px;width:100%}
+  .brandline{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .brandline img{width:46px;height:46px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+  .brandline .bt{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#d7e4da;font-weight:700}
+  .eyebrow{display:inline-block;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--orange2);
+    font-weight:800;border:1px solid rgba(255,138,60,.45);border-radius:999px;padding:5px 13px;margin-bottom:18px;
+    background:rgba(255,138,60,.08);backdrop-filter:blur(4px)}
+  .hero h1{font-size:clamp(30px,6vw,54px);font-weight:850;margin:0 0 16px;max-width:16ch;
+    text-shadow:0 2px 30px rgba(0,0,0,.5)}
+  .hero h1 .u{color:var(--orange2)}
+  .hero .sub{font-size:clamp(15px,2.4vw,19px);color:#dbe6dd;max-width:52ch;margin:0}
+  .scrollcue{margin-top:26px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
 
-  .pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;margin:0 6px 6px 0}
-  .pill.g{background:rgba(63,185,90,.14);color:#5ec878;border:1px solid rgba(63,185,90,.4)}
-  .pill.o{background:rgba(255,136,62,.13);color:var(--orange);border:1px solid rgba(255,136,62,.4)}
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:64px 0}
+  .seclabel{font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:var(--orange2);margin-bottom:10px}
+  .seclabel.g{color:var(--grn)}
+  h2.big{font-size:clamp(24px,4.4vw,38px);font-weight:800;margin:0 0 10px}
+  .dek{color:var(--dim);font-size:16px;max-width:60ch}
+  .kicker-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 
-  ul{margin:8px 0;padding-left:0;list-style:none}
-  ul li{position:relative;padding:6px 0 6px 26px;border-bottom:1px solid rgba(38,51,42,.55)}
-  ul li:last-child{border-bottom:0}
-  ul li:before{content:"";position:absolute;left:6px;top:14px;width:6px;height:6px;border-radius:50%;background:var(--grn)}
-  ul.o li:before{background:var(--orange)}
-  ul.good li:before{content:"✓";color:var(--grn);background:none;top:6px;left:3px;font-size:14px;font-weight:800;width:auto;height:auto}
-  ul li .s{color:var(--dim);font-size:13.5px}
+  /* intro */
+  .intro{background:linear-gradient(180deg,#0d150f,#0a0f0b);border-bottom:1px solid var(--line)}
+  .intro p{font-size:clamp(17px,2.6vw,21px);line-height:1.55;color:#e7efe8;max-width:40ch;margin-left:auto;margin-right:auto}
+  .intro .accent{color:var(--grn);font-weight:700}
 
-  /* comparison table */
-  .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;margin:8px 0}
-  table.cmp{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
-  table.cmp th,table.cmp td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-  table.cmp thead th{position:sticky;top:0;background:var(--panel2);color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.05em;z-index:1}
-  table.cmp td.area{font-weight:700;color:#fff;white-space:nowrap}
-  table.cmp td.cur{color:var(--dim)}
-  table.cmp td.idea{color:#cfe8d6}
-  table.cmp td.why{color:var(--faint);font-size:12.5px}
-  table.cmp tr:last-child td{border-bottom:0}
-  .swipe{font-size:11.5px;color:var(--faint);text-align:center;margin:4px 0 0}
+  /* pillar nav */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+  .pillars a{display:block;text-decoration:none;padding:16px 14px;border:1px solid var(--line);border-radius:14px;
+    background:var(--panel);transition:.15s;color:var(--ink)}
+  .pillars a:hover{border-color:var(--grn);transform:translateY(-2px)}
+  .pillars .n{font-size:12px;color:var(--faint);font-weight:800}
+  .pillars .t{font-weight:800;margin-top:4px;font-size:15px}
+  .pillars .e{font-size:22px}
+  @media(max-width:680px){.pillars{grid-template-columns:repeat(2,1fr)}}
 
-  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13.5px;margin-top:4px}
-  .kv .k{color:var(--faint)}.kv .v{color:var(--ink)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
+  .good-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+  @media(max-width:680px){.good-grid{grid-template-columns:1fr}}
+  .gc{padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#0f1a12,#0d140f)}
+  .gc .h{display:flex;align-items:center;gap:10px;font-weight:800;margin-bottom:5px}
+  .gc .h .ic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:rgba(47,191,91,.16);color:var(--grn);font-size:15px;flex:0 0 26px}
+  .gc.bad .h .ic{background:rgba(240,100,90,.15);color:var(--red)}
+  .gc .d{color:var(--dim);font-size:14px}
 
-  .big{border-left:3px solid var(--orange);background:var(--panel2);border-radius:10px;padding:12px 14px;margin:10px 0}
-  .big b{display:block;margin-bottom:2px}.big .s{color:var(--dim);font-size:13.5px}
-  .tierlabel{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--grn);margin:16px 0 4px}
-  .tierlabel.med{color:var(--amb)}.tierlabel.big{color:var(--orange)}
+  /* comparison cards */
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+  @media(max-width:760px){.cmp{grid-template-columns:1fr}}
+  .cmpcard{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+  .cmpcard .area{padding:12px 16px;font-weight:800;font-size:14.5px;background:var(--panel2);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:9px}
+  .cmpcard .area .dot{width:8px;height:8px;border-radius:50%;background:var(--orange2)}
+  .cmprow{display:grid;grid-template-columns:1fr;gap:0}
+  .cmprow .now,.cmprow .better{padding:12px 16px;font-size:13.7px}
+  .cmprow .now{color:var(--dim);border-bottom:1px dashed var(--line)}
+  .cmprow .now b,.cmprow .better b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:3px}
+  .cmprow .now b{color:var(--faint)}
+  .cmprow .better b{color:var(--grn)}
+  .cmprow .better{color:#d6e9db}
 
-  .note{background:rgba(227,179,65,.08);border:1px solid rgba(227,179,65,.28);border-radius:12px;padding:12px 14px;font-size:13.5px;color:#ecdca6;margin:14px 0}
-  .foot{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 0;line-height:1.7}
-  a.link{color:#6bd486;text-decoration:none;border-bottom:1px solid rgba(107,212,134,.35);word-break:break-word}
-  .toc{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px 0 4px}
-  .toc a{font-size:12.5px;color:var(--dim);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+  /* money */
+  .money{position:relative}
+  .lever{display:grid;grid-template-columns:56px 1fr;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}
+  .lever:last-child{border-bottom:0}
+  .lever .ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;
+    background:linear-gradient(180deg,rgba(255,138,60,.18),rgba(255,138,60,.06));border:1px solid rgba(255,138,60,.3)}
+  .lever h3{font-size:18px;margin:2px 0 6px}
+  .lever p{margin:0;color:var(--dim);font-size:14.5px}
+  .lever .math{margin-top:9px;font-size:13px;color:#f3d9b8;background:rgba(233,184,75,.09);border:1px solid rgba(233,184,75,.25);
+    border-radius:9px;padding:8px 11px;display:inline-block}
+  .lever .math b{color:#ffe6be}
+  .moneydisc{margin-top:22px;font-size:12.5px;color:var(--faint);border-left:2px solid var(--line);padding-left:12px;max-width:64ch}
+
+  /* photo band */
+  .band{position:relative;min-height:52vh;display:flex;align-items:center;overflow:hidden;margin:0}
+  .band img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+  .band .scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,14,9,.92) 0%,rgba(8,14,9,.6) 55%,rgba(8,14,9,.35) 100%)}
+  .band .inner{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:44px 20px;width:100%}
+  .band h2{font-size:clamp(22px,4vw,34px);font-weight:800;max-width:20ch;margin:0 0 10px}
+  .band p{color:#dbe6dd;max-width:46ch;font-size:16px}
+
+  /* close */
+  .close{background:linear-gradient(180deg,#0d150f,#0a0f0b);text-align:center}
+  .close .crest{width:56px;height:56px;margin:0 auto 16px;display:block;opacity:.95}
+  .close h2{font-size:clamp(24px,4.4vw,36px);margin:0 auto 14px;max-width:22ch}
+  .close p{color:var(--dim);max-width:52ch;margin:0 auto 22px}
+  .btn{display:inline-block;text-decoration:none;font-weight:800;font-size:15px;padding:14px 26px;border-radius:12px;
+    background:linear-gradient(180deg,var(--orange2),#e8712a);color:#231204;box-shadow:0 10px 30px rgba(255,138,60,.25)}
+
+  .foot{text-align:center;color:var(--faint);font-size:12px;padding:34px 20px 60px;line-height:1.8;border-top:1px solid var(--line)}
+  .foot a{color:var(--grn)}
+
+  .fadein{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+  .fadein.in{opacity:1;transform:none}
 </style>
 </head>
 <body>
+
+<!-- ================= HERO ================= -->
 <header class="hero">
-  <div class="tag">Just ideas · not a pitch · not hired</div>
-  <div class="flag">☘️</div>
-  <h1>Ireland Lacrosse — a few ideas</h1>
-  <div class="sub">Friendly observations on what could make a good site even better. Their current site was built by someone on their own team and the foundation is solid — this isn't "replace it," it's a handful of ideas, most of them small.</div>
+  <img class="bg" src="img/hero.jpg" alt="Ireland women's national lacrosse team huddled under the lights">
+  <div class="scrim"></div>
+  <div class="inner">
+    <div class="brandline">
+      <img src="img/crest.png" alt="Ireland Lacrosse crest">
+      <span class="bt">Ireland Lacrosse × a digital growth proposal</span>
+    </div>
+    <span class="eyebrow">What's good · what's not · what's next</span>
+    <h1>Your team punches above its weight.<br><span class="u">Your website can too.</span></h1>
+    <p class="sub">A friendly outside look at what irelandlacrosse.ie already does well, where it's quietly leaking opportunity, and how a few focused upgrades could grow both participation <em>and</em> revenue — without touching what already works.</p>
+    <div class="scrollcue">↓ scroll</div>
+  </div>
 </header>
 
-<div class="wrap">
-  <div class="toc">
-    <a href="#frame">The spirit of this</a>
-    <a href="#good">What's already good</a>
-    <a href="#stack">What it runs on</a>
-    <a href="#chart">Comparison chart</a>
-    <a href="#wins">Quick wins</a>
-    <a href="#bigger">Bigger ideas</a>
-    <a href="#three">Three standouts</a>
-  </div>
-
-  <div class="card frame" id="frame">
-    <div class="kicker g">Read this first</div>
-    <h2>Ideas to share, nothing more</h2>
-    <p>We're not hired and we're not pitching anything. Their in-house person built a genuinely respectable site, and their membership runs on <b>JustGo</b> — a proper platform we wouldn't touch. So none of this is "you should replace X."</p>
-    <p>It's just a friendly outside read: a few things — mostly quick, cheap wins — that could make what they already have work a little harder. Share the ones that seem useful, ignore the rest.</p>
-    <span class="pill g">Respect what's there</span><span class="pill g">Keep JustGo</span><span class="pill o">Mostly quick wins</span>
-  </div>
-
-  <div class="card" id="good">
-    <div class="kicker g">Credit where it's due</div>
-    <h2>What's already good</h2>
-    <ul class="good">
-      <li><b>Governance transparency is excellent</b> <span class="s">— public strategic plan, current insurance cert, 14 years of AGM minutes. Most governing bodies hide this; they don't.</span></li>
-      <li><b>It's genuinely maintained</b> <span class="s">— a real burst of Jan 2026 posts, current docs, active league recruitment.</span></li>
-      <li><b>Clear, logical structure</b> <span class="s">— governance / domestic / high-performance split makes sense for an NGB.</span></li>
-      <li><b>Real, named humans on Contact</b> <span class="s">— emails for actual people, not a black-hole form.</span></li>
-      <li><b>The technical foundation is sound</b> <span class="s">— domain, HTTPS, redirects, sitemap, robots all correct. It's a solid base that's just showing its age.</span></li>
-      <li><b>They already have the hard part</b> <span class="s">— the diaspora story and international results are compelling. It's credibility that's under-showcased, not missing.</span></li>
-    </ul>
-  </div>
-
-  <div class="card" id="stack">
-    <div class="kicker">Neutral snapshot</div>
-    <h2>What the site runs on</h2>
-    <div class="lead">Observed from the page headers/HTML — context for the ideas below, not a criticism.</div>
-    <div class="kv">
-      <div class="k">Platform</div><div class="v">WordPress 6.1 · "KingClub" sports-club theme · SiteOrigin page builder</div>
-      <div class="k">Hero slider</div><div class="v">Slider Revolution 5.3 (an old release)</div>
-      <div class="k">Hosting</div><div class="v">Apache, no CDN / edge cache detected</div>
-      <div class="k">Mobile</div><div class="v">Responsive — but pinch-zoom is switched off</div>
-      <div class="k">Tell-tale</div><div class="v">Footer still reads "@2015"; membership link points at the old <i>azolve.com</i> address</div>
+<!-- ================= INTRO ================= -->
+<section class="intro center">
+  <div class="wrap">
+    <p>You gave up a World Games spot so the Haudenosaunee could play. Your U20 men are <span class="accent">European champions</span>. Your women just played the World Games. The credibility is <em>there</em>.</p>
+    <p>The website just hasn't caught up to the team. Here's how we'd close that gap.</p>
+    <div class="pillars" style="margin-top:34px">
+      <a href="#good"><div class="e">✅</div><div class="n">01</div><div class="t">What's good</div></a>
+      <a href="#bad"><div class="e">⚠️</div><div class="n">02</div><div class="t">What's holding it back</div></a>
+      <a href="#better"><div class="e">✨</div><div class="n">03</div><div class="t">What we'd do better</div></a>
+      <a href="#money"><div class="e">💰</div><div class="n">04</div><div class="t">How to monetize it</div></a>
     </div>
-    <p class="note">Read: a well-organized ~2015-era WordPress build — functional and professional, just visually and technically of its era. Nothing broken.</p>
   </div>
+</section>
 
-  <div class="card" id="chart">
-    <div class="kicker">The main event</div>
-    <h2>Current vs. what could be better</h2>
-    <div class="lead">Grounded in what's actually on the live site today. Every row is an idea to offer, not a fault to fix.</div>
-    <div class="tscroll">
-      <table class="cmp">
-        <thead><tr><th>Area</th><th>Current site</th><th>Idea</th><th>Why it'd help</th></tr></thead>
-        <tbody>
-          <tr><td class="area">Social link previews</td><td class="cur">No meta description / Open Graph / cards — shared links preview blank</td><td class="idea">Add an SEO plugin's OG + image tags</td><td class="why">Rich previews with the crest — huge for a sport that lives on social; ~minutes to fix</td></tr>
-          <tr><td class="area">Donations</td><td class="cur">None — yet they're hiring a fundraiser</td><td class="idea">A "Support Ireland Lacrosse" button (Stripe / JustGo)</td><td class="why">Captures goodwill they're already courting</td></tr>
-          <tr><td class="area">Heritage / diaspora</td><td class="cur">Scattered across news posts; Heritage Cup lives on a separate, unlinked site</td><td class="idea">One dedicated, cross-linked Heritage hub</td><td class="why">Showcases their single biggest differentiator</td></tr>
-          <tr><td class="area">Homepage CTA</td><td class="cur">Slider shows the latest headline; no Join / Play / Support buttons</td><td class="idea">A clear "Play / Join / Support" call to action</td><td class="why">Converts visitors instead of only informing them</td></tr>
-          <tr><td class="area">Club finder</td><td class="cur">Flat text list of ~10 clubs + one catch-all email</td><td class="idea">Map + filterable club cards (region, gender, contact)</td><td class="why">Directly helps grow participation</td></tr>
-          <tr><td class="area">Rosters &amp; results</td><td class="cur">Narrative placements + static archive pages</td><td class="idea">Simple current squads + results/fixtures tables</td><td class="why">Turns an archive into a live reference</td></tr>
-          <tr><td class="area">News freshness</td><td class="cur">Active Jan 2026 burst, but latest post ~6 months old</td><td class="idea">Steadier cadence; even short updates</td><td class="why">Signals a living organization</td></tr>
-          <tr><td class="area">Mobile zoom</td><td class="cur">Pinch-zoom disabled in the viewport tag</td><td class="idea">Re-enable it (delete two attributes)</td><td class="why">Accessibility; trivial change</td></tr>
-          <tr><td class="area">Footer year</td><td class="cur">Copyright frozen at "@2015"</td><td class="idea">Dynamic current year</td><td class="why">First thing that reads as "abandoned" — tiny fix</td></tr>
-          <tr><td class="area">Membership link</td><td class="cur">Nav item → stale azolve.com (redirects to JustGo)</td><td class="idea">Prominent "Become a Member" → justgo.com directly</td><td class="why">Cleaner, clearer path to paid membership</td></tr>
-          <tr><td class="area">Newsletter</td><td class="cur">Plugin installed but no signup shown</td><td class="idea">Surface the signup in footer/home</td><td class="why">An owned audience vs rented social</td></tr>
-          <tr><td class="area">Social feed</td><td class="cur">Footer icons only, no embedded feed</td><td class="idea">Embed a live feed + share buttons</td><td class="why">More reach; home looks less static</td></tr>
-          <tr><td class="area">Navigation</td><td class="cur">Logical, but duplicate paths (/about/ vs /about-us/)</td><td class="idea">Consolidate the dupes</td><td class="why">Less sprawl, easier to maintain</td></tr>
-          <tr><td class="area">Page speed</td><td class="cur">40+ un-bundled CSS/JS, old slider, no CDN <i>(inferred)</i></td><td class="idea">Bundle/minify, update slider, add a CDN</td><td class="why">Faster on mobile, better ranking</td></tr>
-          <tr><td class="area">Overall look</td><td class="cur">2015-era boxed theme, small type</td><td class="idea">A restyle: modern spacing, bigger type, stronger imagery</td><td class="why">Matches the credibility they've already earned</td></tr>
-        </tbody>
-      </table>
+<!-- ================= 1. GOOD ================= -->
+<section id="good">
+  <div class="wrap fadein">
+    <div class="seclabel g">01 — Credit where it's due</div>
+    <h2 class="big">What your site already does well</h2>
+    <p class="dek">This isn't a teardown. The foundation your team built is genuinely strong — and worth keeping.</p>
+    <div class="good-grid">
+      <div class="gc"><div class="h"><span class="ic">✓</span>Governance transparency</div><div class="d">Public strategic plan, current insurance cert, 14 years of AGM minutes. Most governing bodies hide this. You don't — it builds real trust.</div></div>
+      <div class="gc"><div class="h"><span class="ic">✓</span>It's genuinely maintained</div><div class="d">A real burst of 2026 posts, current documents, active league recruitment. Someone cares about it.</div></div>
+      <div class="gc"><div class="h"><span class="ic">✓</span>Clear, logical structure</div><div class="d">Governance / domestic / high-performance is exactly the right split for a national governing body.</div></div>
+      <div class="gc"><div class="h"><span class="ic">✓</span>Real, named humans</div><div class="d">Actual people and emails on your Contact page, not a black-hole form. That's rare and good.</div></div>
+      <div class="gc"><div class="h"><span class="ic">✓</span>Sound technical base</div><div class="d">Domain, HTTPS, redirects, sitemap — all correctly configured. It's a solid base that's simply showing its age.</div></div>
+      <div class="gc"><div class="h"><span class="ic">✓</span>You have the hard part</div><div class="d">The diaspora story and international results are compelling. This is credibility that's under-showcased, not missing.</div></div>
     </div>
-    <p class="swipe">← swipe the table sideways on mobile →</p>
   </div>
+</section>
 
-  <div class="card" id="wins">
-    <div class="kicker g">If they only touched five things</div>
-    <h2>The quick wins</h2>
-    <div class="lead">Cheap, low-risk, high-return — most are minutes to hours, no redesign needed.</div>
-    <div class="tierlabel">Minutes → an hour</div>
-    <ul class="o">
-      <li><b>Add OG / meta tags</b> <span class="s">so shared links stop previewing blank</span></li>
-      <li><b>Fix the "@2015" footer</b> <span class="s">→ dynamic year</span></li>
-      <li><b>Re-enable pinch-zoom</b> <span class="s">— delete two attributes</span></li>
-      <li><b>Point membership at justgo.com</b> <span class="s">not the old azolve link</span></li>
-      <li><b>Surface the newsletter signup</b> <span class="s">— the plugin's already there</span></li>
-    </ul>
+<!-- ================= 2. BAD ================= -->
+<section id="bad" style="background:#0c130e">
+  <div class="wrap fadein">
+    <div class="seclabel">02 — The honest part</div>
+    <h2 class="big">Where it's quietly holding you back</h2>
+    <p class="dek">Nothing here is broken. These are the gaps between a good 2015-era site and what the game needs in 2026.</p>
+    <div class="good-grid">
+      <div class="gc bad"><div class="h"><span class="ic">!</span>Your shared links preview blank</div><div class="d">No social/Open Graph tags — every fixture, result and news post shared to WhatsApp, Facebook or X shows up with no image and no text. For a sport that grows on social, that's the costliest miss on the site.</div></div>
+      <div class="gc bad"><div class="h"><span class="ic">!</span>Nowhere to give you money</div><div class="d">You're hiring a Sponsorship &amp; Fundraising Manager — yet there's no donate button, no shop, no sponsor page anywhere on the site.</div></div>
+      <div class="gc bad"><div class="h"><span class="ic">!</span>Your best story is orphaned</div><div class="d">The Heritage Cup / Team Éire diaspora story lives scattered across news posts and a second, disconnected website. Your biggest differentiator has no home.</div></div>
+      <div class="gc bad"><div class="h"><span class="ic">!</span>Newcomers hit a dead end</div><div class="d">"Domestic" is a flat text list with one catch-all email — no club finder, no map, no clear "start playing" path.</div></div>
+      <div class="gc bad"><div class="h"><span class="ic">!</span>Small signals of age</div><div class="d">The footer still reads "©2015," the membership link points at an old address, and pinch-zoom is switched off on mobile. Tiny things that quietly say "dormant."</div></div>
+      <div class="gc bad"><div class="h"><span class="ic">!</span>The results are a story, not data</div><div class="d">Team pages are narrative history — no live rosters, fixtures or results tables fans can actually use.</div></div>
+    </div>
   </div>
+</section>
 
-  <div class="card" id="bigger">
-    <div class="kicker">More involved</div>
-    <h2>Bigger ideas</h2>
-    <div class="tierlabel med">A day or two each</div>
-    <ul class="o">
-      <li><b>A "Play / Join" homepage CTA</b> <span class="s">funneling newcomers to clubs + JustGo</span></li>
-      <li><b>A Donate / Support button</b> <span class="s">— they're literally hiring a fundraiser</span></li>
-      <li><b>Turn Domestic into a real club finder</b> <span class="s">— map + filterable cards</span></li>
-    </ul>
-    <div class="tierlabel big">Bigger projects</div>
-    <ul class="o">
-      <li><b>A proper Heritage Cup / diaspora hub</b> <span class="s">cross-linked with heritagecuplax.com</span></li>
-      <li><b>Structured rosters &amp; results</b> <span class="s">instead of narrative + static archives</span></li>
-      <li><b>A visual + performance refresh</b> <span class="s">off the 2015 theme</span></li>
-    </ul>
-  </div>
-
-  <div class="card" id="three">
-    <div class="kicker o">If we say nothing else, say these</div>
-    <h2>The three that matter most</h2>
-    <div class="big"><b>1. Their shared links preview blank.</b><div class="s">No Open Graph tags means every time a fixture, result, or news post gets shared to WhatsApp / Facebook / X, it shows up with no image and no text. For a sport that grows on social, that's the highest-value, lowest-effort fix on the whole list.</div></div>
-    <div class="big"><b>2. They're hiring a fundraiser but have no Donate button.</b><div class="s">There's an active "Sponsorship &amp; Fundraising Manager" post, yet nowhere on the site to actually give money. A simple donate button meets the goodwill they're already spending money to court.</div></div>
-    <div class="big"><b>3. Their best story is orphaned.</b><div class="s">The Heritage Cup / Team Éire diaspora narrative is their standout differentiator — and it's scattered across news posts and a second, disconnected website. Giving it one real home would make the most of what makes Irish lacrosse unique.</div></div>
-  </div>
-
-  <div class="foot">
-    Ideas only · a friendly outside read · nothing here has been sent to Ireland Lacrosse<br>
-    Based on the live site (main.irelandlacrosse.ie) as observed mid-July 2026 · page-speed points inferred, not Lighthouse-measured<br>
-    Companion note: <a class="link" href="https://branchmanager.app/catherine">branchmanager.app/catherine</a>
+<!-- ============ PHOTO BAND ============ -->
+<div class="band">
+  <img src="img/celebrate.jpg" alt="Ireland players embrace in the Éire kit">
+  <div class="scrim"></div>
+  <div class="inner">
+    <h2>This is what people fall in love with.</h2>
+    <p>Your site should make a stranger feel this in five seconds — then give them a way to play, follow, or give.</p>
   </div>
 </div>
+
+<!-- ================= 3. BETTER ================= -->
+<section id="better">
+  <div class="wrap fadein">
+    <div class="seclabel g">03 — The upgrade</div>
+    <h2 class="big">What we'd do better</h2>
+    <p class="dek">Current vs. what could be — grounded in what's actually on the site today. Most are small; a few are bigger. All keep JustGo exactly where it is.</p>
+    <div class="cmp">
+
+      <div class="cmpcard"><div class="area"><span class="dot"></span>Social link previews</div>
+        <div class="cmprow"><div class="now"><b>Now</b>Shared links preview blank — no image, no text</div><div class="better"><b>Better</b>Rich previews with the crest, a photo and a headline every time</div></div></div>
+
+      <div class="cmpcard"><div class="area"><span class="dot"></span>Homepage</div>
+        <div class="cmprow"><div class="now"><b>Now</b>A slider showing the latest headline; no clear action</div><div class="better"><b>Better</b>A bold hero with "Play · Follow · Support" front and centre</div></div></div>
+
+      <div class="cmpcard"><div class="area"><span class="dot"></span>Heritage &amp; diaspora</div>
+        <div class="cmprow"><div class="now"><b>Now</b>Scattered across posts and a separate, unlinked site</div><div class="better"><b>Better</b>One cinematic Heritage hub — your signature story, told properly</div></div></div>
+
+      <div class="cmpcard"><div class="area"><span class="dot"></span>Club finder</div>
+        <div class="cmprow"><div class="now"><b>Now</b>A plain text list of clubs + one catch-all email</div><div class="better"><b>Better</b>A map + filterable club cards — a real path to start playing</div></div></div>
+
+      <div class="cmpcard"><div class="area"><span class="dot"></span>Rosters &amp; results</div>
+        <div class="cmprow"><div class="now"><b>Now</b>Narrative placements and static archive pages</div><div class="better"><b>Better</b>Clean current squads + results &amp; fixtures fans can scan</div></div></div>
+
+      <div class="cmpcard"><div class="area"><span class="dot"></span>Look &amp; speed</div>
+        <div class="cmprow"><div class="now"><b>Now</b>2015-era theme, old slider, no CDN, small type</div><div class="better"><b>Better</b>A modern, fast, image-led design that matches your kit</div></div></div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4. MONEY ================= -->
+<section id="money" class="money" style="background:#0c130e">
+  <div class="wrap fadein">
+    <div class="seclabel">04 — The part that pays for itself</div>
+    <h2 class="big">How we'd help you make money</h2>
+    <p class="dek">You're already hiring to raise funds. The website should be that hire's best tool — not a brochure. Six levers, in rough order of return:</p>
+
+    <div style="margin-top:22px">
+      <div class="lever"><div class="ic">🌍</div><div>
+        <h3>Diaspora donations</h3>
+        <p>Tens of millions of people claim Irish heritage — and you already run a US 501(c)(3), so American gifts are tax-deductible. A prominent recurring + one-off "Support Irish Lacrosse" is the single biggest untapped lever you have.</p>
+        <span class="math"><b>Illustrative:</b> 1,000 diaspora supporters at €10/month ≈ <b>€120k/year</b></span>
+      </div></div>
+
+      <div class="lever"><div class="ic">👕</div><div>
+        <h3>Jersey &amp; kit shop</h3>
+        <p>You've said you want more people wearing the jersey. A print-on-demand shop means <em>zero</em> inventory and zero risk — fans buy, a partner prints and ships, you keep the margin. Identity and revenue in one.</p>
+        <span class="math"><b>Illustrative:</b> 400 jerseys/year at ~€25 margin ≈ <b>€10k/year</b>, no stock held</span>
+      </div></div>
+
+      <div class="lever"><div class="ic">🤝</div><div>
+        <h3>A real sponsorship storefront</h3>
+        <p>Give your new fundraiser a page to sell: tiered sponsor packages, logo placement, sponsored match content, and clear reach numbers. Right now a sponsor has nothing to look at.</p>
+      </div></div>
+
+      <div class="lever"><div class="ic">🎟️</div><div>
+        <h3>Events, camps &amp; the Heritage Cup</h3>
+        <p>On-site paid registration and ticketing for camps, clinics and the Heritage Cup — instead of email back-and-forth. Every event becomes a clean, countable revenue line.</p>
+      </div></div>
+
+      <div class="lever"><div class="ic">🎫</div><div>
+        <h3>A sharper membership funnel</h3>
+        <p>JustGo stays as your system of record — we just build a far clearer "Become a Member" path into it. Every extra percentage point of conversion is recurring dues you're currently leaving on the table.</p>
+      </div></div>
+
+      <div class="lever"><div class="ic">📣</div><div>
+        <h3>Audience that compounds</h3>
+        <p>The social tags, an embedded feed and a newsletter signup turn one-off visitors into an owned audience — which is exactly what makes every sponsorship and appeal above worth more next year.</p>
+      </div></div>
+    </div>
+
+    <p class="moneydisc"><b>On the numbers:</b> the figures above are illustrative — arithmetic to show the <em>shape</em> of each lever, not forecasts. Real projections need your actual traffic, membership and diaspora data, which we'd model together before anyone commits to anything.</p>
+  </div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+<section class="close">
+  <div class="wrap">
+    <img class="crest" src="img/crest.png" alt="Ireland Lacrosse crest">
+    <h2>We're not here to replace what your team built.<br>We're here to help it go further.</h2>
+    <p>Keep the governance, keep JustGo, keep the people. Add the handful of things that turn a good site into a growth engine — for players, for fans, and for the funding that keeps Irish lacrosse climbing.</p>
+    <a class="btn" href="#money">See the growth levers ↑</a>
+  </div>
+</section>
+
+<div class="foot">
+  A friendly outside proposal · prepared using Ireland Lacrosse's own photography &amp; the live site as observed mid-2026<br>
+  Illustrative figures are examples, not forecasts · page-speed notes inferred, not Lighthouse-measured · nothing here has been sent to Ireland Lacrosse<br>
+  Internal companion: <a href="https://branchmanager.app/catherine">branchmanager.app/catherine</a>
+</div>
+
+<script>
+  // gentle reveal on scroll
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.fadein').forEach(function(el){io.observe(el)});
+</script>
 </body>
 </html>
