@@ -1,119 +1,95 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Where I Failed You — Session Accountability</title>
+<title>Where I Failed You — and How We Work Now</title>
 <style>
-  :root{--ink:#141a1f;--muted:#5b6672;--line:#e7e9ec;--red:#b3261e;--red-bg:#fdecea;--amber:#8a5a00;--amber-bg:#fef7e6;--green:#1f7a44;--card:#fff;--bg:#f4f5f7}
+  :root{--ink:#141a1f;--muted:#5b6672;--line:#e7e9ec;--red:#b3261e;--red-bg:#fdecea;--amber:#8a5a00;--amber-bg:#fef7e6;--green:#1f7a44;--green-d:#155c33;--green-bg:#e9f6ee;--card:#fff;--bg:#f4f5f7}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
   .wrap{max-width:640px;margin:0 auto;padding:20px 16px 64px}
-  header.hd{padding:26px 20px;border-radius:16px;background:linear-gradient(160deg,#22303a,#141a1f);color:#fff;margin-bottom:20px}
-  header.hd h1{margin:0;font-size:23px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+  header.hd{padding:26px 20px;border-radius:16px;background:linear-gradient(160deg,#22303a,#141a1f);color:#fff;margin-bottom:18px}
+  header.hd h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
   header.hd p{margin:10px 0 0;font-size:14px;color:#c3ccd4}
-  .intro{font-size:15px;color:#333;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px}
-  h2.sec{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;margin:26px 4px 10px}
+  nav.jump{display:flex;gap:8px;margin-bottom:20px}
+  nav.jump a{flex:1;text-align:center;text-decoration:none;font-weight:700;font-size:13px;padding:11px 8px;border-radius:11px}
+  nav.jump a.a1{background:#22303a;color:#fff}
+  nav.jump a.a2{background:var(--green);color:#fff}
+  h2.part{font-size:19px;font-weight:800;margin:30px 4px 4px;letter-spacing:-.01em}
+  .part-sub{font-size:13px;color:var(--muted);margin:0 4px 14px}
+  h3.sec{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;margin:22px 4px 10px}
   .item{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;margin-bottom:12px}
-  .item.big{border-left-color:var(--red);box-shadow:0 2px 10px rgba(179,38,30,.08)}
   .item.amber{border-left-color:var(--amber)}
-  .item h3{margin:0 0 6px;font-size:16px;font-weight:800;line-height:1.3}
+  .item h4{margin:0 0 6px;font-size:16px;font-weight:800;line-height:1.3}
   .item .what{font-size:14px;color:#333;margin:0 0 8px}
   .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-bottom:8px}
-  .tag.red{background:var(--red-bg);color:var(--red)}
-  .tag.amber{background:var(--amber-bg);color:var(--amber)}
+  .tag.red{background:var(--red-bg);color:var(--red)} .tag.amber{background:var(--amber-bg);color:var(--amber)}
   .cost{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
-  .cost b{color:var(--ink)}
-  .fix{font-size:12.5px;color:var(--green);margin-top:6px}
-  .fix b{color:var(--green)}
-  footer{margin-top:30px;padding:18px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:14px;color:#333}
+  .cost b{color:var(--ink)} .fix{font-size:12.5px;color:var(--green-d);margin-top:6px} .fix b{color:var(--green-d)}
+  ol.rules{list-style:none;margin:0;padding:0;counter-reset:r}
+  ol.rules li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px 13px 46px;margin-bottom:10px;position:relative;font-size:14.5px}
+  ol.rules li::before{counter-increment:r;content:counter(r);position:absolute;left:12px;top:13px;width:24px;height:24px;border-radius:50%;background:var(--green-bg);color:var(--green-d);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+  ol.rules li b{color:var(--ink)} ol.rules.hard li::before{background:var(--red-bg);color:var(--red)}
+  .open{background:var(--amber-bg);border:1px solid #f0dca8;border-radius:12px;padding:14px 16px;font-size:13.5px;color:#5a4a1f;margin-top:8px}
+  .open b{color:var(--amber)}
+  .divider{height:1px;background:var(--line);margin:34px 0 4px}
+  footer{margin-top:26px;padding:18px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:13.5px;color:#333}
   footer b{color:var(--ink)}
 </style></head><body>
 <div class="wrap">
   <header class="hd">
-    <h1>Where I failed you</h1>
-    <p>Every mistake I made in this session — the honest list, no excuses. Read it on your phone; that's the point.</p>
+    <h1>Where I failed you — and how we work now</h1>
+    <p>Both, on one page. The honest list of my mistakes, then the rules so it stops. Read it on your phone.</p>
   </header>
+  <nav class="jump"><a class="a1" href="#failures">① Where I failed</a><a class="a2" href="#rules">② The rules</a></nav>
 
-  <div style="margin:0 0 18px;"><a href="ground-rules-c4e2.html" style="display:block;text-align:center;background:#1f7a44;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 16px;border-radius:12px;">📋 Read the ground rules →</a></div>
-  <div class="intro">You asked me to get my head together and understand what we're doing. This is me showing that I do. These are <b>my</b> failures — not gaps in how you prompted me. Ordered worst first.</div>
+  <h2 class="part" id="failures">① Where I failed you</h2>
+  <p class="part-sub">Every mistake this session — no excuses. Worst first. These are mine, not gaps in how you asked.</p>
 
-  <h2 class="sec">The two that matter most</h2>
+  <h3 class="sec">The two that matter most</h3>
+  <div class="item"><span class="tag red">FOUNDATIONAL</span><h4>I built and checked it for desktop — it's a mobile field app</h4><p class="what">Your crew uses this one-handed, on a phone, in a truck. Mobile is the whole point. I kept verifying on a desktop that couldn't even shrink to phone width, so mobile broke and I didn't see it. You should never have had to tell me that.</p><div class="cost"><b>Cost:</b> a product that looked fine to me and was broken for the people using it. Your trust.</div><div class="fix"><b>Now:</b> mobile-first every message; your phone screenshot is the sign-off before I say "done."</div></div>
+  <div class="item"><span class="tag red">DATA</span><h4>I imported 1 of your 6 Jobber files — your real paid history is missing</h4><p class="what">I imported Communications only. Your <b>Invoices (358), Jobs (203), Visits (343)</b> never came in, and BM's invoice numbers don't match Jobber's — two parallel sets. That's why <b>Al Garone's $8,128 job (done + paid Jun 2)</b> is invisible in BM.</p><div class="cost"><b>Cost:</b> your books don't show work you did and got paid for. You were right.</div><div class="fix"><b>Now:</b> a planned reconciliation (match by client+amount+date), done together.</div></div>
 
-  <div class="item big">
-    <span class="tag red">FOUNDATIONAL</span>
-    <h3>I built and checked it for desktop — it's a mobile field app</h3>
-    <p class="what">Your crew uses this one-handed, on a phone, in a truck. Mobile is the entire point. I kept designing and verifying on a desktop that couldn't even shrink to phone width, so mobile broke and I didn't see it. You should never have had to tell me that.</p>
-    <div class="cost"><b>Cost:</b> months of a product that looked fine to me and was broken for the people actually using it. Your trust.</div>
-    <div class="fix"><b>Now:</b> mobile-first is enforced on every message; your phone screenshot is the sign-off before I ever say "done."</div>
-  </div>
+  <h3 class="sec">I said "done" when it wasn't</h3>
+  <div class="item"><span class="tag red">VERIFY</span><h4>The dead Google review link — wrong three times</h4><p class="what">Every receipt's review link went to a dead page. I "fixed" it twice more wrong, each time claiming I'd verified — but only with curl, which can't tell. Only right once I opened it in your logged-in browser.</p></div>
+  <div class="item"><span class="tag red">VERIFY</span><h4>"We're live" when we weren't</h4><p class="what">I told you things were working from assumption, not from testing them. That should never have happened.</p></div>
 
-  <div class="item big">
-    <span class="tag red">DATA</span>
-    <h3>I imported 1 of your 6 Jobber files — your real paid history is missing</h3>
-    <p class="what">I imported Communications (7,155). I never imported your <b>Invoices (358), Jobs (203), or Visits (343)</b>. BM's invoice numbers don't even match Jobber — they're two parallel sets. That's why <b>Al Garone's $8,128 job (done + paid Jun 2)</b> is invisible in BM, and why the data doesn't reflect reality.</p>
-    <div class="cost"><b>Cost:</b> your books don't show work you actually did and got paid for. Big deal — you were right.</div>
-    <div class="fix"><b>Now:</b> a planned reconciliation (match by client+amount+date, not number), done together — not a rushed script.</div>
-  </div>
+  <h3 class="sec">Mobile things I broke</h3>
+  <div class="item"><span class="tag red">MOBILE</span><h4>The notification panel locked the whole app</h4><p class="what">On a phone it opened off-screen with no way to close it — you couldn't scroll or see anything. A one-character CSS mistake.</p></div>
+  <div class="item"><span class="tag red">MOBILE</span><h4>The line-item box squished to two words wide</h4><p class="what">A 6-column desktop grid crushed Service/Description to ~40px on a phone.</p></div>
+  <div class="item"><span class="tag red">MOBILE</span><h4>The Send button was hidden off-screen</h4><p class="what">"Send invoice" was in a menu that opened off the left edge — so you went looking and found no Send button.</p></div>
 
-  <h2 class="sec">I said "done" when it wasn't</h2>
+  <h3 class="sec">I wasted your time and money</h3>
+  <div class="item amber"><span class="tag amber">DISORGANIZED</span><h4>Re-deriving which account owns what</h4><p class="what">I re-hunted which GitHub/Cloudflare/Supabase account owned things, pushed with wrong credentials, couldn't find your peekskilltree.com source for two rounds, and had you make a wrong-scope token — when the access was usually already there.</p></div>
+  <div class="item amber"><span class="tag amber">RUSHED</span><h4>Rushed instead of planning</h4><p class="what">I jumped straight to building over and over, and once nearly pushed a stale copy that would've reverted a fix. Building wrong-from-the-start and redoing it is what wasted the most of your time.</p></div>
 
-  <div class="item">
-    <span class="tag red">VERIFY</span>
-    <h3>The dead Google review link — wrong three times</h3>
-    <p class="what">Every receipt's "leave a review" link went to a dead google.com page. I "fixed" it twice more wrong (wrong ID, then a number the endpoint rejects), each time claiming I'd verified it — but I'd only tested with curl, which hits a login wall and can't tell. Only got it right by opening it in your logged-in browser.</p>
-    <div class="cost"><b>Cost:</b> your time, three rounds, and reviews that went nowhere.</div>
-  </div>
+  <div class="divider"></div>
 
-  <div class="item">
-    <span class="tag red">VERIFY</span>
-    <h3>"We're live" when we weren't</h3>
-    <p class="what">Early on I told you things were working and live from assumption, not from testing them. "You said we were live, I trusted you" — that should never have happened.</p>
-  </div>
+  <h2 class="part" id="rules">② How we work now — the rules</h2>
+  <p class="part-sub">Enforced on every message + in my long-term memory. Yours to change.</p>
 
-  <h2 class="sec">Mobile things I broke</h2>
+  <h3 class="sec">How we work</h3>
+  <ol class="rules">
+    <li><b>Mobile-first, always.</b> Every screen designed + verified at phone width first, desktop second. <b>Your phone screenshot is the final sign-off</b> — I never call a UI change done until you've confirmed it on your phone.</li>
+    <li><b>Plan together, then I execute.</b> For anything non-trivial we agree on the approach before I touch code or data.</li>
+    <li><b>Verify before "done."</b> I run the real thing, report what I actually saw, and fix it in every place it lives.</li>
+    <li><b>I ask when I'm unsure.</b> If your intent is genuinely ambiguous, I ask a real question instead of assuming — assuming wrong wastes more of your time than asking.</li>
+    <li><b>Never make you repeat yourself.</b> Accounts, IDs, tokens, deploy paths live in one map I read first.</li>
+  </ol>
+  <h3 class="sec">Hard lines — I never</h3>
+  <ol class="rules hard">
+    <li><b>Send anything to a customer.</b> I prepare it and hand you the link; <b>you</b> send. Always.</li>
+    <li><b>Turn on automated / marketing email.</b> Permanently off since the May 6 incident.</li>
+    <li><b>Fabricate</b> a number, price, or phone — or guess who a contact is.</li>
+    <li><b>Write to a record you're actively editing,</b> or show customer-facing prices on the marketing site.</li>
+  </ol>
+  <h3 class="sec">How I talk to you</h3>
+  <ol class="rules">
+    <li><b>Advisor, not a yes-man.</b> Uncomfortable truth first. I own my mistakes instead of praising you for catching them.</li>
+    <li><b>Every link clickable;</b> I name exactly where I saved or changed something; no overclaiming.</li>
+  </ol>
+  <h3 class="sec">Still open — not yet fixed</h3>
+  <div class="open"><b>Jobber data:</b> only Communications imported. Your <b>Invoices, Jobs, Visits</b> weren't, and the numbers don't match BM (two parallel sets), so real paid work like <b>Al Garone's $8,128 job</b> is missing. Fix = a planned reconciliation, together. &nbsp;·&nbsp; <b>Mobile pass</b> across key screens, one at a time, verified on your phone.</div>
 
-  <div class="item">
-    <span class="tag red">MOBILE</span>
-    <h3>The notification panel locked the whole app</h3>
-    <p class="what">On a phone it opened off-screen with no way to close it — you couldn't scroll or see anything. A one-character CSS mistake (<code>right:-60px</code>).</p>
-  </div>
-
-  <div class="item">
-    <span class="tag red">MOBILE</span>
-    <h3>The line-item box squished to two words wide</h3>
-    <p class="what">A 6-column desktop grid crushed the Service/Description fields to ~40px on a phone. Desktop-first, again.</p>
-  </div>
-
-  <div class="item">
-    <span class="tag red">MOBILE</span>
-    <h3>The Send button was hidden off-screen</h3>
-    <p class="what">"Send invoice" lived in a menu that opened off the left edge of your phone — so you went looking for a Send button and there was none.</p>
-  </div>
-
-  <h2 class="sec">I wasted your time and money</h2>
-
-  <div class="item amber">
-    <span class="tag amber">DISORGANIZED</span>
-    <h3>Re-deriving which account owns what</h3>
-    <p class="what">I kept re-hunting which GitHub / Cloudflare / Supabase account owned things, pushed with the wrong credentials (403s), couldn't find your peekskilltree.com source for two rounds, and had you make a token that was the wrong scope — when the access was usually already on the machine.</p>
-    <div class="cost"><b>Cost:</b> real time and money, repeatedly. You said it made you furious. Fair.</div>
-    <div class="fix"><b>Now:</b> one accounts map I read first; I never make you paste the same thing twice.</div>
-  </div>
-
-  <div class="item amber">
-    <span class="tag amber">DISORGANIZED</span>
-    <h3>Missed the invoice-email gap until you asked</h3>
-    <p class="what">361 of 363 invoices had no email stored, so almost none could be emailed. I only checked the scope after you pushed — I should have caught it the moment it hit Lance.</p>
-  </div>
-
-  <div class="item amber">
-    <span class="tag amber">RUSHED</span>
-    <h3>Rushed instead of planning</h3>
-    <p class="what">I jumped straight to building over and over. Once I nearly pushed a stale copy that would have reverted a fix I'd just made. Building wrong-from-the-start and redoing it is the #1 thing that wasted your time.</p>
-    <div class="fix"><b>Now:</b> we agree the approach first, then I execute.</div>
-  </div>
-
-  <footer>
-    <b>The through-line:</b> I moved fast, assumed instead of verified, and treated your phone as an afterthought. None of that was you being unclear. The rules we set — <a href="ground-rules-c4e2.html" style="color:#1f7a44;font-weight:700;">the ground rules</a> (also in <b>CLAUDE-GROUND-RULES.md</b> on your Desktop) — exist so this specific list can't grow. When you're ready, we start with the Jobber reconciliation — planned together, verified on your phone, one step at a time.
-  </footer>
+  <footer><b>The through-line I broke:</b> I moved fast, assumed instead of verified, and treated your phone as an afterthought. None of that was you being unclear. These rules exist so this list can't grow.</footer>
 </div>
 </body></html>
