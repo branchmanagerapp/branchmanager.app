@@ -8,20 +8,49 @@ var Photos = {
   BUCKET: 'job-photos',
   BRAND: 'Branch Cam',
 
-  // v979: quota-safe localStorage write for photo blobs (base64 can be MBs each
-  // and blows mobile Safari's ~5MB quota → uncaught QuotaExceededError). On quota,
-  // evict OTHER cached photo groups (re-fetchable from cloud) and retry once.
+  // v1012 PERMANENT FIX: never persist base64 image data to localStorage.
+  // Every photo lives in Supabase Storage and renders straight from its cloud URL,
+  // so the local cache only needs the small metadata + https URL. Base64 blobs
+  // (MBs each) are stripped before writing — they used to blow mobile Safari's
+  // ~5MB quota, and because that quota is SHARED with all app data, a bucket full
+  // of cached photos also silently dropped real quote/invoice saves. Offline-only
+  // captures still live in the upload queue (bm-photo-queue) until they sync.
+  _stripBlobs: function(value) {
+    if (!Array.isArray(value)) return value;
+    return value.filter(function(p) {
+      return p && typeof p.url === 'string' && p.url.indexOf('data:') !== 0;
+    });
+  },
   _safeStore: function(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    var slim = Photos._stripBlobs(value);
+    try { localStorage.setItem(key, JSON.stringify(slim)); return true; }
     catch(e) {
       if (e && (e.name === 'QuotaExceededError' || e.code === 22) && typeof window.BM_freePhotoStorage === 'function') {
         window.BM_freePhotoStorage(key);
-        try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch(e2) {}
+        try { localStorage.setItem(key, JSON.stringify(slim)); return true; } catch(e2) {}
       }
       console.warn('[Photos] local cache write skipped (storage full):', key);
-      if (typeof UI !== 'undefined' && UI.toast) UI.toast('Storage full — photo saved to the cloud, not cached on this device.', 'error');
       return false;
     }
+  },
+
+  // v1012: one-time cleanup — strip any legacy base64 blobs already sitting in the
+  // photo cache on this device (from before the URL-only path). Runs on startup.
+  sweepLocalBlobs: function() {
+    try {
+      var freed = 0, before = 0;
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf('bm-photos-') !== 0) continue;
+        var raw = localStorage.getItem(k) || '';
+        if (raw.indexOf('data:') === -1) continue; // no blobs in this key
+        before += raw.length;
+        var arr; try { arr = JSON.parse(raw); } catch(e) { continue; }
+        var slim = Photos._stripBlobs(arr);
+        try { localStorage.setItem(k, JSON.stringify(slim)); freed++; } catch(e2) {}
+      }
+      if (freed) console.debug('[Photos] sweepLocalBlobs: cleaned ' + freed + ' keys (~' + Math.round(before/1024) + 'KB of base64)');
+    } catch (e) { console.warn('[Photos] sweepLocalBlobs failed:', e); }
   },
 
   // Capture GPS once, reuse across uploads in the same batch (saves prompts + battery)
@@ -538,6 +567,7 @@ var Photos = {
   // Pull all photo metadata for this tenant into local cache (call on app boot)
   syncFromCloud: async function() {
     if (!SupabaseDB || !SupabaseDB.ready) return;
+    Photos.sweepLocalBlobs(); // v1012: clean any legacy base64 out of the 5MB bucket first
     try {
       var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
       var q = SupabaseDB.client.from('photos').select('*').order('taken_at', { ascending: false });

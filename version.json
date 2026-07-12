@@ -1,5 +1,5 @@
 {
-  "version": 1011,
+  "version": 1012,
   "released": "2026-07-12",
-  "notes": "Today-board sections start collapsed; Send Invoice / Send Receipt buttons on the invoice page."
+  "notes": "New-SMS modal now has a message field + blank-send guard; Text Receipt/Invoice buttons on invoices; photos no longer cache base64 in localStorage (fixes storage-full popup + save failures)."
 }

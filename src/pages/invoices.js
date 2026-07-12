@@ -538,6 +538,32 @@ var InvoicesPage = {
     }
   },
 
+  // v1012: Text the receipt (paid) or invoice (unpaid) — pre-fills the SMS thread with the
+  // message + client phone, then Doug taps Send. Never auto-fires a customer message.
+  _textReceipt: function(id) {
+    var inv = DB.invoices.getById(id);
+    if (!inv) { UI.toast('Invoice not found', 'error'); return; }
+    var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+    var phone = inv.clientPhone || (client && (client.phone || client.mobile || client.cell)) || '';
+    if (!phone) { UI.toast('No phone number on file for this client', 'error'); return; }
+    var _c = InvoicesPage._co();
+    var owner = CompanyInfo.get('ownerName') || _c.name;
+    var firstName = (inv.clientName || '').split(' ')[0] || 'there';
+    var total = UI.money(inv.total || 0);
+    var link = InvoicesPage._getPayLink(id);
+    var jobLine = inv.subject ? ' for ' + inv.subject : '';
+    var msg = (inv.status === 'paid')
+      ? 'Thanks ' + firstName + '! Here\'s your receipt' + jobLine + ' — ' + total + ', paid in full: ' + link + ' — ' + owner + ', ' + _c.name
+      : 'Hi ' + firstName + ' — your invoice' + jobLine + ' from ' + _c.name + ' is ' + total + '. View + pay here: ' + link + ' — ' + owner;
+    loadPage('callcenter');
+    setTimeout(function() {
+      if (typeof CallCenter === 'undefined' || !CallCenter._openThread) { UI.toast('Open Receptionist to send', 'error'); return; }
+      CallCenter._activeTab = 'threads';
+      if (CallCenter._switchTab) CallCenter._switchTab('threads');
+      CallCenter._openThread({ phone: phone, clientId: inv.clientId, name: inv.clientName || CallCenter._fmtPhone(phone), prefill: msg });
+    }, 350);
+  },
+
   _saveStripeUrl: function(id, url) {
     if (url && !url.startsWith('https://')) { UI.toast('Must be a valid https:// URL', 'error'); return; }
     DB.invoices.update(id, { stripePaymentUrl: url || null });
@@ -907,8 +933,8 @@ var InvoicesPage = {
       +       '</div>'
       +     '</div>'
       +     (inv.status !== 'paid'
-        ? '<button type="button" class="btn btn-outline" onclick="InvoicesPage._sendInvoiceEmail(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;margin-right:8px;">📤 Send Invoice</button>' + '<button type="button" class="btn btn-primary" onclick="if(typeof Workflow!==\'undefined\')Workflow.showMarkPaid(\'' + id + '\');else InvoicesPage._quickPay(\'' + id + '\');" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">$ Collect Payment</button>'
-        : '<span style="font-size:12px;color:var(--green-dark);font-weight:700;display:inline-flex;align-items:center;gap:5px;background:#e8f5e9;padding:8px 12px;border-radius:8px;margin-right:8px;">✓ Paid</span>' + '<button type="button" class="btn btn-primary" onclick="InvoicesPage._sendReceiptEmail(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">🧾 Send Receipt</button>')
+        ? '<button type="button" class="btn btn-outline" onclick="InvoicesPage._textReceipt(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;margin-right:8px;">📱 Text</button>' + '<button type="button" class="btn btn-outline" onclick="InvoicesPage._sendInvoiceEmail(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;margin-right:8px;">📤 Send Invoice</button>' + '<button type="button" class="btn btn-primary" onclick="if(typeof Workflow!==\'undefined\')Workflow.showMarkPaid(\'' + id + '\');else InvoicesPage._quickPay(\'' + id + '\');" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">$ Collect Payment</button>'
+        : '<span style="font-size:12px;color:var(--green-dark);font-weight:700;display:inline-flex;align-items:center;gap:5px;background:#e8f5e9;padding:8px 12px;border-radius:8px;margin-right:8px;">✓ Paid</span>' + '<button type="button" class="btn btn-outline" onclick="InvoicesPage._textReceipt(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;margin-right:8px;">📱 Text Receipt</button>' + '<button type="button" class="btn btn-primary" onclick="InvoicesPage._sendReceiptEmail(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">🧾 Send Receipt</button>')
       +   '</div>'
       + '</div>'
 

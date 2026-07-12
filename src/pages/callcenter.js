@@ -142,6 +142,12 @@ var CallCenter = {
 
     body += '</div>'
 
+      // Message field (SMS only) — v1012: was missing entirely, so "Send SMS" fired a blank text
+      + (mode === 'sms'
+          ? '<textarea id="cc-sms-msg" placeholder="Type your message…" '
+            + 'style="width:100%;min-height:84px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px;background:var(--bg);color:var(--text);resize:vertical;"></textarea>'
+          : '')
+
       // Action button
       + '<button onclick="CallCenter._dialGo()" style="width:100%;padding:13px;background:' + (mode==='sms'?'var(--green-dark)':'#1a7a3c') + ';color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;">'
       + (mode === 'sms' ? '💬 Send SMS' : '📞 Make Call')
@@ -165,12 +171,24 @@ var CallCenter = {
   _dialGo: function() {
     var num = CallCenter._number.replace(/\D/g, '');
     if (!num) { UI.toast('Enter a phone number first', 'error'); return; }
-    UI.closeModal();
     if (CallCenter._dialMode === 'sms') {
+      // v1012: read + require the message BEFORE closing the modal (closeModal destroys the field).
+      // Blank guard: never fire an empty text.
+      var msgEl = document.getElementById('cc-sms-msg');
+      var msg = msgEl ? msgEl.value.trim() : '';
+      if (!msg) { UI.toast('Type a message first', 'error'); if (msgEl) msgEl.focus(); return; }
+      var cid = CallCenter._clientId, cname = CallCenter._clientName;
+      UI.closeModal();
+      if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
+        Dialpad.sendSMS(num, msg, cid);   // sends through Dialpad + shows its own "Text sent" toast
+      } else {
+        window.open('sms:' + num + '?body=' + encodeURIComponent(msg));
+      }
       CallCenter._activeTab = 'threads';
       CallCenter._switchTab('threads');
-      CallCenter._openThread({ phone: num, clientId: CallCenter._clientId, name: CallCenter._clientName || CallCenter._fmtPhone(num) });
+      CallCenter._openThread({ phone: num, clientId: cid, name: cname || CallCenter._fmtPhone(num) });
     } else {
+      UI.closeModal();
       if (typeof Dialpad !== 'undefined') Dialpad.call(num, CallCenter._clientId, CallCenter._clientName);
       else window.open('tel:' + num);
     }
@@ -1100,6 +1118,12 @@ var CallCenter = {
       + '<button onclick="CallCenter._sendReply()" style="padding:9px 20px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">Send ↑</button>'
       + '</div>'
       + '</div>';
+
+    // v1012: pre-filled draft (e.g. a receipt from an invoice) — user still taps Send, never auto-fired
+    if (thr.prefill) {
+      var _rin = document.getElementById('cc-reply-input');
+      if (_rin) { _rin.value = thr.prefill; setTimeout(function(){ _rin.focus(); }, 60); }
+    }
 
     // Load messages
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
