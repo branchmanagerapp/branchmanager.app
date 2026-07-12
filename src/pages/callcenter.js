@@ -19,6 +19,7 @@ var AI_INTENT_PILLS = {
 var CallCenter = {
   _activeTab: 'missed',  // 'missed' | 'threads' | 'activity'
   _activeThread: null,
+  _pendingThread: null,  // v1017: deep-link target set before loadPage('callcenter')
   _realtimeSub: null,
 
   render: function() {
@@ -60,6 +61,19 @@ var CallCenter = {
 
     setTimeout(function() {
       if (typeof lucide !== 'undefined') lucide.createIcons();
+      // v1017: deep-link straight into a specific SMS thread (e.g. Text Receipt from an
+      // invoice). Open it AFTER render so the default panel load can't clobber it.
+      if (CallCenter._pendingThread) {
+        var pt = CallCenter._pendingThread;
+        CallCenter._pendingThread = null;
+        CallCenter._activeTab = 'threads';
+        ['missed','emails','threads','activity'].forEach(function(t) {
+          var btn = document.getElementById('cc-tab-' + t);
+          if (btn) { var a = t === 'threads'; btn.style.color = a ? 'var(--accent)' : 'var(--text-light)'; btn.style.borderBottom = '2px solid ' + (a ? 'var(--accent)' : 'transparent'); }
+        });
+        CallCenter._openThread(pt);
+        return;
+      }
       CallCenter._loadPanel();
     }, 0);
 

@@ -573,13 +573,13 @@ var InvoicesPage = {
     var msg = (inv.status === 'paid')
       ? 'Thanks ' + firstName + '! Here\'s your receipt' + jobLine + ' — ' + total + ', paid in full: ' + link + ' — ' + owner + ', ' + _c.name
       : 'Hi ' + firstName + ' — your invoice' + jobLine + ' from ' + _c.name + ' is ' + total + '. View + pay here: ' + link + ' — ' + owner;
+    if (typeof CallCenter === 'undefined') { UI.toast('Messaging unavailable', 'error'); return; }
+    // v1017: hand CallCenter a pending thread and let ITS render open it after the page
+    // draws. The old setTimeout raced the default panel load and dumped you on the
+    // Leads Center instead of the pre-filled receipt thread.
+    CallCenter._pendingThread = { phone: phone, clientId: inv.clientId, name: inv.clientName || (CallCenter._fmtPhone ? CallCenter._fmtPhone(phone) : phone), prefill: msg };
+    CallCenter._activeTab = 'threads';
     loadPage('callcenter');
-    setTimeout(function() {
-      if (typeof CallCenter === 'undefined' || !CallCenter._openThread) { UI.toast('Open Receptionist to send', 'error'); return; }
-      CallCenter._activeTab = 'threads';
-      if (CallCenter._switchTab) CallCenter._switchTab('threads');
-      CallCenter._openThread({ phone: phone, clientId: inv.clientId, name: inv.clientName || CallCenter._fmtPhone(phone), prefill: msg });
-    }, 350);
   },
 
   _saveStripeUrl: function(id, url) {

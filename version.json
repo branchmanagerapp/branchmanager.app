@@ -1,5 +1,5 @@
 {
-  "version": 1016,
+  "version": 1017,
   "released": "2026-07-12",
-  "notes": "Bulk photo upload + drag-drop pool are now desktop-only on the quote form; on mobile you add photos straight to each line item (📷 Add Photos / add-tree)."
+  "notes": "Text Receipt from an invoice now opens the pre-filled text thread reliably (was racing the page load and dumping you on the Leads Center)."
 }
