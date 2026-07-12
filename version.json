@@ -1,5 +1,5 @@
 {
-  "version": 1006,
+  "version": 1007,
   "released": "2026-07-12",
-  "notes": "Today board: hide drafts/quotes older than 60 days; show more per section so fresh drafts surface."
+  "notes": "Today board: each section is now individually collapsible (state remembered)."
 }

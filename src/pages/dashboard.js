@@ -1141,9 +1141,12 @@ var DashboardPage = {
       var CAP = 8;
       var section = function(title, color, rows, renderRow, moreTarget) {
         if (!rows.length) return '';
-        var h = '<div style="padding:10px 16px 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + color + ';">' + title + ' (' + rows.length + ')</div>';
+        var _hkey = 'tbsec' + title.replace(/[^a-z0-9]/gi, '').slice(0, 18);
+        var _hcol = false; try { _hcol = localStorage.getItem('bm-' + _hkey) === '1'; } catch (e) {}
+        var h = '<div onclick="DashboardPage._toggleTodaySection(\'' + _hkey + '\')" style="padding:10px 16px 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + color + ';cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;"><span>' + title + ' (' + rows.length + ')</span><span id="' + _hkey + '-chev" style="font-size:10px;transition:transform .15s;transform:rotate(' + (_hcol ? '-90deg' : '0deg') + ');">&#9662;</span></div><div id="' + _hkey + '-body" style="' + (_hcol ? 'display:none;' : '') + '">';
         rows.slice(0, CAP).forEach(function(r) { h += renderRow(r); });
         if (rows.length > CAP) h += '<div onclick="loadPage(\'' + moreTarget + '\')" style="padding:6px 16px 10px;font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;">+ ' + (rows.length - CAP) + ' more →</div>';
+        h += '</div>';
         return h;
       };
       var qRow = function(tag) {
@@ -1193,6 +1196,16 @@ var DashboardPage = {
         + '<div id="bm-today-body" style="' + (_tbCollapsed ? 'display:none;' : '') + '">' + body + '</div>'
         + '</div>';
     } catch (e) { return ''; /* never break the dashboard */ }
+  },
+
+  _toggleTodaySection: function(key) {
+    var b = document.getElementById(key + '-body');
+    var c = document.getElementById(key + '-chev');
+    if (!b) return;
+    var collapse = b.style.display !== 'none';
+    b.style.display = collapse ? 'none' : '';
+    if (c) c.style.transform = 'rotate(' + (collapse ? '-90deg' : '0deg') + ')';
+    try { localStorage.setItem('bm-' + key, collapse ? '1' : '0'); } catch (e) {}
   },
 
   _toggleTodayBoard: function() {
