@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Ireland Lacrosse — Website + Portal Proposal</title>
+<style>
+  :root{
+    --bg:#0c110d; --panel:#131a14; --panel2:#18211a; --line:#26332a;
+    --ink:#e9f1ea; --dim:#9fb3a5; --faint:#6d8175;
+    --grn:#3fb95a; --grn2:#2ea043; --orange:#ff883e; --org2:#e8712a;
+    --amb:#e3b341; --red:#f0645a;
+    --r:16px; --shadow:0 10px 34px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(900px 480px at 15% -8%, #16281b 0%, transparent 60%),
+      radial-gradient(900px 480px at 90% -8%, #2a1a0e 0%, transparent 60%),
+      var(--bg) fixed;
+    color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 90px;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px}
+  header.hero{padding:38px 16px 8px;text-align:center}
+  .flag{font-size:34px;letter-spacing:4px;margin-bottom:8px}
+  .hero h1{margin:0 0 8px;font-size:27px;line-height:1.2;letter-spacing:-.4px;font-weight:800}
+  .hero .sub{color:var(--dim);font-size:15px;max-width:600px;margin:0 auto}
+  .tag{display:inline-block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);
+    border:1px solid var(--line);border-radius:999px;padding:4px 12px;margin-bottom:16px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin:16px 0;box-shadow:var(--shadow)}
+  .card.blunt{background:linear-gradient(180deg,#241a0f,#1a1610);border-color:rgba(255,136,62,.35)}
+  .kicker{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:800;margin-bottom:6px}
+  .kicker.g{color:var(--grn)}
+  h2{margin:0 0 4px;font-size:20px;letter-spacing:-.2px}
+  .card .lead{color:var(--dim);font-size:14.5px;margin:4px 0 14px}
+  h3{margin:20px 0 8px;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+
+  p{margin:10px 0}
+  b,strong{color:#fff}
+  .em{color:var(--orange);font-weight:700}
+  .emg{color:var(--grn);font-weight:700}
+
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;margin:0 6px 6px 0}
+  .pill.g{background:rgba(63,185,90,.14);color:#5ec878;border:1px solid rgba(63,185,90,.4)}
+  .pill.o{background:rgba(255,136,62,.13);color:var(--orange);border:1px solid rgba(255,136,62,.4)}
+  .pill.p1{background:rgba(63,185,90,.16);color:#6bd486;border:1px solid rgba(63,185,90,.5)}
+  .pill.p2{background:rgba(227,179,65,.13);color:var(--amb);border:1px solid rgba(227,179,65,.4)}
+  .pill.p3{background:rgba(109,129,117,.16);color:var(--dim);border:1px solid var(--line)}
+
+  ul{margin:8px 0;padding-left:0;list-style:none}
+  ul li{position:relative;padding:6px 0 6px 26px;border-bottom:1px solid rgba(38,51,42,.55)}
+  ul li:last-child{border-bottom:0}
+  ul li:before{content:"";position:absolute;left:6px;top:14px;width:6px;height:6px;border-radius:50%;background:var(--grn)}
+  ul.o li:before{background:var(--orange)}
+  ul li .s{color:var(--dim);font-size:13.5px}
+  ul.no li:before{display:none}
+  ul.no li{padding-left:26px}
+  ul.no li:before{content:"✕";display:block;color:var(--red);background:none;top:6px;left:4px;font-size:13px;width:auto;height:auto}
+
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--faint);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  td .u{color:var(--dim);font-size:12.5px}
+  a.link{color:#6bd486;text-decoration:none;border-bottom:1px solid rgba(107,212,134,.35);word-break:break-word}
+
+  .steps{counter-reset:s;list-style:none;padding:0;margin:6px 0}
+  .steps li{position:relative;padding:0 0 18px 42px;border:0}
+  .steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:-2px;
+    width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--orange)}
+  .steps li:after{content:"";position:absolute;left:13px;top:28px;bottom:-4px;width:1px;background:var(--line)}
+  .steps li:last-child:after{display:none}
+  .steps li b{display:block;margin-bottom:2px}
+
+  .q{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:10px;padding:12px 14px;margin:10px 0}
+  .q b{display:block;margin-bottom:2px}
+  .q .why{color:var(--dim);font-size:13.5px}
+
+  .phase{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+  .phase:last-child{border-bottom:0}
+  .phase .n{flex:0 0 auto}
+  .phase .body b{display:block}
+  .phase .body .s{color:var(--dim);font-size:13.5px}
+
+  .note{background:rgba(227,179,65,.08);border:1px solid rgba(227,179,65,.28);border-radius:12px;padding:12px 14px;font-size:13.5px;color:#ecdca6;margin:14px 0}
+  .win{background:rgba(63,185,90,.08);border:1px solid rgba(63,185,90,.3);border-radius:12px;padding:12px 14px;font-size:13.5px;color:#bfe6cb;margin:14px 0}
+  .foot{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 0;line-height:1.7}
+  .toc{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:14px 0 4px}
+  .toc a{font-size:12.5px;color:var(--dim);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+  .toc a:hover{border-color:var(--grn);color:#fff}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="tag">Internal scoping · for Doug &amp; Catherine · not for the client yet</div>
+  <div class="flag">☘️</div>
+  <h1>Ireland Lacrosse — Website &amp; Player Portal</h1>
+  <div class="sub">A proposal to define <em>exactly</em> what they need, so we agree the scope with Catherine first and hand the real build to one clean prompt — not weeks of fixing.</div>
+</header>
+
+<div class="wrap">
+  <div class="toc">
+    <a href="#read">The honest read</a>
+    <a href="#who">Who they are</a>
+    <a href="#have">What they have</a>
+    <a href="#value">Where we add value</a>
+    <a href="#site">Website scope</a>
+    <a href="#portal">Portal scope</a>
+    <a href="#phases">Phases</a>
+    <a href="#questions">Open questions</a>
+  </div>
+
+  <!-- 0. HONEST READ -->
+  <div class="card blunt" id="read">
+    <div class="kicker">Read this first · the strategic reality</div>
+    <h2>They already have a member portal. Don't pitch replacing it.</h2>
+    <p>Ireland Lacrosse runs <b>JustGo</b> (<a class="link" href="https://irelandlacrosse.justgo.com" target="_blank" rel="noopener">irelandlacrosse.justgo.com</a>) — a mature, NGB-grade membership platform used by 100+ national sport bodies. Registration, dues, auto-renewals, safeguarding, coach credentials, event ticketing: <b>all already handled.</b> A "we'll build you a player portal from scratch" pitch walks straight into an entrenched incumbent and loses.</p>
+    <p>The <span class="em">winnable</span> opening is different and cleaner:</p>
+    <ul class="o">
+      <li><b>Their public website is dated</b> (old WordPress) and disconnected from the portal — <span class="em">this is the strong, clean deliverable.</span></li>
+      <li><b>A lacrosse-specific layer JustGo does poorly</b> — heritage/eligibility verification, tryout &amp; roster workflows, diaspora engagement.</li>
+      <li><b>Shop + donations</b> — jerseys (they flagged this themselves) and US-diaspora fundraising, which JustGo doesn't surface on a public site.</li>
+    </ul>
+    <p class="note"><b>Budget reality:</b> volunteer-led, no paid staff (per their 2022 strategic plan), turnover fell ~€200k → ~€24k in the COVID year. This is likely a favor / portfolio / relationship play through Catherine's coaching connection — not a big-budget contract. Scope it lean and let the <b>website</b> be the whole Phase 1.</p>
+  </div>
+
+  <!-- 1. WHO -->
+  <div class="card" id="who">
+    <div class="kicker g">The organization · verified facts</div>
+    <h2>Who Ireland Lacrosse is</h2>
+    <ul>
+      <li><b>National governing body</b> for lacrosse in Ireland — men's, women's, box &amp; Sixes under one body. Company Limited by Guarantee, est. <b>2009</b>; recognized by <b>World Lacrosse</b> &amp; the <b>European Lacrosse Federation</b>; joined the Olympic Federation of Ireland in 2025.<br><span class="s">⚠️ One thing to confirm: whether they've since secured full <b>Sport Ireland</b> NGB status (a stated 2022 goal). Affects their funding/credibility.</span></li>
+      <li><b>Decision-maker:</b> <b>Michael "Mike" Kennedy</b> — Founder &amp; CEO, the public face and the person a pitch has to reach. Chair: Rudi Wortmann.<br><span class="s">Contact addresses are general: info@ / clubs@ / schools@irelandlacrosse.ie. No direct line published.</span></li>
+      <li><b>On the field:</b> ranked ~<b>12th (men) / 13th (women)</b> in the world in field lacrosse. Men's U20 won <b>European gold in 2024</b>; women competed at the <b>2025 World Games</b>. Next big date: <b>Women's World Championship, Tokyo 2026</b>.</li>
+      <li><b>The story worth telling:</b> in 2020 Ireland <b>voluntarily gave up its 2022 World Games spot to the Haudenosaunee</b> (the originators of lacrosse, excluded on a technicality). Widely praised, 50k+ petition signatures. A genuine, verifiable brand-values asset — great website material.</li>
+      <li><b>Their defining feature — the diaspora:</b> Ireland fields many North-American players of Irish descent via the <b>Heritage Cup</b> and <b>Team Éire</b>. Full national-team play needs passport eligibility; heritage/Éire teams accept looser Irish-ancestry criteria. <span class="em">This eligibility split is a real, lacrosse-specific workflow</span> — and a US 501(c)(3) exists for diaspora fundraising.</li>
+    </ul>
+  </div>
+
+  <!-- 2. WHAT THEY HAVE -->
+  <div class="card" id="have">
+    <div class="kicker g">Current state</div>
+    <h2>What they run today</h2>
+    <table>
+      <tr><th>Property</th><th>What it is</th><th>Our read</th></tr>
+      <tr><td>main.irelandlacrosse.ie</td><td>Main website (WordPress)</td><td class="u">Dated design, content-rich. <b>The opening.</b></td></tr>
+      <tr><td>irelandlacrosse.justgo.com</td><td>Membership portal (JustGo)</td><td class="u">Enterprise-grade. <b>Leave it be / integrate.</b></td></tr>
+      <tr><td>heritagecuplax.com</td><td>Heritage Cup event site</td><td class="u">Separate. Could fold into a new site.</td></tr>
+      <tr><td>Facebook / Instagram</td><td>@irelandlacrosse</td><td class="u">Active. Embed into the new site.</td></tr>
+    </table>
+    <h3>Gaps a project can honestly fill</h3>
+    <ul class="o">
+      <li>Modern, mobile, on-brand public website Catherine (or they) can actually update</li>
+      <li>Public <b>shop</b> (jerseys) and <b>donations</b> — currently nowhere on the main site</li>
+      <li>Communications — self-identified as a weakness in their own plan</li>
+      <li>Heritage / eligibility + tryout / roster workflows JustGo doesn't do elegantly</li>
+    </ul>
+  </div>
+
+  <!-- 3. VALUE -->
+  <div class="card" id="value">
+    <div class="kicker g">Positioning</div>
+    <h2>Where we actually add value — three pillars</h2>
+    <ul>
+      <li><b>A. A modern public website</b> <span class="pill g">core</span><br><span class="s">The face of the sport in Ireland. Teams, results, news, the diaspora story, how to get involved. Fast, mobile, editable.</span></li>
+      <li><b>B. A lacrosse-specific member layer</b> <span class="pill o">differentiator</span><br><span class="s">The bits JustGo can't: heritage/eligibility verification, tryout applications, roster &amp; team comms. Only if they want it.</span></li>
+      <li><b>C. Diaspora shop + donations</b> <span class="pill o">revenue</span><br><span class="s">Jerseys and fundraising aimed at the North-American Irish base — a lever they already know they're underusing.</span></li>
+    </ul>
+    <div class="win"><b>The line to hold:</b> JustGo stays as the system of record for membership &amp; dues. We build <em>around</em> it — website + public-facing revenue + lacrosse-specific workflows — we don't try to rip it out.</div>
+  </div>
+
+  <!-- 4. WEBSITE SCOPE -->
+  <div class="card" id="site">
+    <div class="kicker g">Scope · Phase 1</div>
+    <h2>The public website</h2>
+    <div class="lead">This is the whole first deliverable and the one "clean prompt" target. Pages:</div>
+    <ul>
+      <li><b>Home</b> <span class="s">— hero, latest results/news, the diaspora hook, clear "Play / Support / Shop" paths</span></li>
+      <li><b>National Teams</b> <span class="s">— men / women / box / sixes; rosters, fixtures, results, staff</span></li>
+      <li><b>Domestic</b> <span class="s">— leagues (ILL / IWLL), club finder, "how to start playing"</span></li>
+      <li><b>Heritage &amp; Diaspora</b> <span class="s">— the story, Heritage Cup, Team Éire, "am I eligible?", how to get involved from abroad</span></li>
+      <li><b>News</b> <span class="s">— editable posts; migrate the good WordPress content</span></li>
+      <li><b>Events &amp; Fixtures</b> <span class="s">— calendar, camps/clinics, tournaments</span></li>
+      <li><b>Shop</b> <span class="s">— jerseys &amp; kit (Phase 2 if it slows Phase 1)</span></li>
+      <li><b>Donate / Support</b> <span class="s">— diaspora fundraising, one-off + recurring</span></li>
+      <li><b>About / Governance</b> <span class="s">— board, strategic plan, partners</span></li>
+      <li><b>Join / Contact</b> <span class="s">— routes to the JustGo portal + info@ / clubs@ / schools@</span></li>
+    </ul>
+    <h3>Must-haves</h3>
+    <ul class="o">
+      <li>Editable by a non-coder (simple CMS or clean structured content) — <span class="s">so Catherine isn't blocked on us for every update</span></li>
+      <li>Mobile-first, fast, good SEO — <span class="s">it's the front door for players, parents &amp; sponsors</span></li>
+      <li>Social embeds, results/fixtures, clean brand (green/orange/☘️)</li>
+      <li>Deep links out to the JustGo portal wherever "register / pay / renew" appears</li>
+    </ul>
+  </div>
+
+  <!-- 5. PORTAL SCOPE -->
+  <div class="card" id="portal">
+    <div class="kicker">Scope · Phase 3 (only if wanted)</div>
+    <h2>The lacrosse-specific member layer</h2>
+    <div class="lead">Not a JustGo replacement — the workflows it does badly. Build only what they actually ask for.</div>
+    <h3>Candidate features</h3>
+    <ul class="o">
+      <li><b>Heritage / eligibility verification</b> <span class="s">— upload passport vs ancestry docs, staff review, status flag. The real differentiator.</span></li>
+      <li><b>Tryout / identification-event applications</b> <span class="s">— apply for national-team / Éire selection online</span></li>
+      <li><b>Roster &amp; team management</b> <span class="s">— coach view of their squad, availability</span></li>
+      <li><b>Team communications</b> <span class="s">— announcements to a squad/club</span></li>
+      <li><b>Event / camp / clinic signups</b> <span class="s">— public registration + payment</span></li>
+    </ul>
+    <h3>Explicitly NOT rebuilding</h3>
+    <ul class="no">
+      <li>Membership registration, dues, auto-renewals — <span class="s">JustGo owns this</span></li>
+      <li>Safeguarding &amp; coach-credential compliance — <span class="s">JustGo owns this</span></li>
+      <li>Member database of record — <span class="s">link/integrate, don't duplicate</span></li>
+    </ul>
+    <div class="note"><b>Open integration question:</b> does our layer <em>link to</em> JustGo (simple, safe) or <em>sync with</em> it (harder, needs their JustGo admin + API access)? Default to link-out unless they specifically fund integration.</div>
+  </div>
+
+  <!-- 6. PHASES -->
+  <div class="card" id="phases">
+    <div class="kicker g">How we'd sequence it</div>
+    <h2>Phases — ship value, don't boil the ocean</h2>
+    <div class="phase"><div class="n"><span class="pill p1">Phase 1</span></div><div class="body"><b>Public marketing website</b><div class="s">High impact, fast, low risk. This alone is a real, finished deliverable and the whole first "one good prompt." Everything else is optional after.</div></div></div>
+    <div class="phase"><div class="n"><span class="pill p2">Phase 2</span></div><div class="body"><b>Shop + donations</b><div class="s">Jerseys and diaspora fundraising bolted onto the site. Needs a payment decision (whose Stripe).</div></div></div>
+    <div class="phase"><div class="n"><span class="pill p3">Phase 3</span></div><div class="body"><b>Lacrosse-specific member layer</b><div class="s">Eligibility / tryouts / rosters. Only if they want it and JustGo can't. Biggest effort — don't commit to it up front.</div></div></div>
+    <div class="win"><b>The whole point of phasing:</b> we can say yes to Phase 1 immediately and prove value before anyone signs up for the hard parts.</div>
+  </div>
+
+  <!-- 7. OPEN QUESTIONS -->
+  <div class="card" id="questions">
+    <div class="kicker">Decide these with Catherine BEFORE any build</div>
+    <h2>Open questions — this is the real work right now</h2>
+    <div class="lead">Every one of these, unsettled, is a week of rework later. Answer them, and Phase 1 becomes a single clean prompt.</div>
+
+    <div class="q"><b>1. Who exactly is the client?</b><div class="why">All of Ireland Lacrosse (the NGB), or a slice Catherine touches — a specific club, a team she coaches, or the Heritage/diaspora program? Scope and the "yes" person change completely.</div></div>
+    <div class="q"><b>2. What is this — paid, favor, or portfolio?</b><div class="why">Sets budget, how much we build, and whether we host it or hand it off. Given their finances, assume lean.</div></div>
+    <div class="q"><b>3. Who's the decision-maker we're actually reaching?</b><div class="why">Likely CEO Mike Kennedy. Does Catherine have a warm line to him, or are we going in cold?</div></div>
+    <div class="q"><b>4. Replace the site, or facelift it?</b><div class="why">New standalone site vs. modernizing the existing WordPress. Affects the domain question below.</div></div>
+    <div class="q"><b>5. Domain</b><div class="why">Take over main.irelandlacrosse.ie, sit on a subdomain, or a fresh URL for a pilot? They control the DNS — we'd need access or a handoff.</div></div>
+    <div class="q"><b>6. Do we touch JustGo at all?</b><div class="why">Link-out only (default) or real integration (needs their JustGo admin + API). Don't promise integration blind.</div></div>
+    <div class="q"><b>7. Payments — whose Stripe for shop &amp; donations?</b><div class="why">Theirs (they own the money, cleaner) or ours pass-through (faster to launch, messier). US 501(c)(3) matters for tax-deductible diaspora donations.</div></div>
+    <div class="q"><b>8. Who maintains content after launch?</b><div class="why">Catherine, a volunteer, or us on retainer? Drives how much CMS we build vs. hard-code.</div></div>
+    <div class="q"><b>9. What feeds results / fixtures / rosters?</b><div class="why">Manual entry (simplest) vs. importing from World Lacrosse / their records. Decide before we design the data model.</div></div>
+    <div class="q"><b>10. Is there a deadline driving this?</b><div class="why">e.g. Tokyo 2026 women's worlds, a Heritage Cup cycle, a season start. A real date sharpens Phase 1 scope.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="kicker g">The build target</div>
+    <h2>Once the ten are answered → one prompt</h2>
+    <ol class="steps">
+      <li><b>Settle the ten questions with Catherine</b><span class="s"> — this doc is the checklist. Nothing gets built until these are answered.</span></li>
+      <li><b>Lock Phase 1 scope</b><span class="s"> — the exact page list + content sources above, trimmed to what's real.</span></li>
+      <li><b>One clean prompt builds the website</b><span class="s"> — this doc becomes the spec that prompt references, so it's right the first time.</span></li>
+      <li><b>Review as the end user, then ship</b><span class="s"> — load it on a phone, click every path, then hand it over.</span></li>
+    </ol>
+  </div>
+
+  <div class="foot">
+    Internal proposal · Second Nature / Branch Manager · for Doug &amp; Catherine<br>
+    Built from verified research — org facts, rankings, web presence &amp; JustGo confirmed on official sources.<br>
+    Nothing here has been pitched or shared with Ireland Lacrosse.
+  </div>
+</div>
+</body>
+</html>
