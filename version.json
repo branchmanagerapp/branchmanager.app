@@ -1,5 +1,5 @@
 {
-  "version": 998,
+  "version": 999,
   "released": "2026-07-10",
-  "notes": "Hide the AI walkthrough buttons on the quote list + form in Jobber mode (classic-only) to declutter. Photo drag-drop unchanged."
+  "notes": "Fix mobile notification dropdown trapping users (right:-60px pushed close button off-screen, locking scroll)."
 }
