@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1003; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1004; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -768,6 +768,23 @@
     .search-box { min-width:auto; flex:1; }
     /* bottom-nav removed */
     .detail-grid { grid-template-columns:1fr !important; }
+
+    /* Invoice DETAIL view line items (invoices.js:984 header / :990 rows) — bare
+       inline grid, no class, so target the exact inline grid-template-columns
+       string and stack to block flow on a phone: service name + description wrap
+       full-width, Qty/Rate/Total on one labeled line. Verified at 375px (headless). */
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] { display:block !important; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"][style*="text-transform:uppercase"] { display:none !important; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div { overflow-wrap:anywhere !important; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(1) { font-size:15px !important; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(2) { margin-bottom:8px !important; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(3),
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(4),
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(5) { display:inline-block !important; text-align:left !important; margin-right:18px !important; font-size:13px !important; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(3)::before { content:'Qty '; color:var(--text-light); font-size:11px; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(4)::before { content:'Rate '; color:var(--text-light); font-size:11px; }
+    div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(5)::before { content:'Total '; color:var(--text-light); font-size:11px; }
+    div[style*="min-width:280px;font-size:14px"] { min-width:0 !important; width:100% !important; }
     .option-grid { grid-template-columns:1fr !important; }
 
     /* Full sidebar on mobile — slide in/out via hamburger */

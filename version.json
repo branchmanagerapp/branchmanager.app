@@ -1,5 +1,5 @@
 {
-  "version": 1003,
-  "released": "2026-07-10",
-  "notes": "Dashboard: Today board is now collapsible (click header to hide/show, remembers your choice)."
+  "version": 1004,
+  "released": "2026-07-12",
+  "notes": "Mobile fix: invoice detail line items stack cleanly on phone (no off-screen clipping)."
 }
