@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#14120e">
+<title>Enough.</title>
+<style>
+  :root{
+    --bg:#14120e;
+    --bg2:#1c1a15;
+    --ink:#efe9dd;
+    --ink-soft:#b8b0a0;
+    --ink-faint:#7d766a;
+    --amber:#e0a54b;
+    --amber-soft:#c99a52;
+    --line:#2b281f;
+    --green:#7fb069;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.6;
+    padding:0 22px calc(64px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:600px;margin:0 auto}
+  .hero{padding:64px 0 8px;text-align:center}
+  .kicker{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-faint);margin:0 0 20px;
+  }
+  h1{
+    font-family:Georgia,"Times New Roman",serif;
+    font-weight:400;font-size:clamp(46px,16vw,78px);
+    line-height:.98;margin:0;letter-spacing:-.01em;
+  }
+  h1 .dot{color:var(--amber)}
+  .sub{
+    font-family:Georgia,serif;font-style:italic;
+    color:var(--ink-soft);font-size:19px;margin:20px auto 0;max-width:26ch;
+  }
+  .rule{border:none;border-top:1px solid var(--line);margin:48px 0}
+  .lead{font-size:18px;color:var(--ink-soft)}
+  .lead b{color:var(--ink);font-weight:600}
+  .reframe{
+    background:linear-gradient(180deg,var(--bg2),#181610);
+    border:1px solid var(--line);border-radius:18px;
+    padding:26px 24px;margin:8px 0 0;
+  }
+  h2{
+    font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--amber-soft);margin:0 0 16px;font-weight:600;
+  }
+  .oath{
+    font-family:Georgia,serif;font-size:27px;line-height:1.32;
+    color:var(--ink);text-align:center;margin:6px 0;letter-spacing:-.01em;
+  }
+  .oath .a{color:var(--amber)}
+  .principles{list-style:none;padding:0;margin:0}
+  .principles li{
+    padding:16px 0;border-bottom:1px solid var(--line);
+    display:flex;gap:14px;align-items:flex-start;
+  }
+  .principles li:last-child{border-bottom:none}
+  .principles .n{
+    font-family:Georgia,serif;color:var(--amber);font-size:22px;
+    line-height:1;flex:0 0 auto;width:22px;
+  }
+  .principles .t{font-size:16.5px}
+  .principles .t b{color:var(--ink)}
+  .principles .t span{color:var(--ink-faint)}
+  .tasks{list-style:none;padding:0;margin:0}
+  .tasks li{
+    display:flex;gap:14px;align-items:flex-start;
+    padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .tasks li:last-child{border-bottom:none}
+  .box{
+    flex:0 0 auto;width:26px;height:26px;border-radius:8px;
+    border:1.5px solid #4a4638;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s ease;
+  }
+  .box svg{width:15px;height:15px;opacity:0;transform:scale(.5);transition:all .15s ease}
+  .tasks li.done .box{background:var(--green);border-color:var(--green)}
+  .tasks li.done .box svg{opacity:1;transform:scale(1)}
+  .tasks li.done .body .h{text-decoration:line-through;color:var(--ink-faint)}
+  .tasks li.done .body .why{opacity:.45}
+  .body .h{font-size:17px;color:var(--ink);font-weight:600}
+  .body .why{font-size:14.5px;color:var(--ink-soft);margin-top:3px}
+  .parked{margin:0;padding:0;list-style:none}
+  .parked li{
+    font-size:15px;color:var(--ink-faint);padding:9px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .parked li:last-child{border-bottom:none}
+  .parked li b{color:var(--ink-soft);font-weight:500}
+  .links{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+  .links a{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
+    padding:15px 18px;color:var(--ink);text-decoration:none;font-size:16px;
+  }
+  .links a .arr{color:var(--amber);font-size:19px}
+  .links a:active{background:#221f18}
+  .foot{
+    text-align:center;color:var(--ink-faint);font-size:15px;
+    margin-top:44px;font-family:Georgia,serif;font-style:italic;line-height:1.7;
+  }
+  .stamp{text-align:center;color:#4a4638;font-size:11.5px;letter-spacing:.08em;margin-top:30px}
+  .note{font-size:13px;color:var(--ink-faint);margin:14px 0 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="kicker">Read this instead of the feed</p>
+    <h1>Enough<span class="dot">.</span></h1>
+    <p class="sub">You opened this because something made you feel behind.</p>
+  </div>
+
+  <hr class="rule">
+
+  <p class="lead">
+    You run <b>three real businesses</b> that employ people, pay a payroll, and gross
+    about a quarter-million a year. The carousel that sent you here is engineered to
+    sell you a <b>deficiency you don't have</b> — "you're losing 1% daily," "fix your
+    lethargy in 28 seconds," "billionaires dominate 14-hour days."
+  </p>
+  <p class="lead" style="margin-bottom:0">
+    None of it is measuring your life. <b>You are not behind.</b> You're carrying a lot,
+    and you're tired because you're carrying a lot — not because you're missing a hack.
+  </p>
+
+  <hr class="rule">
+
+  <div class="reframe">
+    <h2>The only rule</h2>
+    <p class="oath">Finish and <span class="a">close</span>.<br>Don't start.</p>
+    <p class="oath" style="font-size:18px;color:var(--ink-soft);font-style:italic;font-family:Georgia,serif;margin-top:14px">
+      Don't open a fifth thing.
+    </p>
+  </div>
+
+  <hr class="rule">
+
+  <h2 style="color:var(--ink-faint)">What "productive" actually is — for you, right now</h2>
+  <ul class="principles">
+    <li><span class="n">1</span><span class="t"><b>Close one open loop.</b> <span>Not optimize five. A finished thing is worth more than five improved ones.</span></span></li>
+    <li><span class="n">2</span><span class="t"><b>One back office.</b> <span>Every hour spent consolidating beats an hour spent starting. That's the whole 2026 goal.</span></span></li>
+    <li><span class="n">3</span><span class="t"><b>Tired isn't broken.</b> <span>It's information. Rest is a legitimate line item, not a failure to grind.</span></span></li>
+  </ul>
+
+  <hr class="rule">
+
+  <h2>Closing, not starting — this week</h2>
+  <ul class="tasks" id="tasks">
+    <li data-k="cadco">
+      <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#14120e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <span class="body"><span class="h">Settle the CADCO invoice</span><span class="why">Closes two loops at once — clears the past-due and unblocks Dennis's mowers shipping.</span></span>
+    </li>
+    <li data-k="wc">
+      <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#14120e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <span class="body"><span class="h">Confirm WC reinstatement — Maria Trombetta</span><span class="why">One call, then it's closed. Can't operate uninsured; don't let it drift.</span></span>
+    </li>
+    <li data-k="maps">
+      <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#14120e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <span class="body"><span class="h">Enable billing → fix SmartLawn map</span><span class="why">No code. One toggle in Google Cloud closes a broken feature that's been open for weeks.</span></span>
+    </li>
+  </ul>
+  <p class="note">On file — cross off what's already done. The full list lives on your Plan.</p>
+
+  <hr class="rule">
+
+  <h2 style="color:var(--ink-faint)">Parked on purpose — so you can let go</h2>
+  <ul class="parked">
+    <li><b>Northeast Intrepid</b> — not really happening. Fine.</li>
+    <li><b>Line clearance / ASG</b> — a someday, not a now.</li>
+    <li><b>Skate clip pipeline · video map</b> — genuinely optional.</li>
+    <li><b>Branch Manager as a product</b> — a side-project, not the business.</li>
+  </ul>
+  <p class="note">Written down means handled. You're allowed to not think about these.</p>
+
+  <hr class="rule">
+
+  <div class="links">
+    <a href="/plan-snt-8c31d7.html">The Plan — the real list <span class="arr">&rsaquo;</span></a>
+    <a href="/ground-control-7c3f9a.html">Ground Control — today <span class="arr">&rsaquo;</span></a>
+  </div>
+
+  <p class="foot">
+    When the pull comes back, come here first.<br>
+    Then close the laptop. You've done enough today.
+  </p>
+
+  <p class="stamp">SECOND NATURE · FOR DOUG</p>
+
+</div>
+
+<script>
+(function(){
+  var KEY='snt-enough-v1';
+  var state={};
+  try{state=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){state={}}
+  var items=document.querySelectorAll('#tasks li');
+  items.forEach(function(li){
+    var k=li.getAttribute('data-k');
+    if(state[k])li.classList.add('done');
+    li.addEventListener('click',function(){
+      li.classList.toggle('done');
+      state[k]=li.classList.contains('done');
+      try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
+    });
+  });
+})();
+</script>
+</body>
+</html>
