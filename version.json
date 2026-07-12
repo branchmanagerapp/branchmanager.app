@@ -1,5 +1,5 @@
 {
-  "version": 1008,
+  "version": 1009,
   "released": "2026-07-12",
-  "notes": "Mobile: quote detail Client/Meta cards stack on phone (values no longer clip)."
+  "notes": "Search page: magnifying glass no longer overlaps typed text."
 }

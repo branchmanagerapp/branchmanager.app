@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1008; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1009; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -745,6 +745,9 @@
   .search-box:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,168,138,.12); background:var(--white); }
   .search-box input { border:none; background:none; outline:none; flex:1; font-size:13px; color:var(--text); }
   .search-box input::placeholder { color:var(--text-light); }
+  /* Search PAGE input (search.js) — magnifying glass is absolutely positioned;
+     40px left padding let it overlap the typed text (worse on iOS). Clear it. */
+  #search-page-input, #global-search-input { padding-left:52px !important; }
 
   /* ── Empty state ── */
   .empty-state { text-align:center; padding:48px 20px; color:var(--text-light); }
