@@ -359,24 +359,46 @@ serve(async (req: Request) => {
           .in('id', ids);
         if (error) { console.error('Multi-invoice fetch error:', error); }
         else {
-          for (const inv of (invs || [])) {
-            await supabase.from('invoices').update({
-              status: 'paid',
-              balance: 0,
-              paid_date: new Date().toISOString(),
-              amount_paid: inv.total,
-              payment_method: 'stripe',
-              stripe_payment_id: paymentIntentId,
-              updated_at: new Date().toISOString()
-            }).eq('id', inv.id);
-            console.log(`✅ Invoice #${inv.invoice_number} (${inv.client_name}) marked PAID via multi-invoice charge`);
+          // GUARD: only mark all invoices paid if the amount received actually
+          // covers the sum of their balances (1c tolerance for rounding).
+          // Otherwise this is an UNDERPAYMENT — never falsely mark paid-in-full.
+          const sumBalanceCents = (invs || []).reduce(
+            (s: number, i: any) => s + Math.round(Number(i.balance ?? i.total ?? 0) * 100), 0);
+          const covers = amountPaid + 1 >= sumBalanceCents;
+          if (covers) {
+            for (const inv of (invs || [])) {
+              const paidNow = new Date().toISOString();
+              const invBal = Number(inv.balance ?? inv.total ?? 0);
+              await supabase.from('invoices').update({
+                status: 'paid',
+                balance: 0,
+                paid_date: paidNow,
+                amount_paid: invBal,
+                payment_method: 'stripe',
+                stripe_payment_id: paymentIntentId,
+                updated_at: paidNow
+              }).eq('id', inv.id);
+              console.log(`✅ Invoice #${inv.invoice_number} (${inv.client_name}) marked PAID via multi-invoice charge`);
 
-            // Send receipt to client
-            const toEmail = inv.client_email || customerEmail || '';
-            if (toEmail) {
-              const invWithDate = { ...inv, paid_date: new Date().toISOString() };
-              await sendReceipt({ toEmail, inv: invWithDate as Record<string, unknown>, coConfig });
+              // Send receipt to client
+              const toEmail = inv.client_email || customerEmail || '';
+              if (toEmail) {
+                const invWithDate = { ...inv, paid_date: paidNow };
+                await sendReceipt({ toEmail, inv: invWithDate as Record<string, unknown>, coConfig });
+              }
             }
+          } else {
+            // Underpayment across multiple invoices — do NOT mark paid.
+            // Flag for manual reconciliation and alert the owner.
+            console.warn(`⚠️ Multi-invoice UNDERPAYMENT: received $${(amountPaid/100).toFixed(2)} vs owed $${(sumBalanceCents/100).toFixed(2)} — NOT marking paid`);
+            await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: String(coConfig.company_email ?? 'info@peekskilltree.com'),
+                subject: `⚠️ Partial/underpayment received — needs review ($${(amountPaid/100).toFixed(2)})`,
+                text: `A Stripe payment of $${(amountPaid/100).toFixed(2)} came in against ${(invs||[]).length} invoice(s) totaling $${(sumBalanceCents/100).toFixed(2)}. It did NOT cover the balance, so nothing was marked paid — please reconcile manually in Branch Manager. Payment id: ${paymentIntentId}`
+              })
+            }).catch((e) => console.error('underpayment notify failed:', e));
           }
         }
         return new Response('OK', { status: 200 });
@@ -402,19 +424,26 @@ serve(async (req: Request) => {
         const inv = invoices[0];
         const amountDollars = amountPaid / 100;
         const paidAt = new Date().toISOString();
+        // GUARD: only mark PAID if the payment covers the balance (1c tolerance).
+        // A short payment is recorded as a PARTIAL — balance reduced, still unpaid.
+        const balanceCents = Math.round(Number(inv.balance ?? inv.total ?? 0) * 100);
+        const covers = amountPaid + 1 >= balanceCents;
+        const remaining = Math.round((Number(inv.balance ?? inv.total ?? 0) - amountDollars) * 100) / 100;
 
-        // Update invoice as paid
+        const updateFields: Record<string, unknown> = covers
+          ? {
+              status: 'paid', balance: 0, paid_date: paidAt, amount_paid: amountDollars,
+              payment_method: 'stripe', stripe_payment_id: paymentIntentId, updated_at: paidAt
+            }
+          : {
+              // partial: keep it unpaid, reduce the balance, record what was paid
+              balance: remaining > 0 ? remaining : 0, amount_paid: amountDollars,
+              payment_method: 'stripe', stripe_payment_id: paymentIntentId, updated_at: paidAt
+            };
+
         const { error: updateErr } = await supabase
           .from('invoices')
-          .update({
-            status: 'paid',
-            balance: 0,
-            paid_date: paidAt,
-            amount_paid: amountDollars,
-            payment_method: 'stripe',
-            stripe_payment_id: paymentIntentId,
-            updated_at: paidAt
-          })
+          .update(updateFields)
           .eq('id', inv.id);
 
         if (updateErr) {
@@ -422,34 +451,50 @@ serve(async (req: Request) => {
           return new Response('Update error', { status: 500 });
         }
 
-        console.log(`✅ Invoice #${invoiceNumber} for ${inv.client_name} marked PAID — $${amountDollars.toFixed(2)}`);
+        if (covers) {
+          console.log(`✅ Invoice #${invoiceNumber} for ${inv.client_name} marked PAID — $${amountDollars.toFixed(2)}`);
+        } else {
+          console.warn(`⚠️ Invoice #${invoiceNumber} UNDERPAID — got $${amountDollars.toFixed(2)} of $${(balanceCents/100).toFixed(2)}; recorded partial, $${remaining.toFixed(2)} still due`);
+        }
 
-        // Send receipt to client
+        // Send the paid receipt to the client ONLY on a full payment.
         const toEmail = inv.client_email || customerEmail || '';
-        if (toEmail) {
+        if (covers && toEmail) {
           await sendReceipt({
             toEmail,
             inv: { ...inv, total: amountDollars, paid_date: paidAt } as Record<string, unknown>,
             coConfig
           });
+        } else if (!covers) {
+          console.log(`Partial payment — not sending a paid-in-full receipt for invoice #${invoiceNumber}`);
         } else {
           console.log(`No client email for invoice #${invoiceNumber} — skipping receipt`);
         }
 
         // Notify Doug via Resend (send-email edge fn)
-        const notifyText = `Invoice #${invoiceNumber} for ${inv.client_name} was just paid online.\n\nAmount: $${amountDollars.toFixed(2)}\nMethod: Stripe / Credit Card\nEmail: ${customerEmail}\n\nThe invoice has been automatically marked as paid in Branch Manager.\n\nhttps://branchmanager.app/`;
-        const notifyHtml = `<p>Invoice #${esc(invoiceNumber)} for ${esc(inv.client_name)} was just paid online.</p>`
-          + `<p><strong>Amount:</strong> $${amountDollars.toFixed(2)}<br>`
-          + `<strong>Method:</strong> Stripe / Credit Card<br>`
-          + `<strong>Email:</strong> ${esc(customerEmail)}</p>`
-          + `<p>The invoice has been automatically marked as paid in Branch Manager.</p>`
-          + `<p><a href="https://branchmanager.app/">https://branchmanager.app/</a></p>`;
+        const notifyText = covers
+          ? `Invoice #${invoiceNumber} for ${inv.client_name} was just paid online.\n\nAmount: $${amountDollars.toFixed(2)}\nMethod: Stripe / Credit Card\nEmail: ${customerEmail}\n\nThe invoice has been automatically marked as paid in Branch Manager.\n\nhttps://branchmanager.app/`
+          : `⚠️ PARTIAL payment on Invoice #${invoiceNumber} for ${inv.client_name}.\n\nPaid now: $${amountDollars.toFixed(2)}\nRemaining balance: $${(remaining > 0 ? remaining : 0).toFixed(2)}\nMethod: Stripe / Credit Card\nEmail: ${customerEmail}\n\nThe invoice was NOT marked paid — its balance was updated. Please review in Branch Manager.\n\nhttps://branchmanager.app/`;
+        const notifyHtml = covers
+          ? `<p>Invoice #${esc(invoiceNumber)} for ${esc(inv.client_name)} was just paid online.</p>`
+            + `<p><strong>Amount:</strong> $${amountDollars.toFixed(2)}<br>`
+            + `<strong>Method:</strong> Stripe / Credit Card<br>`
+            + `<strong>Email:</strong> ${esc(customerEmail)}</p>`
+            + `<p>The invoice has been automatically marked as paid in Branch Manager.</p>`
+            + `<p><a href="https://branchmanager.app/">https://branchmanager.app/</a></p>`
+          : `<p>⚠️ <strong>Partial payment</strong> on Invoice #${esc(invoiceNumber)} for ${esc(inv.client_name)}.</p>`
+            + `<p><strong>Paid now:</strong> $${amountDollars.toFixed(2)}<br>`
+            + `<strong>Remaining balance:</strong> $${(remaining > 0 ? remaining : 0).toFixed(2)}<br>`
+            + `<strong>Method:</strong> Stripe / Credit Card</p>`
+            + `<p>The invoice was <strong>not</strong> marked paid — its balance was updated. Please review in Branch Manager.</p>`;
         await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: String(coConfig.company_email ?? 'info@peekskilltree.com'),
-            subject: `💳 Payment received — Invoice #${invoiceNumber} — $${amountDollars.toFixed(2)}`,
+            subject: covers
+              ? `💳 Payment received — Invoice #${invoiceNumber} — $${amountDollars.toFixed(2)}`
+              : `⚠️ PARTIAL payment — Invoice #${invoiceNumber} — $${amountDollars.toFixed(2)} of $${(balanceCents/100).toFixed(2)}`,
             html: notifyHtml,
             text: notifyText
           })

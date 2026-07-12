@@ -36,6 +36,22 @@ async function getTenantSecretKey(tenantId: string): Promise<string | null> {
   return (cfg && cfg.stripe_secret_key) || Deno.env.get('STRIPE_SECRET_KEY') || null;
 }
 
+// Server-side authoritative amount: sum the REAL balances of the given
+// invoices (scoped to the tenant). Returns cents, or null if it can't verify.
+async function getInvoicesBalanceCents(tenantId: string, ids: string[]): Promise<number | null> {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ids.length) return null;
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/invoices?id=in.(${ids.join(',')})&tenant_id=eq.${tenantId}&select=balance,total`,
+    { headers: { 'apikey': SERVICE_ROLE_KEY, 'Authorization': 'Bearer ' + SERVICE_ROLE_KEY } }
+  );
+  if (!r.ok) return null;
+  const rows = await r.json();
+  if (!Array.isArray(rows) || !rows.length) return null;
+  let cents = 0;
+  for (const row of rows) cents += Math.round(Number(row.balance ?? row.total ?? 0) * 100);
+  return cents;
+}
+
 async function stripeForm(path: string, secretKey: string, params: Record<string, string>) {
   const body = new URLSearchParams(params).toString();
   const r = await fetch('https://api.stripe.com/v1' + path, {
@@ -63,7 +79,20 @@ serve(async (req: Request) => {
         status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
       });
     }
-    const cents = Math.round(parseFloat(amount) * 100);
+    // AUTHORITATIVE AMOUNT: if this charge is tied to invoices, compute the
+    // amount SERVER-SIDE from their real balances — never trust the client's
+    // `amount` (a tampered browser could try to pay a $5,000 invoice for $0.50).
+    const invoiceIdList = Array.isArray(invoiceIds) ? invoiceIds.filter(Boolean) : [];
+    let cents = Math.round(parseFloat(amount) * 100); // fallback: owner ad-hoc charge with no invoice attached
+    if (invoiceIdList.length) {
+      const serverCents = await getInvoicesBalanceCents(tenantId, invoiceIdList);
+      if (serverCents == null) {
+        return new Response(JSON.stringify({ ok: false, error: 'Could not verify invoice balances' }), {
+          status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
+        });
+      }
+      cents = serverCents; // ignore whatever the client sent
+    }
     if (!cents || cents < 50) {
       return new Response(JSON.stringify({ ok: false, error: 'Amount must be at least $0.50' }), {
         status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
@@ -80,7 +109,6 @@ serve(async (req: Request) => {
     // Encode invoice IDs in client_reference_id so the existing stripe-webhook
     // can mark all of them paid via comma-split. We append "MULTI:" prefix so
     // the webhook can distinguish multi-invoice charges.
-    const invoiceIdList = Array.isArray(invoiceIds) ? invoiceIds.filter(Boolean) : [];
     const ref = invoiceIdList.length ? 'MULTI:' + invoiceIdList.join(',') : '';
 
     const params: Record<string, string> = {
