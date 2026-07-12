@@ -1105,6 +1105,8 @@ var DashboardPage = {
       // Jobber-era sent quotes were burying live follow-ups (Doug 7/9: the
       // $35k Fred Romer follow-up was invisible under 2023 dead leads).
       var cutoff90 = Date.now() - 90 * 86400000;
+      var cutoff60 = Date.now() - 60 * 86400000; // Doug: hide drafts/quotes older than 60d
+      var staleDraftOld = 0;
       // v991: "Parked" — a back-burner quote (real but deferred, e.g. Fred Romer's
       // $35k waiting on town approval ~next year). Marked by archiving WITH a note
       // containing "BACK BURNER" or "PARKED", so it stays visible-but-quiet instead
@@ -1115,10 +1117,10 @@ var DashboardPage = {
           if (parkedRe.test(q.notes || '')) parked.push(q);
           return;
         }
-        if (q.status === 'draft') { ((q.total || 0) > 0 ? sendReady : writeThese).push(q); }
+        if (q.status === 'draft') { if (new Date(q.createdAt || 0).getTime() < cutoff60) { staleDraftOld++; return; } ((q.total || 0) > 0 ? sendReady : writeThese).push(q); }
         else if (q.status === 'sent' || q.status === 'awaiting') {
           var when = new Date(q.sentAt || q.createdAt || 0).getTime();
-          if (when >= cutoff90) waiting.push(q); else waitingOld++;
+          if (when >= cutoff60) waiting.push(q); else waitingOld++;
         }
         else if (q.status === 'approved') { schedule.push(q); }
         else if (q.status === 'changes_requested') { changes.push(q); }
@@ -1136,7 +1138,7 @@ var DashboardPage = {
       }).sort(function(a, b) { return String(a.scheduledDate).localeCompare(String(b.scheduledDate)); });
 
       var open = function(page, obj, id) { return '"' + obj + '._pendingDetail=\'' + id + '\';loadPage(\'' + page + '\');"'; };
-      var CAP = 5;
+      var CAP = 8;
       var section = function(title, color, rows, renderRow, moreTarget) {
         if (!rows.length) return '';
         var h = '<div style="padding:10px 16px 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + color + ';">' + title + ' (' + rows.length + ')</div>';
@@ -1174,12 +1176,13 @@ var DashboardPage = {
         + section('🧾 Invoices to send', '#1565c0', invSend, iRow('send'), 'invoices')
         + section('💰 Collect', '#c62828', invCollect, iRow('collect'), 'invoices')
         + section('✍️ Write the estimate', '#b26a00', writeThese, qRow('needs scope + price'), 'quotes')
-        + section('📨 Sent — waiting to hear back (last 90 days)', '#8b2252', waiting, qRow('follow up'), 'quotes')
-        + (waitingOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + waitingOld + ' sent quotes older than 90 days (likely dead — review in Quotes)</div>' : '')
+        + section('📨 Sent — waiting to hear back (last 60 days)', '#8b2252', waiting, qRow('follow up'), 'quotes')
+        + (waitingOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + waitingOld + ' sent quotes older than 60 days (review in Quotes)</div>' : '')
         + section('✅ Approved — schedule it', '#2e7d32', schedule, qRow('book it'), 'quotes')
         + section('🔄 Changes requested', '#e07c24', changes, qRow('respond'), 'quotes')
         + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule')
-        + section('💤 Parked — back burner', '#9e9e9e', parked, qRow('parked — un-archive when live'), 'quotes');
+        + section('💤 Parked — back burner', '#9e9e9e', parked, qRow('parked — un-archive when live'), 'quotes')
+        + (staleDraftOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + staleDraftOld + ' draft quote' + (staleDraftOld>1?'s':'') + ' older than 60 days (review in Quotes)</div>' : '');
       if (!body) return '';
       var _tbCollapsed = false;
       try { _tbCollapsed = localStorage.getItem('bm-today-collapsed') === '1'; } catch (e) {}

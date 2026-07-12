@@ -1,5 +1,5 @@
 {
-  "version": 1005,
+  "version": 1006,
   "released": "2026-07-12",
-  "notes": "Mobile: Jobs line-items table stacks cleanly on phone (matches invoice)."
+  "notes": "Today board: hide drafts/quotes older than 60 days; show more per section so fresh drafts surface."
 }
