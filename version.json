@@ -1,5 +1,5 @@
 {
-  "version": 1020,
+  "version": 1021,
   "released": "2026-07-12",
-  "notes": "New Quote goes straight to the manual build (no more manual-vs-walkthrough chooser); the AI Walkthrough option is now always a button up top next to New Quote."
+  "notes": "Force-update hardened: stale devices now hard-refresh via a cache-busting URL (fixes the iOS case where location.reload() served the cached index.html and the app never updated), with a loop guard. This is what kills the recurring stale-cache 400s."
 }

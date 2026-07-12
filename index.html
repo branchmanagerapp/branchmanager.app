@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1020; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1021; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -31,34 +31,64 @@
 
   // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
   if (/[?&]reset=/.test(location.search)) return;
+  // v1021: loop guard — the highest version we've already forced a refresh toward
+  // THIS session. If we jump to it and are still behind (CDN/network lag serving an
+  // old index.html), we stop instead of reload-looping.
+  var _forcedFor = 0;
+  try { _forcedFor = parseInt(sessionStorage.getItem('bm-forced-refresh-for') || '0', 10) || 0; } catch(e) {}
+
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       if (!data || typeof data.version !== 'number') return;
-      if (data.version > BUNDLED_VERSION) {
-        console.log('[BM] Stale app (bundled ' + BUNDLED_VERSION + ' < server ' + data.version + ') — force refresh.');
-        try {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(regs) {
-              Promise.all(regs.map(function(r){ return r.unregister(); })).then(function() {
-                if (window.caches) {
-                  caches.keys().then(function(keys) {
-                    Promise.all(keys.map(function(k){ return caches.delete(k); })).then(function() {
-                      location.reload();
-                    });
-                  });
-                } else { location.reload(); }
-              });
-            });
-          } else if (window.caches) {
-            caches.keys().then(function(keys) {
-              Promise.all(keys.map(function(k){ return caches.delete(k); })).then(function() {
-                location.reload();
-              });
-            });
-          } else { location.reload(); }
-        } catch(e) { location.reload(); }
+      if (data.version <= BUNDLED_VERSION) return; // already current
+      if (_forcedFor >= data.version) {
+        // Already forced a refresh to this version this session yet still stale —
+        // the network/CDN is serving an old index.html. Don't loop; flag it so the
+        // app can offer a manual refresh, and let the user keep working meanwhile.
+        window.__bmStaleVersion = data.version;
+        console.warn('[BM] Still stale after forced refresh to v' + data.version + ' — not looping (CDN lag).');
+        return;
       }
+      console.log('[BM] Stale app (bundled ' + BUNDLED_VERSION + ' < server ' + data.version + ') — hard refresh to v' + data.version + '.');
+      try { sessionStorage.setItem('bm-forced-refresh-for', String(data.version)); } catch(e) {}
+
+      // The real fix: reload to a CACHE-BUSTING url. location.reload() can still
+      // serve the HTTP-cached index.html on iOS (so the version never advances and
+      // sw.js is empty, so it isn't the SW). A changed ?v= forces a fresh network fetch.
+      var hardReload = function() {
+        try {
+          var u = new URL(location.href);
+          u.searchParams.set('v', String(data.version));
+          location.replace(u.toString());
+        } catch(e) {
+          location.replace(location.pathname + '?v=' + data.version + (location.hash || ''));
+        }
+      };
+
+      // Best-effort clear any SW + caches first, then hard-reload exactly once
+      // (guarded so we never hang if the async cleanup stalls).
+      var done = false;
+      var go = function() { if (!done) { done = true; hardReload(); } };
+      try {
+        var chain = Promise.resolve();
+        if ('serviceWorker' in navigator) {
+          chain = chain.then(function() {
+            return navigator.serviceWorker.getRegistrations().then(function(regs) {
+              return Promise.all(regs.map(function(r) { return r.unregister(); }));
+            });
+          });
+        }
+        if (window.caches) {
+          chain = chain.then(function() {
+            return caches.keys().then(function(keys) {
+              return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+            });
+          });
+        }
+        chain.then(go).catch(go);
+        setTimeout(go, 1500);
+      } catch(e) { go(); }
     })
     .catch(function(){ /* offline is fine — skip check */ });
 })();
@@ -1349,7 +1379,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1020.min.js"></script>
+<script defer src="dist/bm.bundle.v1021.min.js"></script>
 
 
 
