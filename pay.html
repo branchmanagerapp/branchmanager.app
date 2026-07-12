@@ -220,7 +220,7 @@ document.title = 'Pay Invoice';
       el.innerHTML = '<div class="inv-card"><div class="state-center">'
         + '<div class="s-icon">✅</div><h2>All Paid — Thank You!</h2>'
         + '<p>Invoice #' + esc(inv.invoice_number||inv.invoiceNumber||'') + ' for <strong>' + esc(inv.client_name||inv.clientName||'') + '</strong> has been paid in full.<br><br>We appreciate your business!</p>'
-        + (BM_CONFIG.websiteUrl && BM_CONFIG.website ? '<p style="margin-top:20px;"><a href="' + esc(BM_CONFIG.websiteUrl) + '" style="color:#1a3c12;">Back to ' + esc(BM_CONFIG.website) + '</a></p>' : '')
+        + (BM_CONFIG.websiteUrl && BM_CONFIG.website ? '<p style="margin-top:20px;"><a href="' + esc(BM_CONFIG.websiteUrl) + '" style="color:#1a3c12;">Back to ' + esc(String(BM_CONFIG.website).replace(/^https?:\/\//,'')) + '</a></p>' : '')
         + '</div></div>';
       return;
     }
