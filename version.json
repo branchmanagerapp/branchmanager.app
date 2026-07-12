@@ -1,5 +1,5 @@
 {
-  "version": 1000,
+  "version": 1001,
   "released": "2026-07-10",
-  "notes": "Card processing surcharge on card payments (pay link + Collect Payment); cash/check/ACH stay fee-free, with disclosure."
+  "notes": "Mobile: keep invoice action dropdowns (More/client) on-screen; were anchored right:0 and ran off the left edge on phones."
 }
