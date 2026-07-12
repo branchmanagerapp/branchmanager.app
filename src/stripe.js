@@ -37,13 +37,19 @@ var Stripe = {
   buildPayUrl: function(amountDollars, invoiceNum) {
     var base = Stripe.getBaseLink();
     if (!base) return '';
-    // Convert dollars to cents for quantity pre-fill
-    var qty = Math.round(parseFloat(amountDollars) * 100);
+    // Card surcharge: pay link IS a card payment -> gross up by the fee.
+    var qty = Math.round(Stripe.cardTotal(amountDollars) * 100);
     if (qty < 1) qty = 1;
     var sep = base.indexOf('?') >= 0 ? '&' : '?';
     var url = base + sep + 'prefilled_quantity=' + qty;
     if (invoiceNum) url += '&client_reference_id=INV-' + invoiceNum;
     return url;
+  },
+
+  SURCHARGE_CARD: true,
+  cardTotal: function(amountDollars) {
+    var a = parseFloat(amountDollars) || 0;
+    return Stripe.SURCHARGE_CARD ? Math.round((a + Stripe.calcFees(a).card) * 100) / 100 : a;
   },
 
   // Get effective payment link for invoice:

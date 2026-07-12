@@ -124,6 +124,7 @@ var CollectPaymentPage = {
 
     var totalSelected = invs.filter(function(i){ return CollectPaymentPage._selectedInvoiceIds.indexOf(i.id) >= 0; })
       .reduce(function(s, i){ return s + (parseFloat(i.balance) || parseFloat(i.total) || 0); }, 0);
+    var cpCardTotal = (typeof Stripe !== 'undefined' && Stripe.cardTotal) ? Stripe.cardTotal(totalSelected) : totalSelected;
 
     var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;">'
       + '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">'
@@ -144,12 +145,13 @@ var CollectPaymentPage = {
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
       +   '<h4 style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:0;font-weight:700;">Card details</h4>'
-      +   '<span id="cp-total-display" style="font-size:18px;font-weight:800;color:#1a3c12;">' + UI.money(totalSelected) + '</span>'
+      +   '<span id="cp-total-display" style="font-size:18px;font-weight:800;color:#1a3c12;">' + UI.money(cpCardTotal) + '</span>'
       + '</div>'
       + '<div id="cp-card-element" style="padding:14px;border:1px solid var(--border);border-radius:8px;background:#fff;min-height:44px;"></div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:8px;">💳 Card total includes a 2.9% + $0.30 processing fee. Fee-free with cash, check, or ACH (record those manually).</div>'
       + '<div id="cp-card-error" style="color:#dc2626;font-size:13px;margin-top:8px;display:none;"></div>'
       + '<div style="display:flex;gap:8px;align-items:center;margin-top:16px;">'
-      +   '<button id="cp-charge-btn" onclick="CollectPaymentPage._charge()" style="flex:1;background:#2e7d32;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">💳 Charge <span id="cp-charge-amount">' + UI.money(totalSelected) + '</span></button>'
+      +   '<button id="cp-charge-btn" onclick="CollectPaymentPage._charge()" style="flex:1;background:#2e7d32;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">💳 Charge <span id="cp-charge-amount">' + UI.money(cpCardTotal) + '</span></button>'
       +   '<button onclick="loadPage(\'invoices\')" style="background:#fff;color:var(--text);border:1px solid var(--border);padding:14px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>'
       + '</div>'
       + '<div id="cp-status" style="margin-top:12px;font-size:13px;"></div>'
@@ -174,8 +176,9 @@ var CollectPaymentPage = {
       .reduce(function(s, i) { return s + (parseFloat(i.balance) || parseFloat(i.total) || 0); }, 0);
     var disp = document.getElementById('cp-total-display');
     var btn = document.getElementById('cp-charge-amount');
-    if (disp) disp.textContent = UI.money(total);
-    if (btn) btn.textContent = UI.money(total);
+    var cardT = (typeof Stripe !== 'undefined' && Stripe.cardTotal) ? Stripe.cardTotal(total) : total;
+    if (disp) disp.textContent = UI.money(cardT);
+    if (btn) btn.textContent = UI.money(cardT);
   },
 
   _mountStripe: function() {
@@ -216,8 +219,9 @@ var CollectPaymentPage = {
     if (!selectedIds.length) { UI.toast('Pick at least one invoice', 'error'); return; }
     if (!CollectPaymentPage._stripe || !CollectPaymentPage._cardElement) { UI.toast('Stripe not ready — try refresh', 'error'); return; }
 
-    var total = selectedIds.map(function(id) { return DB.invoices.getById(id); }).filter(Boolean)
+    var subtotal = selectedIds.map(function(id) { return DB.invoices.getById(id); }).filter(Boolean)
       .reduce(function(s, i) { return s + (parseFloat(i.balance) || parseFloat(i.total) || 0); }, 0);
+    var total = (typeof Stripe !== 'undefined' && Stripe.cardTotal) ? Stripe.cardTotal(subtotal) : subtotal;
     if (total < 0.5) { UI.toast('Total must be at least $0.50', 'error'); return; }
 
     var btn = document.getElementById('cp-charge-btn');

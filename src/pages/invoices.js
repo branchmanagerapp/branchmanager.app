@@ -614,7 +614,8 @@ var InvoicesPage = {
     var phone = (inv.clientPhone || (client && client.phone) || '').replace(/\D/g, '');
     if (!phone) { UI.toast('No phone on file', 'error'); return; }
     var payLink = InvoicesPage._getPayLink(id);
-    var msg = 'Invoice #' + inv.invoiceNumber + ' from ' + InvoicesPage._co().name + ' — ' + UI.money(inv.balance || inv.total) + '. Pay: ' + payLink;
+    var _b = inv.balance || inv.total; var _ct = (typeof Stripe!=='undefined'&&Stripe.cardTotal)?Stripe.cardTotal(_b):_b;
+    var msg = 'Invoice #' + inv.invoiceNumber + ' from ' + InvoicesPage._co().name + ' — ' + UI.money(_b) + '. Pay by card: ' + payLink + ' (' + UI.money(_ct) + ' incl. card fee). Skip the fee — pay by check, cash, or e-check; call us.';
     window.open('sms:' + phone + '?&body=' + encodeURIComponent(msg));
   },
 
@@ -642,7 +643,8 @@ var InvoicesPage = {
       + (inv.subject ? '  Job: ' + inv.subject + '\n' : '')
       + '  Amount Due: ' + amtDue + '\n'
       + (inv.dueDate ? '  Due: ' + UI.dateShort(inv.dueDate) + '\n' : '') + '\n'
-      + 'Pay online (card, or tip optional):\n' + payLink + '\n\n'
+      + 'Pay online by card (' + UI.money((typeof Stripe!=='undefined'&&Stripe.cardTotal)?Stripe.cardTotal(inv.balance||inv.total):(inv.balance||inv.total)) + ', includes card processing fee):\n' + payLink + '\n'
+      + 'Prefer no fee? Pay by check, cash, or e-check/ACH — just reply or call us.\n\n'
       + 'Want to see all your invoices, quotes & job history any time? Get a portal link: https://branchmanager.app/portal.html\n\n'
       + 'Questions? Reply to this email or call/text ' + InvoicesPage._co().phone + '.\n\n'
       + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + InvoicesPage._co().name + '\n' + InvoicesPage._co().phone + '\n' + InvoicesPage._co().website;
@@ -728,8 +730,8 @@ var InvoicesPage = {
       // ── Pay button ────────────────────────────────────────────────────
       + '<tr style="background:#fff;">'
       + '<td colspan="2" style="padding:20px 26px;text-align:center;">'
-      + '<a href="' + payLink + '" style="display:inline-block;background:linear-gradient(135deg,#00836c,#1a3c12);color:#fff;padding:14px 36px;border-radius:10px;font-size:16px;font-weight:800;text-decoration:none;letter-spacing:-0.3px;box-shadow:0 4px 14px rgba(0,131,108,.35);">💳 Pay ' + amtDue + ' Online</a>'
-      + '<div style="font-size:11px;color:#9ca3af;margin-top:8px;">Optional gratuity available on the payment page.</div>'
+      + '<a href="' + payLink + '" style="display:inline-block;background:linear-gradient(135deg,#00836c,#1a3c12);color:#fff;padding:14px 36px;border-radius:10px;font-size:16px;font-weight:800;text-decoration:none;letter-spacing:-0.3px;box-shadow:0 4px 14px rgba(0,131,108,.35);">💳 Pay by Card ' + UI.money((typeof Stripe!=='undefined'&&Stripe.cardTotal)?Stripe.cardTotal(inv.balance||inv.total):(inv.balance||inv.total)) + '</a>'
+      + '<div style="font-size:11px;color:#9ca3af;margin-top:8px;">Card total includes a processing fee. To avoid it, pay by check, cash, or e-check/ACH — contact us.</div>'
       + '</td>'
       + '</tr>'
       // ── Footer ────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 {
-  "version": 999,
+  "version": 1000,
   "released": "2026-07-10",
-  "notes": "Fix mobile notification dropdown trapping users (right:-60px pushed close button off-screen, locking scroll)."
+  "notes": "Card processing surcharge on card payments (pay link + Collect Payment); cash/check/ACH stay fee-free, with disclosure."
 }
