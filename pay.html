@@ -220,7 +220,7 @@ document.title = 'Pay Invoice';
       el.innerHTML = '<div class="inv-card"><div class="state-center">'
         + '<div class="s-icon">✅</div><h2>All Paid — Thank You!</h2>'
         + '<p>Invoice #' + esc(inv.invoice_number||inv.invoiceNumber||'') + ' for <strong>' + esc(inv.client_name||inv.clientName||'') + '</strong> has been paid in full.<br><br>We appreciate your business!</p>'
-        + '<p style="margin-top:20px;"><a href="' + esc(BM_CONFIG.websiteUrl) + '" style="color:#1a3c12;">Back to ' + esc(BM_CONFIG.website) + '</a></p>'
+        + (BM_CONFIG.websiteUrl && BM_CONFIG.website ? '<p style="margin-top:20px;"><a href="' + esc(BM_CONFIG.websiteUrl) + '" style="color:#1a3c12;">Back to ' + esc(BM_CONFIG.website) + '</a></p>' : '')
         + '</div></div>';
       return;
     }
@@ -443,7 +443,23 @@ document.title = 'Pay Invoice';
   })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data && data.ok && data.invoice) { state.invoice = data.invoice; loadTenantConfig(); return; }
+      if (data && data.ok && data.invoice) {
+        state.invoice = data.invoice;
+        // Preferred path: branding rides along with the invoice (service-role,
+        // whitelisted fields) because anon can no longer read tenants (RLS).
+        if (data.tenant && window.bmApplyBranding) {
+          try {
+            if (data.tenant.config && data.tenant.config.stripe_base_link) {
+              state.tenantBaseLink = data.tenant.config.stripe_base_link;
+            }
+            bmApplyBranding(data.tenant);
+            if (window.bmPaintBrand) bmPaintBrand();
+            render();
+          } catch (e) { loadTenantConfig(); }
+          return;
+        }
+        loadTenantConfig(); return;
+      }
       state.invoice = null; render();
     })
     .catch(function() { state.invoice = null; render(); });
