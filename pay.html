@@ -227,7 +227,8 @@ document.title = 'Pay Invoice';
 
     var balance    = parseFloat(inv.balance || inv.total || 0);
     var tipAmt     = state.tip;
-    var grandTotal = balance + tipAmt;
+    var cardFee    = Math.round((balance * 0.029 + 0.30) * 100) / 100; // v1012: pass Stripe's card fee to the customer (card only; ACH/check/cash are fee-free)
+    var grandTotal = balance + tipAmt + cardFee;
 
     // Line items
     var lineItems = [];
@@ -331,8 +332,11 @@ document.title = 'Pay Invoice';
       + '<div class="pay-totals">'
       + '<div class="pay-total-row"><span>Invoice balance</span><span>' + fmt(balance) + '</span></div>'
       + (tipAmt > 0 ? '<div class="pay-total-row tip-row"><span>Gratuity 💚</span><span>+ ' + fmt(tipAmt) + '</span></div>' : '')
+      + '<div class="pay-total-row"><span>Card processing fee (2.9% + $0.30)</span><span>+ ' + fmt(cardFee) + '</span></div>'
       + '<div class="pay-total-row grand"><span>Total to pay</span><span id="grand-total">' + fmt(grandTotal) + '</span></div>'
       + '</div>'
+
+      + '<div style="font-size:11px;color:#64748b;margin:0 2px 10px;line-height:1.45;">💳 A 2.9% + $0.30 card processing fee is included above. Prefer to skip it? Pay by check, cash, or e-check — just call or text us.</div>'
 
       + (stripeLink
           ? '<button class="pay-btn" id="pay-btn" onclick="PAY.payWithCard()">💳 Pay ' + fmt(grandTotal) + ' with Card</button>'
@@ -365,7 +369,9 @@ document.title = 'Pay Invoice';
 
     customTip: function(val) {
       state.tip = parseFloat(val) || 0;
-      var grandTotal = parseFloat(state.invoice.balance || state.invoice.total || 0) + state.tip;
+      var _bal = parseFloat(state.invoice.balance || state.invoice.total || 0);
+      var _fee = Math.round((_bal * 0.029 + 0.30) * 100) / 100;
+      var grandTotal = _bal + state.tip + _fee;
       var gt  = document.getElementById('grand-total');
       var pa  = document.getElementById('pay-panel-amount');
       var btn = document.getElementById('pay-btn');
@@ -377,7 +383,9 @@ document.title = 'Pay Invoice';
     payWithCard: function() {
       var inv = state.invoice;
       if (!inv) return;
-      var grandTotal = parseFloat(inv.balance || inv.total || 0) + state.tip;
+      var bal = parseFloat(inv.balance || inv.total || 0);
+      var fee = Math.round((bal * 0.029 + 0.30) * 100) / 100; // v1012: card surcharge, matches the displayed total
+      var grandTotal = bal + state.tip + fee;
 
       var stripeLink = inv.stripe_payment_url || inv.stripePaymentUrl || state.tenantBaseLink || '';
       if (!stripeLink) { try { stripeLink = localStorage.getItem('bm-stripe-base-link') || ''; } catch(e) {} }
@@ -387,6 +395,9 @@ document.title = 'Pay Invoice';
         alert('Online card payment is not available for this invoice yet.\n\nPlease call ' + BM_CONFIG.phone + ' to arrange payment.');
         return;
       }
+
+      // Strip any pre-existing prefilled_quantity so we never double up the amount param
+      stripeLink = stripeLink.replace(/([?&])prefilled_quantity=\d+/g, '$1').replace(/[?&]$/, '').replace(/\?&/, '?');
 
       var cents  = Math.round(grandTotal * 100);
       var sep    = stripeLink.indexOf('?') >= 0 ? '&' : '?';

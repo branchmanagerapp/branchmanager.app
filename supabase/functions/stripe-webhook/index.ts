@@ -355,7 +355,7 @@ serve(async (req: Request) => {
       if (ids.length) {
         const { data: invs, error } = await supabase
           .from('invoices')
-          .select('id, invoice_number, balance, total, client_name, client_email, client_id, line_items, subject, paid_date')
+          .select('id, invoice_number, balance, total, status, stripe_payment_id, client_name, client_email, client_id, line_items, subject, paid_date')
           .in('id', ids);
         if (error) { console.error('Multi-invoice fetch error:', error); }
         else {
@@ -367,6 +367,12 @@ serve(async (req: Request) => {
           const covers = amountPaid + 1 >= sumBalanceCents;
           if (covers) {
             for (const inv of (invs || [])) {
+              // Idempotency: a Stripe webhook retry re-delivers the same payment intent.
+              // Skip any invoice already paid by THIS payment intent so we don't re-send the receipt.
+              if (inv.status === 'paid' && inv.stripe_payment_id === paymentIntentId) {
+                console.log(`↩︎ Duplicate webhook — invoice #${inv.invoice_number} already paid by ${paymentIntentId}, skipping`);
+                continue;
+              }
               const paidNow = new Date().toISOString();
               const invBal = Number(inv.balance ?? inv.total ?? 0);
               await supabase.from('invoices').update({
@@ -411,7 +417,7 @@ serve(async (req: Request) => {
 
       const { data: invoices, error } = await supabase
         .from('invoices')
-        .select('id, invoice_number, balance, total, status, client_name, client_email, client_id, line_items, subject')
+        .select('id, invoice_number, balance, total, status, stripe_payment_id, client_name, client_email, client_id, line_items, subject')
         .eq('invoice_number', invoiceNumber)
         .limit(1);
 
@@ -422,6 +428,12 @@ serve(async (req: Request) => {
 
       if (invoices && invoices.length > 0) {
         const inv = invoices[0];
+        // Idempotency: if this invoice is already paid by this exact payment intent, a webhook
+        // retry is re-delivering the same event — don't re-update or re-send the receipt.
+        if (inv.status === 'paid' && inv.stripe_payment_id === paymentIntentId) {
+          console.log(`↩︎ Duplicate webhook for invoice #${inv.invoice_number} (payment ${paymentIntentId}) — already processed, skipping`);
+          return new Response('OK (already processed)', { status: 200 });
+        }
         const amountDollars = amountPaid / 100;
         const paidAt = new Date().toISOString();
         // GUARD: only mark PAID if the payment covers the balance (1c tolerance).
