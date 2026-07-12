@@ -39,16 +39,21 @@
     <p>Itemized monthly burn to keep it stable, secure, and not silently broken. Tiered by how much it matters.</p>
   </header>
 
-  <div class="now"><b>Where you are right now:</b> mostly <b>free tiers</b> (verified today — Supabase org has no paid plan). No crash risk this second, but the free tier has <b>no automated backups</b> and email caps at 100/day. The two Tier-1 upgrades below are the ones I'd actually pay for.</div>
+  <div class="now"><b>Where you are right now:</b> you're on <b>Supabase Pro</b> ($25/mo, active ~3 months) — <b>daily backups are running</b> (verified: 8 daily backups on file, latest today; database is only 66&nbsp;MB of 8&nbsp;GB). Everything else runs on free tiers that are currently sufficient. <b>Nothing here is at risk right now.</b></div>
 
-  <h2>Tier 1 — don't embarrass yourself with real customers</h2>
-  <div class="tier t1">
-    <div class="thd"><span class="t">Required</span><span class="amt">~$45/mo</span></div>
-    <div class="row"><div class="l"><span class="svc">Supabase Pro</span><span class="cost">$25/mo</span></div><div class="why">Free tier auto-pauses your database after 7 idle days and keeps only 1-day backups. Pro = daily backups + 7-day point-in-time recovery + no auto-pause. This is the one I'd buy first — it's your insurance against losing data.</div></div>
-    <div class="row"><div class="l"><span class="svc">Resend Pro</span><span class="cost">$20/mo</span></div><div class="why">Free tier = 100 emails/day, and we've hit it. Fine for receipts today; the day a busy morning of invoices + review requests runs, BM silently stops sending mid-day. Pro removes the cap.</div></div>
+  <h2>What's already covering you</h2>
+  <div class="tier t3">
+    <div class="thd"><span class="t">Active — already paid</span><span class="amt">$25/mo</span></div>
+    <div class="row"><div class="l"><span class="svc">Supabase Pro ✓ ACTIVE</span><span class="cost">$25/mo</span></div><div class="why">This is on and has been for ~3 months. Daily backups + no auto-pause — your data insurance is already in place. Point-in-time recovery (7-day) is available for +$100/mo but not needed at 66&nbsp;MB; skip it.</div></div>
   </div>
 
-  <h2>Tier 2 — strongly recommended for production</h2>
+  <h2>Optional — only if a specific cap bites</h2>
+  <div class="tier t2">
+    <div class="thd"><span class="t">Not needed yet</span><span class="amt">~$20/mo</span></div>
+    <div class="row"><div class="l"><span class="svc">Resend Pro</span><span class="cost">$20/mo</span></div><div class="why">Free tier = 100 emails/day. The old marketing cron that burned through it is <b>disabled</b>, so receipts + review requests sit well under the cap. Only worth buying if you turn bulk email back on.</div></div>
+  </div>
+
+  <h2>Nice-to-have monitoring (free tiers work today)</h2>
   <div class="tier t2">
     <div class="thd"><span class="t">Recommended</span><span class="amt">~$33/mo</span></div>
     <div class="row"><div class="l"><span class="svc">UptimeRobot Solo</span><span class="cost">$7/mo</span></div><div class="why">Texts your phone the moment the app or a payment function goes down — before your crew calls you about it. Free tier works too (5-min checks, email only).</div></div>
@@ -75,11 +80,11 @@
   </div>
 
   <div class="bottom">
-    <div class="line"><span><b>Tier 1 only</b> — don't be embarrassed</span><span class="pick">$45/mo</span></div>
-    <div class="line"><span><b>Tier 1 + 2</b> — production-grade</span><span>$78/mo</span></div>
-    <div class="line"><span><b>Tier 1 + 2 + 3</b> — at real scale</span><span>$83/mo</span></div>
+    <div class="line"><span><b>Paying now</b> — Supabase Pro (your data insurance)</span><span class="pick">$25/mo</span></div>
+    <div class="line"><span><b>+ full monitoring</b> — if you add UptimeRobot + Sentry</span><span>$58/mo</span></div>
+    <div class="line"><span><b>+ at real scale</b> — everything above + Cloudflare paid</span><span>$63/mo</span></div>
   </div>
 
-  <p class="foot">Figures from the May 2026 cost audit; current plan state verified today (free tiers). Each upgrade pays for itself the first time it prevents one lost invoice, one lost backup, or one 4am outage you didn't hear about.</p>
+  <p class="foot">Current plan state verified today: <b>Supabase Pro active, daily backups on, database 66&nbsp;MB of 8&nbsp;GB</b>. Other services sit on free tiers that are currently sufficient. The monitoring add-ons pay for themselves the first time they catch a 4am outage before your crew does.</p>
 </div>
 </body></html>
