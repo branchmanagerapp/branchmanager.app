@@ -148,8 +148,8 @@ var QuotesPage = {
       +   '<span style="font-size:13px;color:var(--text-light);">(' + filtered.length + ')</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-      +   '<button class="btn btn-primary" onclick="QuotesPage.showNewQuotePicker()" style="font-size:13px;font-weight:700;">New Quote</button>'
-      +   ((window.BMUI && BMUI.isClassic && BMUI.isClassic()) ? '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:var(--white);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ From walkthrough</button>' : '')
+      +   '<button class="btn btn-primary" onclick="QuotesPage.showForm(null)" style="font-size:13px;font-weight:700;">New Quote</button>'
+      +   '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:1px solid #2e7d32;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ AI Walkthrough</button>'
       +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
       +     '<input type="text" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="QuotesPage._search=this.value;QuotesPage._page=0;loadPage(\'quotes\')">'
@@ -422,20 +422,10 @@ var QuotesPage = {
   // Tapping "AI Walkthrough" hands off to VideoQuote; "Manual" goes straight
   // to showForm() as before.
   showNewQuotePicker: function(clientId, requestId) {
-    var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:8px 0;">'
-      + '<button onclick="UI.closeModal();QuotesPage.showForm(null,' + JSON.stringify(clientId || null) + ',' + JSON.stringify(requestId || null) + ');" style="background:var(--white);border:2px solid var(--border);border-radius:12px;padding:22px 18px;text-align:left;cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'#2e7d32\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
-      +   '<div style="font-size:32px;margin-bottom:8px;">📝</div>'
-      +   '<div style="font-size:15px;font-weight:800;color:var(--text);">Build manually</div>'
-      +   '<div style="font-size:12px;color:var(--text-light);margin-top:4px;line-height:1.4;">Type line items, prices, and the work scope. Best when you already know what you\'re quoting.</div>'
-      + '</button>'
-      + '<button onclick="UI.closeModal();loadPage(\'videoquote\');" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:2px solid #2e7d32;border-radius:12px;padding:22px 18px;text-align:left;cursor:pointer;position:relative;">'
-      +   '<div style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.05em;">AI</div>'
-      +   '<div style="font-size:32px;margin-bottom:8px;">🎙️</div>'
-      +   '<div style="font-size:15px;font-weight:800;">From walkthrough</div>'
-      +   '<div style="font-size:12px;opacity:0.85;margin-top:4px;line-height:1.4;">Record/upload a property video. AI extracts every tree, hazard, and urgency — drafts line items for you to review.</div>'
-      + '</button>'
-      + '</div>';
-    UI.showModal('New ' + QuotesPage._term(false).toLowerCase(), html, { keepModal: false });
+    // v1020: skip the "manual vs walkthrough" chooser — go straight to the manual
+    // build (Doug's flow). The AI walkthrough stays available from the "🎙️ From
+    // walkthrough" button in the Quotes header (always visible now).
+    QuotesPage.showForm(null, clientId || null, requestId || null);
   },
 
   // v878: upload a walkthrough video into an EXISTING quote (appends line

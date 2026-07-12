@@ -1,5 +1,5 @@
 {
-  "version": 1019,
+  "version": 1020,
   "released": "2026-07-12",
-  "notes": "Message Center is now mobile-friendly: on a phone you see the thread list, tap one to open the full-screen conversation with a back arrow; desktop keeps the two-pane list+conversation."
+  "notes": "New Quote goes straight to the manual build (no more manual-vs-walkthrough chooser); the AI Walkthrough option is now always a button up top next to New Quote."
 }
