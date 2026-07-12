@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1004; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1005; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -785,6 +785,23 @@
     div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(4)::before { content:'Rate '; color:var(--text-light); font-size:11px; }
     div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(5)::before { content:'Total '; color:var(--text-light); font-size:11px; }
     div[style*="min-width:280px;font-size:14px"] { min-width:0 !important; width:100% !important; }
+    /* Jobs line-items table (jobs.js data-table) -> stack on phone like the invoice.
+       Excludes the EDITABLE quote-builder table via its #li-tbody so inputs stay intact. */
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) { min-width:0 !important; width:100% !important; display:block !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) thead { display:none !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) tbody { display:block !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) tr { display:block !important; padding:12px 14px !important; border-bottom:1px solid var(--border) !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td { display:inline-block !important; border:none !important; padding:1px 0 !important; white-space:normal !important; font-size:13px !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(1) { display:block !important; font-weight:700 !important; font-size:15px !important; color:#1a3c12 !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(2) { display:block !important; color:var(--text-light) !important; margin-bottom:6px !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(3), table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(4) { margin-right:18px !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(3)::before { content:'Qty '; color:var(--text-light); }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(4)::before { content:'Rate '; color:var(--text-light); }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) td:nth-child(5)::before { content:'Total '; color:var(--text-light); }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) tr[style*="green-bg"] { display:flex !important; justify-content:space-between !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) tr[style*="green-bg"] td { display:inline-block !important; font-weight:800 !important; color:var(--accent) !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) tr[style*="green-bg"] td:nth-child(1) { font-size:13px !important; color:var(--text) !important; }
+    table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) tr[style*="green-bg"] td:nth-child(1)::before { content:'' !important; }
     .option-grid { grid-template-columns:1fr !important; }
 
     /* Full sidebar on mobile — slide in/out via hamburger */

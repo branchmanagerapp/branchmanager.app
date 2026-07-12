@@ -1,5 +1,5 @@
 {
-  "version": 1004,
+  "version": 1005,
   "released": "2026-07-12",
-  "notes": "Mobile fix: invoice detail line items stack cleanly on phone (no off-screen clipping)."
+  "notes": "Mobile: Jobs line-items table stacks cleanly on phone (matches invoice)."
 }
