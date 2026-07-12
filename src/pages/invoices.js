@@ -122,7 +122,7 @@ var InvoicesPage = {
       + '<div style="display:flex;align-items:center;gap:8px;">'
       +   '<div class="search-box" style="min-width:200px;max-width:280px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
-      +     '<input type="text" placeholder="Search invoices..." value="' + UI.esc(self._search) + '" oninput="InvoicesPage._search=this.value;InvoicesPage._page=0;loadPage(\'invoices\')">'
+      +     '<input type="text" id="inv-search-input" placeholder="Search invoices..." value="' + UI.esc(self._search) + '" oninput="InvoicesPage._onSearch(this.value)">'
       +   '</div>'
       + '</div></div>';
 
@@ -274,6 +274,24 @@ var InvoicesPage = {
     InvoicesPage._page = 0; loadPage('invoices');
   },
   _setFilter: function(f) { InvoicesPage._filter = f; InvoicesPage._page = 0; loadPage('invoices'); },
+  // v1015: search re-rendered the whole page on EVERY keystroke, destroying the
+  // input and killing focus/keyboard — so you could never type the 2+ chars search
+  // needs and it looked completely broken. Fix: debounce so typing never re-renders
+  // mid-word (input + keyboard stay put); filter once ~300ms after you pause, then
+  // restore focus + caret. Right arrow / clearing still works.
+  _searchTimer: null,
+  _onSearch: function(val) {
+    InvoicesPage._search = val;
+    clearTimeout(InvoicesPage._searchTimer);
+    InvoicesPage._searchTimer = setTimeout(function() {
+      InvoicesPage._page = 0;
+      loadPage('invoices');
+      requestAnimationFrame(function() {
+        var el = document.getElementById('inv-search-input');
+        if (el) { el.focus(); try { var v = el.value; el.setSelectionRange(v.length, v.length); } catch(e) {} }
+      });
+    }, 300);
+  },
   _goPage: function(p) { var t = Math.ceil(InvoicesPage._getFiltered().length / InvoicesPage._perPage); InvoicesPage._page = Math.max(0, Math.min(p, t - 1)); loadPage('invoices'); },
   _toggleShowAll: function() { InvoicesPage._showAll = !InvoicesPage._showAll; InvoicesPage._page = 0; loadPage('invoices'); },
 

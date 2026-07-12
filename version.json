@@ -1,5 +1,5 @@
 {
-  "version": 1014,
+  "version": 1015,
   "released": "2026-07-12",
-  "notes": "Quote detail rebuilt Jobber-style for mobile: single-column (title · line items · totals · client), one-tap Approve & Schedule, Change-client menu (reassign/edit), and all extras (photos, video, notes, status) collapsed under expandable sections."
+  "notes": "Invoices search fixed (debounced so you can actually type a full query); the scary 'Storage was full' toast no longer pops up (it self-heals to the cloud, now logged silently)."
 }

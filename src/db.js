@@ -55,10 +55,11 @@ var DB = (function() {
         if (freed > 0) {
           try { localStorage.setItem(key, JSON.stringify(data)); _lastSetOk = true; return; } catch(e2) {}
         }
-        console.error('localStorage full! Data may not be saved for: ' + key);
-        if (typeof UI !== 'undefined' && UI.toast) {
-          UI.toast('Storage was full — cleared cached photos to make room. They’ll reload from the cloud.', 'error');
-        }
+        // v1015: the local cache is full but the record still syncs to the cloud
+        // (Supabase is the source of truth). This self-heals, so DON'T pop a scary
+        // red toast at Doug mid-job — just log it for diagnostics. Real save failures
+        // surface through the sync layer / Sentry, not this cosmetic cache pressure.
+        console.warn('[BM] localStorage cache full for "' + key + '" — cleared photo cache; record still syncs to cloud.');
       }
     }
   }
