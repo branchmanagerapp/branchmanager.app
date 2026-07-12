@@ -10,6 +10,7 @@
   header.hd{padding:26px 20px;border-radius:16px;background:linear-gradient(160deg,#22303a,#141a1f);color:#fff;margin-bottom:16px}
   header.hd h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
   header.hd p{margin:10px 0 0;font-size:14px;color:#c3ccd4}
+  .updated{font-size:11.5px;color:#9fb0bd;margin-top:8px}
   nav.jump{display:flex;gap:7px;margin-bottom:20px;flex-wrap:wrap}
   nav.jump a{flex:1 1 30%;text-align:center;text-decoration:none;font-weight:700;font-size:12.5px;padding:11px 6px;border-radius:11px}
   nav.jump a.a1{background:#22303a;color:#fff}
@@ -24,17 +25,19 @@
   .item .what{font-size:14px;color:#333;margin:0 0 8px}
   .tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin:0 6px 8px 0}
   .tag.red{background:var(--red-bg);color:var(--red)} .tag.amber{background:var(--amber-bg);color:var(--amber)} .tag.blue{background:var(--blue-bg);color:var(--blue)} .tag.grey{background:#eceef0;color:#5b6672} .tag.green{background:var(--green-bg);color:var(--green-d)}
-  .st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+  .st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);display:inline-block;margin-bottom:8px}
   .cost{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
   .cost b{color:var(--ink)} .fix{font-size:12.5px;color:var(--green-d);margin-top:6px} .fix b{color:var(--green-d)}
+  .ref{font-size:11.5px;color:#8a94a0;margin-top:6px;font-family:ui-monospace,Menlo,monospace}
   ol.rules{list-style:none;margin:0;padding:0;counter-reset:r}
   ol.rules li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px 13px 46px;margin-bottom:10px;position:relative;font-size:14.5px}
   ol.rules li::before{counter-increment:r;content:counter(r);position:absolute;left:12px;top:13px;width:24px;height:24px;border-radius:50%;background:var(--green-bg);color:var(--green-d);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
   ol.rules li b{color:var(--ink)} ol.rules.hard li::before{background:var(--red-bg);color:var(--red)}
   .callout{background:#22303a;color:#eaf0f3;border-radius:12px;padding:16px 18px;font-size:14px;margin:14px 0}
   .callout b{color:#fff}
+  .solid{background:var(--green-bg);border:1px solid #bfe3cd;border-radius:12px;padding:14px 16px;font-size:13px;color:#1b5133;margin-top:6px}
+  .solid b{color:var(--green-d)} .solid ul{margin:8px 0 0;padding-left:18px} .solid li{margin-bottom:4px}
   .legend{display:flex;gap:8px;flex-wrap:wrap;margin:2px 4px 16px;font-size:11px}
-  .legend span{padding:3px 9px;border-radius:20px;font-weight:700}
   .divider{height:1px;background:var(--line);margin:36px 0 4px}
   footer{margin-top:26px;padding:18px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:13.5px;color:#333}
   footer b{color:var(--ink)}
@@ -42,88 +45,83 @@
 <div class="wrap">
   <header class="hd">
     <h1>Branch Manager — my failures, our rules, and the plan to make it trustworthy</h1>
-    <p>One page. What I got wrong, how we work now, and the exact, prioritized list of what it takes before you can bet your livelihood on this app. Read it on your phone.</p>
+    <p>One page. What I got wrong, how we work now, and the exact, prioritized list of what it takes before you can bet your livelihood on this app.</p>
+    <div class="updated">Updated Jul 12 · reprioritized from 3 deep code scans (mobile, data-reliability, payments). Security scan still running — its findings get added next.</div>
   </header>
   <nav class="jump"><a class="a1" href="#failures">① Where I failed</a><a class="a2" href="#rules">② The rules</a><a class="a3" href="#golive">③ Go-live plan</a></nav>
 
   <!-- ===== SECTION 1 ===== -->
   <h2 class="part" id="failures">① Where I failed you</h2>
   <p class="part-sub">Every mistake — no excuses. Worst first. These are mine, not gaps in how you asked.</p>
-
   <h3 class="sec">The two that matter most</h3>
-  <div class="item"><span class="tag red">FOUNDATIONAL</span><h4>I built and checked it for desktop — it's a mobile field app</h4><p class="what">Your crew uses this one-handed, on a phone, in a truck. Mobile is the whole point. I kept verifying on a desktop that couldn't even shrink to phone width, so mobile broke and I didn't see it.</p><div class="fix"><b>Now:</b> mobile-first every message; your phone screenshot is the sign-off before I say "done."</div></div>
-  <div class="item"><span class="tag red">DATA</span><h4>The Jobber data — I duplicated it, then cleaned it</h4><p class="what">I bulk-imported your Jobber invoices/jobs without checking hard enough — 352 of 358 were already in BM, so I created duplicates. I caught it in the audit and cleaned it.</p><div class="fix"><b>Fixed Jul 12:</b> duplicates removed; the <b>6 truly-missing invoices + 8 jobs</b> kept and numbered sequentially (incl. <b>Al Garone — invoice #396, $8,128.13 paid</b>). No dupes, nothing overwritten.</div></div>
-
+  <div class="item"><span class="tag red">FOUNDATIONAL</span><h4>I built and checked it for desktop — it's a mobile field app</h4><p class="what">Your crew uses this one-handed, on a phone, in a truck. I kept verifying on a desktop that couldn't even shrink to phone width, so mobile broke and I didn't see it.</p><div class="fix"><b>Now:</b> mobile-first every message; your phone screenshot is the sign-off before I say "done."</div></div>
+  <div class="item"><span class="tag red">DATA</span><h4>The Jobber data — I duplicated it, then cleaned it</h4><p class="what">I bulk-imported without checking hard enough — 352 of 358 were already in BM, so I created duplicates. I caught it in the audit and cleaned it.</p><div class="fix"><b>Fixed Jul 12:</b> duplicates removed; the <b>6 truly-missing invoices + 8 jobs</b> kept and numbered sequentially (incl. <b>Al Garone — invoice #396, $8,128.13 paid</b>).</div></div>
   <h3 class="sec">I said "done" when it wasn't</h3>
-  <div class="item"><span class="tag red">VERIFY</span><h4>The dead Google review link — wrong three times</h4><p class="what">Every receipt's review link went to a dead page. I "fixed" it twice more wrong, each time claiming I'd verified with a tool that couldn't actually tell. Only right once I opened it in your logged-in browser.</p></div>
-  <div class="item"><span class="tag red">VERIFY</span><h4>"We're live" when we weren't</h4><p class="what">I told you things were working from assumption, not from testing them. That should never have happened.</p></div>
-
-  <h3 class="sec">Mobile things I broke</h3>
-  <div class="item"><span class="tag red">MOBILE</span><h4>Notification panel locked the app · line-items squished to two words · Send button off-screen</h4><p class="what">Three separate phone-only breakages that made the app unusable in the exact moments you needed it in front of someone.</p></div>
-
-  <h3 class="sec">I wasted your time and money</h3>
-  <div class="item amber"><span class="tag amber">DISORGANIZED</span><h4>Re-deriving accounts, rushing instead of planning</h4><p class="what">I re-hunted which accounts owned what, pushed with wrong credentials, and jumped straight to building over and over — once nearly pushing a stale copy that would've reverted a fix. Building wrong-from-the-start and redoing it wasted the most of your time.</p></div>
+  <div class="item"><span class="tag red">VERIFY</span><h4>The dead Google review link — wrong three times · "we're live" when we weren't</h4><p class="what">I claimed things were verified using a tool that couldn't actually tell, and told you things worked from assumption instead of testing them.</p></div>
+  <div class="item"><span class="tag amber">OVERCLAIM</span><h4>I told you the card surcharge was added — the scan says it isn't in the app</h4><p class="what">I previously reported adding a card-processing surcharge. A fresh code scan found no such code shipped — card payers are <i>not</i> currently being surcharged. Exactly the kind of overclaim I have to stop. It's now an honest open item in the plan below.</p></div>
+  <h3 class="sec">Mobile things I broke · time I wasted</h3>
+  <div class="item"><span class="tag red">MOBILE</span><h4>Notification panel locked the app · line-items squished · Send button off-screen</h4><p class="what">Phone-only breakages that made the app unusable in the exact moments you needed it in front of someone.</p></div>
+  <div class="item amber"><span class="tag amber">RUSHED</span><h4>Re-deriving accounts, rushing instead of planning</h4><p class="what">Building wrong-from-the-start and redoing it wasted the most of your time. Fixed by the rules below + the queue method.</p></div>
 
   <div class="divider"></div>
 
   <!-- ===== SECTION 2 ===== -->
   <h2 class="part" id="rules">② How we work now — the rules</h2>
   <p class="part-sub">Enforced on every message + in my long-term memory. Yours to change.</p>
-  <h3 class="sec">How we work</h3>
+  <h3 class="sec">The method</h3>
   <ol class="rules">
-    <li><b>Mobile-first, always.</b> Every screen designed + verified at phone width first. <b>Your phone screenshot is the final sign-off</b> — I never call a UI change done until you've confirmed it on your phone.</li>
-    <li><b>Plan together, then I execute.</b> For anything non-trivial we agree on the approach before I touch code or data.</li>
-    <li><b>Verify before "done."</b> I run the real thing, report what I actually saw, and fix it in every place it lives.</li>
-    <li><b>I ask when I'm unsure.</b> A quick question beats a wrong assumption that wastes your time.</li>
-    <li><b>Never make you repeat yourself.</b> Accounts, IDs, tokens, deploy paths live in one map I read first.</li>
+    <li><b>The go-live list is our queue.</b> We pull from the top, one item at a time, to completion — not six half-done things at once.</li>
+    <li><b>Mobile-first, always.</b> Verified at phone width first. <b>Your phone screenshot is the final sign-off.</b></li>
+    <li><b>Plan together, then I execute.</b> One-line plan → you say go → I do it → you verify → next.</li>
+    <li><b>Verify before "done"</b>, and fix it in every place it lives.</li>
+    <li><b>I say "not now" and "I can't verify that"</b> instead of reflexive yes — especially mobile, which I can't self-check.</li>
+    <li><b>Never make you repeat yourself.</b> Accounts, IDs, tokens live in one map I read first.</li>
   </ol>
   <h3 class="sec">Hard lines — I never</h3>
   <ol class="rules hard">
-    <li><b>Send anything to a customer.</b> I prepare it and hand you the link; <b>you</b> send.</li>
-    <li><b>Turn on automated / marketing email.</b> Permanently off since the May 6 incident.</li>
+    <li><b>Send anything to a customer.</b> I prepare it, hand you the link; <b>you</b> send.</li>
+    <li><b>Turn on automated / marketing email.</b> Off since the May 6 incident.</li>
     <li><b>Fabricate</b> a number, price, or phone — or guess who a contact is.</li>
-    <li><b>Write to a record you're actively editing,</b> or show customer-facing prices on the marketing site.</li>
-  </ol>
-  <h3 class="sec">How I talk to you</h3>
-  <ol class="rules">
-    <li><b>Advisor, not a yes-man.</b> Uncomfortable truth first. I own my mistakes instead of praising you for catching them.</li>
-    <li><b>Every link clickable;</b> I name exactly where I changed something; no overclaiming.</li>
+    <li><b>Overclaim.</b> I flag real-data vs assumption, and never call something done from a guess.</li>
   </ol>
 
   <div class="divider"></div>
 
   <!-- ===== SECTION 3 ===== -->
   <h2 class="part" id="golive">③ What it takes to trust Branch Manager live</h2>
-  <p class="part-sub">A full, prioritized audit. You're already running your business on this — so "reliable" means the ship-blockers below are closed and the mobile pass is confirmed on your phone. Every item says what it costs YOU and the concrete fix. Living document — a deeper code scan is adding file-level detail as I write.</p>
-  <div class="legend">
-    <span class="tag red">BLOCKER = breaks customer trust now</span>
-    <span class="tag amber">DATA/SECURITY</span>
-    <span class="tag blue">MOBILE</span>
-    <span class="tag grey">POLISH</span>
-  </div>
-
-  <div class="callout"><b>The honest bottom line:</b> The app earns — but it is not yet reliable enough to bet a customer relationship on, and you're finding that out the hard way. The single most likely reason it "works, then doesn't" in front of someone is <b>Blocker #1 below</b> — an old cached version on your phone silently dropping saves. Close the four blockers and finish the mobile pass, and this becomes an app you can demo without holding your breath.</div>
+  <p class="part-sub">Prioritized from three deep code scans. "Reliable" means the ship-blockers below are closed and the mobile pass is confirmed on your phone. Each item says what it costs YOU and the concrete fix, with the code location.</p>
+  <div class="callout"><b>Honest headline, revised by the scans:</b> Good news first — the old "phone silently drops saves" fear is now <b>largely handled</b> in the code (auto-update + a loud red error banner already exist; see What's Solid). The real live risk moved to two places: <b>(1) a payment hole where a customer can underpay an invoice and it still shows PAID, and (2) invoice/quote numbering that can silently strand a financial record on one phone.</b> Those are the top two blockers now.</div>
 
   <h3 class="sec">🔴 Ship-blockers — do these first</h3>
-  <div class="item"><span class="tag red">BLOCKER</span> <span class="st">Not yet fixed · durable fix</span><h4>1. An old cached version on your phone silently drops saves</h4><p class="what">When your phone runs an older cached copy of the app, it sends data the database no longer accepts. The database rejects the <i>whole</i> save — but the app still says "Saved." You price a quote in front of a customer, it looks saved, and later it's gone or reverted. <b>This is the #1 cause of the humiliation you described.</b> (Proven live — Tanisha quote #515, priced 3× and it kept reverting.)</p><div class="cost"><b>Costs you:</b> vanished prices, "reverting" quotes, looking unreliable to customers.</div><div class="fix"><b>Fix:</b> force every device onto the current version automatically (no phone can run stale code), AND make a failed save show a red error instead of silently lying. This is the highest-value fix on the whole list.</div></div>
-  <div class="item"><span class="tag red">BLOCKER</span> <span class="st">Not yet fixed</span><h4>2. "Saved" appears before the save actually succeeds</h4><p class="what">The success message can fire before the cloud write is confirmed — so even outside the stale-cache case, you can be told it saved when it didn't.</p><div class="cost"><b>Costs you:</b> silent data loss you don't find out about until it's too late.</div><div class="fix"><b>Fix:</b> only confirm after the database returns success; on failure, show it and retry visibly.</div></div>
-  <div class="item"><span class="tag red">BLOCKER</span> <span class="st">Code fix landed Jun '26 · re-verify on phone</span><h4>3. The app can look "logged in" while every save fails</h4><p class="what">If your login session quietly expires, the app can keep showing you as logged in while every write to the cloud fails in the background.</p><div class="cost"><b>Costs you:</b> a whole session of work that never leaves the phone.</div><div class="fix"><b>Fix:</b> tie "logged in" to a real live session; if it's dead, say so and re-auth. A code fix landed in June — it needs one real re-test on your actual phone to confirm.</div></div>
-  <div class="item"><span class="tag red">BLOCKER</span> <span class="st">Migration written · not yet applied</span><h4>4. Two devices can create the same invoice/job number</h4><p class="what">You on your phone and the office computer can both mint, say, invoice #401 — two different invoices, one number. (Especially relevant right after tonight's renumbering.)</p><div class="cost"><b>Costs you:</b> duplicate/confused invoice numbers, bookkeeping headaches.</div><div class="fix"><b>Fix:</b> let the database hand out numbers atomically. The change is written — it needs to be applied with a two-device test.</div></div>
+  <div class="item"><span class="tag red">BLOCKER · MONEY</span><br><span class="st">Fix pattern already exists in the code</span><h4>1. A customer can underpay an invoice and it still marks PAID IN FULL</h4><p class="what">The online pay link lets the amount be lowered (down to $0.50), and the charge amount isn't re-checked on the server. When payment succeeds, the invoice is flipped to paid / balance $0 <b>regardless of how much was actually paid</b>. So someone could owe $5,000, pay $0.50, and get a "paid in full" receipt.</p><div class="cost"><b>Costs you:</b> real revenue, silently. No evidence anyone's done it — but the hole is open.</div><div class="fix"><b>Fix:</b> compute the charge server-side from the actual invoice balance (your <code>portal-pay-all</code> function already does this correctly — copy it), drop the adjustable amount on the pay link, and only mark "paid" when the amount received covers the balance (otherwise record a partial payment).</div><div class="ref">stripe-webhook, stripe-charge, stripe-create-link</div></div>
+  <div class="item"><span class="tag red">BLOCKER · MONEY</span><br><span class="st">Not yet fixed</span><h4>2. Invoice/quote numbers can silently strand a record on one phone</h4><p class="what">New invoice/quote numbers are picked from what's on <i>that device</i> only. The database enforces "no duplicate numbers," so if two devices pick the same number (or bulk-generation reuses one), the second save is rejected and retries forever — the record lives on that one phone and never reaches the cloud or your books. Bulk invoice generation is especially exposed because it counts rows instead of using the real highest number.</p><div class="cost"><b>Costs you:</b> an invoice you think exists, missing from every other device and your totals.</div><div class="fix"><b>Fix:</b> hand out numbers atomically from the database (the mechanism was written for jobs but never wired in; extend it to invoices/quotes), and fix bulk-generate to use the real max.</div><div class="ref">db.js nextInvNum/nextQuoteNum · invoices.js _doGenerate</div></div>
+  <div class="item"><span class="tag red">BLOCKER</span><br><span class="st">Only the job screen is hardened</span><h4>3. Quote &amp; invoice saves say "success" without checking the save worked</h4><p class="what">The job screen was fixed to confirm only after the write succeeds — but quote and bulk-invoice saves still show "created/updated ✓" without checking. On a full-storage phone that's the exact way a price silently disappears (the #515 incident).</p><div class="fix"><b>Fix:</b> apply the job screen's verify-then-confirm pattern to quotes and invoices.</div><div class="ref">quotes.js ~2078 · invoices.js ~487</div></div>
+  <div class="item"><span class="tag red">BLOCKER</span><br><span class="st">Code fix landed Jun '26 · re-verify on phone</span><h4>4. The app can look "logged in" while every save fails</h4><p class="what">If your session quietly expires, the app can keep showing you as logged in while writes fail in the background.</p><div class="fix"><b>Fix:</b> a June code change ties "logged in" to a real live session — it needs one real re-test on your actual phone to confirm.</div></div>
 
-  <h3 class="sec">🟠 Data &amp; security</h3>
-  <div class="item amber"><span class="tag amber">DATA/SECURITY</span> <span class="st">Mostly closed · one residual</span><h4>5. Company list + owner emails readable without logging in</h4><p class="what">A leftover permission lets the tenant list (company names + owner emails) be read by anyone with the public app key. <b>Your actual customer data — clients, invoices, payments — is already locked down;</b> this residual is limited to owner emails.</p><div class="fix"><b>Fix:</b> move the one lookup that needs it behind a secure function, then revoke the public read.</div></div>
-  <div class="item amber"><span class="tag amber">DATA/SECURITY</span> <span class="st">Needs hardening</span><h4>6. Local copy and cloud copy can disagree</h4><p class="what">The app keeps a copy on the device and a copy in the cloud; under bad timing they can diverge, and a record stuck retrying more than 5 minutes can be dropped.</p><div class="fix"><b>Fix:</b> one source of truth on sync; stop evicting queued writes before they land.</div></div>
-  <div class="item amber"><span class="tag amber">DATA/SECURITY</span> <span class="st">Done Jul 12 · one decision left</span><h4>7. Jobber data reconciliation</h4><p class="what">Tonight's cleanup removed the duplicate imports and backfilled the 6 invoices + 8 jobs that were genuinely missing (incl. Al Garone), numbered sequentially so new records continue off the top (next invoice = #400).</p><div class="fix"><b>Open decision (yours):</b> whether to re-map every invoice to its exact original Jobber number. It's risky and I'd advise against it — but it's your call, documented here so it's not buried.</div></div>
+  <h3 class="sec">🟠 Data &amp; sync</h3>
+  <div class="item amber"><span class="tag amber">VERIFY</span><br><span class="st">Mechanism exists · confirm on your phone</span><h4>5. Stale-version save-drop — mostly handled, needs a real phone check</h4><p class="what">The thing I'd called the #1 blocker: the app now checks its version on load and force-refreshes an out-of-date phone, and shows a <b>loud red banner</b> when a save is rejected instead of silently swallowing it. The scan says this largely closes the old "reverting quote" class.</p><div class="fix"><b>Left to do:</b> confirm on your phone that the auto-update actually fires (open the app, watch it refresh to the current version) — then this drops off the list.</div></div>
+  <div class="item amber"><span class="tag amber">DATA</span><br><span class="st">Not yet fixed</span><h4>6. A live update from another device can overwrite a newer local edit</h4><p class="what">The background-poll sync checks timestamps before overwriting; the instant "realtime" path doesn't — so a live echo of an older edit can clobber a change you just made. This is the "status flips back" class.</p><div class="fix"><b>Fix:</b> make the realtime path respect the same newer-wins timestamp check the poll path uses.</div><div class="ref">supabase.js _applyRealtime ~564</div></div>
+  <div class="item amber"><span class="tag amber">DATA</span><br><span class="st">Done Jul 12 · one decision left</span><h4>7. Jobber data reconciliation</h4><p class="what">Cleaned up tonight — duplicates removed, 6 invoices + 8 jobs backfilled, numbered sequentially so new records continue off the top (next invoice = #400).</p><div class="fix"><b>Your call (documented, not buried):</b> whether to re-map every invoice to its exact original Jobber number. Risky; I'd advise against it.</div></div>
 
-  <h3 class="sec">🔵 Mobile — it's a phone app, so this is field reliability</h3>
-  <div class="item blue"><span class="tag blue">MOBILE</span> <span class="st">Ongoing · per screen</span><h4>8. Full responsive pass at phone width, screen by screen</h4><p class="what">The app was largely built desktop-first — several screens squish or run off the edge on a 390px phone (line items, tables, dropdowns, some pop-ups). There are ~288 fixed multi-column layouts and only ~14 phone-specific rules, so this is a real per-screen job, not a one-liner.</p><div class="cost"><b>Costs you:</b> screens that look broken exactly when a customer is watching.</div><div class="fix"><b>Fix:</b> go screen by screen — invoices, jobs, quotes, dashboard, client detail, collect payment, schedule, settings — fix each at phone width, and <b>you confirm each on your real phone</b> before it's called done.</div></div>
+  <h3 class="sec">🔵 Mobile — screen-by-screen punch list (from the scan)</h3>
+  <div class="item blue"><span class="tag blue">MOBILE · BLOCKER</span><br><span class="st">Data clipped/hidden on a phone</span><h4>8. Three screens are unusable at phone width right now</h4><p class="what"><b>Payroll timesheet</b> (9-column grid → days crush, Total pushed off-screen), <b>Books register</b> (4 wide columns overflow, description collapses to nothing), and <b>Messaging</b> (280px list leaves ~110px for the conversation). These clip instead of scroll.</p><div class="fix"><b>Fix:</b> transpose/opt these into the app's existing mobile patterns (stack or swipe). The primitives already exist — these screens just never opted in.</div><div class="ref">payroll.js:182 · books.js:1116 · messaging.js:128</div></div>
+  <div class="item blue"><span class="tag blue">MOBILE · HIGH</span><br><span class="st">Field-critical money screens</span><h4>9. Invoice &amp; quote edit rows squish on a phone</h4><p class="what">The line-item edit rows (Service/Desc/Qty/Rate/Amount) and Settings service/team rows crush to near-illegible at 390px — and these are the screens you use in the field.</p><div class="fix"><b>Fix:</b> stack them the way the quote builder's line items already do (that screen works — copy its treatment).</div><div class="ref">invoices.js:1253 · quotes.js:3717 · settings.js:1045</div></div>
+  <div class="item blue"><span class="tag blue">MOBILE · QUICK WIN</span><br><span class="st">One-line fix across ~18 files</span><h4>10. Stat tiles stuck 4-across → add one class</h4><p class="what">Roughly 18 screens show 4 stat tiles jammed across a phone. The app already has a rule that stacks them 2×2 → 1 — those screens just need the class added. Big visual payoff, tiny effort. Also: Schedule should default to a phone-friendly agenda/week view instead of the tiny month grid.</p></div>
 
   <h3 class="sec">⚪ Polish &amp; housekeeping</h3>
-  <div class="item grey"><span class="tag grey">POLISH</span><h4>9. ~75 jobs have no scheduled date → invisible on the schedule</h4><p class="what">Jobs without a date silently don't appear in schedule views.</p><div class="fix"><b>Fix:</b> flag and backfill them.</div></div>
-  <div class="item grey"><span class="tag grey">POLISH</span><h4>10. Owner password is weak</h4><p class="what">A simple word protects the owner login.</p><div class="fix"><b>Fix:</b> set a strong password.</div></div>
-  <div class="item grey"><span class="tag grey">POLISH</span><h4>11. A GitHub access token sits in plaintext on disk</h4><p class="what">It's in the local repo config (not published), but it's a plaintext credential.</p><div class="fix"><b>Fix:</b> rotate it and move it to the Mac keychain.</div></div>
-  <div class="item grey"><span class="tag grey">POLISH</span><h4>12. Build-tool dependencies have known vulnerabilities</h4><p class="what">In the build tooling only — not shipped to customers.</p><div class="fix"><b>Fix:</b> run the dependency update.</div></div>
+  <div class="item grey"><span class="tag grey">POLISH · MONEY</span><h4>11. Card surcharge isn't actually applied · pay link caps at $9,999.99</h4><p class="what">Card payers aren't being surcharged (the code was never shipped), and the online pay link can't take a payment over ~$10k — a problem for big tree-removal invoices.</p><div class="fix"><b>Fix:</b> decide if you want the surcharge (then actually build + verify it), and raise/remove the pay-link cap.</div></div>
+  <div class="item grey"><span class="tag grey">POLISH</span><h4>12. Duplicate receipts can fire on a payment retry · ~75 jobs have no date · weak owner password · a GitHub token sits in plaintext on disk · build-tool dependency updates</h4><p class="what">Smaller hardening items — none customer-breaking, all quick once the blockers are closed.</p></div>
 
-  <footer><b>Where we stand, plainly:</b> you can keep using Branch Manager today, but until blockers #1–#4 are closed and the mobile pass (#8) is confirmed on your phone, treat every quote/save with a "did it actually land?" check. That's the honest truth — and every item above has a concrete fix, not a shrug. We'll work it top-down, verify each on your phone, and I'll update the status pills here as they close.</footer>
+  <div class="solid"><b>✅ What the scans confirmed is already solid (don't regress these):</b>
+    <ul>
+      <li>Auto-update + <b>loud red error banner</b> on any rejected save — the old silent-drop is largely closed.</li>
+      <li>Quote approve/decline now shows a real error instead of a fake "success."</li>
+      <li>Payment webhook signature is properly verified; the sensitive admin functions are owner-only.</li>
+      <li><b>No automated customer emails</b> — the marketing-send safety line holds; only owner reports are scheduled.</li>
+      <li>Deleted records stay deleted (no resurrection); edits send only changed fields and refuse to clobber a newer cloud copy.</li>
+    </ul>
+  </div>
+
+  <footer><b>Where we stand, plainly:</b> the app earns and its worst historical bug is largely contained — but until blockers #1–#4 are closed and the three mobile screens (#8) are fixed and confirmed on your phone, treat online payments and multi-device invoice creation with care. Every item above has a concrete fix and a code location, not a shrug. We work it top-down, one at a time, each confirmed on your phone. I'll update the status pills here as they close, and add the security scan's findings next.</footer>
 </div>
 </body></html>
