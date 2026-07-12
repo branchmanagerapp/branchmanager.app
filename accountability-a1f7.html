@@ -46,7 +46,7 @@
   <header class="hd">
     <h1>Branch Manager — my failures, our rules, and the plan to make it trustworthy</h1>
     <p>One page. What I got wrong, how we work now, and the exact, prioritized list of what it takes before you can bet your livelihood on this app.</p>
-    <div class="updated">Updated Jul 12 · reprioritized from 3 deep code scans (mobile, data-reliability, payments). Security scan still running — its findings get added next.</div>
+    <div class="updated">Updated Jul 12 · reprioritized from 4 deep code scans (mobile, data-reliability, payments, security). Security state confirmed by a live probe of the database, not just a code read.</div>
   </header>
   <nav class="jump"><a class="a1" href="#failures">① Where I failed</a><a class="a2" href="#rules">② The rules</a><a class="a3" href="#golive">③ Go-live plan</a></nav>
 
@@ -114,6 +114,7 @@
 
   <div class="solid"><b>✅ What the scans confirmed is already solid (don't regress these):</b>
     <ul>
+      <li><b>Your customer data is locked down — verified live Jul 12.</b> With the public app key and no login, an outsider gets <b>0 rows</b> from clients, invoices, payments, quotes, jobs, team, and requests; spoofing the tenant header doesn't bypass it. The May 2026 breach is closed. (One deferred, zero-risk-today item: a multi-tenant staff role model, only relevant once you have a second company with crews on the app.)</li>
       <li>Auto-update + <b>loud red error banner</b> on any rejected save — the old silent-drop is largely closed.</li>
       <li>Quote approve/decline now shows a real error instead of a fake "success."</li>
       <li>Payment webhook signature is properly verified; the sensitive admin functions are owner-only.</li>
