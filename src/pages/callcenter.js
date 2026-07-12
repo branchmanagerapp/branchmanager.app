@@ -123,34 +123,35 @@ var CallCenter = {
       + '<div id="cc-client-label" style="font-size:11px;color:var(--accent);min-height:14px;margin-bottom:2px;font-weight:700;letter-spacing:.3px;"></div>'
       + '<div style="display:flex;align-items:center;gap:6px;">'
       + '<div id="cc-display" style="flex:1;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px;min-height:28px;color:var(--text);">—</div>'
-      + '<button onclick="CallCenter._backspace()" title="Backspace" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;color:var(--text-light);">⌫</button>'
+      + (mode !== 'sms' ? '<button onclick="CallCenter._backspace()" title="Backspace" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;color:var(--text-light);">⌫</button>' : '')
       + '</div>'
       + '<input type="tel" id="cc-raw-input" placeholder="or type a number…" autocomplete="off"'
       + '  oninput="CallCenter._onRawInput(this.value)"'
       + '  style="width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14px;box-sizing:border-box;background:var(--bg);color:var(--text);">'
-      + '</div>'
+      + '</div>';
 
-      // Dial pad
-      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;">';
+    // Dial pad — CALLS ONLY. v1013: texting goes through Dialpad with a typed message;
+    // a phone dialer makes no sense for SMS (Doug: "everything should go through Dialpad").
+    if (mode !== 'sms') {
+      body += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;">';
+      ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(function(k) {
+        body += '<button onclick="CallCenter._press(\'' + k + '\')"'
+          + ' style="padding:11px 0;font-size:17px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;"'
+          + ' onmousedown="this.style.background=\'var(--border)\'" onmouseup="this.style.background=\'var(--surface)\'">'
+          + k + '</button>';
+      });
+      body += '</div>';
+    }
 
-    ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(function(k) {
-      body += '<button onclick="CallCenter._press(\'' + k + '\')"'
-        + ' style="padding:11px 0;font-size:17px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;"'
-        + ' onmousedown="this.style.background=\'var(--border)\'" onmouseup="this.style.background=\'var(--surface)\'">'
-        + k + '</button>';
-    });
+    // Message field (SMS only) — the whole point of New SMS: type it, send through Dialpad
+    if (mode === 'sms') {
+      body += '<textarea id="cc-sms-msg" placeholder="Type your message…" '
+        + 'style="width:100%;min-height:110px;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px;background:var(--bg);color:var(--text);resize:vertical;"></textarea>';
+    }
 
-    body += '</div>'
-
-      // Message field (SMS only) — v1012: was missing entirely, so "Send SMS" fired a blank text
-      + (mode === 'sms'
-          ? '<textarea id="cc-sms-msg" placeholder="Type your message…" '
-            + 'style="width:100%;min-height:84px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px;background:var(--bg);color:var(--text);resize:vertical;"></textarea>'
-          : '')
-
-      // Action button
-      + '<button onclick="CallCenter._dialGo()" style="width:100%;padding:13px;background:' + (mode==='sms'?'var(--green-dark)':'#1a7a3c') + ';color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;">'
-      + (mode === 'sms' ? '💬 Send SMS' : '📞 Make Call')
+    // Action button
+    body += '<button onclick="CallCenter._dialGo()" style="width:100%;padding:13px;background:' + (mode==='sms'?'var(--green-dark)':'#1a7a3c') + ';color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;">'
+      + (mode === 'sms' ? '💬 Send Text via Dialpad' : '📞 Make Call')
       + '</button></div>';
 
     UI.showModal(title, body, { keepModal: true });

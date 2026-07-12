@@ -1,5 +1,5 @@
 {
-  "version": 1012,
+  "version": 1013,
   "released": "2026-07-12",
-  "notes": "New-SMS modal now has a message field + blank-send guard; Text Receipt/Invoice buttons on invoices; photos no longer cache base64 in localStorage (fixes storage-full popup + save failures)."
+  "notes": "New SMS is now a clean compose (contact + message) that sends through Dialpad — the phone dialpad is gone from texting (calls keep it)."
 }
