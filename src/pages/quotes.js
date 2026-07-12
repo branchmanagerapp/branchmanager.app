@@ -4106,7 +4106,7 @@ var QuotesPage = {
 
   _deleteQuote: function(quoteId) {
     if (!confirm('Delete this quote permanently? This cannot be undone.')) return;
-    DB.quotes.delete(quoteId);
+    DB.quotes.remove(quoteId);
     UI.toast(QuotesPage._term(true) + ' deleted');
     loadPage('quotes');
   }

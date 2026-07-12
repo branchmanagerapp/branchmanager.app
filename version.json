@@ -1,5 +1,5 @@
 {
-  "version": 1009,
+  "version": 1010,
   "released": "2026-07-12",
-  "notes": "Search page: magnifying glass no longer overlaps typed text."
+  "notes": "Fix: Delete Quote button crashed (DB.quotes.delete -> remove)."
 }
