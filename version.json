@@ -1,5 +1,5 @@
 {
-  "version": 1013,
+  "version": 1014,
   "released": "2026-07-12",
-  "notes": "New SMS is now a clean compose (contact + message) that sends through Dialpad — the phone dialpad is gone from texting (calls keep it)."
+  "notes": "Quote detail rebuilt Jobber-style for mobile: single-column (title · line items · totals · client), one-tap Approve & Schedule, Change-client menu (reassign/edit), and all extras (photos, video, notes, status) collapsed under expandable sections."
 }

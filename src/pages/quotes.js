@@ -2121,15 +2121,73 @@ var QuotesPage = {
     var statusColor = statusColors[q.status] || '#8b2252';
     var client = q.clientId ? DB.clients.getById(q.clientId) : null;
 
-    var html = '<div style="max-width:960px;margin:0 auto;">'
-      // Top bar: back + actions
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
-      + '<button class="btn btn-outline" onclick="loadPage(\'quotes\')" style="padding:6px 12px;font-size:12px;">← Back to Quotes</button>'
-      + '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
-      // v461: stale follow-up CTA — surface when quote has been awaiting 5+ days
-      // and either no follow-up sent yet OR last follow-up > 3 days ago.
-      // Was buried in the kebab menu; per funnel audit this is the biggest
-      // pipeline-unlocker (44 stale quotes worth of money sitting).
+    var subtitle = q.subject || '';
+    var convertedJob = q.convertedJobId ? DB.jobs.getById(q.convertedJobId) : null;
+    var _gBtn = function(label, onclick){ return '<button onclick="' + onclick + '" style="flex:1.35;background:#1f7a3d;color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;padding:15px 8px;line-height:1.18;cursor:pointer;">' + label + '</button>'; };
+    var _oBtn = function(label, onclick){ return '<button onclick="' + onclick + '" style="flex:1;background:#fff;color:var(--text);border:1.5px solid var(--border);border-radius:11px;font-size:15px;font-weight:700;padding:15px 8px;cursor:pointer;">' + label + '</button>'; };
+    var _primary;
+    if (q.status === 'converted') {
+      _primary = (convertedJob ? _gBtn('🗓 View Job', 'JobsPage.showDetail(\'' + (q.convertedJobId||'') + '\')') : _gBtn('✅ Convert &amp; Book', 'QuotesPage._convertAndBook(\'' + id + '\')')) + _oBtn('📄 PDF', 'PDF.generateQuote(\'' + id + '\')');
+    } else if (q.status === 'approved') {
+      _primary = _gBtn('✅ Convert &amp; Book', 'QuotesPage._convertAndBook(\'' + id + '\')') + _oBtn('Resend', 'QuotesPage._sendQuote(\'' + id + '\')');
+    } else if (q.status === 'declined') {
+      _primary = _gBtn('↩︎ Re-open', 'QuotesPage.setStatus(\'' + id + '\',\'sent\')') + _oBtn('✏️ Edit', 'QuotesPage.showForm(\'' + id + '\')');
+    } else if (q.status === 'draft') {
+      _primary = _gBtn('📤 Send Quote', 'QuotesPage._sendQuote(\'' + id + '\')') + _oBtn('✏️ Edit', 'QuotesPage.showForm(\'' + id + '\')');
+    } else {
+      _primary = _gBtn('✓ Approve<br>&amp; Schedule', 'QuotesPage._approveAndSchedule(\'' + id + '\')') + _oBtn('Resend', 'QuotesPage._sendQuote(\'' + id + '\')');
+    }
+
+    var html = '<style>'
+      + '.q-detail{border-top:1px solid var(--border);}'
+      + '.q-detail>summary{list-style:none;padding:15px 2px;font-size:16px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:var(--text);}'
+      + '.q-detail>summary::-webkit-details-marker{display:none;}'
+      + '.q-detail>summary .qc{color:var(--text-light);font-size:13px;transition:transform .15s;}'
+      + '.q-detail[open]>summary .qc{transform:rotate(90deg);}'
+      + '.q-detail .q-body{padding:2px 2px 18px;}'
+      + '</style>'
+      + '<div style="max-width:480px;margin:0 auto;padding-bottom:44px;">'
+      // Top bar
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+      + '<button onclick="loadPage(\'quotes\')" style="background:#f1f4f5;border:none;border-radius:50%;width:40px;height:40px;font-size:22px;color:var(--text);cursor:pointer;line-height:1;">‹</button>'
+      + '<div style="position:relative;display:inline-block;">'
+      + '<button onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.more-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';" style="background:#f1f4f5;border:none;border-radius:50%;width:40px;height:40px;font-size:15px;color:var(--text);cursor:pointer;">•••</button>'
+      + '<div class="more-dd" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;padding:4px 0;z-index:200;min-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.14);">'
+      + '<button onclick="QuotesPage.showForm(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Edit Quote</button>'
+      + '<button onclick="QuotesPage._sendQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Send to Client</button>'
+      + (q.clientId ? '<button onclick="ClientsPage._sendPortalInvite(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🔗 Send portal invite</button>' : '')
+      + '<button onclick="QuotesPage._copyApprovalLink(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Copy Approval Link</button>'
+      + '<button onclick="PDF.generateQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Download PDF</button>'
+      + '<button onclick="QuotesPage._quickFollowUp(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Send Follow-up</button>'
+      + '<button onclick="QuotesPage.duplicate(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🧬 Duplicate</button>'
+      + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
+      + '<button onclick="QuotesPage.setStatus(\'' + id + '\',\'declined\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:#dc3545;">Mark Declined</button>'
+      + '<button onclick="QuotesPage._archiveQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text-light);">Archive</button>'
+      + '<button onclick="QuotesPage._deleteQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:#dc3545;">Delete</button>'
+      + '</div></div>'
+      + '</div>'
+      // Status pill
+      + '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      + UI.statusBadge(q.status)
+      + (q.expiresAt ? (function() { var exp=new Date(q.expiresAt),now=new Date(); var days=Math.ceil((exp-now)/86400000); var color=days<0?'#dc3545':days<=5?'#e6a817':'var(--text-light)'; var label=days<0?'Expired '+Math.abs(days)+'d ago':days===0?'Expires today':'Valid '+days+'d'; return '<span style="font-size:12px;color:'+color+';">⏱ '+label+'</span>'; })() : '')
+      + (q.depositRequired ? '<span style="font-size:12px;color:var(--text-light);">' + (q.depositPaid ? '✅ Deposit paid' : '⚠️ Deposit due: ' + UI.money(q.depositDue)) + '</span>' : '')
+      + '</div>'
+      // Cover photo
+      + (q.cover_photo_url ? '<div style="margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);max-height:240px;"><img src="' + UI.esc(q.cover_photo_url) + '" alt="cover" style="width:100%;object-fit:cover;display:block;max-height:240px;"></div>' : '')
+      // Title
+      + '<h1 style="font-size:24px;font-weight:800;line-height:1.18;margin:2px 0 2px;letter-spacing:-.01em;">'
+      + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' for '
+      + (q.clientId ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName||'—') + '</a>' : UI.esc(q.clientName||'—'))
+      + ' — ' + UI.money(q.total) + '</h1>'
+      + (subtitle ? '<div style="font-size:18px;color:var(--text-light);font-weight:600;margin:0 0 14px;">' + UI.esc(subtitle) + '</div>' : '<div style="margin-bottom:8px;"></div>')
+      // Created / Sent
+      + '<div style="display:flex;gap:48px;margin-bottom:16px;">'
+      + '<div><div style="font-size:14px;font-weight:700;">Created</div><div style="font-size:14px;color:var(--text-light);margin-top:2px;">' + UI.dateShort(q.createdAt) + '</div></div>'
+      + (q.sentAt ? '<div><div style="font-size:14px;font-weight:700;">Sent</div><div style="font-size:14px;color:var(--text-light);margin-top:2px;">' + UI.dateShort(q.sentAt) + '</div></div>' : '')
+      + '</div>'
+      // Primary actions
+      + '<div style="display:flex;gap:10px;margin-bottom:16px;">' + _primary + '</div>'
+      // Follow-up nudge
       + (function(){
           if (q.status !== 'sent' && q.status !== 'awaiting') return '';
           var sentTs = q.sentAt ? new Date(q.sentAt).getTime() : (q.createdAt ? new Date(q.createdAt).getTime() : 0);
@@ -2138,192 +2196,62 @@ var QuotesPage = {
           if (daysSince < 5) return '';
           var fuTs = q.lastFollowUp ? new Date(q.lastFollowUp).getTime() : 0;
           var daysSinceFu = fuTs ? Math.floor((Date.now() - fuTs) / 86400000) : 999;
-          if (daysSinceFu < 3) return ''; // Don't pester
-          var label = fuTs ? 'Send Another Follow-Up · ' + daysSince + 'd' : 'Send Follow-Up · ' + daysSince + 'd';
-          return '<button onclick="QuotesPage._quickFollowUp(\'' + id + '\')" '
-            +    'style="background:#f59e0b;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;" '
-            +    'title="Quote sent ' + daysSince + ' days ago — nudge the client">'
-            +  '📧 ' + label
-            + '</button>';
+          if (daysSinceFu < 3) return '';
+          var label = fuTs ? 'Send another follow-up' : 'Send a follow-up';
+          return '<button onclick="QuotesPage._quickFollowUp(\'' + id + '\')" style="width:100%;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px;text-align:left;">📧 ' + label + ' — sent ' + daysSince + ' days ago</button>';
         })()
-      + '<button class="btn btn-outline" onclick="QuotesPage._copyApprovalLink(\'' + id + '\')" style="font-size:12px;">Copy Link</button>'
-      + (q.status !== 'converted' && q.status !== 'declined'
-          ? '<button class="btn btn-outline" onclick="QuotesPage._sendQuote(\'' + id + '\')" style="font-size:12px;">Send Quote</button>' : '')
-      + (q.status === 'approved' || q.status === 'converted'
-          ? '<button class="btn btn-primary" onclick="QuotesPage._convertAndBook(\'' + id + '\')" style="font-size:12px;">Convert &amp; Book</button>'
-          : '<button class="btn btn-primary" onclick="QuotesPage.showForm(\'' + id + '\')" style="font-size:12px;">Edit Quote</button>')
-      + '<div style="position:relative;display:inline-block;">'
-      + '<button onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.more-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';" class="btn btn-outline" style="font-size:13px;padding:6px 10px;">•••</button>'
-      + '<div class="more-dd" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 0;z-index:200;min-width:180px;box-shadow:0 4px 16px rgba(0,0,0,.12);">'
-      + '<button onclick="QuotesPage.showForm(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Edit Quote</button>'
-      + '<button onclick="QuotesPage._sendQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Send to Client</button>'
-      + (q.clientId ? '<button onclick="ClientsPage._sendPortalInvite(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🔗 Send portal invite</button>' : '')
-      + '<button onclick="QuotesPage._copyApprovalLink(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Copy Approval Link</button>'
-      + '<button onclick="PDF.generateQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Download PDF</button>'
-      + '<button onclick="QuotesPage._quickFollowUp(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Send Follow-up</button>'
-      + '<button onclick="QuotesPage.duplicate(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🧬 Duplicate Quote</button>'
-      + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
-      + '<button onclick="QuotesPage.setStatus(\'' + id + '\',\'declined\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:#dc3545;">Mark Declined</button>'
-      + '<button onclick="QuotesPage._archiveQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text-light);">Archive</button>'
-      + '<button onclick="QuotesPage._deleteQuote(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:#dc3545;">Delete Quote</button>'
-      + '</div></div>'
-      + '</div></div>'
-
-      // v683: Jobber-style 2-column header. Status pill top-left + big H1
-      // "Quote for [Client]". Below, side-by-side: Client card / Meta card.
-      + '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">'
-      +   UI.statusBadge(q.status)
-      +   (q.expiresAt ? (function() {
-            var exp = new Date(q.expiresAt); var now = new Date();
-            var days = Math.ceil((exp - now) / 86400000);
-            var color = days < 0 ? '#dc3545' : days <= 5 ? '#e6a817' : 'var(--text-light)';
-            var label = days < 0 ? 'Expired ' + Math.abs(days) + 'd ago' : days === 0 ? 'Expires today' : 'Valid ' + days + 'd';
-            return '<span style="font-size:12px;color:' + color + ';">⏱ ' + label + '</span>';
-          })() : '')
-      +   (q.depositRequired ? '<span style="font-size:12px;color:var(--text-light);">' + (q.depositPaid ? '✅ Deposit paid' : '⚠️ Deposit due: ' + UI.money(q.depositDue)) + '</span>' : '')
-      + '</div>'
-      + '<div style="height:4px;background:' + statusColor + ';border-radius:2px;margin-bottom:14px;"></div>'
-      // v883: cover photo from AI walkthrough (if attached)
-      + (q.cover_photo_url ? '<div style="margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);max-height:280px;"><img src="' + UI.esc(q.cover_photo_url) + '" alt="Property cover photo" style="width:100%;height:100%;object-fit:cover;display:block;max-height:280px;"></div>' : '')
-      + '<h1 style="font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;">' + QuotesPage._term(true) + ' for '
-      +   (q.clientId
-            ? '<a onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--text-light);cursor:pointer;">' + UI.esc(q.clientName || '—') + '</a>'
-            : UI.esc(q.clientName || '—'))
-      + '</h1>'
-      + '<div style="font-size:13px;color:var(--text-light);margin-bottom:16px;">' + QuotesPage._term(true) + ' #' + (q.quoteNumber||'') + ' · ' + UI.money(q.total) + '</div>'
-      // Two side-by-side cards: Client (left) / Meta (right)
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">'
-      // ── Client card ──
-      +   '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">'
-      +     '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">'
-      +       '<div style="display:flex;align-items:center;gap:8px;">'
-      +         '<span style="font-weight:700;font-size:15px;">' + UI.esc(q.clientName || '—') + '</span>'
-      +         (client ? '<span style="width:8px;height:8px;border-radius:50%;background:#2e7d32;" title="Active client"></span>' : '')
-      +       '</div>'
-      +       (q.clientId
-              ? '<div style="display:flex;gap:6px;align-items:center;">'
-                + '<button type="button" onclick="ClientsPage.showForm(\'' + q.clientId + '\')" title="Edit client details" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;height:28px;padding:0 10px;cursor:pointer;font-size:12px;color:var(--text);font-weight:600;display:inline-flex;align-items:center;gap:4px;">✏️ Edit</button>'
-                + '<button type="button" onclick="ClientsPage._showCommSettings(\'' + q.clientId + '\')" title="Communication settings" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px;color:var(--text);display:inline-flex;align-items:center;justify-content:center;">🔔</button>'
-                + '<div style="position:relative;">'
-                + '<button type="button" onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.q-client-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';event.stopPropagation();" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px;color:var(--text);display:inline-flex;align-items:center;justify-content:center;">•••</button>'
-                + '<div class="q-client-dd" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;padding:4px 0;z-index:200;min-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.12);">'
-                +   '<button type="button" onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">👁  View client profile</button>'
-                +   '<button type="button" onclick="ClientsPage.showForm(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✏️  Edit client details</button>'
-                +   '<button type="button" onclick="ClientsPage._showCommSettings(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🔔  Communication settings</button>'
-                + '</div>'
-                + '</div>'
-                + '</div>'
-              : '')
-      +     '</div>'
-      +     (q.property ? '<div style="font-size:13px;color:var(--text-light);margin-bottom:6px;"><a href="https://maps.apple.com/?daddr=' + encodeURIComponent(q.property) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">📍 ' + UI.esc(q.property) + '</a></div>' : '')
-      +     (q.clientPhone || (client && client.phone) ? '<div style="font-size:13px;margin-bottom:4px;"><a href="tel:' + (q.clientPhone || client.phone).replace(/\D/g,'') + '" style="color:var(--accent);text-decoration:none;">📞 ' + (q.clientPhone || client.phone) + '</a></div>' : '')
-      +     (q.clientEmail || (client && client.email) ? '<div style="font-size:13px;"><a href="mailto:' + (q.clientEmail || client.email) + '" style="color:var(--accent);text-decoration:none;">✉️ ' + (q.clientEmail || client.email) + '</a></div>' : '')
-      +   '</div>'
-      // ── Meta card ──
-      +   '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">'
-      +     '<div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13px;align-items:baseline;">'
-      +       '<span style="color:var(--text-light);">' + QuotesPage._term(true) + ' #</span><span style="font-weight:600;">' + (q.quoteNumber || '—') + '</span>'
-      +       '<span style="color:var(--text-light);">Total</span><span style="font-weight:700;color:var(--accent);">' + UI.money(q.total) + '</span>'
-      +       '<span style="color:var(--text-light);">Created</span><span>' + UI.dateShort(q.createdAt) + '</span>'
-      +       (q.sentAt ? '<span style="color:var(--text-light);">Sent</span><span>' + UI.dateShort(q.sentAt) + '</span>' : '')
-      +       (q.approvedAt ? '<span style="color:var(--text-light);">Approved</span><span style="color:var(--green-dark);font-weight:600;">' + UI.dateShort(q.approvedAt) + '</span>' : '')
-      +       (q.requestId ? '<span style="color:var(--text-light);">From Request</span><span><a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;text-decoration:underline;">' + ((function(){ var r=DB.requests&&DB.requests.getById?DB.requests.getById(q.requestId):null; return r&&r.createdAt?UI.dateShort(r.createdAt):'View request'; })()) + '</a></span>' : '')
-      +       (q.source ? '<span style="color:var(--text-light);">Lead source</span><span>' + UI.esc(q.source) + '</span>' : '')
-      +       (function(){
-              // v712: next upcoming reminder (or "none") so the user can see
-              // when this quote will next nudge the client.
-              if (typeof PipelinePage === 'undefined' || !PipelinePage._nextReminderForId) return '';
-              var nx = PipelinePage._nextReminderForId(id);
-              if (nx) return '<span style="color:var(--text-light);">Next reminder</span><span style="color:#92400e;">⏰ ' + UI.dateShort(nx.date) + (nx.stage === 2 ? ' (2nd)' : '') + '</span>';
-              if (q.followupSentAt && q.followup2SentAt) return '<span style="color:var(--text-light);">Reminders</span><span style="color:var(--text-light);">✓ Both follow-ups sent</span>';
-              return '<span style="color:var(--text-light);">Reminders</span><span style="color:var(--text-light);">✓ None upcoming</span>';
-            })()
-      +     '</div>'
-      +   '</div>'
-      + '</div>'
-
-      // Description
-      + (q.description ? '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">'
-        + '<h4 style="font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Description</h4>'
-        + '<p style="font-size:14px;line-height:1.6;margin:0;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;">' + UI.esc(q.description) + '</p></div>' : '')
-
-      // Line items (Product / Service) — inline editor
-      + QuotesPage.renderLineItems(q, id)
-
-      // Video walkthrough (full width, above photos)
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">'
-      + '<h4 style="font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Video Walkthrough</h4>'
-      + (q.videoUrl
-        ? '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;margin-bottom:8px;">'
-          + '<iframe src="' + q.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/') + '" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div>'
-          + '<div style="display:flex;gap:6px;">'
-          + '<button class="btn btn-outline" style="font-size:11px;" onclick="navigator.clipboard.writeText(\'' + UI.esc(q.videoUrl) + '\');UI.toast(\'Video link copied!\')">🔗 Copy Link</button>'
-          + '<button class="btn btn-outline" style="font-size:11px;" onclick="QuotesPage._removeVideo(\'' + id + '\')">🗑 Remove</button>'
-          + '</div>'
-        : '<div style="text-align:center;padding:16px;background:var(--bg);border-radius:8px;">'
-          + '<div style="font-size:24px;margin-bottom:8px;">🎥</div>'
-          + '<div style="font-size:13px;color:var(--text-light);margin-bottom:8px;">Record a property walkthrough and attach it to this quote</div>'
-          + '<button class="btn btn-primary" style="font-size:12px;" onclick="QuotesPage._addVideo(\'' + id + '\')">+ Add Video</button>'
-          + '</div>')
-      + '</div>'
-
-      // Signed-approval block — shows the customer's e-signature once captured
-      // (approve.html → quote-update writes client_signature/signed_name/signed_at).
+      // Signature block
       + (function(){
-          var sig = q.clientSignature || q.client_signature || '';
-          var sName = q.signedName || q.signed_name || '';
-          var sAt = q.signedAt || q.signed_at || q.approvedAt || '';
-          if (!sig && !sName) return '';
-          var when = '';
-          try { if (sAt) when = new Date(sAt).toLocaleString(); } catch(e) {}
-          return '<div style="background:var(--white);border:1px solid #a5d6a7;border-radius:10px;padding:16px;margin-bottom:16px;">'
-            + '<h4 style="font-size:12px;color:#2e7d32;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;font-weight:700;">✓ Signed &amp; approved by customer</h4>'
-            + (sig && sig.indexOf('data:image') === 0 ? '<img src="' + sig + '" alt="customer signature" style="max-width:300px;max-height:100px;border-bottom:1px solid var(--border);display:block;margin-bottom:8px;">' : '')
-            + '<div style="font-size:15px;font-weight:700;color:var(--text);">' + UI.esc(sName || '(typed name not captured)') + '</div>'
-            + (when ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Signed ' + UI.esc(when) + '</div>' : '')
-            + '<div style="font-size:11px;color:var(--text-light);margin-top:6px;">Electronic signature — legally binding under the federal ESIGN Act &amp; NY ESRA.</div>'
-            + '</div>';
+          var sig = q.clientSignature || q.client_signature || ''; var sName = q.signedName || q.signed_name || ''; var sAt = q.signedAt || q.signed_at || q.approvedAt || '';
+          if (!sig && !sName) return ''; var when=''; try { if (sAt) when=new Date(sAt).toLocaleString(); } catch(e){}
+          return '<div style="background:var(--white);border:1px solid #a5d6a7;border-radius:10px;padding:14px;margin-bottom:16px;">'
+            + '<h4 style="font-size:12px;color:#2e7d32;text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px;font-weight:700;">✓ Signed &amp; approved by customer</h4>'
+            + (sig && sig.indexOf('data:image')===0 ? '<img src="'+sig+'" alt="signature" style="max-width:280px;max-height:90px;display:block;margin-bottom:8px;">' : '')
+            + '<div style="font-size:15px;font-weight:700;">' + UI.esc(sName||'(name not captured)') + '</div>'
+            + (when ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Signed ' + UI.esc(when) + '</div>' : '') + '</div>';
         })()
-
-      // Photos + Notes + Actions in bottom section
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="detail-grid">'
-
-      // Photos
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;">'
-      + '<h4 style="font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Photos</h4>';
-    if (typeof Photos !== 'undefined') { html += Photos.renderGallery('quote', id); }
-    else { html += '<div style="color:var(--text-light);font-size:13px;">No photos</div>'; }
-    html += '</div>'
-
-      // Notes + Status + Actions
-      + '<div>'
-      // Internal notes — editable textarea, autosaves on blur (parity with invoice detail)
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">'
-      + '<h4 style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;font-weight:700;">Internal Notes</h4>'
-      + '<textarea id="quote-notes-' + id + '" placeholder="Notes only you see\u2026" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;" onblur="QuotesPage._saveNotes(\'' + id + '\',this.value)">' + UI.esc(q.notes || '') + '</textarea>'
+      // Divider + line items (+ totals)
+      + '<div style="height:9px;background:var(--bg);margin:4px -18px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>'
+      + QuotesPage.renderLineItems(q, id)
+      // Client section
+      + '<div style="height:9px;background:var(--bg);margin:18px -18px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">'
+      + '<div style="font-size:15px;font-weight:800;">Client</div>'
+      + (q.clientId
+          ? '<div style="position:relative;"><button onclick="var d=this.nextElementSibling;document.querySelectorAll(\'.q-change-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=d.style.display===\'block\'?\'none\':\'block\';event.stopPropagation();" style="color:#1f7a3d;font-size:13px;font-weight:700;border:1.5px solid #1f7a3d;border-radius:8px;padding:6px 13px;background:#fff;cursor:pointer;">Change ⇄</button>'
+            + '<div class="q-change-dd" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;padding:4px 0;z-index:200;min-width:220px;box-shadow:0 4px 16px rgba(0,0,0,.14);">'
+            + '<button onclick="QuotesPage._reassignClient(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:11px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">🔄  Attach a different client</button>'
+            + '<button onclick="ClientsPage.showForm(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:11px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✏️  Edit this client</button>'
+            + '<button onclick="ClientsPage.showDetail(\'' + q.clientId + '\')" style="display:block;width:100%;text-align:left;padding:11px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">👁  View client profile</button>'
+            + '</div></div>'
+          : '<button onclick="QuotesPage._reassignClient(\'' + id + '\')" style="color:#1f7a3d;font-size:13px;font-weight:700;border:1.5px solid #1f7a3d;border-radius:8px;padding:6px 13px;background:#fff;cursor:pointer;">+ Attach client</button>')
       + '</div>'
-      // Update Status chips (parity with invoice detail)
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">'
-      + '<h4 style="font-size:12px;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;font-weight:700;">Update Status</h4>'
-      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
-      + (function() {
-          var statusBtns = [['draft','Draft'],['sent','Sent'],['awaiting','Awaiting'],['approved','Approved'],['converted','Converted'],['declined','Declined']];
-          return statusBtns.map(function(sb) {
-            var isActive = q.status === sb[0];
-            return '<button onclick="QuotesPage.setStatus(\'' + id + '\',\'' + sb[0] + '\')" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid '
-              + (isActive ? '#2e7d32' : 'var(--border)') + ';background:' + (isActive ? '#2e7d32' : 'var(--white)') + ';color:' + (isActive ? '#fff' : 'var(--text)') + ';cursor:pointer;font-weight:' + (isActive ? '700' : '500') + ';">'
-              + sb[1] + '</button>';
-          }).join('');
-        })()
-      + '</div></div>'
-      // Action buttons
-      + '<div style="display:flex;flex-direction:column;gap:6px;">'
-      + '<button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;" onclick="PDF.generateQuote(\'' + id + '\')">📄 Download PDF</button>'
-      + (q.property ? '<button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px;" onclick="PropertyMap.show(\'' + (q.property || '').replace(/'/g, "\\'") + '\')">📐 Equipment Layout</button>' : '')
-      + (q.status !== 'converted' ? '<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="QuotesPage._convertAndBook(\'' + id + '\')">✅ Convert &amp; Book</button>' : '')
-      + '</div></div>'
-
+      + '<div style="font-size:18px;font-weight:700;">' + UI.esc(q.clientName||'—') + '</div>'
+      + (q.property ? '<div style="font-size:14px;color:var(--text-light);margin-top:4px;"><a href="https://maps.apple.com/?daddr=' + encodeURIComponent(q.property) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">📍 ' + UI.esc(q.property) + '</a></div>' : '')
+      + ((q.clientPhone || (client&&client.phone)) ? '<div style="font-size:14px;margin-top:8px;"><a href="tel:' + (q.clientPhone||client.phone).replace(/\D/g,'') + '" style="color:var(--accent);text-decoration:none;">📞 ' + (q.clientPhone||client.phone) + '</a></div>' : '')
+      + ((q.clientEmail || (client&&client.email)) ? '<div style="font-size:14px;margin-top:4px;"><a href="mailto:' + (q.clientEmail||client.email) + '" style="color:var(--accent);text-decoration:none;">✉️ ' + (q.clientEmail||client.email) + '</a></div>' : '')
+      // Overview
+      + '<div style="height:9px;background:var(--bg);margin:18px -18px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>'
+      + '<div style="font-size:15px;font-weight:800;margin-bottom:10px;">Overview</div>'
+      + '<div style="display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:14px;align-items:baseline;">'
+      + '<span style="color:var(--text-light);">Salesperson</span><span style="font-weight:600;">' + UI.esc(q.salesperson || (typeof CompanyInfo!=='undefined'&&CompanyInfo.get?CompanyInfo.get('ownerName'):'') || '—') + '</span>'
+      + (q.source ? '<span style="color:var(--text-light);">Lead source</span><span style="font-weight:600;">' + UI.esc(q.source) + '</span>' : '')
+      + (q.approvedAt ? '<span style="color:var(--text-light);">Approved</span><span style="color:var(--green-dark);font-weight:600;">' + UI.dateShort(q.approvedAt) + '</span>' : '')
+      + (q.requestId ? '<span style="color:var(--text-light);">From request</span><span><a onclick="RequestsPage._pendingDetail=\'' + q.requestId + '\';loadPage(\'requests\');" style="color:var(--accent);cursor:pointer;text-decoration:underline;">View request</a></span>' : '')
       + '</div>'
+      // Collapsible extras
+      + '<div style="height:9px;background:var(--bg);margin:20px -18px 0;border-top:1px solid var(--border);"></div>'
+      + '<details class="q-detail"><summary>📷 Photos <span class="qc">▸</span></summary><div class="q-body">' + (typeof Photos !== 'undefined' ? Photos.renderGallery('quote', id) : '') + '</div></details>'
+      + '<details class="q-detail"><summary>🎥 Video walkthrough <span class="qc">▸</span></summary><div class="q-body">'
+      + (q.videoUrl
+          ? '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;margin-bottom:8px;"><iframe src="' + q.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/') + '" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div><div style="display:flex;gap:6px;"><button class="btn btn-outline" style="font-size:11px;" onclick="QuotesPage._removeVideo(\'' + id + '\')">🗑 Remove</button></div>'
+          : '<div style="text-align:center;padding:16px;background:var(--bg);border-radius:8px;"><div style="font-size:13px;color:var(--text-light);margin-bottom:8px;">Record a property walkthrough and attach it</div><button class="btn btn-primary" style="font-size:12px;" onclick="QuotesPage._addVideo(\'' + id + '\')">+ Add Video</button></div>')
+      + '</div></details>'
+      + (q.description ? '<details class="q-detail"><summary>📝 Description <span class="qc">▸</span></summary><div class="q-body" style="font-size:14px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;">' + UI.esc(q.description) + '</div></details>' : '')
+      + '<details class="q-detail"><summary>🗒 Internal notes <span class="qc">▸</span></summary><div class="q-body"><textarea id="quote-notes-' + id + '" placeholder="Notes only you see…" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;" onblur="QuotesPage._saveNotes(\'' + id + '\',this.value)">' + UI.esc(q.notes||'') + '</textarea></div></details>'
+      + '<details class="q-detail"><summary>⚙️ Change status manually <span class="qc">▸</span></summary><div class="q-body"><div style="display:flex;gap:6px;flex-wrap:wrap;">'
+      + (function(){ var sb=[['draft','Draft'],['sent','Sent'],['awaiting','Awaiting'],['approved','Approved'],['converted','Converted'],['declined','Declined']]; return sb.map(function(s){ var a=q.status===s[0]; return '<button onclick="QuotesPage.setStatus(\'' + id + '\',\'' + s[0] + '\')" style="font-size:12px;padding:7px 14px;border-radius:8px;border:1px solid ' + (a?'#2e7d32':'var(--border)') + ';background:' + (a?'#2e7d32':'#fff') + ';color:' + (a?'#fff':'var(--text)') + ';cursor:pointer;font-weight:' + (a?'700':'500') + ';">' + s[1] + '</button>'; }).join(''); })()
+      + '</div></div></details>'
       + '</div>'; // close max-width wrapper
 
     // Render full page
@@ -2332,6 +2260,56 @@ var QuotesPage = {
     document.getElementById('pageAction').style.display = 'none';
     if (typeof lucide !== 'undefined') lucide.createIcons();
     return;
+  },
+
+  // v1014: one-tap Approve & Schedule — mark approved, then convert to a job and
+  // open the scheduler (Doug's chosen behavior for the Jobber-style quote page).
+  _approveAndSchedule: function(id) {
+    var q = DB.quotes.getById(id);
+    if (!q) { UI.toast('Quote not found', 'error'); return; }
+    if (q.status !== 'approved' && q.status !== 'converted') {
+      DB.quotes.update(id, { status: 'approved', approvedAt: new Date().toISOString() });
+    }
+    QuotesPage._convertAndBook(id); // creates/finds the job + opens the scheduler
+  },
+
+  // v1014: reassign a quote to a different client (from the quote detail "Change" menu)
+  _reassignQuoteId: null,
+  _reassignClient: function(quoteId) {
+    QuotesPage._reassignQuoteId = quoteId;
+    var html = '<input type="text" id="q-reassign-search" placeholder="Search clients…" autocomplete="off" oninput="QuotesPage._reassignFilter(this.value)" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px;background:var(--bg);color:var(--text);">'
+      + '<div id="q-reassign-list" style="max-height:340px;overflow-y:auto;"></div>';
+    UI.showModal('Attach a different client', html);
+    setTimeout(function(){ QuotesPage._reassignFilter(''); var i=document.getElementById('q-reassign-search'); if(i)i.focus(); }, 60);
+  },
+  _reassignFilter: function(val) {
+    var list = document.getElementById('q-reassign-list'); if (!list) return;
+    var all = (DB.clients.getAll && DB.clients.getAll()) || [];
+    var v = (val||'').toLowerCase().trim();
+    var matches = all.filter(function(c){ return c && !c.archived && (!v || (c.name||'').toLowerCase().indexOf(v) >= 0 || (c.address||'').toLowerCase().indexOf(v) >= 0); }).slice(0, 40);
+    if (!matches.length) { list.innerHTML = '<div style="padding:16px;color:var(--text-light);font-size:13px;text-align:center;">No matching clients</div>'; return; }
+    list.innerHTML = matches.map(function(c){
+      return '<div onclick="QuotesPage._reassignPick(\'' + c.id + '\')" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;">'
+        + '<div style="font-weight:600;">' + UI.esc(c.name||'—') + '</div>'
+        + (c.address ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + UI.esc(c.address) + '</div>' : '')
+        + '</div>';
+    }).join('');
+  },
+  _reassignPick: function(clientId) {
+    var quoteId = QuotesPage._reassignQuoteId;
+    var c = DB.clients.getById(clientId);
+    if (!quoteId || !c) return;
+    var q = DB.quotes.getById(quoteId) || {};
+    DB.quotes.update(quoteId, {
+      clientId: clientId,
+      clientName: c.name,
+      clientPhone: c.phone || q.clientPhone || '',
+      clientEmail: c.email || q.clientEmail || '',
+      property: q.property || c.address || ''
+    });
+    if (typeof UI.closeModal === 'function') UI.closeModal();
+    UI.toast('Moved to ' + c.name);
+    QuotesPage.showDetail(quoteId);
   },
 
   _getApprovalLink: function(id) {
