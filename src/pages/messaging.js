@@ -125,10 +125,23 @@ var MessagingPage = {
       + '<div style="font-size:13px;"><span style="font-weight:700;color:var(--green-dark);">' + openConvos + '</span> <span style="color:var(--text-light);">Active Conversations</span></div>'
       + '</div>';
 
-    html += '<div style="display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 200px);background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;">';
+    // v1019: responsive master-detail. Desktop = two panes (list + conversation).
+    // Mobile (<=720px) = show the list; tap a thread -> full-screen conversation with
+    // a back button (the fixed 280px+1fr grid was crushing the phone).
+    html += '<style>'
+      + '@media (max-width:720px){'
+      + '.msg-shell{grid-template-columns:1fr !important;height:calc(100vh - 150px) !important;}'
+      + '.msg-shell .msg-convo{display:none !important;}'
+      + '.msg-shell.has-sel .msg-list{display:none !important;}'
+      + '.msg-shell.has-sel .msg-convo{display:flex !important;}'
+      + '.msg-back{display:inline-flex !important;}'
+      + '}'
+      + '.msg-back{display:none;}'
+      + '</style>';
+    html += '<div class="msg-shell' + (selectedId ? ' has-sel' : '') + '" style="display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 200px);background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;">';
 
     // Left: Contact list
-    html += '<div style="border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;">'
+    html += '<div class="msg-list" style="border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;">'
       + '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;">'
       + '<input type="text" placeholder="Search contacts..." oninput="MessagingPage.filterContacts(this.value)" style="flex:1;padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-size:13px;">'
       + '<button onclick="MessagingPage.newMessage()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New</button>'
@@ -180,7 +193,7 @@ var MessagingPage = {
     html += '</div></div>';
 
     // Right: Conversation
-    html += '<div style="display:flex;flex-direction:column;">';
+    html += '<div class="msg-convo" style="display:flex;flex-direction:column;">';
     if (selectedId) {
       var client = null;
       var comms = [];
@@ -220,10 +233,13 @@ var MessagingPage = {
           + '<button onclick="Dialpad.showTextModal(\'' + selectedId + '\',\'' + (client ? (client.name || '').replace(/'/g, "\\'") : '') + '\',\'' + (client ? (client.phone || '') : '') + '\')" style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;color:var(--green-dark);">💬 Text</button>'
           + '<button onclick="MessagingPage.showTemplates(\'' + selectedId + '\')" style="background:#e3f2fd;border:1px solid #bbdefb;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;color:#1565c0;">📋 Templates</button>';
       }
-      html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">'
-        + '<div><strong style="font-size:15px;">' + UI.esc(headerName) + '</strong>'
-        + '<div style="font-size:12px;color:var(--text-light);">' + UI.esc(headerSub) + '</div></div>'
-        + '<div style="display:flex;gap:6px;">' + headerActions + '</div></div>';
+      html += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;">'
+        + '<div style="display:flex;align-items:center;gap:6px;min-width:0;">'
+        + '<button class="msg-back" onclick="MessagingPage._back()" title="Back to messages" style="background:none;border:none;font-size:24px;color:var(--text);cursor:pointer;padding:0 2px 0 0;line-height:1;align-items:center;">‹</button>'
+        + '<div style="min-width:0;"><strong style="font-size:15px;">' + UI.esc(headerName) + '</strong>'
+        + '<div style="font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(headerSub) + '</div></div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;">' + headerActions + '</div></div>';
 
       // Context strip — show latest quote/invoice/job for known clients so
       // Doug can answer "is your quote ready" / "what's my balance" without
@@ -293,6 +309,13 @@ var MessagingPage = {
     html += '</div></div>';
 
     return html;
+  },
+
+  // v1019: mobile back — clear the selection so the full-screen conversation
+  // collapses back to the thread list.
+  _back: function() {
+    MessagingPage._selected = null;
+    loadPage('messaging');
   },
 
   selectClient: function(clientId) {
