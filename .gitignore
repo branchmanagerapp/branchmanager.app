@@ -14,3 +14,4 @@ package-lock.json
 supabase/.temp/
 supabase/.branches/
 security/
+node_modules
