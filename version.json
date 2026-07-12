@@ -1,5 +1,5 @@
 {
-  "version": 1017,
+  "version": 1018,
   "released": "2026-07-12",
-  "notes": "Text Receipt from an invoice now opens the pre-filled text thread reliably (was racing the page load and dumping you on the Leads Center)."
+  "notes": "Client page now shows the client's existing Quotes right on the Overview (tap to open); removed the prominent +Quote/+Job/+Invoice buttons from the top (create from each section instead)."
 }

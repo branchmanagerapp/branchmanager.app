@@ -1171,9 +1171,6 @@ var ClientsPage = {
       +   (phoneTel ? '<button class="btn" style="background:var(--green-dark);color:#fff;font-size:13px;padding:10px;" onclick="Dialpad.call(\'' + phoneTel + '\',\'' + id + '\',\'' + nameJs + '\')">📞 Call</button>' : '')
       +   (phoneTel ? '<button class="btn" style="background:var(--accent);color:#fff;font-size:13px;padding:10px;" onclick="Dialpad.showTextModal(\'' + id + '\',\'' + nameJs + '\',\'' + phoneTel + '\')">💬 Text</button>' : '')
       +   (c.email ? '<a class="btn btn-primary" style="font-size:13px;padding:10px;text-decoration:none;text-align:center;" href="mailto:' + encodeURIComponent(c.email) + '">✉️ Email</a>' : '')
-      +   '<button class="btn btn-primary" style="font-size:13px;padding:10px;" onclick="QuotesPage.showForm(null,\'' + id + '\')">+ Quote</button>'
-      +   '<button class="btn btn-primary" style="font-size:13px;padding:10px;" onclick="JobsPage.showForm(null,\'' + id + '\')">+ Job</button>'
-      +   '<button class="btn btn-primary" style="font-size:13px;padding:10px;" onclick="InvoicesPage.showForm(null,\'' + id + '\')">+ Invoice</button>'
       +   (c.email ? '<button class="btn" style="background:#7c3aed;color:#fff;font-size:13px;padding:10px;" onclick="ClientsPage._sendPortalInvite(\'' + id + '\')">🔗 Portal Invite</button>' : '')
       + '</div>'
 
@@ -1241,11 +1238,39 @@ var ClientsPage = {
     } else {
       html += '<div style="font-size:13px;color:var(--text-light);padding:10px 0;">No upcoming work. Tap <strong>+ Schedule</strong> to add a job.</div>';
     }
-    html += '</div>'
+    html += '</div>';
 
-      //  Recent pricing for this property
-      +   '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;">'
-      +     '<h3 style="font-size:16px;font-weight:700;margin:0 0 10px;">Recent pricing</h3>';
+    // ── Quotes for this client (v1018 — Doug: "I need to see the ones that exist for him").
+    // Surfaced on the Overview so existing quotes aren't buried in the Work tab.
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (clientQuotes.length ? '4px' : '10px') + ';">'
+      + '<h3 style="font-size:16px;font-weight:700;margin:0;">Quotes (' + clientQuotes.length + ')</h3>'
+      + '<button class="btn btn-outline" style="font-size:12px;padding:5px 12px;" onclick="QuotesPage.showForm(null,\'' + id + '\')">+ New</button>'
+      + '</div>';
+    if (clientQuotes.length) {
+      var _cqSorted = clientQuotes.slice().sort(function(a, b){ return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+      _cqSorted.slice(0, 6).forEach(function(q) {
+        html += '<div onclick="QuotesPage._pendingDetail=\'' + q.id + '\';loadPage(\'quotes\')" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--bg);cursor:pointer;">'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(q.subject || ((QuotesPage._term ? QuotesPage._term(true) : 'Quote') + ' #' + (q.quoteNumber || ''))) + '</div>'
+          + '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">#' + (q.quoteNumber || '—') + ' · ' + UI.dateShort(q.createdAt) + '</div>'
+          + '</div>'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'
+          + (UI.statusBadge ? '<span style="font-size:12px;">' + UI.statusBadge(q.status) + '</span>' : '')
+          + '<span style="font-size:14px;font-weight:700;color:var(--green-dark);">' + UI.money(q.total) + '</span>'
+          + '</div></div>';
+      });
+      if (_cqSorted.length > 6) {
+        html += '<div style="text-align:center;padding-top:10px;"><a onclick="ClientsPage._tab(document.querySelector(\'.cd-tab[onclick*=cd-work]\'),\'cd-work\')" style="font-size:12px;color:var(--accent);cursor:pointer;">View all ' + _cqSorted.length + ' quotes →</a></div>';
+      }
+    } else {
+      html += '<div style="font-size:13px;color:var(--text-light);">No quotes yet — tap <strong>+ New</strong> to create one.</div>';
+    }
+    html += '</div>';
+
+    //  Recent pricing for this property
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;">'
+      + '<h3 style="font-size:16px;font-weight:700;margin:0 0 10px;">Recent pricing</h3>';
     var recentLineItems = [];
     clientQuotes.forEach(function(q) {
       if (q.lineItems) q.lineItems.forEach(function(li) {
