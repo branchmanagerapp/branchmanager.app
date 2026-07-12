@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Branch Manager — Monthly Costs</title>
+<style>
+  :root{--ink:#141a1f;--muted:#5b6672;--line:#e7e9ec;--green:#1f7a44;--green-d:#155c33;--green-bg:#e9f6ee;--amber:#8a5a00;--amber-bg:#fef7e6;--red:#b3261e;--red-bg:#fdecea;--card:#fff;--bg:#f4f5f7}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
+  .wrap{max-width:640px;margin:0 auto;padding:18px 14px 60px}
+  header.hd{padding:22px 18px;border-radius:16px;background:linear-gradient(160deg,#22303a,#141a1f);color:#fff;margin-bottom:16px}
+  header.hd h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
+  header.hd p{margin:8px 0 0;font-size:13.5px;color:#c3ccd4}
+  .now{background:var(--red-bg);border:1px solid #f3c2bd;border-radius:12px;padding:13px 15px;font-size:13.5px;color:#7a1a13;margin-bottom:16px}
+  .now b{color:var(--red)}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;margin:22px 4px 8px}
+  .tier{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
+  .tier .thd{display:flex;justify-content:space-between;align-items:baseline;padding:12px 15px;border-bottom:1px solid var(--line);gap:8px}
+  .tier .thd .t{font-weight:800;font-size:15px}
+  .tier .thd .amt{font-weight:800;font-size:15px;color:var(--green-d);white-space:nowrap}
+  .row{padding:11px 15px;border-bottom:1px solid #f1f3f5}
+  .row:last-child{border-bottom:none}
+  .row .l{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .row .svc{font-weight:700;font-size:14px}
+  .row .cost{font-weight:800;font-size:14px;white-space:nowrap}
+  .row .why{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .t1 .thd{background:var(--red-bg)} .t1 .thd .amt{color:var(--red)}
+  .t2 .thd{background:var(--amber-bg)} .t2 .thd .amt{color:var(--amber)}
+  .t3 .thd{background:var(--green-bg)}
+  .paid .thd{background:#eef1f4}
+  .bottom{background:#22303a;color:#eaf0f3;border-radius:14px;padding:16px 18px;margin-top:18px}
+  .bottom .line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:14px}
+  .bottom .line:last-child{border-bottom:none}
+  .bottom .line b{color:#fff} .bottom .pick{color:#7ee0a6;font-weight:800}
+  .foot{font-size:11.5px;color:var(--muted);margin-top:16px;text-align:center}
+</style></head><body>
+<div class="wrap">
+  <header class="hd">
+    <h1>Branch Manager — what it costs to run</h1>
+    <p>Itemized monthly burn to keep it stable, secure, and not silently broken. Tiered by how much it matters.</p>
+  </header>
+
+  <div class="now"><b>Where you are right now:</b> mostly <b>free tiers</b> (verified today — Supabase org has no paid plan). No crash risk this second, but the free tier has <b>no automated backups</b> and email caps at 100/day. The two Tier-1 upgrades below are the ones I'd actually pay for.</div>
+
+  <h2>Tier 1 — don't embarrass yourself with real customers</h2>
+  <div class="tier t1">
+    <div class="thd"><span class="t">Required</span><span class="amt">~$45/mo</span></div>
+    <div class="row"><div class="l"><span class="svc">Supabase Pro</span><span class="cost">$25/mo</span></div><div class="why">Free tier auto-pauses your database after 7 idle days and keeps only 1-day backups. Pro = daily backups + 7-day point-in-time recovery + no auto-pause. This is the one I'd buy first — it's your insurance against losing data.</div></div>
+    <div class="row"><div class="l"><span class="svc">Resend Pro</span><span class="cost">$20/mo</span></div><div class="why">Free tier = 100 emails/day, and we've hit it. Fine for receipts today; the day a busy morning of invoices + review requests runs, BM silently stops sending mid-day. Pro removes the cap.</div></div>
+  </div>
+
+  <h2>Tier 2 — strongly recommended for production</h2>
+  <div class="tier t2">
+    <div class="thd"><span class="t">Recommended</span><span class="amt">~$33/mo</span></div>
+    <div class="row"><div class="l"><span class="svc">UptimeRobot Solo</span><span class="cost">$7/mo</span></div><div class="why">Texts your phone the moment the app or a payment function goes down — before your crew calls you about it. Free tier works too (5-min checks, email only).</div></div>
+    <div class="row"><div class="l"><span class="svc">Sentry Team</span><span class="cost">$26/mo</span></div><div class="why">Catches every JS error from every session (it's what caught the quote-delete crash). Free tier's 5k events/mo is fine until you have a few crew logins.</div></div>
+  </div>
+
+  <h2>Tier 3 — only once you grow</h2>
+  <div class="tier t3">
+    <div class="thd"><span class="t">At scale</span><span class="amt">~$5/mo</span></div>
+    <div class="row"><div class="l"><span class="svc">Cloudflare Workers Paid</span><span class="cost">$5/mo</span></div><div class="why">Free tier = 100k requests/day. You're well under. Only matters at 5+ companies on the platform.</div></div>
+  </div>
+
+  <h2>Domains (annual, amortized)</h2>
+  <div class="tier">
+    <div class="thd"><span class="t">peekskilltree · branchmanager.app · brmgr.app</span><span class="amt">~$4/mo</span></div>
+  </div>
+
+  <h2>Already paid / not BM-core</h2>
+  <div class="tier paid">
+    <div class="thd"><span class="t">Reference</span><span class="amt"></span></div>
+    <div class="row"><div class="l"><span class="svc">Dialpad Connect Pro</span><span class="cost">~$25/mo</span></div><div class="why">Paid through Mar 2027. Powers the in-app texting/calling.</div></div>
+    <div class="row"><div class="l"><span class="svc">Bouncie (3 trucks)</span><span class="cost">~$24/mo</span></div><div class="why">GPS dongles. Not BM-core.</div></div>
+    <div class="row"><div class="l"><span class="svc">Stripe</span><span class="cost">2.9% + 30¢</span></div><div class="why">Per card transaction, no monthly fee. Cash/check/ACH have no fee.</div></div>
+  </div>
+
+  <div class="bottom">
+    <div class="line"><span><b>Tier 1 only</b> — don't be embarrassed</span><span class="pick">$45/mo</span></div>
+    <div class="line"><span><b>Tier 1 + 2</b> — production-grade</span><span>$78/mo</span></div>
+    <div class="line"><span><b>Tier 1 + 2 + 3</b> — at real scale</span><span>$83/mo</span></div>
+  </div>
+
+  <p class="foot">Figures from the May 2026 cost audit; current plan state verified today (free tiers). Each upgrade pays for itself the first time it prevents one lost invoice, one lost backup, or one 4am outage you didn't hear about.</p>
+</div>
+</body></html>
