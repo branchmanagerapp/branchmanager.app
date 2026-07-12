@@ -1181,12 +1181,25 @@ var DashboardPage = {
         + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule')
         + section('💤 Parked — back burner', '#9e9e9e', parked, qRow('parked — un-archive when live'), 'quotes');
       if (!body) return '';
+      var _tbCollapsed = false;
+      try { _tbCollapsed = localStorage.getItem('bm-today-collapsed') === '1'; } catch (e) {}
       return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--white);margin-bottom:20px;overflow:hidden;' + (_cl ? 'box-shadow:0 1px 3px rgba(0,0,0,0.04);' : '') + '">'
-        + '<div style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:baseline;">'
+        + '<div onclick="DashboardPage._toggleTodayBoard()" style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">'
         + '<h3 style="margin:0;font-size:18px;font-weight:' + (_cl ? '700' : '800') + ';' + (_cl ? '' : 'font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;') + '">Today board</h3>'
-        + '<span style="font-size:11px;color:var(--text-light);">tap a row to open it</span></div>'
-        + body + '</div>';
+        + '<span id="bm-today-chevron" style="font-size:14px;color:var(--text-light);transition:transform .15s ease;transform:rotate(' + (_tbCollapsed ? '-90deg' : '0deg') + ');">&#9662;</span></div>'
+        + '<div id="bm-today-body" style="' + (_tbCollapsed ? 'display:none;' : '') + '">' + body + '</div>'
+        + '</div>';
     } catch (e) { return ''; /* never break the dashboard */ }
+  },
+
+  _toggleTodayBoard: function() {
+    var b = document.getElementById('bm-today-body');
+    var c = document.getElementById('bm-today-chevron');
+    if (!b) return;
+    var collapse = b.style.display !== 'none';
+    b.style.display = collapse ? 'none' : '';
+    if (c) c.style.transform = 'rotate(' + (collapse ? '-90deg' : '0deg') + ')';
+    try { localStorage.setItem('bm-today-collapsed', collapse ? '1' : '0'); } catch (e) {}
   },
 
   _renderMobileFocusBlock: function(now, todayStr) {
