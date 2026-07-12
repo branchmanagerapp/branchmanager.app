@@ -665,14 +665,16 @@ var QuotesPage = {
       +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" title="Add tree (photo + AI)" style="width:54px;height:54px;border-radius:10px;background:var(--green-dark);color:#fff;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📷</button>'
       // v693: bulk-upload button — picks many photos at once, queues them in a
       // tray; user drags each onto the line item it belongs to (or taps on mobile).
-      +   '<button type="button" onclick="QuotesPage._bulkAddPhotos()" title="Bulk add photos — drag onto line items" style="width:54px;height:54px;border-radius:10px;background:var(--white);color:var(--green-dark);border:2px solid var(--green-dark);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;">📸+</button>'
+      +   '<button type="button" class="q-desktop-only" onclick="QuotesPage._bulkAddPhotos()" title="Bulk add photos — drag onto line items (desktop)" style="width:54px;height:54px;border-radius:10px;background:var(--white);color:var(--green-dark);border:2px solid var(--green-dark);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;">📸+</button>'
       + '</div>';
 
     // v989: permanent Job Photos pool — always visible so the bulk flow is
     // discoverable (Doug: "all the job photos in one section, then I drag and
     // drop to the line items — very important"). Filled by _renderPhotoTray;
     // accepts files dragged straight in from Finder/Photos on desktop.
-    html += '<div id="q-photo-pool" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:12px 14px;margin-bottom:14px;"></div>';
+    // v1015: bulk photo pool + drag-drop is a DESKTOP flow (Doug: bulk upload is desktop-only;
+    // on mobile you add photos straight to each line item with the per-item 📷 Add Photos button).
+    html += '<div id="q-photo-pool" class="q-desktop-only" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:12px 14px;margin-bottom:14px;"></div>';
 
     // Line items list — newly-added items render expanded so user can fill in immediately.
     html += '<div id="q-items">';

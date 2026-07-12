@@ -1,5 +1,5 @@
 {
-  "version": 1015,
+  "version": 1016,
   "released": "2026-07-12",
-  "notes": "Invoices search fixed (debounced so you can actually type a full query); the scary 'Storage was full' toast no longer pops up (it self-heals to the cloud, now logged silently)."
+  "notes": "Bulk photo upload + drag-drop pool are now desktop-only on the quote form; on mobile you add photos straight to each line item (📷 Add Photos / add-tree)."
 }
