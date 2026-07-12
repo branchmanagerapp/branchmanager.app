@@ -1,5 +1,5 @@
 {
-  "version": 1007,
+  "version": 1008,
   "released": "2026-07-12",
-  "notes": "Today board: each section is now individually collapsible (state remembered)."
+  "notes": "Mobile: quote detail Client/Meta cards stack on phone (values no longer clip)."
 }

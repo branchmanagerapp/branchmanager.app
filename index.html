@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1007; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1008; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -785,6 +785,9 @@
     div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(4)::before { content:'Rate '; color:var(--text-light); font-size:11px; }
     div[style*="grid-template-columns:1.5fr 2fr 60px 90px 90px"] > div:nth-child(5)::before { content:'Total '; color:var(--text-light); font-size:11px; }
     div[style*="min-width:280px;font-size:14px"] { min-width:0 !important; width:100% !important; }
+    /* Quote detail Client/Meta cards (quotes.js:2195) — bare 1fr 1fr with no
+       .detail-grid class; collapse to one column on a phone so meta values fit. */
+    div[style*="grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px"] { grid-template-columns:1fr !important; }
     /* Jobs line-items table (jobs.js data-table) -> stack on phone like the invoice.
        Excludes the EDITABLE quote-builder table via its #li-tbody so inputs stay intact. */
     table.data-table[style*="border:none;border-radius:0"]:not(:has(#li-tbody)) { min-width:0 !important; width:100% !important; display:block !important; }
