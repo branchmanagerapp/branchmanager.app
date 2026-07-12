@@ -1,5 +1,5 @@
 {
-  "version": 1010,
+  "version": 1011,
   "released": "2026-07-12",
-  "notes": "Fix: Delete Quote button crashed (DB.quotes.delete -> remove)."
+  "notes": "Today-board sections start collapsed; Send Invoice / Send Receipt buttons on the invoice page."
 }

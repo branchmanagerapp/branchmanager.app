@@ -907,8 +907,8 @@ var InvoicesPage = {
       +       '</div>'
       +     '</div>'
       +     (inv.status !== 'paid'
-        ? '<button type="button" class="btn btn-primary" onclick="if(typeof Workflow!==\'undefined\')Workflow.showMarkPaid(\'' + id + '\');else InvoicesPage._quickPay(\'' + id + '\');" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">$ Collect Payment</button>'
-        : '<span style="font-size:13px;color:var(--green-dark);font-weight:700;display:inline-flex;align-items:center;gap:6px;background:#e8f5e9;padding:8px 14px;border-radius:8px;">✓ Paid</span>')
+        ? '<button type="button" class="btn btn-outline" onclick="InvoicesPage._sendInvoiceEmail(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;margin-right:8px;">📤 Send Invoice</button>' + '<button type="button" class="btn btn-primary" onclick="if(typeof Workflow!==\'undefined\')Workflow.showMarkPaid(\'' + id + '\');else InvoicesPage._quickPay(\'' + id + '\');" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">$ Collect Payment</button>'
+        : '<span style="font-size:12px;color:var(--green-dark);font-weight:700;display:inline-flex;align-items:center;gap:5px;background:#e8f5e9;padding:8px 12px;border-radius:8px;margin-right:8px;">✓ Paid</span>' + '<button type="button" class="btn btn-primary" onclick="InvoicesPage._sendReceiptEmail(\'' + id + '\')" style="font-size:14px;font-weight:700;padding:9px 18px;background:#2e7d32;color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 3px rgba(0,0,0,.1);">🧾 Send Receipt</button>')
       +   '</div>'
       + '</div>'
 
