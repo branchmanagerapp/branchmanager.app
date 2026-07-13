@@ -1,5 +1,5 @@
 {
-  "version": 1045,
+  "version": 1046,
   "released": "2026-07-13",
-  "notes": "Card-fee waiver: a 'Waive the card fee for this client' toggle on the Send-Invoice screen removes the ~3% surcharge from that customer's pay page (you absorb it) — one tap, per invoice. Plus the pay page respects it end-to-end."
+  "notes": "Quote/invoice save-failure fix: numbers are now cloud-aware so a device that's behind the cloud can't mint an already-used quote/invoice number (the 409 'Cloud Save failed' collision). DB quote_number sequence realigned past the real max, and lead_source/salesperson/photo columns backfilled."
 }

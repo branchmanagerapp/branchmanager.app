@@ -154,11 +154,17 @@ var CloudSync = {
           // Audit fix (Jun 2026): record the highest job_number seen in the
           // cloud so DB.nextJobNum() can avoid handing out a number another
           // device already used (cloud-aware numbering — closes the online race).
-          if (table === 'jobs') {
+          if (table === 'jobs' || table === 'quotes' || table === 'invoices') {
             try {
               window._bmCloudMax = window._bmCloudMax || {};
-              var cmax = converted.reduce(function(m, j) { return Math.max(m, (j.jobNumber || j.job_number || 0)); }, 0);
-              if (cmax > (window._bmCloudMax.jobs || 0)) window._bmCloudMax.jobs = cmax;
+              // Human-facing sequence number differs per table.
+              var numField = table === 'jobs' ? ['jobNumber','job_number']
+                           : table === 'quotes' ? ['quoteNumber','quote_number']
+                           : ['invoiceNumber','invoice_number'];
+              var cmax = converted.reduce(function(m, r) {
+                return Math.max(m, (r[numField[0]] || r[numField[1]] || 0));
+              }, 0);
+              if (cmax > (window._bmCloudMax[table] || 0)) window._bmCloudMax[table] = cmax;
             } catch (e) {}
           }
           totalRows += converted.length;

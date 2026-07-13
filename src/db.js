@@ -773,9 +773,19 @@ var DB = (function() {
   };
 
   // ── Quotes ──
+  // Audit fix (Jul 2026): quote numbers had the SAME stale-device collision the
+  // jobs fix (below) closed — nextQuoteNum used max(LOCAL quoteNumber) only, so a
+  // device behind the cloud minted a number already taken → the whole cloud save
+  // was rejected (409 duplicate key on quotes_tenant_qnum_unique) and the user saw
+  // "Cloud Save failed". Now also factor in the highest quote_number from the last
+  // cloud pull (window._bmCloudMax.quotes, set by CloudSync).
   var nextQuoteNum = function() {
     var all = getAll(KEYS.quotes);
     var max = all.reduce(function(m, q) { return Math.max(m, q.quoteNumber || 0); }, 0);
+    try {
+      var cloudHint = (typeof window !== 'undefined' && window._bmCloudMax && window._bmCloudMax.quotes) || 0;
+      if (cloudHint > max) max = cloudHint;
+    } catch (e) {}
     return max + 1;
   };
   // Backfill clientId on a record that has clientName but no clientId —
@@ -888,6 +898,12 @@ var DB = (function() {
   var nextInvNum = function() {
     var all = getAll(KEYS.invoices);
     var max = all.reduce(function(m, i) { return Math.max(m, i.invoiceNumber || 0); }, 399);
+    // Same cloud-aware fix as quotes/jobs: don't hand out an invoice_number a
+    // synced device already used (409 duplicate → "Cloud Save failed").
+    try {
+      var cloudHint = (typeof window !== 'undefined' && window._bmCloudMax && window._bmCloudMax.invoices) || 0;
+      if (cloudHint > max) max = cloudHint;
+    } catch (e) {}
     return max + 1;
   };
   var invoices = {
