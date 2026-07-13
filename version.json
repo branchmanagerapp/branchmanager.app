@@ -1,5 +1,5 @@
 {
-  "version": 1041,
+  "version": 1042,
   "released": "2026-07-13",
-  "notes": "Clients search fixed: removed the box-in-box (borderless input inside the pill), and debounced so it no longer re-renders + steals focus on every keystroke — you can type a full query uninterrupted, so filtering works (typing 'Rob' shows the Robs, not unfiltered A's)."
+  "notes": "Saving a client now closes the editor and returns you to the page you were on (e.g. the quote you opened 'Edit this client' from) instead of always dumping you on the clients list."
 }

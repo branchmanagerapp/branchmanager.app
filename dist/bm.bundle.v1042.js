@@ -2550,6 +2550,32 @@ var UI = (function() {
     });
   }
 
+  // v1040: GLOBAL address autocomplete. Bind Photon autocomplete to ANY address
+  // input the moment it's focused, anywhere in the app — so every location field
+  // (client, company, chip-drop, permit, hiring, property map, + future ones)
+  // gets the type-ahead without wiring each form by hand. Idempotent via the
+  // _addrAutocompleteBound flag inside bindAddressAutocomplete.
+  (function initGlobalAddressAutocomplete() {
+    if (typeof document === 'undefined') return;
+    document.addEventListener('focusin', function(e) {
+      var el = e.target;
+      if (!el || el.tagName !== 'INPUT' || el._addrAutocompleteBound) return;
+      var type = (el.type || 'text').toLowerCase();
+      if (type !== 'text' && type !== 'search') return; // skip checkboxes/toggles
+      var id = (el.id || '').toLowerCase();
+      var ac = (el.getAttribute('autocomplete') || '').toLowerCase();
+      var ph = (el.placeholder || '').toLowerCase();
+      // Address field if: autocomplete=street-address, OR id/placeholder mentions
+      // address/street. Exclude the booking-form "require address" SETTING toggle.
+      var isAddr = ac === 'street-address'
+        || (/address|street/.test(id) && !/require/.test(id))
+        || /\baddress\b|\bstreet\b/.test(ph);
+      if (!isAddr) return;
+      if (!el.id) el.id = 'addr-auto-' + Math.random().toString(36).slice(2, 9);
+      bindAddressAutocomplete(el.id);
+    }, true);
+  })();
+
   // v634: searchable client picker — replaces the no-search native <select>
   // that became unusable as the client list grew.
   //
@@ -5485,7 +5511,21 @@ var ClientsPage = {
   },
 
   setFilter: function(f) { ClientsPage._filter = f; ClientsPage._page = 0; loadPage('clients'); },
-  setSearch: function(q) { ClientsPage._search = q; ClientsPage._page = 0; loadPage('clients'); },
+  // v1041: DEBOUNCE the search. Was: loadPage('clients') on EVERY keystroke,
+  // which re-rendered the whole page, recreated #client-search, and stole focus
+  // after each letter — so you couldn't finish typing "Rob" and it stayed on a
+  // partial/empty query (showing unfiltered A's). Now: update _search immediately,
+  // but only re-render (and re-filter) 220ms after you stop typing, then restore
+  // focus + caret so typing is uninterrupted.
+  setSearch: function(q) {
+    ClientsPage._search = q; ClientsPage._page = 0;
+    clearTimeout(ClientsPage._searchDebounce);
+    ClientsPage._searchDebounce = setTimeout(function() {
+      loadPage('clients');
+      var el = document.getElementById('client-search');
+      if (el) { el.focus(); try { var n = el.value.length; el.setSelectionRange(n, n); } catch (e) {} }
+    }, 220);
+  },
   setSort: function(field) {
     if (ClientsPage._sort === field) { ClientsPage._sortDir *= -1; }
     else { ClientsPage._sort = field; ClientsPage._sortDir = 1; }
@@ -6049,7 +6089,11 @@ var ClientsPage = {
         return;
       }
     }
-    loadPage('clients');
+    // v1041: close the modal and return to the page you were ON (e.g. the quote
+    // you opened "Edit this client" from) — was: always loadPage('clients'),
+    // which kicked you off the quote to the clients list after every save.
+    if (UI.closeModal) UI.closeModal();
+    loadPage(window._currentPage || 'clients');
   },
 
   // v962: set the flag then submit; save() reopens a fresh form (Jobber-match)
@@ -9365,9 +9409,10 @@ var QuotesPage = {
       +   (q && q.id && !_jb ? '<button type="button" onclick="QuotesPage.addWalkthroughTo(\'' + q.id + '\')" title="Record/upload a property video — AI extracts trees + adds line items to this quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><span>🎙️</span> Add walkthrough <span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:999px;font-size:9px;letter-spacing:.05em;">AI</span></button>' : '')
       + '</div>'
       + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;">'
-      +   '<select id="q-service-picker" onchange="QuotesPage._addItemFromPicker(this)" style="flex:1;padding:14px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--white);">'
-      +     svcOptionsHtml
-      +   '</select>'
+      // v1039: type-or-pick — you can TYPE any service (not just pick from a list).
+      // Uses the shared q-svc-datalist so the old suggestions still drop down.
+      +   '<input id="q-service-input" list="q-svc-datalist" placeholder="Type a service — or pick — then Add" onkeydown="if(event.key===\'Enter\'){event.preventDefault();QuotesPage._addItemFromInput();}" style="flex:1;padding:14px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--white);">'
+      +   '<button type="button" onclick="QuotesPage._addItemFromInput()" title="Add this service as a line item" style="padding:14px 18px;border-radius:10px;background:var(--green-dark);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">+ Add</button>'
       +   '<button type="button" onclick="QuotesPage._addPhotoFirst()" title="Add tree (photo + AI)" style="width:54px;height:54px;border-radius:10px;background:var(--green-dark);color:#fff;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📷</button>'
       // v693: bulk-upload button — picks many photos at once, queues them in a
       // tray; user drags each onto the line item it belongs to (or taps on mobile).
@@ -9904,13 +9949,17 @@ var QuotesPage = {
       + '</div>'
       // Row 3: Description (full width)
       + '<div class="form-group" style="margin:0 0 8px;"><label style="font-size:11px;font-weight:600;">Description</label><input class="q-item-desc" value="' + UI.esc(item.description || '') + '" placeholder="Work details..." oninput="QuotesPage._syncSummary(this);QuotesPage._updateFormula(this)" style="font-size:13px;width:100%;box-sizing:border-box;"></div>'
-      // Row 4: Qty + Rate + Amount + Delete
-      + '<div style="display:grid;grid-template-columns:80px 1fr 1fr 36px;gap:8px;align-items:end;">'
+      // Row 4: Qty + Rate + Amount (delete moved to its own labeled row below)
+      + '<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:8px;align-items:end;">'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Qty</label><input type="number" inputmode="numeric" class="q-item-qty" value="' + (item.qty || 1) + '" min="1" oninput="QuotesPage.calcTotal();QuotesPage._syncSummary(this)" style="font-size:13px;text-align:center;"></div>'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Rate ($)</label><input type="number" inputmode="decimal" class="q-item-rate" value="' + (item.rate || '') + '" step="0.01" placeholder="0.00" oninput="QuotesPage.calcTotal();QuotesPage._syncSummary(this)" style="font-size:13px;">'
       +     formulaHint + '</div>'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Amount</label><div class="q-item-amount" style="font-size:14px;font-weight:700;color:var(--green-dark);padding:8px 0;">' + UI.money(lineTotal) + '</div></div>'
-      +   '<button type="button" style="background:none;border:none;font-size:20px;color:var(--red);cursor:pointer;padding-bottom:8px;opacity:.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6" onclick="this.closest(\'.q-item-wrap\').remove();QuotesPage.calcTotal();">✕</button>'
+      + '</div>'
+      // v1039: clearly-LABELED delete (was a bare ✕ that read like "close/collapse"
+      // but actually deleted). Confirm guards against accidental data loss.
+      + '<div style="margin-top:12px;">'
+      +   '<button type="button" title="Delete this line item" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;padding:8px 14px;display:inline-flex;align-items:center;gap:6px;" onclick="if(confirm(\'Delete this line item?\')){this.closest(\'.q-item-wrap\').remove();QuotesPage.calcTotal();}">🗑 Delete line item</button>'
       + '</div>'
       // v629: photo grid lives below the form fields now (above the photo/AI
       // action buttons) — line entry first, then optional enrichment.
@@ -10573,6 +10622,16 @@ var QuotesPage = {
     } else {
       QuotesPage.addItem(v); // pre-fill chosen service, focus moves to description
     }
+  },
+
+  // v1039: add a line item from the type-or-pick input. Whatever you typed (a
+  // custom service the list has never seen, or a picked suggestion) pre-fills
+  // the new row's Service field. Empty = a blank row you fill in.
+  _addItemFromInput: function() {
+    var inp = document.getElementById('q-service-input');
+    var v = (inp && inp.value || '').trim();
+    QuotesPage.addItem(v);
+    if (inp) { inp.value = ''; inp.focus(); }
   },
 
   _toggleDeposit: function(checked) {

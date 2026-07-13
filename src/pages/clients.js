@@ -948,7 +948,11 @@ var ClientsPage = {
         return;
       }
     }
-    loadPage('clients');
+    // v1041: close the modal and return to the page you were ON (e.g. the quote
+    // you opened "Edit this client" from) — was: always loadPage('clients'),
+    // which kicked you off the quote to the clients list after every save.
+    if (UI.closeModal) UI.closeModal();
+    loadPage(window._currentPage || 'clients');
   },
 
   // v962: set the flag then submit; save() reopens a fresh form (Jobber-match)
