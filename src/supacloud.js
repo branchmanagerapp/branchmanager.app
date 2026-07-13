@@ -31,6 +31,10 @@ var CloudSync = {
 
     var sb = SupabaseDB.client;
     var totalRows = 0;
+    // Offline detection: flips true the moment ANY query resolves (we reached
+    // Supabase). If EVERY table's query throws (fetch failed), we never reached
+    // the cloud → show the offline banner. One table succeeding = we're online.
+    var reachedCloud = false;
     // Multi-tenant: scope pulls to the resolved tenant if available.
     var tenantId = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
     // Tables without tenant_id column — don't apply the filter
@@ -51,6 +55,7 @@ var CloudSync = {
           var _q = sb.from(table).select('*').order('created_at', { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
           if (tenantId && !NO_TENANT[table]) _q = _q.eq('tenant_id', tenantId);
           var { data: batch, error } = await _q;
+          reachedCloud = true; // query resolved → network reached Supabase
           if (error) break;
           if (batch && batch.length > 0) { allData = allData.concat(batch); page++; }
           if (!batch || batch.length < 1000) hasMore = false;
@@ -167,6 +172,16 @@ var CloudSync = {
     CloudSync.syncing = false;
     CloudSync.lastSync = Date.now();
     if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: done — ' + totalRows + ' total rows cached');
+
+    // OFFLINE BANNER: BM is cloud-live — if we couldn't reach the cloud, say so
+    // loudly instead of silently showing stale data. Offline = browser reports
+    // offline, OR every table query failed to reach Supabase (and we DID have
+    // tables to try). Reaching the cloud clears the banner.
+    try {
+      var _offline = (navigator.onLine === false) || (!reachedCloud && CloudSync.tables.length > 0);
+      if (_offline) CloudSync._showOfflineBanner();
+      else CloudSync._hideOfflineBanner();
+    } catch (e) {}
 
     // Probe auth state — surface the loud "Cloud signed out" badge if the
     // Supabase session has lapsed. Repeats every 60s so a mid-session expiry
@@ -312,6 +327,56 @@ var CloudSync = {
   _clearCloudSignedOut: function() {
     var el = document.getElementById('cloud-auth-badge');
     if (el) el.remove();
+  },
+
+  // OFFLINE BANNER — a loud, full-width top bar shown when BM can't reach the
+  // cloud. BM is cloud-live (the cloud is the source of truth), so rather than
+  // silently show stale device data in a dead zone, we tell the user plainly:
+  // this data may be out of date and changes won't save until they reconnect.
+  // body is fixed (height:100vh; overflow:hidden), so the banner is position:
+  // fixed and we shift .app down by its height so it never covers content.
+  _showOfflineBanner: function() {
+    if (document.getElementById('bm-offline-banner')) return;
+    var b = document.createElement('div');
+    b.id = 'bm-offline-banner';
+    b.setAttribute('role', 'alert');
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#b91c1c;color:#fff;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;line-height:1.35;';
+    b.innerHTML = '<span>⚠️ Offline — can’t reach the cloud. This data may be out of date and changes won’t save until you reconnect.</span>'
+      + '<button type="button" id="bm-offline-retry" style="background:#fff;color:#b91c1c;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">Retry</button>';
+    document.body.appendChild(b);
+    var app = document.querySelector('.app');
+    // Shift .app down by the banner's height. Read offsetHeight AFTER layout
+    // settles — reading it synchronously right after appendChild is pre-reflow
+    // and over-reports when the text wraps (measured 267px for a 109px banner).
+    // rAF + a short timeout catch font/emoji reflow; ResizeObserver keeps it
+    // correct through rotate / width changes.
+    var _syncShift = function() {
+      var h = b.offsetHeight || 44;
+      if (app) { app.style.marginTop = h + 'px'; app.style.height = 'calc(100vh - ' + h + 'px)'; }
+    };
+    requestAnimationFrame(_syncShift);
+    setTimeout(_syncShift, 150);
+    if (window.ResizeObserver) { try { new ResizeObserver(_syncShift).observe(b); } catch (e) {} }
+    var r = document.getElementById('bm-offline-retry');
+    if (r) r.onclick = function() {
+      if (navigator.onLine === false) {
+        r.textContent = 'Still offline'; setTimeout(function() { var rr = document.getElementById('bm-offline-retry'); if (rr) rr.textContent = 'Retry'; }, 1600);
+        return;
+      }
+      r.textContent = 'Retrying…'; r.disabled = true;
+      // init() hides the banner itself if it reaches the cloud.
+      CloudSync.init().then(function() {
+        var rr = document.getElementById('bm-offline-retry');
+        if (rr) { rr.textContent = 'Retry'; rr.disabled = false; }
+      });
+    };
+  },
+
+  _hideOfflineBanner: function() {
+    var b = document.getElementById('bm-offline-banner');
+    if (b) b.remove();
+    var app = document.querySelector('.app');
+    if (app) { app.style.marginTop = ''; app.style.height = ''; }
   },
 
   // Proactive auth-state probe. Runs on init + every 60s.
@@ -510,6 +575,15 @@ var CloudSync = {
         }
       } catch (e) {}
     });
+
+    // Live connectivity listeners (once): drop into a dead zone → banner appears
+    // instantly; signal returns → re-pull fresh from the cloud (which clears the
+    // banner on success).
+    if (!window._bmOfflineListeners) {
+      window._bmOfflineListeners = true;
+      window.addEventListener('offline', function() { try { CloudSync._showOfflineBanner(); } catch (e) {} });
+      window.addEventListener('online', function() { try { CloudSync.init(); } catch (e) {} });
+    }
   } else if (attempts > 0) {
     setTimeout(function() { waitForSupabase(attempts - 1); }, 1000);
   }

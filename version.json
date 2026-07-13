@@ -1,5 +1,5 @@
 {
-  "version": 1035,
+  "version": 1036,
   "released": "2026-07-13",
-  "notes": "CLOUD-LIVE data layer: always pull fresh from the cloud on every load (removed the 1-hour stale-cache shortcut). Cloud is the single source of truth. Dashboard auto-refreshes when fresh data lands; guarded so it never bounces you out of a record you're viewing or clobbers an edit."
+  "notes": "Offline banner: when Branch Manager can't reach the cloud, show a loud red top bar (Data may be out of date; changes won't save until you reconnect) with a Retry button, instead of silently showing stale data. Appears the instant signal drops, clears when it returns."
 }
