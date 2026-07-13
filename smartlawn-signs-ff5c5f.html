@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>SmartLawn NY — Yard Signs (print-ready)</title>
+<style>
+  :root { --green: #6abb1e; --dgreen: #4a8a10; --ink: #1d1d1f; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f7; color: var(--ink); padding: 16px; max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 12px 0 4px; }
+  .meta { color: #636366; font-size: 0.9rem; margin-bottom: 20px; }
+  h2 { font-size: 1.1rem; margin: 26px 0 10px; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .preview { width: 100%; aspect-ratio: 4/3; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; position: relative; }
+  .preview iframe { width: 2304px; height: 1728px; border: 0; transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
+  .btn { display: block; text-align: center; background: var(--green); color: #fff; font-weight: 700; text-decoration: none; padding: 14px; border-radius: 10px; margin-top: 12px; font-size: 1rem; }
+  .btn.secondary { background: #fff; color: var(--dgreen); border: 2px solid var(--green); }
+  .tag { display: inline-block; background: var(--dgreen); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; margin-bottom: 8px; }
+  ul { padding-left: 20px; }
+  li { margin: 7px 0; line-height: 1.45; }
+  .spec { font-size: 0.95rem; }
+  .spec b { display: inline-block; min-width: 7.5em; }
+  a { color: var(--dgreen); }
+  .foot { color: #86868b; font-size: 0.8rem; margin: 30px 0 10px; text-align: center; }
+</style>
+</head>
+<body>
+<h1>SmartLawn NY — Yard Signs</h1>
+<div class="meta">Print-ready 24″ × 18″ · built Jul 12, 2026 · real phone (914) 647-7276 · QR verified → smartlawnny.com</div>
+
+<div class="card">
+  <span class="tag">VARIANT A — RECOMMENDED</span>
+  <div class="preview"><iframe src="smartlawn-sign-a-src.html" scrolling="no" id="fa"></iframe></div>
+  <a class="btn" href="smartlawn-sign-A-24x18.pdf" download>⬇︎ Download Sign A — print PDF (24×18)</a>
+</div>
+
+<div class="card">
+  <span class="tag" style="background:#636366">VARIANT B — CATEGORY-LED</span>
+  <div class="preview"><iframe src="smartlawn-sign-b-src.html" scrolling="no" id="fb"></iframe></div>
+  <a class="btn secondary" href="smartlawn-sign-B-24x18.pdf" download>⬇︎ Download Sign B — print PDF (24×18)</a>
+</div>
+
+<h2>Why A over B</h2>
+<div class="card">
+  <ul>
+    <li><b>"Never mow again"</b> is a benefit hook — sign research shows drivers process a sign in 2–3 seconds, and a benefit beats a category label at 45 mph.</li>
+    <li>B is the safer, literal play (matches what people type into Google). Both carry the same phone, QR, and domain — you can run both and see which pulls.</li>
+  </ul>
+</div>
+
+<h2>Print specs (give these to the printer)</h2>
+<div class="card spec">
+  <ul style="list-style:none; padding:0">
+    <li><b>Size:</b> 24″ wide × 18″ tall</li>
+    <li><b>Material:</b> 4mm corrugated plastic (coroplast)</li>
+    <li><b>Sides:</b> double-sided (traffic comes both ways)</li>
+    <li><b>Stakes:</b> H-frame wire stakes, one per sign</li>
+    <li><b>File:</b> the PDF above — exact size, vector, no bleed needed for coroplast</li>
+    <li><b>QR:</b> ~5″ square, high error correction — verified it decodes to smartlawnny.com</li>
+  </ul>
+</div>
+
+<h2>Where to order</h2>
+<div class="card">
+  <ul>
+    <li><a href="https://www.signs.com/yard-signs/">Signs.com — yard signs</a></li>
+    <li><a href="https://www.buildasign.com/yard-signs">BuildASign — yard signs</a></li>
+    <li><a href="https://www.vistaprint.com/signs-posters/yard-signs">VistaPrint — yard signs</a></li>
+  </ul>
+  <p style="margin-top:10px; font-size:0.9rem; color:#636366">Upload the PDF, pick 24×18 double-sided coroplast + H-stakes. Price drops fast with quantity — get 10+ if the budget allows. (I have not pulled live prices — check at checkout.)</p>
+</div>
+
+<h2>Placement (from the research)</h2>
+<div class="card">
+  <ul>
+    <li><b>Next to fresh installs</b> — signs near a recent job convert ~4× better than cold spots; neighbors saw the mower running.</li>
+    <li>Intersections with a stop sign or light beat open road — drivers are stationary and actually read.</li>
+    <li>Letters read ~10 ft per inch of height — the big lines on these signs are readable from ~150 ft.</li>
+    <li>QR scans happen from parked/stopped cars and walkers, not moving traffic — corners with foot traffic help.</li>
+  </ul>
+</div>
+
+<div class="foot">Unlisted page · Second Nature / SmartLawn NY internal</div>
+
+<script>
+function fit(){
+  document.querySelectorAll('.preview').forEach(function(p){
+    var f = p.querySelector('iframe');
+    f.style.transform = 'scale(' + (p.clientWidth / 2304) + ')';
+  });
+}
+window.addEventListener('load', fit); window.addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
