@@ -217,11 +217,55 @@ document.title = 'Pay Invoice';
     }
 
     if (inv.status === 'paid') {
-      el.innerHTML = '<div class="inv-card"><div class="state-center">'
-        + '<div class="s-icon">✅</div><h2>All Paid — Thank You!</h2>'
-        + '<p>Invoice #' + esc(inv.invoice_number||inv.invoiceNumber||'') + ' for <strong>' + esc(inv.client_name||inv.clientName||'') + '</strong> has been paid in full.<br><br>We appreciate your business!</p>'
-        + (BM_CONFIG.websiteUrl && BM_CONFIG.website ? '<p style="margin-top:20px;"><a href="' + esc(BM_CONFIG.websiteUrl) + '" style="color:#1a3c12;">Back to ' + esc(String(BM_CONFIG.website).replace(/^https?:\/\//,'')) + '</a></p>' : '')
-        + '</div></div>';
+      // v1022: a real, itemized RECEIPT (Doug: "not much of a receipt") — amount paid,
+      // date, line items, totals — something the customer can keep for their records.
+      var pFirst    = (inv.client_name || inv.clientName || '').split(' ')[0] || 'there';
+      var pPaidAmt  = parseFloat(inv.amount_paid || inv.total || inv.subtotal || 0);
+      var pWhen     = inv.paid_date || inv.paidDate;
+      var pDateStr  = pWhen ? new Date(pWhen).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' }) : '';
+      var pMethod   = (inv.payment_method || '').toString();
+      var pMethodLb = pMethod ? pMethod.charAt(0).toUpperCase() + pMethod.slice(1) : '';
+      var pSubject  = inv.subject || '';
+      var pItems    = []; try { pItems = inv.line_items || inv.lineItems || []; } catch(e) { pItems = []; }
+      var pItemsHtml = '';
+      if (pItems.length) {
+        pItemsHtml = '<div class="line-items"><table><thead><tr><th>Service</th><th class="r">Amount</th></tr></thead><tbody>';
+        pItems.forEach(function(item) {
+          var amt = parseFloat(item.amount || ((parseFloat(item.qty || 1)) * (parseFloat(item.rate || 0))));
+          pItemsHtml += '<tr><td><div class="line-svc">' + esc(item.service || item.name || 'Tree Service') + '</div>'
+            + (item.description ? '<div class="line-desc">' + esc(item.description) + '</div>' : '') + '</td>'
+            + '<td class="r">' + fmt(amt) + '</td></tr>';
+        });
+        pItemsHtml += '</tbody></table></div>';
+      }
+      var pSub    = parseFloat(inv.subtotal || pPaidAmt);
+      var pTaxPct = parseFloat(inv.tax_rate || inv.taxRate || 0);
+      var pTax    = parseFloat(inv.tax_amount || inv.taxAmount || 0);
+      el.innerHTML = '<div class="inv-card">'
+        + '<div class="inv-header"><div class="inv-header-row">'
+        +   '<div><div class="inv-doc-type">Receipt</div><div class="inv-number">#' + esc(inv.invoice_number || inv.invoiceNumber || '') + '</div></div>'
+        +   '<div><div class="inv-amount-label">Amount Paid</div><div class="inv-amount" style="color:#065f46;">' + fmt(pPaidAmt) + '</div></div>'
+        + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 26px;background:#ecfdf5;border-bottom:1px solid #d1fae5;">'
+        +   '<span class="status-badge status-paid">✓ Paid in Full</span>'
+        +   (pDateStr ? '<span style="font-size:13px;color:#065f46;font-weight:600;">Paid ' + esc(pDateStr) + (pMethodLb ? ' · ' + esc(pMethodLb) : '') + '</span>' : '')
+        + '</div>'
+        + '<div class="inv-meta">'
+        +   '<div class="inv-meta-item"><div class="inv-meta-label">Billed To</div><div class="inv-meta-val">' + esc(inv.client_name || inv.clientName || '') + '</div></div>'
+        +   (pSubject ? '<div class="inv-meta-item"><div class="inv-meta-label">For</div><div class="inv-meta-val">' + esc(pSubject) + '</div></div>' : '')
+        + '</div>'
+        + pItemsHtml
+        + '<div class="inv-totals"><div class="totals-inner">'
+        +   '<div class="totals-row"><span>Subtotal</span><span>' + fmt(pSub) + '</span></div>'
+        +   (pTaxPct > 0 ? '<div class="totals-row"><span>Tax (' + pTaxPct + '%)</span><span>' + fmt(pTax) + '</span></div>' : '')
+        +   '<div class="totals-row totals-grand"><span>Total Paid</span><span>' + fmt(pPaidAmt) + '</span></div>'
+        + '</div></div>'
+        + '<div style="padding:20px 26px;text-align:center;">'
+        +   '<p style="font-size:15px;color:#065f46;font-weight:700;margin:0 0 4px;">Thank you, ' + esc(pFirst) + '! 🌳</p>'
+        +   '<p style="font-size:13px;color:#64748b;margin:0;">This is your receipt — keep it for your records. We appreciate your business!</p>'
+        +   (BM_CONFIG.websiteUrl && BM_CONFIG.website ? '<p style="margin-top:16px;"><a href="' + esc(BM_CONFIG.websiteUrl) + '" style="color:#1a3c12;font-size:13px;font-weight:600;">Back to ' + esc(String(BM_CONFIG.website).replace(/^https?:\/\//,'')) + '</a></p>' : '')
+        + '</div>'
+        + '</div>';
       return;
     }
 
