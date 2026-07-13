@@ -1,5 +1,5 @@
 {
-  "version": 1024,
+  "version": 1025,
   "released": "2026-07-12",
-  "notes": "Removed green from the header — the + button and avatar are now neutral dark slate."
+  "notes": "Header + button and avatar are neutral light gray (not green, not black)."
 }
