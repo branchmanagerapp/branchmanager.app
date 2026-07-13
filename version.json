@@ -1,5 +1,5 @@
 {
-  "version": 1044,
+  "version": 1045,
   "released": "2026-07-13",
-  "notes": "Stale-version banner: if your device can't auto-update to the latest code (usually a stuck service worker), a loud 'You're on an older version — Update now' banner appears with a one-tap hard reset (clears the service worker + caches). No more silently running old code and hitting already-fixed bugs."
+  "notes": "Card-fee waiver: a 'Waive the card fee for this client' toggle on the Send-Invoice screen removes the ~3% surcharge from that customer's pay page (you absorb it) — one tap, per invoice. Plus the pay page respects it end-to-end."
 }

@@ -617,6 +617,12 @@ var InvoicesPage = {
       +   '<div style="font-size:28px;font-weight:800;margin-top:2px;">' + amt + '</div>'
       +   (inv.dueDate ? '<div style="font-size:12px;opacity:.8;margin-top:2px;">Due ' + UI.dateShort(inv.dueDate) + '</div>' : '')
       + '</div>'
+      // v1045: one-tap card-fee waiver for THIS client — removes the ~3% surcharge
+      // from their pay page (the shop absorbs it). Good for repeat clients / paying faster.
+      + '<label style="display:flex;align-items:center;gap:10px;background:#fff8e6;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;cursor:pointer;">'
+      +   '<input type="checkbox" ' + (inv.absorbCardFee ? 'checked' : '') + ' onchange="InvoicesPage._toggleCardFee(\'' + id + '\', this.checked)" style="width:17px;height:17px;flex-shrink:0;">'
+      +   '<span><b>Waive the card fee for this client</b> — removes the ~3% processing fee from their pay page (you absorb it). Toggle any time.</span>'
+      + '</label>'
       + '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;">'
       +   '<div style="font-weight:600;margin-bottom:4px;">Pay link:</div>'
       +   '<div style="font-family:monospace;font-size:11px;word-break:break-all;color:var(--text-light);">' + payLink + '</div>'
@@ -637,6 +643,13 @@ var InvoicesPage = {
     UI.showModal('Send Invoice #' + inv.invoiceNumber, body, {
       footer: '<button class="btn btn-outline" onclick="UI.closeModal();loadPage(\'invoices\');">Done</button>'
     });
+  },
+
+  // v1045: waive/restore the card processing fee for one invoice (pay.html reads
+  // absorb_card_fee → charges no surcharge). Saved to the invoice like any edit.
+  _toggleCardFee: function(id, checked) {
+    DB.invoices.update(id, { absorbCardFee: !!checked });
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast(checked ? 'Card fee waived — this client pays no surcharge' : 'Card fee back on for this client');
   },
 
   _chooserSendEmail: function(id) {
