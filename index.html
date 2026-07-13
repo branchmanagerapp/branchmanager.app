@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1022; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1023; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1314,7 +1314,7 @@
           </button>
           <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
           <button class="topbar-icon" onclick="loadPage('messaging')" title="Message Center">
-            <i data-lucide="message-square" style="width:18px;height:18px;stroke:var(--text-light);stroke-width:1.75;"></i>
+            <i data-lucide="messages-square" style="width:18px;height:18px;stroke:var(--text-light);stroke-width:1.75;"></i>
           </button>
           <div style="position:relative;">
             <button class="topbar-icon" id="notif-bell-btn" onclick="NotifCenter.toggle(event)" title="Activity Feed">
@@ -1379,7 +1379,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1022.min.js"></script>
+<script defer src="dist/bm.bundle.v1023.min.js"></script>
 
 
 

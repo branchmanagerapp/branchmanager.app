@@ -1,5 +1,5 @@
 {
-  "version": 1022,
+  "version": 1023,
   "released": "2026-07-12",
-  "notes": "Receipts now show the full review footer (Google, Facebook, Instagram, Yelp, Nextdoor) matching the invoice email — the receipt email + auto-send were missing Yelp/Nextdoor."
+  "notes": "Header messages icon is now the double-bubble (messages-square) for a clearer 'conversations' look."
 }
