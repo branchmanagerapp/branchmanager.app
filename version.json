@@ -1,5 +1,5 @@
 {
-  "version": 1038,
+  "version": 1039,
   "released": "2026-07-13",
-  "notes": "Quote photo pool: the yellow dashed 'add photos' box is now TAP-TO-UPLOAD (opens the camera/photo picker) and works on mobile — was drag-drop only and desktop-only. Tap the box to add photos, then tap a photo and tap its line item to place it."
+  "notes": "Quote line items: (1) add a service by TYPING it (type-or-pick input + Add button) instead of only picking from a dropdown; (2) the line-item delete is now a clearly-labeled '🗑 Delete line item' button (was a bare ✕ that read like close/collapse), with a confirm to prevent accidental deletion."
 }
