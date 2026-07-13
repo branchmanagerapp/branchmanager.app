@@ -63,7 +63,7 @@ var Campaigns = {
     });
     html += '<div style="flex:1;"></div>';
     html += '<input type="text" placeholder="Search campaigns..." value="' + UI.esc(Campaigns._search) + '" '
-      + 'oninput="Campaigns._search=this.value;loadPage(window._currentPage)" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:200px;">';
+      + 'oninput="UI.searchInput(this, Campaigns, \'_search\')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:200px;">';
     html += '</div>';
 
     // Campaign table

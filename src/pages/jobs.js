@@ -176,7 +176,7 @@ var JobsPage = {
       + '</div>'
       + '<div class="search-box" style="min-width:200px;max-width:280px;">'
       + '<span style="color:var(--text-light);">🔍</span>'
-      + '<input type="text" placeholder="Search jobs..." value="' + UI.esc(self._search) + '" oninput="JobsPage._search=this.value;JobsPage._page=0;loadPage(\'jobs\')">'
+      + '<input type="text" id="jobs-search" placeholder="Search jobs..." value="' + UI.esc(self._search) + '" oninput="UI.searchInput(this, JobsPage, \'_search\', \'jobs\')">'
       + '</div></div>';
 
     // Bulk close-out banner for "unscheduled" filter — legacy system-imported jobs

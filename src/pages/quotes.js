@@ -152,7 +152,7 @@ var QuotesPage = {
       +   '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:1px solid #2e7d32;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ AI Walkthrough</button>'
       +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
-      +     '<input type="text" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="QuotesPage._search=this.value;QuotesPage._page=0;loadPage(\'quotes\')">'
+      +     '<input type="text" id="quotes-search" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="UI.searchInput(this, QuotesPage, \'_search\', \'quotes\')">'
       +   '</div>'
       + '</div></div>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';

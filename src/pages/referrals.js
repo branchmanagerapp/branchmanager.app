@@ -79,7 +79,7 @@ var Referrals = {
     });
     html += '<div style="flex:1;"></div>';
     html += '<input type="text" placeholder="Search..." value="' + UI.esc(Referrals._search) + '" '
-      + 'oninput="Referrals._search=this.value;loadPage(window._currentPage)" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:180px;">';
+      + 'oninput="UI.searchInput(this, Referrals, \'_search\')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:180px;">';
     html += '</div>';
 
     var filtered = referrals.filter(function(r) {

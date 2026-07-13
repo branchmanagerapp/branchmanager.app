@@ -1,5 +1,5 @@
 {
-  "version": 1042,
+  "version": 1043,
   "released": "2026-07-13",
-  "notes": "Saving a client now closes the editor and returns you to the page you were on (e.g. the quote you opened 'Edit this client' from) instead of always dumping you on the clients list."
+  "notes": "Same search fix applied everywhere: Jobs, Quotes, Requests, Campaigns, Referrals, and Task Reminders search boxes were also re-rendering + stealing focus on every keystroke. All now use one shared debounced handler (Invoices already had it). Type a full query anywhere without getting kicked out."
 }

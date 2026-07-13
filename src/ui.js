@@ -304,6 +304,25 @@ var UI = (function() {
     }, true);
   })();
 
+  // v1042: shared DEBOUNCED search-input handler. Many list pages wired
+  // oninput="X._search=this.value;loadPage('page')" which re-rendered the WHOLE
+  // page on every keystroke → recreated the search <input> → stole focus, so you
+  // couldn't finish typing (the "kicks me out every letter / Rob shows A's" bug).
+  // This updates the query immediately but debounces the re-render, then restores
+  // focus + caret. Use: oninput="UI.searchInput(this, JobsPage, '_search', 'jobs')"
+  function searchInput(el, obj, key, page) {
+    if (!el || !obj) return;
+    obj[key] = el.value;
+    if (obj._page !== undefined) obj._page = 0;
+    var id = el.id;
+    clearTimeout(searchInput._t);
+    searchInput._t = setTimeout(function() {
+      try { loadPage(page || window._currentPage); } catch (e) {}
+      var e2 = id && document.getElementById(id);
+      if (e2) { e2.focus(); try { var n = e2.value.length; e2.setSelectionRange(n, n); } catch (x) {} }
+    }, 220);
+  }
+
   // v634: searchable client picker — replaces the no-search native <select>
   // that became unusable as the client list grew.
   //
@@ -678,6 +697,7 @@ var UI = (function() {
     field: field,
     formSection: formSection,
     bindAddressAutocomplete: bindAddressAutocomplete,
+    searchInput: searchInput,
     bindClientPicker: bindClientPicker,
     statCard: statCard,
     emptyState: emptyState,

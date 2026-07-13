@@ -155,7 +155,7 @@ var TaskReminders = {
       + '<div class="search-box" style="min-width:180px;">'
       + '<span style="color:var(--text-light);display:flex;align-items:center;"><i data-lucide="search" style="width:14px;height:14px;"></i></span>'
       + '<input type="text" placeholder="Search tasks…" value="' + UI.esc(TaskReminders._search||'') + '" '
-      + 'oninput="TaskReminders._search=this.value;loadPage(\'taskreminders\')" '
+      + 'oninput="UI.searchInput(this, TaskReminders, \'_search\', \'taskreminders\')" '
       + 'style="border:none;outline:none;background:transparent;font-size:13px;width:100%;color:var(--text);"></div>'
       + '<button id="bm-task-mic-btn" onclick="TaskReminders._toggleMic()" title="Voice input" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i data-lucide="mic" style="width:16px;height:16px;"></i></button>'
       + '<button onclick="TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:0 16px;height:34px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New</button>'
