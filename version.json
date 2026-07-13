@@ -1,5 +1,5 @@
 {
-  "version": 1023,
+  "version": 1024,
   "released": "2026-07-12",
-  "notes": "Header messages icon is now the double-bubble (messages-square) for a clearer 'conversations' look."
+  "notes": "Removed green from the header — the + button and avatar are now neutral dark slate."
 }

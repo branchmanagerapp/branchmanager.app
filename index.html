@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1023; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1024; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1046,7 +1046,7 @@
   .topbar-icon:hover { background:var(--bg); }
   .topbar-icon:hover i { stroke:var(--text) !important; }
   .topbar-icon:active { transform:scale(.93); }
-  .topbar-icon-create:hover { background:var(--accent-hover) !important; }
+  .topbar-icon-create:hover { background:#0f1720 !important; }
   .topbar-dot {
     position:absolute; top:6px; right:6px; width:8px; height:8px;
     background:var(--red); border-radius:50%; display:none;
@@ -1056,7 +1056,7 @@
 
   .topbar-avatar {
     position:relative; width:34px; height:34px; border-radius:50%;
-    background:var(--accent); color:#fff; display:flex; align-items:center;
+    background:#22303a; color:#fff; display:flex; align-items:center;
     justify-content:center; font-size:12px; font-weight:700; cursor:pointer;
     margin-left:6px; user-select:none;
   }
@@ -1309,7 +1309,7 @@
         <div class="topbar-icons">
           <!-- v670: trial-status chip — populated by Subscription module post-boot. Hidden by default. -->
           <button id="bm-trial-chip" onclick="loadPage('settings')" title="Subscription · open Settings" style="display:none;background:#fff3e0;color:#7c4a00;border:1px solid #ffcc80;height:32px;padding:0 12px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;align-items:center;gap:6px;white-space:nowrap;"></button>
-          <button class="topbar-icon topbar-icon-create" onclick="BM_contextCreate()" title="New…" style="background:var(--accent);border-radius:8px;width:32px;height:32px;">
+          <button class="topbar-icon topbar-icon-create" onclick="BM_contextCreate()" title="New…" style="background:#22303a;border-radius:8px;width:32px;height:32px;">
             <i data-lucide="plus" style="width:18px;height:18px;stroke:#fff;stroke-width:2.5;"></i>
           </button>
           <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
@@ -1379,7 +1379,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1023.min.js"></script>
+<script defer src="dist/bm.bundle.v1024.min.js"></script>
 
 
 
