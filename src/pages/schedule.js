@@ -427,9 +427,9 @@ var SchedulePage = {
       + '</div>'
       // v1026: collapse the busy toggle row into a small ⚙ Options dropdown (Doug: too busy)
       + '<div style="position:relative;">'
-      +   '<button onclick="var d=this.nextElementSibling;var wasOpen=d.style.display===\'block\';document.querySelectorAll(\'.cal-opts-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=wasOpen?\'none\':\'block\';event.stopPropagation();" class="btn btn-outline" style="font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;" title="Calendar display options"><span style="font-size:14px;line-height:1;">⚙</span> Options</button>'
+      +   '<button onclick="var d=this.nextElementSibling;var wasOpen=d.style.display===\'block\';document.querySelectorAll(\'.cal-opts-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=wasOpen?\'none\':\'block\';event.stopPropagation();" class="btn btn-outline" style="font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;" title="Calendar &amp; View Options"><span style="font-size:14px;line-height:1;">⚙</span> Options</button>'
       +   '<div class="cal-opts-dd" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;z-index:400;min-width:200px;box-shadow:0 8px 30px rgba(0,0,0,.16);">'
-      +     '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Show on calendar</div>'
+      +     '<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;">Calendar &amp; View Options</div>'
       +     '<div style="display:flex;flex-direction:column;gap:14px;">'
       +       (typeof Weather !== 'undefined' ? optRow('Weather', wEnabled, 'Weather.toggle()') : '')
       +       optRow('Photos', pEnabled, 'SchedulePage._togglePhotos()')
