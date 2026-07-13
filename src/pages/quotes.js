@@ -2515,6 +2515,15 @@ var QuotesPage = {
           + (_showUnit ? '<td style="padding:9px 14px;border-bottom:1px solid #e5e7eb;text-align:right;color:#111;font-size:13px;">'   + fmt(rate) + '</td>' : '')
           + '<td style="padding:9px 14px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;color:#111;font-size:13px;">' + fmt(amt) + '</td>'
           + '</tr>';
+        // v1031: render photos attached to THIS line item (were saved but never shown in the detail/preview)
+        var _liPhotos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
+        if (_liPhotos.length) {
+          var _cspan = 2 + (_showQty?1:0) + (_showUnit?1:0) + 1;
+          liRows += '<tr style="background:' + bg + ';"><td colspan="' + _cspan + '" style="padding:2px 14px 12px;border-bottom:1px solid #e5e7eb;">'
+            + '<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+            + _liPhotos.map(function(p){ return '<img src="' + p + '" style="width:92px;height:92px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;">'; }).join('')
+            + '</div></td></tr>';
+        }
       });
     }
     // ── Totals rows ───────────────────────────────────────────────────────

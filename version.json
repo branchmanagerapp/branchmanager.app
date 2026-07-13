@@ -1,5 +1,5 @@
 {
-  "version": 1030,
+  "version": 1031,
   "released": "2026-07-13",
-  "notes": "Dialpad is the default SMS sender (no local key paste needed); job Text button opens the Dialpad composer instead of the Messages app."
+  "notes": "Quote detail: render photos attached to each line item (were saved but not displayed)."
 }
