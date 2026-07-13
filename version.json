@@ -1,5 +1,5 @@
 {
-  "version": 1031,
+  "version": 1032,
   "released": "2026-07-13",
-  "notes": "Quote detail: render photos attached to each line item (were saved but not displayed)."
+  "notes": "In-app quote view shows line-item photos; Dialpad send failure shows an error instead of silently opening Messages."
 }

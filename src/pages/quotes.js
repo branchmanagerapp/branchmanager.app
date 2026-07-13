@@ -3676,6 +3676,7 @@ var QuotesPage = {
           + '<td>'
           + '<strong class="li-name" onclick="QuotesPage.editLineItem(\'' + id + '\',' + idx + ')" style="cursor:pointer;" title="Click to edit">' + UI.esc(item.service || item.name || 'Custom') + '</strong>'
           + (item.description ? '<br><span style="color:var(--text-light);font-size:12px;">' + UI.esc(item.description) + '</span>' : '')
+          + (function(){ var _lip = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []); return _lip.length ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">' + _lip.map(function(p){ return '<img src="' + p + '" style="width:76px;height:76px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">'; }).join('') + '</div>' : ''; })()
           + '</td>'
           + '<td><input type="number" class="li-qty-input" value="' + (item.qty || 1) + '" min="0" step="1" style="width:60px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:13px;" onblur="QuotesPage.updateLineItemField(\'' + id + '\',' + idx + ',\'qty\',this.value)" onkeydown="if(event.key===\'Enter\'){this.blur();}"></td>'
           + '<td style="text-align:right;"><input type="number" class="li-rate-input" value="' + (item.rate || 0) + '" min="0" step="0.01" style="width:90px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:13px;" onblur="QuotesPage.updateLineItemField(\'' + id + '\',' + idx + ',\'rate\',this.value)" onkeydown="if(event.key===\'Enter\'){this.blur();}"></td>'

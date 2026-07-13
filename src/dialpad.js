@@ -71,10 +71,9 @@ var Dialpad = {
       }
       throw new Error(data.error || 'Send failed');
     } catch (e) {
-      console.warn('[Dialpad] sendSMS fallback:', e);
-      window.open('sms:' + cleanPhone + '?body=' + encodeURIComponent(message));
-      UI.toast('Opening Messages app', 'error');
-      return { success: false, method: 'sms_fallback', error: e.message };
+      console.warn('[Dialpad] sendSMS failed:', e);
+      UI.toast('⚠️ Dialpad could not send: ' + (e && e.message ? e.message : 'unknown error') + ' — did NOT open Messages.', 'error');
+      return { success: false, method: 'error', error: e && e.message };
     }
   },
 
