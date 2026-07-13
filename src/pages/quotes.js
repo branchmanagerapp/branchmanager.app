@@ -675,7 +675,16 @@ var QuotesPage = {
     // accepts files dragged straight in from Finder/Photos on desktop.
     // v1015: bulk photo pool + drag-drop is a DESKTOP flow (Doug: bulk upload is desktop-only;
     // on mobile you add photos straight to each line item with the per-item 📷 Add Photos button).
-    html += '<div id="q-photo-pool" class="q-desktop-only" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:12px 14px;margin-bottom:14px;"></div>';
+    // v1038: the whole yellow box is TAP-TO-UPLOAD (works on a phone — no drag
+    // needed) AND still accepts drag-drop on desktop. Default prompt paints
+    // immediately so the box is never a blank rectangle. (Was q-desktop-only +
+    // drop-only; Doug asked to click it and upload from the app on mobile.)
+    html += '<div id="q-photo-pool" onclick="QuotesPage._poolClick(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:14px;margin-bottom:14px;cursor:pointer;">'
+      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;pointer-events:none;">'
+      +   '<span style="font-size:22px;">📸</span>'
+      +   '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;"><b>Tap to add job photos</b> — or drag files in. Then tap a photo and tap its line item to place it.</div>'
+      + '</div>'
+      + '</div>';
 
     // Line items list — newly-added items render expanded so user can fill in immediately.
     html += '<div id="q-items">';
@@ -2973,6 +2982,13 @@ var QuotesPage = {
     });
   },
 
+  // v1038: whole yellow pool box = tap-to-upload. Ignore taps on a tray photo
+  // (that's tap-to-assign) or a button inside — only empty box taps open the picker.
+  _poolClick: function(e) {
+    if (e.target && e.target.closest && (e.target.closest('.q-tray-photo') || e.target.closest('button'))) return;
+    QuotesPage._bulkAddPhotos();
+  },
+
   _renderPhotoTray: function() {
     var existing = document.getElementById('q-photo-tray');
     if (existing) existing.remove();
@@ -2980,9 +2996,10 @@ var QuotesPage = {
     // v989: render into the permanent pool when present (quote editor).
     var pool = document.getElementById('q-photo-pool');
     if (pool && !QuotesPage._photoTray.length) {
-      pool.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
-        + '<button type="button" onclick="QuotesPage._bulkAddPhotos()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">📸 Add all job photos</button>'
-        + '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;">Every job photo lands here first — then <b>drag each onto its line item</b> (on your phone: tap the photo, tap the tree). Or drop files straight in.</div>'
+      // pointer-events:none so a tap anywhere lands on the box's onclick (upload).
+      pool.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;pointer-events:none;">'
+        + '<span style="font-size:22px;">📸</span>'
+        + '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;"><b>Tap to add job photos</b> — or drag files in. Then tap a photo and tap its line item to place it.</div>'
         + '</div>';
       return;
     }

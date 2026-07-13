@@ -9380,7 +9380,16 @@ var QuotesPage = {
     // accepts files dragged straight in from Finder/Photos on desktop.
     // v1015: bulk photo pool + drag-drop is a DESKTOP flow (Doug: bulk upload is desktop-only;
     // on mobile you add photos straight to each line item with the per-item 📷 Add Photos button).
-    html += '<div id="q-photo-pool" class="q-desktop-only" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:12px 14px;margin-bottom:14px;"></div>';
+    // v1038: the whole yellow box is TAP-TO-UPLOAD (works on a phone — no drag
+    // needed) AND still accepts drag-drop on desktop. Default prompt paints
+    // immediately so the box is never a blank rectangle. (Was q-desktop-only +
+    // drop-only; Doug asked to click it and upload from the app on mobile.)
+    html += '<div id="q-photo-pool" onclick="QuotesPage._poolClick(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:14px;margin-bottom:14px;cursor:pointer;">'
+      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;pointer-events:none;">'
+      +   '<span style="font-size:22px;">📸</span>'
+      +   '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;"><b>Tap to add job photos</b> — or drag files in. Then tap a photo and tap its line item to place it.</div>'
+      + '</div>'
+      + '</div>';
 
     // Line items list — newly-added items render expanded so user can fill in immediately.
     html += '<div id="q-items">';
@@ -11678,6 +11687,13 @@ var QuotesPage = {
     });
   },
 
+  // v1038: whole yellow pool box = tap-to-upload. Ignore taps on a tray photo
+  // (that's tap-to-assign) or a button inside — only empty box taps open the picker.
+  _poolClick: function(e) {
+    if (e.target && e.target.closest && (e.target.closest('.q-tray-photo') || e.target.closest('button'))) return;
+    QuotesPage._bulkAddPhotos();
+  },
+
   _renderPhotoTray: function() {
     var existing = document.getElementById('q-photo-tray');
     if (existing) existing.remove();
@@ -11685,9 +11701,10 @@ var QuotesPage = {
     // v989: render into the permanent pool when present (quote editor).
     var pool = document.getElementById('q-photo-pool');
     if (pool && !QuotesPage._photoTray.length) {
-      pool.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
-        + '<button type="button" onclick="QuotesPage._bulkAddPhotos()" style="background:var(--green-dark);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">📸 Add all job photos</button>'
-        + '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;">Every job photo lands here first — then <b>drag each onto its line item</b> (on your phone: tap the photo, tap the tree). Or drop files straight in.</div>'
+      // pointer-events:none so a tap anywhere lands on the box's onclick (upload).
+      pool.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;pointer-events:none;">'
+        + '<span style="font-size:22px;">📸</span>'
+        + '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;"><b>Tap to add job photos</b> — or drag files in. Then tap a photo and tap its line item to place it.</div>'
         + '</div>';
       return;
     }
@@ -13181,7 +13198,11 @@ var JobsPage = {
     });
     var needsInvoicing = recentNeedsInvoicing; // used for Overview stat
     var actionReq = all.filter(function(j) { return j.status === 'action_required'; });
-    var unscheduled = all.filter(function(j) { return !j.scheduledDate; });
+    // "Unscheduled" = undated work that still needs a date. Must match the Jobs
+    // list filter (:312), the bulk-close (:344) and the Schedule panel exactly —
+    // exclude completed/cancelled/archived, or the Overview badge over-counts
+    // (was 81: 74 completed + 5 archived + 2 active). All four now agree.
+    var unscheduled = all.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     var recentVisits = all.filter(function(j) { var d = new Date(j.scheduledDate); var ago = new Date(); ago.setDate(ago.getDate()-30); return d >= ago && d <= new Date(); });
     var upcomingVisits = all.filter(function(j) { var d = new Date(j.scheduledDate); var ahead = new Date(); ahead.setDate(ahead.getDate()+30); return d > new Date() && d <= ahead; });
     var activeTotal = activeJobs.reduce(function(s,j){return s+(j.total||0);},0);
@@ -13391,7 +13412,7 @@ var JobsPage = {
       var now = new Date(); var end30 = new Date(Date.now() + 30 * 86400000);
       all = all.filter(function(j) { var d = j.scheduledDate ? new Date(j.scheduledDate) : null; return d && d > now && d <= end30 && j.status !== 'completed' && j.status !== 'cancelled'; });
     } else if (self._filter === 'unscheduled') {
-      all = all.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+      all = all.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     } else if (self._filter !== 'all') {
       all = all.filter(function(j) { return j.status === self._filter; });
     }
@@ -13423,7 +13444,7 @@ var JobsPage = {
   _setFilter: function(f) { JobsPage._filter = f; JobsPage._page = 0; loadPage('jobs'); },
 
   _bulkCloseUnscheduled: function() {
-    var all = DB.jobs.getAll().filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var all = DB.jobs.getAll().filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (!all.length) { UI.toast('Nothing to close', 'error'); return; }
     if (!confirm('Mark ' + all.length + ' orphaned jobs as completed?\n\nThis cannot be undone individually (but you can reopen each job.)')) return;
     var draftedCount = 0;
@@ -17292,7 +17313,7 @@ var SchedulePage = {
     var html = '';
 
     // Unscheduled jobs panel for day view
-    var globalUnscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var globalUnscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (globalUnscheduled.length > 0) {
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;">'
         + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">' + String.fromCharCode(128203) + ' Unscheduled Jobs (' + globalUnscheduled.length + ') — <span style="font-size:12px;font-weight:400;color:var(--text-light);">drag to a time slot</span></div>'
@@ -17589,7 +17610,7 @@ var SchedulePage = {
     var html = '';
 
     // Unscheduled jobs panel — suppressed when right-rail Unscheduled tab takes over
-    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (skipUnscheduledBanner) {
       // Right rail handles this — skip duplicate.
     } else {
@@ -17702,7 +17723,7 @@ var SchedulePage = {
     var html = '';
 
     // Unscheduled jobs panel — suppressed when right-rail Unscheduled tab takes over
-    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (skipUnscheduledBanner) {
       // Right rail handles this — skip duplicate.
     } else {
@@ -18227,7 +18248,7 @@ var SchedulePage = {
     var revenue = rangeJobs.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
     var completed = rangeJobs.filter(function(j) { return j.status === 'completed'; }).length;
     var unscheduled = allJobs.filter(function(j) {
-      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled';
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived';
     });
     var queueValue = unscheduled.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
     var rangeLabel = SchedulePage.view === 'week' ? 'This Week' : 'This Month';
@@ -18282,7 +18303,7 @@ var SchedulePage = {
       allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
     }
     var unscheduled = allJobs.filter(function(j) {
-      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled';
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived';
     });
     var activeTab = SchedulePage._railTab();
 
@@ -55785,6 +55806,10 @@ var CloudSync = {
 
     var sb = SupabaseDB.client;
     var totalRows = 0;
+    // Offline detection: flips true the moment ANY query resolves (we reached
+    // Supabase). If EVERY table's query throws (fetch failed), we never reached
+    // the cloud → show the offline banner. One table succeeding = we're online.
+    var reachedCloud = false;
     // Multi-tenant: scope pulls to the resolved tenant if available.
     var tenantId = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
     // Tables without tenant_id column — don't apply the filter
@@ -55805,6 +55830,7 @@ var CloudSync = {
           var _q = sb.from(table).select('*').order('created_at', { ascending: false }).range(page * 1000, (page + 1) * 1000 - 1);
           if (tenantId && !NO_TENANT[table]) _q = _q.eq('tenant_id', tenantId);
           var { data: batch, error } = await _q;
+          reachedCloud = true; // query resolved → network reached Supabase
           if (error) break;
           if (batch && batch.length > 0) { allData = allData.concat(batch); page++; }
           if (!batch || batch.length < 1000) hasMore = false;
@@ -55921,6 +55947,16 @@ var CloudSync = {
     CloudSync.syncing = false;
     CloudSync.lastSync = Date.now();
     if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: done — ' + totalRows + ' total rows cached');
+
+    // OFFLINE BANNER: BM is cloud-live — if we couldn't reach the cloud, say so
+    // loudly instead of silently showing stale data. Offline = browser reports
+    // offline, OR every table query failed to reach Supabase (and we DID have
+    // tables to try). Reaching the cloud clears the banner.
+    try {
+      var _offline = (navigator.onLine === false) || (!reachedCloud && CloudSync.tables.length > 0);
+      if (_offline) CloudSync._showOfflineBanner();
+      else CloudSync._hideOfflineBanner();
+    } catch (e) {}
 
     // Probe auth state — surface the loud "Cloud signed out" badge if the
     // Supabase session has lapsed. Repeats every 60s so a mid-session expiry
@@ -56066,6 +56102,56 @@ var CloudSync = {
   _clearCloudSignedOut: function() {
     var el = document.getElementById('cloud-auth-badge');
     if (el) el.remove();
+  },
+
+  // OFFLINE BANNER — a loud, full-width top bar shown when BM can't reach the
+  // cloud. BM is cloud-live (the cloud is the source of truth), so rather than
+  // silently show stale device data in a dead zone, we tell the user plainly:
+  // this data may be out of date and changes won't save until they reconnect.
+  // body is fixed (height:100vh; overflow:hidden), so the banner is position:
+  // fixed and we shift .app down by its height so it never covers content.
+  _showOfflineBanner: function() {
+    if (document.getElementById('bm-offline-banner')) return;
+    var b = document.createElement('div');
+    b.id = 'bm-offline-banner';
+    b.setAttribute('role', 'alert');
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#b91c1c;color:#fff;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;line-height:1.35;';
+    b.innerHTML = '<span>⚠️ Offline — can’t reach the cloud. This data may be out of date and changes won’t save until you reconnect.</span>'
+      + '<button type="button" id="bm-offline-retry" style="background:#fff;color:#b91c1c;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">Retry</button>';
+    document.body.appendChild(b);
+    var app = document.querySelector('.app');
+    // Shift .app down by the banner's height. Read offsetHeight AFTER layout
+    // settles — reading it synchronously right after appendChild is pre-reflow
+    // and over-reports when the text wraps (measured 267px for a 109px banner).
+    // rAF + a short timeout catch font/emoji reflow; ResizeObserver keeps it
+    // correct through rotate / width changes.
+    var _syncShift = function() {
+      var h = b.offsetHeight || 44;
+      if (app) { app.style.marginTop = h + 'px'; app.style.height = 'calc(100vh - ' + h + 'px)'; }
+    };
+    requestAnimationFrame(_syncShift);
+    setTimeout(_syncShift, 150);
+    if (window.ResizeObserver) { try { new ResizeObserver(_syncShift).observe(b); } catch (e) {} }
+    var r = document.getElementById('bm-offline-retry');
+    if (r) r.onclick = function() {
+      if (navigator.onLine === false) {
+        r.textContent = 'Still offline'; setTimeout(function() { var rr = document.getElementById('bm-offline-retry'); if (rr) rr.textContent = 'Retry'; }, 1600);
+        return;
+      }
+      r.textContent = 'Retrying…'; r.disabled = true;
+      // init() hides the banner itself if it reaches the cloud.
+      CloudSync.init().then(function() {
+        var rr = document.getElementById('bm-offline-retry');
+        if (rr) { rr.textContent = 'Retry'; rr.disabled = false; }
+      });
+    };
+  },
+
+  _hideOfflineBanner: function() {
+    var b = document.getElementById('bm-offline-banner');
+    if (b) b.remove();
+    var app = document.querySelector('.app');
+    if (app) { app.style.marginTop = ''; app.style.height = ''; }
   },
 
   // Proactive auth-state probe. Runs on init + every 60s.
@@ -56245,20 +56331,34 @@ var CloudSync = {
     if (typeof Photos !== 'undefined' && Photos.syncFromCloud) Photos.syncFromCloud();
     if (typeof Photos !== 'undefined' && Photos.flushQueue) Photos.flushQueue();
     CloudSync.init().then(function() {
-      // Fresh cloud data just landed. Re-render the page the user is on so they
-      // see CURRENT data, not the instant-but-stale snapshot the boot rendered.
-      // Guard: never re-render while a field is focused (would clobber an
-      // in-progress edit — see the Oswald #514 clobber lesson), and skip if a
-      // modal/dialog is open.
+      // Fresh cloud data just landed. Re-render so the user sees CURRENT data,
+      // not the instant-but-stale snapshot the boot rendered.
+      // SAFETY: only auto-refresh the DASHBOARD (the boot screen). Detail views
+      // (a quote/job/client the user opened) render into #pageContent but leave
+      // window._currentPage as the list page ('quotes' etc.) — so re-rendering
+      // that would BOUNCE the user out of the record they're reading. Any
+      // navigation moves _currentPage off 'dashboard', and every loadPage reads
+      // the now-fresh cache, so the user sees current data on their next tap
+      // regardless. Also skip while a field is focused or a modal is open
+      // (never clobber an in-progress edit — the Oswald #514 clobber lesson).
       try {
         var _ae = document.activeElement;
         var _editing = _ae && (_ae.tagName === 'INPUT' || _ae.tagName === 'TEXTAREA' || _ae.tagName === 'SELECT' || _ae.isContentEditable);
         var _modalOpen = !!document.querySelector('.modal-overlay, .bm-modal, [role="dialog"]');
-        if (!_editing && !_modalOpen && window._currentPage && typeof loadPage === 'function') {
-          loadPage(window._currentPage);
+        if (window._currentPage === 'dashboard' && !_editing && !_modalOpen && typeof loadPage === 'function') {
+          loadPage('dashboard');
         }
       } catch (e) {}
     });
+
+    // Live connectivity listeners (once): drop into a dead zone → banner appears
+    // instantly; signal returns → re-pull fresh from the cloud (which clears the
+    // banner on success).
+    if (!window._bmOfflineListeners) {
+      window._bmOfflineListeners = true;
+      window.addEventListener('offline', function() { try { CloudSync._showOfflineBanner(); } catch (e) {} });
+      window.addEventListener('online', function() { try { CloudSync.init(); } catch (e) {} });
+    }
   } else if (attempts > 0) {
     setTimeout(function() { waitForSupabase(attempts - 1); }, 1000);
   }

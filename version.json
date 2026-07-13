@@ -1,5 +1,5 @@
 {
-  "version": 1037,
+  "version": 1038,
   "released": "2026-07-13",
-  "notes": "Unify the 'unscheduled jobs' count across Jobs Overview badge, Jobs list filter, bulk-close, and all Schedule panels (day/week/month) to one honest definition: undated AND not completed/cancelled/archived. Fixes the 81 vs 7 vs 2 mismatch — all now show the true active-unscheduled count."
+  "notes": "Quote photo pool: the yellow dashed 'add photos' box is now TAP-TO-UPLOAD (opens the camera/photo picker) and works on mobile — was drag-drop only and desktop-only. Tap the box to add photos, then tap a photo and tap its line item to place it."
 }
