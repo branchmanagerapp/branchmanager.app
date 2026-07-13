@@ -275,7 +275,10 @@ document.title = 'Pay Invoice';
 
     var balance    = parseFloat(inv.balance || inv.total || 0);
     var tipAmt     = state.tip;
-    var cardFee    = Math.round((balance * 0.029 + 0.30) * 100) / 100; // v1012: pass Stripe's card fee to the customer (card only; ACH/check/cash are fee-free)
+    // v1045: per-invoice card-fee waiver. When absorb_card_fee is set, the shop
+    // eats the ~3% (good-client goodwill / pay-sooner) — no surcharge shown or charged.
+    var absorbFee  = !!(inv.absorb_card_fee || inv.absorbCardFee);
+    var cardFee    = absorbFee ? 0 : Math.round((balance * 0.029 + 0.30) * 100) / 100; // pass Stripe's card fee to the customer (card only)
     var grandTotal = balance + tipAmt + cardFee;
 
     // Line items
@@ -380,11 +383,11 @@ document.title = 'Pay Invoice';
       + '<div class="pay-totals">'
       + '<div class="pay-total-row"><span>Invoice balance</span><span>' + fmt(balance) + '</span></div>'
       + (tipAmt > 0 ? '<div class="pay-total-row tip-row"><span>Gratuity 💚</span><span>+ ' + fmt(tipAmt) + '</span></div>' : '')
-      + '<div class="pay-total-row"><span>Card processing fee (2.9% + $0.30)</span><span>+ ' + fmt(cardFee) + '</span></div>'
+      + (cardFee > 0 ? '<div class="pay-total-row"><span>Card processing fee (2.9% + $0.30)</span><span>+ ' + fmt(cardFee) + '</span></div>' : '')
       + '<div class="pay-total-row grand"><span>Total to pay</span><span id="grand-total">' + fmt(grandTotal) + '</span></div>'
       + '</div>'
 
-      + '<div style="font-size:11px;color:#64748b;margin:0 2px 10px;line-height:1.45;">💳 A 2.9% + $0.30 card processing fee is included above. Prefer to skip it? Pay by check, cash, or e-check — just call or text us.</div>'
+      + (cardFee > 0 ? '<div style="font-size:11px;color:#64748b;margin:0 2px 10px;line-height:1.45;">💳 A 2.9% + $0.30 card processing fee is included above. Prefer to skip it? Pay by check, cash, or e-check — just call or text us.</div>' : '')
 
       + (stripeLink
           ? '<button class="pay-btn" id="pay-btn" onclick="PAY.payWithCard()">💳 Pay ' + fmt(grandTotal) + ' with Card</button>'
@@ -418,7 +421,7 @@ document.title = 'Pay Invoice';
     customTip: function(val) {
       state.tip = parseFloat(val) || 0;
       var _bal = parseFloat(state.invoice.balance || state.invoice.total || 0);
-      var _fee = Math.round((_bal * 0.029 + 0.30) * 100) / 100;
+      var _fee = (state.invoice.absorb_card_fee || state.invoice.absorbCardFee) ? 0 : Math.round((_bal * 0.029 + 0.30) * 100) / 100;
       var grandTotal = _bal + state.tip + _fee;
       var gt  = document.getElementById('grand-total');
       var pa  = document.getElementById('pay-panel-amount');
@@ -432,7 +435,7 @@ document.title = 'Pay Invoice';
       var inv = state.invoice;
       if (!inv || !inv.id) return;
       var bal = parseFloat(inv.balance || inv.total || 0);
-      var fee = Math.round((bal * 0.029 + 0.30) * 100) / 100; // v1012: card surcharge, matches the displayed total
+      var fee = (inv.absorb_card_fee || inv.absorbCardFee) ? 0 : Math.round((bal * 0.029 + 0.30) * 100) / 100; // v1045: waived when absorb_card_fee is set
       var grandTotal = bal + state.tip + fee;
       var btn = document.getElementById('pay-btn');
       var restore = function(){ if (btn) { btn.textContent = '💳 Pay ' + fmt(grandTotal) + ' with Card'; btn.disabled = false; } };
