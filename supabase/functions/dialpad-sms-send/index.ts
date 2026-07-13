@@ -23,7 +23,11 @@ function cors(body: string, status = 200) {
     headers: {
       "content-type": "application/json",
       "access-control-allow-origin": "*",
-      "access-control-allow-headers": "content-type, authorization",
+      // Must include apikey + x-client-info: the browser client (dialpad.js)
+      // sends an `apikey` header, and the Supabase JS client adds `x-client-info`.
+      // If they're not allowed here, the CORS preflight fails and the real POST
+      // is blocked → "Failed to fetch" in the browser (Jul 13 2026 fix).
+      "access-control-allow-headers": "content-type, authorization, apikey, x-client-info",
     },
   });
 }
