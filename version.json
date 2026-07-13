@@ -1,5 +1,5 @@
 {
-  "version": 1028,
-  "released": "2026-07-12",
-  "notes": "Calendar P&L is now one consolidated month figure below the grid (no longer a strip dividing every week) and off by default — toggle 'Profit / Loss' in Calendar & View Options."
+  "version": 1029,
+  "released": "2026-07-13",
+  "notes": "Quotes list: actionable quotes (draft/changes/sent) sort to top; converted/expired dead last."
 }

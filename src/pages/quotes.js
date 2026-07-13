@@ -318,7 +318,18 @@ var QuotesPage = {
     }
     var col = self._sortCol;
     var dir = self._sortDir === 'asc' ? 1 : -1;
+    // Default view: surface ACTIONABLE quotes first (draft/changes = your action,
+    // then sent/awaiting = customer's, then approved, converted/expired dead last).
+    // A user clicking a column header sorts purely by that column instead.
+    var _RANK = { draft:0, changes_requested:0, sent:1, awaiting:1, approved:2, expired:3, converted:4, declined:5, archived:6 };
+    var _defaultSort = (col === 'quoteNumber' && self._sortDir === 'desc');
     all.sort(function(a, b) {
+      if (_defaultSort) {
+        var ra = (_RANK[a.status] != null ? _RANK[a.status] : 9);
+        var rb = (_RANK[b.status] != null ? _RANK[b.status] : 9);
+        if (ra !== rb) return ra - rb;
+        return (b.quoteNumber || 0) - (a.quoteNumber || 0);
+      }
       var va = a[col], vb = b[col];
       if (col === 'quoteNumber' || col === 'total') return ((va || 0) - (vb || 0)) * dir;
       if (col === 'createdAt') return ((new Date(va || 0)).getTime() - (new Date(vb || 0)).getTime()) * dir;
