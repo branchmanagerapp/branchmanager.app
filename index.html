@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1043; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1044; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -47,7 +47,13 @@
         // the network/CDN is serving an old index.html. Don't loop; flag it so the
         // app can offer a manual refresh, and let the user keep working meanwhile.
         window.__bmStaleVersion = data.version;
-        console.warn('[BM] Still stale after forced refresh to v' + data.version + ' — not looping (CDN lag).');
+        console.warn('[BM] Still stale after forced refresh to v' + data.version + ' — showing update banner.');
+        // v1044: the silent auto-reload couldn't force the new bundle (usually a
+        // stuck iOS/PWA service worker serving old cached code). Never leave the
+        // user silently trapped on old code — show a LOUD banner with a one-tap
+        // AGGRESSIVE reset (unregister SW + delete all caches, then hard-reload).
+        var _sb = function() { try { window.bmShowStaleBanner(data.version); } catch (e) {} };
+        if (document.body) _sb(); else document.addEventListener('DOMContentLoaded', _sb);
         return;
       }
       console.log('[BM] Stale app (bundled ' + BUNDLED_VERSION + ' < server ' + data.version + ') — hard refresh to v' + data.version + '.');
@@ -92,6 +98,32 @@
     })
     .catch(function(){ /* offline is fine — skip check */ });
 })();
+
+// v1044: loud stale-version banner. Shown when the silent auto-updater tried to
+// pull the new bundle but couldn't (stuck service worker). Gives a one-tap
+// AGGRESSIVE reset so the user is never silently stuck on old code.
+window.bmShowStaleBanner = function(version) {
+  if (document.getElementById('bm-stale-banner')) return;
+  var b = document.createElement('div');
+  b.id = 'bm-stale-banner';
+  b.setAttribute('role', 'alert');
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100001;background:#7c2d12;color:#fff;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;line-height:1.35;';
+  b.innerHTML = '<span>⚠️ Branch Manager updated to v' + version + ' — you’re on an older version, so some things may look wrong until you update.</span>'
+    + '<button type="button" id="bm-stale-update" style="background:#fff;color:#7c2d12;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">Update now</button>';
+  document.body.appendChild(b);
+  var app = document.querySelector('.app');
+  if (app) { var h = b.offsetHeight || 44; app.style.marginTop = h + 'px'; app.style.height = 'calc(100vh - ' + h + 'px)'; }
+  var btn = document.getElementById('bm-stale-update');
+  if (btn) btn.onclick = function() {
+    btn.textContent = 'Updating…'; btn.disabled = true;
+    var go = function() { location.replace(location.pathname + '?v=' + version + '&fresh=' + (window.BUNDLED_VERSION || '') + '-' + version); };
+    Promise.resolve()
+      .then(function() { return ('serviceWorker' in navigator) ? navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); }) : null; })
+      .then(function() { return window.caches ? caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }) : null; })
+      .then(go).catch(go);
+    setTimeout(go, 1500);
+  };
+};
 
 // PWA navigation style — Top (default) or Bottom tab bar.
 // Only applies when user chose 'bottom' AND the app is running as an
@@ -1382,7 +1414,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1043.min.js"></script>
+<script defer src="dist/bm.bundle.v1044.min.js"></script>
 
 
 

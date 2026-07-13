@@ -1,5 +1,5 @@
 {
-  "version": 1043,
+  "version": 1044,
   "released": "2026-07-13",
-  "notes": "Same search fix applied everywhere: Jobs, Quotes, Requests, Campaigns, Referrals, and Task Reminders search boxes were also re-rendering + stealing focus on every keystroke. All now use one shared debounced handler (Invoices already had it). Type a full query anywhere without getting kicked out."
+  "notes": "Stale-version banner: if your device can't auto-update to the latest code (usually a stuck service worker), a loud 'You're on an older version — Update now' banner appears with a one-tap hard reset (clears the service worker + caches). No more silently running old code and hitting already-fixed bugs."
 }

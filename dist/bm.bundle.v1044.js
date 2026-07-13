@@ -2576,6 +2576,25 @@ var UI = (function() {
     }, true);
   })();
 
+  // v1042: shared DEBOUNCED search-input handler. Many list pages wired
+  // oninput="X._search=this.value;loadPage('page')" which re-rendered the WHOLE
+  // page on every keystroke → recreated the search <input> → stole focus, so you
+  // couldn't finish typing (the "kicks me out every letter / Rob shows A's" bug).
+  // This updates the query immediately but debounces the re-render, then restores
+  // focus + caret. Use: oninput="UI.searchInput(this, JobsPage, '_search', 'jobs')"
+  function searchInput(el, obj, key, page) {
+    if (!el || !obj) return;
+    obj[key] = el.value;
+    if (obj._page !== undefined) obj._page = 0;
+    var id = el.id;
+    clearTimeout(searchInput._t);
+    searchInput._t = setTimeout(function() {
+      try { loadPage(page || window._currentPage); } catch (e) {}
+      var e2 = id && document.getElementById(id);
+      if (e2) { e2.focus(); try { var n = e2.value.length; e2.setSelectionRange(n, n); } catch (x) {} }
+    }, 220);
+  }
+
   // v634: searchable client picker — replaces the no-search native <select>
   // that became unusable as the client list grew.
   //
@@ -2950,6 +2969,7 @@ var UI = (function() {
     field: field,
     formSection: formSection,
     bindAddressAutocomplete: bindAddressAutocomplete,
+    searchInput: searchInput,
     bindClientPicker: bindClientPicker,
     statCard: statCard,
     emptyState: emptyState,
@@ -5511,7 +5531,21 @@ var ClientsPage = {
   },
 
   setFilter: function(f) { ClientsPage._filter = f; ClientsPage._page = 0; loadPage('clients'); },
-  setSearch: function(q) { ClientsPage._search = q; ClientsPage._page = 0; loadPage('clients'); },
+  // v1041: DEBOUNCE the search. Was: loadPage('clients') on EVERY keystroke,
+  // which re-rendered the whole page, recreated #client-search, and stole focus
+  // after each letter — so you couldn't finish typing "Rob" and it stayed on a
+  // partial/empty query (showing unfiltered A's). Now: update _search immediately,
+  // but only re-render (and re-filter) 220ms after you stop typing, then restore
+  // focus + caret so typing is uninterrupted.
+  setSearch: function(q) {
+    ClientsPage._search = q; ClientsPage._page = 0;
+    clearTimeout(ClientsPage._searchDebounce);
+    ClientsPage._searchDebounce = setTimeout(function() {
+      loadPage('clients');
+      var el = document.getElementById('client-search');
+      if (el) { el.focus(); try { var n = el.value.length; el.setSelectionRange(n, n); } catch (e) {} }
+    }, 220);
+  },
   setSort: function(field) {
     if (ClientsPage._sort === field) { ClientsPage._sortDir *= -1; }
     else { ClientsPage._sort = field; ClientsPage._sortDir = 1; }
@@ -6075,7 +6109,11 @@ var ClientsPage = {
         return;
       }
     }
-    loadPage('clients');
+    // v1041: close the modal and return to the page you were ON (e.g. the quote
+    // you opened "Edit this client" from) — was: always loadPage('clients'),
+    // which kicked you off the quote to the clients list after every save.
+    if (UI.closeModal) UI.closeModal();
+    loadPage(window._currentPage || 'clients');
   },
 
   // v962: set the flag then submit; save() reopens a fresh form (Jobber-match)
@@ -7989,7 +8027,7 @@ var RequestsPage = {
       +   '<button class="btn btn-primary" onclick="RequestsPage.showForm()" style="font-size:13px;font-weight:700;">New Request</button>'
       +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
-      +     '<input type="text" placeholder="Search requests..." value="' + UI.esc(self._search) + '" oninput="RequestsPage._search=this.value;RequestsPage._page=0;loadPage(\'requests\')">'
+      +     '<input type="text" id="requests-search" placeholder="Search requests..." value="' + UI.esc(self._search) + '" oninput="UI.searchInput(this, RequestsPage, \'_search\', \'requests\')">'
       +   '</div>'
       + '</div>'
       + '</div>';
@@ -8883,7 +8921,7 @@ var QuotesPage = {
       +   '<button onclick="loadPage(\'videoquote\')" title="Record/upload a property video — AI extracts trees, hazards, urgency, and builds the quote" style="background:linear-gradient(135deg,#1f3a1a,#2e7d32);color:#fff;border:1px solid #2e7d32;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🎙️ AI Walkthrough</button>'
       +   '<div class="search-box" style="min-width:180px;max-width:260px;">'
       +     '<span style="color:var(--text-light);">🔍</span>'
-      +     '<input type="text" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="QuotesPage._search=this.value;QuotesPage._page=0;loadPage(\'quotes\')">'
+      +     '<input type="text" id="quotes-search" placeholder="Search quotes..." value="' + UI.esc(self._search) + '" oninput="UI.searchInput(this, QuotesPage, \'_search\', \'quotes\')">'
       +   '</div>'
       + '</div></div>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
@@ -13316,7 +13354,7 @@ var JobsPage = {
       + '</div>'
       + '<div class="search-box" style="min-width:200px;max-width:280px;">'
       + '<span style="color:var(--text-light);">🔍</span>'
-      + '<input type="text" placeholder="Search jobs..." value="' + UI.esc(self._search) + '" oninput="JobsPage._search=this.value;JobsPage._page=0;loadPage(\'jobs\')">'
+      + '<input type="text" id="jobs-search" placeholder="Search jobs..." value="' + UI.esc(self._search) + '" oninput="UI.searchInput(this, JobsPage, \'_search\', \'jobs\')">'
       + '</div></div>';
 
     // Bulk close-out banner for "unscheduled" filter — legacy system-imported jobs
@@ -39824,7 +39862,7 @@ var Campaigns = {
     });
     html += '<div style="flex:1;"></div>';
     html += '<input type="text" placeholder="Search campaigns..." value="' + UI.esc(Campaigns._search) + '" '
-      + 'oninput="Campaigns._search=this.value;loadPage(window._currentPage)" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:200px;">';
+      + 'oninput="UI.searchInput(this, Campaigns, \'_search\')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:200px;">';
     html += '</div>';
 
     // Campaign table
@@ -40733,7 +40771,7 @@ var Referrals = {
     });
     html += '<div style="flex:1;"></div>';
     html += '<input type="text" placeholder="Search..." value="' + UI.esc(Referrals._search) + '" '
-      + 'oninput="Referrals._search=this.value;loadPage(window._currentPage)" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:180px;">';
+      + 'oninput="UI.searchInput(this, Referrals, \'_search\')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:180px;">';
     html += '</div>';
 
     var filtered = referrals.filter(function(r) {
@@ -67401,7 +67439,7 @@ var TaskReminders = {
       + '<div class="search-box" style="min-width:180px;">'
       + '<span style="color:var(--text-light);display:flex;align-items:center;"><i data-lucide="search" style="width:14px;height:14px;"></i></span>'
       + '<input type="text" placeholder="Search tasks…" value="' + UI.esc(TaskReminders._search||'') + '" '
-      + 'oninput="TaskReminders._search=this.value;loadPage(\'taskreminders\')" '
+      + 'oninput="UI.searchInput(this, TaskReminders, \'_search\', \'taskreminders\')" '
       + 'style="border:none;outline:none;background:transparent;font-size:13px;width:100%;color:var(--text);"></div>'
       + '<button id="bm-task-mic-btn" onclick="TaskReminders._toggleMic()" title="Voice input" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i data-lucide="mic" style="width:16px;height:16px;"></i></button>'
       + '<button onclick="TaskReminders._openOverlay(null)" style="background:var(--green-dark);color:#fff;border:none;padding:0 16px;height:34px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New</button>'
