@@ -491,17 +491,22 @@ var CloudSync = {
     if (typeof Photos !== 'undefined' && Photos.syncFromCloud) Photos.syncFromCloud();
     if (typeof Photos !== 'undefined' && Photos.flushQueue) Photos.flushQueue();
     CloudSync.init().then(function() {
-      // Fresh cloud data just landed. Re-render the page the user is on so they
-      // see CURRENT data, not the instant-but-stale snapshot the boot rendered.
-      // Guard: never re-render while a field is focused (would clobber an
-      // in-progress edit — see the Oswald #514 clobber lesson), and skip if a
-      // modal/dialog is open.
+      // Fresh cloud data just landed. Re-render so the user sees CURRENT data,
+      // not the instant-but-stale snapshot the boot rendered.
+      // SAFETY: only auto-refresh the DASHBOARD (the boot screen). Detail views
+      // (a quote/job/client the user opened) render into #pageContent but leave
+      // window._currentPage as the list page ('quotes' etc.) — so re-rendering
+      // that would BOUNCE the user out of the record they're reading. Any
+      // navigation moves _currentPage off 'dashboard', and every loadPage reads
+      // the now-fresh cache, so the user sees current data on their next tap
+      // regardless. Also skip while a field is focused or a modal is open
+      // (never clobber an in-progress edit — the Oswald #514 clobber lesson).
       try {
         var _ae = document.activeElement;
         var _editing = _ae && (_ae.tagName === 'INPUT' || _ae.tagName === 'TEXTAREA' || _ae.tagName === 'SELECT' || _ae.isContentEditable);
         var _modalOpen = !!document.querySelector('.modal-overlay, .bm-modal, [role="dialog"]');
-        if (!_editing && !_modalOpen && window._currentPage && typeof loadPage === 'function') {
-          loadPage(window._currentPage);
+        if (window._currentPage === 'dashboard' && !_editing && !_modalOpen && typeof loadPage === 'function') {
+          loadPage('dashboard');
         }
       } catch (e) {}
     });
