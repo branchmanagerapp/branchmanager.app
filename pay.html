@@ -60,6 +60,10 @@
   /* Line items */
   .line-items { overflow-x: auto; }
   .line-items table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 400px; }
+  /* v1022: the 2-column receipt table fits a phone — drop the 5-col min-width so the amount never clips */
+  .line-items.receipt-items { overflow-x: visible; }
+  .line-items.receipt-items table { min-width: 0; }
+  .line-items.receipt-items th, .line-items.receipt-items td { padding-left: 20px; padding-right: 20px; }
   .line-items thead tr { background: transparent; }
   .line-items th { padding: 14px 26px 10px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; text-align: left; white-space: nowrap; border-bottom: 1px solid #eef0f3; }
   .line-items th.r { text-align: right; }
@@ -229,7 +233,7 @@ document.title = 'Pay Invoice';
       var pItems    = []; try { pItems = inv.line_items || inv.lineItems || []; } catch(e) { pItems = []; }
       var pItemsHtml = '';
       if (pItems.length) {
-        pItemsHtml = '<div class="line-items"><table><thead><tr><th>Service</th><th class="r">Amount</th></tr></thead><tbody>';
+        pItemsHtml = '<div class="line-items receipt-items"><table><thead><tr><th>Service</th><th class="r">Amount</th></tr></thead><tbody>';
         pItems.forEach(function(item) {
           var amt = parseFloat(item.amount || ((parseFloat(item.qty || 1)) * (parseFloat(item.rate || 0))));
           pItemsHtml += '<tr><td><div class="line-svc">' + esc(item.service || item.name || 'Tree Service') + '</div>'
