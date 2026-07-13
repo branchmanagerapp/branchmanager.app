@@ -190,7 +190,7 @@ var Dialpad = {
 
   // ── Quick Text Modal (like legacy system) ──────────────────
 
-  showTextModal: function(clientId, clientName, phone) {
+  showTextModal: function(clientId, clientName, phone, prefillMsg) {
     var client = clientId ? DB.clients.getById(clientId) : null;
     var clientPhone = phone || (client ? client.phone : '');
     var name = clientName || (client ? client.name : '');
@@ -216,7 +216,7 @@ var Dialpad = {
       + '<div style="font-size:13px;color:var(--text-light);">To: <strong>' + UI.esc(name) + '</strong> &mdash; ' + (clientPhone || 'No phone') + '</div>'
       + modeBadge
       + '</div>'
-      + '<textarea id="sms-message" placeholder="Type your message..." style="width:100%;height:110px;border:2px solid var(--border);border-radius:8px;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"></textarea>'
+      + '<textarea id="sms-message" placeholder="Type your message..." style="width:100%;height:110px;border:2px solid var(--border);border-radius:8px;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;">' + (prefillMsg ? (typeof UI!=='undefined'&&UI.esc?UI.esc(prefillMsg):String(prefillMsg)) : '') + '</textarea>'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px;">'
       + '<button onclick="Dialpad._showSMSTemplates(\'' + clientId + '\')" class="btn btn-outline" style="font-size:12px;">📋 Templates</button>'
       + '<div style="display:flex;gap:8px;align-items:center;">'

@@ -1,5 +1,5 @@
 {
-  "version": 1032,
+  "version": 1033,
   "released": "2026-07-13",
-  "notes": "In-app quote view shows line-item photos; Dialpad send failure shows an error instead of silently opening Messages."
+  "notes": "Route client portal-invite text + invoice text through Dialpad composer (were opening Messages); composer supports a prefilled message."
 }

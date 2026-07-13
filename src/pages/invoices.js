@@ -660,7 +660,7 @@ var InvoicesPage = {
     var payLink = InvoicesPage._getPayLink(id);
     var _b = inv.balance || inv.total; var _ct = (typeof Stripe!=='undefined'&&Stripe.cardTotal)?Stripe.cardTotal(_b):_b;
     var msg = 'Invoice #' + inv.invoiceNumber + ' from ' + InvoicesPage._co().name + ' — ' + UI.money(_b) + '. Pay by card: ' + payLink + ' (' + UI.money(_ct) + ' incl. card fee). Skip the fee — pay by check, cash, or e-check; call us.';
-    window.open('sms:' + phone + '?&body=' + encodeURIComponent(msg));
+    if (typeof Dialpad!=='undefined' && Dialpad.showTextModal) { Dialpad.showTextModal(inv.clientId||'', '', phone, msg); } else { window.open('sms:' + phone + '?&body=' + encodeURIComponent(msg)); }
   },
 
   _chooserCopyLink: function(id) {
