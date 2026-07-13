@@ -18,7 +18,10 @@ var Dialpad = {
   },
 
   isConfigured: function() {
-    return !!Dialpad.apiKey;
+    // Dialpad is configured SERVER-side (DIALPAD_API_KEY secret + dialpad-sms-send
+    // edge fn); the send goes through that edge fn regardless of any client-saved
+    // key, so default the UI to Dialpad instead of gating on a local key paste.
+    return true;
   },
 
   // ── SMS ──────────────────────────────────────────────

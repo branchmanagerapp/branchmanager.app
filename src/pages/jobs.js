@@ -1038,7 +1038,7 @@ var JobsPage = {
       + (function() {
         var phone = j.clientPhone || (client && client.phone) || '';
         return phone ? '<a href="tel:' + phone.replace(/\D/g,'') + '" class="btn btn-outline" style="font-size:12px;">📞 Call</a>'
-          + '<a href="sms:' + phone.replace(/\D/g,'') + '" class="btn btn-outline" style="font-size:12px;">💬 Text</a>' : '';
+          + '<button onclick="Dialpad.showTextModal(\'' + (j.clientId||'') + '\',\'\',\'' + phone.replace(/\D/g,'') + '\')" class="btn btn-outline" style="font-size:12px;">💬 Text</button>' : '';
       })()
       + (j.crew && j.crew.length > 0 ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._textCrew(\'' + id + '\')">📲 Text Crew</button>' : '')
       + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._etaToClient(\'' + id + '\')" title="Send ETA SMS to client">⏱ ETA to Client</button>' : '')
