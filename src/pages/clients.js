@@ -370,7 +370,21 @@ var ClientsPage = {
   },
 
   setFilter: function(f) { ClientsPage._filter = f; ClientsPage._page = 0; loadPage('clients'); },
-  setSearch: function(q) { ClientsPage._search = q; ClientsPage._page = 0; loadPage('clients'); },
+  // v1041: DEBOUNCE the search. Was: loadPage('clients') on EVERY keystroke,
+  // which re-rendered the whole page, recreated #client-search, and stole focus
+  // after each letter — so you couldn't finish typing "Rob" and it stayed on a
+  // partial/empty query (showing unfiltered A's). Now: update _search immediately,
+  // but only re-render (and re-filter) 220ms after you stop typing, then restore
+  // focus + caret so typing is uninterrupted.
+  setSearch: function(q) {
+    ClientsPage._search = q; ClientsPage._page = 0;
+    clearTimeout(ClientsPage._searchDebounce);
+    ClientsPage._searchDebounce = setTimeout(function() {
+      loadPage('clients');
+      var el = document.getElementById('client-search');
+      if (el) { el.focus(); try { var n = el.value.length; el.setSelectionRange(n, n); } catch (e) {} }
+    }, 220);
+  },
   setSort: function(field) {
     if (ClientsPage._sort === field) { ClientsPage._sortDir *= -1; }
     else { ClientsPage._sort = field; ClientsPage._sortDir = 1; }

@@ -1,5 +1,5 @@
 {
-  "version": 1040,
+  "version": 1041,
   "released": "2026-07-13",
-  "notes": "Address autocomplete now works on EVERY address field app-wide (client, company, chip-drop, permit, hiring, property map + future fields), not just the client form. Global focus-based binder + Photon geocoder (type an address, pick from the dropdown, it fills in). Verified at 375px."
+  "notes": "Clients search fixed: removed the box-in-box (borderless input inside the pill), and debounced so it no longer re-renders + steals focus on every keystroke — you can type a full query uninterrupted, so filtering works (typing 'Rob' shows the Robs, not unfiltered A's)."
 }
