@@ -1,5 +1,5 @@
 {
-  "version": 1021,
+  "version": 1022,
   "released": "2026-07-12",
-  "notes": "Force-update hardened: stale devices now hard-refresh via a cache-busting URL (fixes the iOS case where location.reload() served the cached index.html and the app never updated), with a loop guard. This is what kills the recurring stale-cache 400s."
+  "notes": "Receipts now show the full review footer (Google, Facebook, Instagram, Yelp, Nextdoor) matching the invoice email — the receipt email + auto-send were missing Yelp/Nextdoor."
 }

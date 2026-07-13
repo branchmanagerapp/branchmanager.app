@@ -845,11 +845,13 @@ var InvoicesPage = {
       });
     }
 
-    // Social links
+    // Social links — v1022: match the invoice email footer (was missing Yelp + Nextdoor)
     var socialLinks = [];
     if (_c.googleReview) socialLinks.push('<a href="' + _c.googleReview + '" style="color:#1a3c12;text-decoration:none;font-weight:700;font-size:12px;">⭐ Leave a Review</a>');
     if (_c.facebook)     socialLinks.push('<a href="' + _c.facebook + '" style="color:#1877f2;text-decoration:none;font-size:12px;">&#9633; Facebook</a>');
     if (_c.instagram)    socialLinks.push('<a href="' + _c.instagram + '" style="color:#e1306c;text-decoration:none;font-size:12px;">&#9650; Instagram</a>');
+    if (_c.yelp)         socialLinks.push('<a href="' + _c.yelp + '" style="color:#d32323;text-decoration:none;font-weight:700;font-size:12px;">&#9670; Yelp</a>');
+    if (_c.nextdoor)     socialLinks.push('<a href="' + _c.nextdoor + '" style="color:#00b246;text-decoration:none;font-weight:700;font-size:12px;">&#9632; Nextdoor</a>');
 
     var htmlBody = '<div style="background:#f5f6f8;padding:24px 0;">'
       + '<table style="max-width:560px;margin:0 auto;border-collapse:collapse;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">'

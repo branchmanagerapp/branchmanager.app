@@ -57,10 +57,12 @@ function buildReceiptHtml(params: {
   googleReviewUrl: string;
   facebookUrl: string;
   instagramUrl: string;
+  yelpUrl: string;
+  nextdoorUrl: string;
 }): string {
   const { firstName, invoiceNumber, total, paidDate, lineItems,
           coName, coPhone, coWebsite, coLogo,
-          googleReviewUrl, facebookUrl, instagramUrl } = params;
+          googleReviewUrl, facebookUrl, instagramUrl, yelpUrl, nextdoorUrl } = params;
 
   const totalStr = money(total);
 
@@ -81,6 +83,8 @@ function buildReceiptHtml(params: {
   if (googleReviewUrl) socialLinks.push(`<a href="${googleReviewUrl}" style="color:#1a3c12;text-decoration:none;font-weight:700;font-size:12px;">⭐ Leave a Review</a>`);
   if (facebookUrl)     socialLinks.push(`<a href="${facebookUrl}" style="color:#1877f2;text-decoration:none;font-size:12px;">&#9633; Facebook</a>`);
   if (instagramUrl)    socialLinks.push(`<a href="${instagramUrl}" style="color:#e1306c;text-decoration:none;font-size:12px;">&#9650; Instagram</a>`);
+  if (yelpUrl)         socialLinks.push(`<a href="${yelpUrl}" style="color:#d32323;text-decoration:none;font-weight:700;font-size:12px;">&#9670; Yelp</a>`);
+  if (nextdoorUrl)     socialLinks.push(`<a href="${nextdoorUrl}" style="color:#00b246;text-decoration:none;font-weight:700;font-size:12px;">&#9632; Nextdoor</a>`);
 
   const logoBlock = coLogo
     ? `<img src="${coLogo}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;display:block;margin-bottom:8px;" alt="">`
@@ -165,6 +169,8 @@ async function sendReceipt(params: {
     googleReviewUrl: String(coConfig.google_review_url ?? ''),
     facebookUrl:    String(coConfig.facebook_url ?? ''),
     instagramUrl:   String(coConfig.instagram_url ?? ''),
+    yelpUrl:        String(coConfig.yelp_url ?? ''),
+    nextdoorUrl:    String(coConfig.nextdoor_url ?? ''),
   });
 
   const textBody = `Hi ${firstName},\n\nThank you for your payment of ${money(total)}! Your account is paid in full.\n\nInvoice #${invoiceNumber}\n${inv.subject ? 'Job: ' + inv.subject + '\n' : ''}Amount Paid: ${money(total)}\nDate: ${paidDate}\n\n${coConfig.google_review_url ? 'Happy with our work? We\'d love a Google review!\n' + coConfig.google_review_url + '\n\n' : ''}Thanks,\n${coConfig.owner_name ?? "Owner"}\n${coConfig.company_name ?? 'Second Nature Tree Service'}\n${coConfig.company_phone ?? '(914) 391-5233'}`;
