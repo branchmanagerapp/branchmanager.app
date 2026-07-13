@@ -430,28 +430,30 @@ document.title = 'Pay Invoice';
 
     payWithCard: function() {
       var inv = state.invoice;
-      if (!inv) return;
+      if (!inv || !inv.id) return;
       var bal = parseFloat(inv.balance || inv.total || 0);
       var fee = Math.round((bal * 0.029 + 0.30) * 100) / 100; // v1012: card surcharge, matches the displayed total
       var grandTotal = bal + state.tip + fee;
+      var btn = document.getElementById('pay-btn');
+      var restore = function(){ if (btn) { btn.textContent = '💳 Pay ' + fmt(grandTotal) + ' with Card'; btn.disabled = false; } };
+      if (btn) { btn.textContent = 'Loading secure checkout…'; btn.disabled = true; }
 
-      var stripeLink = inv.stripe_payment_url || inv.stripePaymentUrl || state.tenantBaseLink || '';
-      if (!stripeLink) { try { stripeLink = localStorage.getItem('bm-stripe-base-link') || ''; } catch(e) {} }
-      if (!stripeLink) { stripeLink = params.get('stripe') || ''; }
-
-      if (!stripeLink) {
-        alert('Online card payment is not available for this invoice yet.\n\nPlease call ' + BM_CONFIG.phone + ' to arrange payment.');
-        return;
-      }
-
-      // Strip any pre-existing prefilled_quantity so we never double up the amount param
-      stripeLink = stripeLink.replace(/([?&])prefilled_quantity=\d+/g, '$1').replace(/[?&]$/, '').replace(/\?&/, '?');
-
-      var cents  = Math.round(grandTotal * 100);
-      var sep    = stripeLink.indexOf('?') >= 0 ? '&' : '?';
-      var invNum = inv.invoice_number || inv.invoiceNumber || '';
-      var ref    = invNum ? '&client_reference_id=INV-' + encodeURIComponent(invNum) : '';
-      window.location.href = stripeLink + sep + 'prefilled_quantity=' + cents + ref;
+      // v1045: mint a proper Stripe Checkout Session for the EXACT amount via the
+      // invoice-checkout edge fn. The old buy.stripe.com + prefilled_quantity trick
+      // NEVER set the amount — Stripe ignores that URL param, so every link showed
+      // $0.50 / Qty 50. This charges the real total and can't be underpaid.
+      fetch(FN_BASE + '/invoice-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+        body: JSON.stringify({ invoiceId: inv.id, amountCents: Math.round(grandTotal * 100) })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d && d.ok && d.url) { window.location.href = d.url; return; }
+        restore();
+        alert('Could not start secure checkout' + (d && d.error ? ' (' + d.error + ')' : '') + '.\n\nPlease call ' + BM_CONFIG.phone + ' to pay.');
+      }).catch(function(){
+        restore();
+        alert('Network hiccup starting checkout. Please try again, or call ' + BM_CONFIG.phone + '.');
+      });
     }
   };
 
