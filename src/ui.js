@@ -278,6 +278,32 @@ var UI = (function() {
     });
   }
 
+  // v1040: GLOBAL address autocomplete. Bind Photon autocomplete to ANY address
+  // input the moment it's focused, anywhere in the app — so every location field
+  // (client, company, chip-drop, permit, hiring, property map, + future ones)
+  // gets the type-ahead without wiring each form by hand. Idempotent via the
+  // _addrAutocompleteBound flag inside bindAddressAutocomplete.
+  (function initGlobalAddressAutocomplete() {
+    if (typeof document === 'undefined') return;
+    document.addEventListener('focusin', function(e) {
+      var el = e.target;
+      if (!el || el.tagName !== 'INPUT' || el._addrAutocompleteBound) return;
+      var type = (el.type || 'text').toLowerCase();
+      if (type !== 'text' && type !== 'search') return; // skip checkboxes/toggles
+      var id = (el.id || '').toLowerCase();
+      var ac = (el.getAttribute('autocomplete') || '').toLowerCase();
+      var ph = (el.placeholder || '').toLowerCase();
+      // Address field if: autocomplete=street-address, OR id/placeholder mentions
+      // address/street. Exclude the booking-form "require address" SETTING toggle.
+      var isAddr = ac === 'street-address'
+        || (/address|street/.test(id) && !/require/.test(id))
+        || /\baddress\b|\bstreet\b/.test(ph);
+      if (!isAddr) return;
+      if (!el.id) el.id = 'addr-auto-' + Math.random().toString(36).slice(2, 9);
+      bindAddressAutocomplete(el.id);
+    }, true);
+  })();
+
   // v634: searchable client picker — replaces the no-search native <select>
   // that became unusable as the client list grew.
   //

@@ -1,5 +1,5 @@
 {
-  "version": 1039,
+  "version": 1040,
   "released": "2026-07-13",
-  "notes": "Quote line items: (1) add a service by TYPING it (type-or-pick input + Add button) instead of only picking from a dropdown; (2) the line-item delete is now a clearly-labeled '🗑 Delete line item' button (was a bare ✕ that read like close/collapse), with a confirm to prevent accidental deletion."
+  "notes": "Address autocomplete now works on EVERY address field app-wide (client, company, chip-drop, permit, hiring, property map + future fields), not just the client form. Global focus-based binder + Photon geocoder (type an address, pick from the dropdown, it fills in). Verified at 375px."
 }
