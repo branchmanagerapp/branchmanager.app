@@ -436,6 +436,7 @@ var SchedulePage = {
       +       optRow('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
       +       optRow('Recurring', SchedulePage._recurringEnabled(), 'SchedulePage._toggleRecurring()')
       +       optRow('Time Off', SchedulePage._eventsEnabled(), 'SchedulePage._toggleEvents()')
+      +       (self.view === 'month' ? optRow('Profit / Loss', SchedulePage._pnlEnabled(), 'SchedulePage._togglePnl()') : '')
       +       ((self.view === 'week' || self.view === 'month') ? optRow('Side panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
       +       optRow('Archived', showArchived, 'SchedulePage._toggleArchived()')
       +     '</div>'
@@ -885,6 +886,14 @@ var SchedulePage = {
     localStorage.setItem('bm-cal-photos', current ? 'false' : 'true');
     loadPage('schedule');
   },
+  // v1028: month P&L — OFF by default (=== 'true'); shows one consolidated figure below the grid.
+  _pnlEnabled: function() {
+    return localStorage.getItem('bm-cal-pnl') === 'true';
+  },
+  _togglePnl: function() {
+    localStorage.setItem('bm-cal-pnl', SchedulePage._pnlEnabled() ? 'false' : 'true');
+    loadPage('schedule');
+  },
 
   _toggleArchived: function() {
     var current = localStorage.getItem('bm-cal-show-archived') === 'true';
@@ -1141,32 +1150,27 @@ var SchedulePage = {
     SchedulePage._loadCalEvents();
     var _billsIdx = window._bmCalEventsIndex || {};
     var _cellN = 0, _wkDates = [];
-    function _wkStrip(dates) {
-      if (window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic()) return ''; // classic UI = no week strips
+    // v1028: P&L is now ONE consolidated month figure below the grid (not a strip
+    // dividing every week) and OFF by default — toggled on via Calendar & View Options.
+    var _pnlOn = SchedulePage._pnlEnabled();
+    var _mRev = 0, _mExp = 0, _mJobN = 0;
+    function _accWeek(dates) {
       var ds = dates.filter(Boolean);
-      if (!ds.length) return '';
-      var rev = 0, jobN = 0, exp = 0;
+      if (!ds.length) return;
+      var rev = 0, exp = 0;
       allJobs.forEach(function(j) {
         if (!j.scheduledDate) return;
         var dd = j.scheduledDate.substring(0, 10);
-        if (ds.indexOf(dd) >= 0 && j.status !== 'archived' && j.status !== 'cancelled') { rev += Number(j.total) || 0; jobN++; }
+        if (ds.indexOf(dd) >= 0 && j.status !== 'archived' && j.status !== 'cancelled') { rev += Number(j.total) || 0; _mJobN++; }
       });
       ds.forEach(function(dStr) {
         (_billsIdx[dStr] || []).forEach(function(ev) {
           if (ev.type === 'bill') { var m = String(ev.title || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); if (m) exp += parseFloat(m[1]); }
         });
       });
-      var net = rev - exp;
-      var money = function(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); };
-      var netC = net >= 0 ? 'var(--green-dark)' : '#c62828';
-      return '<div style="grid-column:1 / -1;background:var(--bg);display:flex;align-items:center;gap:14px;padding:4px 10px;font-size:10.5px;font-weight:600;border-top:1px solid var(--border);">'
-        + '<span style="color:var(--text-light);font-weight:700;margin-right:auto;letter-spacing:.03em;">WEEK P&amp;L</span>'
-        + '<span style="color:var(--green-dark);">Rev ' + money(rev) + (jobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + jobN + 'j)</span>' : '') + '</span>'
-        + '<span style="color:#c62828;">Exp ' + (exp > 0 ? money(-exp) : '$0') + '</span>'
-        + '<span style="color:' + netC + ';font-weight:800;">Net ' + money(net) + '</span>'
-        + '</div>';
+      _mRev += rev; _mExp += exp;
     }
-    function _tick(dateOrNull) { _wkDates.push(dateOrNull); _cellN++; if (_cellN % 7 === 0) { html += _wkStrip(_wkDates); _wkDates = []; } }
+    function _tick(dateOrNull) { _wkDates.push(dateOrNull); _cellN++; if (_cellN % 7 === 0) { _accWeek(_wkDates); _wkDates = []; } }
 
     html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
 
@@ -1248,6 +1252,18 @@ var SchedulePage = {
     }
 
     html += '</div>';
+    // v1028: single consolidated month P&L below the grid (toggle on via Options).
+    if (_pnlOn) {
+      var _mNet = _mRev - _mExp;
+      var _pm = function(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); };
+      var _netC = _mNet >= 0 ? 'var(--green-dark)' : '#c62828';
+      html += '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:12px;font-size:13px;font-weight:600;">'
+        + '<span style="color:var(--text-light);font-weight:800;letter-spacing:.03em;margin-right:auto;">' + SchedulePage._getTitle() + ' P&amp;L</span>'
+        + '<span style="color:var(--green-dark);">Revenue ' + _pm(_mRev) + (_mJobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + _mJobN + ' jobs)</span>' : '') + '</span>'
+        + '<span style="color:#c62828;">Expenses ' + (_mExp > 0 ? _pm(-_mExp) : '$0') + '</span>'
+        + '<span style="color:' + _netC + ';font-weight:900;font-size:15px;">Net ' + _pm(_mNet) + '</span>'
+        + '</div>';
+    }
     return html;
   },
 
