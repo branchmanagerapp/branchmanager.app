@@ -99,7 +99,11 @@ var JobsPage = {
     });
     var needsInvoicing = recentNeedsInvoicing; // used for Overview stat
     var actionReq = all.filter(function(j) { return j.status === 'action_required'; });
-    var unscheduled = all.filter(function(j) { return !j.scheduledDate; });
+    // "Unscheduled" = undated work that still needs a date. Must match the Jobs
+    // list filter (:312), the bulk-close (:344) and the Schedule panel exactly —
+    // exclude completed/cancelled/archived, or the Overview badge over-counts
+    // (was 81: 74 completed + 5 archived + 2 active). All four now agree.
+    var unscheduled = all.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     var recentVisits = all.filter(function(j) { var d = new Date(j.scheduledDate); var ago = new Date(); ago.setDate(ago.getDate()-30); return d >= ago && d <= new Date(); });
     var upcomingVisits = all.filter(function(j) { var d = new Date(j.scheduledDate); var ahead = new Date(); ahead.setDate(ahead.getDate()+30); return d > new Date() && d <= ahead; });
     var activeTotal = activeJobs.reduce(function(s,j){return s+(j.total||0);},0);
@@ -309,7 +313,7 @@ var JobsPage = {
       var now = new Date(); var end30 = new Date(Date.now() + 30 * 86400000);
       all = all.filter(function(j) { var d = j.scheduledDate ? new Date(j.scheduledDate) : null; return d && d > now && d <= end30 && j.status !== 'completed' && j.status !== 'cancelled'; });
     } else if (self._filter === 'unscheduled') {
-      all = all.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+      all = all.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     } else if (self._filter !== 'all') {
       all = all.filter(function(j) { return j.status === self._filter; });
     }
@@ -341,7 +345,7 @@ var JobsPage = {
   _setFilter: function(f) { JobsPage._filter = f; JobsPage._page = 0; loadPage('jobs'); },
 
   _bulkCloseUnscheduled: function() {
-    var all = DB.jobs.getAll().filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var all = DB.jobs.getAll().filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (!all.length) { UI.toast('Nothing to close', 'error'); return; }
     if (!confirm('Mark ' + all.length + ' orphaned jobs as completed?\n\nThis cannot be undone individually (but you can reopen each job.)')) return;
     var draftedCount = 0;

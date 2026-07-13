@@ -1,5 +1,5 @@
 {
-  "version": 1036,
+  "version": 1037,
   "released": "2026-07-13",
-  "notes": "Offline banner: when Branch Manager can't reach the cloud, show a loud red top bar (Data may be out of date; changes won't save until you reconnect) with a Retry button, instead of silently showing stale data. Appears the instant signal drops, clears when it returns."
+  "notes": "Unify the 'unscheduled jobs' count across Jobs Overview badge, Jobs list filter, bulk-close, and all Schedule panels (day/week/month) to one honest definition: undated AND not completed/cancelled/archived. Fixes the 81 vs 7 vs 2 mismatch — all now show the true active-unscheduled count."
 }

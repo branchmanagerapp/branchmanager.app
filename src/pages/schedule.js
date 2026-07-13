@@ -708,7 +708,7 @@ var SchedulePage = {
     var html = '';
 
     // Unscheduled jobs panel for day view
-    var globalUnscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var globalUnscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (globalUnscheduled.length > 0) {
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;">'
         + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">' + String.fromCharCode(128203) + ' Unscheduled Jobs (' + globalUnscheduled.length + ') — <span style="font-size:12px;font-weight:400;color:var(--text-light);">drag to a time slot</span></div>'
@@ -1005,7 +1005,7 @@ var SchedulePage = {
     var html = '';
 
     // Unscheduled jobs panel — suppressed when right-rail Unscheduled tab takes over
-    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (skipUnscheduledBanner) {
       // Right rail handles this — skip duplicate.
     } else {
@@ -1118,7 +1118,7 @@ var SchedulePage = {
     var html = '';
 
     // Unscheduled jobs panel — suppressed when right-rail Unscheduled tab takes over
-    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled'; });
+    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
     if (skipUnscheduledBanner) {
       // Right rail handles this — skip duplicate.
     } else {
@@ -1643,7 +1643,7 @@ var SchedulePage = {
     var revenue = rangeJobs.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
     var completed = rangeJobs.filter(function(j) { return j.status === 'completed'; }).length;
     var unscheduled = allJobs.filter(function(j) {
-      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled';
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived';
     });
     var queueValue = unscheduled.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
     var rangeLabel = SchedulePage.view === 'week' ? 'This Week' : 'This Month';
@@ -1698,7 +1698,7 @@ var SchedulePage = {
       allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
     }
     var unscheduled = allJobs.filter(function(j) {
-      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled';
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived';
     });
     var activeTab = SchedulePage._railTab();
 
