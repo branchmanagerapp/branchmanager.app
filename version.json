@@ -1,5 +1,5 @@
 {
-  "version": 1025,
+  "version": 1026,
   "released": "2026-07-12",
-  "notes": "Header + button and avatar are neutral light gray (not green, not black)."
+  "notes": "Schedule page: the busy Weather/Photos/Reminders/Recurring/Time Off/Archived toggle row is now a small ⚙ Options dropdown (top-right)."
 }

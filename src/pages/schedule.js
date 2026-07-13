@@ -397,6 +397,16 @@ var SchedulePage = {
         + '</label>';
     }
 
+    // v1026: row variant for the ⚙ Options dropdown — label left, switch right
+    function optRow(label, on, onclick) {
+      return '<label style="display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;font-size:13px;color:var(--text);font-weight:500;">'
+        + '<span>' + label + '</span>'
+        + '<button onclick="' + onclick + '" style="position:relative;width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;background:' + (on ? 'var(--accent)' : '#ccc') + ';transition:background .2s;flex-shrink:0;">'
+        +   '<span style="position:absolute;top:2px;' + (on ? 'left:18px' : 'left:2px') + ';width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>'
+        + '</button>'
+        + '</label>';
+    }
+
     // v647: Jobber-pattern mobile schedule — Day / List / Map pills
     // primary, Week / Month under "More". Week scroller strip below the
     // controls (S/M/T/W/T/F/S with date numbers, today highlighted) so
@@ -415,14 +425,21 @@ var SchedulePage = {
       +   '<button onclick="JobsPage.showForm()" style="font-size:12px;padding:5px 12px;background:var(--green-dark);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New Job</button>'
       +   '<button onclick="SchedulePage.addEvent()" title="Add time off / personal item" style="font-size:12px;padding:5px 12px;background:#8e44ad;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Time off</button>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;">'
-      +   (typeof Weather !== 'undefined' ? toggleSwitch('Weather', wEnabled, 'Weather.toggle()') : '')
-      +   toggleSwitch('Photos', pEnabled, 'SchedulePage._togglePhotos()')
-      +   toggleSwitch('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
-      +   toggleSwitch('Recurring', SchedulePage._recurringEnabled(), 'SchedulePage._toggleRecurring()')
-      +   toggleSwitch('Time Off', SchedulePage._eventsEnabled(), 'SchedulePage._toggleEvents()')
-      +   ((self.view === 'week' || self.view === 'month') ? toggleSwitch('Panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
-      +   toggleSwitch('Archived', showArchived, 'SchedulePage._toggleArchived()')
+      // v1026: collapse the busy toggle row into a small ⚙ Options dropdown (Doug: too busy)
+      + '<div style="position:relative;">'
+      +   '<button onclick="var d=this.nextElementSibling;var wasOpen=d.style.display===\'block\';document.querySelectorAll(\'.cal-opts-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=wasOpen?\'none\':\'block\';event.stopPropagation();" class="btn btn-outline" style="font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;" title="Calendar display options"><span style="font-size:14px;line-height:1;">⚙</span> Options</button>'
+      +   '<div class="cal-opts-dd" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;z-index:400;min-width:200px;box-shadow:0 8px 30px rgba(0,0,0,.16);">'
+      +     '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Show on calendar</div>'
+      +     '<div style="display:flex;flex-direction:column;gap:14px;">'
+      +       (typeof Weather !== 'undefined' ? optRow('Weather', wEnabled, 'Weather.toggle()') : '')
+      +       optRow('Photos', pEnabled, 'SchedulePage._togglePhotos()')
+      +       optRow('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
+      +       optRow('Recurring', SchedulePage._recurringEnabled(), 'SchedulePage._toggleRecurring()')
+      +       optRow('Time Off', SchedulePage._eventsEnabled(), 'SchedulePage._toggleEvents()')
+      +       ((self.view === 'week' || self.view === 'month') ? optRow('Side panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
+      +       optRow('Archived', showArchived, 'SchedulePage._toggleArchived()')
+      +     '</div>'
+      +   '</div>'
       + '</div>'
       + '</div>'
       // v709: View pills moved to a 2nd row directly under the toggles.
