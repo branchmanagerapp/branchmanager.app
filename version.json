@@ -1,5 +1,5 @@
 {
-  "version": 1033,
+  "version": 1034,
   "released": "2026-07-13",
-  "notes": "Route client portal-invite text + invoice text through Dialpad composer (were opening Messages); composer supports a prefilled message."
+  "notes": "CLOUD-LIVE data layer: always pull fresh from the cloud on every load (removed the 1-hour stale-cache shortcut that made devices show up-to-an-hour-old data), and re-render the current page the moment fresh cloud data lands. Fixes missing clients / reverted saves / stale data on reopen. Cloud is now the single source of truth."
 }

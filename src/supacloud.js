@@ -479,21 +479,32 @@ var CloudSync = {
 // Auto-init after Supabase connects — retry until connected
 (function waitForSupabase(attempts) {
   if (SupabaseDB && SupabaseDB.ready) {
-    // Check if we need to sync (no local data or stale)
-    var localClients = localStorage.getItem('bm-clients');
-    var hasLocal = localClients && JSON.parse(localClients).length > 0;
-    if (!hasLocal || (Date.now() - CloudSync.lastSync > 3600000)) {
-      CloudSync.init().then(function() {
-        CloudSync.wrapWrites();
-        if (typeof Photos !== 'undefined' && Photos.syncFromCloud) Photos.syncFromCloud();
-        if (typeof Photos !== 'undefined' && Photos.flushQueue) Photos.flushQueue();
-      });
-    } else {
-      CloudSync.wrapWrites();
-      if (typeof Photos !== 'undefined' && Photos.syncFromCloud) Photos.syncFromCloud();
-      if (typeof Photos !== 'undefined' && Photos.flushQueue) Photos.flushQueue();
-      if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: using cached data (' + JSON.parse(localClients).length + ' clients)');
-    }
+    // CLOUD-LIVE (Jul 13 2026): Branch Manager is a cloud system — the cloud is
+    // the single source of truth. ALWAYS pull fresh on every load; NEVER trust a
+    // stale device cache. (Was: skip the pull entirely if this device synced
+    // <1hr ago — which showed up-to-an-hour-old data on reopen. That single
+    // shortcut was the root cause of "client is missing / my save reverted /
+    // it's showing old data" — the device was displaying a local snapshot and
+    // never checking the cloud.) wrapWrites first so any write during the pull
+    // still syncs up.
+    CloudSync.wrapWrites();
+    if (typeof Photos !== 'undefined' && Photos.syncFromCloud) Photos.syncFromCloud();
+    if (typeof Photos !== 'undefined' && Photos.flushQueue) Photos.flushQueue();
+    CloudSync.init().then(function() {
+      // Fresh cloud data just landed. Re-render the page the user is on so they
+      // see CURRENT data, not the instant-but-stale snapshot the boot rendered.
+      // Guard: never re-render while a field is focused (would clobber an
+      // in-progress edit — see the Oswald #514 clobber lesson), and skip if a
+      // modal/dialog is open.
+      try {
+        var _ae = document.activeElement;
+        var _editing = _ae && (_ae.tagName === 'INPUT' || _ae.tagName === 'TEXTAREA' || _ae.tagName === 'SELECT' || _ae.isContentEditable);
+        var _modalOpen = !!document.querySelector('.modal-overlay, .bm-modal, [role="dialog"]');
+        if (!_editing && !_modalOpen && window._currentPage && typeof loadPage === 'function') {
+          loadPage(window._currentPage);
+        }
+      } catch (e) {}
+    });
   } else if (attempts > 0) {
     setTimeout(function() { waitForSupabase(attempts - 1); }, 1000);
   }
