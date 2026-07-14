@@ -247,6 +247,29 @@ var DB = (function() {
     'quotes': ['photo', 'salesperson', 'lead_source']
   };
 
+  // v1047: SYSTEMIC fix for the recurring "Could not find the 'X' column of
+  // '<table>'" whole-row rejection. CloudSync captures each table's real
+  // snake_case column set (window._bmCloudCols[table]) from the data it already
+  // pulls. Before ANY push we drop keys that have no column, so an unknown field
+  // can never reject the save again — on any table, learned automatically. This
+  // supersedes the hand-maintained _CLOUD_LOCAL_ONLY list above (kept as a
+  // fallback for the window before the first sync populates the column set).
+  // Returns the array of stripped keys so the caller can log them (never silent).
+  function _stripUnknownCols(table, obj) {
+    var stripped = [];
+    try {
+      var cols = (typeof window !== 'undefined' && window._bmCloudCols && window._bmCloudCols[table]);
+      if (!cols || !cols.length) return stripped; // no schema learned yet → don't strip
+      var allow = {};
+      cols.forEach(function(c) { allow[c] = true; });
+      Object.keys(obj).forEach(function(k) {
+        if (!allow[k]) { delete obj[k]; stripped.push(k); }
+      });
+      if (stripped.length) console.debug('[DB push] stripped non-column field(s) from ' + table + ':', stripped.join(', '));
+    } catch (e) {}
+    return stripped;
+  }
+
   // Cross-device write reliability — was: fetch().catch(console.warn) which
   // never checked response.ok; an RLS rejection / 4xx / wrong tenant_id =
   // silent loss. Local localStorage shows the row; Supabase never gets it;
@@ -379,6 +402,8 @@ var DB = (function() {
       // not synced. (photo = legacy stray; salesperson/lead_source = v975 jobber
       // rail fields with no column. Title is mapped to the existing `subject` col.)
       (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeRow[f]; });
+      // v1047: dynamic schema-aware strip (supersedes the static list above).
+      _stripUnknownCols(table, snakeRow);
 
       // v891 (2026-05-31): use upsert ONLY on create. Full-row upsert on update
       // clobbers any field that the local cache is stale on (the Quote #513
@@ -458,6 +483,8 @@ var DB = (function() {
       });
       // v976: same non-column strip as _pushToCloud (see note there).
       (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeChanges[f]; });
+      // v1047: dynamic schema-aware strip (supersedes the static list above).
+      _stripUnknownCols(table, snakeChanges);
       snakeChanges.updated_at = _now();  // always wins — fresh mtime guaranteed
       // Build URL with id filter; add updated_at precondition if supplied.
       var qs = 'id=eq.' + encodeURIComponent(id);

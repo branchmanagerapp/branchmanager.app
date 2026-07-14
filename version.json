@@ -1,5 +1,5 @@
 {
-  "version": 1046,
+  "version": 1047,
   "released": "2026-07-13",
-  "notes": "Quote/invoice save-failure fix: numbers are now cloud-aware so a device that's behind the cloud can't mint an already-used quote/invoice number (the 409 'Cloud Save failed' collision). DB quote_number sequence realigned past the real max, and lead_source/salesperson/photo columns backfilled."
+  "notes": "Systemic save-reliability fix: the cloud push now auto-strips any field that has no column in the live table (learned from each sync), so an unknown column can never reject a whole save again on ANY table. Plus v1046 cloud-aware quote/invoice numbering."
 }

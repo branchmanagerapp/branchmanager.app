@@ -72,6 +72,17 @@ var CloudSync = {
         }
 
         if (data && data.length > 0) {
+          // v1047: capture the AUTHORITATIVE snake_case column set for this
+          // table (PostgREST select=* returns every column, nulls included).
+          // The cloud push (db.js) strips any field NOT in this set, so an
+          // unknown column can never reject the whole row again — for EVERY
+          // table, learned automatically, replacing the hand-maintained
+          // _CLOUD_LOCAL_ONLY whack-a-mole. This is the systemic fix for the
+          // recurring "Could not find the 'X' column of 'quotes'" save failure.
+          try {
+            window._bmCloudCols = window._bmCloudCols || {};
+            window._bmCloudCols[table] = Object.keys(data[0]);
+          } catch (e) {}
           // Convert snake_case to camelCase for app compatibility
           var converted = data.map(function(row) {
             var newRow = {};
