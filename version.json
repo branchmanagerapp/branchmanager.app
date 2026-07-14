@@ -1,5 +1,5 @@
 {
-  "version": 1053,
+  "version": 1054,
   "released": "2026-07-14",
-  "notes": "Quotes list defaults to ACTIVE quotes (drafts, sent/awaiting, changes, approved); converted/archived tucked behind pills. Declutters the field view + shrinks what the phone caches."
+  "notes": "Fix false 'Save did NOT reach the cloud' banner on app open: boot maintenance sweeps (mark-overdue / fix-statuses) no longer fire the panic banner, and the update precondition tolerates legacy non-ISO timestamps instead of 400-ing the save."
 }

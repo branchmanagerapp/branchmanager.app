@@ -453,7 +453,7 @@ var DB = (function() {
   // updated_at BEFORE this edit), we add ?updated_at=lte.<that> to the PATCH
   // so PostgREST refuses to overwrite a cloud row that has since changed.
   // 0 rows affected → re-pull and retry with the user's diff on top.
-  function _pushUpdateToCloud(key, id, changes, precheckUpdatedAt) {
+  function _pushUpdateToCloud(key, id, changes, precheckUpdatedAt, opts) {
     try {
       var table = REMOTE_TABLE[key];
       if (!table || !id) return;
@@ -488,7 +488,15 @@ var DB = (function() {
       snakeChanges.updated_at = _now();  // always wins — fresh mtime guaranteed
       // Build URL with id filter; add updated_at precondition if supplied.
       var qs = 'id=eq.' + encodeURIComponent(id);
-      if (precheckUpdatedAt) {
+      // v1054: ONLY apply the updated_at precondition when the local mtime is a
+      // real ISO timestamp. Legacy rows can carry updatedAt as an epoch number
+      // or other non-timestamp value; `updated_at=lte.1720000000000` makes
+      // PostgREST reject the whole PATCH with a 400 — which then fired the loud
+      // "Save did NOT reach the cloud" banner (and re-fired every boot via the
+      // markOverdue/fixStatuses sweeps). A malformed mtime = skip the clobber
+      // guard for this one write (PATCH by id only) rather than lose the save.
+      var _isoPre = precheckUpdatedAt && typeof precheckUpdatedAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(precheckUpdatedAt);
+      if (_isoPre) {
         // PostgREST: updated_at must be <= the local row's pre-edit mtime.
         // If cloud has moved on (server-side PATCH between local read & this push),
         // affected rows = 0 and we re-pull.
@@ -511,6 +519,12 @@ var DB = (function() {
               CloudSync._markCloudSignedOut('Cloud rejected ' + table + ' patch (' + r.status + ') — re-sign in to sync.');
             }
           }).catch(function(){});
+          // v1054: background maintenance writes (markOverdue / fixStatuses run
+          // on every boot) are NOT user saves. If one is rejected, log it but
+          // NEVER show the panic banner or poison the retry queue — otherwise a
+          // single stale row screams "your save failed, delete the app" at Doug
+          // every time he opens it, when he never saved anything.
+          if (opts && opts.silent) return;
           _loudPushFail(table, r.status);  // v984: never let a rejected save be silent
           _queueAdd({ key: key, table: table, id: id, method: 'update', payload: snakeChanges, queuedAt: Date.now(), lastStatus: r.status });
           return;
@@ -651,7 +665,7 @@ var DB = (function() {
     _pushToCloud(key, record, 'create');
     return record;
   }
-  function update(key, id, changes) {
+  function update(key, id, changes, opts) {
     var all = _get(key);
     var idx = all.findIndex(function(r) { return r.id === id; });
     if (idx < 0) return null;
@@ -671,7 +685,7 @@ var DB = (function() {
     // v891: was _pushToCloud(key, all[idx], 'update') — full-row upsert that
     // clobbered any field local was stale on (Quote #513 status bug). Now
     // sends just the diff via PATCH-by-id with updated_at precondition.
-    _pushUpdateToCloud(key, id, changes, preUpdatedAt);
+    _pushUpdateToCloud(key, id, changes, preUpdatedAt, opts);
     return all[idx];
   }
   // v761: Global tombstones — when you delete a row locally, we record
@@ -919,7 +933,7 @@ var DB = (function() {
           else if (j.status === 'unscheduled' || j.status === 'pending') { newStatus = 'scheduled'; }
           else if (j.status === 'done' || j.status === 'invoiced') { newStatus = 'completed'; }
           else { newStatus = 'scheduled'; }
-          jobs.update(j.id, { status: newStatus });
+          update(KEYS.jobs, j.id, { status: newStatus }, { silent: true }); // v1054: boot sweep = silent, no panic banner
           changed++;
         }
       });
@@ -964,10 +978,10 @@ var DB = (function() {
       var changed = 0;
       all.forEach(function(inv) {
         if (inv.status === 'past_due') {
-          invoices.update(inv.id, { status: 'overdue' });
+          update(KEYS.invoices, inv.id, { status: 'overdue' }, { silent: true }); // v1054: boot sweep = silent, no panic banner
           changed++;
         } else if (inv.status !== 'paid' && inv.status !== 'cancelled' && inv.status !== 'overdue' && inv.status !== 'draft' && inv.dueDate && inv.dueDate.substring(0, 10) < today) {
-          invoices.update(inv.id, { status: 'overdue' });
+          update(KEYS.invoices, inv.id, { status: 'overdue' }, { silent: true }); // v1054: boot sweep = silent, no panic banner
           changed++;
         }
       });
