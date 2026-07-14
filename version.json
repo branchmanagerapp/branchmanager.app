@@ -1,5 +1,5 @@
 {
-  "version": 1055,
+  "version": 1056,
   "released": "2026-07-14",
-  "notes": "Root-cause fix for quotes vanishing from the app: quotes is the biggest cached table (~1.6MB) and would silently blow the phone's localStorage cap and fail to cache. Now degrades gracefully — active quotes always stay on the phone, done ones load from the cloud — instead of dropping the whole table."
+  "notes": "Kill the real 'services error 400' banner: the default-services seeder was re-running on every empty-cache boot, racing the cloud sync — duplicating the catalog (grew to 63) and throwing the panic banner when logged out. Now seeds once, only for a signed-in tenant after the cloud pull, never logged out. Catalog de-duplicated back to 21."
 }

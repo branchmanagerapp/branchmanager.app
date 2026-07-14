@@ -224,6 +224,12 @@ var CloudSync = {
 
     CloudSync.syncing = false;
     CloudSync.lastSync = Date.now();
+    // v1056: seed the starter services catalog ONLY now that the cloud pull has
+    // finished. If the cloud already had services they're cached above and
+    // seed() no-ops (gate 1); only a brand-new tenant with zero cloud services
+    // actually seeds. This is what stops the seed racing the pull and creating
+    // duplicate catalogs + the "services error 400" banner.
+    try { if (typeof DB !== 'undefined' && DB.services && DB.services.seed) DB.services.seed(); } catch (e) {}
     if (typeof SupabaseDB !== 'undefined' && SupabaseDB._debug) console.debug('CloudSync: done — ' + totalRows + ' total rows cached');
 
     // OFFLINE BANNER: BM is cloud-live — if we couldn't reach the cloud, say so

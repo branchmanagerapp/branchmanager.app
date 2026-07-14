@@ -1011,7 +1011,22 @@ var DB = (function() {
     update: function(id, data) { return update(KEYS.services, id, data); },
     remove: function(id) { remove(KEYS.services, id); },
     seed: function() {
+      // v1056: HARD-GATE seeding. This one-shot starter catalog was re-running
+      // on every empty-cache boot (fresh install / localStorage quota eviction)
+      // and RACING CloudSync's pull — so it re-seeded the same 21 services into
+      // the cloud again and again (that is why services grew to 21×3 = 63 dupes)
+      // AND fired the red "Save did NOT reach the cloud (services, 400)" banner
+      // whenever it ran logged-out or before a tenant resolved. Gates:
+      //  (1) already have a local catalog → nothing to do
+      //  (2) already seeded on this device → never re-seed
+      //  (3) no resolved tenant (logged out / pre-auth) → the push 400s → banner
+      //  (4) CloudSync hasn't pulled yet → an empty cache is NOT a new tenant
+      // Only a signed-in tenant whose cloud pull returned ZERO services seeds.
       if (getAll(KEYS.services).length > 0) return;
+      try { if (localStorage.getItem('bm-services-seeded') === '1') return; } catch (e) {}
+      if (!getTenantId()) return;
+      if (!(typeof CloudSync !== 'undefined' && CloudSync.lastSync > 0)) return;
+      try { localStorage.setItem('bm-services-seeded', '1'); } catch (e) {}
       var defaults = [
         { name: 'Tree Removal', description: 'Schedule an estimate for a tree removal', type: 'service' },
         { name: 'Tree Pruning', description: 'General pruning to remove dead, damaged or crossing branches', type: 'service' },
