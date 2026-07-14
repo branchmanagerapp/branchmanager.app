@@ -3,7 +3,7 @@
  * Quote list, builder with line items, status management
  */
 var QuotesPage = {
-  _page: 0, _perPage: 50, _search: '', _filter: 'all', _sortCol: 'quoteNumber', _sortDir: 'desc',
+  _page: 0, _perPage: 50, _search: '', _filter: 'active', _sortCol: 'quoteNumber', _sortDir: 'desc',
 
   // v735: right-click context menu on quote rows
   _rowContextMenu: function(event, quoteId) {
@@ -141,7 +141,7 @@ var QuotesPage = {
     // property-video AI walkthrough, not just the manual form. Same dest
     // as Reports → Tools → Video Walkthrough but reachable from the Quotes
     // surface where it logically belongs.
-    var chipDefs = [['all','All'],['draft','Draft'],['awaiting','Awaiting'],['stale','Stale 7d+'],['changes_requested','Changes Req.'],['approved','Approved'],['converted','Converted']];
+    var chipDefs = [['active','Active'],['draft','Draft'],['awaiting','Awaiting'],['changes_requested','Changes Req.'],['approved','Approved'],['stale','Stale 7d+'],['converted','Converted'],['archived','Archived'],['all','All']];
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
       + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
       +   '<h3 style="font-size:16px;font-weight:700;margin:0;">Quotes</h3>'
@@ -175,7 +175,7 @@ var QuotesPage = {
 
     // ── Empty state with "Clear filter" affordance ──
     if (page.length === 0) {
-      if (self._search || self._filter !== 'all') {
+      if (self._search || (self._filter !== 'all' && self._filter !== 'active')) {
         html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:40px 20px;text-align:center;color:var(--text-light);">'
           +   '<div style="font-size:36px;margin-bottom:10px;">📋</div>'
           +   '<div style="font-size:15px;font-weight:600;margin-bottom:4px;color:var(--text);">No quotes match this view</div>'
@@ -295,7 +295,16 @@ var QuotesPage = {
     // Default view hides archived quotes (status='archived' is reserved for
     // bulk-cleaned old drafts that never converted). Explicit filter to
     // 'archived' shows them again.
-    if (self._filter === 'all') {
+    if (self._filter === 'active') {
+      // Default view: only LIVE quotes needing attention — drafts you're still
+      // building, sent/awaiting a customer reply, changes requested, and
+      // approved (approved stays here until you convert it to a job). Converted,
+      // declined, expired, archived drop out — reach them via the pills below.
+      all = all.filter(function(q) {
+        return q.status === 'draft' || q.status === 'sent' || q.status === 'awaiting'
+            || q.status === 'changes_requested' || q.status === 'approved';
+      });
+    } else if (self._filter === 'all') {
       all = all.filter(function(q) { return q.status !== 'archived'; });
     } else {
       if (self._filter === 'stale') {

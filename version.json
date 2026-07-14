@@ -1,5 +1,5 @@
 {
-  "version": 1052,
-  "released": "2026-07-12",
-  "notes": "Mobile: Books register rows stack into readable cards on a phone (no column overflow)."
+  "version": 1053,
+  "released": "2026-07-14",
+  "notes": "Quotes list defaults to ACTIVE quotes (drafts, sent/awaiting, changes, approved); converted/archived tucked behind pills. Declutters the field view + shrinks what the phone caches."
 }
