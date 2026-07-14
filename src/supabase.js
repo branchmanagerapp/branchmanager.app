@@ -492,17 +492,25 @@ var SupabaseDB = {
     // crawl and leaving search/data incomplete during the churn. Realtime
     // postgres-change subscriptions (below) already deliver live updates, so the
     // full re-pull only needs to run occasionally as a backstop.
-    var SYNC_THROTTLE_MS = 2 * 60 * 1000; // at most one full re-pull per 2 min
-    var tick = async function() {
+    var SYNC_THROTTLE_MS = 2 * 60 * 1000;   // background poll: at most one full re-pull per 2 min
+    var RESUME_THROTTLE_MS = 8 * 1000;      // v1057: a reopen ALWAYS re-pulls; 8s only de-dupes rapid double-events
+    var _resync = async function(minGap) {
       if (document.hidden) return;
       if (!SupabaseDB.ready || !SupabaseDB.client) return;
       if (typeof CloudSync === 'undefined' || CloudSync.syncing) return;
-      if (Date.now() - (CloudSync.lastSync || 0) < SYNC_THROTTLE_MS) return; // throttle: skip redundant full re-pulls
+      if (Date.now() - (CloudSync.lastSync || 0) < minGap) return; // throttle
       try { await CloudSync.init(); } catch(e) {}
     };
+    var tick   = function() { return _resync(SYNC_THROTTLE_MS); };   // periodic background safety net
+    var resume = function() { return _resync(RESUME_THROTTLE_MS); }; // app reopened → pull fresh NOW
     SupabaseDB._livePollInterval = setInterval(tick, 30 * 1000);
-    document.addEventListener('visibilitychange', function() { if (!document.hidden) tick(); });
-    window.addEventListener('focus', tick);
+    // v1057: on ANY app-resume signal, pull fresh so cloud corrections appear
+    // WITHOUT a manual refresh. pageshow catches PWA/bfcache reopen (the case a
+    // plain focus/visibility handler misses); online catches reconnect.
+    document.addEventListener('visibilitychange', function() { if (!document.hidden) resume(); });
+    window.addEventListener('focus', resume);
+    window.addEventListener('pageshow', resume);
+    window.addEventListener('online', resume);
 
     // Realtime: one channel, many postgres-change subscriptions
     try {

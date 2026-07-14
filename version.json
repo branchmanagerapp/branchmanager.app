@@ -1,5 +1,5 @@
 {
-  "version": 1056,
+  "version": 1057,
   "released": "2026-07-14",
-  "notes": "Kill the real 'services error 400' banner: the default-services seeder was re-running on every empty-cache boot, racing the cloud sync — duplicating the catalog (grew to 63) and throwing the panic banner when logged out. Now seeds once, only for a signed-in tenant after the cloud pull, never logged out. Catalog de-duplicated back to 21."
+  "notes": "Auto-pull fresh data on app reopen: focus/visibility/pageshow/online now trigger an immediate cloud re-pull (was throttled 2 min + missing the PWA-reopen event), so cloud corrections appear without a manual refresh."
 }
