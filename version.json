@@ -1,5 +1,5 @@
 {
-  "version": 1049,
+  "version": 1050,
   "released": "2026-07-13",
-  "notes": "One-tap phone storage cleanup: /?cleanstorage=1 frees re-downloadable photo blobs + disposable caches, keeps you logged in and preserves pending uploads, and reports the biggest space-hogs. For phones that hit QuotaExceededError."
+  "notes": "Stuck-queue self-heal: pending cloud writes that were minted against an older schema (e.g. services rows carrying updated_at, which the table lacked) are now re-stripped to the current columns on replay instead of failing 400 forever. Plus the services table gained the updated_at column it was missing, so those 21 stuck writes clear."
 }

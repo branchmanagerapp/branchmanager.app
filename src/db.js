@@ -598,6 +598,12 @@ var DB = (function() {
       // full-row upsert which would re-introduce the stale-clobber bug for
       // anything edited while offline.
       var isUpdate = op.method === 'update';
+      // v1049: self-heal stale queued payloads. A queued write minted before a
+      // schema was known (or against an older schema) can carry a field with no
+      // column and 400 FOREVER on replay (e.g. services.updated_at). Re-run the
+      // schema-aware strip against the CURRENT known columns so the replay always
+      // matches the live table instead of looping on a stale bad column.
+      try { if (op.payload) _stripUnknownCols(op.table, op.payload); } catch (e) {}
       var url2 = isUpdate
         ? (url + '/rest/v1/' + op.table + '?id=eq.' + encodeURIComponent(op.id))
         : (url + '/rest/v1/' + op.table + '?on_conflict=id');
