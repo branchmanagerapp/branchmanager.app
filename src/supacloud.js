@@ -25,6 +25,42 @@ var CloudSync = {
     return CloudSync._localKeyOverrides[table] || ('bm-' + table.replace(/_/g, '-'));
   },
 
+  // v1055: localStorage has a ~5MB per-origin cap SHARED across every bm-* key.
+  // `quotes` is by far the biggest table (~1.6MB across 536 rows — 73 columns
+  // wide) and it grows as photos/videos pile on. When a setItem exceeds quota it
+  // THROWS; the init-loop catch swallowed it silently, so the ENTIRE quotes
+  // table failed to cache and the list showed EMPTY even though every server-side
+  // check was healthy (right tenant, RLS ok, data present). THIS is the recurring
+  // "no quotes in the app" bug. Fix: on quota, DEGRADE instead of vanish — keep
+  // the field-critical ACTIVE quotes on the phone (draft/sent/awaiting/changes/
+  // approved) and let the done ones (converted/archived/declined/expired) reload
+  // from the cloud when a pill or search asks for them.
+  _cacheResilient: function(localKey, rows) {
+    try {
+      localStorage.setItem(localKey, JSON.stringify(rows));
+      return true;
+    } catch (e) {
+      var quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || /quota/i.test(e.message || ''));
+      if (!quota) { console.warn('[CloudSync] setItem failed for ' + localKey + ':', e); return false; }
+      console.warn('[CloudSync] QUOTA exceeded caching ' + localKey + ' (' + (rows && rows.length) + ' rows) — degrading to fit instead of dropping the table');
+      if (localKey === 'bm-quotes' && Array.isArray(rows)) {
+        var DONE = { converted: 1, archived: 1, declined: 1, expired: 1 };
+        var active = rows.filter(function(r) { return r && !DONE[r.status]; });
+        try {
+          localStorage.setItem(localKey, JSON.stringify(active));
+          window._bmQuotaTrimmed = { table: 'quotes', dropped: rows.length - active.length, at: Date.now() };
+          console.warn('[CloudSync] cached ' + active.length + '/' + rows.length + ' quotes (active kept on device; ' + (rows.length - active.length) + ' done quotes stay in the cloud, load on demand)');
+          return true;
+        } catch (e2) { console.error('[CloudSync] still over quota after trimming quotes to active:', e2); }
+      }
+      // Still over quota (or a non-quotes table): DO NOT wipe. setItem threw
+      // before writing, so the PREVIOUS cache is intact — better stale-but-present
+      // than a blank screen.
+      console.error('[CloudSync] could not cache ' + localKey + ' — keeping the previous cache to avoid data-vanish');
+      return false;
+    }
+  },
+
   init: async function() {
     if (!SupabaseDB || !SupabaseDB.ready) return;
     CloudSync.syncing = true;
@@ -155,7 +191,7 @@ var CloudSync = {
           }
           converted = merged;
 
-          localStorage.setItem(localKey, JSON.stringify(converted));
+          CloudSync._cacheResilient(localKey, converted); // v1055: quota-safe — degrade to active quotes instead of silently dropping the whole table
           // Audit fix (Jun 2026): bump DB's in-memory parse cache so reads after
           // a background poll-sync return the freshly-merged rows. Without this,
           // DB._get() kept serving the pre-sync cached array until the next local
