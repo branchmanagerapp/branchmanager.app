@@ -2432,16 +2432,28 @@ var TreeInventory = {
     return TreeInventory.getAll().find(function(t) { return t.id === id; }) || null;
   },
 
+  // v1048: quota-safe (a full phone must not crash logging a tree mid-estimate).
+  _safeWrite: function(all) {
+    var str = JSON.stringify(all);
+    try { localStorage.setItem(TreeInventory._key, str); }
+    catch (e) {
+      if ((e && (e.name === 'QuotaExceededError' || e.code === 22)) && typeof window.BM_freePhotoStorage === 'function') {
+        try { window.BM_freePhotoStorage(); localStorage.setItem(TreeInventory._key, str); return; } catch (e2) {}
+      }
+      console.warn('[TreeInventory] localStorage write skipped (quota)');
+    }
+  },
+
   save: function(tree) {
     var all = TreeInventory.getAll();
     var idx = all.findIndex(function(t) { return t.id === tree.id; });
     if (idx >= 0) { all[idx] = tree; } else { all.push(tree); }
-    localStorage.setItem(TreeInventory._key, JSON.stringify(all));
+    TreeInventory._safeWrite(all);
   },
 
   remove: function(id) {
     var all = TreeInventory.getAll().filter(function(t) { return t.id !== id; });
-    localStorage.setItem(TreeInventory._key, JSON.stringify(all));
+    TreeInventory._safeWrite(all);
   },
 
   showForm: function(clientId, treeId) {

@@ -34,18 +34,36 @@ var Materials = {
     { id: 'mat25', name: 'Ear Protection',            category: 'Safety',       unitCost: 28,   unit: 'each',   currentStock: 6, reorderPoint: 3 }
   ],
 
+  // v1048: quota-safe write. A full localStorage used to throw here (raw
+  // setItem) and CRASH the whole service-change handler on a quote line item
+  // (Sentry QuotaExceededError at _getCatalog → _lookupMaterial → _onServiceChange).
+  // Mirror db.js._set: on quota, free the disposable photo cache (re-syncs from
+  // the cloud) and retry once; never let it throw into a caller.
+  _safeSet: function(key, str) {
+    try { localStorage.setItem(key, str); return true; }
+    catch (e) {
+      if ((e && (e.name === 'QuotaExceededError' || e.code === 22)) && typeof window.BM_freePhotoStorage === 'function') {
+        try { window.BM_freePhotoStorage(); localStorage.setItem(key, str); return true; } catch (e2) {}
+      }
+      console.warn('[Materials] localStorage write skipped (quota) for ' + key);
+      return false;
+    }
+  },
+
   // ─── Catalog CRUD ──────────────────────────────────────────
   _getCatalog: function() {
     var stored = localStorage.getItem('bm-materials-catalog');
     if (stored) {
       try { return JSON.parse(stored); } catch(e) { /* fall through */ }
     }
-    localStorage.setItem('bm-materials-catalog', JSON.stringify(Materials._defaults));
+    // Seed defaults — but NEVER crash the caller (e.g. the quote line-item
+    // service-change lookup) if storage is full; just return the defaults.
+    Materials._safeSet('bm-materials-catalog', JSON.stringify(Materials._defaults));
     return JSON.parse(JSON.stringify(Materials._defaults));
   },
 
   _saveCatalog: function(items) {
-    localStorage.setItem('bm-materials-catalog', JSON.stringify(items));
+    Materials._safeSet('bm-materials-catalog', JSON.stringify(items));
   },
 
   // ─── Usage CRUD ────────────────────────────────────────────
@@ -55,7 +73,7 @@ var Materials = {
   },
 
   _saveUsage: function(records) {
-    localStorage.setItem('bm-materials-usage', JSON.stringify(records));
+    Materials._safeSet('bm-materials-usage', JSON.stringify(records));
   },
 
   // ─── Helpers ───────────────────────────────────────────────

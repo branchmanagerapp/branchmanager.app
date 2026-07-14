@@ -1,5 +1,5 @@
 {
-  "version": 1047,
+  "version": 1048,
   "released": "2026-07-13",
-  "notes": "Systemic save-reliability fix: the cloud push now auto-strips any field that has no column in the live table (learned from each sync), so an unknown column can never reject a whole save again on ANY table. Plus v1046 cloud-aware quote/invoice numbering."
+  "notes": "Quota-safe writes: a full phone storage no longer crashes changing a service on a quote line item (Sentry QuotaExceededError in materials catalog) or logging a tree mid-estimate. These writes now self-heal by freeing the re-syncable photo cache, matching the main save path. Estimate saves were already quota-safe (they sync to the cloud)."
 }
