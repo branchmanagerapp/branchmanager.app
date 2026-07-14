@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1051; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1052; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -906,6 +906,16 @@ window.bmShowStaleBanner = function(version) {
        columns / dropping the Total off-screen. Wrapper scrolls; rows keep width. */
     div:has(> div[style*="grid-template-columns:140px repeat(7,1fr) 70px"]) { overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
     div[style*="grid-template-columns:140px repeat(7,1fr) 70px"] { min-width:620px !important; }
+
+    /* Books register (books.js) — Date/Description/Category/Amount grid stacks
+       into a card on a phone: description first (full width), date+amount on one
+       line, category dropdown full-width. Header row hidden. */
+    div[style*="grid-template-columns:90px 1fr 200px 110px"][style*="text-transform:uppercase"] { display:none !important; }
+    div[style*="grid-template-columns:90px 1fr 200px 110px"] { display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:4px 10px !important; }
+    div[style*="grid-template-columns:90px 1fr 200px 110px"] > div:nth-child(2) { order:0 !important; flex:0 0 100% !important; }
+    div[style*="grid-template-columns:90px 1fr 200px 110px"] > div:nth-child(1) { order:1 !important; }
+    div[style*="grid-template-columns:90px 1fr 200px 110px"] > div:nth-child(4) { order:2 !important; margin-left:auto !important; }
+    div[style*="grid-template-columns:90px 1fr 200px 110px"] > div:nth-child(3) { order:3 !important; flex:0 0 100% !important; margin-top:4px !important; }
     .data-table { min-width:620px; }
     .data-table th, .data-table td { white-space:nowrap; font-size:12px !important; padding:10px 8px !important; }
 

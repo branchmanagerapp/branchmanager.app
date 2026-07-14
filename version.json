@@ -1,5 +1,5 @@
 {
-  "version": 1051,
+  "version": 1052,
   "released": "2026-07-12",
-  "notes": "Mobile: payroll weekly timesheet scrolls horizontally instead of crushing day columns."
+  "notes": "Mobile: Books register rows stack into readable cards on a phone (no column overflow)."
 }
