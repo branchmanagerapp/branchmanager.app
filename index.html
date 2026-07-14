@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1048; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1049; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1414,7 +1414,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1048.min.js"></script>
+<script defer src="dist/bm.bundle.v1049.min.js"></script>
 
 
 
@@ -2772,8 +2772,53 @@ if (document.readyState === 'loading') {
 
 // ── Service Worker ──
 if ('serviceWorker' in navigator) {
+  // v1049: one-tap storage cleanup — visit /?cleanstorage=1 on a phone whose
+  // localStorage filled up (QuotaExceededError). Frees the re-downloadable photo
+  // blobs + disposable caches, KEEPS the login session and any pending uploads,
+  // shows the top space-hogs (so we learn what actually filled it), then reloads.
+  if (/[?&]cleanstorage=/.test(location.search)) {
+    (function() {
+      try {
+        // 1. Measure every key (UTF-16 ≈ 2 bytes/char).
+        var sizes = [];
+        var total = 0;
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          var v = localStorage.getItem(k) || '';
+          var bytes = (k.length + v.length) * 2;
+          sizes.push({ key: k, bytes: bytes });
+          total += bytes;
+        }
+        sizes.sort(function(a, b) { return b.bytes - a.bytes; });
+        var kb = function(b) { return (b / 1024).toFixed(0) + 'KB'; };
+        var top = sizes.slice(0, 6).map(function(s) { return s.key + ' = ' + kb(s.bytes); }).join('\n');
+
+        // 2. Decide what to evict. Disposable = re-syncs from cloud or is temp.
+        //    NEVER touch: auth session (sb-*-auth-token), pending write queue,
+        //    tombstones, the core config. Everything else here is safe because
+        //    Branch Manager is cloud-live (cloud is the source of truth).
+        var KEEP = /^(sb-.*-auth-token$|bm-write-queue$|bm-tombstones$|bm-supabase-url$|bm-supabase-key$|bm-config$|bm-tenant)/;
+        var DISPOSABLE = /^(bm-photos-|bm-ai-|bm-vq-|.*-recovery$|bm-plantnet|bm-blocked-fabricated$)/;
+        var freed = 0, removedKeys = [];
+        // snapshot keys first (removing during iteration reindexes)
+        var allKeys = [];
+        for (var j = 0; j < localStorage.length; j++) allKeys.push(localStorage.key(j));
+        allKeys.forEach(function(key) {
+          if (!key) return;
+          if (KEEP.test(key)) return;
+          if (DISPOSABLE.test(key)) {
+            try { freed += (localStorage.getItem(key) || '').length * 2; localStorage.removeItem(key); removedKeys.push(key); } catch (e) {}
+          }
+        });
+
+        alert('Storage before: ' + kb(total) + '\n\nBiggest items:\n' + top +
+              '\n\nFreed: ' + kb(freed) + ' (' + removedKeys.length + ' items)\nPhotos re-download from the cloud. You stay logged in.\n\nReloading…');
+        location.replace(location.pathname);
+      } catch (e) { alert('Cleanup error: ' + e.message); location.replace(location.pathname); }
+    })();
+  }
   // Emergency reset: visit /?reset=1 to nuke SW + caches and reload clean
-  if (/[?&]reset=/.test(location.search)) {
+  else if (/[?&]reset=/.test(location.search)) {
     (async function() {
       try {
         var regs = await navigator.serviceWorker.getRegistrations();

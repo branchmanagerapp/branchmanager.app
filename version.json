@@ -1,5 +1,5 @@
 {
-  "version": 1048,
+  "version": 1049,
   "released": "2026-07-13",
-  "notes": "Quota-safe writes: a full phone storage no longer crashes changing a service on a quote line item (Sentry QuotaExceededError in materials catalog) or logging a tree mid-estimate. These writes now self-heal by freeing the re-syncable photo cache, matching the main save path. Estimate saves were already quota-safe (they sync to the cloud)."
+  "notes": "One-tap phone storage cleanup: /?cleanstorage=1 frees re-downloadable photo blobs + disposable caches, keeps you logged in and preserves pending uploads, and reports the biggest space-hogs. For phones that hit QuotaExceededError."
 }
