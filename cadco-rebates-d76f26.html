@@ -55,7 +55,7 @@
     <td data-l="Customer">Elizabeth Bynum — Rye NY</td><td data-l="Model">H220 + garage</td>
     <td data-l="Serial" class="sn">20HAA2545Y0061</td>
     <td data-l="Date">paid Jun 15 2026</td><td data-l="Sold">$3,355.29 pkg</td>
-    <td data-l="Promo" class="dim">no claim (garage sourced outside CADCO)</td><td data-l="Credit" class="dim">—</td>
+    <td data-l="Promo" class="dim">no claim (garage sourced outside CADCO)</td><td data-l="Credit" class="amount">$0.00</td>
   </tr>
   <tr>
     <td data-l="Customer">Sara DelRosso — Katonah NY</td><td data-l="Model">X430</td>
@@ -97,21 +97,26 @@
     <td data-l="Customer">Lucente Landscaping (Dennis Lucente) — same order</td><td data-l="Model">i105E</td>
     <td data-l="Serial" class="sn">serial TBD (recording at delivery)</td>
     <td data-l="Date">sold Prime Day (Jun 23–26) · invoiced late (Jul 9)</td><td data-l="Sold">$799 (list)</td>
-    <td data-l="Promo" class="dim">no claim (sold at full list)</td><td data-l="Credit" class="dim">—</td>
+    <td data-l="Promo" class="dim">"Prime" — pending: i105E credit per CADCO Dealer Program sheet (sold at $799 list)</td><td data-l="Credit" class="amount">$0.00*</td>
   </tr>
   <tr>
     <td data-l="Customer" class="dim">Remaining X430s: NJ buyer + dealer demo (one each)</td><td data-l="Model">X430 ×2</td>
     <td data-l="Serial" class="sn">22EBD2549Y1911<br>22EBD2549Y1959</td>
-    <td data-l="Date" class="dim">recv'd Mar 24 2026</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
+    <td data-l="Date" class="dim">recv'd Mar 24 2026</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="amount">$0.00</td>
   </tr>
   <tr>
-    <td data-l="Customer" class="dim">In stock</td><td data-l="Model">i210 AWD</td><td data-l="Serial" class="sn">2SEEA2544K0396</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
+    <td data-l="Customer" class="dim">In stock</td><td data-l="Model">i210 AWD</td><td data-l="Serial" class="sn">2SEEA2544K0396</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="amount">$0.00</td>
   </tr>
   <tr>
-    <td data-l="Customer" class="dim">In stock — on July promo (Jul 9–29, $100 dealer credit when sold)</td><td data-l="Model">i215 LiDAR</td><td data-l="Serial" class="sn">21DDB2545Y0542</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
+    <td data-l="Customer" class="dim">In stock — on July promo (Jul 9–29, $100 dealer credit when sold)</td><td data-l="Model">i215 LiDAR</td><td data-l="Serial" class="sn">21DDB2545Y0542</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="amount">$0.00</td>
   </tr>
   <tr>
-    <td data-l="Customer" class="dim">Dealer demo / promo unit</td><td data-l="Model">CM120M1</td><td data-l="Serial" class="sn">22GBE2551Y0221</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
+    <td data-l="Customer" class="dim">Dealer demo / promo unit</td><td data-l="Model">CM120M1</td><td data-l="Serial" class="sn">22GBE2551Y0221</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="amount">$0.00</td>
+  </tr>
+  <tr style="border-top:3px solid #1a3a5c; background:#f0f8e8">
+    <td data-l="Customer" style="font-weight:800">TOTAL CREDITS REQUESTED</td><td data-l="Model"></td><td data-l="Serial"></td><td data-l="Date"></td><td data-l="Sold"></td>
+    <td data-l="Promo" style="font-weight:700">*i105E pending Dealer Program sheet</td>
+    <td data-l="Credit" class="amount" style="font-size:1.05rem">$2,794.86</td>
   </tr>
 </table>
 <button class="btn" onclick="var r=[...document.querySelectorAll('#list tr')].map(tr=>[...tr.children].map(td=>td.innerText.replace(/\n/g,' ')).join(' | ')).join('\n');(navigator.clipboard?navigator.clipboard.writeText(r):Promise.reject()).then(()=>{this.textContent='✓ Copied'});setTimeout(()=>{this.textContent='Copy entire list'},1500)">Copy entire list</button>
