@@ -145,6 +145,64 @@ var DashboardPage = {
     loadPage('dashboard');
   },
 
+  // v1059: Jobber-style "To do" list — grouped action categories with dollar
+  // totals + one tap to the relevant page. Self-contained (reads DB directly) so
+  // it can sit at the top of the home as the primary "nothing lives in my head"
+  // surface. Matches Jobber's home To-do (new requests / approved quotes / changes
+  // requested / action required / require invoicing / awaiting payment) + adds
+  // "jobs to schedule" (Doug's queue).
+  _renderTodo: function() {
+    var quotes = DB.quotes.getAll(), jobs = DB.jobs.getAll(),
+        invoices = DB.invoices.getAll(), requests = DB.requests.getAll();
+    var moneyInt = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt : function(n){ return '$' + Math.round(n||0).toLocaleString(); };
+    function sumT(arr, field){ return arr.reduce(function(s,x){ return s + (Number(x[field]) || 0); }, 0); }
+    var invBal = function(i){ return (Number(i.balance) || Number(i.total)) || 0; };
+    var newReq   = requests.filter(function(r){ return r.status === 'new'; });
+    var approved = quotes.filter(function(q){ return q.status === 'approved' && !q.convertedJobId && !q.jobId; });
+    var changes  = quotes.filter(function(q){ return q.status === 'changes_requested'; });
+    var toSched  = jobs.filter(function(j){ return !j.scheduledDate && (j.status === 'scheduled' || j.status === 'in_progress'); });
+    var actionJ  = jobs.filter(function(j){ return j.status === 'action_required' || j.status === 'late'; });
+    // Scope "to invoice" to RECENT completions (last 60d, or last 7d if undated)
+    // — matches the app's needsInvoicing rule + Jobber; avoids surfacing the
+    // entire historical backlog of long-done jobs whose invoice link is unset.
+    var _c60 = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+    var _c7  = new Date(Date.now() - 7 * 86400000).toISOString();
+    var toInv    = jobs.filter(function(j){
+      if (j.status !== 'completed' || j.invoiceId) return false;
+      return (j.scheduledDate && j.scheduledDate.slice(0, 10) >= _c60) || (!j.scheduledDate && (j.createdAt || '') > _c7);
+    });
+    var awaitPay = invoices.filter(function(i){ return i.status !== 'paid' && i.status !== 'draft' && invBal(i) > 0; });
+    var rows = [
+      { n: newReq.length,   one: 'new request',             many: 'new requests',             val: 0,                      icon: '📥', page: 'requests' },
+      { n: approved.length, one: 'approved quote',           many: 'approved quotes',           val: sumT(approved,'total'), icon: '✅', page: 'quotes' },
+      { n: changes.length,  one: 'changes-requested quote',  many: 'changes-requested quotes',  val: sumT(changes,'total'),  icon: '✏️', page: 'quotes' },
+      { n: toSched.length,  one: 'job to schedule',          many: 'jobs to schedule',          val: sumT(toSched,'total'),  icon: '📅', page: 'schedule' },
+      { n: actionJ.length,  one: 'action-required job',      many: 'action-required jobs',      val: sumT(actionJ,'total'),  icon: '🔨', page: 'jobs' },
+      { n: toInv.length,    one: 'job to invoice',           many: 'jobs to invoice',           val: sumT(toInv,'total'),    icon: '💵', page: 'jobs' },
+      { n: awaitPay.length, one: 'invoice awaiting payment', many: 'invoices awaiting payment', val: awaitPay.reduce(function(s,i){ return s + invBal(i); }, 0), icon: '📄', page: 'invoices' }
+    ].filter(function(r){ return r.n > 0; });
+
+    var head = '<div style="font-family:var(--jb-font-display,inherit);font-weight:800;font-size:17px;color:var(--text);padding:15px 16px 6px;">To do</div>';
+    if (!rows.length) {
+      return '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:16px;">' + head
+        + '<div style="padding:2px 16px 18px;color:var(--text-light);font-size:14px;">🎉 All caught up — nothing needs your attention.</div></div>';
+    }
+    var html = '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">' + head;
+    rows.forEach(function(r){
+      var noun = r.n === 1 ? r.one : r.many;
+      html += '<div onclick="loadPage(\'' + r.page + '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+        + '<span style="font-size:20px;width:26px;text-align:center;flex-shrink:0;">' + r.icon + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-weight:700;font-size:15px;color:var(--text);line-height:1.25;">' + r.n + ' ' + noun + '</div>'
+        +   (r.val > 0 ? '<div style="font-size:13px;color:var(--text-light);margin-top:1px;">Worth ' + moneyInt(r.val) + '</div>' : '')
+        + '</div>'
+        + '<span style="color:#2e7d32;font-size:20px;font-weight:700;flex-shrink:0;">&rsaquo;</span>'
+        + '</div>';
+    });
+    html += '</div>';
+    return html;
+  },
+
   render: function() {
     // One-time fix: mark legacy system-migrated completed jobs as already invoiced
     if (!localStorage.getItem('bm-legacy-jobs-fixed')) {
@@ -358,6 +416,7 @@ var DashboardPage = {
 
     // v986: Today board — named rows by status, the daily front door.
     html += DashboardPage._renderTodayBoard();
+    html += DashboardPage._renderTodo(); // v1059: Jobber-style To-do action list (top of home)
 
     // Branch Cam widget removed from dashboard per user request — still accessible via Tools → Branch Cam.
 

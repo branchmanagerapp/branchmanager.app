@@ -1,5 +1,5 @@
 {
-  "version": 1059,
+  "version": 1060,
   "released": "2026-07-14",
-  "notes": "Login screen: visible Start-your-free-trial signup link (form existed only behind ?signup=); pricing CTAs now point at the signup form."
+  "notes": "Home 'To do' action list (Jobber-style): grouped categories with dollar totals — new requests, approved quotes, changes-requested, jobs to schedule, jobs to invoice (recent), invoices awaiting payment — one tap to each page. (Also realigns bundle ref to the shipped build.)"
 }
