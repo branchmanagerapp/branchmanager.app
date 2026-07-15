@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1060; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1061; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1396,6 +1396,80 @@ window.bmShowStaleBanner = function(version) {
         <!-- pageAction deprecated: universal '+' in topbar covers all create actions. Element kept with forced display:none so legacy loadPage() logic stays intact without breaking anything. -->
         <button class="btn btn-primary" id="pageAction" style="display:none !important;" aria-hidden="true">+ New</button>
         <span id="bmVersionBadge" onclick="if(confirm('Force-refresh the app (clear cache)?')){location.href='?reset=1';}" title="Tap to force-refresh. Version badge — if this doesn't match the latest, your PWA is stale." style="font-size:10px;color:#94a3b8;margin-left:10px;font-weight:600;letter-spacing:.05em;cursor:pointer;">v318</span>
+<script>
+// ── Account switcher: Doug runs two tenants (Second Nature Tree + Smart Lawn NY) in one browser.
+// Sessions are parked per email in localStorage; the chip swaps the active Supabase session and
+// cold-reloads (caches cleared) so no tenant's cached data bleeds into the other.
+(function(){
+  var MAP_KEY = 'bm-acct-switch';
+  var SB_KEY = 'sb-ltpivkqahvplapyagljt-auth-token'; // fixed project ref for this app
+  var LABELS = { 'info@peekskilltree.com': 'Tree', 'smartlawnny@gmail.com': 'Smart Lawn' };
+  function label(em){ return LABELS[em] || (em || '').split('@')[0]; }
+  function readMap(){ try { return JSON.parse(localStorage.getItem(MAP_KEY) || '{}'); } catch(e){ return {}; } }
+  function writeMap(m){ try { localStorage.setItem(MAP_KEY, JSON.stringify(m)); } catch(e){} }
+  function liveSession(){ try { return JSON.parse(localStorage.getItem(SB_KEY)); } catch(e){ return null; } }
+  function liveEmail(){ var s = liveSession(); return (s && s.user && s.user.email) || null; }
+  function capture(){
+    var s = liveSession(); var em = (s && s.user && s.user.email) || null;
+    if (!em) return null;
+    var m = readMap(); m[em] = { session: s, at: Date.now() }; writeMap(m); return em;
+  }
+  function clearBmCaches(){
+    var keep = { }; keep[MAP_KEY] = 1; keep['bm-ui-style'] = 1;
+    var kill = [];
+    for (var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if (keep[k]) continue;
+      if (k === SB_KEY || /^bm-/.test(k) || /^snt-/.test(k)) kill.push(k);
+    }
+    kill.forEach(function(k){ localStorage.removeItem(k); });
+  }
+  function switchTo(email){
+    capture();
+    var m = readMap(); var t = m[email];
+    clearBmCaches();
+    if (t && t.session) { try { localStorage.setItem(SB_KEY, JSON.stringify(t.session)); } catch(e){} }
+    // No parked session (or it will turn out expired) → app lands on login for that account; next login is re-captured.
+    location.reload();
+  }
+  window._bmSwitchAccount = switchTo;
+  function render(){
+    try {
+      capture();
+      var m = readMap(); var cur = liveEmail();
+      var others = Object.keys(m).filter(function(e){ return e !== cur; });
+      // In-app chip next to the version badge
+      var badge = document.getElementById('bmVersionBadge');
+      if (badge && cur && others.length && !document.getElementById('bmAcctChip')) {
+        var chip = document.createElement('span');
+        chip.id = 'bmAcctChip';
+        chip.textContent = '\u21c4 ' + label(others[0]);
+        chip.title = 'Switch account to ' + others[0];
+        chip.style.cssText = 'font-size:10px;font-weight:800;color:#2e7d12;background:#eaf5e2;border:1px solid #cde6b8;border-radius:12px;padding:2px 8px;margin-left:8px;cursor:pointer;letter-spacing:.03em;vertical-align:middle;';
+        chip.onclick = function(){ if (confirm('Switch to ' + others[0] + '? The app reloads with that account.')) switchTo(others[0]); };
+        badge.parentNode.insertBefore(chip, badge.nextSibling);
+      }
+      // Login screen: one-tap sign-in buttons for parked accounts
+      var login = document.getElementById('login-screen');
+      if (login && !cur && Object.keys(m).length && !document.getElementById('bmAcctQuick')) {
+        var wrap = document.createElement('div');
+        wrap.id = 'bmAcctQuick';
+        wrap.style.cssText = 'margin:14px auto 0;text-align:center;';
+        Object.keys(m).forEach(function(em){
+          var b = document.createElement('button');
+          b.textContent = 'Continue as ' + label(em) + ' (' + em + ')';
+          b.style.cssText = 'display:block;margin:8px auto;padding:10px 18px;border-radius:10px;border:1px solid #cde6b8;background:#fff;color:#2e7d12;font-weight:700;font-size:13px;cursor:pointer;';
+          b.onclick = function(){ switchTo(em); };
+          wrap.appendChild(b);
+        });
+        login.appendChild(wrap);
+      }
+    } catch(e){}
+  }
+  setInterval(render, 1500);
+  render();
+})();
+</script>
 <script>(function(){try{var b=document.getElementById('bmVersionBadge');if(b&&typeof BUNDLED_VERSION!=='undefined')b.textContent='v'+BUNDLED_VERSION;}catch(e){}})();</script>
       </div>
     </div>

@@ -1,5 +1,5 @@
 {
-  "version": 1060,
-  "released": "2026-07-14",
-  "notes": "Home 'To do' action list (Jobber-style): grouped categories with dollar totals — new requests, approved quotes, changes-requested, jobs to schedule, jobs to invoice (recent), invoices awaiting payment — one tap to each page. (Also realigns bundle ref to the shipped build.)"
+  "version": 1061,
+  "released": "2026-07-15",
+  "notes": "Account switcher: chip next to the version badge toggles between parked logins (Tree <-> Smart Lawn) with a cache-cleared reload; login screen gets one-tap Continue-as buttons."
 }
