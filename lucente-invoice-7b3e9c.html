@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Dennis Lucente — Invoice &amp; Payment · Smart Lawn</title>
+<title>Dennis Lucente — Statement &amp; Payment · Smart Lawn</title>
 <style>
   :root{--ink:#1d1d1f;--grey:#f5f5f7;--mut:#86868b;--green:#6abb1e;--greend:#4a8a10;--line:#e5e5ea;--gold:#b8860b;--red:#c0392b}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -59,6 +59,8 @@
   .ach-step b{color:var(--ink)}
   .ach-step .n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
   .fieldflag{color:var(--red);font-weight:700;font-size:11.5px}
+  .btn{display:inline-block;border:none;border-radius:12px;padding:13px 22px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  .btn-green{background:var(--green);color:#fff}
   @media (max-width:560px){.ach-grid{grid-template-columns:1fr}.sheet{padding:22px 18px}}
 </style>
 </head>
@@ -74,9 +76,9 @@
         <div class="sub">smartlawnny@gmail.com · (914) 647-7276 · smartlawnny.com</div>
       </div>
       <div class="invmeta">
-        <div class="big">Invoice</div>
-        <div>Invoice # <b>INV-20260704-01</b></div>
-        <div>Date <b>July 9, 2026 (rev. 2)</b></div>
+        <div class="big">Statement</div>
+        <div>Invoices <b>#1003 · #1004</b></div>
+        <div>As of <b>July 15, 2026</b></div>
         <div>Terms <b>Due upon receipt</b></div>
       </div>
     </div>
@@ -90,12 +92,13 @@
       </div>
       <div class="party">
         <div class="lbl">Delivered &amp; installed</div>
-        <div class="nm">4 units — 1 on site, 3 scheduled</div>
-        <div>X450 #1 activated July 3 &amp; mowing. Remaining units delivered on your schedule.</div>
+        <div class="nm">5 units — 2 on site &amp; mowing, 3 scheduled</div>
+        <div>X450 #1 (park) and CM240 (healthcare site) activated July 3. Remaining units delivered on your schedule.</div>
         <div>Dealer install, setup &amp; crew training included on all units.</div>
       </div>
     </div>
 
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);margin-top:18px">Invoice #1003 — issued July 4 (delivered &amp; activated)</div>
     <table class="items">
       <thead>
         <tr><th>Item</th><th class="r">Retail</th><th class="r">Qty</th><th class="r">Your price</th><th class="r">Amount</th></tr>
@@ -111,6 +114,20 @@
           <td class="r">1</td>
           <td class="r"><span class="yours">$2,539</span></td>
           <td class="r"><span class="yours">$2,539.00</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="item-nm">Navimow CM240M1</div>
+            <div class="item-fit">Largest commercial sites · up to 6 acres</div>
+            <div class="item-detail">Serial <b>22HBE2551Y0125</b> · Site: <b>healthcare property</b><br>Activated 07/03/2026 · Factory warranty from activation</div>
+          </td>
+          <td class="r"><span class="retail">$6,999</span></td>
+          <td class="r">1</td>
+          <td class="r"><span class="yours">$6,299</span></td>
+          <td class="r"><span class="yours">$6,299.00</span></td>
+        </tr>
+        <tr class="invsplit">
+          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1004 — issued July 9 (units delivering)</td>
         </tr>
         <tr>
           <td>
@@ -147,11 +164,11 @@
         </tr>
         <tr>
           <td>
-            <div class="item-nm">Dealer installation, setup &amp; crew training — 4 units</div>
+            <div class="item-nm">Dealer installation, setup &amp; crew training — 5 units</div>
             <div class="item-detail">On-site install at each property, RTK setup, app onboarding &amp; crew walkthrough.</div>
           </td>
           <td class="r"></td>
-          <td class="r">4</td>
+          <td class="r">5</td>
           <td class="r"><span class="yours" style="color:var(--greend)">Included</span></td>
           <td class="r"><span class="yours" style="color:var(--greend)">$0.00</span></td>
         </tr>
@@ -160,32 +177,28 @@
 
     <div class="totals">
       <table>
-        <tr class="sub"><td>Subtotal</td><td class="r"><b>$7,856.00</b></td></tr>
-        <tr><td colspan="2" class="save">You save $1,320 vs retail — plus $0 install on all 4 units.</td></tr>
-        <tr id="taxRow"><td id="taxLabel">NY sales tax (8.375%)</td><td class="r" id="taxAmt">$657.94</td></tr>
-        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$8,513.94</td></tr>
+        <tr class="sub"><td>Invoice #1003 (X450 #1 + CM240, w/ tax)</td><td class="r"><b>$9,578.18</b></td></tr>
+        <tr><td>Invoice #1004 (X450 #2 + X430 + i105E, w/ tax)</td><td class="r"><b>$5,762.30</b></td></tr>
+        <tr><td colspan="2" class="save">You save $2,140 vs retail — plus $0 install on all 5 units.</td></tr>
+        <tr id="taxRow"><td id="taxLabel">Includes NY sales tax (8.375%)</td><td class="r" id="taxAmt">$1,185.48</td></tr>
+        <tr class="grand"><td>Total due</td><td class="r" id="grandTotal">$15,340.48</td></tr>
       </table>
     </div>
   </div>
 
   <!-- ============ OPTIONAL — CM SERIES 20% OFF ============ -->
   <div class="sheet" style="border:2px dashed var(--green);background:#f7fcf2;">
-    <div class="sec-tag">Optional — commercial scale, 20% off with this order</div>
+    <div class="sec-tag">Optional — one more commercial unit, 20% off with this order</div>
     <div style="font-size:13.5px;color:#3a3a3c;line-height:1.6;margin-bottom:14px;">
-      Dennis — since you're building out the fleet, I'll extend <b>20% off the TerraNox CM commercial series</b> if you add either (or both) to this order. These are the machines for your biggest sites — one CM240 covers up to 6 acres on its own. This pricing is only available bundled with this invoice.
+      Dennis — the CM240 is yours and mowing. If you want its little brother for the mid-size sites, I'll extend <b>20% off the CM120M1</b> bundled with this order.
     </div>
     <table class="items">
       <thead><tr><th>Add-on</th><th class="r">Retail</th><th class="r">20% off — your price</th></tr></thead>
       <tbody>
         <tr>
-          <td><div class="item-nm">TerraNox CM120M1</div><div class="item-fit">Commercial grounds, HOAs, campuses · up to 3 acres</div></td>
+          <td><div class="item-nm">Navimow CM120M1</div><div class="item-fit">Commercial grounds, HOAs, campuses · up to 3 acres</div></td>
           <td class="r"><span class="retail">$5,499</span></td>
           <td class="r"><span class="yours" style="color:var(--greend)">$4,399.20</span></td>
-        </tr>
-        <tr>
-          <td><div class="item-nm">TerraNox CM240M1</div><div class="item-fit">Largest commercial sites · up to 6 acres</div></td>
-          <td class="r"><span class="retail">$6,999</span></td>
-          <td class="r"><span class="yours" style="color:var(--greend)">$5,599.20</span></td>
         </tr>
       </tbody>
     </table>
@@ -215,16 +228,11 @@
   var ACH_LINK = null;
   document.getElementById('achBtn').addEventListener('click',function(){
     if(ACH_LINK){ window.location.href=ACH_LINK; return; }
-    var subj=encodeURIComponent('Send me the secure ACH link — Invoice INV-20260704-01 (Lucente)');
-    var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoice INV-20260704-01. Thanks, Dennis.');
+    var subj=encodeURIComponent('Send me the secure ACH link — Smart Lawn invoices #1003 + #1004 (Lucente)');
+    var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoices #1003 and #1004. Thanks, Dennis.');
     window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
   });
 
-  document.getElementById('emailBtn').addEventListener('click',function(){
-    var subj=encodeURIComponent('My Smart Lawn invoice INV-20260704-01');
-    var body=encodeURIComponent('Please send me a copy of invoice INV-20260704-01.');
-    window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
-  });
 })();
 </script>
 </body>
