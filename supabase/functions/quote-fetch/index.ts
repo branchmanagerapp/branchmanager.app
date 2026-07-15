@@ -9,6 +9,12 @@
  * `Anon read quotes USING (status <> 'draft')` policy — that policy let
  * any anon-key holder dump every customer's name/phone/address/total.
  *
+ * v2 (Jul 15 2026): on each successful token-validated fetch, notify the
+ * tenant team by email that the customer OPENED the quote (throttled to one
+ * email per quote per 4h via an analytics_events marker row). The notify
+ * block is fully fire-safe: any failure inside it is swallowed so the
+ * customer's quote page can never break because of it.
+ *
  * Deploy:
  *   supabase functions deploy quote-fetch --no-verify-jwt --project-ref ltpivkqahvplapyagljt
  */
@@ -16,6 +22,52 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const VIEW_THROTTLE_MS = 4 * 60 * 60 * 1000; // one "opened" email per quote per 4h
+
+// Email the tenant team that the customer opened the quote. Throttled via a
+// marker row in analytics_events (path = /quote-viewed/<id>). Never throws.
+async function notifyQuoteViewed(row: any, headers: Record<string, string>) {
+  try {
+    if (!RESEND_API_KEY) return;
+    const qid = String(row.id);
+    const marker = '/quote-viewed/' + qid;
+    const since = new Date(Date.now() - VIEW_THROTTLE_MS).toISOString();
+
+    // Throttle check
+    const chk = await fetch(`${SUPABASE_URL}/rest/v1/analytics_events?path=eq.${encodeURIComponent(marker)}&created_at=gt.${encodeURIComponent(since)}&select=id&limit=1`, { headers });
+    if (chk.ok && (await chk.json()).length > 0) return;
+
+    // Marker row (also the audit trail of customer views)
+    await fetch(`${SUPABASE_URL}/rest/v1/analytics_events`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ tenant_id: row.tenant_id, session_id: 'quote-view-notify', path: marker, user_agent: 'quote-fetch' })
+    });
+
+    // Tenant branding (from_email required by Resend; company_email = recipient)
+    const tr = await fetch(`${SUPABASE_URL}/rest/v1/tenants?id=eq.${encodeURIComponent(row.tenant_id)}&select=config&limit=1`, { headers });
+    if (!tr.ok) return;
+    const trows = await tr.json();
+    const cfg = (trows && trows[0] && trows[0].config) || {};
+    const to = cfg.company_email || cfg.email;
+    const from = cfg.from_email;
+    if (!to || !from) return;
+
+    const qNum = row.quote_number || qid.slice(0, 8);
+    const cName = row.client_name || 'Customer';
+    const total = '$' + (+(row.total || 0)).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    const subject = `\u{1F440} Quote #${qNum} opened — ${cName}`;
+    const text = `${cName} just opened Quote #${qNum} (${total}, status: ${row.status || '—'}).\n\nGood moment for a follow-up call or text.\n\nView in Branch Manager: https://branchmanager.app/`;
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: `${cfg.from_name || 'Branch Manager'} <${from}>`, to: [to], subject, text })
+    });
+  } catch (e) {
+    console.warn('quote-view notify failed (non-fatal):', e);
+  }
+}
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type'
@@ -53,19 +105,18 @@ serve(async (req: Request) => {
     'apikey': SERVICE_KEY,
     'Authorization': 'Bearer ' + SERVICE_KEY
   };
-  // NO status filter — security is the constant-time token compare below (safeEq
-  // on approval_token). A valid-token link must ALWAYS resolve, even while the
-  // quote is still 'draft'/being priced, so a shared link never 404s again
-  // ("link not found" incident, Oswald Roche, Jul 6 2026). Token secrecy is the guard.
-  const url = `${SUPABASE_URL}/rest/v1/quotes?id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
+  const url = `${SUPABASE_URL}/rest/v1/quotes?id=eq.${encodeURIComponent(id)}&status=neq.draft&select=*&limit=1`;
   const r = await fetch(url, { headers });
   if (!r.ok) return j(500, { ok: false, error: 'lookup failed', status: r.status });
   const rows = await r.json();
-  if (!rows || !rows.length) return j(404, { ok: false, error: 'Quote not found' });
+  if (!rows || !rows.length) return j(404, { ok: false, error: 'Quote not found or draft' });
 
   const row = rows[0];
   const stored = String(row.approval_token || '');
   if (!stored || !safeEq(stored, token)) return j(403, { ok: false, error: 'Invalid token' });
+
+  // Team heads-up: customer opened this quote (throttled, fire-safe).
+  await notifyQuoteViewed(row, headers);
 
   // Strip approval_token from the response — customer doesn't need it back
   // and it should never echo to the client (defense-in-depth against
