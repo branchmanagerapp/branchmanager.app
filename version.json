@@ -1,5 +1,5 @@
 {
-  "version": 1064,
+  "version": 1065,
   "released": "2026-07-15",
-  "notes": "Tenant switch now sticks: switchTo calls set_active_tenant RPC + refreshes the session so the JWT re-stamps; caches wiped on switch. (Server: is_active-aware token hook, SECURITY DEFINER restored.)"
+  "notes": "Tenant switch verifies the refreshed token is stamped with the TARGET company before reloading (retries up to 3x) \u2014 kills the boot-with-wrong-tenant race that could pull the wrong dataset after a switch."
 }

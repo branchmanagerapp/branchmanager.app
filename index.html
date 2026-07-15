@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1064; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1065; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1409,11 +1409,27 @@ window.bmShowStaleBanner = function(version) {
     TenantSwitcher.switchTo = function(tenantId){
       if (!tenantId) return;
       if (!confirm('Switch company? The app will reload with fresh data.')) return;
+      function claimOf(sess){
+        try {
+          var tok = sess && sess.access_token; var p = tok.split('.')[1];
+          p += '='.repeat((4 - p.length % 4) % 4);
+          return JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/'))).tenant_id || null;
+        } catch(e){ return null; }
+      }
+      function refreshUntilStamped(tries){
+        return SupabaseDB.client.auth.refreshSession().then(function(rr){
+          var sess = rr && rr.data && rr.data.session;
+          if (claimOf(sess) === tenantId) return true;
+          if (tries <= 0) return false;
+          return new Promise(function(res){ setTimeout(res, 800); }).then(function(){ return refreshUntilStamped(tries - 1); });
+        });
+      }
       SupabaseDB.client.rpc('set_active_tenant', { p_tenant: tenantId }).then(function(r){
         if (r.error || r.data !== true) { alert('Switch failed: ' + (r.error ? r.error.message : 'no access to that company')); return null; }
-        return SupabaseDB.client.auth.refreshSession();
+        return refreshUntilStamped(3);
       }).then(function(res){
-        if (!res) return;
+        if (res === null || res === undefined) return;
+        if (res === false) { alert('Switch not confirmed by the server yet — try once more in a few seconds.'); return; }
         CACHE_KEYS.forEach(function(k){ localStorage.removeItem(k); });
         for (var i = localStorage.length - 1; i >= 0; i--){
           var k = localStorage.key(i);
