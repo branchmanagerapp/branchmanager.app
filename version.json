@@ -1,5 +1,5 @@
 {
-  "version": 1065,
+  "version": 1066,
   "released": "2026-07-15",
-  "notes": "Tenant switch verifies the refreshed token is stamped with the TARGET company before reloading (retries up to 3x) \u2014 kills the boot-with-wrong-tenant race that could pull the wrong dataset after a switch."
+  "notes": "Tapping the current page in the nav now re-pulls fresh cloud data and repaints (was: re-render of the cached snapshot only). Edit/modal guards respected."
 }

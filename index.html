@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1065; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1066; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1672,6 +1672,19 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
     if (page === currentPage) {
       window.scrollTo(0, 0);
       loadPage(page, { force: true });
+      // v1066 (Doug): a same-page tap should also REFRESH THE DATA, not just re-render
+      // the cached snapshot. Pull fresh from the cloud, then repaint — unless the user
+      // started editing or opened a modal meanwhile (never clobber an edit).
+      try {
+        if (typeof CloudSync !== 'undefined' && CloudSync.init) {
+          CloudSync.init().then(function() {
+            var ae = document.activeElement;
+            var editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable);
+            var modalOpen = !!document.querySelector('.modal-overlay, .bm-modal, [role="dialog"]');
+            if (window._currentPage === page && !editing && !modalOpen) loadPage(page, { force: true });
+          }).catch(function(){});
+        }
+      } catch(e) {}
       return;
     }
     currentPage = page;
