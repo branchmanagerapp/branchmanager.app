@@ -1,5 +1,5 @@
 {
-  "version": 1063,
+  "version": 1064,
   "released": "2026-07-15",
-  "notes": "Sidebar brand = active company name with tenant dropdown (built-in TenantSwitcher); correct user-change cache guard keyed to bm-session (v1061/1062 watched a key this app never writes)."
+  "notes": "Tenant switch now sticks: switchTo calls set_active_tenant RPC + refreshes the session so the JWT re-stamps; caches wiped on switch. (Server: is_active-aware token hook, SECURITY DEFINER restored.)"
 }

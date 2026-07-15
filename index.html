@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1063; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1064; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1396,6 +1396,37 @@ window.bmShowStaleBanner = function(version) {
         <!-- pageAction deprecated: universal '+' in topbar covers all create actions. Element kept with forced display:none so legacy loadPage() logic stays intact without breaking anything. -->
         <button class="btn btn-primary" id="pageAction" style="display:none !important;" aria-hidden="true">+ New</button>
         <span id="bmVersionBadge" onclick="if(confirm('Force-refresh the app (clear cache)?')){location.href='?reset=1';}" title="Tap to force-refresh. Version badge — if this doesn't match the latest, your PWA is stale." style="font-size:10px;color:#94a3b8;margin-left:10px;font-weight:600;letter-spacing:.05em;cursor:pointer;">v318</span>
+<script>
+// ── Make the built-in TenantSwitcher actually switch (v1064): the active tenant lives in the
+// JWT claim (stamped server-side), so switching = set_active_tenant RPC + session refresh.
+// The old switchTo only wrote localStorage, which the JWT claim overrides — switch never stuck.
+(function(){
+  var CACHE_KEYS = ['bm-clients','bm-jobs','bm-quotes','bm-invoices','bm-requests','bm-team','bm-services','bm-expenses','bm-tenant-id','bm-co-name'];
+  function patch(){
+    if (!window.TenantSwitcher || TenantSwitcher._bmPatched) return false;
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return false;
+    TenantSwitcher._bmPatched = true;
+    TenantSwitcher.switchTo = function(tenantId){
+      if (!tenantId) return;
+      if (!confirm('Switch company? The app will reload with fresh data.')) return;
+      SupabaseDB.client.rpc('set_active_tenant', { p_tenant: tenantId }).then(function(r){
+        if (r.error || r.data !== true) { alert('Switch failed: ' + (r.error ? r.error.message : 'no access to that company')); return null; }
+        return SupabaseDB.client.auth.refreshSession();
+      }).then(function(res){
+        if (!res) return;
+        CACHE_KEYS.forEach(function(k){ localStorage.removeItem(k); });
+        for (var i = localStorage.length - 1; i >= 0; i--){
+          var k = localStorage.key(i);
+          if (k && k.indexOf('bm-comms-') === 0) localStorage.removeItem(k);
+        }
+        location.reload();
+      }).catch(function(e){ alert('Switch failed: ' + (e && e.message || e)); });
+    };
+    return true;
+  }
+  var iv = setInterval(function(){ if (patch()) clearInterval(iv); }, 800);
+})();
+</script>
 <script>
 // ── Company-name brand + account guard (v1063). Truth sources: localStorage 'bm-session'
 // (custom Auth), 'bm-tenant-id' (active tenant), and the bundle's TenantSwitcher (v798).
