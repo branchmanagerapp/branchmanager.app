@@ -77,7 +77,7 @@
       </div>
       <div class="invmeta">
         <div class="big">Statement</div>
-        <div>Invoices <b>#1003 · #1004 · #1008</b></div>
+        <div>Invoices <b>#1003 · #1004 · #1008 · #1009 · #1010</b> (one per unit)</div>
         <div>As of <b>July 15, 2026</b> · $9,578.18 received — thank you!</div>
         <div>Terms <b>Due upon receipt</b></div>
       </div>
@@ -98,7 +98,7 @@
       </div>
     </div>
 
-    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);margin-top:18px">Invoice #1003 — issued June 26 · ✓ PAID IN FULL July 15</div>
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);margin-top:18px">Invoice #1003 · X450 unit 1 — June 26 · ✓ PAID July 15</div>
     <table class="items">
       <thead>
         <tr><th>Item</th><th class="r">Retail</th><th class="r">Qty</th><th class="r">Your price</th><th class="r">Amount</th></tr>
@@ -115,6 +115,9 @@
           <td class="r"><span class="yours">$2,539</span></td>
           <td class="r"><span class="yours">$2,539.00</span></td>
         </tr>
+        <tr class="invsplit">
+          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1009 · CM240 — June 26 · ✓ PAID July 15</td>
+        </tr>
         <tr>
           <td>
             <div class="item-nm">Navimow CM240M1</div>
@@ -127,7 +130,7 @@
           <td class="r"><span class="yours">$6,299.00</span></td>
         </tr>
         <tr class="invsplit">
-          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1004 — issued June 26 (units delivering)</td>
+          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1004 · X450 unit 2 — June 26 (delivering)</td>
         </tr>
         <tr>
           <td>
@@ -139,6 +142,9 @@
           <td class="r">1</td>
           <td class="r"><span class="yours">$2,539</span></td>
           <td class="r"><span class="yours">$2,539.00</span></td>
+        </tr>
+        <tr class="invsplit">
+          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1010 · X430 — June 26 (delivering)</td>
         </tr>
         <tr>
           <td>
@@ -153,7 +159,7 @@
         </tr>
 
         <tr class="invsplit">
-          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1008 — issued July 9 (add-on)</td>
+          <td colspan="5" style="padding:18px 8px 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--greend);border-bottom:none">Invoice #1008 · i105E — July 9 (add-on)</td>
         </tr>
         <tr>
           <td>
@@ -181,9 +187,11 @@
 
     <div class="totals">
       <table>
-        <tr class="sub"><td>Invoice #1003 (X450 #1 + CM240) — <b style="color:var(--greend)">PAID ✓</b></td><td class="r"><b>$9,578.18</b></td></tr>
-        <tr><td>Invoice #1004 (X450 #2 + X430, w/ tax)</td><td class="r"><b>$5,026.43</b></td></tr>
-        <tr><td>Invoice #1008 (i105E, w/ tax)</td><td class="r"><b>$735.87</b></td></tr>
+        <tr class="sub"><td>#1003 X450 unit 1 — <b style="color:var(--greend)">PAID ✓</b></td><td class="r"><b>$2,751.64</b></td></tr>
+        <tr><td>#1009 CM240 — <b style="color:var(--greend)">PAID ✓</b></td><td class="r"><b>$6,826.54</b></td></tr>
+        <tr><td>#1004 X450 unit 2 (w/ tax)</td><td class="r"><b>$2,751.64</b></td></tr>
+        <tr><td>#1010 X430 (w/ tax)</td><td class="r"><b>$2,274.79</b></td></tr>
+        <tr><td>#1008 i105E (w/ tax)</td><td class="r"><b>$735.87</b></td></tr>
         <tr><td colspan="2" class="save">You save $2,140 vs retail — plus $0 install on all 5 units.</td></tr>
         <tr id="taxRow"><td id="taxLabel">Includes NY sales tax (8.375%)</td><td class="r" id="taxAmt">$1,185.48</td></tr>
         <tr class="grand"><td>Balance due</td><td class="r" id="grandTotal">$5,762.30</td></tr>
@@ -233,8 +241,8 @@
   var ACH_LINK = null;
   document.getElementById('achBtn').addEventListener('click',function(){
     if(ACH_LINK){ window.location.href=ACH_LINK; return; }
-    var subj=encodeURIComponent('Send me the secure ACH link — Smart Lawn invoices #1004 + #1008 (Lucente)');
-    var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoices #1004 and #1008. Thanks, Dennis.');
+    var subj=encodeURIComponent('Send me the secure ACH link — Smart Lawn invoices #1004, #1010 + #1008 (Lucente)');
+    var body=encodeURIComponent('Hi Smart Lawn — please send me the secure bank-transfer (ACH) link for invoices #1004, #1010 and #1008. Thanks, Dennis.');
     window.location.href='mailto:smartlawnny@gmail.com?subject='+subj+'&body='+body;
   });
 
