@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1058; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1059; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -2103,6 +2103,13 @@ function checkAuth() {
     }
     loginDiv.innerHTML = (/[?&]signup=/.test(location.search) && Auth.renderSignup)
       ? Auth.renderSignup() : Auth.renderLogin();
+    // Self-serve signup existed only behind ?signup= — give the login screen a visible path in.
+    if (!/[?&]signup=/.test(location.search) && Auth.renderSignup) {
+      var _su = document.createElement('div');
+      _su.style.cssText = 'margin:16px auto 0;text-align:center;font-size:14px;color:#4b5563;';
+      _su.innerHTML = 'New to Branch Manager? <a href="?signup=1" style="color:#2e7d12;font-weight:700;">Start your free trial</a>';
+      loginDiv.appendChild(_su);
+    }
     // If an email-confirmation return failed (expired/used link), say so
     // instead of dropping them on a bare login screen with no explanation.
     try {

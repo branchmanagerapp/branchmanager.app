@@ -1,5 +1,5 @@
 {
-  "version": 1058,
+  "version": 1059,
   "released": "2026-07-14",
-  "notes": "Schedule header tightened: view pills share one row with the This-Month stat strip (stats left, pills right), reclaiming a row of vertical space; wraps cleanly on phones."
+  "notes": "Login screen: visible Start-your-free-trial signup link (form existed only behind ?signup=); pricing CTAs now point at the signup form."
 }
