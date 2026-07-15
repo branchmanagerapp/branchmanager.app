@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1062; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1063; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1397,92 +1397,76 @@ window.bmShowStaleBanner = function(version) {
         <button class="btn btn-primary" id="pageAction" style="display:none !important;" aria-hidden="true">+ New</button>
         <span id="bmVersionBadge" onclick="if(confirm('Force-refresh the app (clear cache)?')){location.href='?reset=1';}" title="Tap to force-refresh. Version badge — if this doesn't match the latest, your PWA is stale." style="font-size:10px;color:#94a3b8;margin-left:10px;font-weight:600;letter-spacing:.05em;cursor:pointer;">v318</span>
 <script>
-// ── Account switcher: Doug runs two tenants (Second Nature Tree + Smart Lawn NY) in one browser.
-// Sessions are parked per email in localStorage; the chip swaps the active Supabase session and
-// cold-reloads (caches cleared) so no tenant's cached data bleeds into the other.
+// ── Company-name brand + account guard (v1063). Truth sources: localStorage 'bm-session'
+// (custom Auth), 'bm-tenant-id' (active tenant), and the bundle's TenantSwitcher (v798).
+// Replaces the v1061/1062 switcher which watched a Supabase storage key this app never writes.
 (function(){
-  var MAP_KEY = 'bm-acct-switch';
-  var SB_KEY = 'sb-ltpivkqahvplapyagljt-auth-token'; // fixed project ref for this app
-  var LABELS = { 'info@peekskilltree.com': 'Tree', 'smartlawnny@gmail.com': 'Smart Lawn' };
-  function label(em){ return LABELS[em] || (em || '').split('@')[0]; }
-  function readMap(){ try { return JSON.parse(localStorage.getItem(MAP_KEY) || '{}'); } catch(e){ return {}; } }
-  function writeMap(m){ try { localStorage.setItem(MAP_KEY, JSON.stringify(m)); } catch(e){} }
-  function liveSession(){ try { return JSON.parse(localStorage.getItem(SB_KEY)); } catch(e){ return null; } }
-  function liveEmail(){ var s = liveSession(); return (s && s.user && s.user.email) || null; }
-  function capture(){
-    var s = liveSession(); var em = (s && s.user && s.user.email) || null;
-    if (!em) return null;
-    var m = readMap(); m[em] = { session: s, at: Date.now() }; writeMap(m); return em;
+  var CACHE_KEYS = ['bm-clients','bm-jobs','bm-quotes','bm-invoices','bm-requests','bm-team','bm-services','bm-expenses','bm-tenant-id','bm-co-name'];
+  function sessionEmail(){
+    try { var s = JSON.parse(localStorage.getItem('bm-session') || 'null'); return (s && s.email) || null; } catch(e){ return null; }
   }
-  function clearBmCaches(keepAuth){
-    var keep = { }; keep[MAP_KEY] = 1; keep['bm-ui-style'] = 1; keep['bm-active-user'] = 1;
-    var kill = [];
-    for (var i = 0; i < localStorage.length; i++){
+  function wipeTenantCaches(){
+    CACHE_KEYS.forEach(function(k){ localStorage.removeItem(k); });
+    for (var i = localStorage.length - 1; i >= 0; i--){
       var k = localStorage.key(i);
-      if (keep[k]) continue;
-      if (k === SB_KEY) { if (!keepAuth) kill.push(k); continue; }
-      if (/^bm-/.test(k) || /^snt-/.test(k)) kill.push(k);
+      if (k && k.indexOf('bm-comms-') === 0) localStorage.removeItem(k);
     }
-    kill.forEach(function(k){ localStorage.removeItem(k); });
   }
-  function switchTo(email){
-    capture();
-    var m = readMap(); var t = m[email];
-    clearBmCaches(false);
-    try { localStorage.setItem('bm-active-user', email); } catch(e){}
-    if (t && t.session) { try { localStorage.setItem(SB_KEY, JSON.stringify(t.session)); } catch(e){} }
-    // No parked session (or it will turn out expired) → app lands on login for that account; next login is re-captured.
-    location.reload();
+  // Guard: a DIFFERENT user logged in — must not inherit the previous account's tenant
+  // pointer or cached data (Jul 15: Smart Lawn login painted Tree data from stale cache).
+  function guard(){
+    var em = sessionEmail();
+    if (!em) return false;
+    var prev = localStorage.getItem('bm-active-user');
+    if (prev && prev !== em) {
+      try { localStorage.setItem('bm-active-user', em); } catch(e){}
+      wipeTenantCaches();
+      location.reload();
+      return true;
+    }
+    if (!prev) { try { localStorage.setItem('bm-active-user', em); } catch(e){} }
+    return false;
   }
-  window._bmSwitchAccount = switchTo;
-  function render(){
-    try {
-      // Boot guard: a MANUAL logout/login to a different account must not inherit the
-      // previous account's cached data (Jul 15: Smart Lawn login booted into cached Tree data).
-      var em0 = liveEmail();
-      if (em0) {
-        var prev = localStorage.getItem('bm-active-user');
-        if (prev && prev !== em0) {
-          localStorage.setItem('bm-active-user', em0);
-          clearBmCaches(true); // keep the new login, wipe the old account's caches
-          location.reload();
+  // Brand: sidebar shows the ACTIVE COMPANY NAME; if the user has 2+ tenants, it's a dropdown.
+  function brand(){
+    var h1 = document.querySelector('.sidebar-header h1');
+    if (!h1) return;
+    if (window.TenantSwitcher && TenantSwitcher.loadTenants) {
+      TenantSwitcher.loadTenants().then(function(ts){
+        var cur = null;
+        try { cur = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null; } catch(e){}
+        if (ts && ts.length) {
+          var active = ts.filter(function(t){ return t.id === cur; })[0] || ts[0];
+          var sig = active.id + ':' + ts.length;
+          if (h1.getAttribute('data-bm-brand') === sig) return;
+          h1.setAttribute('data-bm-brand', sig);
+          h1.textContent = active.name;
+          if (ts.length > 1) {
+            var car = document.createElement('span');
+            car.textContent = ' \u25be';
+            car.style.cssText = 'font-size:.7em;opacity:.75;';
+            h1.appendChild(car);
+            h1.style.cursor = 'pointer';
+            h1.title = 'Switch company';
+            h1.onclick = function(ev){ ev.stopPropagation(); TenantSwitcher.show(); };
+          }
           return;
         }
-        if (!prev) { try { localStorage.setItem('bm-active-user', em0); } catch(e){} }
-      }
-      capture();
-      var m = readMap(); var cur = liveEmail();
-      var others = Object.keys(m).filter(function(e){ return e !== cur; });
-      // In-app chip next to the version badge
-      var badge = document.getElementById('bmVersionBadge');
-      if (badge && cur && others.length && !document.getElementById('bmAcctChip')) {
-        var chip = document.createElement('span');
-        chip.id = 'bmAcctChip';
-        chip.textContent = '\u21c4 ' + label(others[0]);
-        chip.title = 'Switch account to ' + others[0];
-        chip.style.cssText = 'font-size:10px;font-weight:800;color:#2e7d12;background:#eaf5e2;border:1px solid #cde6b8;border-radius:12px;padding:2px 8px;margin-left:8px;cursor:pointer;letter-spacing:.03em;vertical-align:middle;';
-        chip.onclick = function(){ if (confirm('Switch to ' + others[0] + '? The app reloads with that account.')) switchTo(others[0]); };
-        badge.parentNode.insertBefore(chip, badge.nextSibling);
-      }
-      // Login screen: one-tap sign-in buttons for parked accounts
-      var login = document.getElementById('login-screen');
-      if (login && !cur && Object.keys(m).length && !document.getElementById('bmAcctQuick')) {
-        var wrap = document.createElement('div');
-        wrap.id = 'bmAcctQuick';
-        wrap.style.cssText = 'margin:14px auto 0;text-align:center;';
-        Object.keys(m).forEach(function(em){
-          var b = document.createElement('button');
-          b.textContent = 'Continue as ' + label(em) + ' (' + em + ')';
-          b.style.cssText = 'display:block;margin:8px auto;padding:10px 18px;border-radius:10px;border:1px solid #cde6b8;background:#fff;color:#2e7d12;font-weight:700;font-size:13px;cursor:pointer;';
-          b.onclick = function(){ switchTo(em); };
-          wrap.appendChild(b);
-        });
-        login.appendChild(wrap);
+        fallbackName(h1);
+      }).catch(function(){ fallbackName(h1); });
+    } else { fallbackName(h1); }
+  }
+  function fallbackName(h1){
+    try {
+      var co = localStorage.getItem('bm-co-name');
+      if (co && h1.getAttribute('data-bm-brand') !== 'co:' + co) {
+        h1.setAttribute('data-bm-brand', 'co:' + co);
+        h1.textContent = co;
       }
     } catch(e){}
   }
-  setInterval(render, 1500);
-  render();
+  setInterval(function(){ if (!guard()) brand(); }, 1500);
+  guard();
 })();
 </script>
 <script>(function(){try{var b=document.getElementById('bmVersionBadge');if(b&&typeof BUNDLED_VERSION!=='undefined')b.textContent='v'+BUNDLED_VERSION;}catch(e){}})();</script>

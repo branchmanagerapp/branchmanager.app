@@ -1,5 +1,5 @@
 {
-  "version": 1062,
+  "version": 1063,
   "released": "2026-07-15",
-  "notes": "Fix: manual logout/login to a different account no longer inherits the previous account cached data (auto cache-wipe on user change)."
+  "notes": "Sidebar brand = active company name with tenant dropdown (built-in TenantSwitcher); correct user-change cache guard keyed to bm-session (v1061/1062 watched a key this app never writes)."
 }
