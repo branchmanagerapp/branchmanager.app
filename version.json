@@ -1,5 +1,5 @@
 {
-  "version": 1066,
+  "version": 1067,
   "released": "2026-07-15",
-  "notes": "Tapping the current page in the nav now re-pulls fresh cloud data and repaints (was: re-render of the cached snapshot only). Edit/modal guards respected."
+  "notes": "Fix silent save-loss: shim .catch/.finally onto supabase builder (was throwing sync -> aborted saves)."
 }

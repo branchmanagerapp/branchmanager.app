@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1066; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1067; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -3923,5 +3923,28 @@ window.addEventListener('popstate', function(e) {
 </nav>
 
 <!-- bm-ai-fab removed v498 (user preference: no floating Ask AI button) -->
+<script>
+/* COMPAT SHIM (index-only, no bundle rebuild) — supabase-js v2 query builder is a
+   thenable (.then) but has NO .catch/.finally. Any supabase.from(x).insert(y).catch(fn)
+   in the bundle throws "catch is not a function" SYNCHRONOUSLY, aborting the surrounding
+   save pipeline -> silent data loss (deleted invoice #1003, Jul 15). Verified fix vs the
+   real lib in headless Chrome. Patches the builder prototype once at boot. */
+(function(){var tries=0;var iv=setInterval(function(){tries++;try{
+  var lib=window.supabase;
+  if(!lib||typeof lib.createClient!=='function'){ if(tries>160)clearInterval(iv); return; }
+  var tmp=lib.createClient('https://shim.placeholder.co','placeholder-anon-key');
+  var b=tmp.from('_shim_probe_').select('id'); var p=b;
+  while(p && !Object.prototype.hasOwnProperty.call(p,'then')) p=Object.getPrototypeOf(p);
+  if(p && typeof p.then==='function'){
+    if(typeof p.catch!=='function'){ p.catch=function(onRej){ return this.then(undefined,onRej); }; }
+    if(typeof p.finally!=='function'){ p.finally=function(cb){ return this.then(
+      function(v){ return Promise.resolve(cb&&cb()).then(function(){ return v; }); },
+      function(e){ return Promise.resolve(cb&&cb()).then(function(){ throw e; }); }); }; }
+    try{ console.log('[BM] supabase builder .catch/.finally shim installed'); }catch(_){}
+  }
+  clearInterval(iv);
+}catch(e){ if(tries>160)clearInterval(iv); }},200);})();
+</script>
+
 </body>
 </html>
