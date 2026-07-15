@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1061; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1062; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1414,20 +1414,22 @@ window.bmShowStaleBanner = function(version) {
     if (!em) return null;
     var m = readMap(); m[em] = { session: s, at: Date.now() }; writeMap(m); return em;
   }
-  function clearBmCaches(){
-    var keep = { }; keep[MAP_KEY] = 1; keep['bm-ui-style'] = 1;
+  function clearBmCaches(keepAuth){
+    var keep = { }; keep[MAP_KEY] = 1; keep['bm-ui-style'] = 1; keep['bm-active-user'] = 1;
     var kill = [];
     for (var i = 0; i < localStorage.length; i++){
       var k = localStorage.key(i);
       if (keep[k]) continue;
-      if (k === SB_KEY || /^bm-/.test(k) || /^snt-/.test(k)) kill.push(k);
+      if (k === SB_KEY) { if (!keepAuth) kill.push(k); continue; }
+      if (/^bm-/.test(k) || /^snt-/.test(k)) kill.push(k);
     }
     kill.forEach(function(k){ localStorage.removeItem(k); });
   }
   function switchTo(email){
     capture();
     var m = readMap(); var t = m[email];
-    clearBmCaches();
+    clearBmCaches(false);
+    try { localStorage.setItem('bm-active-user', email); } catch(e){}
     if (t && t.session) { try { localStorage.setItem(SB_KEY, JSON.stringify(t.session)); } catch(e){} }
     // No parked session (or it will turn out expired) → app lands on login for that account; next login is re-captured.
     location.reload();
@@ -1435,6 +1437,19 @@ window.bmShowStaleBanner = function(version) {
   window._bmSwitchAccount = switchTo;
   function render(){
     try {
+      // Boot guard: a MANUAL logout/login to a different account must not inherit the
+      // previous account's cached data (Jul 15: Smart Lawn login booted into cached Tree data).
+      var em0 = liveEmail();
+      if (em0) {
+        var prev = localStorage.getItem('bm-active-user');
+        if (prev && prev !== em0) {
+          localStorage.setItem('bm-active-user', em0);
+          clearBmCaches(true); // keep the new login, wipe the old account's caches
+          location.reload();
+          return;
+        }
+        if (!prev) { try { localStorage.setItem('bm-active-user', em0); } catch(e){} }
+      }
       capture();
       var m = readMap(); var cur = liveEmail();
       var others = Object.keys(m).filter(function(e){ return e !== cur; });

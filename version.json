@@ -1,5 +1,5 @@
 {
-  "version": 1061,
+  "version": 1062,
   "released": "2026-07-15",
-  "notes": "Account switcher: chip next to the version badge toggles between parked logins (Tree <-> Smart Lawn) with a cache-cleared reload; login screen gets one-tap Continue-as buttons."
+  "notes": "Fix: manual logout/login to a different account no longer inherits the previous account cached data (auto cache-wipe on user change)."
 }
