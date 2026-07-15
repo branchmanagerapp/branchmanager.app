@@ -14,15 +14,22 @@
   header .sub { color: #cfe0f2; font-size: 0.88rem; line-height: 1.5; }
   .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.84rem; min-width: 860px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
   th { text-align: left; background: #f0f8e8; color: var(--dgreen); padding: 8px 9px; white-space: nowrap; }
   td { padding: 9px; border-top: 1px solid #eee; vertical-align: top; }
-  .sn { font-family: ui-monospace, Menlo, monospace; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+  .sn { font-family: ui-monospace, Menlo, monospace; font-size: 0.82rem; font-weight: 700; word-break: break-all; }
   .amount { font-weight: 800; color: var(--dgreen); white-space: nowrap; }
   .promo { font-weight: 700; color: var(--navy); white-space: nowrap; }
   .dim { color: var(--muted); }
   .btn { display: block; width: 100%; background: var(--dgreen); color: #fff; font-weight: 700; border: 0; padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 0.95rem; }
   .foot { color: #86868b; font-size: 0.82rem; margin: 20px 0 8px; line-height: 1.6; }
+  @media (max-width: 700px) {
+    table, tbody, tr, td { display: block; width: 100%; }
+    table tr:first-child { display: none; }
+    tr { border-top: 3px solid #6abb1e; padding: 8px 0; }
+    td { border: 0; padding: 3px 2px; }
+    td[data-l]::before { content: attr(data-l) ": "; font-size: 0.72rem; font-weight: 700; color: #4a8a10; text-transform: uppercase; }
+  }
 </style>
 </head>
 <body>
@@ -39,67 +46,67 @@
 <table id="list">
   <tr><th>Customer</th><th>Model</th><th>Serial</th><th>Date</th><th>Sold</th><th>Promo (form name)</th><th>Credit requested</th></tr>
   <tr>
-    <td>Chris Viltaggio — Wallkill NY</td><td>X430</td>
-    <td class="sn">confirming (one of the 4 X430s below)</td>
-    <td>Jun 26 2026</td><td>$2,099 (vs $2,499)</td>
-    <td class="promo">"Prime" — 100% credit</td><td class="amount">$400.00</td>
+    <td data-l="Customer">Chris Viltaggio — Wallkill NY</td><td data-l="Model">X430</td>
+    <td data-l="Serial" class="sn">confirming (one of the 4 X430s below)</td>
+    <td data-l="Date">Jun 26 2026</td><td data-l="Sold">$2,099 (vs $2,499)</td>
+    <td data-l="Promo" class="promo">"Prime" — 100% credit</td><td data-l="Credit" class="amount">$400.00</td>
   </tr>
   <tr>
-    <td>Elizabeth Bynum — Rye NY</td><td>H220 + garage</td>
-    <td class="sn">20HAA2545Y0061</td>
-    <td>paid Jun 15 2026</td><td>$3,355.29 pkg</td>
-    <td class="promo">Father's Day — Free Garage form</td><td class="amount">garage credit</td>
+    <td data-l="Customer">Elizabeth Bynum — Rye NY</td><td data-l="Model">H220 + garage</td>
+    <td data-l="Serial" class="sn">20HAA2545Y0061</td>
+    <td data-l="Date">paid Jun 15 2026</td><td data-l="Sold">$3,355.29 pkg</td>
+    <td data-l="Promo" class="promo">Father's Day — Free Garage form</td><td data-l="Credit" class="amount">garage credit</td>
   </tr>
   <tr>
-    <td>Sara DelRosso — Katonah NY</td><td>X430</td>
-    <td class="sn">confirming (one of the 4 X430s below)</td>
-    <td>Jun 2026 <span class="dim">(invoice date sets promo)</span></td><td>confirming</td>
-    <td class="promo">by date: Father's Day / "Prime" / "4th of July"</td><td class="amount">per invoice</td>
+    <td data-l="Customer">Sara DelRosso — Katonah NY</td><td data-l="Model">X430</td>
+    <td data-l="Serial" class="sn">confirming (one of the 4 X430s below)</td>
+    <td data-l="Date">Jun 2026 <span class="dim">(invoice date sets promo)</span></td><td data-l="Sold">confirming</td>
+    <td data-l="Promo" class="promo">by date: Father's Day / "Prime" / "4th of July"</td><td data-l="Credit" class="amount">per invoice</td>
   </tr>
   <tr>
-    <td>Retail buyer — NJ (Marketplace)</td><td>X430</td>
-    <td class="sn">confirming (one of the 4 X430s below)</td>
-    <td>Jun 2026 <span class="dim">(invoice date sets promo)</span></td><td>confirming</td>
-    <td class="promo">by date: Father's Day / "Prime" / "4th of July"</td><td class="amount">per invoice</td>
+    <td data-l="Customer">Retail buyer — NJ (Marketplace)</td><td data-l="Model">X430</td>
+    <td data-l="Serial" class="sn">confirming (one of the 4 X430s below)</td>
+    <td data-l="Date">Jun 2026 <span class="dim">(invoice date sets promo)</span></td><td data-l="Sold">confirming</td>
+    <td data-l="Promo" class="promo">by date: Father's Day / "Prime" / "4th of July"</td><td data-l="Credit" class="amount">per invoice</td>
   </tr>
   <tr>
-    <td>Lucente Landscaping (Dennis Lucente) — New Rochelle NY</td><td>X450</td>
-    <td class="sn">22FBD2611Y0029</td>
-    <td>Jul 3 2026 · INV-20260704-01</td><td>$2,539 (vs $2,999)</td>
-    <td class="promo">"4th of July" — 50% credit</td><td class="amount">$230.00</td>
+    <td data-l="Customer">Lucente Landscaping (Dennis Lucente) — New Rochelle NY</td><td data-l="Model">X450</td>
+    <td data-l="Serial" class="sn">22FBD2611Y0029</td>
+    <td data-l="Date">sold Prime Day (Jun 23–26) · invoiced late (INV-20260704-01, Jul 4)</td><td data-l="Sold">$2,539 (vs $2,999)</td>
+    <td data-l="Promo" class="promo">"Prime" — 100% credit</td><td data-l="Credit" class="amount">$460.00</td>
   </tr>
   <tr>
-    <td>Lucente Landscaping (Dennis Lucente) — New Rochelle NY</td><td>CM240M1</td>
-    <td class="sn">22HBE2551Y0125</td>
-    <td>Jul 3 2026 · INV-20260704-01</td><td>$6,299 (vs $6,999)</td>
-    <td class="promo">"4th of July" — 50% credit</td><td class="amount">$350.00</td>
+    <td data-l="Customer">Lucente Landscaping (Dennis Lucente) — New Rochelle NY</td><td data-l="Model">CM240M1</td>
+    <td data-l="Serial" class="sn">22HBE2551Y0125</td>
+    <td data-l="Date">sold Prime Day (Jun 23–26) · invoiced late (INV-20260704-01, Jul 4)</td><td data-l="Sold">$6,299 (vs $6,999)</td>
+    <td data-l="Promo" class="promo">"Prime" — 100% credit</td><td data-l="Credit" class="amount">$700.00</td>
   </tr>
   <tr>
-    <td>Lucente Landscaping (Dennis Lucente) — 2nd unit on order</td><td>X450</td>
-    <td class="sn">serial TBD (recording at delivery)</td>
-    <td>invoiced Jul 9 2026</td><td>$2,539 (vs $2,999)</td>
-    <td class="promo dim">no promo (invoiced after Jul 8 window)</td><td class="dim">—</td>
+    <td data-l="Customer">Lucente Landscaping (Dennis Lucente) — 2nd unit, same order</td><td data-l="Model">X450</td>
+    <td data-l="Serial" class="sn">serial TBD (recording at delivery)</td>
+    <td data-l="Date">sold Prime Day (Jun 23–26) · invoiced late (Jul 9)</td><td data-l="Sold">$2,539 (vs $2,999)</td>
+    <td data-l="Promo" class="promo">"Prime" — 100% credit</td><td data-l="Credit" class="amount">$460.00</td>
   </tr>
   <tr>
-    <td class="dim">X430 serial pool (3 sales above + 1 demo)</td><td>X430 ×4</td>
-    <td class="sn">22EBD2549Y1911 · 22EBD2549Y1944 · 22EBD2549Y1959 · 22EBD2549Y1985</td>
-    <td class="dim">recv'd Mar 24 2026</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td>
+    <td data-l="Customer" class="dim">X430 serial pool (3 sales above + 1 demo)</td><td data-l="Model">X430 ×4</td>
+    <td data-l="Serial" class="sn">22EBD2549Y1911<br>22EBD2549Y1944<br>22EBD2549Y1959<br>22EBD2549Y1985</td>
+    <td data-l="Date" class="dim">recv'd Mar 24 2026</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
   </tr>
   <tr>
-    <td class="dim">In stock</td><td>i210 AWD</td><td class="sn">2SEEA2544K0396</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td>
+    <td data-l="Customer" class="dim">In stock</td><td data-l="Model">i210 AWD</td><td data-l="Serial" class="sn">2SEEA2544K0396</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
   </tr>
   <tr>
-    <td class="dim">In stock — on July promo (Jul 9–29, $100 dealer credit when sold)</td><td>i215 LiDAR</td><td class="sn">21DDB2545Y0542</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td>
+    <td data-l="Customer" class="dim">In stock — on July promo (Jul 9–29, $100 dealer credit when sold)</td><td data-l="Model">i215 LiDAR</td><td data-l="Serial" class="sn">21DDB2545Y0542</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
   </tr>
   <tr>
-    <td class="dim">Dealer demo / promo unit</td><td>CM120M1</td><td class="sn">22GBE2551Y0221</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td>
+    <td data-l="Customer" class="dim">Dealer demo / promo unit</td><td data-l="Model">CM120M1</td><td data-l="Serial" class="sn">22GBE2551Y0221</td><td data-l="Date" class="dim">—</td><td data-l="Sold" class="dim">—</td><td data-l="Promo" class="dim">—</td><td data-l="Credit" class="dim">—</td>
   </tr>
 </table>
 <button class="btn" onclick="var r=[...document.querySelectorAll('#list tr')].map(tr=>[...tr.children].map(td=>td.innerText.replace(/\n/g,' ')).join(' | ')).join('\n');(navigator.clipboard?navigator.clipboard.writeText(r):Promise.reject()).then(()=>{this.textContent='✓ Copied'});setTimeout(()=>{this.textContent='Copy entire list'},1500)">Copy entire list</button>
 </div>
 
 <div class="foot">
-  Claims total: <b>$980.00</b> + Father's Day garage credit — please apply as account credit against inv. #108833 ($5,000 paid Jul 10 2026 → balance $11,303.55).
+  Claims total: <b>$2,020.00</b> + Father's Day garage credit — please apply as account credit against inv. #108833 ($5,000 paid Jul 10 2026 → balance $11,303.55).
   Also requested: copy of the X450 shipment invoice + current statement · NavimowFleet/Naviport provisioning for our dealer account.<br>
   Smart Lawn NY · smartlawnny.com · Authorized Segway Navimow dealer · contacts on file: Justin Neiles · tamers@cadcodist.com · ar@cadcodist.com
 </div>
