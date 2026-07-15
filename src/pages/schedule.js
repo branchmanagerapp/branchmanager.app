@@ -445,8 +445,9 @@ var SchedulePage = {
       + '</div>'
       // v709: View pills moved to a 2nd row directly under the toggles.
       // Order: Day · Week · Month · List · Map (primary calendar views first).
-      + '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">'
-      +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">'
+      +   ((self.view === 'week' || self.view === 'month') ? self._renderStatStrip(allJobs) : '<span></span>')
+      +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;flex-shrink:0;">'
       +     _viewPill('day', 'Day')
       +     _viewPill('week', 'Week')
       +     _viewPill('month', 'Month')
@@ -477,7 +478,6 @@ var SchedulePage = {
       html += self._renderMap();
     } else if (self.view === 'week' || self.view === 'month') {
       var showRail = self._dockedMapEnabled() && window.innerWidth >= 900;
-      html += self._renderStatStrip(allJobs);
       var calBody = (self.view === 'week') ? self._renderWeek(showRail) : self._renderMonth(showRail);
       if (showRail) {
         html += '<div style="display:flex;gap:12px;align-items:flex-start;">'
@@ -1655,7 +1655,7 @@ var SchedulePage = {
         + '</div>';
     }
 
-    return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;">'
+    return '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">'
       + '<span style="font-size:11px;color:var(--text-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">' + rangeLabel + '</span>'
       + pill('Jobs', rangeJobs.length)
       + pill('Revenue', UI.moneyInt(revenue), 'var(--green-dark)')

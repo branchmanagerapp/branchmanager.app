@@ -1,5 +1,5 @@
 {
-  "version": 1057,
+  "version": 1058,
   "released": "2026-07-14",
-  "notes": "Auto-pull fresh data on app reopen: focus/visibility/pageshow/online now trigger an immediate cloud re-pull (was throttled 2 min + missing the PWA-reopen event), so cloud corrections appear without a manual refresh."
+  "notes": "Schedule header tightened: view pills share one row with the This-Month stat strip (stats left, pills right), reclaiming a row of vertical space; wraps cleanly on phones."
 }
