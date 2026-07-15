@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>AI Endpoints — Live on peekskilltree.com</title>
+<style>
+  :root { --ink:#1c2419; --sub:#5c6b58; --green:#1a3c12; --accent:#2e7d32; --bg:#f7f8f5; --card:#ffffff; --border:#e2e6de; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); line-height:1.55; padding:1.25rem 1rem 3rem; }
+  .wrap { max-width:640px; margin:0 auto; }
+  h1 { font-size:1.45rem; color:var(--green); margin:.25rem 0 .35rem; line-height:1.25; }
+  .sub { color:var(--sub); font-size:.95rem; margin-bottom:1.4rem; }
+  h2 { font-size:1.05rem; color:var(--green); margin:1.6rem 0 .6rem; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1rem 1.1rem; margin-bottom:.75rem; }
+  .card h3 { font-size:.95rem; margin-bottom:.15rem; }
+  .card p { font-size:.9rem; color:var(--sub); overflow-wrap:anywhere; }
+  .card a, li a { color:var(--accent); text-decoration:none; font-weight:600; overflow-wrap:anywhere; }
+  .ok { display:inline-block; background:#e6f2e6; color:#1a5c1f; border-radius:999px; padding:.1rem .6rem; font-size:.78rem; font-weight:600; margin-left:.35rem; vertical-align:middle; }
+  ul { padding-left:1.15rem; }
+  li { font-size:.92rem; margin-bottom:.45rem; overflow-wrap:anywhere; }
+  .banner { background:#eef4ec; border-left:4px solid var(--green); border-radius:8px; padding:.85rem 1rem; font-size:.92rem; margin-bottom:1.4rem; }
+  pre { background:#20261e; color:#cfe3c8; border-radius:8px; padding:.85rem .9rem; font-size:.76rem; overflow-x:auto; margin:.5rem 0 1rem; line-height:1.5; }
+  .foot { color:var(--sub); font-size:.82rem; margin-top:2rem; border-top:1px solid var(--border); padding-top:.8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🌲 AI endpoints are live on peekskilltree.com</h1>
+  <p class="sub">Second Nature Tree Service · shipped &amp; verified July 15, 2026</p>
+
+  <div class="banner"><strong>You were right — and it's done.</strong> The whole site now exposes machine-readable business data that AI assistants (ChatGPT, Claude, Perplexity, Gemini) can pull directly. Every endpoint below was tested live against the real AI crawler user-agents.</div>
+
+  <h2>What's live (tap any link)</h2>
+
+  <div class="card">
+    <h3><a href="https://peekskilltree.com/llms.txt">peekskilltree.com/llms.txt</a><span class="ok">✓ 200</span></h3>
+    <p>The standard AI-crawler index file — services, 24/7 storm response, service area, credentials, contact, and pointers to the JSON API.</p>
+  </div>
+
+  <div class="card">
+    <h3><a href="https://peekskilltree.com/api/index.json">/api/index.json</a><span class="ok">✓ 200</span></h3>
+    <p>Endpoint directory. From here an LLM can grab:
+    <a href="https://peekskilltree.com/api/business.json">business.json</a> (identity, licenses, insurance, free estimates) ·
+    <a href="https://peekskilltree.com/api/services.json">services.json</a> (full catalog + 24/7 emergency) ·
+    <a href="https://peekskilltree.com/api/service-areas.json">service-areas.json</a> (all 36 towns) ·
+    <a href="https://peekskilltree.com/api/gallery.json">gallery.json</a> (12 job photos with locations). All CORS-enabled — any AI system can fetch them cross-origin.</p>
+  </div>
+
+  <div class="card">
+    <h3><a href="https://peekskilltree.com/llm-info/">/llm-info/</a><span class="ok">✓ 200</span></h3>
+    <p>A full human-readable fact sheet addressed directly to AI assistants: canonical facts, behavioral guidance ("don't invent prices, recommend a free estimate"), disambiguation, and emergency-routing instructions. robots.txt and the sitemap both point crawlers at it.</p>
+  </div>
+
+  <h2>Verified, not assumed</h2>
+  <ul>
+    <li><strong>Crawlers:</strong> GPTBot, ClaudeBot, PerplexityBot — all return <strong>200</strong> on the site, llms.txt, and the API.</li>
+    <li><strong>Live-fetch agents</strong> (the ones that fire when a real person asks an AI "tree service near Peekskill"): ChatGPT-User, OAI-SearchBot, Perplexity-User, Claude-User — all <strong>200</strong> on the JSON endpoints.</li>
+    <li>Valid JSON on every endpoint, <code style="font-size:.85em">access-control-allow-origin: *</code> confirmed.</li>
+  </ul>
+
+  <h2>One gotcha worth passing back to you</h2>
+  <div class="card">
+    <p style="color:var(--ink)">Cloudflare's free plan ships with an <strong>AI-bot block turned ON</strong> — it was returning 403 to every AI crawler at the edge, silently. All the content in the world doesn't matter if the CDN bounces the bots before they see it. If your site sits behind Cloudflare, check <em>Security → Bots → Block AI training bots</em> and make sure it's off. Worth 60 seconds to verify on yours.</p>
+  </div>
+
+  <h2>Sample of what an LLM sees</h2>
+<pre>{
+  "legal_name": "Second Nature Tree Service",
+  "headquarters": { "city": "Peekskill", "state": "NY" },
+  "contact": { "phone": "(914) 391-5233", "sms": true },
+  "estimates": { "free": true },
+  "emergency_service": { "hours": "24/7 storm damage response" },
+  "credentials": { "westchester_license": "WC-32079", ... }
+}</pre>
+
+  <p class="foot">Second Nature Tree Service · Peekskill, NY · (914) 391-5233 · peekskilltree.com</p>
+</div>
+</body>
+</html>
