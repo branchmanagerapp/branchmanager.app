@@ -2295,6 +2295,8 @@ var QuotesPage = {
     document.getElementById('pageContent').innerHTML = html;
     document.getElementById('pageAction').style.display = 'none';
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    // v1068: surface any staged email awaiting review right on this quote
+    if (typeof Drafts !== 'undefined' && Drafts.renderPendingBanner) Drafts.renderPendingBanner('quote', id);
     return;
   },
 

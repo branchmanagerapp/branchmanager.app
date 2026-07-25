@@ -599,8 +599,10 @@ var MarketingPage = (function() {
     });
   }
 
-  function approveDraft(id) {
-    var d = (_draftsCache || []).find(function(x){ return x.id === id; });
+  function approveDraft(id, fallbackDraft) {
+    // v1068: fallbackDraft lets record-page banners (invoices/quotes detail)
+    // approve without the Marketing page's _draftsCache being loaded.
+    var d = (_draftsCache || []).find(function(x){ return x.id === id; }) || fallbackDraft;
     if (!d) { UI.toast('Draft not found', 'error'); return; }
     var sb = SupabaseDB.client;
     var tid = DB.getTenantId();

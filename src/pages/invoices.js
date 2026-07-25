@@ -808,13 +808,28 @@ var InvoicesPage = {
       + '</table>'
       + '</div>';
 
-    if (typeof Email !== 'undefined') {
+    // v1068: Jobber-style flow — show exactly what the customer will get,
+    // with editable To/Subject; nothing sends until the second Send tap.
+    if (typeof Drafts !== 'undefined' && Drafts.previewEmail && typeof Email !== 'undefined') {
+      Drafts.previewEmail({
+        to: email, subject: subject, html: htmlBody, sendLabel: '📤 Send Invoice',
+        onSend: function(to2, subj2) {
+          if (to2 !== email) DB.invoices.update(id, { clientEmail: to2 });
+          Email.send(to2, subj2, body, { htmlBody: htmlBody }).then(function(result) {
+            // Email.send returns {success:true,...} on success — Email itself toasts the user
+            if (result && result.success) {
+              DB.invoices.update(id, { status: 'sent', sentAt: new Date().toISOString() });
+            }
+            // Email.send already toasts on failure (with hint + mailto fallback) — don't double-toast
+            InvoicesPage.showDetail(id);
+          });
+        }
+      });
+    } else if (typeof Email !== 'undefined') {
       Email.send(email, subject, body, { htmlBody: htmlBody }).then(function(result) {
-        // Email.send returns {success:true,...} on success — Email itself toasts the user
         if (result && result.success) {
           DB.invoices.update(id, { status: 'sent', sentAt: new Date().toISOString() });
         }
-        // Email.send already toasts on failure (with hint + mailto fallback) — don't double-toast
         InvoicesPage.showDetail(id);
       });
     } else {
@@ -1127,6 +1142,8 @@ var InvoicesPage = {
     document.getElementById('pageContent').innerHTML = html;
     document.getElementById('pageAction').style.display = 'none';
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    // v1068: surface any staged email awaiting review right on this invoice
+    if (typeof Drafts !== 'undefined' && Drafts.renderPendingBanner) Drafts.renderPendingBanner('invoice', id);
     return;
   },
 

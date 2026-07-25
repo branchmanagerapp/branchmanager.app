@@ -1,5 +1,5 @@
 {
-  "version": 1067,
-  "released": "2026-07-15",
-  "notes": "Fix silent save-loss: shim .catch/.finally onto supabase builder (was throwing sync -> aborted saves)."
+  "version": 1068,
+  "released": "2026-07-25",
+  "notes": "v1068: review-before-send email preview (Jobber-style) + pending-draft banner on invoice/quote detail"
 }

@@ -107,9 +107,134 @@
     });
   }
 
+  // ── v1068: Jobber-style preview-before-send modal ─────────────────────────
+  // Shows exactly what the customer will receive (rendered HTML in a sandboxed
+  // iframe) with editable To + Subject; nothing sends until the final Send tap.
+  // Used by the record-page draft banner below AND InvoicesPage._sendInvoiceEmail.
+  var _previewCtx = null;
+
+  function previewEmail(opts) {
+    // opts: { to, subject, html, sendLabel?, onSend(to, subject) }
+    _previewCtx = opts || {};
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(s){ return String(s||'').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+    var html = ''
+      + '<div style="display:flex;flex-direction:column;gap:10px;">'
+      +   '<div>'
+      +     '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">To</label>'
+      +     '<input id="drafts-prev-to" type="email" value="' + esc(opts.to || '') + '" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;">'
+      +   '</div>'
+      +   '<div>'
+      +     '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Subject</label>'
+      +     '<input id="drafts-prev-subject" type="text" value="' + esc(opts.subject || '') + '" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;">'
+      +   '</div>'
+      +   '<div>'
+      +     '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">What the customer sees</div>'
+      +     '<iframe id="drafts-prev-frame" sandbox="" style="width:100%;height:52vh;border:1px solid var(--border);border-radius:10px;background:#fff;box-sizing:border-box;"></iframe>'
+      +   '</div>'
+      +   '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+      +     '<button type="button" class="btn btn-primary" onclick="Drafts._previewSend()" style="flex:1;min-width:150px;padding:13px;font-size:15px;font-weight:800;background:#2e7d32;color:#fff;border:none;border-radius:10px;cursor:pointer;">' + esc(opts.sendLabel || '📤 Send') + '</button>'
+      +     '<button type="button" class="btn btn-outline" onclick="UI.closeModal()" style="flex:0 0 auto;padding:13px 18px;font-size:14px;border-radius:10px;cursor:pointer;">Cancel</button>'
+      +   '</div>'
+      + '</div>';
+    UI.showModal('Review before sending', html, { keepModal: true });
+    // srcdoc set via JS (not attribute) so the email HTML needs no escaping
+    setTimeout(function() {
+      var f = document.getElementById('drafts-prev-frame');
+      if (f) f.srcdoc = _previewCtx.html || '<p style="font-family:sans-serif;color:#666;">(no preview available)</p>';
+    }, 60);
+  }
+
+  function _previewSend() {
+    var ctx = _previewCtx;
+    if (!ctx || typeof ctx.onSend !== 'function') { UI.closeModal(); return; }
+    var to = (document.getElementById('drafts-prev-to') || {}).value || ctx.to;
+    var subj = (document.getElementById('drafts-prev-subject') || {}).value || ctx.subject;
+    if (!to || to.indexOf('@') === -1) { UI.toast('Enter a valid email address', 'error'); return; }
+    UI.closeModal();
+    ctx.onSend(to.trim(), subj);
+    _previewCtx = null;
+  }
+
+  // ── v1068: pending-draft banner on the record it belongs to ───────────────
+  // Doug (Jul 25 2026): staged emails must be reviewable from the invoice/quote
+  // itself, not hidden under Marketing. Call after a detail page renders; it
+  // prepends a banner into #pageContent only when a pending draft points at
+  // this record. Approve/Reject reuse MarketingPage's functions (single queue).
+  function renderPendingBanner(recordType, recordId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tid = _tenantId();
+    if (!sb || !tid || !recordId) return;
+    sb.from('marketing_drafts').select('*')
+      .eq('tenant_id', tid).eq('status', 'pending')
+      .eq('source_record_type', recordType).eq('source_record_id', recordId)
+      .order('created_at', { ascending: false })
+      .then(function(r) {
+        var drafts = (r && r.data) || [];
+        var host = document.getElementById('pageContent');
+        var old = document.getElementById('bm-record-draft-banner');
+        if (old) old.remove();
+        if (!drafts.length || !host) return;
+        _bannerCache = {};
+        var esc = UI.esc;
+        var box = document.createElement('div');
+        box.id = 'bm-record-draft-banner';
+        box.innerHTML = drafts.map(function(d) {
+          _bannerCache[d.id] = d;
+          return '<div style="background:#fff8e1;border:1px solid #ffcc80;border-radius:12px;padding:14px 16px;margin-bottom:14px;">'
+            + '<div style="font-size:12px;font-weight:800;color:#7e2d10;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">📧 Email awaiting your review</div>'
+            + '<div style="font-size:14px;font-weight:700;margin-bottom:2px;">' + esc(d.subject || '(no subject)') + '</div>'
+            + '<div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">To: ' + esc(d.to_email || '—') + '</div>'
+            + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+            +   '<button type="button" onclick="Drafts._bannerReview(\'' + d.id + '\')" style="flex:1;min-width:140px;background:#2e7d32;color:#fff;border:none;border-radius:9px;padding:11px 14px;font-size:14px;font-weight:800;cursor:pointer;">👁 Review &amp; Send</button>'
+            +   '<button type="button" onclick="Drafts._bannerReject(\'' + d.id + '\')" style="flex:0 0 auto;background:none;border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-size:13px;cursor:pointer;color:var(--text);">Reject</button>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+        host.insertBefore(box, host.firstChild);
+        box._ctx = { recordType: recordType, recordId: recordId };
+      });
+  }
+
+  var _bannerCache = {};
+
+  function _bannerReview(draftId) {
+    var d = _bannerCache[draftId];
+    if (!d) { UI.toast('Draft not found — reload the page', 'error'); return; }
+    previewEmail({
+      to: d.to_email,
+      subject: d.subject,
+      html: d.body_html || ('<pre style="font-family:sans-serif;white-space:pre-wrap;padding:16px;">' + UI.esc(d.body_text || '') + '</pre>'),
+      sendLabel: '📤 Approve & Send',
+      onSend: function(to, subj) {
+        var patched = Object.assign({}, d, { to_email: to, subject: subj });
+        if (typeof MarketingPage !== 'undefined' && MarketingPage.approveDraft) {
+          MarketingPage.approveDraft(d.id, patched);
+          var banner = document.getElementById('bm-record-draft-banner');
+          var ctx = banner && banner._ctx;
+          setTimeout(function(){ if (ctx) renderPendingBanner(ctx.recordType, ctx.recordId); else if (banner) banner.remove(); }, 1500);
+        } else {
+          UI.toast('Approve unavailable — use Marketing > Drafts to Review', 'error');
+        }
+      }
+    });
+  }
+
+  function _bannerReject(draftId) {
+    if (typeof MarketingPage === 'undefined' || !MarketingPage.rejectDraft) return;
+    MarketingPage.rejectDraft(draftId);
+    var banner = document.getElementById('bm-record-draft-banner');
+    var ctx = banner && banner._ctx;
+    setTimeout(function(){ if (ctx) renderPendingBanner(ctx.recordType, ctx.recordId); else if (banner) banner.remove(); }, 800);
+  }
+
   window.Drafts = {
     queue: queue,
     queueWithToast: queueWithToast,
-    queueMany: queueMany
+    queueMany: queueMany,
+    previewEmail: previewEmail,
+    renderPendingBanner: renderPendingBanner,
+    _previewSend: _previewSend,
+    _bannerReview: _bannerReview,
+    _bannerReject: _bannerReject
   };
 })();
