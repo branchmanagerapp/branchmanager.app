@@ -619,7 +619,9 @@ var MarketingPage = (function() {
           to: d.to_email,
           subject: d.subject,
           html: d.body_html,
-          text: d.body_text
+          text: d.body_text,
+          // v1069: drafts can carry attachments (e.g. the W-9 PDF) in metadata
+          attachments: (d.metadata && d.metadata.attachments) || undefined
         })
       }).then(function(r){
         if (r.ok) {

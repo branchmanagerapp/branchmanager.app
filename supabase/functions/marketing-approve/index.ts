@@ -52,7 +52,10 @@ async function sendOne(draft: any, fromEmail: string): Promise<{ ok: boolean; er
       to: [draft.to_email],
       subject: draft.subject || '(no subject)',
       text: draft.body_text || '',
-      html: draft.body_html || undefined
+      html: draft.body_html || undefined,
+      // v1069: drafts can carry attachments (e.g. the W-9 PDF) in metadata
+      attachments: (draft.metadata && Array.isArray(draft.metadata.attachments) && draft.metadata.attachments.length)
+        ? draft.metadata.attachments.slice(0, 5) : undefined
     })
   });
   const txt = await r.text();

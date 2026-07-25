@@ -105,11 +105,14 @@ serve(async (req: Request) => {
     'apikey': SERVICE_KEY,
     'Authorization': 'Bearer ' + SERVICE_KEY
   };
-  const url = `${SUPABASE_URL}/rest/v1/quotes?id=eq.${encodeURIComponent(id)}&status=neq.draft&select=*&limit=1`;
+  // No status filter: a valid-token link must resolve even while the quote is
+  // still 'draft' (the Jul 6 Oswald + Jul 15 Barbara Jones "link not found"
+  // failures). Security is the constant-time safeEq(approval_token) below.
+  const url = `${SUPABASE_URL}/rest/v1/quotes?id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
   const r = await fetch(url, { headers });
   if (!r.ok) return j(500, { ok: false, error: 'lookup failed', status: r.status });
   const rows = await r.json();
-  if (!rows || !rows.length) return j(404, { ok: false, error: 'Quote not found or draft' });
+  if (!rows || !rows.length) return j(404, { ok: false, error: 'Quote not found' });
 
   const row = rows[0];
   const stored = String(row.approval_token || '');

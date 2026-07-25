@@ -66,7 +66,18 @@ serve(async (req) => {
   }
 
   try {
-    const { to, subject, html, text, from, replyTo } = await req.json()
+    const { to, subject, html, text, from, replyTo, attachments } = await req.json()
+
+    // v1069: optional attachments, forwarded to Resend. Each entry is either
+    // {filename, path} (Resend fetches the URL — used for the hosted W-9) or
+    // {filename, content} (base64). Capped at 5 to bound payload size.
+    let safeAttachments: { filename: string; path?: string; content?: string }[] | undefined
+    if (Array.isArray(attachments) && attachments.length) {
+      safeAttachments = attachments.slice(0, 5)
+        .filter((a: any) => a && typeof a.filename === 'string' && (typeof a.path === 'string' || typeof a.content === 'string'))
+        .map((a: any) => ({ filename: a.filename, path: a.path, content: a.content }))
+      if (!safeAttachments.length) safeAttachments = undefined
+    }
 
     if (!to || !subject || (!html && !text)) {
       return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, html or text' }), {
@@ -99,6 +110,7 @@ serve(async (req) => {
         text: text || undefined,
         html: html || undefined,
         reply_to: replyToAddr,
+        attachments: safeAttachments,
       }),
     })
 

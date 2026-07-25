@@ -1,5 +1,5 @@
 {
-  "version": 1068,
+  "version": 1069,
   "released": "2026-07-25",
-  "notes": "v1068: review-before-send email preview (Jobber-style) + pending-draft banner on invoice/quote detail"
+  "notes": "v1069: email attachments through the draft-approve pipeline (W-9 etc.) + v1068 review-before-send"
 }
