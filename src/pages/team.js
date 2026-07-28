@@ -157,6 +157,7 @@ var TeamPage = {
       + UI.formField('Role', 'select', 'tm-role', m.role || 'crew_member', { options: [
           { value: 'owner', label: 'Owner — Full access' },
           { value: 'crew_lead', label: 'Crew Lead — Jobs, schedule, clients' },
+          { value: 'sales', label: 'Sales — Leads, quotes, clients (no books/payroll)' },
           { value: 'crew_member', label: 'Crew Member — Clock in/out, today\'s jobs' }
         ]})
 

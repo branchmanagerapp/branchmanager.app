@@ -1,5 +1,1 @@
-{
-  "version": 1069,
-  "released": "2026-07-25",
-  "notes": "v1069: email attachments through the draft-approve pipeline (W-9 etc.) + v1068 review-before-send"
-}
+{"version": 1070, "released": "2026-07-28", "notes": "v1070: Sales role (leads/quotes/clients only \u2014 no books, payroll, settings) added to Team roles + page gating"}

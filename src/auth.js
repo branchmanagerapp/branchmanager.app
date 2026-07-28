@@ -506,6 +506,9 @@ var Auth = {
     if (Auth.role === 'crew_member') {
       return ['crewview','dispatch','schedule','timesheet','employeecenter','budget','notifications'];
     }
+    if (Auth.role === 'sales') {
+      return ['dashboard','pipeline','schedule','clients','requests','quotes','jobs','clientmap','messaging','notifications','search'];
+    }
     if (Auth.role === 'crew_lead') {
       return ['dashboard','dispatch','schedule','clients','jobs','quotes','timesheet','messaging','employeecenter','budget','notifications','expenses'];
     }

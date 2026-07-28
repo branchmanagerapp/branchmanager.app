@@ -82,7 +82,11 @@ var Email = {
     // explicit `from`, derive FROM/replyTo from CompanyInfo so emails go out
     // as the tenant's own brand. Solo tier and missing-config tenants fall
     // through to the server-side RESEND_PLATFORM_FROM default.
-    if (!payload.from && typeof Subscription !== 'undefined' && Subscription.canUseFeature && Subscription.canUseFeature('email_per_tenant')) {
+    // v1070: the subscription gate made sends silently fall back to the
+    // platform FROM (a Smart Lawn address) whenever the flag was off —
+    // wrong brand on customer email. Always send as the tenant's own
+    // CompanyInfo identity when one is configured.
+    if (!payload.from) {
       try {
         var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || '';
         var coEmail = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('email')) || '';
