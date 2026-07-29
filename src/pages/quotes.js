@@ -391,6 +391,8 @@ var QuotesPage = {
     if (email && typeof Email !== 'undefined') {
       var firstName = (q.clientName || '').split(' ')[0] || 'there';
       var _co2 = QuotesPage._co();
+      var _lbb2 = (typeof CompanyInfo !== 'undefined' && CompanyInfo.lineBrandFor) ? CompanyInfo.lineBrandFor(q) : null;
+      if (_lbb2 && _lbb2.companyName) _co2 = Object.assign({}, _co2, { name: _lbb2.companyName });
       var _ft = QuotesPage._term(false);
       var subject = 'Following up on your ' + _ft + ' from ' + _co2.name;
       var body = 'Hi ' + firstName + ',\n\n'
@@ -2520,6 +2522,9 @@ var QuotesPage = {
     var q = DB.quotes.getById(id);
     if (!q) return '';
     var _co       = QuotesPage._co();
+    // v1073: line-of-business brand override (smartlawn → Smart Lawn NY)
+    var _lbb = (typeof CompanyInfo !== 'undefined' && CompanyInfo.lineBrandFor) ? CompanyInfo.lineBrandFor(q) : null;
+    if (_lbb && _lbb.companyName) { _co = Object.assign({}, _co, { name: _lbb.companyName }); if (_lbb.websiteUrl) _co.website = _lbb.websiteUrl; }
     var _term     = QuotesPage._term(true);    // "Quote" or "Estimate"
     var _terml    = QuotesPage._term(false);   // lowercase
     var _showQty  = QuotesPage._showQty();

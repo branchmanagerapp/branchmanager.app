@@ -237,6 +237,16 @@ var CompanyGeo = {
  * app keeps its existing BM_CONFIG defaults (zero regression). Only writes
  * keys that are present and non-empty (never blanks a fallback). Idempotent.
  */
+// v1073: per-line-of-business brand override (smartlawn → "Smart Lawn NY").
+// Returns {companyName, website, websiteUrl} or null for the given record.
+CompanyInfo.lineBrandFor = function(rec) {
+  try {
+    var lbs = window._bmLineBrands || JSON.parse(localStorage.getItem('bm-line-brands') || 'null');
+    var lob = rec && (rec.lineOfBusiness || rec.line_of_business);
+    return (lbs && lob && lbs[lob]) || null;
+  } catch (e) { return null; }
+};
+
 CompanyInfo.loadTenantFromSession = (function() {
   var done = false;
   function ready() {
@@ -273,6 +283,7 @@ CompanyInfo.loadTenantFromSession = (function() {
             return delay(400).then(function(){ return run(triesLeft - 1); });
           }
           var c = t.config || {};
+          try { window._bmLineBrands = c.line_brands || null; localStorage.setItem('bm-line-brands', JSON.stringify(c.line_brands || null)); } catch(e) {}
           function L(lsKey, val) { if (val) { try { localStorage.setItem(lsKey, String(val)); } catch(e) {} } }
           function B(bmKey, val) { if (val && typeof BM_CONFIG !== 'undefined') BM_CONFIG[bmKey] = val; }
           var nm = c.company_name || t.name;

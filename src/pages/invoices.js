@@ -685,17 +685,21 @@ var InvoicesPage = {
   _sendInvoiceEmail: function(id) {
     var inv = DB.invoices.getById(id);
     if (!inv) return;
+    // v1073: line-of-business brand (e.g. mower invoices send as Smart Lawn NY)
+    var _lbb = (typeof CompanyInfo !== 'undefined' && CompanyInfo.lineBrandFor) ? CompanyInfo.lineBrandFor(inv) : null;
+    var _coB = Object.assign({}, InvoicesPage._co());
+    if (_lbb && _lbb.companyName) { _coB.name = _lbb.companyName; if (_lbb.websiteUrl) _coB.website = _lbb.websiteUrl; }
     var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
     var email = inv.clientEmail || (client && client.email) || '';
     if (!email) { UI.toast('No email address for this client', 'error'); return; }
     var firstName = (inv.clientName || '').split(' ')[0] || 'there';
     var payLink = InvoicesPage._getPayLink(id);
     var amtDue = UI.money(inv.balance || inv.total);
-    var subject = 'Invoice #' + inv.invoiceNumber + ' from ' + InvoicesPage._co().name + ' — ' + amtDue;
+    var subject = 'Invoice #' + inv.invoiceNumber + ' from ' + _coB.name + ' — ' + amtDue;
 
     // Plain text fallback
     var body = 'Hi ' + firstName + ',\n\n'
-      + 'Thank you for choosing ' + InvoicesPage._co().name + '! Your invoice is ready:\n\n'
+      + 'Thank you for choosing ' + _coB.name + '! Your invoice is ready:\n\n'
       + '  Invoice #' + inv.invoiceNumber + '\n'
       + (inv.subject ? '  Job: ' + inv.subject + '\n' : '')
       + '  Amount Due: ' + amtDue + '\n'
@@ -703,11 +707,11 @@ var InvoicesPage = {
       + 'Pay online by card (' + UI.money((typeof Stripe!=='undefined'&&Stripe.cardTotal)?Stripe.cardTotal(inv.balance||inv.total):(inv.balance||inv.total)) + ', includes card processing fee):\n' + payLink + '\n'
       + 'Prefer no fee? Pay by check, cash, or e-check/ACH — just reply or call us.\n\n'
       + 'Want to see all your invoices, quotes & job history any time? Get a portal link: https://branchmanager.app/portal.html\n\n'
-      + 'Questions? Reply to this email or call/text ' + InvoicesPage._co().phone + '.\n\n'
-      + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + InvoicesPage._co().name + '\n' + InvoicesPage._co().phone + '\n' + InvoicesPage._co().website;
+      + 'Questions? Reply to this email or call/text ' + _coB.phone + '.\n\n'
+      + 'Thanks,\n' + CompanyInfo.get('ownerName') + '\n' + _coB.name + '\n' + _coB.phone + '\n' + _coB.website;
 
     // Branded HTML email
-    var _c = InvoicesPage._co();
+    var _c = _coB;
     var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
     // Line items table
