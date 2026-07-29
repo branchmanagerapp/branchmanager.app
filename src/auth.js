@@ -398,10 +398,30 @@ var Auth = {
       localStorage.setItem('bm-session', JSON.stringify(Auth.user));
       window.location.reload();
     } else {
-      errEl.textContent = 'Invalid email or password';
-      errEl.style.display = 'block';
-      btn.textContent = 'Sign In';
-      btn.disabled = false;
+      // v1074: cross-device team login. Hashes created on the owner's device
+      // never reached other phones — ask the server before failing.
+      fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/team-login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d && d.ok) {
+          Auth.user = { email: d.email, role: d.role, name: d.name };
+          Auth.role = d.role;
+          localStorage.setItem('bm-session', JSON.stringify(Auth.user));
+          try { if (d.tenant_id) localStorage.setItem('bm-tenant-id', d.tenant_id); } catch(e) {}
+          window.location.reload();
+        } else {
+          errEl.textContent = 'Invalid email or password';
+          errEl.style.display = 'block';
+          btn.textContent = 'Sign In';
+          btn.disabled = false;
+        }
+      }).catch(function(){
+        errEl.textContent = 'Invalid email or password';
+        errEl.style.display = 'block';
+        btn.textContent = 'Sign In';
+        btn.disabled = false;
+      });
     }
   },
 

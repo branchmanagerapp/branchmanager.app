@@ -276,6 +276,14 @@ var TeamPage = {
     var hashes = {};
     try { hashes = JSON.parse(localStorage.getItem('bm-auth-hashes') || '{}'); } catch(e){}
     hashes[m.email.toLowerCase()] = Auth._hash(pass);
+    // v1074: also store the hash on the cloud roster row so the member can
+    // log in from THEIR device (team-login edge fn validates against it).
+    try {
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
+        SupabaseDB.client.from('team_members').update({ login_hash: Auth._hash(pass) })
+          .eq('email', m.email.toLowerCase()).then(function(){});
+      }
+    } catch(e) {}
     localStorage.setItem('bm-auth-hashes', JSON.stringify(hashes));
 
     var loginUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
