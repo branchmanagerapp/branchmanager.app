@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1077; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1078; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1304,6 +1304,7 @@ window.bmShowStaleBanner = function(version) {
       <button class="nav-item" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
       <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
       <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
+      <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="users" class="li"></i></span> Team</button>
       <button class="nav-item" data-page="payments"><span class="icon"><i data-lucide="credit-card" class="li"></i></span> Payments</button>
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
       <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Receptionist<span class="cc-dot" id="cc-indicator-dot"></span></button>
@@ -1315,7 +1316,6 @@ window.bmShowStaleBanner = function(version) {
       <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
       <!-- BM-only (below divider — Jobber doesn't have these) -->
       <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
-      <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="wallet" class="li"></i></span> Payroll</button>
       <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
       <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
       <button class="nav-item" data-page="insurance"><span class="icon"><i data-lucide="shield" class="li"></i></span> Insurance</button>
