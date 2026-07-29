@@ -403,13 +403,16 @@ var TeamPage = {
     if (m.email) {
       var _hashes = {};
       try { _hashes = JSON.parse(localStorage.getItem('bm-auth-hashes') || '{}'); } catch(e){}
-      var _hasLogin = !!_hashes[m.email.toLowerCase()];
+      // v1077: a login can exist in the cloud (set via invite / another device) —
+      // don't report "no login" just because THIS device never created it.
+      var _hasLogin = !!(_hashes[m.email.toLowerCase()] || m.login_hash || m.loginHash);
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;margin-bottom:16px;">'
         + '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin-bottom:8px;">🔐 App Login</div>'
         + '<div style="font-size:13px;color:var(--text-light);margin-bottom:12px;">'
         +   (_hasLogin ? '✅ <strong style="color:var(--green-dark);">' + UI.esc(m.email) + '</strong> has a login. Reset to generate a new temp password.' : '⚠️ No login yet. Create one so ' + UI.esc((m.name||'').split(' ')[0] || 'they') + ' can sign in.')
         + '</div>'
         + '<button type="button" class="btn btn-primary" style="width:100%;padding:12px;font-weight:700;" onclick="TeamPage._createLogin(\'' + id + '\')">' + (_hasLogin ? '🔄 Reset Password + Re-send' : '✨ Create Login + Send to ' + UI.esc((m.name||'').split(' ')[0] || 'Them')) + '</button>'
+        + '<button type="button" class="btn btn-outline" style="width:100%;padding:12px;font-weight:700;margin-top:8px;" onclick="TeamPage.sendInvite(\'' + id + '\')">✉️ Send Invite — they set their own password</button>'
         + '</div>';
     } else {
       html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin-top:16px;margin-bottom:16px;font-size:13px;color:#92400e;">'
