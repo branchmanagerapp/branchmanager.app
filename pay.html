@@ -486,7 +486,7 @@ document.title = 'Pay Invoice';
         }
       })
       .catch(function() {})
-      .finally(function() { if (window.bmPaintBrand) bmPaintBrand(); render(); });
+      .finally(function() { if (window.bmApplyLineBrand) bmApplyLineBrand(state.invoice); if (window.bmPaintBrand) bmPaintBrand(); render(); });
   }
 
   // RLS gateway — was: anon SELECT * exposed every customer's invoice
@@ -517,6 +517,7 @@ document.title = 'Pay Invoice';
               state.tenantBaseLink = data.tenant.config.stripe_base_link;
             }
             bmApplyBranding(data.tenant);
+            if (window.bmApplyLineBrand) bmApplyLineBrand(state.invoice);
             if (window.bmPaintBrand) bmPaintBrand();
             render();
           } catch (e) { loadTenantConfig(); }

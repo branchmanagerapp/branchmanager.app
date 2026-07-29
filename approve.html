@@ -215,6 +215,7 @@
         // White-label: rebrand to THIS quote's tenant before rendering the
         // document, so a friend's customer never sees Second Nature Tree.
         try { if (window.bmApplyTenantBranding) await window.bmApplyTenantBranding(data.quote.tenant_id); } catch(e) {}
+        try { if (window.bmApplyLineBrand) window.bmApplyLineBrand(data.quote); } catch(e) {}
         renderQuote(data.quote);
       } catch(e) {
         showError('Network error loading quote. Please contact us if this persists.');

@@ -65,8 +65,27 @@
       if (t.id || c.id) localStorage.setItem('bm-tenant-id', t.id || c.id);
     } catch (e) {}
     window.bmResolvedTenant = t;
+    try { window.BM_TENANT_CONFIG = c; } catch (e) {}
   }
   window.bmApplyBranding = applyBranding;
+
+  // Line-of-business brand override (v1072): a tenant may declare
+  // config.line_brands = { smartlawn: { companyName, website, websiteUrl } }.
+  // Customer-facing pages call this AFTER applyBranding with the record —
+  // if the record's line_of_business has a brand, those fields overlay
+  // BM_CONFIG so e.g. mower invoices render as "Smart Lawn NY" while
+  // tree work stays Second Nature. No-op for tenants without line_brands.
+  window.bmApplyLineBrand = function(rec) {
+    try {
+      var c = window.BM_TENANT_CONFIG || {};
+      var lob = rec && (rec.line_of_business || rec.lineOfBusiness);
+      var lb = c.line_brands && lob && c.line_brands[lob];
+      if (!lb) return false;
+      var BC = window.BM_CONFIG; if (!BC) return false;
+      for (var k in lb) BC[k] = lb[k];
+      return true;
+    } catch (e) { return false; }
+  };
 
   // Resolve a tenant's branding by id. Used by customer-facing pages that have
   // the record's tenant_id but no ?tenant_slug. Returns a Promise.
