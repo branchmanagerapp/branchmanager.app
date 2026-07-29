@@ -1,72 +1,42 @@
-<!doctype html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow,noarchive">
-<meta name="theme-color" content="#0a2e18">
-<title>Estimates & Jobs — Map</title>
-<link rel="stylesheet" href="assets/site.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Work Map — Second Nature Tree</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:16px 16px 14px;text-align:center}
-header h1{margin:0;font-size:19px;font-weight:800}
-header a{color:#cfe9d9;font-size:13px;text-decoration:none}
-#map{height:52vh;width:100%}
-.bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
-.fb{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:20px;padding:7px 13px;font-size:13px;font-weight:700}
-.fb.on{background:var(--green);color:#fff;border-color:var(--green)}
-.list{padding:8px 14px 50px;max-width:760px;margin:0 auto}
-.row{display:flex;gap:10px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}
-.row .amt{margin-left:auto;font-weight:800;color:var(--green-d);white-space:nowrap}
-.row .nm{font-weight:700}.row .ad{color:var(--muted);font-size:13px}
-.pill{font-size:10px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;color:#fff;white-space:nowrap}
-.date{font-size:11px;color:var(--faint);font-weight:700}
-.age{font-size:10px;color:#b06a1a;font-weight:700;margin-left:5px}
-</style></head><body>
-<header><h1>🗺️ Estimates &amp; Jobs</h1><a href="ground-control-7c3f9a.html">‹ Ground Control</a></header>
-<div class="bar" id="bar"></div>
+ *{box-sizing:border-box;margin:0}
+ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#111;}
+ #map{height:100vh;width:100vw}
+ .legend{position:fixed;bottom:14px;left:10px;z-index:1000;background:rgba(255,255,255,.95);border-radius:12px;padding:10px 14px;font-size:12px;line-height:1.9;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+ .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle}
+ .hdr{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(26,60,42,.95);color:#fff;border-radius:10px;padding:7px 16px;font-size:13px;font-weight:800;white-space:nowrap}
+ .leaflet-popup-content{font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="hdr">🌳 Work Map — updated Jul 29</div>
 <div id="map"></div>
-<div class="list" id="list"></div>
+<div class="legend">
+ <span class="dot" style="background:#1565c0"></span>Scheduled job<br>
+ <span class="dot" style="background:#1a9850"></span>Open estimate (quote out)<br>
+ <span class="dot" style="background:#e6a817"></span>Money waiting
+</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var PINS=[{"name": "Adam Melish #533", "addr": "68 Cedar Ave, Poughkeepsie, NY 12603", "status": "quote", "amt": "$3,800", "lat": 41.6759422, "lng": -73.9052749, "date": "2026-07-08"}, {"name": "Oswald #514", "addr": "26 N 2nd St, Cortlandt Manor, NY", "status": "sent", "amt": "$7,300", "lat": 41.2859824, "lng": -73.8555983, "date": "2026-07-06"}, {"name": "Tanisha #515", "addr": "24 N 2nd St, Cortlandt Manor, NY", "status": "sent", "amt": "$1,000", "lat": 41.2862305, "lng": -73.8556446, "date": "2026-07-06"}, {"name": "Ricardo (paid)", "addr": "8 Barger St, Cortlandt Manor, NY", "status": "done", "amt": "cash", "lat": 41.329265, "lng": -73.8789479, "date": "2026-07-06"}, {"name": "144 Putnam Rd", "addr": "144 Putnam Rd, Continental Village, NY", "status": "done", "amt": "storm", "lat": 41.3327884, "lng": -73.9098627, "date": "2026-07-06"}, {"name": "2801 Sarles Dr", "addr": "2801 Sarles Dr, Yorktown Heights, NY", "status": "done", "amt": "storm", "lat": 41.3046204, "lng": -73.7803514, "date": "2026-07-06"}, {"name": "Amanda #534", "addr": "100 Nassau Ave, Peekskill, NY", "status": "quote", "amt": "$3,500", "lat": 41.289811, "lng": -73.9204922, "approx": true, "date": "2026-07-08"}, {"name": "Arlene Richie #516", "addr": "3723 Sunnyside Rd, Shrub Oak, NY", "status": "quote", "amt": "$5,500", "lat": 41.321508, "lng": -73.8298696, "approx": true, "date": "2026-07-06"}, {"name": "Matt Green (cleanup)", "addr": "11 Country Lane, Philipstown NY (Armand's street)", "status": "job", "amt": "cleanup", "date": "2026-07-08", "lat": 41.3354377, "lng": -73.9243886}];
-var COLORS={quote:"#1f7a43",sent:"#1d6fd6",job:"#b06a1a",done:"#8a94a0"};
-var LABEL={quote:"Open quote",sent:"Sent",job:"Job",done:"Done"};
-var FILTERS=[["all","All"],["quote","Open quotes"],["sent","Sent"],["job","Jobs"],["done","Done"]];
-var cur="all";
-var map=L.map("map"); var markers=[];
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
-function ageStr(d){ if(!d)return""; var t=new Date(); var dt=new Date(d+"T12:00:00");
-  var days=Math.round((t-dt)/86400000); if(days<=0)return"today"; if(days===1)return"1 day"; return days+" days"; }
-function draw(){
-  markers.forEach(function(m){map.removeLayer(m);}); markers=[];
-  var pts=[];
-  PINS.forEach(function(p){
-    if(cur!=="all"&&p.status!==cur)return;
-    var c=COLORS[p.status]||"#1f7a43";
-    var m=L.circleMarker([p.lat,p.lng],{radius:9,color:"#fff",weight:2,fillColor:c,fillOpacity:1}).addTo(map);
-    m.bindPopup("<b>"+p.name+"</b><br>"+p.addr+(p.approx?" <i>(approx)</i>":"")+"<br><b>"+p.amt+"</b>"+(p.date?" · "+p.date:""));
-    markers.push(m); pts.push([p.lat,p.lng]);
-  });
-  if(pts.length) map.fitBounds(pts,{padding:[40,40]});
-  // list — newest date first
-  var rows=PINS.filter(function(p){return cur==="all"||p.status===cur;})
-    .sort(function(a,b){return (b.date||"")<(a.date||"")?-1:1;});
-  var h="";
-  rows.forEach(function(p){
-    var c=COLORS[p.status]||"#1f7a43";
-    h+='<div class="row"><span class="pill" style="background:'+c+'">'+LABEL[p.status]+'</span>'+
-       '<span><span class="nm">'+p.name+'</span><br><span class="ad">'+p.addr+(p.approx?" (approx)":"")+'</span><br>'+
-       '<span class="date">'+(p.date||"—")+'</span><span class="age">'+ageStr(p.date)+'</span></span>'+
-       '<span class="amt">'+p.amt+'</span></div>';
-  });
-  document.getElementById("list").innerHTML=h||'<div style="padding:20px;color:#8a94a0">None in this filter.</div>';
-}
-var bar=document.getElementById("bar");
-FILTERS.forEach(function(f){
-  var b=document.createElement("button"); b.className="fb"+(f[0]==="all"?" on":""); b.textContent=f[1];
-  b.onclick=function(){cur=f[0]; [].forEach.call(bar.children,function(x){x.classList.remove("on");}); b.classList.add("on"); draw();};
-  bar.appendChild(b);
+var PINS = [{"label": "Fri 7/31 \u2014 Braxton's job (helping)", "addr": "New Paltz, NY", "kind": "job", "detail": "Address TBD from Braxton \u2014 town-level pin", "lat": 41.7464972, "lon": -74.0844894, "approx": false}, {"label": "Sat 8/1 \u2014 Anthony Turner sub job", "addr": "99 Fulton Avenue, Poughkeepsie, NY", "kind": "job", "detail": "Client confirmed", "lat": 41.6927166, "lon": -73.9053189, "approx": false}, {"label": "Mon 8/3 \u2014 Mrs. Mustico prune $1,000", "addr": "109 Main St, South Salem, NY", "kind": "job", "detail": "914-715-5316", "lat": 41.2878895, "lon": -73.5604263, "approx": false}, {"label": "Tue 8/4 \u2014 David Croote locust $2,200", "addr": "25 Phillard Ct, Patterson, NY", "kind": "job", "detail": "spelling unverified", "lat": 41.4867443, "lon": -73.5337941, "approx": false}, {"label": "Wed 8/5 \u2014 Jim G bucket prune $850", "addr": "3 Greenlawn Rd, Katonah, NY", "kind": "job", "detail": "Katonah double, part 1", "lat": 41.2716754, "lon": -73.7592896, "approx": false}, {"label": "Wed 8/5 \u2014 Jessica Jafet $1,150", "addr": "75 Meadow Lane, Katonah, NY", "kind": "job", "detail": "Katonah double, part 2", "lat": 41.2600943, "lon": -73.6923694, "approx": false}, {"label": "Thu 8/6 \u2014 Julie Melagrano (scope TBD)", "addr": "Malverne Rd, Scarsdale, NY", "kind": "job", "detail": "street-level pin (TOWN-LEVEL approx)", "lat": 40.9885221, "lon": -73.8085608, "approx": true}, {"label": "Hope / St. Christopher's \u2014 $500 owed + next quote", "addr": "21 Franciscan Way, Garrison, NY", "kind": "money", "detail": "Invoice #387 delivered; tree-above-generator request open (TOWN-LEVEL approx)", "lat": 41.3825364, "lon": -73.9466505, "approx": true}, {"label": "Q#491 Tim Baron $1,246", "addr": "54 Steuben Road, Garrison, NY 10524", "kind": "est", "detail": "", "lat": 41.3334064, "lon": -73.9087775, "approx": false}, {"label": "Q#492 Pam Acevedo $2,384", "addr": "24 Oriole Street, Putnam Valley, NY 10579", "kind": "est", "detail": "", "lat": 41.3380501, "lon": -73.8755514, "approx": false}, {"label": "Q#493 Michael Pfeifer $542", "addr": "2 Boulder Drive, Cortlandt, NY 10567", "kind": "est", "detail": "", "lat": 41.2640656, "lon": -73.925898, "approx": false}, {"label": "Q#537 Burchie Green $8,562", "addr": "134 Highland Drive, Cortlandt Manor, NY 10567", "kind": "est", "detail": "linked with Barbara Jones (approved #536)", "lat": 41.3275942, "lon": -73.913867, "approx": false}, {"label": "Q#543 Liz $6,015", "addr": "12 Barger Hill Road, Putnam Valley, NY 10579", "kind": "est", "detail": "", "lat": 41.3857627, "lon": -73.8349277, "approx": false}, {"label": "Q#547 Alan Katz $2,845", "addr": "2760 Windmill Drive, Yorktown Heights, NY 10598", "kind": "est", "detail": "", "lat": 41.3029503, "lon": -73.7799194, "approx": false}, {"label": "Q#558 Toni Rosen $3,902", "addr": "3083 Wharton Rd, Yorktown, NY 10598", "kind": "est", "detail": " (TOWN-LEVEL approx)", "lat": 41.2956496, "lon": -73.80819, "approx": true}, {"label": "Q#559 Mike Stabulas $4,552", "addr": "32 Amalfi Drive, Cortlandt Manor, NY", "kind": "est", "detail": "", "lat": 41.2391913, "lon": -73.9053406, "approx": false}, {"label": "Q#560 Isabel (Izzy) $3,576", "addr": "184 Benefield Blvd, Peekskill, NY", "kind": "est", "detail": "sent 7/28", "lat": 41.3010685, "lon": -73.8969113, "approx": false}, {"label": "Q#561 Natasha $3,251", "addr": "46 Johnson Street, Lake Peekskill, NY", "kind": "est", "detail": "sent 7/28 \u2014 $2,800 package option", "lat": 41.3354115, "lon": -73.8835985, "approx": false}];
+var map = L.map('map');
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap'}).addTo(map);
+var colors = {job:'#1565c0', est:'#1a9850', money:'#e6a817'};
+var bounds = [];
+PINS.forEach(function(p){
+  var m = L.circleMarker([p.lat,p.lon],{radius:9,color:'#fff',weight:2,fillColor:colors[p.kind]||'#666',fillOpacity:.95}).addTo(map);
+  m.bindPopup('<strong>'+p.label+'</strong><br>'+p.addr+(p.detail?('<br><em>'+p.detail+'</em>'):'')+'<br><a href="https://maps.apple.com/?daddr='+encodeURIComponent(p.addr)+'">Directions →</a>');
+  bounds.push([p.lat,p.lon]);
 });
-draw();
+map.fitBounds(bounds,{padding:[40,40]});
 </script>
-</body></html>
+</body>
+</html>
