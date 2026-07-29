@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1074; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1075; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1388,6 +1388,19 @@ window.bmShowStaleBanner = function(version) {
               <button onclick="(function(){var w=(window.CompanyInfo&&CompanyInfo.get&&(CompanyInfo.get('websiteUrl')||CompanyInfo.get('website')))||'';if(w){window.open(w.indexOf('http')===0?w:'https://'+w,'_blank');}else if(window.UI&&UI.toast){UI.toast('No website set — add one in Settings');}})()"><i data-lucide="external-link" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>View Website</button>
               <button id="dark-mode-btn" onclick="toggleDarkMode()"><i data-lucide="moon" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Dark Mode <span id="dark-mode-state" style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:600;"></span></button>
               <hr>
+              <button onclick="(function(){
+                var em=(window.Auth&&Auth.user&&Auth.user.email)||'';
+                if(!em){UI.toast('Not signed in','error');return;}
+                var o=prompt('Current password:'); if(!o) return;
+                var n1=prompt('New password (8+ characters):'); if(!n1) return;
+                if(n1.length<8){alert('New password must be at least 8 characters.');return;}
+                var n2=prompt('Type the new password again:'); if(n1!==n2){alert('Passwords did not match.');return;}
+                fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/team-password-change',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,old_password:o,new_password:n1})})
+                  .then(function(r){return r.json();}).then(function(d){
+                    if(d&&d.ok){try{var h=JSON.parse(localStorage.getItem('bm-auth-hashes')||'{}');h[em.toLowerCase()]=Auth._hash(n1);localStorage.setItem('bm-auth-hashes',JSON.stringify(h));}catch(e){}alert('Password changed ✓');}
+                    else{alert((d&&d.error)||'Could not change password.');}
+                  }).catch(function(){alert('Network problem — try again.');});
+              })()"><i data-lucide="key" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Change Password</button>
               <button onclick="BugReport.open()"><i data-lucide="bug" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Report Bug</button>
               <button onclick="Auth.logout()" style="color:var(--red);"><i data-lucide="log-out" style="width:14px;height:14px;stroke:var(--red);vertical-align:middle;margin-right:6px;"></i>Log Out</button>
             </div>
