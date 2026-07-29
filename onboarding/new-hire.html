@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>New Hire Intake — {{business_name}}</title>
+<title>New Hire Intake — Second Nature Tree Service</title>
 <link rel="stylesheet" href="_shared.css">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -277,27 +277,28 @@ document.getElementById('intake-form').addEventListener('submit', function(e) {
   // Doug had ~10 of these JSONs cluttering his desktop. Optional download
   // button is still available below if a paper trail copy is wanted.)
 
-  // 4. Try saving to Supabase (cloud backup)
+  // 4. Save to cloud via the token-gated team-onboard fn (v1074).
+  // The old direct anon INSERT to team_members is RLS-blocked — submissions
+  // were silently dying. The invite link Doug texts carries ?t=<token>.
   try {
-    var SUPA_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
-    var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
-    fetch(SUPA_URL + '/rest/v1/team_members', {
+    var _obToken = new URLSearchParams(location.search).get('t') || '';
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/team-onboard', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tenant_id: '93af4348-8bba-4045-ac3e-5e71ec1cc8c5',
+        token: _obToken,
         name: emp.fullName,
         email: emp.email || null,
         phone: emp.phone || null,
-        role: emp.role === 'crew_lead' ? 'crew_lead' : emp.role === 'climber' ? 'crew' : 'crew',
-        rate: parseFloat(emp.payRate) || 0,
-        active: true,
+        hire_date: emp.startDate || null,
+        employment_type: emp.role || null,
+        notes: 'Self-onboarded ' + new Date().toISOString().slice(0,10) + (emp.payRate ? ' · discussed rate on file with owner' : '')
       })
-    }).then(function(r) {
-      if (r.ok) console.log('[Supabase] Employee saved to cloud');
-      else console.warn('[Supabase] Save failed:', r.status);
-    }).catch(function(e) { console.warn('[Supabase] Offline — saved locally only'); });
-  } catch(e) { console.warn('[Supabase] Error:', e); }
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d && d.ok) console.log('[Onboard] saved to cloud' + (d.merged ? ' (merged existing roster row)' : ''));
+      else { console.warn('[Onboard] cloud save failed:', d && d.error); alert('Heads up — your info saved on this device but did not reach the office. Please text Doug that you finished the form.'); }
+    }).catch(function(e) { console.warn('[Onboard] offline:', e); });
+  } catch(e) { console.warn('[Onboard] error:', e); }
 
   // Show success + document list
   document.getElementById('intake-form').style.display = 'none';
