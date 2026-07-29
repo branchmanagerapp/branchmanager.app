@@ -174,6 +174,7 @@ var TeamPage = {
         + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">🔐 App Login</div>'
         + '<div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">'
         +   (hasLogin ? '✅ ' + UI.esc(m.email) + ' has a login. Reset to generate a new temp password.' : '⚠️ No login yet. Create one to let this person sign in.')
+        +   '<div style="margin-top:10px;"><button type="button" class="btn btn-outline" onclick="TeamPage.sendInvite(\'' + id + '\')" style="font-size:13px;">✉️ Send Invite — they set their own password</button></div>'
         + '</div>'
         + '<button type="button" class="btn btn-outline" style="font-size:13px;" onclick="TeamPage._createLogin(\'' + id + '\')">' + (hasLogin ? 'Reset Password' : 'Create Login') + '</button>'
         + '</div>';
@@ -210,6 +211,30 @@ var TeamPage = {
       footer: '<button class="btn btn-outline" style="color:#c62828;margin-right:auto;" onclick="TeamPage._savePhotoUrl(\'' + id + '\', \'\')">Remove photo</button>'
         + '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
         + ' <button class="btn btn-primary" onclick="TeamPage._savePhotoUrl(\'' + id + '\', document.getElementById(\'tm-photo-url\').value)">Save URL</button>'
+    });
+  },
+
+  // v1076: email the member an invite link; they choose their own password
+  // on set-password.html (token single-use, validated by team-set-password fn).
+  // The email goes out because DOUG taps this button — his send, in-app.
+  sendInvite: function(id) {
+    var m = DB.team.getById ? DB.team.getById(id) : (JSON.parse(localStorage.getItem('bm-team')||'[]').find(function(x){return x.id===id;}));
+    if (!m || !m.email) { UI.toast('Add an email address first', 'error'); return; }
+    var tok = '';
+    try { var a = new Uint8Array(18); crypto.getRandomValues(a); tok = Array.from(a, function(b){ return b.toString(16).padStart(2,'0'); }).join(''); }
+    catch(e) { tok = (Math.random().toString(36)+Math.random().toString(36)).replace(/[^a-z0-9]/g,'').slice(0,36); }
+    var link = 'https://branchmanager.app/set-password.html?t=' + tok;
+    if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.client)) { UI.toast('Cloud connection required', 'error'); return; }
+    if (!confirm('Email an invite to ' + m.email + '? They\'ll set their own password.')) return;
+    SupabaseDB.client.from('team_members').update({ invite_token: tok }).eq('email', String(m.email).toLowerCase()).then(function(res){
+      if (res && res.error) { UI.toast('Could not stage invite: ' + res.error.message, 'error'); return; }
+      var co = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || 'the team';
+      var subject = 'Your ' + co + ' team invite — set your password';
+      var body = 'Hi ' + (m.name || '').split(' ')[0] + ',\n\nYou\'re set up in Branch Manager, our system for jobs, schedules and customers.\n\n1. Tap this link and choose your password:\n' + link + '\n\n2. Then sign in at https://branchmanager.app with:\n   Email: ' + m.email + '\n   and the password you chose.\n\nSee you out there,\n' + ((typeof CompanyInfo !== 'undefined' && CompanyInfo.get('ownerName')) || '') + '\n' + co;
+      Email.send(m.email, subject, body).then(function(r){
+        if (r && (r.success || r.ok)) UI.toast('Invite sent to ' + m.email + ' ✓');
+        else UI.toast('Invite staged but email failed — ' + ((r && (r.hint || r.error)) || 'try again'), 'error');
+      });
     });
   },
 
