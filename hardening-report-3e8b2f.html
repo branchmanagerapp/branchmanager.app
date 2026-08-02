@@ -29,9 +29,9 @@
   <h1>🛡️ Production Hardening Sprint</h1>
   <div class="sub">Branch Manager · Aug 1–2, 2026 · all claims verified against live production</div>
 
-  <div class="card doug">
-    <h2 style="margin-top:0;">Your ONE step</h2>
-    <p><strong>Open <a href="https://resend.com">resend.com</a> in Chrome and log in as the SNT account</strong> (info@peekskilltree.com — the workspace that sends all client email). Then tell Claude — the bounce webhook gets created, wired, and tested from there. Until then, bounced client emails (the Percy failure mode) stay invisible.</p>
+  <div class="card doug" style="border-left-color:#166534;background:#f0fdf4;">
+    <h2 style="margin-top:0;">✅ DONE Aug 2 — bounce webhook is LIVE</h2>
+    <p>Doug logged into the SNT Resend workspace; Claude created the webhook (email.bounced + email.complained), stored the signing secret in Supabase, and proved the FULL loop with a live test: sent to Resend's bounce simulator → webhook fired → signature verified → bounce logged in the communications table. Bounced client emails are no longer invisible. Nothing left on this item.</p>
   </div>
 
   <h2>Fixed &amp; verified live this session</h2>
