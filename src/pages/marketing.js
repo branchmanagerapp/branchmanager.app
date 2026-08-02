@@ -552,9 +552,20 @@ var MarketingPage = (function() {
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     var tid = (DB && DB.getTenantId) ? DB.getTenantId() : null;
     if (!sb || !tid) {
-      box.innerHTML = '<div style="background:#fff3cd;border:1px solid #ffe082;border-radius:8px;padding:12px;color:#7e2d10;font-size:13px;">⚠ Cloud sync required to load drafts.</div>';
+      // v1080: cloud client often isn't ready the instant the page renders —
+      // retry for up to 12s before declaring sync unavailable (the old
+      // instant give-up stranded Doug on "Cloud sync required").
+      loadDrafts._tries = (loadDrafts._tries || 0) + 1;
+      if (loadDrafts._tries <= 24) {
+        box.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:8px 0;">Connecting to cloud…</div>';
+        setTimeout(loadDrafts, 500);
+      } else {
+        loadDrafts._tries = 0;
+        box.innerHTML = '<div style="background:#fff3cd;border:1px solid #ffe082;border-radius:8px;padding:12px;color:#7e2d10;font-size:13px;">⚠ Cloud sync isn\'t connecting — check Settings → Cloud Sync, then tap Refresh.</div>';
+      }
       return;
     }
+    loadDrafts._tries = 0;
     sb.from('marketing_drafts').select('*').eq('tenant_id', tid).eq('status', 'pending').order('created_at', { ascending: false }).then(function(r) {
       _draftsCache = (r && r.data) || [];
       if (counter) counter.textContent = _draftsCache.length;

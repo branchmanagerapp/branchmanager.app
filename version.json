@@ -1,5 +1,5 @@
 {
-  "version": 1079,
+  "version": 1080,
   "released": "2026-08-02",
-  "notes": "v1079: Schedule page — 🛰 Ground Control button next to the view pills (links to ground-control page; interim until day-recap integration)"
+  "notes": "v1080: Drafts to Review waits for cloud client instead of instant 'Cloud sync required' give-up"
 }
