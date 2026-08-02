@@ -455,6 +455,7 @@ var SchedulePage = {
       +     _viewPill('list', 'List')
       +     _viewPill('map', 'Map')
       +   '</div>'
+      +   '<a href="https://branchmanager.app/ground-control-7c3f9a.html" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;padding:5px 12px;border-radius:6px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;" title="Past jobs, photos & the day-recap calendar">🛰 Ground Control</a>'
       + '</div>';
 
     // Load cloud calendar events (time off / personal) once; re-renders on arrival.

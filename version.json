@@ -1,1 +1,5 @@
-{"version": 1078, "released": "2026-07-29", "notes": "v1078: nav \u2014 Payroll renamed Team, moved to sit right after Invoices"}
+{
+  "version": 1079,
+  "released": "2026-08-02",
+  "notes": "v1079: Schedule page — 🛰 Ground Control button next to the view pills (links to ground-control page; interim until day-recap integration)"
+}
