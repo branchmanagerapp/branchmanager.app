@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>BM Hardening Sprint — Aug 1 Report</title>
+<style>
+  :root { --green:#1a3c12; --amber:#b45309; --red:#b91c1c; --bg:#f7f6f2; --text:#1f2937; --light:#6b7280; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; font-size:16px; padding:20px 16px 60px; }
+  .wrap { max-width:640px; margin:0 auto; }
+  h1 { font-size:24px; color:var(--green); margin:10px 0 4px; }
+  .sub { color:var(--light); font-size:13px; margin-bottom:20px; }
+  h2 { font-size:18px; color:var(--green); margin:28px 0 8px; }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin:12px 0; }
+  .doug { border-left:4px solid var(--amber); background:#fffbeb; }
+  ul { margin:0 0 8px 20px; } li { margin-bottom:8px; }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:20px; margin-right:4px; }
+  .fixed { background:#dcfce7; color:#166534; } .open { background:#fee2e2; color:#991b1b; } .note { background:#e0e7ff; color:#3730a3; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { text-align:left; padding:7px 8px; border-bottom:1px solid #eee; }
+  th { color:var(--light); font-size:12px; text-transform:uppercase; }
+  .small { font-size:13px; color:var(--light); }
+  a { color:var(--green); }
+</style>
+</head>
+<body><div class="wrap">
+  <h1>🛡️ Production Hardening Sprint</h1>
+  <div class="sub">Branch Manager · Aug 1–2, 2026 · all claims verified against live production</div>
+
+  <div class="card doug">
+    <h2 style="margin-top:0;">Your ONE step</h2>
+    <p><strong>Open <a href="https://resend.com">resend.com</a> in Chrome and log in as the SNT account</strong> (info@peekskilltree.com — the workspace that sends all client email). Then tell Claude — the bounce webhook gets created, wired, and tested from there. Until then, bounced client emails (the Percy failure mode) stay invisible.</p>
+  </div>
+
+  <h2>Fixed &amp; verified live this session</h2>
+  <div class="card">
+    <ul>
+      <li><span class="tag fixed">FIXED</span><strong>Every email send is now logged</strong> — success or failure — to the communications table (Resend ID or the exact error). Verified both paths with real sends. Failed sends can no longer vanish.</li>
+      <li><span class="tag fixed">FIXED</span><strong>Portal-link emails were fire-and-forget</strong> — customer login emails ignored Resend's response entirely. Now routed through the logging pipeline; verified with a live canary test.</li>
+      <li><span class="tag fixed">FIXED</span><strong>Customer-page branding was broken since Jul 8</strong> — the RLS lockdown cut off branding.js, so the portal showed no business name and a phoneless "Need help? Call." Fixed via a sanitized branding gateway (secrets stay server-side). Verified at 375px.</li>
+      <li><span class="tag fixed">FIXED</span><strong>Git repo had drifted behind production</strong> on stripe-webhook (missing the receipt + dedupe code) and invoice-checkout (absent entirely) — a future deploy would have regressed payments. Production sources recovered and committed.</li>
+      <li><span class="tag fixed">NEW</span><strong>Email hygiene audit tool</strong> (scripts/email-hygiene-check.py) — flags open quotes/invoices whose client has no usable email. Current: 18 records, $53,459.41 in flight (mostly text-first clients — awareness, not emergencies).</li>
+      <li><span class="tag fixed">FIXED</span><strong>Harry Wallen #390 marked paid</strong> ($2,817.75, Jobber ACH per Doug 8/2 — exact ACH date noted as TBD on the record). Heads-up: the "new Jobber pull" (jobber-sync) only syncs <em>weekly revenue totals</em> for the P&amp;L, never per-invoice status — and it's not connected (no OAuth token) or scheduled anyway. Jobber payments will always need manual marking unless we build a real per-invoice sync.</li>
+    </ul>
+  </div>
+
+  <h2>Verified healthy (no action needed)</h2>
+  <div class="card">
+    <ul>
+      <li><strong>DNS email auth complete</strong> on both domains (SPF ✓ DKIM ✓ DMARC ✓). Not the cause of any silent failure.</li>
+      <li><strong>Payments reconcile clean</strong> — all 29 invoices since Jun 1 internally consistent; payment links can't underpay, double-charge, or charge stale amounts (all guards confirmed in deployed code).</li>
+      <li><strong>SMS pipeline solid</strong> — every send logged with errors captured; live test fired to the business line. No automated team-SMS exists (by design — your no-auto-send rule).</li>
+      <li><strong>RLS holding</strong> — anon key gets zero rows on all 7 sensitive tables. The pre-ship-audit PII leak is confirmed fixed in production.</li>
+      <li><strong>No rogue crons</strong> — only Bouncie sync, your 6-hour digest, and Plaid sync. Marketing email stays permanently off.</li>
+      <li><strong>Lead pipeline intact</strong> — peekskilltree.com contact → book.html → request-notify, all live.</li>
+      <li><strong>Resend free tier fine</strong> at transactional volume (100/day, 3k/mo per account).</li>
+    </ul>
+  </div>
+
+  <h2>Money on the table (from the audit)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Invoice</th><th>Client</th><th>Amount</th><th>Status</th></tr>
+      <tr><td>#395</td><td>Sarah Moden-Alliston</td><td>$2,059.13</td><td><strong>past due</strong></td></tr>
+      <tr><td>#387</td><td>Saint Christopher's Inn</td><td>$500.00</td><td><strong>past due</strong></td></tr>
+      <tr><td>#1007</td><td>Dennis Lucente</td><td>$3,457.16</td><td>sent</td></tr>
+      <tr><td>#1004</td><td>Lucente Landscaping</td><td>$2,751.64</td><td>sent</td></tr>
+      <tr><td>#1010</td><td>Lucente Landscaping</td><td>$2,274.79</td><td>sent</td></tr>
+      <tr><td>#1011</td><td>New Rochelle — 66 Laron</td><td>$1,899.00</td><td>sent</td></tr>
+      <tr><td>#1008</td><td>Lucente Landscaping</td><td>$735.87</td><td>sent</td></tr>
+      <tr><td>#1012</td><td>Nicholas</td><td>$650.25</td><td>sent</td></tr>
+    </table>
+    <p class="small" style="margin-top:8px;"><strong>$14,327.84 open</strong> (Lucente = $9,219.46 of it). Draft unsent: Lance Thompson $16,272.51. (Harry Wallen #390 resolved — paid via Jobber ACH, marked 8/2.)</p>
+  </div>
+
+  <h2>Minor / cosmetic (ranked)</h2>
+  <div class="card">
+    <ul>
+      <li><span class="tag note">DATA</span>Void test invoice <strong>#106</strong> ("TEST — Stripe fix check", $1) — flagged, not touched.</li>
+      <li><span class="tag note">UI</span>approve.html at 375px squeezes QTY/RATE together ("1$1,139"); totals display whole-dollar rounded.</li>
+      <li><span class="tag note">UI</span>peekskilltree.com header phone truncates its last digit at 375px (hero button shows it in full).</li>
+      <li><span class="tag note">DATA</span>Some Jobber-era paid invoices have amount_paid = 0 (balances correct; bookkeeping only). The payments ledger table is no longer written — Stripe payments live on invoice rows.</li>
+      <li><span class="tag note">DNS</span>Optional deliverability upgrade: peekskilltree.com DMARC is <code>p=none</code> with no reporting. To improve: change the <code>_dmarc.peekskilltree.com</code> TXT to <code>v=DMARC1; p=none; rua=mailto:info@peekskilltree.com;</code> now, tighten to <code>p=quarantine</code> after a clean month.</li>
+    </ul>
+  </div>
+
+  <h2>Percy</h2>
+  <div class="card">
+    <p>No Percy exists in any BM table or in Gmail — could not verify the incident. Likely a different name or pre-BM. Either way, the failure mode it represents (bad address + silent failure) is now covered by send logging, the hygiene check, and — once you do the one step above — bounce detection.</p>
+  </div>
+
+  <h2>App Store plan (Phase 5)</h2>
+  <div class="card">
+    <p>Written plan: <a href="https://branchmanager.app/appstore-plan-7d41c9.html">appstore-plan-7d41c9.html</a>. Short version: Capacitor + 4 real native features (push, native camera, Face ID, offline); skip PWABuilder. One hard constraint: your Intel Mac can't run Xcode 26 (required since Apr 2026) → builds go via cloud CI (~$0–40/mo) + $99/yr Apple account. It's a SaaS-credibility play, not an ops need — fine to park.</p>
+  </div>
+
+  <h2>Ground Control → BM module (approach only, no work done)</h2>
+  <div class="card">
+    <p>Ground Control is already server-rendered pages + a launcher shell, so folding it in is low-drama: (1) move its calendar/agenda into a BM page fed by calendar_events (the v1079 Schedule page already links to GC — the bridge exists); (2) keep the unlisted GC URL as a thin redirect so bookmarks survive; (3) retire GC's hand-maintained EVENTS array in favor of BM records — the one real task. A day of work when you want it; nothing about it blocks anything else.</p>
+  </div>
+
+  <p class="small" style="margin-top:24px;">Everything above was exercised against live production — real sends, real screenshots at 375px, real reconciliation queries. Code pushed: 4 commits on branchmanagerapp/branchmanager.app main. Unlisted · noindex.</p>
+</div></body>
+</html>
