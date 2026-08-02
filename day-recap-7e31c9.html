@@ -79,7 +79,7 @@ function render(){
     var ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' · '+MON[d.getMonth()].slice(0,3)+' '+d.getDate();
     var ph=r.photos||[];
     var cls=ph.length===1?'grid n1':(ph.length===2?'grid n2':'grid');
-    var locs=(r.locations||[]).map(function(l){return l.name?l.name.split(',')[0]:'';}).filter(Boolean).slice(0,2).join(' · ');
+    var locs=(r.locations||[]).map(function(l){return l.name?l.name.split(',')[0]:'';}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).slice(0,2).join(' · ');
     h+='<div class="day">'
       +'<div class="head"><div class="date">'+ds+'</div><h3>'+esc(r.title)+'</h3></div>'
       +'<div class="sum">'+esc(r.summary)+'</div>'
