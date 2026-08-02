@@ -210,13 +210,18 @@
     var tenantId = resolveTenantId();
     var tokens = buildTokens(null); // start with defaults
     try {
+      // v1091: the Jul 8 RLS lockdown removed the anon read on `tenants`,
+      // which silently broke every {{token}} on static customer pages
+      // (portal rendered no business name and a phoneless "Need help?
+      // Call"). Branding now comes from the tenant-by-slug edge fn, which
+      // returns a whitelisted display-safe `config` — same shape
+      // buildTokens() already consumes. Raw tenants.config stays private.
       var r = await fetch(
-        SUPABASE_URL + '/rest/v1/tenants?id=eq.' + tenantId + '&select=id,name,config',
-        { headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY } }
+        SUPABASE_URL + '/functions/v1/tenant-by-slug?id=' + encodeURIComponent(tenantId)
       );
       if (r.ok) {
-        var rows = await r.json();
-        if (rows && rows[0]) tokens = buildTokens(rows[0]);
+        var row = await r.json();
+        if (row && row.ok && row.config) tokens = buildTokens(row);
       }
     } catch (e) {
       // network failure → defaults render
