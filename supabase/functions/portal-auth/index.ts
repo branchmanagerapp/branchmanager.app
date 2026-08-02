@@ -92,17 +92,20 @@ Deno.serve(async (req) => {
   const portalLink = `${PORTAL_BASE}?t=${token}`;
   const firstName = (client.name || "").split(" ")[0] || "there";
 
-  // Send email via Resend with tenant branding
-  await fetch("https://api.resend.com/emails", {
+  // Send via the send-email edge fn (v1090: it logs every attempt to the
+  // communications table, so a failed portal-link send is visible instead
+  // of vanishing — this call previously hit Resend directly and ignored
+  // the response entirely).
+  const sendRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
+      "X-Tenant-ID": client.tenant_id || tenantId,
     },
     body: JSON.stringify({
       from: `${b.from_name} <${b.from_email}>`,
       to: [client.email || email],
-      reply_to: b.email,
+      replyTo: b.email,
       subject: `Your ${b.business_short_name} portal link`,
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px 20px;color:#1d1d1f;">
@@ -129,6 +132,10 @@ Deno.serve(async (req) => {
       `,
     }),
   });
+  if (!sendRes.ok) {
+    const t = await sendRes.text().catch(() => "");
+    console.error("portal-auth: portal-link email failed:", sendRes.status, t.slice(0, 300));
+  }
 
   return cors(JSON.stringify({ ok: true }));
 });

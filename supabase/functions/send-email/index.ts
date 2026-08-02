@@ -28,6 +28,62 @@
 // Required secrets: RESEND_API_KEY (always), RESEND_PLATFORM_FROM (recommended)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolveTenantId } from '../_shared/tenant.ts'
+
+// v1090: every send attempt (success OR failure) is logged to the
+// communications table — same pattern dialpad-sms-send uses for SMS. A
+// failed send is no longer invisible: it shows on the client's record as
+// status 'send_failed' and is queryable (status=eq.send_failed).
+const sb = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+)
+
+async function logEmailAttempt(opts: {
+  tenantId: string
+  recipients: string[]
+  subject: string
+  from: string
+  ok: boolean
+  resendId?: string
+  resendStatus?: number
+  error?: string
+}) {
+  try {
+    const recipient = (opts.recipients[0] || '').toLowerCase().trim()
+    let clientId: string | null = null
+    if (recipient) {
+      const { data: rows } = await sb
+        .from('clients')
+        .select('id')
+        .eq('tenant_id', opts.tenantId)
+        .ilike('email', recipient)
+        .limit(1)
+      if (rows && rows.length) clientId = rows[0].id
+    }
+    const { error: logErr } = await sb.from('communications').insert({
+      tenant_id: opts.tenantId,
+      client_id: clientId,
+      type: 'email',
+      channel: 'email',
+      direction: 'outbound',
+      body: `${opts.subject} → ${opts.recipients.join(', ')}`,
+      status: opts.ok ? 'sent' : 'send_failed',
+      metadata: {
+        kind: 'email_send',
+        sent_via: 'send-email',
+        from: opts.from,
+        resend_id: opts.resendId || null,
+        resend_status: opts.resendStatus ?? null,
+        error: (opts.error || '').slice(0, 500) || null,
+      },
+    })
+    if (logErr) console.warn('email send log failed:', logErr.message)
+  } catch (e) {
+    console.warn('email send log failed:', e)
+  }
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -114,14 +170,18 @@ serve(async (req) => {
       }),
     })
 
+    const tenantId = resolveTenantId(req)
+
     if (r.ok) {
       const d = await r.json().catch(() => ({}))
+      await logEmailAttempt({ tenantId, recipients, subject, from: sender.from, ok: true, resendId: d?.id, resendStatus: r.status })
       return new Response(JSON.stringify({ success: true, status: r.status, id: d?.id, from_mode: sender.mode, from_account: keyAccount }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       })
     }
 
     const errText = await r.text()
+    await logEmailAttempt({ tenantId, recipients, subject, from: sender.from, ok: false, resendStatus: r.status, error: errText })
     return new Response(JSON.stringify({ error: 'Resend error', status: r.status, details: errText.slice(0, 500), from_mode: sender.mode, from_account: keyAccount, from_attempted: sender.from }), {
       status: r.status,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
