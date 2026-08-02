@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Branch Manager — iOS App Store Plan</title>
+<style>
+  :root { --green:#1a3c12; --amber:#b45309; --bg:#f7f6f2; --card:#fff; --text:#1f2937; --light:#6b7280; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.65; font-size:16px; padding:20px 16px 60px; }
+  .wrap { max-width:640px; margin:0 auto; }
+  h1 { font-size:26px; color:var(--green); margin:12px 0 4px; letter-spacing:-.3px; }
+  .sub { color:var(--light); font-size:13px; margin-bottom:24px; }
+  h2 { font-size:19px; color:var(--green); margin:32px 0 10px; }
+  h3 { font-size:15px; margin:18px 0 6px; }
+  p { margin:0 0 12px; }
+  .card { background:var(--card); border:1px solid #e5e7eb; border-radius:12px; padding:18px; margin:14px 0; }
+  .verdict { border-left:4px solid var(--green); }
+  .warn { border-left:4px solid var(--amber); background:#fffbeb; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin:10px 0; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid #eee; vertical-align:top; }
+  th { color:var(--light); font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
+  ul,ol { margin:0 0 12px 20px; }
+  li { margin-bottom:6px; }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  .yes { background:#dcfce7; color:#166534; } .no { background:#fee2e2; color:#991b1b; } .part { background:#fef3c7; color:#92400e; }
+  .small { font-size:13px; color:var(--light); }
+</style>
+</head>
+<body><div class="wrap">
+  <h1>Branch Manager → iOS App Store</h1>
+  <div class="sub">Scoping plan only — no build started. Aug 2026.</div>
+
+  <div class="card verdict">
+    <h3>The verdict up front</h3>
+    <p><strong>Path: Capacitor shell + 4–5 real native features. Skip PWABuilder.</strong> PWABuilder's iOS output is a thin WKWebView wrapper — exactly what Apple's guideline 4.2 reviewers reject. Capacitor wraps the same BM code but gives a real native bridge, and every native feature we'd add maps to something BM already does on the web side, so it reads as a genuine app, not a repackaged site.</p>
+    <p><strong>Honest advisor note [Likely]:</strong> the App Store listing matters for Branch Manager the <em>SaaS product</em> (credibility vs Jobber, "download our app" on the pricing page). For your own crew, the PWA already installs from Safari and does the job. This is a marketing/growth investment, not an ops need — roughly 2–4 weeks of focused work plus Apple review cycles. Fine to park until the SaaS side has pull.</p>
+  </div>
+
+  <div class="card warn">
+    <h3>⚠️ Hard constraint found: your Mac can't build this</h3>
+    <p>Since <strong>April 28, 2026</strong> Apple requires all App Store submissions to be built with <strong>Xcode 26 / iOS 26 SDK</strong>, which needs macOS Tahoe — and your Intel MacBook can't run Tahoe (same reason Palmier was a no-go). So local iOS builds are off the table.</p>
+    <p><strong>The workaround is normal and cheap:</strong> cloud Mac builds — Codemagic (free tier ~500 min/mo), Ionic Appflow, or GitHub Actions macOS runners. Capacitor projects build fine on all three. Budget $0–40/mo. You still need an Apple Developer account: <strong>$99/yr</strong>.</p>
+  </div>
+
+  <h2>Path comparison</h2>
+  <div class="card">
+    <table>
+      <tr><th>Path</th><th>What it is</th><th>4.2 risk</th><th>Call</th></tr>
+      <tr><td><strong>Capacitor</strong></td><td>Native shell + JS bridge to real iOS APIs; BM's vanilla JS drops in as-is</td><td>Low, if we ship real native features</td><td><span class="tag yes">PICK</span></td></tr>
+      <tr><td>PWABuilder</td><td>Auto-generated WKWebView wrapper around the PWA</td><td>High — the classic 4.2 rejection</td><td><span class="tag no">SKIP</span></td></tr>
+      <tr><td>Light native shell (Swift)</td><td>Hand-rolled WKWebView + Swift screens</td><td>Medium — same risk unless native screens are substantial; most work of the three</td><td><span class="tag no">SKIP</span></td></tr>
+    </table>
+    <p class="small">Rejection cycles run days–weeks each, so getting 4.2 right the first time is the whole game.</p>
+  </div>
+
+  <h2>Native features that earn approval (and are actually useful)</h2>
+  <div class="card">
+    <p class="small">Apple explicitly says bolting on push + GPS isn't enough. The winning move: native features tied to what BM already does.</p>
+    <ol>
+      <li><strong>Push notifications (APNs)</strong> — payment received, quote approved, new request, schedule change. BM already generates all these events server-side (Stripe webhook, quote-update, request-notify). Real utility, easy to demo to a reviewer. Must be optional, never marketing without opt-in.</li>
+      <li><strong>Native camera + photo library</strong> — job photos straight into the job-photos bucket (crew photo flow already exists; the AI-extract-uploads onboarding flow too). Native capture with offline queueing is a genuine step up from the web file input.</li>
+      <li><strong>Biometric login (Face ID)</strong> — auth gate is already a ship-blocker on the pre-ship audit; Face ID on the native shell solves mobile login friction and reads as native.</li>
+      <li><strong>Offline mode</strong> — BM's localStorage-first design is unusually close to this already; surfacing "works in the field with no signal, syncs later" is both true and reviewer-friendly.</li>
+      <li><strong>Geofenced arrival ("on my way" / auto clock-in)</strong> — geofence.js exists web-side; CoreLocation region monitoring makes it real background behavior the web can't do. Optional but the strongest "this is an app" signal.</li>
+    </ol>
+    <p>Ship 1–4 for submission; 5 is the stretch goal.</p>
+  </div>
+
+  <h2>Submission checklist (the non-code stuff that blocks approval)</h2>
+  <div class="card">
+    <ul>
+      <li>Apple Developer Program — $99/yr, needs D-U-N-S if enrolling as the LLC (recommended for the SaaS brand).</li>
+      <li>Privacy policy URL — <a href="https://branchmanager.app/privacy.html">privacy.html</a> exists; needs App-Store-specific data-collection disclosure review.</li>
+      <li>Privacy nutrition labels + privacy manifest (mandatory since May 2024) — declare data types, API-usage reasons, third-party SDKs (Supabase, Stripe).</li>
+      <li>Camera/location/notification permission strings — plain-English reasons.</li>
+      <li>Demo account for the reviewer — a seeded tenant with fake data (the provision-tenant flow can mint this).</li>
+      <li>Screenshots for 6.7" and 5.5" devices; App Store description that leads with the native features.</li>
+      <li>Sign in with Apple — required if any third-party login is offered; BM is email/password only today, so <em>not</em> required. Keep it that way for v1.</li>
+    </ul>
+  </div>
+
+  <h2>Feature parity vs Jobber — where BM actually stands</h2>
+  <div class="card">
+    <table>
+      <tr><th>Jobber feature</th><th>BM today</th></tr>
+      <tr><td>Quotes w/ online approval + signature</td><td><span class="tag yes">HAVE</span> approve.html, sign, deposits</td></tr>
+      <tr><td>Invoicing + online card payment</td><td><span class="tag yes">HAVE</span> pay.html, Stripe, tips, surcharge</td></tr>
+      <tr><td>Client hub / portal</td><td><span class="tag yes">HAVE</span> portal w/ photos, pay-all, uploads</td></tr>
+      <tr><td>Scheduling + calendar</td><td><span class="tag part">PARTIAL</span> calendar_events + drag-drop exist; crew-facing day view is thinner than Jobber's</td></tr>
+      <tr><td>Push notifications</td><td><span class="tag no">GAP</span> — the Capacitor build closes it</td></tr>
+      <tr><td>GPS / routing / time tracking</td><td><span class="tag part">PARTIAL</span> Bouncie fleet + time_entries; no turn-by-turn</td></tr>
+      <tr><td>Automated reminders/follow-ups</td><td><span class="tag yes">HAVE</span> draft-queue model (by design, Doug-approved sends)</td></tr>
+      <tr><td>Reviews / marketing</td><td><span class="tag yes">HAVE</span> review links on receipts, campaigns module</td></tr>
+      <tr><td>Payroll</td><td><span class="tag yes">HAVE</span> (Jobber charges extra for less)</td></tr>
+      <tr><td>Offline field app</td><td><span class="tag part">PARTIAL</span> localStorage-first helps; needs a deliberate offline pass</td></tr>
+    </table>
+  </div>
+
+  <h2>Phased plan (when you say go)</h2>
+  <div class="card">
+    <ol>
+      <li><strong>Phase A — shell (2–3 days):</strong> Capacitor project in the BM repo, app icons/splash, cloud build pipeline (Codemagic), TestFlight to your phone.</li>
+      <li><strong>Phase B — native features (1–2 weeks):</strong> push (APNs via a small Supabase push-token table + edge fn), native camera into job-photos, Face ID gate, offline audit.</li>
+      <li><strong>Phase C — submission (3–5 days + review):</strong> privacy manifest/labels, permission strings, reviewer demo tenant, screenshots, submit. Expect one rejection round; answer with the native-feature demo video.</li>
+    </ol>
+    <p class="small">Pre-ship audit blockers (auth gate, tenant RLS, job# collisions) should land before any public App Store presence — the store listing points strangers at the signup flow.</p>
+  </div>
+
+  <p class="small" style="margin-top:28px;">Unlisted page · noindex · prepared by Claude, Aug 2026 session</p>
+</div></body>
+</html>
