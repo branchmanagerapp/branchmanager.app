@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Second Nature — Day by Day</title>
+<style>
+  * { box-sizing:border-box; margin:0; }
+  :root { --green:#1a3c12; --green-mid:#2c5e1f; --bg:#f5f6f4; --card:#fff; --ink:#1c2419; --dim:#687662; --line:#e3e8e0; }
+  body { background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; padding-bottom:60px; }
+  header { background:linear-gradient(135deg,#12300c,#2c5e1f); color:#fff; padding:26px 18px 20px; text-align:center; }
+  header .co { font-size:11px; letter-spacing:2px; text-transform:uppercase; opacity:.75; }
+  header h1 { font-size:24px; margin-top:4px; }
+  header .sub { font-size:13px; opacity:.8; margin-top:4px; }
+  .wrap { max-width:640px; margin:0 auto; padding:14px; }
+  .monthbar { display:flex; align-items:center; justify-content:space-between; margin:6px 2px 14px; }
+  .monthbar h2 { font-size:18px; }
+  .monthbar button { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 14px; font-size:16px; cursor:pointer; }
+  .day { background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:16px; overflow:hidden; }
+  .day .head { padding:14px 16px 4px; }
+  .day .date { font-size:12px; font-weight:700; color:var(--green-mid); text-transform:uppercase; letter-spacing:1px; }
+  .day h3 { font-size:18px; margin:2px 0 4px; }
+  .day .sum { font-size:14.5px; color:var(--dim); padding:0 16px 10px; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2px; }
+  .grid.n1 { grid-template-columns:1fr; } .grid.n2 { grid-template-columns:1fr 1fr; }
+  .grid img { width:100%; aspect-ratio:1; object-fit:cover; display:block; cursor:pointer; background:#dde3da; }
+  .grid.n1 img { aspect-ratio:4/3; }
+  .foot { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; }
+  .loc { font-size:12px; color:var(--dim); }
+  .share { background:var(--green); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+  .empty { text-align:center; color:var(--dim); padding:40px 0; font-size:14px; }
+  /* lightbox */
+  #lb { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:50; align-items:center; justify-content:center; }
+  #lb img { max-width:100%; max-height:92vh; object-fit:contain; }
+  #lb .x { position:absolute; top:14px; right:18px; color:#fff; font-size:30px; cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="co">Second Nature Tree Service</div>
+  <h1>🌳 Day by Day</h1>
+  <div class="sub">What we were out doing — real days, real trees</div>
+</header>
+<div class="wrap">
+  <div class="monthbar">
+    <button onclick="shift(-1)">&larr;</button>
+    <h2 id="mtitle"></h2>
+    <button onclick="shift(1)">&rarr;</button>
+  </div>
+  <div id="feed"><div class="empty">Loading…</div></div>
+</div>
+<div id="lb" onclick="this.style.display='none'"><span class="x">&times;</span><img id="lbimg"></div>
+<script>
+var SB='https://ltpivkqahvplapyagljt.supabase.co';
+var ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var now=new Date(); var vy=now.getFullYear(), vm=now.getMonth();
+var ALL=null;
+function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+function shift(d){ vm+=d; if(vm<0){vm=11;vy--;} if(vm>11){vm=0;vy++;} render(); }
+function load(){
+  fetch(SB+'/rest/v1/day_recaps?select=date,title,summary,photos,locations&order=date.desc',
+    {headers:{apikey:ANON,Authorization:'Bearer '+ANON}})
+  .then(function(r){return r.json();})
+  .then(function(rows){ ALL=rows; render(); })
+  .catch(function(){ document.getElementById('feed').innerHTML='<div class="empty">Couldn\'t load — check connection.</div>'; });
+}
+function render(){
+  document.getElementById('mtitle').textContent=MON[vm]+' '+vy;
+  if(!ALL) return;
+  var pre=(vy+'-'+(vm<9?'0':'')+(vm+1));
+  var rows=ALL.filter(function(r){return r.date.indexOf(pre)===0;});
+  var el=document.getElementById('feed');
+  if(!rows.length){ el.innerHTML='<div class="empty">No days logged this month.</div>'; return; }
+  var h='';
+  rows.forEach(function(r){
+    var d=new Date(r.date+'T12:00:00');
+    var ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' · '+MON[d.getMonth()].slice(0,3)+' '+d.getDate();
+    var ph=r.photos||[];
+    var cls=ph.length===1?'grid n1':(ph.length===2?'grid n2':'grid');
+    var locs=(r.locations||[]).map(function(l){return l.name?l.name.split(',')[0]:'';}).filter(Boolean).slice(0,2).join(' · ');
+    h+='<div class="day">'
+      +'<div class="head"><div class="date">'+ds+'</div><h3>'+esc(r.title)+'</h3></div>'
+      +'<div class="sum">'+esc(r.summary)+'</div>'
+      +(ph.length?'<div class="'+cls+'">'+ph.map(function(u){return '<img loading="lazy" src="'+esc(u)+'" onclick="lb(\''+esc(u)+'\')">';}).join('')+'</div>':'')
+      +'<div class="foot"><span class="loc">'+esc(locs)+'</span>'
+      +'<button class="share" onclick="shareDay(\''+r.date+'\',\''+esc(r.title).replace(/'/g,"\\'")+'\')">Share</button></div>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+}
+function lb(u){ document.getElementById('lbimg').src=u; document.getElementById('lb').style.display='flex'; }
+function shareDay(date,title){
+  var url=location.origin+location.pathname+'#'+date;
+  var text=title+' — Second Nature Tree Service';
+  if(navigator.share){ navigator.share({title:text,text:text,url:url}).catch(function(){}); }
+  else { navigator.clipboard && navigator.clipboard.writeText(text+' '+url); alert('Link copied'); }
+}
+load();
+</script>
+</body>
+</html>
