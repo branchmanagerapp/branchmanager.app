@@ -126,7 +126,7 @@ serve(async (req) => {
     const tenantRes = await pgFetch(`/rest/v1/tenants?id=eq.${session.tenant_id}&select=name,config`);
     const tenantArr = await tenantRes.json();
     const tenant = tenantArr && tenantArr[0];
-    const secretKey = tenant?.config?.stripe_secret_key || Deno.env.get("STRIPE_SECRET_KEY") || "";
+    const secretKey = tenant?.config?.stripe_secret_key || Deno.env.get("STRIPE_SECRET_KEY") || Deno.env.get("STRIPE_API_KEY") || "";
     if (!secretKey) {
       return new Response(JSON.stringify({ ok: false, error: "Stripe not configured for tenant" }), {
         status: 400, headers: { ...CORS, "Content-Type": "application/json" },

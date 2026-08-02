@@ -33,7 +33,7 @@ async function getTenantSecretKey(tenantId: string): Promise<string | null> {
   if (!r.ok) return null;
   const data = await r.json();
   const cfg = data && data[0] && data[0].config;
-  return (cfg && cfg.stripe_secret_key) || Deno.env.get('STRIPE_SECRET_KEY') || null;
+  return (cfg && cfg.stripe_secret_key) || (Deno.env.get('STRIPE_SECRET_KEY') ?? Deno.env.get('STRIPE_API_KEY')) || null;
 }
 
 // Server-side authoritative amount: sum the REAL balances of the given
