@@ -180,9 +180,16 @@ footer a{color:var(--green)}
 <script>
 (function(){
   var EVENTS = [
+    // ---- Aug 2 2026 session adds ----
+    {d:'2026-08-02', t:'SHIPPED: broken customer-link bug KILLED', k:'done', ic:'🛠️', note:'quote-fetch + invoice-fetch both 404ed any link shared while the record sat in draft (hit Barbara, Birchie, Maria/Lucente, 25 Cayuga). Fixed + deployed + smoke-tested. Also: BM v1079 (🛰 Ground Control button on Schedule), Tap-card guide page, 6-hour stalled-items email digest created.'},
+    {d:'2026-08-02', t:'APPROVE 2 EMAILS — Hope Bogart + Maria/Lucente', k:'task', ic:'📨', note:'Both staged in Marketing → Drafts to Review. Bogart = corrected $500 invoice + W-9 (waiting since Jun 9). Maria = working link for unpaid Lucente #1007 $3,457.16.', link:'https://branchmanager.app/#marketing'},
+    {d:'2026-08-02', t:'25 Cayuga: NEVER invoiced, NEVER paid — need amount', k:'task', ic:'🔴', note:'No invoice, no payment on record. Customer (914-261-7558, 723hudsonave@gmail.com) approved by text 7/15, pays by check via business acct. Last msg 7/17: "your guy hit the house." Doug: give Claude the amount → invoice goes out same day.'},
+    {d:'2026-07-29', t:'Hudson Ridge estimate visit → quote #564 drafted', k:'task', ic:'🧾', note:'Catherine Scott, 70 Hudson Ridge Garrison (repeat client). 8 site photos attached to 4 scope lines — PRICE IT ($0 placeholders) then Send.', link:'https://branchmanager.app/?rec=quote-f5966dd0-b739-4fb4-8a9b-34fd70860d77#quotes'},
+    {d:'2026-08-05', t:'Photo-sweep: 4 site visits with NO record', k:'sug', ic:'💡', note:'GPS says you were at: 1187 Old Post Rd South Salem (7/6) · 11 Hale Ct Continental Vlg (7/24+27) · 2094 Albany Post Rd Montrose (7/18+25) · ~49 Johnson St PV (7/27+30, likely Natasha). Real jobs? Tell Claude which → estimates built like Hudson Ridge.'},
+    {d:'2026-08-08', t:'Chris Kailer — freebie ash drop (friend)', k:'sug', ic:'🌳', note:'41 Stonewall Farm Rd, Mahopac. Backyard ash, no invoice, when convenient.'},
     // ---- Aug 1 2026 adds (from Doug's texts) ----
     {d:'2026-08-03', t:'Fred Romer estimate — Continental Village Park District (DOUG)', k:'task', ic:'🧾', note:'Doug 8/1: do not forget. Draft quotes #562 ($0) + #563 ($100) already in BM — price them after the visit.'},
-    {d:'2026-08-03', t:'Finish Oswald Roche job (HALF DONE)', k:'big', ic:'🔴', note:'26 N 2nd St, Cortlandt. Approved #514 $2,500 (insurance). Cleanup done 7/17; remaining tree work needs a day — NO DATE SET, pick one. Invoice when finished (likely + the 2nd tree).'},
+    {d:'2026-08-06', t:'FINISH OSWALD ROCHE — #1 PRIORITY', k:'big', ic:'🔴', note:'Doug 8/2: highest-priority job. Most work done, NOT paid, cleanup remains. First job back next week (~Thu 8/6, BEFORE Nick). Approved #514 $2,500 — invoice the day it finishes.'},
     {d:'2026-08-01', t:'New Paltz job DONE — Braxton', k:'done', ic:'✅', note:'Per Doug 8/1. No New Paltz record in BM yet — add client/job so it can be invoiced.'},
     {d:'2026-08-01', t:'Anthony Turner\'s job — Doug on site', k:'big', ic:'🌳', note:'Per Doug 8/1.'},
     {d:'2026-08-07', t:'Nick\'s job (TENTATIVE) — 78 Andrews Rd, Lagrangeville', k:'task', ic:'🌳', note:'Nicholas Anthony (Mr Tree, 845-670-6536, Anthony Turner referral). Piece out 1 tree, all stays, set up from neighbor\'s drive. $800 agreed ($1,000 was his offer for Mon 8/3). His 7/29 text is UNANSWERED — confirm day w/ him + homeowner.'},
@@ -205,13 +212,13 @@ footer a{color:var(--green)}
     {d:'2026-07-08', t:'Return new-lead calls', k:'task', ic:'📞', note:'Barbara · Rob McCrane · Chris Cannon.'},
     {d:'2026-07-09', t:'Adam Melish job — with Armand', k:'big', ic:'🌳', note:'68 Cedar Ave, Poughkeepsie. ~$3,800 (or $4,600 w/ stump).'},
     // ---- to-do / blocked ----
-    {d:'2026-07-07', t:'Hector Arroyo — job NOT done, ASAP', k:'big', ic:'🔴', note:'Still open — get it done. Confirm which Hector / what work.'},
-    {d:'2026-07-08', t:'Matt Green — Country Lane — tree cleanup', k:'task', ic:'🌳', note:'11 Country Lane, Philipstown (Armand’s street). Still owed.'},
+    {d:'2026-07-23', t:'Hector Arroyo job DONE — paid ✅', k:'done', ic:'✓', note:'16 Parkway Dr. Done+paid per Doug 8/2. NOT in books yet — need amount + method to record it. NEXT: he wants an estimate for another tree (WINTER work).'},
+    {d:'2026-08-03', t:'Collect $1,200 — Matt Green (11 Country Lane)', k:'task', ic:'💵', note:'Job done. Draft invoice #1013 ready — check tax ($1,200+tax=$1,300.50 as built), edit scope, Send.', link:'https://branchmanager.app/?rec=invoice-0522c7b9-6fed-43f1-8648-5e25d5698749#invoices'},
     {d:'2026-07-08', t:'Send Arlene #516 + Syed #535 quotes', k:'task', ic:'🧾', note:'Arlene hickory $5,500 (attach photos) · Syed Yarbo (add prices + address).', link:'https://branchmanager.app'},
-    {d:'2026-07-08', t:'Order X430 for Ted Haver', k:'task', ic:'🚜', note:'BLOCKED — need to pay CADCO invoice #108833 ($16,303.55) first. Same block as Dennis’s X450s.'},
+    {d:'2026-08-04', t:'Follow up Ted Haver — X430 orderable again', k:'task', ic:'🚜', note:'CADCO #108833 paid (per Doug 8/2) so his lost X430 sale is revivable. No contact info on file — add his number to BM.'},
     // ---- suggested (Claude) — move/confirm as you like ----
     {d:'2026-07-10', t:'Follow up: Oswald + Tanisha quotes', k:'sug', ic:'💡', note:'Suggested — both sent Jul 6, no reply yet. A nudge keeps storm work warm.'},
-    {d:'2026-07-11', t:'Pay CADCO → unlocks Ted + Dennis mowers', k:'sug', ic:'💡', note:'Suggested — clearing #108833 unblocks Ted Haver’s X430 AND Dennis’s backordered X450s.'}
+    {d:'2026-08-04', t:'CADCO: enter NEW bills + deadlines', k:'task', ic:'🧾', note:'#108833 ($16,303.55) PAID per Doug 8/2 (not yet verified in books). New bills exist — Doug logs Claude into the CADCO portal to pull them.'}
   ];
   var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var pad=function(n){return (n<10?'0':'')+n;};
