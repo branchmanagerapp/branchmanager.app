@@ -290,7 +290,13 @@ serve(async (req)=>{
               }
               const paidNow = new Date().toISOString();
               const invBal = Number(inv.balance ?? inv.total ?? 0);
-              await supabase.from('invoices').update({
+              // ATOMIC first-writer-wins (Aug 2 fix): checkout.session.completed and
+              // payment_intent.succeeded arrive near-simultaneously for one payment —
+              // both read the invoice pre-paid, so the read-then-check guard above
+              // passed BOTH and the customer got two receipts (live-reproduced on
+              // #106). The update itself now refuses rows already stamped with this
+              // payment intent; zero rows updated → the other event won → skip.
+              const { data: updatedRows } = await supabase.from('invoices').update({
                 status: 'paid',
                 balance: 0,
                 paid_date: paidNow,
@@ -298,7 +304,13 @@ serve(async (req)=>{
                 payment_method: 'stripe',
                 stripe_payment_id: paymentIntentId,
                 updated_at: paidNow
-              }).eq('id', inv.id);
+              }).eq('id', inv.id)
+                .or(`stripe_payment_id.is.null,stripe_payment_id.neq.${paymentIntentId}`)
+                .select('id');
+              if (!updatedRows || updatedRows.length === 0) {
+                console.log(`↩︎ Race duplicate — invoice #${inv.invoice_number} already claimed by ${paymentIntentId}, skipping receipt`);
+                continue;
+              }
               console.log(`✅ Invoice #${inv.invoice_number} (${inv.client_name}) marked PAID via multi-invoice charge`);
               // Send receipt to client
               const toEmail = inv.client_email || customerEmail || '';
@@ -379,12 +391,22 @@ serve(async (req)=>{
           stripe_payment_id: paymentIntentId,
           updated_at: paidAt
         };
-        const { error: updateErr } = await supabase.from('invoices').update(updateFields).eq('id', inv.id);
+        // ATOMIC first-writer-wins (Aug 2 fix — see multi-invoice path): refuse
+        // rows already stamped with this payment intent so the simultaneous
+        // checkout.session.completed / payment_intent.succeeded pair can't both
+        // mark paid and double-send the receipt.
+        const { data: updatedRows, error: updateErr } = await supabase.from('invoices').update(updateFields).eq('id', inv.id)
+          .or(`stripe_payment_id.is.null,stripe_payment_id.neq.${paymentIntentId}`)
+          .select('id');
         if (updateErr) {
           console.error('Invoice update error:', updateErr);
           return new Response('Update error', {
             status: 500
           });
+        }
+        if (!updatedRows || updatedRows.length === 0) {
+          console.log(`↩︎ Race duplicate — invoice #${invoiceNumber} already claimed by ${paymentIntentId}, skipping receipt`);
+          return new Response('OK (duplicate)', { status: 200 });
         }
         if (covers) {
           console.log(`✅ Invoice #${invoiceNumber} for ${inv.client_name} marked PAID — $${amountDollars.toFixed(2)}`);
