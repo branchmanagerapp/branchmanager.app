@@ -1,5 +1,5 @@
 {
-  "version": 1081,
+  "version": 1082,
   "released": "2026-08-04",
-  "notes": "SocialBranch cloud mirror + server post runner + daily digest social recap"
+  "notes": "Earnings ledger: nightly earned-from-hours sync, record-payment + settle-up on Payroll"
 }

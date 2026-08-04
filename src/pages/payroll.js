@@ -305,6 +305,10 @@ var PayrollPage = {
     // ── Weekly Review Panel ──
     html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
 
+    // ── Earnings Ledger (v1082) — earned vs paid per member ──
+    html += '<div id="pay-ledger" style="margin-top:20px;"><div style="font-size:12px;color:var(--text-light);">Loading earnings ledger…</div></div>';
+    setTimeout(PayrollPage._loadLedger, 0);
+
     // v383: My Pay (employeecenter) folded under Payroll. Link at bottom for now;
     // will pull out to its own page once Crew View ships and crew-vs-admin nav splits.
     html += '<div style="margin-top:24px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
@@ -866,5 +870,97 @@ var PayrollPage = {
   // once nothing in the codebase calls it.
   triggerGusto: function(weekStart) {
     PayrollPage.showPayrollSummary(weekStart);
+  },
+
+  // ── EARNINGS LEDGER (v1082) ─────────────────────────────
+  // Server fn earnings-sync builds earned rows from time_entries nightly;
+  // payments/adjustments are recorded here. Balance = earned − paid.
+  // Until payments are recorded, balances are "earned on record", NOT owed —
+  // the Settle-up button zeroes history so accrual starts clean.
+  _ledgerRows: null,
+  _loadLedger: function() {
+    var el = document.getElementById('pay-ledger');
+    if (!el || typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+    SupabaseDB.client.from('earnings_ledger')
+      .select('member_name, kind, amount, entry_date')
+      .then(function(res) {
+        if (!document.getElementById('pay-ledger')) return;
+        if (res.error) {
+          document.getElementById('pay-ledger').innerHTML =
+            '<div style="font-size:12px;color:var(--red);">Ledger unavailable: ' + UI.esc(res.error.message) + '</div>';
+          return;
+        }
+        PayrollPage._ledgerRows = res.data || [];
+        PayrollPage._renderLedger();
+      });
+  },
+  _renderLedger: function() {
+    var el = document.getElementById('pay-ledger');
+    if (!el) return;
+    var rows = PayrollPage._ledgerRows || [];
+    var agg = {};
+    rows.forEach(function(r) {
+      var a = agg[r.member_name] = agg[r.member_name] || { earned: 0, paid: 0, adj: 0 };
+      var amt = +r.amount || 0;
+      if (r.kind === 'earned') a.earned += amt;
+      else if (r.kind === 'payment') a.paid += -amt;
+      else a.adj += amt;
+    });
+    var names = Object.keys(agg).sort();
+    var anyPayments = rows.some(function(r) { return r.kind === 'payment'; });
+    var fmt = function(n) { return '$' + (+n).toLocaleString('en-US', { minimumFractionDigits: 2 }); };
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">'
+      + '<strong style="font-size:14px;">💰 Earnings ledger</strong>'
+      + '<span style="font-size:11px;color:var(--text-light);">earned from logged hours · payments count once recorded</span></div>';
+    if (!anyPayments) {
+      html += '<div style="font-size:12px;background:#fff8e6;border:1px solid #f0d97a;border-radius:8px;padding:8px 10px;margin-bottom:10px;">'
+        + '⚠️ No payments recorded yet, so these are <b>earned-on-record totals since Jan 2024</b>, not amounts owed. '
+        + 'Tap <b>Settle up</b> on anyone you\'re square with — the ledger starts counting fresh from today.</div>';
+    }
+    html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:430px;">'
+      + '<tr style="text-align:left;color:var(--text-light);font-size:11px;"><th style="padding:6px 8px;">Member</th><th style="padding:6px 8px;text-align:right;">Earned</th><th style="padding:6px 8px;text-align:right;">Paid</th><th style="padding:6px 8px;text-align:right;">Balance</th><th style="padding:6px 8px;"></th></tr>';
+    names.forEach(function(n) {
+      var a = agg[n];
+      var bal = Math.round((a.earned + a.adj - a.paid) * 100) / 100;
+      var esc = n.replace(/'/g, "\\'");
+      html += '<tr style="border-top:1px solid var(--border);">'
+        + '<td style="padding:8px;font-weight:600;">' + UI.esc(n) + '</td>'
+        + '<td style="padding:8px;text-align:right;">' + fmt(a.earned + a.adj) + '</td>'
+        + '<td style="padding:8px;text-align:right;">' + fmt(a.paid) + '</td>'
+        + '<td style="padding:8px;text-align:right;font-weight:700;color:' + (bal > 0.009 ? 'var(--red)' : 'var(--green-dark)') + ';">' + fmt(bal) + '</td>'
+        + '<td style="padding:8px;white-space:nowrap;">'
+        + '<button onclick="PayrollPage.recordPayment(\'' + esc + '\')" class="btn btn-outline" style="font-size:11px;padding:4px 8px;">Record payment</button> '
+        + (bal > 0.009 ? '<button onclick="PayrollPage.settleUp(\'' + esc + '\',' + bal + ')" class="btn btn-outline" style="font-size:11px;padding:4px 8px;">Settle up</button>' : '')
+        + '</td></tr>';
+    });
+    html += '</table></div></div>';
+    el.innerHTML = html;
+  },
+  _insertLedgerRow: function(row, doneMsg) {
+    row.tenant_id = DB.getTenantId();
+    row.source = 'manual';
+    row.source_key = 'man-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    SupabaseDB.client.from('earnings_ledger').insert(row).then(function(res) {
+      if (res.error) { UI.toast('Save failed: ' + res.error.message, 'error'); return; }
+      UI.toast(doneMsg);
+      PayrollPage._loadLedger();
+    });
+  },
+  recordPayment: function(name) {
+    var amt = parseFloat(prompt('Amount paid to ' + name + ' (e.g. 600):') || '');
+    if (!amt || amt <= 0) return;
+    var note = prompt('Note (how/when — e.g. "Zelle 8/4"):') || '';
+    PayrollPage._insertLedgerRow({
+      member_name: name, entry_date: new Date().toISOString().slice(0, 10),
+      kind: 'payment', amount: -Math.abs(amt), notes: note.slice(0, 200) || null
+    }, 'Payment recorded — ' + name);
+  },
+  settleUp: function(name, bal) {
+    if (!confirm('Mark ' + name + ' as fully settled through today? Records a payment of $' + bal.toFixed(2) + ' so the ledger starts fresh. (Does not move any money.)')) return;
+    PayrollPage._insertLedgerRow({
+      member_name: name, entry_date: new Date().toISOString().slice(0, 10),
+      kind: 'payment', amount: -Math.abs(bal), notes: 'Settled up through today (opening-balance zero-out)'
+    }, name + ' marked settled');
   }
 };
