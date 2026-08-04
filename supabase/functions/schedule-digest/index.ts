@@ -80,8 +80,24 @@ serve(async (req) => {
     wageLines += `  ${n}: ${h.toFixed(2)}h → ${money(w)}\n`;
   }
 
+  // ── Social recap (v1091, Doug 8/4): what posted, what's due, what's stuck ──
+  const yesterday = new Date(et.getTime() - 24 * 3600000).toISOString();
+  const tomorrow = new Date(et.getTime() + 24 * 3600000).toISOString();
+  const socPosted = await q(`social_posts?tenant_id=eq.${TENANT}&status=eq.posted&posted_at=gte.${yesterday}&select=caption,networks,posted_at&order=posted_at.desc`);
+  const socDue = await q(`social_posts?tenant_id=eq.${TENANT}&status=eq.scheduled&scheduled_at=lte.${tomorrow}&select=caption,networks,scheduled_at&order=scheduled_at`);
+  const socFailed = await q(`social_posts?tenant_id=eq.${TENANT}&status=eq.failed&updated_at=gte.${yesterday}&select=caption,results`);
+  const capOf = (p: any) => `"${String(p.caption || '(no caption)').slice(0, 70)}" [${(p.networks || []).join(', ')}]`;
+  let soc = '';
+  if (socPosted.length || socDue.length || socFailed.length) {
+    soc = '\nSOCIAL POSTS\n';
+    for (const p of socPosted) soc += `  ✅ posted: ${capOf(p)}\n`;
+    for (const p of socDue) soc += `  🕒 due next 24h: ${capOf(p)}\n`;
+    for (const p of socFailed) soc += `  ❌ FAILED: ${capOf(p)} — ${String(p.results?.error || 'check webhook')}\n`;
+    soc += '  Manage: https://branchmanager.app/#socialbranch\n';
+  }
+
   const stamp = et.toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  const text = `SCHEDULE — next 7 days\n${sched}\nQUOTES OUT (awaiting approval): ${quotes.length}\n${qs}\nMONEY OWED TO YOU: ${money(owed)} across ${invs.length} open invoices\n${is_}\nBUSINESS STATUS\n  NY sales tax collected this quarter (owed at the ~Sep 22 filing): ${money(taxOwed)}\n  Collected in the last 7 days: ${money(revWk)}\n  Wages accrued last 7 days (hours × private rates):\n${wageLines || '  (no hours logged)\n'}  Accrued total: ${money(wages)}  — estimates from BM records, not a payroll filing\n\nOpen the app: https://branchmanager.app/#schedule\n\n— Branch Manager digest, ${stamp} ET (every 6h; tell Claude to change or stop it)`;
+  const text = `SCHEDULE — next 7 days\n${sched}\nQUOTES OUT (awaiting approval): ${quotes.length}\n${qs}\nMONEY OWED TO YOU: ${money(owed)} across ${invs.length} open invoices\n${is_}${soc}\nBUSINESS STATUS\n  NY sales tax collected this quarter (owed at the ~Sep 22 filing): ${money(taxOwed)}\n  Collected in the last 7 days: ${money(revWk)}\n  Wages accrued last 7 days (hours × private rates):\n${wageLines || '  (no hours logged)\n'}  Accrued total: ${money(wages)}  — estimates from BM records, not a payroll filing\n\nOpen the app: https://branchmanager.app/#schedule\n\n— Branch Manager digest, ${stamp} ET (daily 6am; tell Claude to change or stop it)`;
 
   const r = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

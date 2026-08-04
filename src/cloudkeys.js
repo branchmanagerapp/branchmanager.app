@@ -26,7 +26,11 @@ var CloudKeys = {
     // persist to Supabase via DB.jobs.create; this cloud-syncs the templates
     // themselves so they survive a cache clear and follow the owner across
     // devices — required parity for SNT's seasonal/recurring work vs Jobber.
-    'bm-recurring'
+    'bm-recurring',
+    // Social posting webhook (Zapier/Make) — synced so the social-post-runner
+    // edge fn can read it from tenant_settings and fire scheduled posts
+    // server-side (v1091).
+    'bm-socialpilot-webhook'
   ],
 
   ready: false,

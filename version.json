@@ -1,5 +1,5 @@
 {
-  "version": 1080,
-  "released": "2026-08-02",
-  "notes": "v1080: Drafts to Review waits for cloud client instead of instant 'Cloud sync required' give-up"
+  "version": 1081,
+  "released": "2026-08-04",
+  "notes": "SocialBranch cloud mirror + server post runner + daily digest social recap"
 }

@@ -48,6 +48,7 @@ var SocialBranch = {
 
   render: function() {
     var self = SocialBranch;
+    SocialBranch._reconcileFromCloud();
     // Auto-import SocialPilot history. Previous versions (v363) could set the
     // flag without actually importing, so we self-heal: if the flag is set but
     // we have zero SP-tagged posts, clear the flag and retry.
@@ -1366,6 +1367,97 @@ var SocialBranch = {
   },
   _setPosts: function(posts) {
     localStorage.setItem('bm-social-posts', JSON.stringify(posts));
+    SocialBranch._mirrorToCloud(posts);
+  },
+
+  // ── CLOUD MIRROR (v1091) ─────────────────────────────────
+  // localStorage stays the UI's source of truth; every save also mirrors a
+  // lightweight copy (no data-URL blobs) to the social_posts table so the
+  // social-post-runner edge fn can fire scheduled posts with the app closed
+  // and the daily digest can recap them. Data-URL media on a scheduled post
+  // is uploaded to storage here so the server has real URLs to publish.
+  _mirrorTimer: null,
+  _mirrorToCloud: function(posts) {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) return;
+    clearTimeout(SocialBranch._mirrorTimer);
+    SocialBranch._mirrorTimer = setTimeout(function() {
+      var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+      if (!tid) return;
+      var pending = posts.filter(function(p) {
+        return p.status === 'scheduled' && (p.media || []).some(function(m) { return /^data:/i.test(m); });
+      });
+      var chain = Promise.resolve();
+      pending.forEach(function(p) {
+        chain = chain.then(function() {
+          return SocialBranch._uploadMediaToPublicUrls(p.media || []).then(function(pub) {
+            var all = SocialBranch._getPosts();
+            var i = all.findIndex(function(x) { return x.id === p.id; });
+            if (i >= 0) { all[i].media = pub; localStorage.setItem('bm-social-posts', JSON.stringify(all)); }
+          }).catch(function() { /* runner will flag device-only media */ });
+        });
+      });
+      chain.then(function() {
+        var fresh = SocialBranch._getPosts();
+        if (!fresh.length) return; // never prune cloud from an empty device
+        var rows = fresh.map(function(p) {
+          var pub = (p.media || []).filter(function(m) { return !/^data:/i.test(m); });
+          return {
+            id: String(p.id), tenant_id: tid,
+            caption: (p.caption || '').slice(0, 4000),
+            networks: p.networks || [],
+            media_urls: pub,
+            has_local_media: (p.media || []).length > pub.length,
+            scheduled_at: p.scheduledAt || null,
+            status: p.status || 'draft',
+            posted_at: p.postedAt || null,
+            results: p.results || null,
+            updated_at: new Date().toISOString()
+          };
+        });
+        SupabaseDB.client.from('social_posts').upsert(rows).then(function(res) {
+          if (res.error) { console.warn('[SocialBranch] cloud mirror failed:', res.error.message); return; }
+          var ids = rows.map(function(r) { return '"' + r.id + '"'; }).join(',');
+          SupabaseDB.client.from('social_posts').delete().eq('tenant_id', tid)
+            .not('id', 'in', '(' + ids + ')')
+            .then(function(res2) { if (res2.error) console.warn('[SocialBranch] mirror prune failed:', res2.error.message); });
+        });
+      });
+    }, 800);
+  },
+
+  // Pull server outcomes (runner-fired posts) + posts from other devices.
+  // Runs once per page load, before any local save can prune the cloud.
+  _reconciledOnce: false,
+  _reconcileFromCloud: function() {
+    if (SocialBranch._reconciledOnce) return;
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) return;
+    SocialBranch._reconciledOnce = true;
+    SupabaseDB.client.from('social_posts').select('*').then(function(res) {
+      if (res.error || !res.data) return;
+      var posts = SocialBranch._getPosts();
+      var changed = false;
+      res.data.forEach(function(row) {
+        var p = posts.find(function(x) { return String(x.id) === String(row.id); });
+        if (!p) {
+          // Post exists in cloud only (created on another device) — import lightweight.
+          posts.push({
+            id: row.id, caption: row.caption || '', media: row.media_urls || [],
+            networks: row.networks || [], scheduledAt: row.scheduled_at,
+            status: row.status, postedAt: row.posted_at, results: row.results,
+            createdAt: row.created_at
+          });
+          changed = true;
+        } else if ((row.status === 'posted' || row.status === 'failed') && p.status === 'scheduled') {
+          // Server runner outcome wins over a stale local 'scheduled'.
+          p.status = row.status; p.postedAt = row.posted_at; p.results = row.results;
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem('bm-social-posts', JSON.stringify(posts));
+        if (window._currentPage === 'socialbranch') loadPage('socialbranch');
+      }
+    });
   },
   _upsertPost: function(post) {
     var posts = SocialBranch._getPosts();
