@@ -144,6 +144,9 @@
       <tr><td>Dave (climber)</td><td>$500</td></tr>
       <tr class="section"><td>Fixed subtotal</td><td>$5,500</td></tr>
       <tr class="commission"><td>Michelle — sales commission<span class="note">10% of job price</span></td><td id="commission">$800</td></tr>
+      <tr><td>Other company costs<span class="note">insurance, trucks, fuel, admin — tap to set</span></td>
+        <td><input type="number" id="overhead" inputmode="decimal" min="0" step="50" placeholder="0" value=""
+          style="width:90px;background:#161913;border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;font-weight:600;font-size:15px;text-align:right;padding:6px 8px;-moz-appearance:textfield;"></td></tr>
       <tr class="section"><td>Total costs</td><td id="totalCosts">$6,300</td></tr>
     </table>
   </div>
@@ -165,6 +168,7 @@
   var FIXED = 5500;
   var COMMISSION_RATE = 0.10;
   var slider = document.getElementById('slider');
+  var overheadInput = document.getElementById('overhead');
 
   function fmt(n) {
     return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -173,7 +177,8 @@
   function update() {
     var price = Number(slider.value);
     var commission = price * COMMISSION_RATE;
-    var totalCosts = FIXED + commission;
+    var overhead = Math.max(0, Number(overheadInput.value) || 0);
+    var totalCosts = FIXED + commission + overhead;
     var net = price - totalCosts;
     var margin = (net / price) * 100;
 
@@ -192,6 +197,7 @@
   }
 
   slider.addEventListener('input', update);
+  overheadInput.addEventListener('input', update);
   update();
 })();
 </script>
