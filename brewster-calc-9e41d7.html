@@ -152,11 +152,13 @@
       <tr class="section"><td>Fixed subtotal</td><td>$5,500</td></tr>
       <tr class="commission"><td>Michelle — sales commission<span class="note">10% of job price</span></td><td id="commission">$800</td></tr>
       <tr><td colspan="2" style="padding-top:12px;">
-        <div style="font-size:15px;display:flex;justify-content:space-between;align-items:baseline;"><span>Other company costs</span><span style="font-weight:700;font-variant-numeric:tabular-nums;" id="overheadOut">$375</span></div>
-        <div class="note" style="margin-top:6px;line-height:2;">
+        <div style="font-size:15px;display:flex;justify-content:space-between;align-items:baseline;"><span>Company costs / job</span><span style="font-weight:700;font-variant-numeric:tabular-nums;" id="overheadOut">$375</span></div>
+        <div class="note" style="margin-top:8px;">
+          <select id="ovJobDays" class="mini" style="width:100%;padding:10px 8px;text-align:left;font-size:15px;-webkit-appearance:menulist;appearance:menulist;"></select>
+        </div>
+        <div class="note" style="margin-top:8px;line-height:2;">
           fixed nut <input type="number" id="ovMonthly" inputmode="decimal" min="0" step="100" value="7500" class="mini"> /mo
           ÷ <input type="number" id="ovDays" inputmode="decimal" min="1" step="1" value="20" class="mini narrow"> work days
-          × <input type="number" id="ovJobDays" inputmode="decimal" min="0" step="0.5" value="1" class="mini narrow"> job days
         </div>
         <div class="note">$7,500/mo = truck loans + F-750 lease + insurance + Intrepid + software + owner draw (2025 books)</div>
       </td></tr>
@@ -189,12 +191,29 @@
     return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
   }
 
+  var DAY_CHOICES = [0.5, 1, 1.5, 2, 3, 4, 5];
+
+  function rebuildDayOptions() {
+    var monthly = Math.max(0, Number(ovMonthly.value) || 0);
+    var workDays = Math.max(1, Number(ovDays.value) || 20);
+    var perDay = monthly / workDays;
+    var current = Number(ovJobDays.value) || 1;
+    ovJobDays.innerHTML = '';
+    DAY_CHOICES.forEach(function (d) {
+      var opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = (d === 0.5 ? 'Half day' : d + (d === 1 ? ' day' : ' days')) + ' — ' + fmt(Math.round(perDay * d));
+      if (d === current) opt.selected = true;
+      ovJobDays.appendChild(opt);
+    });
+  }
+
   function update() {
     var price = Number(slider.value);
     var commission = price * COMMISSION_RATE;
     var monthly = Math.max(0, Number(ovMonthly.value) || 0);
     var workDays = Math.max(1, Number(ovDays.value) || 20);
-    var jobDays = Math.max(0, Number(ovJobDays.value) || 0);
+    var jobDays = Math.max(0, Number(ovJobDays.value) || 1);
     var overhead = Math.round((monthly / workDays) * jobDays);
     var totalCosts = FIXED + commission + overhead;
     var net = price - totalCosts;
@@ -217,9 +236,10 @@
   }
 
   slider.addEventListener('input', update);
-  ovMonthly.addEventListener('input', update);
-  ovDays.addEventListener('input', update);
-  ovJobDays.addEventListener('input', update);
+  ovMonthly.addEventListener('input', function () { rebuildDayOptions(); update(); });
+  ovDays.addEventListener('input', function () { rebuildDayOptions(); update(); });
+  ovJobDays.addEventListener('change', update);
+  rebuildDayOptions();
   update();
 })();
 </script>
