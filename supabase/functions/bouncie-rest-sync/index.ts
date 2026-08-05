@@ -48,6 +48,7 @@ interface BouncieTrip {
   imei?: string;
   startTime?: string;
   endTime?: string;
+  averageSpeed?: number;
   gps?: {
     coordinates?: Array<[number, number]>;
     timestamps?: string[];
@@ -61,12 +62,31 @@ function pointsFromTrip(t: BouncieTrip): BounciePoint[] {
   const coords = t.gps?.coordinates ?? [];
   const stamps = t.gps?.timestamps ?? [];
   const speeds = t.gps?.speeds ?? [];
-  const n = Math.min(coords.length, stamps.length);
+  if (stamps.length) {
+    const n = Math.min(coords.length, stamps.length);
+    for (let i = 0; i < n; i++) {
+      const c = coords[i];
+      const ts = stamps[i];
+      if (!c || c.length < 2 || !ts) continue;
+      out.push({ ts, lon: c[0], lat: c[1], speed_mph: typeof speeds[i] === "number" ? speeds[i] : null });
+    }
+    return out;
+  }
+  // Verified Aug 5 2026: Bouncie's gps-format=geojson carries ONLY
+  // coordinates — no per-point timestamps — so the branch above yielded
+  // zero points for every trip (root cause of the silent no-insert sync).
+  // Interpolate linearly between the trip's startTime and endTime instead.
+  // In-progress trips (no endTime yet) are skipped; the next 15-min tick
+  // picks them up once complete.
+  const startMs = Date.parse(t.startTime ?? "");
+  const endMs = Date.parse(t.endTime ?? "");
+  if (!coords.length || !Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) return out;
+  const n = coords.length;
   for (let i = 0; i < n; i++) {
     const c = coords[i];
-    const ts = stamps[i];
-    if (!c || c.length < 2 || !ts) continue;
-    out.push({ ts, lon: c[0], lat: c[1], speed_mph: typeof speeds[i] === "number" ? speeds[i] : null });
+    if (!c || c.length < 2) continue;
+    const ts = new Date(startMs + (n === 1 ? 0 : ((endMs - startMs) * i) / (n - 1))).toISOString();
+    out.push({ ts, lon: c[0], lat: c[1], speed_mph: typeof t.averageSpeed === "number" ? t.averageSpeed : null });
   }
   return out;
 }
@@ -189,7 +209,9 @@ async function syncTenant(sb: SupabaseClient, tenantId: string, cfg: BouncieTena
       `/trips?imei=${encodeURIComponent(imei)}&starts-after=${encodeURIComponent(startsAfter)}&gps-format=geojson`,
     );
     if (!tResp.ok) {
-      perVehicle.push({ imei, inserted: 0, latestSeen: null });
+      // Surface the failure — a silent {inserted:0} is indistinguishable
+      // from "no trips today" and hid the May–Aug outage.
+      perVehicle.push({ imei, inserted: 0, latestSeen: null, error: `trips HTTP ${tResp.status}` } as never);
       continue;
     }
     const rawT = tResp.data;
@@ -232,7 +254,7 @@ async function syncTenant(sb: SupabaseClient, tenantId: string, cfg: BouncieTena
     }
 
     totalInserted += inserted;
-    perVehicle.push({ imei, inserted, latestSeen: latestSeenTs });
+    perVehicle.push({ imei, inserted, latestSeen: latestSeenTs, trips: trips.length } as never);
   }
 
   return { tenantId, vehicles_seen: vehicles.length, inserted: totalInserted, perVehicle };
