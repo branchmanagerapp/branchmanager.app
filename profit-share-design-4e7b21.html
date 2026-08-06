@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Crew Profit-Share — Design for Review</title>
+<style>
+:root{--bg:#0f1512;--card:#18211c;--card2:#1e2a23;--line:#2c3a31;--ink:#e8efe9;--dim:#9db3a4;--green:#8ac926;--gold:#e9c46a;--red:#e76f51;--blue:#6ab7d8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:760px;margin:0 auto}
+h1{font-size:1.45rem;line-height:1.25;margin:8px 0 4px}
+h2{font-size:1.05rem;margin:28px 0 10px;color:var(--green);text-transform:uppercase;letter-spacing:.06em}
+h3{font-size:.95rem;margin:16px 0 6px;color:var(--gold)}
+p{margin:8px 0;color:var(--ink)}
+.dim{color:var(--dim);font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin:8px 0}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;vertical-align:middle}
+.real{background:#1d3a26;color:var(--green)}
+.decide{background:#3a2f1d;color:var(--gold)}
+.warn{background:#3a231d;color:var(--red)}
+pre{background:#0b0f0d;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.72rem;line-height:1.45;overflow-x:auto;color:#c8d8cc;margin:8px 0}
+ul,ol{margin:8px 0 8px 20px}
+li{margin:5px 0}
+b{color:#fff}
+.q{background:var(--card2);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;margin:10px 0}
+.q b{color:var(--gold)}
+/* ---------- phone mockup ---------- */
+.phone{width:375px;max-width:100%;margin:16px auto;background:#101816;border:1px solid #33443a;border-radius:28px;padding:10px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.screen{background:#0d1310;border-radius:20px;overflow:hidden}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.appbar .t{font-weight:700;font-size:1.02rem}
+.appbar .avatar{width:30px;height:30px;border-radius:50%;background:var(--green);color:#0d1310;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.8rem}
+.mk{padding:12px}
+.mkcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.payline{display:flex;justify-content:space-between;font-size:.86rem;padding:5px 0;color:var(--dim)}
+.payline b{color:var(--ink);font-variant-numeric:tabular-nums}
+.payline.total{border-top:1px dashed var(--line);margin-top:6px;padding-top:9px;font-size:1rem}
+.payline.total b{color:var(--green);font-size:1.25rem}
+.tierchip{display:inline-flex;align-items:center;gap:6px;background:#26331e;color:var(--green);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:20px}
+.bigshare{text-align:center;padding:10px 0 4px}
+.bigshare .amt{font-size:2.2rem;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
+.bigshare .sub{font-size:.78rem;color:var(--dim)}
+.meter{height:8px;border-radius:6px;background:#0b0f0d;overflow:hidden;display:flex;margin:8px 0 4px}
+.meter i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:.68rem;color:var(--dim)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.ladder{display:flex;gap:8px;margin-top:8px}
+.rung{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-size:.68rem;color:var(--dim)}
+.rung.on{border-color:var(--green);color:var(--ink);background:#1d2a20}
+.rung .ic{font-size:1.1rem;display:block;margin-bottom:2px}
+.btnrow{display:flex;gap:8px;margin-top:4px}
+.mkbtn{flex:1;text-align:center;background:var(--green);color:#0d1310;font-weight:700;font-size:.85rem;padding:11px;border-radius:10px}
+.mkbtn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.rowlink{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:.86rem}
+.rowlink:last-child{border-bottom:none}
+.rowlink .r{color:var(--dim);font-size:.78rem}
+@media(max-width:420px){body{padding:10px}.phone{border-radius:22px;padding:6px}}
+</style>
+</head>
+<body>
+<p class="dim">Second Nature Tree · internal · for Doug's review · Aug 6 2026</p>
+<h1>🤝 Crew Profit-Share &amp; Path-to-Ownership</h1>
+<p class="dim">Design only — <b>no code written yet.</b> Every number below is tagged: <span class="tag real">REAL DATA</span> = computed from live Branch Manager records · <span class="tag decide">DOUG DECIDES</span> = placeholder awaiting your call · <span class="tag warn">FLAG</span> = data-quality caveat.</p>
+
+<h2>0 · What I audited first</h2>
+<div class="card">
+<ul>
+<li><span class="tag real">REAL DATA</span> <b>7,678 bank transactions</b> (Jan 2020 → Aug 2026) already categorized against your chart of accounts — this is the overhead source.</li>
+<li><span class="tag real">REAL DATA</span> An <b>earnings_ledger already exists and is live</b> (312 rows, entries through Jul 25 2026: hours × rate per member, kinds <code>earned</code>/<code>payment</code>). Profit-share becomes a new <code>kind</code> in the same ledger — no parallel payout system.</li>
+<li><span class="tag real">REAL DATA</span> Team roster with per-role rates already in <code>team_members</code> (Ryan/Catherine crew_lead $30 · David crew $30 · Braxton sub $50 · Doug owner $30 · Michelle sales/commission).</li>
+<li><span class="tag warn">FLAG</span> <b>Zero of 318 completed jobs have a crew list</b>, and time entries aren't linked to jobs (job_id null). Job-level profit-share needs to know who worked the job — see the one workflow change in §5.</li>
+</ul>
+</div>
+
+<h2>1 · Schema (lean — 2 new tables, 2 new columns, reuse the rest)</h2>
+<pre>-- Immutable snapshot taken when a job closes. THE record of truth for that payout.
+CREATE TABLE job_costings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  job_id UUID REFERENCES jobs(id) UNIQUE,     -- one costing per job
+  closed_at TIMESTAMPTZ DEFAULT now(),
+  revenue NUMERIC(10,2),                      -- job total excl. sales tax
+  materials_cost NUMERIC(10,2),               -- real recorded job costs (COGS)
+  labor_cost NUMERIC(10,2),                   -- Σ hours × role rate (owner included)
+  labor_burden NUMERIC(10,2),                 -- labor × burden% (payroll tax + WC)
+  overhead_rate NUMERIC(5,4),                 -- trailing-12 rate AT close (frozen)
+  overhead_cost NUMERIC(10,2),                -- revenue × overhead_rate
+  margin NUMERIC(10,2),                       -- revenue − mat − labor − burden − OH
+  pool_pct NUMERIC(4,3),                      -- setting at close (frozen)
+  pool_amount NUMERIC(10,2),                  -- pool_pct × max(margin, 0)
+  snapshot JSONB,                             -- full math trail shown on receipts
+  status TEXT DEFAULT 'pending'               -- pending → approved → paid
+    CHECK (status IN ('pending','approved','paid','void'))
+);
+
+-- One row per crew member per closed job = their cut + their receipt.
+CREATE TABLE profit_share_allocations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  job_costing_id UUID REFERENCES job_costings(id),
+  team_member_id UUID REFERENCES team_members(id),
+  member_name TEXT,
+  hours NUMERIC(5,2),
+  labor_paid NUMERIC(10,2),                   -- their fixed-rate wage on this job
+  tier SMALLINT,                              -- 1/2/3 at time of close (frozen)
+  tier_multiplier NUMERIC(4,2),
+  weight NUMERIC(10,4),                       -- labor_paid × tier_multiplier
+  share_amount NUMERIC(10,2),                 -- pool × weight / Σweights
+  receipt_token TEXT UNIQUE,                  -- public receipt URL (like pay.html)
+  status TEXT DEFAULT 'pending'
+    CHECK (status IN ('pending','approved','paid','void')),
+  paid_at TIMESTAMPTZ, payment_method TEXT
+);
+
+-- Partnership ladder lives ON the existing roster:
+ALTER TABLE team_members ADD COLUMN partner_tier SMALLINT DEFAULT 1; -- 1/2/3
+ALTER TABLE team_members ADD COLUMN tier_since DATE;
+
+-- Payouts flow into the EXISTING earnings_ledger as new kinds:
+--   kind='profit_share'   (job payout, source_key = allocation id)
+--   kind='vested_accrual' (tier-3 banked value — see §4)
+-- Settings (pool %, overhead mode, burden %) = keys in tenant_settings. No new table.</pre>
+<p class="dim">RLS: both tables tenant-scoped via <code>current_tenant_id()</code>, same as payroll_approvals. Receipt page reads via a token-gateway edge function (same pattern as quote-fetch) — never anon table reads.</p>
+
+<h2>2 · Overhead — derived from your real transactions, not assumed</h2>
+<div class="card">
+<p><b>Formula:</b> at each job close, overhead rate = <b>trailing-12-month overhead spend ÷ trailing-12-month net revenue</b>, computed live from <code>bank_transactions</code> and frozen into the costing snapshot. It self-updates monthly as real spending changes — nobody ever picks a number.</p>
+<p><b>What counts as overhead</b> (account codes): all operating spend <b>except</b> what the job already pays directly — direct COGS (51–54xx: subs, materials, disposal — charged per-job), wages 6100 (charged per-job at fixed rates), payroll tax 6110 + workers comp 6310 (applied as a labor-burden % on the labor line), and pass-through sales-tax remittance 6130/6135 (excluded from both sides). Owner draws (7000) and transfers (71–73xx) are never costs.</p>
+<table>
+<tr><th>Trailing 12 months (Aug 2025 → Jul 2026)</th><th class="n">Amount</th></tr>
+<tr><td>Net revenue (deposits 4xxx − sales tax remitted)</td><td class="n">$216,106</td></tr>
+<tr><td>Direct COGS paid (5xxx)</td><td class="n">$33,065</td></tr>
+<tr><td>Wages paid (6100)</td><td class="n">$30,886</td></tr>
+<tr><td>Labor burden (6110 + 6310) — <b>3.1% of wages</b></td><td class="n">$945</td></tr>
+<tr><td><b>Overhead — everything else (fuel, insurance, vehicle loans, repairs, software, phone…)</b></td><td class="n"><b>$160,790</b></td></tr>
+</table>
+<p><span class="tag real">REAL DATA</span> That yields <b>overhead ≈ 74% of net revenue</b> today. Excluding vehicle-loan payments 6230 ($32,138) as financing rather than operating cost → <b>≈ 60%</b>.</p>
+<p><span class="tag warn">FLAG</span> Three honesty caveats before anyone stands in front of the crew with this: (1) <b>$28.9k is uncategorized (6999)</b> and <b>$20.2k sits in "Meals"</b> in that window — almost certainly miscoded, and some of it is probably labor cash; (2) 2026 bank data shows almost no categorized wages while the earnings ledger shows $54k earned — payroll cash isn't hitting 6100; (3) categorization cleanup will move the rate meaningfully. The system stays honest either way because the rate is recomputed from whatever the books say — but <b>open-book only works if the books are right.</b> A books-cleanup pass should ship alongside this.</p>
+<p><span class="tag decide">DOUG DECIDES</span> Which overhead mode: <b>A. full cash truth</b> (incl. truck payments, ~74%) or <b>B. operating overhead</b> (excl. loan principal, ~60%). B is the standard accounting answer; A is the "this is what it actually costs to keep the doors open" answer. Advisor take [Likely]: crew trust is the whole point — use A, and show the breakdown so the crew sees exactly where it goes.</p>
+</div>
+
+<h2>3 · The margin math at job close</h2>
+<div class="card">
+<pre>margin  = revenue − materials − (labor × (1 + 3.1% burden)) − (revenue × overhead%)
+pool    = pool% × max(margin, 0)        -- never negative, never clawed back
+share_i = pool × (labor_paid_i × tier_mult_i) ÷ Σ all weights</pre>
+<p><b>Labor rule (locked, per your spec):</b> everyone on the job — including you when you're climbing — is a fixed line at their role rate. Salespeople quote against known labor costs. Profit-share is a layer on top; the labor rate never wiggles.</p>
+<p><b>Worked example</b> <span class="tag decide">EXAMPLE — not a real payout</span> — $4,000 job (excl. tax), $300 dump fee, Ryan 8h + David 8h + Doug 8h @ $30, overhead mode A (74%), pool 30%:</p>
+<table>
+<tr><td>Revenue</td><td class="n">$4,000.00</td></tr>
+<tr><td>Materials/disposal</td><td class="n">− $300.00</td></tr>
+<tr><td>Labor 24h × $30 × 1.031</td><td class="n">− $742.32</td></tr>
+<tr><td>Overhead 74%</td><td class="n">− $2,960.00</td></tr>
+<tr><td><b>Job margin</b></td><td class="n"><b>$0 → no pool</b></td></tr>
+</table>
+<p><span class="tag warn">FLAG — this is the uncomfortable truth, and it's the point.</span> At today's real overhead, an average-priced job produces <b>no pool</b>. The pool appears exactly where the business actually makes money: storm work, big-ticket removals, jobs that beat the average revenue-per-day. Same job at $6,500 → margin ≈ $647 → pool ≈ $194. The dashboard makes that visible to the crew — which is the open-book philosophy doing its job: everyone sees that "work faster, quote better, spend less on trucks" literally creates the pool. It also means this system gives you a crew-aligned reason to fix overhead, not just a payout gadget.</p>
+<p><span class="tag decide">DOUG DECIDES</span> pool % of margin (example uses 30%).</p>
+</div>
+
+<h2>4 · The three-tier ladder</h2>
+<div class="card">
+<table>
+<tr><th>Tier</th><th>Who</th><th>Gets</th><th class="n">Multiplier</th></tr>
+<tr><td><b>1 · Profit-share</b></td><td>Everyone after <span class="tag decide">90 days?</span></td><td>Share of every job pool they worked</td><td class="n">1.0×</td></tr>
+<tr><td><b>2 · Vested member</b></td><td>Invited by you after <span class="tag decide">? yrs</span></td><td>Bigger share + a voice: sees full company books in-app, consulted on gear buys/hires</td><td class="n"><span class="tag decide">1.25×?</span></td></tr>
+<tr><td><b>3 · Path-to-ownership</b></td><td>Invited, tier 2 first</td><td>Tier-2 share, and may elect to <b>bank</b> part of each payout as <code>vested_accrual</code> in the ledger — a real dollar balance convertible to equity if/when you open that door (their choice each payout: cash now vs. bank it)</td><td class="n"><span class="tag decide">1.25×?</span></td></tr>
+</table>
+<ul>
+<li><b>Skill sets the floor, tier adds loyalty:</b> the role rate (climber &gt; ground &gt; new guy) is the wage floor; the tier multiplier only scales their slice of the pool weight (labor_paid × multiplier).</li>
+<li><b>Ownership income stays separate</b> (locked, per your spec): your return as owner is a company-level admin expense line in the books — it never appears inside job labor or the pool math. When you work a job you're paid the role rate like anyone else.</li>
+<li><span class="tag decide">DOUG DECIDES</span> Does the owner's labor also earn a pool share when you're on the job, or is your upside the ownership stream only? Spec reads like the latter — assumed <b>owner works for wage, no pool share</b>.</li>
+<li><span class="tag decide">DOUG DECIDES</span> Braxton is a $50/hr <b>subcontractor</b> — in the pool or not? (Subs in the pool has WC/classification echoes of the operator-network risk.) Michelle is commission — sales stays outside the job pool. Assumed both out.</li>
+<li>Tier-3 banked value is a <b>bookkeeping liability, not equity</b> — no securities paperwork until the day you actually convert; the page will say exactly that in plain words.</li>
+</ul>
+</div>
+
+<h2>5 · Where crew attribution comes from (the one field-workflow change)</h2>
+<div class="card">
+<p>Today no completed job knows who worked it. Fix: the existing crew clock-in gets a <b>job picker</b> (time_entries.job_id already exists, just unused), and at job close the costing pulls crew + hours from time entries on that job. Fallback: the close screen shows a pre-checked crew list to confirm — 5 seconds on a phone. No new data entry, just linking what's already tracked.</p>
+</div>
+
+<h2>6 · Payout delivery + receipt</h2>
+<div class="card">
+<ol>
+<li>Job marked complete → costing computed → <b>payout queue</b> on your dashboard (same pattern as the draft-message queue: <b>nothing pays out without your tap</b>).</li>
+<li>You approve → allocations post to earnings_ledger → you send the money same-day (Zelle/ACH as you do now — BM records it; <b>BM does not move money</b> in v1).</li>
+<li>Each member gets a <b>customer-style receipt</b> — token URL, same template infrastructure as payment receipts: job total, materials, labor, overhead %, margin, pool, <b>their share</b>, tier badge, YTD totals. Full math, nothing hidden.</li>
+</ol>
+<p><span class="tag decide">DOUG DECIDES</span> Same-day rail stays manual-Zelle-recorded-in-BM for v1? (True automated payouts = Stripe Connect — real build, real KYC; recommend not in v1. No baroque builds.)</p>
+</div>
+
+<h2>7 · The mockup — crew member's "My Share" screen (375px)</h2>
+<p class="dim">One mockup as requested. This is the crew-facing transparency dashboard inside BM mobile; your admin view adds the payout-approval queue and the company overhead breakdown.</p>
+
+<div class="phone" id="mockup"><div class="screen">
+<div class="appbar"><span class="t">💰 My Share</span><span class="avatar">RK</span></div>
+<div class="mk">
+
+<div class="mkcard">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span class="tierchip">⭐ Tier 2 · Vested Member</span>
+<span class="dim" style="font-size:.72rem">since Mar 2026</span>
+</div>
+<div class="bigshare">
+<div class="amt">$1,284.50</div>
+<div class="sub">profit-share YTD · on top of $14,760 wages</div>
+</div>
+<div class="ladder">
+<div class="rung on"><span class="ic">✅</span>1 · Share</div>
+<div class="rung on"><span class="ic">⭐</span>2 · Vested</div>
+<div class="rung"><span class="ic">🔑</span>3 · Owner path</div>
+</div>
+</div>
+
+<div class="mkcard">
+<div style="display:flex;justify-content:space-between;margin-bottom:6px">
+<b style="font-size:.9rem">Job #341 · Oak removal, Cortlandt</b>
+<span class="tag real" style="font-size:.62rem">CLOSED TODAY</span>
+</div>
+<div class="payline"><span>Job total (no tax)</span><b>$6,500.00</b></div>
+<div class="payline"><span>Materials &amp; dump</span><b>− $300.00</b></div>
+<div class="payline"><span>Crew labor (24h, fixed rates)</span><b>− $742.32</b></div>
+<div class="payline"><span>Company overhead (74%)</span><b>− $4,810.00</b></div>
+<div class="payline"><span>Job margin</span><b>$647.68</b></div>
+<div class="payline"><span>Crew pool (30%)</span><b>$194.30</b></div>
+<div class="meter">
+<i style="background:var(--red);width:74%"></i>
+<i style="background:var(--blue);width:11%"></i>
+<i style="background:var(--dim);width:5%"></i>
+<i style="background:var(--green);width:10%"></i>
+</div>
+<div class="legend"><span><i style="background:var(--red)"></i>Overhead</span><span><i style="background:var(--blue)"></i>Labor</span><span><i style="background:var(--dim)"></i>Materials</span><span><i style="background:var(--green)"></i>Margin</span></div>
+<div class="payline total"><span>Your share (8h · ⭐1.25×)</span><b>$107.94</b></div>
+<p class="dim" style="font-size:.7rem;margin-top:2px">Split of $194.30: you 300 wt ($107.94) · David 240 wt ($86.36) · Doug (owner) wage only</p>
+<div class="btnrow"><span class="mkbtn">View receipt</span><span class="mkbtn ghost">How it's figured</span></div>
+</div>
+
+<div class="mkcard">
+<b style="font-size:.85rem;color:var(--dim)">RECENT PAYOUTS</b>
+<div class="rowlink"><span>Job #338 · Storm cleanup ×3</span><span><b style="color:var(--green)">$142.80</b> <span class="r">Jul 28</span></span></div>
+<div class="rowlink"><span>Job #335 · Maple prune, Peekskill</span><span><b style="color:var(--green)">$61.20</b> <span class="r">Jul 21</span></span></div>
+<div class="rowlink"><span>Job #329 · Lot clearing</span><span><b style="color:var(--dim)">$0 · thin margin</b> <span class="r">Jul 14</span></span></div>
+</div>
+
+<div class="mkcard">
+<b style="font-size:.85rem;color:var(--dim)">OPEN BOOK · WHERE THE MONEY GOES</b>
+<p class="dim" style="font-size:.78rem;margin-top:6px">Company trailing-12: $216k in · 74¢ of every $1 runs the company (trucks, insurance, fuel, gear). Beat the average day → the pool grows. <span style="color:var(--green)">Tap for the full breakdown →</span></p>
+</div>
+
+</div>
+</div></div>
+<p class="dim" style="text-align:center">Numbers in the mockup are illustrative except the 74% overhead rate, which is the real trailing-12 figure.</p>
+
+<h2>8 · Your calls before I write code</h2>
+<div class="q"><b>Q1 — Pool %:</b> what % of job margin goes to the crew pool? (Example used 30%.)</div>
+<div class="q"><b>Q2 — Overhead mode:</b> A. full cash truth ~74% (truck payments in) or B. operating ~60% (financing out)? I lean A for trust.</div>
+<div class="q"><b>Q3 — Tier multipliers &amp; entry:</b> 1.0× / 1.25× / 1.25×+banking OK? Tier 1 automatic at 90 days? Tiers 2–3 invite-only by you?</div>
+<div class="q"><b>Q4 — Who's in:</b> owner-on-the-job = wage only, no pool share? Braxton (sub) out? Michelle (sales) out?</div>
+<div class="q"><b>Q5 — Payout rail:</b> v1 = you approve in BM + send Zelle same-day, BM records + fires the receipt link into your draft queue (you send). Good?</div>
+<div class="q"><b>Q6 — Books cleanup:</b> the $29k uncategorized + $20k "meals" + missing-2026-wages issues distort the honest rate. Green-light a categorization cleanup pass as part of this build?</div>
+
+<h2>9 · Build order (after your answers)</h2>
+<div class="card"><ol>
+<li>Books categorization cleanup (if Q6 yes) — makes the rate honest.</li>
+<li>Migration: 2 tables + 2 columns + settings keys.</li>
+<li>Overhead-rate function + job-close costing hook + crew confirm on close.</li>
+<li>Admin payout queue (approve → ledger → mark paid).</li>
+<li>Crew "My Share" page (the mockup) + token receipt page.</li>
+<li>Tier ladder in Settings; tier-3 banking ledger.</li>
+</ol>
+<p class="dim">Each step ships and verifies alone, mobile-first, 375px screenshots. No white-label surface — single-tenant feature flags on your tenant only.</p></div>
+
+<p class="dim" style="margin-top:24px">— Prepared by Claude · nothing deployed to the app · no schema changed · no code written</p>
+</body>
+</html>
