@@ -110,7 +110,10 @@ var PayrollPage = {
     if (team.length === 0) {
       team = [{ id: 'owner', name: CompanyInfo.get('ownerName') || 'Owner', role: 'owner', rate: 0, active: true }];
     }
-    return team.filter(function(t) { return t.active !== false; });
+    // v1086: commission roles (Michelle) are excluded from the hours grid —
+    // they're paid per-sale, not per-hour (Doug 8/6). Commission enters
+    // payroll as its own run line when a payout is recorded, never as time.
+    return team.filter(function(t) { return t.active !== false && t.employment_type !== 'commission'; });
   },
 
   _getEntriesForDate: function(userId, date) {
@@ -217,8 +220,7 @@ var PayrollPage = {
         + 'title="View crew profile" '
         + 'style="padding:10px 12px;display:flex;align-items:center;gap:8px;border-right:1px solid #f0f0f0;cursor:pointer;">'
         + avatar
-        + '<div style="min-width:0;"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent);">' + UI.esc(emp.name || '') + '</div>'
-        + '<div style="font-size:10px;color:var(--text-light);">' + UI.esc(emp.role || '') + (emp.rate ? ' · $' + Number(emp.rate).toFixed(0) + '/hr' : '') + '</div></div>'
+        + '<div style="min-width:0;"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent);">' + UI.esc(emp.name || '') + '</div></div>'
         + '</div>';
 
       // Day cells

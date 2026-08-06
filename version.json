@@ -1,5 +1,1 @@
-{
-  "version": 1085,
-  "released": "2026-08-05",
-  "notes": "Work History in Fleet: GPS visits in-app + one-tap crew hour logging (truck-history page retired)"
-}
+{"version": 1086, "released": "2026-08-06", "notes": "Payroll: sub-tab strip no longer floats over week nav/buttons (all hub pages); commission roles excluded from hours grid"}

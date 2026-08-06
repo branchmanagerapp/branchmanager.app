@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1085; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1086; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1582,7 +1582,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1085.min.js"></script>
+<script defer src="dist/bm.bundle.v1086.min.js"></script>
 
 
 
@@ -1947,7 +1947,13 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
   // v692: trimmed top padding (14→4) so the strip sits flush with the topbar
   // instead of floating below a wide gap. Bottom margin kept at 16px so the
   // page body has breathing room below the strip.
-  var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:-24px -24px 16px;padding:4px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+  // v1086: dropped the NEGATIVE TOP margin (-24px). With sticky top:0 that
+  // margin put the strip's flow slot above the scrollport, so the browser
+  // pinned it 24px lower than layout reserved — and the week nav / action
+  // buttons on Payroll (and every hub page) flowed up underneath the strip
+  // ("floating in a weird place", Doug 8/6). Flow slot now equals pinned
+  // position: no displacement, no overlap. Horizontal bleed kept.
+  var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -24px 16px;padding:4px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">';
   for (var j = 0; j < tabs.length; j++) {
     var t = tabs[j];
     var active = tab === t[0];
