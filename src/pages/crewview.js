@@ -175,7 +175,7 @@ var CrewView = {
     return h + ':' + m + ' ' + ampm;
   },
 
-  // v1083: hours land on the JOB. Clock-in captures which of today's jobs
+  // v1084: hours land on the JOB. Clock-in captures which of today's jobs
   // this session belongs to (auto-picked when there's exactly one), and
   // clock-out stamps that jobId on the time entry so JobCosting/profit
   // cards finally get real labor numbers.
@@ -191,7 +191,7 @@ var CrewView = {
     } else if (todays.length > 1) {
       var html = '<div style="display:grid;gap:8px;">';
       todays.forEach(function(j) {
-        html += '<button class="btn btn-outline" style="width:100%;text-align:left;padding:12px;" onclick="CrewView._pickClockJob(\'' + j.id + '\')">'
+        html += '<button class="btn btn-outline" style="display:block;width:100%;text-align:left;padding:12px;" onclick="CrewView._pickClockJob(\'' + j.id + '\')">'
           + '#' + (j.jobNumber || '') + ' ' + UI.esc(j.clientName || '')
           + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + UI.esc(j.property || '') + '</div></button>';
       });

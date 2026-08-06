@@ -1,5 +1,5 @@
 {
-  "version": 1083,
+  "version": 1084,
   "released": "2026-08-05",
-  "notes": "Crew clock-in job picker: time entries now link to jobs (job costing live)"
+  "notes": "Crew clock-in job picker (stacked mobile layout): time entries link to jobs"
 }
