@@ -1,5 +1,5 @@
 {
-  "version": 1082,
-  "released": "2026-08-04",
-  "notes": "Earnings ledger: nightly earned-from-hours sync, record-payment + settle-up on Payroll"
+  "version": 1083,
+  "released": "2026-08-05",
+  "notes": "Crew clock-in job picker: time entries now link to jobs (job costing live)"
 }

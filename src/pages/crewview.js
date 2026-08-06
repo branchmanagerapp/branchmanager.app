@@ -175,7 +175,42 @@ var CrewView = {
     return h + ':' + m + ' ' + ampm;
   },
 
+  // v1083: hours land on the JOB. Clock-in captures which of today's jobs
+  // this session belongs to (auto-picked when there's exactly one), and
+  // clock-out stamps that jobId on the time entry so JobCosting/profit
+  // cards finally get real labor numbers.
   clockIn: function() {
+    var todayStr = new Date().toISOString().split('T')[0];
+    var todays = DB.jobs.getAll().filter(function(j) {
+      if (!j.scheduledDate) return false;
+      return j.scheduledDate.split('T')[0] === todayStr;
+    });
+    if (todays.length === 1) {
+      localStorage.setItem('bm-clock-job', todays[0].id);
+      CrewView._beginClock();
+    } else if (todays.length > 1) {
+      var html = '<div style="display:grid;gap:8px;">';
+      todays.forEach(function(j) {
+        html += '<button class="btn btn-outline" style="width:100%;text-align:left;padding:12px;" onclick="CrewView._pickClockJob(\'' + j.id + '\')">'
+          + '#' + (j.jobNumber || '') + ' ' + UI.esc(j.clientName || '')
+          + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + UI.esc(j.property || '') + '</div></button>';
+      });
+      html += '<button class="btn btn-outline" style="width:100%;padding:12px;" onclick="CrewView._pickClockJob(\'\')">No job / other work</button></div>';
+      UI.showModal('Which job are you on?', html);
+    } else {
+      localStorage.removeItem('bm-clock-job');
+      CrewView._beginClock();
+    }
+  },
+
+  _pickClockJob: function(jobId) {
+    if (jobId) localStorage.setItem('bm-clock-job', jobId);
+    else localStorage.removeItem('bm-clock-job');
+    UI.closeModal();
+    CrewView._beginClock();
+  },
+
+  _beginClock: function() {
     localStorage.setItem('bm-clock-in', new Date().toISOString());
     UI.toast('Clocked in! ⏱');
     CrewView._startGPSTracker();
@@ -196,9 +231,11 @@ var CrewView = {
         user: userName,
         date: new Date().toISOString().split('T')[0],
         hours: parseFloat(hrs),
+        jobId: localStorage.getItem('bm-clock-job') || null,
         clockIn: startTime,
         clockOut: new Date().toISOString()
       });
+      localStorage.removeItem('bm-clock-job');
 
       UI.toast('Clocked out! ' + hrs + ' hours logged');
       CrewView._stopGPSTracker();
