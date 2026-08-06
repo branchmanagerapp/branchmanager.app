@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Payroll — Legal Setup Status &amp; Plan</title>
+<style>
+:root{--bg:#10130f;--card:#191e17;--card2:#20261d;--line:#303827;--ink:#eaeee6;--dim:#a3ad97;--green:#8ac926;--gold:#e9c46a;--red:#e76f51;--blue:#6ab7d8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:760px;margin:0 auto}
+h1{font-size:1.4rem;line-height:1.25;margin:8px 0 4px}
+h2{font-size:1rem;margin:26px 0 10px;color:var(--green);text-transform:uppercase;letter-spacing:.06em}
+p{margin:8px 0}
+.dim{color:var(--dim);font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.hero{border-color:var(--gold);background:#221f14}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin:8px 0}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;vertical-align:middle}
+.real{background:#1d3a26;color:var(--green)}
+.likely{background:#1d2f3a;color:var(--blue)}
+.warn{background:#3a231d;color:var(--red)}
+.ask{background:#3a2f1d;color:var(--gold)}
+ul,ol{margin:8px 0 8px 20px}
+li{margin:6px 0}
+b{color:#fff}
+.q{background:var(--card2);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:.9rem}
+pre{background:#0c0f0a;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.78rem;line-height:1.5;white-space:pre-wrap;color:#d5dccb;margin:8px 0}
+.big{font-size:1.05rem}
+.ok{color:var(--green)}.bad{color:var(--red)}.mid{color:var(--gold)}
+a{color:var(--blue)}
+.step{border:2px solid var(--green);background:#1a2413;border-radius:12px;padding:14px;margin:14px 0}
+@media(max-width:420px){body{padding:10px}}
+</style>
+</head>
+<body>
+<p class="dim">Second Nature Tree LLC · internal · Aug 6 2026 · prep for Kevin Fay, CPA — <b>nothing here is tax advice; Kevin blesses the final structure</b></p>
+<h1>💵 Payroll — can we legally cut quarterly checks?</h1>
+
+<div class="card hero">
+<p class="big"><b>Short answer:</b> <span class="bad">Not quarterly for the hourly crew</span> — New York requires <b>manual workers to be paid weekly</b> (Labor Law §191: within 7 days of the week earned). Tree crew are squarely "manual workers." <span class="ok">What CAN be quarterly:</span> your own owner draws (sole-prop — no payroll needed at all), and possibly the profit-share bonus layer on top (Kevin confirms). <b>The fix is cheap and fast:</b> a ~$52–67/month payroll service runs weekly direct-deposit with all deductions automatic — you approve hours from Branch Manager, it does the rest.</p>
+</div>
+
+<h2>1 · Where we actually stand today <span class="tag real">REAL DATA · verified Aug 6 vs live system + bank</span></h2>
+<div class="card">
+<table>
+<tr><th>Check</th><th>Status</th></tr>
+<tr><td>Formal payroll runs recorded (ever)</td><td class="bad"><b>0</b> — payroll_runs table empty</td></tr>
+<tr><td>2026 payroll tax remitted (acct 6110)</td><td class="bad"><b>$0.00</b></td></tr>
+<tr><td>2026 wages categorized in bank (6100)</td><td class="mid">$1,594.94</td></tr>
+<tr><td>Workers comp (NYSIF)</td><td class="ok">Active — 6310 payments in bank ($515.28 in 2026)</td></tr>
+<tr><td>2026 crew earnings in BM ledger</td><td class="mid">David $4,612.50 earned / $3,592.50 paid (Aug 3, gross — no withholding) · Braxton $537.50 · Ryan &amp; Catherine $0 in ledger</td></tr>
+<tr><td>Doug's own 2026 hours in ledger</td><td class="ok">$49,240 — that's <b>owner draw</b> territory on a Schedule C: no withholding required, just take draws (most of the "$54k unpaid payroll" scare is actually this — fine)</td></tr>
+<tr><td>Entity</td><td class="ok">Second Nature Tree LLC, Schedule C sole prop (EIN 83-2374535) → <b>you can't be on your own W-2</b>; crew would be the only W-2 employees</td></tr>
+<tr><td>Employee paperwork (W-4 / IT-2104 / I-9) — David, Ryan, Catherine, Braxton</td><td class="bad"><b>NONE on file for anyone.</b> Doug asked specifically about David Beers Aug 6: zero documents. The only signed onboarding doc in the entire system is Doug's own wage-notice pad test (May 3). Upload + e-sign infrastructure exists and is empty — day-one task once a provider is picked</td></tr>
+<tr><td>Braxton Kari</td><td class="mid">Deactivated Aug 6 per Doug; no W-9/I-9 in system (paper copies, if any, need scanning in). Typed <i>subcontractor</i> → W-9 + 1099-NEC, not W-2</td></tr>
+<tr><td>NY Disability (DBL) policy</td><td class="ok"><b>EXISTS</b> — ShelterPoint policy D701106 on file in BM compliance docs (found during this audit)</td></tr>
+<tr><td>1099 history</td><td class="mid">Osorio $8k 1099-NEC flagged overdue in the 2025 CPA memo — same pattern to close out</td></tr>
+</table>
+<p><span class="tag warn">EXPOSURE — honest read</span> [Likely] David (and previously others) paid gross with no withholding while typed "hourly" = employee-misclassification / unremitted-withholding exposure if examined. The 2026 dollar amounts are small (~$3.6k paid so far), so <b>fixing it now is cheap</b> — this is exactly the right moment, before Q4 and before profit-share adds more payments. [Certain] Nothing about this is filed wrong yet for 2026 — Q3 941/NYS-45 aren't due until October; set up properly now and the year can close clean. (2025's $62.9k of wages and how they were reported = Kevin question Q3 below.)</p>
+</div>
+
+<h2>2 · What "legal payroll with deductions" means for us in NY</h2>
+<div class="card">
+<p class="dim">Framed for Kevin to confirm — this is the standard checklist, not advice:</p>
+<ul>
+<li><b>Pay frequency</b> — manual workers <b>weekly</b> (<a href="https://dol.ny.gov/frequency-pay-faq">NY DOL §191 FAQ</a>). Semi-monthly only with a NYSDOL authorization (generally for 1,000+ employee firms). So: weekly runs, automated.</li>
+<li><b>Federal</b> — withholding + FICA each run; deposits monthly/semi-weekly; <b>Form 941</b> quarterly (or 944 if IRS says so); <b>940 FUTA</b> annual; <b>W-2/W-3</b> in January. W-4 on file per employee.</li>
+<li><b>New York</b> — register as employer (NYS-100) if not already; <b>NYS-45</b> quarterly (combined withholding + unemployment insurance wage reporting); NY SUI account; <b>IT-2104</b> on file; <b>wage-theft-prevention pay notice</b> at hire + detailed weekly pay stubs; new-hire reporting within 20 days.</li>
+<li><b>DBL + Paid Family Leave insurance</b> — required NY policies, separate from workers comp. <span class="tag real">GOOD NEWS</span> a ShelterPoint DBL policy (D701106) is on file in BM. <span class="tag ask">ASK KEVIN</span> confirm the <b>PFL rider</b> is attached and the policy is current/under the LLC.</li>
+<li><b>MCTMT</b> — Westchester is in the MCTD; small payrolls under the quarterly threshold owe none, but Kevin should confirm we're under it.</li>
+<li><b>I-9s</b> — federal, every employee, kept on file (digital upload into BM's compliance docs — the infrastructure already exists and is currently empty).</li>
+<li><b>Subcontractors</b> (Braxton-style) — W-9 on file, 1099-NEC each January, and the relationship must actually look like a sub (own tools/insurance/control). NY's construction Fair Play Act presumes employment — whether it reaches tree work is a Kevin question.</li>
+</ul>
+</div>
+
+<h2>3 · Provider comparison — 3 hourly W-2 crew, direct deposit <span class="tag likely">RESEARCHED Aug 2026 — verify at signup</span></h2>
+<div class="card">
+<table>
+<tr><th>Option</th><th class="n">Price (3 crew)</th><th>Notes</th></tr>
+<tr><td><b>Patriot Full-Service</b></td><td class="n">$37 + $5/person = <b>$52/mo</b><br><span class="dim">$18.50+$2.50 first 3 mo</span></td><td>Cheapest full-service (they file 941/NYS-45/W-2s, remit all taxes). US-based, well reviewed for tiny crews. 30-day trial.</td></tr>
+<tr><td><b>Gusto Simple</b></td><td class="n">$49 + $6/person = <b>$67/mo</b></td><td>Slickest product; files everything; employee app + direct deposit; easy CSV/hours import; contractor 1099s included. Base rose to $49 in Mar 2026.</td></tr>
+<tr><td><b>ADP RUN</b></td><td class="n">~$79 + $4–5/person ≈ <b>$91/mo</b> <span class="dim">(quote-only)</span></td><td>Big-co option; more than we need at this size; sales-call pricing, frequent 3-months-free promos.</td></tr>
+<tr><td><b>Kevin-run payroll</b></td><td class="n">ask Kevin</td><td>Some CPAs run client payroll or have a bureau. Zero-learning-curve option; price unknown — on the question list.</td></tr>
+</table>
+<p class="dim">All of the above = "bank transfers" exactly as you wanted: weekly direct deposit, taxes deducted and remitted automatically, quarterly filings done for you. Your only job is approving hours.</p>
+</div>
+
+<h2>4 · How Branch Manager feeds it (no DIY tax engine)</h2>
+<div class="card">
+<ul>
+<li>BM already tracks the truth: <b>earnings_ledger</b> (hours × role rate per member, live since July) + the Payroll page's ACH-CSV export.</li>
+<li>v1 integration = a weekly <b>"Hours export"</b> matching the provider's import format (Gusto/Patriot both take CSV hours). You tap approve in BM → upload → provider does withholding, deposits, filings. A <code>payroll_runs</code> row records each run — so the empty table finally fills.</li>
+<li>BM will <b>not</b> compute withholding — providers and the CPA do tax math; BM stays the source of hours and the system of record. (Same philosophy as profit-share: BM computes shares, the payout rail stays simple.)</li>
+<li>Profit-share payouts (separate design, awaiting your Q1–Q6) would ride as <b>bonus line items</b> in the same provider run so they're taxed properly — timing (per-job vs quarterly) is Kevin question Q6.</li>
+</ul>
+</div>
+
+<h2>5 · Questions for Kevin <span class="tag ask">DRAFT READY — you send</span></h2>
+<div class="card">
+<pre>1. Setting up real payroll for the tree LLC (Schedule C, EIN 83-2374535),
+   3 hourly W-2 crew, weekly direct deposit. Gusto vs Patriot vs you running
+   it — do you run client payroll, and at what cost?
+2. Is the LLC already registered as a NY employer (NYS-100 / SUI account),
+   or does that need doing? Anything already on file from prior years?
+3. 2025 shows ~$62.9k wages paid but only ~$1k in payroll-tax remittance in
+   the books — how were those wages reported (payroll service? 1099s? the
+   skate S-corp's W-2 setup?), and is any 2025/2026 cleanup filing needed?
+4. David Beers was paid $3,592.50 gross in Aug 2026, no withholding — fold
+   into first proper payroll run as YTD wages, or handle differently?
+5. DBL: we hold ShelterPoint policy D701106. Can you confirm the Paid
+   Family Leave rider is attached and it covers the LLC's W-2 crew?
+6. Planned profit-share bonus on top of hourly wages — can that layer pay
+   out quarterly for manual workers under §191, or must it ride weekly?
+7. Braxton Kari: subcontractor, now inactive — W-9/1099-NEC needed for his
+   $537.50? And confirm Osorio's overdue $8k 1099-NEC path.
+8. Owner: confirm Doug just takes draws (no W-2) on the Schedule C, and
+   whether quarterly estimated-tax vouchers need updating once wages start.</pre>
+</div>
+
+<div class="step">
+<p><b>➡️ THE ONE NEXT STEP:</b> open the Gmail draft to Kevin ("Payroll setup — questions before we start cutting weekly checks") in <b>info@peekskilltree.com → Drafts</b> and hit Send. Everything above is linked inside it. Once Kevin answers #1–2, I set up the chosen provider's import from BM the same day.</p>
+</div>
+
+<p class="dim" style="margin-top:20px">Sources for the legal/pricing claims: <a href="https://dol.ny.gov/frequency-pay-faq">NY DOL Frequency of Pay FAQ</a> · <a href="https://www.nysenate.gov/legislation/laws/LAB/191">NY Labor Law §191</a> · <a href="https://costbench.com/software/hr/gusto/">Gusto 2026 pricing</a> · <a href="https://elearningindustry.com/patriot-payroll-pricing">Patriot 2026 pricing</a> · <a href="https://peoplemanagingpeople.com/tools/adp-run-pricing/">ADP RUN 2026 pricing</a>. Prices re-verified at signup; nothing sent to anyone; no records changed.</p>
+</body>
+</html>
