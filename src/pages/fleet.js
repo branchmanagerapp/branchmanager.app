@@ -106,6 +106,15 @@ var FleetPage = {
     });
     html += '</div></div>';
 
+    // ── v1085: Work History (Bouncie GPS visits) — Doug: "everything built
+    // into Branch Manager." Truck sat >=1h somewhere = a visit; one tap
+    // turns a visit into real time_entries for the crew (payroll + job
+    // costing consume those). Data: vehicle_visits, filled by the Bouncie
+    // trips pipeline. RLS: tenant SELECT only.
+    html += '<h3 style="margin:22px 0 10px;font-size:15px;">🕐 Work History <span style="font-size:11px;color:var(--text-light);font-weight:400;">from truck GPS — tap a visit to log crew hours</span></h3>';
+    html += '<div id="fleet-visits" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:8px 0;"><div style="padding:16px;font-size:12px;color:var(--text-light);">Loading work history…</div></div>';
+    setTimeout(FleetPage._loadVisits, 0);
+
     return html;
   },
 
@@ -373,6 +382,100 @@ var FleetPage = {
   // BOUNCIE_CLIENT_ID. It's safe to embed client-side — OAuth client_ids
   // are PUBLIC by design; the secret is enforced server-side in the
   // token exchange.
+  // ── v1085 Work History ──────────────────────────────────────
+  _visits: null,
+  _loadVisits: function() {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+    SupabaseDB.client.from('vehicle_visits')
+      .select('id, vehicle_name, arrived_at, departed_at, minutes, address, matched_client_name, matched_job_id')
+      .order('arrived_at', { ascending: false })
+      .limit(150)
+      .then(function(res) {
+        var el = document.getElementById('fleet-visits');
+        if (!el) return;
+        if (res.error) { el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--red);">Work history unavailable: ' + UI.esc(res.error.message) + '</div>'; return; }
+        FleetPage._visits = res.data || [];
+        FleetPage._renderVisits();
+      });
+  },
+  _renderVisits: function() {
+    var el = document.getElementById('fleet-visits');
+    if (!el) return;
+    var visits = FleetPage._visits || [];
+    if (!visits.length) { el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text-light);">No GPS visits yet — they appear once trucks sit at a site for an hour+.</div>'; return; }
+    var short = function(n) {
+      if (/F-750|Bucket/i.test(n)) return 'F-750';
+      if (/F-550|Chip/i.test(n)) return 'F-550';
+      if (/Ram/i.test(n)) return 'Ram';
+      return (n || '').slice(0, 8);
+    };
+    var byDay = {};
+    visits.forEach(function(v) { var d = (v.arrived_at || '').slice(0, 10); (byDay[d] = byDay[d] || []).push(v); });
+    var days = Object.keys(byDay).sort().reverse();
+    var html = '';
+    days.forEach(function(d) {
+      var vs = byDay[d];
+      var tot = vs.reduce(function(s2, v) { return s2 + (v.minutes || 0); }, 0) / 60;
+      var dt = new Date(d + 'T12:00:00');
+      html += '<div style="padding:10px 16px 4px;display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--green-dark);border-top:1px solid var(--border);">'
+        + '<span>' + dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + '</span>'
+        + '<span>' + tot.toFixed(1) + 'h on sites</span></div>';
+      vs.sort(function(a, b) { return a.arrived_at < b.arrived_at ? -1 : 1; });
+      vs.forEach(function(v) {
+        var addr = (v.address || '?').split(',').slice(0, 3).join(',');
+        html += '<div onclick="FleetPage.logVisitHours(\'' + v.id + '\')" style="padding:8px 16px;cursor:pointer;font-size:13px;display:grid;grid-template-columns:52px 44px 1fr;gap:8px;align-items:baseline;">'
+          + '<span style="color:var(--text-light);font-size:11px;">' + short(v.vehicle_name) + '</span>'
+          + '<span style="font-weight:700;">' + ((v.minutes || 0) / 60).toFixed(1) + 'h</span>'
+          + '<span>' + UI.esc(addr)
+          + (v.matched_client_name ? ' <span style="color:var(--accent);font-size:12px;font-weight:600;">' + UI.esc(v.matched_client_name) + '</span>' : '')
+          + '</span></div>';
+      });
+    });
+    el.innerHTML = html;
+  },
+  logVisitHours: function(visitId) {
+    var v = (FleetPage._visits || []).find(function(x) { return x.id === visitId; });
+    if (!v) return;
+    var team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
+    if (!team.length) team = [{ name: 'Doug Brown' }, { name: 'David Beers' }];
+    var hrs = Math.round((v.minutes / 60) * 4) / 4;
+    var checks = team.map(function(m, i) {
+      var nm = m.name || m;
+      var pre = /doug|david|dave/i.test(nm) ? ' checked' : '';
+      return '<label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:14px;">'
+        + '<input type="checkbox" class="vh-member" value="' + UI.esc(nm) + '"' + pre + '> ' + UI.esc(nm) + '</label>';
+    }).join('');
+    var html = '<div style="font-size:13px;color:var(--text-light);margin-bottom:10px;">'
+      + UI.esc((v.address || '').split(',').slice(0, 3).join(',')) + '<br>'
+      + new Date(v.arrived_at).toLocaleString() + ' — ' + ((v.minutes || 0) / 60).toFixed(1) + 'h truck time'
+      + (v.matched_client_name ? ' · ' + UI.esc(v.matched_client_name) : '') + '</div>'
+      + checks
+      + UI.field('Hours each', '<input type="number" id="vh-hours" step="0.25" min="0" value="' + hrs + '">');
+    UI.showModal('Log crew hours', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="FleetPage._saveVisitHours(\'' + visitId + '\')">Log Hours</button>'
+    });
+  },
+  _saveVisitHours: function(visitId) {
+    var v = (FleetPage._visits || []).find(function(x) { return x.id === visitId; });
+    if (!v) return;
+    var hours = parseFloat(document.getElementById('vh-hours').value) || 0;
+    var members = Array.prototype.slice.call(document.querySelectorAll('.vh-member:checked')).map(function(c) { return c.value; });
+    if (!hours || !members.length) { UI.toast('Pick at least one person and hours', 'error'); return; }
+    members.forEach(function(name) {
+      DB.timeEntries.create({
+        userId: name, user: name,
+        date: (v.arrived_at || '').slice(0, 10),
+        hours: hours,
+        jobId: v.matched_job_id || null,
+        clockIn: v.arrived_at, clockOut: v.departed_at,
+        notes: 'GPS visit: ' + (v.address || '').split(',').slice(0, 2).join(',')
+      });
+    });
+    UI.closeModal();
+    UI.toast('Logged ' + hours + 'h for ' + members.length + ' crew');
+  },
+
   connectBouncie: function() {
     var BOUNCIE_CLIENT_ID = '616a27da73c303dd7203b5a705288ea41a55e735fcf01727c0ffd4963e536b85';
     var REDIRECT = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/bouncie-oauth-callback';

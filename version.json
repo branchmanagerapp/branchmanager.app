@@ -1,5 +1,5 @@
 {
-  "version": 1084,
+  "version": 1085,
   "released": "2026-08-05",
-  "notes": "Crew clock-in job picker (stacked mobile layout): time entries link to jobs"
+  "notes": "Work History in Fleet: GPS visits in-app + one-tap crew hour logging (truck-history page retired)"
 }
