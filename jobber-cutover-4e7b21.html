@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>The Cutover — Jobber off by Fri Aug 14</title>
+<style>
+:root{--ink:#141a1f;--muted:#5b6672;--line:#e7e9ec;--red:#b3261e;--red-bg:#fdecea;--amber:#8a5a00;--amber-bg:#fef7e6;--blue:#1256a0;--blue-bg:#e8f1fb;--green:#1f7a44;--green-d:#155c33;--green-bg:#e9f6ee;--card:#fff;--bg:#f4f5f7}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:660px;margin:0 auto;padding:20px 16px 72px}
+header.hd{padding:26px 20px;border-radius:16px;background:linear-gradient(160deg,#22303a,#141a1f);color:#fff;margin-bottom:16px}
+header.hd h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
+header.hd p{margin:10px 0 0;font-size:14px;color:#c3ccd4}
+.deadline{display:inline-block;background:#b3261e;color:#fff;font-weight:800;font-size:13px;padding:4px 12px;border-radius:20px;margin-top:12px}
+h2.part{font-size:19px;font-weight:800;margin:30px 4px 4px;letter-spacing:-.01em}
+.part-sub{font-size:13.5px;color:var(--muted);margin:0 4px 14px}
+.item{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.item.red{border-left-color:var(--red)} .item.green{border-left-color:var(--green)} .item.amber{border-left-color:var(--amber)}
+.item h4{margin:0 0 6px;font-size:16px;font-weight:800;line-height:1.3}
+.item p{font-size:14px;color:#333;margin:0 0 6px}
+.item p:last-child{margin-bottom:0}
+.who{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin:0 6px 6px 0}
+.who.doug{background:var(--amber-bg);color:var(--amber)} .who.claude{background:var(--blue-bg);color:var(--blue)} .who.cat{background:var(--green-bg);color:var(--green-d)} .who.done{background:var(--green-bg);color:var(--green-d)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13.5px}
+th{background:#f0f2f4;text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top}
+td b{white-space:nowrap}
+.money{text-align:right;font-weight:700;white-space:nowrap}
+.note{font-size:12.5px;color:var(--muted);margin:8px 4px 0}
+a{color:var(--blue);font-weight:700}
+.callout{background:#22303a;color:#eaf0f3;border-radius:12px;padding:16px 18px;font-size:14px;margin:14px 0}
+.callout b{color:#fff}
+footer{margin-top:26px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:13px;color:#333}
+</style></head><body>
+<div class="wrap">
+
+<header class="hd">
+  <h1>The Cutover — Branch Manager becomes the only system</h1>
+  <p>Doug + Catherine run everything in Branch Manager. Jobber gets a final archive, then gets canceled.</p>
+  <div class="deadline">JOBBER CANCELED BY: FRIDAY, AUG 14</div>
+</header>
+
+<h2 class="part">Where we are today — Thu Aug 7</h2>
+<p class="part-sub">Every status verified against the live database and inbox today, not assumed.</p>
+
+<div class="item green">
+  <h4>✅ Verified working today</h4>
+  <p><b>Outbound email works</b> — tested through the app's real send path, landed in the inbox at 8:01am. <b>Customer pay links work on a phone</b> — loaded invoice #1012's live pay page at true iPhone width: renders clean, Pay Online active. The underpay hole is closed (live-verified Aug 2: a tampered 50¢ payment was floored to the full balance). Customer data locked down (live-probed Jul 12). Jobber's historical data was already reconciled into BM Jul 12.</p>
+</div>
+
+<div class="item amber">
+  <h4>💰 Money on the street right now</h4>
+  <table>
+    <tr><th>Who</th><th>What</th><th class="money">Owed</th></tr>
+    <tr><td><b>Oswald Roche</b></td><td>Quote #514 approved; job #340 not finished, not invoiced yet</td><td class="money">$2,500.00</td></tr>
+    <tr><td><b>Maria / Lucente</b></td><td>Invoice #1007 — email drafted, waiting for Doug's approve</td><td class="money">$3,457.16</td></tr>
+    <tr><td><b>Matt Green</b></td><td>Invoice #1013 drafted (tax applied), unsent</td><td class="money">$1,300.50</td></tr>
+    <tr><td><b>Nicholas — 25 Cayuga</b></td><td>Invoice #1012 sent 7/28, unpaid; reminder drafted, waiting for approve</td><td class="money">$650.25</td></tr>
+    <tr><td><b>Hope Bogart</b></td><td>Invoice #387 — she replied Aug 3 "I will get it paid"; chase early next week if nothing lands</td><td class="money">$500.00</td></tr>
+    <tr><td><b>Hector Arroyo</b></td><td>Job #323 done, paid CASH — Doug to confirm the amount (scoped $1,500 tentative), then it gets invoiced + booked</td><td class="money">confirm</td></tr>
+  </table>
+  <p class="note">Plus unpriced drafts to finish: Fred Romer #562 ($3,200) / #563 ($0) · Hudson Ridge #564 ($0).</p>
+</div>
+
+<div class="item red">
+  <h4>⚠️ What still makes BM risky for two people at once</h4>
+  <p>Two save-integrity blockers matter once Doug AND Catherine are both in the app: <b>(1)</b> invoice/quote numbers are picked per-device and can collide — a record can strand on one phone; <b>(2)</b> quote &amp; bulk-invoice saves say "✓" without checking the save landed. Both get closed this week (Tue 8/12 below). Three screens are still broken at phone width (Payroll grid, Books register, Messaging) — fixed the same day.</p>
+</div>
+
+<h2 class="part">The plan — day by day</h2>
+<p class="part-sub">One rule from today forward: <b>nothing new gets created in Jobber.</b> BM is the system of record now.</p>
+
+<div class="item">
+  <h4>Thu 8/7 (today)</h4>
+  <p><span class="who done">DONE</span> Email path verified · pay page verified on phone · Nicholas reminder staged · Hope confirmed she's paying.</p>
+  <p><span class="who doug">DOUG</span> Approve the two drafts in <a href="https://branchmanager.app/#marketing">Drafts to Review</a> (Lucente #1007 · Nicholas reminder) — then tell Claude Hector's cash amount ($1,500?) so it hits the books.</p>
+</div>
+
+<div class="item">
+  <h4>Fri 8/8 — Jobber freeze + final archive</h4>
+  <p><span class="who doug">DOUG</span> ~10 min: log into Jobber → export CSVs (clients, quotes, jobs, invoices, payments) → drop them on the Desktop. Jobber has no API, so this manual export is the only way — and after cancellation the data is gone.</p>
+  <p><span class="who claude">CLAUDE</span> Reconcile the export against BM (same audit as Jul 12) — every open quote, scheduled job, and unpaid invoice must have a BM twin. Archive the CSVs to the repo + report any stragglers same day.</p>
+</div>
+
+<div class="item">
+  <h4>Mon 8/11 — Catherine day</h4>
+  <p><span class="who claude">CLAUDE</span> Prep Catherine's login + a one-page phone cheat sheet of her daily flow (today's schedule → open job → photos → mark complete → invoice it), verified at phone width.</p>
+  <p><span class="who cat">CATHERINE</span> App on her phone home screen, 15-minute walkthrough with Doug, runs that day's real work in BM.</p>
+</div>
+
+<div class="item">
+  <h4>Tue 8/12 — close the two-person blockers</h4>
+  <p><span class="who claude">CLAUDE</span> Ship + verify: atomic invoice/quote numbering from the database (no more per-device collisions) · verify-then-confirm on quote/invoice saves · the three phone-broken screens (Payroll, Books, Messaging). Each with a 375px screenshot; Doug's phone is final confirm.</p>
+</div>
+
+<div class="item">
+  <h4>Wed 8/13 — parallel check</h4>
+  <p><span class="who claude">CLAUDE</span> Final sweep: BM and the Jobber archive agree; open-money list above is current; smoke test (quote approve + payment canary) green.</p>
+  <p><span class="who doug">DOUG</span> Skim the sweep report — anything that feels off, say so now, before Jobber dies.</p>
+</div>
+
+<div class="item red">
+  <h4>Thu 8/14 — cancel Jobber ✂️</h4>
+  <p><span class="who doug">DOUG</span> Jobber → Account → Billing → cancel subscription. Keep the confirmation email. (Claude never cancels accounts — this click is yours.)</p>
+  <p><span class="who claude">CLAUDE</span> Confirm the archive is complete + backed up, mark this page DONE, and update the accountability queue.</p>
+</div>
+
+<div class="callout"><b>What "done" looks like Friday:</b> Jobber is canceled and archived. Doug and Catherine both run the day out of Branch Manager on their phones. Every dollar owed is invoiced from BM with a working pay link. The two-device save risks are closed and proven.</div>
+
+<footer><b>Live queue:</b> <a href="https://branchmanager.app/accountability-a1f7.html">accountability-a1f7</a> stays the master list — this page is the cutover slice of it. Updated Aug 7, 2026 · statuses read from the live BM database.</footer>
+
+</div></body></html>
