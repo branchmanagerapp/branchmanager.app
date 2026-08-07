@@ -11,6 +11,7 @@ var ClientsPage = {
   _sort: 'updatedAt',
   _sortDir: -1,
   _tagFilter: '',
+  _lob: 'field', // v1087: 'field' = tree/snow/firewood (default); 'smartlawn' = Smart Lawn customers only
 
   // v735: right-click context menu on client rows
   _rowContextMenu: function(event, clientId) {
@@ -95,8 +96,10 @@ var ClientsPage = {
     var curYear = now.getFullYear();
     var allClients = DB.clients.getAll();
     var activeCount = 0, leadCount = 0, noEmailCount = 0, newLeads30 = 0, newClients30 = 0, ytdClients = 0;
+    var smartlawnCount = 0;
     for (var _si = 0; _si < allClients.length; _si++) {
       var _c = allClients[_si];
+      if (_c.line_of_business === 'smartlawn') { if (_c.archived !== true) smartlawnCount++; continue; } // v1087: SL customers counted separately, out of field stats
       var _st = _c.status; var _ca = _c.createdAt ? new Date(_c.createdAt) : null;
       if (_st === 'active') { activeCount++; if (_ca && _ca >= ago30) newClients30++; }
       else if (_st === 'lead') { leadCount++; if (_ca && _ca >= ago30) newLeads30++; }
@@ -186,6 +189,7 @@ var ClientsPage = {
         }
         return out;
       })()
+      + '<button onclick="ClientsPage.setLob(\'' + (self._lob === 'smartlawn' ? 'field' : 'smartlawn') + '\')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid ' + (self._lob === 'smartlawn' ? '#7c3aed' : 'var(--border)') + ';background:' + (self._lob === 'smartlawn' ? '#7c3aed' : 'var(--white)') + ';color:' + (self._lob === 'smartlawn' ? '#fff' : '#7c3aed') + ';cursor:pointer;font-weight:600;">🤖 Smart Lawn (' + smartlawnCount + ')' + (self._lob === 'smartlawn' ? ' ✕' : '') + '</button>'
       + (self._tagFilter ? '<button onclick="ClientsPage._tagFilter=\'\';ClientsPage._page=0;loadPage(\'clients\')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid #2e7d32;background:#2e7d32;color:#fff;cursor:pointer;font-weight:600;">Tag: ' + UI.esc(self._tagFilter) + ' ✕</button>' : '<button onclick="ClientsPage.showTagFilter()" style="font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-weight:500;">Filter by tag +</button>')
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
@@ -332,6 +336,14 @@ var ClientsPage = {
     // Hide archived from default list view (Archive page surfaces them)
     clients = clients.filter(function(c) { return c.archived !== true; });
 
+    // v1087: Smart Lawn customers are separated out of the main Clients list —
+    // the 🤖 Smart Lawn chip (or the Smart Lawn section) is where they live.
+    if (self._lob === 'smartlawn') {
+      clients = clients.filter(function(c) { return c.line_of_business === 'smartlawn'; });
+    } else {
+      clients = clients.filter(function(c) { return c.line_of_business !== 'smartlawn'; });
+    }
+
     // Filter by status (or special filters)
     if (self._filter === 'no-email') {
       clients = clients.filter(function(c) { return !c.email; });
@@ -370,6 +382,7 @@ var ClientsPage = {
   },
 
   setFilter: function(f) { ClientsPage._filter = f; ClientsPage._page = 0; loadPage('clients'); },
+  setLob: function(l) { ClientsPage._lob = l; ClientsPage._page = 0; loadPage('clients'); },
   // v1041: DEBOUNCE the search. Was: loadPage('clients') on EVERY keystroke,
   // which re-rendered the whole page, recreated #client-search, and stole focus
   // after each letter — so you couldn't finish typing "Rob" and it stayed on a

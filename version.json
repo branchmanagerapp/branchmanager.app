@@ -1,1 +1,5 @@
-{"version": 1086, "released": "2026-08-06", "notes": "Payroll: sub-tab strip no longer floats over week nav/buttons (all hub pages); commission roles excluded from hours grid"}
+{
+  "version": 1087,
+  "released": "2026-08-07",
+  "notes": "Clients page: Smart Lawn customers separated out of main list — 🤖 Smart Lawn chip toggles them; field stats exclude SL"
+}
