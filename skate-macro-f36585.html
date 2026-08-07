@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Skate Park — Macro Financials</title>
+<style>
+  :root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--txt:#e8eaf0;--dim:#9aa3b2;--orange:#f97316;--green:#34d399;--red:#f87171;--yellow:#fbbf24}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:720px;margin:0 auto}
+  h1{font-size:1.25rem;margin-bottom:2px}
+  .sub{color:var(--dim);font-size:.82rem;margin-bottom:16px}
+  h2{font-size:.95rem;color:var(--orange);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .card .lbl{font-size:.72rem;color:var(--dim);text-transform:uppercase;letter-spacing:.03em}
+  .card .val{font-size:1.25rem;font-weight:700;margin-top:2px}
+  .card .note{font-size:.72rem;color:var(--dim);margin-top:2px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.85rem}
+  th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{background:#1e222b;color:var(--dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:none}
+  .pos{color:var(--green)} .neg{color:var(--red)} .warn{color:var(--yellow)}
+  .flag{background:var(--card);border-left:3px solid var(--yellow);border-radius:6px;padding:10px 12px;font-size:.82rem;margin-bottom:8px;color:var(--dim)}
+  .flag b{color:var(--txt)}
+  .tot td{font-weight:700;background:#1e222b}
+  .tag{font-size:.68rem;padding:1px 6px;border-radius:4px;background:#243041;color:#7dd3fc;vertical-align:middle}
+</style>
+</head>
+<body>
+<h1>🛹 Skate Park — Macro Financial Overview</h1>
+<div class="sub">2nd Nature 3 Inc · built Aug 7, 2026 · sources: M&amp;T 0929 statements Jan–May '26, Square API (live) for Jun–Aug</div>
+
+<div class="cards">
+  <div class="card"><div class="lbl">Cash in bank</div><div class="val">$28,842</div><div class="note">May 31 — last statement on file. Jun/Jul missing.</div></div>
+  <div class="card"><div class="lbl">Payroll owed Aug 1–7</div><div class="val warn">≈ $3,109</div><div class="note">gross, from live timecards; + ~10% employer taxes</div></div>
+  <div class="card"><div class="lbl">July payroll (gross)</div><div class="val">$7,877</div><div class="note">≈ 2× winter ($4.3k in May) — camp season</div></div>
+  <div class="card"><div class="lbl">July card sales</div><div class="val pos">$33,299</div><div class="note">Square only; excludes cash/Wix/Sawyer. June: $34,639</div></div>
+</div>
+
+<h2>The payroll picture <span class="tag">LIVE from Square</span></h2>
+<table>
+  <tr><th>Month</th><th>Gross wages</th><th>vs May</th></tr>
+  <tr><td>May</td><td>$4,312</td><td>—</td></tr>
+  <tr><td>June</td><td>$4,610</td><td>+7%</td></tr>
+  <tr><td>July</td><td class="warn">$7,877</td><td class="warn">+83%</td></tr>
+  <tr><td>Aug 1–7 (partial)</td><td>$3,109</td><td class="warn">on pace ~$12k</td></tr>
+</table>
+<div class="sub" style="margin-top:6px">Timecard gross only — add ~10% employer taxes for all-in cost. Aug pace is early-month; camp ends late Aug.</div>
+
+<table style="margin-top:10px">
+  <tr><th>July — who</th><th>Hours</th><th>Rate</th><th>Gross</th></tr>
+  <tr><td>Lucas Uribe <span class="tag">Camp</span></td><td>137.0</td><td>$24</td><td>$3,346</td></tr>
+  <tr><td>Jon Marchand</td><td>66.0</td><td>$20</td><td>$1,320</td></tr>
+  <tr><td>David Forman</td><td>52.0</td><td>$17</td><td>$932</td></tr>
+  <tr><td>Jack Palmiotti</td><td>51.0</td><td>$17</td><td>$867</td></tr>
+  <tr><td>John Pascale <span class="tag">Camp</span></td><td>25.0</td><td>$20</td><td>$500</td></tr>
+  <tr><td>Jason Swift <span class="tag">Camp</span></td><td>19.0</td><td>$20</td><td>$400</td></tr>
+  <tr><td>Jordan Pascale</td><td>16.0</td><td>$17</td><td>$272</td></tr>
+  <tr><td>Chaz Gamory <span class="tag">Instructor</span></td><td>6.0</td><td>$40</td><td>$240</td></tr>
+  <tr class="tot"><td>Total</td><td>372</td><td></td><td>$7,877</td></tr>
+</table>
+
+<h2>2026 cash flow by month <span class="tag">M&amp;T 0929</span></h2>
+<table>
+  <tr><th>Month</th><th>In</th><th>Out</th><th>Net</th><th>End bal</th></tr>
+  <tr><td>Jan</td><td>$40,553</td><td>$19,761</td><td class="pos">+$20,793</td><td>$32,119</td></tr>
+  <tr><td>Feb</td><td>$29,240</td><td>$19,785</td><td class="pos">+$9,455</td><td>$41,574</td></tr>
+  <tr><td>Mar</td><td>$30,976</td><td>$29,794</td><td class="pos">+$1,182</td><td>$42,756</td></tr>
+  <tr><td>Apr</td><td>$21,545</td><td>$29,853</td><td class="neg">−$8,309</td><td>$34,447</td></tr>
+  <tr><td>May</td><td>$24,416</td><td>$30,021</td><td class="neg">−$5,605</td><td>$28,842</td></tr>
+  <tr><td>Jun–Jul</td><td colspan="3" style="text-align:center;color:var(--dim)">no statements on file — card sales were ~$34k/mo</td><td>?</td></tr>
+</table>
+<div class="sub" style="margin-top:6px">Cash peaked $42.8k end of March, then fell $13.9k in Apr–May — driven by ramped card payments (below), not payroll.</div>
+
+<h2>Where the money went (Jan–May)</h2>
+<table>
+  <tr><th>Item</th><th>5-mo total</th><th>/month</th></tr>
+  <tr><td>Card/lender payments "…1540" <span class="warn">⚠ ID this card</span></td><td>$38,755</td><td>$7,751</td></tr>
+  <tr><td>Rent — Peekskill Park Estates</td><td>$40,125</td><td>$8,025</td></tr>
+  <tr><td>Payroll all-in (wages+taxes+Paychex)</td><td>$24,140</td><td>$4,828</td></tr>
+  <tr><td>Con Edison</td><td>$7,514</td><td>$1,503</td></tr>
+  <tr><td>M&amp;T web pmt (Jan)</td><td>$5,002</td><td>—</td></tr>
+  <tr><td>Checks 1169/1172</td><td>$5,750</td><td>—</td></tr>
+  <tr><td>NYS sales tax (Dec–Feb Q)</td><td>$1,564</td><td>—</td></tr>
+  <tr><td>SBA EIDL (token pmts)</td><td>$159</td><td>$53</td></tr>
+</table>
+<div class="sub" style="margin-top:6px">The "…1540" web payments are the #1 cash drain and accelerating: $4.6k Feb → $9.3k Mar → $9.6k Apr → <b class="neg">$15.3k May</b>. Bigger than rent in May.</div>
+
+<h2>Revenue pace</h2>
+<table>
+  <tr><th>Period</th><th>Revenue-ish</th><th>Basis</th></tr>
+  <tr><td>2025 full year (P&amp;L)</td><td>$200,484</td><td>$16.7k/mo avg</td></tr>
+  <tr><td>2026 Jan–May (bank deposits)</td><td>$142,192</td><td class="pos">$28.4k/mo</td></tr>
+  <tr><td>2026 Jun–Jul (Square cards only)</td><td>$67,937</td><td class="pos">$34k/mo</td></tr>
+</table>
+<div class="sub" style="margin-top:6px">2026 is running well ahead of 2025 — even before adding cash/Wix/Sawyer to the summer months.</div>
+
+<h2>Flags — real data vs assumption</h2>
+<div class="flag"><b>Real:</b> all bank figures (Jan–May statements), Square sales &amp; timecards (live API today). <b>Assumption:</b> ~10% employer-tax load; pay-run schedule (~5th &amp; ~21st) inferred from bank pattern.</div>
+<div class="flag"><b>Missing:</b> June + July M&amp;T statements — current cash balance is unknown. Download both to PARK 2026 and this picture completes.</div>
+<div class="flag"><b>Unidentified:</b> card "…1540" taking $38.8k in 5 months. If it's a skate credit card, its spending isn't in these books; if it's tree/personal, it's an inter-company/draw issue for Kevin.</div>
+<div class="flag"><b>Debt backdrop:</b> SBA EIDL charged-off/Treasury (payoff ~$131.7k, no PG — corp-only); lease $96.3k/yr; sales tax current through Dec–Feb Q (Mar–May Q filed 6/14).</div>
+</body>
+</html>
