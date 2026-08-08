@@ -67,7 +67,7 @@ function load(){
     var hm=(location.hash||'').match(/^#d-(\d{4})-(\d{2})-\d{2}$/);
     if(hm){ vy=+hm[1]; vm=+hm[2]-1; }
     render();
-    if(hm){ setTimeout(function(){ var el=document.getElementById(location.hash.slice(1)); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.style.outline='3px solid #2c5e1f'; } },250); }
+    if(hm){ var _go=function(sm){ var el=document.getElementById(location.hash.slice(1)); if(el){ el.scrollIntoView({behavior:sm?'smooth':'auto',block:'start'}); el.style.outline='3px solid #2c5e1f'; } }; setTimeout(function(){_go(true);},250); setTimeout(function(){_go(false);},1400); setTimeout(function(){_go(false);},3000); }
   })
   .catch(function(){ document.getElementById('feed').innerHTML='<div class="empty">Couldn\'t load — check connection.</div>'; });
 }
