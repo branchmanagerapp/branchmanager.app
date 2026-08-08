@@ -56,7 +56,7 @@
 
   <div class="verdict">
     <h2>Bottom line</h2>
-    <p><b>The web app is production-ready. An App Store upload is not one step away — but it is closer than you'd think.</b> You already have a real native iOS app scaffolded (not a rejectable webview shell). The gap is that it was built in June, never finished, never built, and never submitted — plus three hard Apple gates that only you can open. Realistic distance: <b>days of focused work + your Apple enrollment</b>, not "upload tonight."</p>
+    <p><b>The web app is production-ready. An App Store upload is not one step away — but it is closer than you'd think.</b> You're already enrolled in the Apple Developer Program, and you already have a real native iOS app scaffolded (not a rejectable webview shell). The gap is that the app was built in June, never finished, never built, and never submitted — plus one required Apple feature (account deletion) that isn't built yet. Realistic distance: <b>days of focused work</b>, not "upload tonight."</p>
   </div>
 
   <h3 class="sec">The 4 old ship-blockers — re-verified in v1090</h3>
@@ -84,8 +84,8 @@
   <h3 class="sec">Apple hard gates — these block upload regardless of code</h3>
 
   <div class="row">
-    <div class="top"><span class="pill p-bad">Blocker</span><div class="ttl">Apple Developer Program not enrolled</div></div>
-    <div class="body">Nothing can be uploaded until you enroll ($99/yr). <code>eas.json</code> has an empty Apple Team ID / App ID. <b>This one is yours — I can't do it for you.</b></div>
+    <div class="top"><span class="pill p-ok">Done</span><div class="ttl">Apple Developer Program — enrolled</div></div>
+    <div class="body">You're already enrolled. One small follow-up: your <b>Team ID</b> and (once created) the <b>App Store Connect App ID</b> need to go into <code>eas.json</code> before submit — I'll grab those from you at build time.</div>
   </div>
 
   <div class="row">
@@ -96,6 +96,11 @@
   <div class="row">
     <div class="top"><span class="pill p-warn">Must-do</span><div class="ttl">The native app must actually be built &amp; tested</div></div>
     <div class="body">See the next section — the artifact exists but has never compiled.</div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-ok">Shipped v1091</span><div class="ttl">Geofence "capture notes" — now user-controllable + testable</div></div>
+    <div class="body">The arrival note-reminder feature (v1090) now has a real <b>Settings on/off toggle</b> that the geofence actually respects, plus a <b>"Send a test reminder"</b> button so it can be verified on a phone without driving to a site. Both verified at 375px.</div>
   </div>
 
   <h3 class="sec">The native app situation — the big one</h3>
