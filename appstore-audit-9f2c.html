@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Branch Manager — App Store Readiness Audit</title>
+<style>
+  :root{
+    --bg:#0f1512; --card:#18201c; --card2:#1e2723; --ink:#e8efe9; --dim:#9fb3a6;
+    --line:#2b3831; --green:#4caf50; --amber:#e0a83a; --red:#e06a5a; --blue:#5aa9e0;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-text-size-adjust:100%}
+  .wrap{max-width:820px;margin:0 auto;padding:22px 16px 90px}
+  header h1{font-size:23px;font-weight:800;letter-spacing:-.3px;line-height:1.2}
+  header .sub{color:var(--dim);font-size:14px;margin-top:6px}
+  .stamp{color:var(--dim);font-size:12px;margin-top:10px}
+  .verdict{background:linear-gradient(135deg,#1e2723,#18201c);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:var(--radius);padding:18px;margin:20px 0}
+  .verdict h2{font-size:15px;text-transform:uppercase;letter-spacing:.5px;color:var(--amber);margin-bottom:8px}
+  .verdict p{font-size:16px}
+  .verdict b{color:var(--ink)}
+  h3.sec{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:30px 0 12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .row{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px}
+  .row .top{display:flex;align-items:flex-start;gap:10px}
+  .pill{flex:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:999px;margin-top:2px}
+  .p-ok{background:rgba(76,175,80,.16);color:var(--green)}
+  .p-warn{background:rgba(224,168,58,.16);color:var(--amber)}
+  .p-bad{background:rgba(224,106,90,.16);color:var(--red)}
+  .p-info{background:rgba(90,169,224,.14);color:var(--blue)}
+  .row .ttl{font-weight:700;font-size:15px}
+  .row .body{color:var(--dim);font-size:14.5px;margin-top:7px}
+  .row .body code{background:#0c110e;color:#bcd,color:#b9d3c4;padding:1px 5px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .row .body b{color:var(--ink)}
+  ol.path{counter-reset:step;list-style:none;margin-top:4px}
+  ol.path li{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px 14px 52px;margin-bottom:10px}
+  ol.path li::before{counter-increment:step;content:counter(step);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--green);color:#0c110e;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+  ol.path li b{color:var(--ink)}
+  ol.path li .who{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .who-doug{background:rgba(224,168,58,.16);color:var(--amber)}
+  .who-claude{background:rgba(90,169,224,.14);color:var(--blue)}
+  .row .body ul{margin:8px 0 0 18px}
+  .row .body li{margin-bottom:3px}
+  footer{color:var(--dim);font-size:12.5px;margin-top:34px;text-align:center;line-height:1.7}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🌳 Branch Manager — App Store Readiness Audit</h1>
+    <div class="sub">A true, code-verified audit of what stands between BM and an App Store upload.</div>
+    <div class="stamp">Aug 8 2026 · web app live at v1090 · verified against a fresh production clone, not memory</div>
+  </header>
+
+  <div class="verdict">
+    <h2>Bottom line</h2>
+    <p><b>The web app is production-ready. An App Store upload is not one step away — but it is closer than you'd think.</b> You already have a real native iOS app scaffolded (not a rejectable webview shell). The gap is that it was built in June, never finished, never built, and never submitted — plus three hard Apple gates that only you can open. Realistic distance: <b>days of focused work + your Apple enrollment</b>, not "upload tonight."</p>
+  </div>
+
+  <h3 class="sec">The 4 old ship-blockers — re-verified in v1090</h3>
+
+  <div class="row">
+    <div class="top"><span class="pill p-ok">Fixed</span><div class="ttl">1 · Auth gate</div></div>
+    <div class="body">Login now validates the live Supabase session and force-logs-out only when the refresh token is truly dead (was: trusted a token-less local session forever). Confirmed at <code>src/auth.js:31–60</code> with the "Audit fix Jun 2026" marker.</div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-warn">Fixed, w/ gap</span><div class="ttl">2 · Job-number collision</div></div>
+    <div class="body">All three counters (job/quote/invoice) now reconcile against a cloud-max hint, closing the multi-device race for daily use. An <b>atomic server-side allocator</b> is also wired in the app — <b>but only <code>next_job_number</code> exists in the database</b>; the quote and invoice RPCs were never created, so those two silently fall back to the cloud-aware local number. Not dangerous (the fallback is safe), but the "atomic guarantee" is jobs-only. The full uniqueness migration is <b>staged, not applied</b>.</div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-ok">Fixed</span><div class="ttl">3 · Crew roster sync</div></div>
+    <div class="body"><code>team_members</code> is now in the CloudSync table list with the correct <code>bm-team</code> key override — roster syncs across devices. Confirmed at <code>src/supacloud.js:15,23</code>.</div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-warn">Narrowed, not closed</span><div class="ttl">4 · Tenant PII leak</div></div>
+    <div class="body">I probed the live database with the public key. <b>Good news:</b> the old exposure of every tenant's full config (address, license #, phones) is <b>gone</b>. <b>Remaining:</b> an unauthenticated request can still read <b>all 7 tenant owner-emails</b>. The clean fix (a branding-only RPC + a migration that revokes the broad read) is <b>written and staged but never applied</b> to the database. Severity: PII, not credentials — fix before onboarding tenant #2, not an emergency.</div>
+  </div>
+
+  <h3 class="sec">Apple hard gates — these block upload regardless of code</h3>
+
+  <div class="row">
+    <div class="top"><span class="pill p-bad">Blocker</span><div class="ttl">Apple Developer Program not enrolled</div></div>
+    <div class="body">Nothing can be uploaded until you enroll ($99/yr). <code>eas.json</code> has an empty Apple Team ID / App ID. <b>This one is yours — I can't do it for you.</b></div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-bad">Blocker</span><div class="ttl">No in-app account deletion</div></div>
+    <div class="body">Apple guideline 5.1.1(v): any app with logins must let a user <b>delete their account from inside the app</b>. BM has "Sign Out" and a local "Clear Data" (cache-only), plus an email-request web page — none of which qualify. This is a near-certain rejection until built. I can build it.</div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-warn">Must-do</span><div class="ttl">The native app must actually be built &amp; tested</div></div>
+    <div class="body">See the next section — the artifact exists but has never compiled.</div>
+  </div>
+
+  <h3 class="sec">The native app situation — the big one</h3>
+
+  <div class="row">
+    <div class="top"><span class="pill p-info">Asset</span><div class="ttl">You have a real native iOS app (Expo / React Native)</div></div>
+    <div class="body">In <code>mobile/</code>: <b>38 native screens</b> (Dashboard, Schedule, Jobs, Quotes, Invoices, Payroll, Voice-to-Quote…), native login with a <b>demo-login for Apple reviewers</b>, push notifications, and genuine <b>background location tracking</b>. Because the UI is native (not a webview), it dodges Apple's most common rejection (Guideline 4.2 "just a website"). Stack is current: Expo SDK 54 / React Native 0.81 / React 19. <b>This is a genuinely valuable asset.</b></div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-bad">Broken as committed</span><div class="ttl">…but it's stale and can't build from the repo</div></div>
+    <div class="body">
+      <ul>
+        <li>Last touched <b>Jun 8</b> — ~2 months and ~140 web versions behind, so it's missing recent features.</li>
+        <li>Its <b>package.json was never committed to git</b> (it exists on your Mac, so it's recoverable — but the repo copy can't <code>npm install</code>).</li>
+        <li>Version pinned at 1.0.0 / build 1 — <b>never built, never submitted</b>.</li>
+        <li>Ships with an <b>empty Supabase key fallback</b> — needs an EAS secret set.</li>
+        <li>A <b>second</b>, empty Capacitor shell in <code>ios/</code> is throwaway boilerplate — ignore/delete it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sec">Clean bill of health</h3>
+
+  <div class="row">
+    <div class="top"><span class="pill p-ok">Clean</span><div class="ttl">No secrets leaked in client code</div></div>
+    <div class="body">Full scan of shipped files: no service-role key, SendGrid key, GitHub PAT, or hardcoded bearer token. The only embedded keys are the public Supabase anon JWT and the Stripe <b>publishable</b> key — both designed to be public. (Separately: the GitHub PAT in your local <code>.git/config</code> still needs rotating — that's on-disk, not shipped.)</div>
+  </div>
+
+  <div class="row">
+    <div class="top"><span class="pill p-info">Note</span><div class="ttl">Two small hygiene items</div></div>
+    <div class="body"><code>sw.js</code> is a 0-byte file (notifications still work via the fallback, but there's no offline caching in it). And the two native shells declare <b>different</b> iOS permission strings — the Capacitor one is missing the background-location keys the tracker needs. Both are cleanup, not blockers.</div>
+  </div>
+
+  <h3 class="sec">The real path to upload — in order</h3>
+
+  <ol class="path">
+    <li><b>Enroll in the Apple Developer Program</b> ($99/yr) <span class="who who-doug">Doug</span> — the one thing that gates everything else. Everything below can proceed in parallel, but nothing ships without this.</li>
+    <li><b>Commit the native app's package.json &amp; get it building</b> <span class="who who-claude">Claude</span> — recover it from your Mac, commit it, wire the Supabase key as an EAS secret, and confirm a clean Expo build.</li>
+    <li><b>Build in-app account deletion</b> <span class="who who-claude">Claude</span> — required by Apple; a real delete-account flow in Settings + a delete-tenant edge function.</li>
+    <li><b>Close the tenant owner-email leak</b> <span class="who who-doug">Doug runs the SQL</span> — the migration is written; you paste it into Supabase (I'm not permitted to change access controls).</li>
+    <li><b>Refresh the native app to current features</b> <span class="who who-claude">Claude</span> — it's 2 months behind; bring the screens up to v1090 parity (this is the largest chunk of work).</li>
+    <li><b>Screenshots, listing, TestFlight</b> <span class="who who-doug">Doug + Claude</span> — the listing copy already exists in <code>mobile/APPSTORE.md</code>; capture the 8 required screenshots and push a TestFlight build before submitting.</li>
+  </ol>
+
+  <footer>
+    Private &amp; unlisted · noindex · Second Nature Tree Service<br>
+    Every claim here was checked against live code or the live database on Aug 8 2026 — not assumed.
+  </footer>
+</div>
+</body>
+</html>
