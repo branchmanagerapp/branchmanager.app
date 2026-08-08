@@ -761,7 +761,7 @@ var SettingsPage = {
     // it was closing the BUSINESS meta-group prematurely after the v446 refactor.)
 
     // ═══ Quote & Invoice Defaults (collapsible — uses cardOpen for visual parity) ═══
-    html += cardOpen('Quote & Invoice Defaults', { icon: 'file-text' });
+    html += cardOpen('Sales &amp; Client Settings', { icon: 'file-text' });
 
     // ── Notifications moved to USER meta-group (top of page) ──
 
@@ -773,7 +773,7 @@ var SettingsPage = {
       showLineItemPrices: localStorage.getItem('bm-show-line-prices') !== 'false',
       companyLogo: localStorage.getItem('bm-company-logo') || ''
     };
-    html += cardOpen('Default Quote & Invoice Settings', { open: true })
+    html += cardOpen('Payment Terms, Deposit &amp; Validity', { open: true })
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;">Payment Terms</label>'
       + '<select id="qd-terms" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;">'
@@ -1040,7 +1040,7 @@ var SettingsPage = {
 
     // Products & Services Catalog
     var allServices = DB.services.getAll();
-    html += cardOpen('Products & Services')
+    html += cardOpen('Your Services &amp; Prices')
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
       + '<div style="font-size:12px;color:var(--text-light);">' + allServices.length + ' items — used in quotes and invoices</div>'
       + '<button onclick="SettingsPage.addService()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">+ Add Item</button>'

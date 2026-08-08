@@ -1,5 +1,5 @@
 {
-  "version": 1091,
+  "version": 1092,
   "released": "2026-08-08",
-  "notes": "Geofence arrival reminders: Settings on/off toggle (bm-location-reminders, default ON) now gates the capture-notes prompt + 'Send a test reminder' button to fire it on demand"
+  "notes": "Settings clarity: rename misleading/duplicate cards (Quote & Invoice Defaults->Sales & Client Settings; Default Quote & Invoice Settings->Payment Terms, Deposit & Validity; Products & Services->Your Services & Prices)"
 }
