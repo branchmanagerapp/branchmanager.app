@@ -63,7 +63,12 @@ function load(){
   fetch(SB+'/rest/v1/day_recaps?select=date,title,summary,photos,locations&order=date.desc',
     {headers:{apikey:ANON,Authorization:'Bearer '+ANON}})
   .then(function(r){return r.json();})
-  .then(function(rows){ ALL=rows; render(); })
+  .then(function(rows){ ALL=rows;
+    var hm=(location.hash||'').match(/^#d-(\d{4})-(\d{2})-\d{2}$/);
+    if(hm){ vy=+hm[1]; vm=+hm[2]-1; }
+    render();
+    if(hm){ setTimeout(function(){ var el=document.getElementById(location.hash.slice(1)); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.style.outline='3px solid #2c5e1f'; } },250); }
+  })
   .catch(function(){ document.getElementById('feed').innerHTML='<div class="empty">Couldn\'t load — check connection.</div>'; });
 }
 function render(){
@@ -80,7 +85,7 @@ function render(){
     var ph=r.photos||[];
     var cls=ph.length===1?'grid n1':(ph.length===2?'grid n2':'grid');
     var locs=(r.locations||[]).map(function(l){return l.name?l.name.split(',')[0]:'';}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).slice(0,2).join(' · ');
-    h+='<div class="day">'
+    h+='<div class="day" id="d-'+r.date+'">'
       +'<div class="head"><div class="date">'+ds+'</div><h3>'+esc(r.title)+'</h3></div>'
       +'<div class="sum">'+esc(r.summary)+'</div>'
       +(ph.length?'<div class="'+cls+'">'+ph.map(function(u){return '<img loading="lazy" src="'+esc(u)+'" onclick="lb(\''+esc(u)+'\')">';}).join('')+'</div>':'')
