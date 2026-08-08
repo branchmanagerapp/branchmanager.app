@@ -486,13 +486,17 @@ var InvoicesPage = {
   _doGenerate: function() {
     var checks = document.querySelectorAll('.gen-inv-check:checked');
     var count = 0;
-    // Cache invoice count ONCE outside the loop (was doing a full getAll() per checkbox)
-    var _baseInvCount = DB.invoices.getAll().length;
-    checks.forEach(function(cb) {
-      var jobId = cb.getAttribute('data-id');
+    // v1088: was `row count + i` — deleted invoices made that LOWER than the real
+    // max, minting numbers already taken (cloud 409 → stranded invoice). Now each
+    // create gets its number from the DB allocator (sequential chain), falling
+    // back to DB.nextInvNum's local cloud-aware max when offline.
+    var ids = [];
+    checks.forEach(function(cb) { ids.push(cb.getAttribute('data-id')); });
+    var chain = Promise.resolve();
+    ids.forEach(function(jobId) { chain = chain.then(function() { return window.BMNum.alloc('invoice').then(function(allocNum) {
       var j = DB.jobs.getById(jobId);
       if (!j) return;
-      var invNum = _baseInvCount + count + 1;
+      var invNum = allocNum; // null → create() numbers via local cloud-aware max
       // Subject = first non-empty of (job description, first line-item service,
       // job number fallback). Replaces the generic "For Services Rendered" so
       // invoice list rows show what the work actually was — e.g. "Tree of
@@ -502,8 +506,8 @@ var InvoicesPage = {
         || firstItem.service
         || firstItem.description
         || 'Job #' + (j.jobNumber || '');
-      DB.invoices.create({
-        invoiceNumber: invNum,
+      var _created = DB.invoices.create({
+        invoiceNumber: invNum || undefined,
         clientId: j.clientId,
         clientName: j.clientName,
         clientEmail: j.clientEmail,
@@ -516,12 +520,17 @@ var InvoicesPage = {
         issuedDate: new Date().toISOString().split('T')[0],
         status: 'draft'
       });
-      DB.jobs.update(jobId, { invoiceId: 'generated' });
-      count++;
+      if (_created && _created.id && (!DB._lastWriteOk || DB._lastWriteOk())) {
+        DB.jobs.update(jobId, { invoiceId: 'generated' });
+        count++;
+      }
+    }); }); });
+    chain.then(function() {
+      UI.closeModal();
+      var skipped = ids.length - count;
+      UI.toast(count + ' invoice' + (count !== 1 ? 's' : '') + ' generated! 🧾' + (skipped > 0 ? ' (' + skipped + ' skipped — see jobs)' : ''));
+      loadPage('invoices');
     });
-    UI.closeModal();
-    UI.toast(count + ' invoice' + (count !== 1 ? 's' : '') + ' generated! 🧾');
-    loadPage('invoices');
   },
 
   _getPayLink: function(id) {
@@ -1507,26 +1516,33 @@ var InvoicesPage = {
       status: status
     };
 
-    var savedId;
+    // v1088: verify-then-confirm + atomic invoice number from the database on
+    // create (two devices can no longer mint the same number; offline falls back
+    // to the local cloud-aware number with the unique index as backstop).
+    var _afterWrite = function(savedId, isUpdate) {
+      var ok = !!savedId && (!DB._lastWriteOk || DB._lastWriteOk());
+      _unsave();
+      if (!ok) {
+        UI.toast('⚠ Could not save the invoice — storage may be full (clear old data in Settings). Nothing you typed was lost; try again.', 'error');
+        return;
+      }
+      UI.toast(isUpdate ? 'Invoice updated ✓' : 'Invoice created ✓');
+      if (document.querySelector('.modal-overlay')) UI.closeModal();
+      if (status === 'sent' && savedId) {
+        setTimeout(function() { InvoicesPage._showSendChooser(savedId); }, 100);
+        return;
+      }
+      loadPage('invoices');
+    };
     if (invoiceId) {
       DB.invoices.update(invoiceId, data);
-      savedId = invoiceId;
-      UI.toast('Invoice updated');
+      _afterWrite(invoiceId, true);
     } else {
-      var newInv = DB.invoices.create(data);
-      savedId = newInv && newInv.id;
-      UI.toast('Invoice created');
+      window.BMNum.alloc('invoice').then(function(num) {
+        if (num) data.invoiceNumber = num;
+        var newInv = DB.invoices.create(data);
+        _afterWrite(newInv && newInv.id, false);
+      });
     }
-
-    _unsave();
-    if (document.querySelector('.modal-overlay')) UI.closeModal();
-
-    // If user hit "Save & Send" → open the send-chooser modal (preview + delivery options)
-    if (status === 'sent' && savedId) {
-      setTimeout(function() { InvoicesPage._showSendChooser(savedId); }, 100);
-      return;
-    }
-
-    loadPage('invoices');
   }
 };

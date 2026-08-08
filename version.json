@@ -1,5 +1,5 @@
 {
-  "version": 1087,
-  "released": "2026-08-07",
-  "notes": "Clients page: Smart Lawn customers separated out of main list — 🤖 Smart Lawn chip toggles them; field stats exclude SL"
+  "version": 1088,
+  "released": "2026-08-08",
+  "notes": "Atomic record numbers from DB on create (jobs/invoices/quotes + bulk-gen); verify-then-confirm on quote+invoice saves — two-device safe"
 }

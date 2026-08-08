@@ -2117,17 +2117,34 @@ var QuotesPage = {
     if (data.status === 'sent') data.sentAt = data.sentAt || new Date().toISOString();
     if (data.status === 'approved') data.approvedAt = data.approvedAt || new Date().toISOString();
 
-    var savedId;
+    // v1088: verify-then-confirm (the job screen's audit pattern) + atomic
+    // quote number from the database on create — no more per-device collisions,
+    // no more "created ✓" on a write that silently failed.
+    var _afterWrite = function(savedId, isUpdate) {
+      var ok = !!savedId && (!DB._lastWriteOk || DB._lastWriteOk());
+      if (!ok) {
+        try { _unsave(); } catch(e) {}
+        UI.toast('⚠ Could not save the ' + QuotesPage._term() + ' — storage may be full (clear old data in Settings). Nothing you typed was lost; try again.', 'error');
+        return;
+      }
+      UI.toast(QuotesPage._term(true) + (isUpdate ? ' updated ✓' : ' created ✓'));
+      QuotesPage._afterSave(savedId, data, client, clientId, _unsave);
+    };
     if (quoteId) {
       DB.quotes.update(quoteId, data);
-      UI.toast(QuotesPage._term(true) + ' updated');
-      savedId = quoteId;
+      _afterWrite(quoteId, true);
     } else {
-      var newQ = DB.quotes.create(data);
-      UI.toast(QuotesPage._term(true) + ' created');
-      savedId = newQ.id;
+      window.BMNum.alloc('quote').then(function(num) {
+        if (num) data.quoteNumber = num;
+        var newQ = DB.quotes.create(data);
+        _afterWrite(newQ && newQ.id, false);
+      });
     }
+  },
 
+  // v1088: everything that used to run inline after the quote write — only runs
+  // once the write is confirmed. Same behavior, now failure-gated.
+  _afterSave: function(savedId, data, client, clientId, _unsave) {
     // v883: pending walkthrough cover photo — attach to the new quote
     try {
       var pendingCover = localStorage.getItem('bm-ai-pending-cover');
@@ -2139,7 +2156,7 @@ var QuotesPage = {
 
     QuotesPage._clearAutoSave();
     if (client && client.status === 'lead') DB.clients.update(clientId, { status: 'active' });
-    _unsave();
+    if (typeof _unsave === 'function') { try { _unsave(); } catch(e) {} }
     if (document.querySelector('.modal-overlay')) UI.closeModal();
 
     if (data.status === 'sent' && savedId) {

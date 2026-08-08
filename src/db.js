@@ -1309,3 +1309,27 @@ var DB = (function() {
   // Delay a tick so SupabaseDB.init has a chance to attach the client
   setTimeout(function(){ attempt(8); }, 500);
 })();
+
+// ── v1088: server-authoritative record numbers ───────────────────────────────
+// The atomic allocators (next_job_number / next_invoice_number / next_quote_number,
+// see migrate-job-number-unique.sql) hand out per-tenant numbers that two devices
+// can never both receive. alloc() resolves the number, or null when offline, not
+// signed in, or slow (>2500ms) — callers then fall back to the local cloud-aware
+// number and the DB unique index backstops the rare offline collision loudly.
+window.BMNum = {
+  alloc: function(kind) {
+    return new Promise(function(resolve) {
+      var done = false;
+      var fin = function(v) { if (!done) { done = true; resolve(v); } };
+      setTimeout(function() { fin(null); }, 2500);
+      try {
+        if (!navigator.onLine || typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) return fin(null);
+        var tid = DB.getTenantId && DB.getTenantId();
+        if (!tid) return fin(null);
+        SupabaseDB.client.rpc('next_' + kind + '_number', { p_tenant: tid }).then(function(res) {
+          fin(res && typeof res.data === 'number' ? res.data : null);
+        }, function() { fin(null); });
+      } catch (e) { fin(null); }
+    });
+  }
+};

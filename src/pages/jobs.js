@@ -1010,15 +1010,24 @@ var JobsPage = {
     // committed (update returns the row / DB._lastWriteOk catches quota loss),
     // and only then toast + navigate. On failure we keep the form so nothing
     // typed is lost.
-    var saved = jobId ? DB.jobs.update(jobId, data) : DB.jobs.create(data);
-    var ok = (jobId ? !!saved : !!(saved && saved.id))
-      && (!DB._lastWriteOk || DB._lastWriteOk());
-    if (!ok) {
-      UI.toast('⚠ Could not save the job — storage may be full (clear old data in Settings) or the job was removed elsewhere. Nothing you typed was lost; try again.', 'error');
-      return;
-    }
-    UI.toast(jobId ? 'Job updated ✓' : 'Job created ✓');
-    loadPage('jobs');
+    // v1088: on CREATE, get the number from the database's atomic allocator so
+    // two phones can never mint the same job number (falls back to the local
+    // cloud-aware number when offline; unique index backstops that path).
+    var finish = function(saved) {
+      var ok = (jobId ? !!saved : !!(saved && saved.id))
+        && (!DB._lastWriteOk || DB._lastWriteOk());
+      if (!ok) {
+        UI.toast('⚠ Could not save the job — storage may be full (clear old data in Settings) or the job was removed elsewhere. Nothing you typed was lost; try again.', 'error');
+        return;
+      }
+      UI.toast(jobId ? 'Job updated ✓' : 'Job created ✓');
+      loadPage('jobs');
+    };
+    if (jobId) { finish(DB.jobs.update(jobId, data)); return; }
+    window.BMNum.alloc('job').then(function(num) {
+      if (num) data.jobNumber = num;
+      finish(DB.jobs.create(data));
+    });
   },
 
   showDetail: function(id) {
