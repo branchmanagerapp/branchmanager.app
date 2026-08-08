@@ -1,5 +1,5 @@
 {
-  "version": 1093,
+  "version": 1094,
   "released": "2026-08-08",
-  "notes": "CRITICAL field fix: cloud pull no longer prunes records still in the write-queue (offline data-loss); also bump DB cache after bulk pull so synced data shows without reload"
+  "notes": "Settings: remove orphan Business Info details wrapper that collapsed the whole Business tab into one accordion (field-audit #4)"
 }

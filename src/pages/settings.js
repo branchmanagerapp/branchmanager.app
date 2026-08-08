@@ -317,13 +317,13 @@ var SettingsPage = {
       taxRate: localStorage.getItem('bm-tax-rate') || '8.375',
       logo: CompanyInfo.get('logo')
     };
-    // ═══ GROUP: Business Info (collapsible) ═══
-    html += '<details style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">'
-      + '<summary style="padding:14px 18px;cursor:pointer;font-size:15px;font-weight:700;color:var(--text);list-style:none;display:flex;justify-content:space-between;align-items:center;">'
-      +   '<span><i data-lucide="building-2" class="li li-hdr"></i> Business Info</span>'
-      +   '<span style="font-size:11px;color:var(--text-light);font-weight:500;">tap to expand</span>'
-      + '</summary>'
-      + '<div style="padding:16px 20px;border-top:1px solid var(--border);">';
+    // v1094: REMOVED the "Business Info" <details> wrapper here. Its closing
+    // tags were deleted in the v446 refactor (see the note ~line 760), leaving
+    // an orphan <details> that swallowed EVERY Business-tab card into one
+    // collapsed accordion (field-audit finding #4 — tab looked near-empty).
+    // The cards below already have their own collapsible chrome, so dropping
+    // the wrapper makes them a clean sibling list, and rebalances the page's
+    // <details> open/close count.
 
     // v885: Tenant switcher — for owners who belong to multiple tenants
     // (e.g. Doug owns SNT + 2nd Nature 3 INC / Park). Reads memberships
