@@ -371,15 +371,30 @@ var SupabaseDB = {
           try { existingLocal = JSON.parse(localStorage.getItem(t.local) || '[]'); } catch(e) {}
           var cloudIds = {};
           converted.forEach(function(r) { cloudIds[r.id] = true; });
+          // v1093 CRITICAL FIX: any record still parked in the cloud write-queue
+          // is unsynced work — NEVER prune it by age. Before this, a record a
+          // crew created offline that hadn't reached the cloud within 5 min was
+          // silently deleted on the next pull (boot / "Sync Now"), even though
+          // the write-queue still had it pending. Keep queued ids regardless.
+          var pendingIds = {};
+          try {
+            JSON.parse(localStorage.getItem('bm-write-queue') || '[]').forEach(function(op) {
+              if (op && op.id) pendingIds[op.id] = true;
+            });
+          } catch(e) {}
           var localOnly = existingLocal.filter(function(r) {
-            // Keep local record if not in cloud AND created recently (< 5 min ago = probably unsynced)
             if (cloudIds[r.id]) return false;
+            if (pendingIds[r.id]) return true; // pending upload — keep no matter how old
+            // Keep local record if not in cloud AND created recently (< 5 min ago = probably unsynced)
             if (!r.createdAt) return false;
             var ageMs = Date.now() - new Date(r.createdAt).getTime();
             return ageMs < 5 * 60 * 1000; // 5 minute grace period
           });
           var merged = converted.concat(localOnly);
           localStorage.setItem(t.local, JSON.stringify(merged));
+          // v1093: invalidate DB's in-memory parse cache so the post-pull
+          // re-render shows the merged data, not the stale pre-pull array.
+          try { if (typeof DB !== 'undefined' && DB._bumpCacheVer) DB._bumpCacheVer(t.local); } catch(e) {}
           totalPulled += converted.length;
           if (localOnly.length > 0) console.debug('[Pull merge] kept ' + localOnly.length + ' unsynced local ' + t.remote);
           if (SupabaseDB._debug) console.debug('Pulled ' + converted.length + ' rows from ' + t.remote);

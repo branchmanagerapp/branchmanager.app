@@ -1,5 +1,5 @@
 {
-  "version": 1092,
+  "version": 1093,
   "released": "2026-08-08",
-  "notes": "Settings clarity: rename misleading/duplicate cards (Quote & Invoice Defaults->Sales & Client Settings; Default Quote & Invoice Settings->Payment Terms, Deposit & Validity; Products & Services->Your Services & Prices)"
+  "notes": "CRITICAL field fix: cloud pull no longer prunes records still in the write-queue (offline data-loss); also bump DB cache after bulk pull so synced data shows without reload"
 }
