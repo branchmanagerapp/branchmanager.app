@@ -1,5 +1,5 @@
 {
-  "version": 1089,
+  "version": 1090,
   "released": "2026-08-08",
-  "notes": "Phone layouts: payroll week = per-crew stacked cards; books register reflows at <=720px (messaging was already fixed v1019)"
+  "notes": "Geofence job-arrival capture-notes: geocode today's jobs (Nominatim, cached), arrival banner/notification opens job + starts voice memo; iOS SW-notification fallback; fix distToBase ReferenceError"
 }

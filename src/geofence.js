@@ -1,11 +1,16 @@
 /**
  * Branch Manager — Geofence & GPS Reminders
  *
- * 1. Geofence around 1 Highland Industrial Park (base) — reminds to clock in/out
+ * 1. Geofence around the tenant's base — reminds to clock in/out
  * 2. Scheduled job reminders — push notification at job start time
  * 3. Auto-detect arriving/leaving the yard
+ * 4. v1090: arriving at a job site prompts "capture notes" → opens the job
+ *    and starts the voice-memo (speech-to-text) flow. Job addresses are
+ *    geocoded via Nominatim, cached in localStorage ('bm-jobgeo-*').
  *
- * Uses browser Geolocation API + Notification API
+ * Uses browser Geolocation API + Notification API. All of this runs only
+ * while the PWA is open/foregrounded — browsers give web apps no true
+ * background geofencing; a native wrapper would be needed for that.
  */
 var Geofence = {
   // White-label: the clock-in/out base is the TENANT's own geocoded
@@ -111,7 +116,7 @@ var Geofence = {
     }
     } // end if(_base) — base geofence inert until tenant sets an address
 
-    // ── ARRIVING at job site ──
+    // ── ARRIVING at job site → prompt to capture voice notes ──
     var todayJobs = Geofence._getTodayJobs();
     todayJobs.forEach(function(j) {
       if (j._lat && j._lng && j.status === 'scheduled') {
@@ -121,11 +126,12 @@ var Geofence = {
           if (!localStorage.getItem(notifKey)) {
             localStorage.setItem(notifKey, new Date().toISOString());
             Geofence._notify(
-              '📍 Arrived at job site',
-              j.clientName + ' — Tap to start job',
-              'arrived-job'
+              '📍 Arrived at ' + (j.clientName || 'job site'),
+              'Capture notes while the job is fresh — tap to start the mic.',
+              'arrived-job',
+              function() { Geofence.captureNotes(j.id); }
             );
-            Geofence._showBanner('📍 At <strong>' + j.clientName + '</strong> — <a href="#" onclick="CrewView.startJob(\'' + j.id + '\');Geofence._hideBanner();return false;" style="color:#fff;font-weight:700;">Start Job</a>');
+            Geofence._showBanner('📍 At <strong>' + UI.esc(j.clientName || '') + '</strong> — <a href="#" onclick="Geofence.captureNotes(\'' + j.id + '\');return false;" style="color:#fff;font-weight:700;">🎤 Capture notes</a> &nbsp;·&nbsp; <a href="#" onclick="CrewView.startJob(\'' + j.id + '\');Geofence._hideBanner();return false;" style="color:#fff;font-weight:700;">Start Job</a>');
           }
         }
       }
@@ -134,13 +140,40 @@ var Geofence = {
     // Update status display
     var statusEl = document.getElementById('gps-status');
     if (statusEl) {
-      statusEl.innerHTML = '📍 ' + (Geofence.isAtBase ? 'At yard' : distToBase.toFixed(0) + 'm from yard')
-        + ' · Accuracy: ' + Math.round(pos.coords.accuracy) + 'm';
+      // (pre-v1090 this read an undefined `distToBase` → ReferenceError
+      // whenever the crew-view GPS widget was visible away from base)
+      var baseTxt = 'GPS active';
+      if (_base) {
+        baseTxt = Geofence.isAtBase ? 'At yard'
+          : Geofence._distance(lat, lng, _base.lat, _base.lng).toFixed(0) + 'm from yard';
+      }
+      statusEl.innerHTML = '📍 ' + baseTxt + ' · Accuracy: ' + Math.round(pos.coords.accuracy) + 'm';
     }
+  },
+
+  // Open the job record and start the existing voice-memo flow
+  // (JobsPage._toggleVoiceMemo — speech-to-text appended to job notes).
+  captureNotes: function(jobId) {
+    Geofence._hideBanner();
+    if (typeof JobsPage === 'undefined' || typeof loadPage !== 'function') return;
+    JobsPage._pendingDetail = jobId;
+    loadPage('jobs');
+    // Start the mic once the job detail (and its mic button) has rendered.
+    var tries = 0;
+    var t = setInterval(function() {
+      if (document.getElementById('job-mic-btn-' + jobId)) {
+        clearInterval(t);
+        JobsPage._toggleVoiceMemo(jobId);
+      } else if (++tries > 24) {
+        clearInterval(t); // gave up after ~6s — job detail is open, mic is one tap away
+      }
+    }, 250);
   },
 
   _checkJobReminders: function() {
     var now = new Date();
+    // Resolve coords for today's job addresses (cached, one lookup per tick)
+    try { Geofence._geocodeTodayJobs(); } catch (e) {}
     var todayJobs = Geofence._getTodayJobs();
 
     todayJobs.forEach(function(j) {
@@ -243,7 +276,57 @@ var Geofence = {
     return DB.jobs.getAll().filter(function(j) {
       if (!j.scheduledDate) return false;
       return j.scheduledDate.split('T')[0] === todayStr;
+    }).map(function(j) {
+      // Attach cached geocode so the job-site arrival check can fire. `_lat`/
+      // `_lng` are transient — db.js's _stripUnknownCols drops them on push.
+      if (!j._lat && j.property) {
+        var g = Geofence._geoCached(j.property);
+        if (g) { j._lat = g.lat; j._lng = g.lng; }
+      }
+      return j;
     });
+  },
+
+  // ── Job-address geocoding (Nominatim — same provider as clientmap) ──
+  // Cache: localStorage 'bm-jobgeo-<addr>' = {lat,lng} on hit, {miss:ts} on
+  // no-result (retried after 24h). At most ONE uncached lookup per minute
+  // tick, far inside Nominatim's 1 req/s policy.
+  _geoKey: function(addr) {
+    return 'bm-jobgeo-' + String(addr).toLowerCase().replace(/\s+/g, ' ').trim();
+  },
+  _geoCached: function(addr) {
+    try {
+      var v = JSON.parse(localStorage.getItem(Geofence._geoKey(addr)) || 'null');
+      return (v && v.lat) ? v : null;
+    } catch (e) { return null; }
+  },
+  _geocodeInFlight: false,
+  _geocodeTodayJobs: function() {
+    if (Geofence._geocodeInFlight) return;
+    var jobs = Geofence._getTodayJobs();
+    for (var i = 0; i < jobs.length; i++) {
+      var j = jobs[i];
+      if (j.status !== 'scheduled' || !j.property || j._lat) continue;
+      var key = Geofence._geoKey(j.property);
+      var cached = null;
+      try { cached = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+      if (cached && (cached.lat || (cached.miss && Date.now() - cached.miss < 86400000))) continue;
+      Geofence._geocodeInFlight = true;
+      (function(k, addr) {
+        fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=us&limit=1&q=' + encodeURIComponent(addr))
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data && data.length) {
+              localStorage.setItem(k, JSON.stringify({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }));
+            } else {
+              localStorage.setItem(k, JSON.stringify({ miss: Date.now() }));
+            }
+          })
+          .catch(function() {})
+          .then(function() { Geofence._geocodeInFlight = false; });
+      })(key, j.property);
+      break; // one lookup per tick
+    }
   },
 
   // Haversine distance in meters
@@ -257,29 +340,39 @@ var Geofence = {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   },
 
-  // Send browser notification
-  _notify: function(title, body, tag) {
+  // Send browser notification. Optional onclick runs when the user taps it.
+  _notify: function(title, body, tag, onclick) {
     // Throttle — no more than 1 notification per 2 minutes
     if (Date.now() - Geofence.lastNotification < 120000) return;
     Geofence.lastNotification = Date.now();
 
     if ('Notification' in window && Notification.permission === 'granted') {
+      var opts = {
+        body: body,
+        icon: 'icons/icon-192.png',
+        tag: tag,
+        vibrate: [200, 100, 200],
+        requireInteraction: true
+      };
       try {
-        var n = new Notification(title, {
-          body: body,
-          icon: 'icons/icon-192.png',
-          tag: tag,
-          vibrate: [200, 100, 200],
-          requireInteraction: true
-        });
+        var n = new Notification(title, opts);
         n.onclick = function() {
           window.focus();
+          if (typeof onclick === 'function') { try { onclick(); } catch(e) {} }
           n.close();
         };
         // Auto-close after 30 seconds
         setTimeout(function() { n.close(); }, 30000);
       } catch(e) {
-        console.debug('Notification error:', e);
+        // iOS Safari has no Notification constructor — fall back to the
+        // service-worker path (no click routing there; the in-app banner
+        // carries the tap action, and geofencing only runs while the PWA
+        // is open anyway — browsers give PWAs no true background GPS).
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+          navigator.serviceWorker.getRegistration().then(function(reg) {
+            if (reg && reg.showNotification) reg.showNotification(title, opts);
+          }).catch(function(){});
+        }
       }
     }
   },
