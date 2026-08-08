@@ -628,6 +628,7 @@ var SettingsPage = {
     var locTrack = localStorage.getItem('bm-gps-tracking') !== 'false';
     var locWorkOnly = localStorage.getItem('bm-gps-work-only') !== 'false';
     var locGeofence = localStorage.getItem('bm-geofence') === 'true';
+    var locReminders = localStorage.getItem('bm-location-reminders') !== 'false'; // default ON
     html += cardOpen('Location Services')
       + '<div style="display:flex;flex-direction:column;gap:12px;">'
       + '<label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;">'
@@ -639,6 +640,10 @@ var SettingsPage = {
       + '<label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;">'
       + '<input type="checkbox" id="loc-geofence" style="width:18px;height:18px;"' + (locGeofence ? ' checked' : '') + '>'
       + '<div><strong>Geofence Auto Clock-In</strong><div style="font-size:12px;color:var(--text-light);">Automatically clock crew in when they arrive at a job site</div></div></label>'
+      + '<label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;">'
+      + '<input type="checkbox" id="loc-reminders" onchange="localStorage.setItem(\'bm-location-reminders\', this.checked ? \'true\' : \'false\');UI.toast(\'Arrival note reminders: \' + (this.checked ? \'ON\' : \'OFF\'));" style="width:18px;height:18px;"' + (locReminders ? ' checked' : '') + '>'
+      + '<div><strong>Arrival Note Reminders</strong><div style="font-size:12px;color:var(--text-light);">When you reach a job site, prompt you to capture voice notes — opens the job and starts the mic. Runs while BM is open.</div></div></label>'
+      + '<button type="button" onclick="if(typeof Geofence!==\'undefined\'){Geofence.testReminder();}else{UI.toast(\'Geofence not loaded\',\'error\');}" style="align-self:flex-start;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;">📍 Send a test reminder</button>'
       + '</div>';
 
     // ── Passive Location Tracking (BETA, owner-only for now) ──
@@ -3629,6 +3634,8 @@ var SettingsPage = {
     localStorage.setItem('bm-gps-tracking', document.getElementById('loc-tracking').checked ? 'true' : 'false');
     localStorage.setItem('bm-gps-work-only', document.getElementById('loc-work-only').checked ? 'true' : 'false');
     localStorage.setItem('bm-geofence', document.getElementById('loc-geofence').checked ? 'true' : 'false');
+    var lr = document.getElementById('loc-reminders');
+    if (lr) localStorage.setItem('bm-location-reminders', lr.checked ? 'true' : 'false');
     UI.toast('Location settings saved');
   },
 

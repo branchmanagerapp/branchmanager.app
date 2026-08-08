@@ -1,5 +1,5 @@
 {
-  "version": 1090,
+  "version": 1091,
   "released": "2026-08-08",
-  "notes": "Geofence job-arrival capture-notes: geocode today's jobs (Nominatim, cached), arrival banner/notification opens job + starts voice memo; iOS SW-notification fallback; fix distToBase ReferenceError"
+  "notes": "Geofence arrival reminders: Settings on/off toggle (bm-location-reminders, default ON) now gates the capture-notes prompt + 'Send a test reminder' button to fire it on demand"
 }

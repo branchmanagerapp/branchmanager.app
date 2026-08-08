@@ -117,7 +117,8 @@ var Geofence = {
     } // end if(_base) — base geofence inert until tenant sets an address
 
     // ── ARRIVING at job site → prompt to capture voice notes ──
-    var todayJobs = Geofence._getTodayJobs();
+    // Gated on the Settings "Arrival Note Reminders" toggle (default ON).
+    var todayJobs = Geofence.remindersEnabled() ? Geofence._getTodayJobs() : [];
     todayJobs.forEach(function(j) {
       if (j._lat && j._lng && j.status === 'scheduled') {
         var distToJob = Geofence._distance(lat, lng, j._lat, j._lng);
@@ -149,6 +150,39 @@ var Geofence = {
       }
       statusEl.innerHTML = '📍 ' + baseTxt + ' · Accuracy: ' + Math.round(pos.coords.accuracy) + 'm';
     }
+  },
+
+  // Whether the arrival "capture notes" prompt is on (Settings toggle,
+  // default ON). Does not affect the base clock-in geofence.
+  remindersEnabled: function() {
+    return localStorage.getItem('bm-location-reminders') !== 'false';
+  },
+
+  // Fire an arrival reminder on demand, without GPS — the Settings
+  // "Send a test reminder" button. Picks today's first scheduled job with
+  // an address; falls back to any scheduled job so it's always testable.
+  testReminder: function() {
+    var pick = null;
+    var today = Geofence._getTodayJobs().filter(function(j) { return j.status === 'scheduled'; });
+    pick = today.find(function(j) { return j.property; }) || today[0];
+    if (!pick && typeof DB !== 'undefined' && DB.jobs) {
+      pick = DB.jobs.getAll().filter(function(j) { return j.status === 'scheduled' && j.property; })[0];
+    }
+    if (!pick) {
+      if (typeof UI !== 'undefined') UI.toast('No scheduled job to test with — schedule one first', 'error');
+      return;
+    }
+    if (typeof UI !== 'undefined') UI.toast('Test: simulating arrival at ' + (pick.clientName || 'job'));
+    // Clear the once-per-day guard + the throttle so the test always shows.
+    localStorage.removeItem('bm-arrived-' + pick.id);
+    Geofence.lastNotification = 0;
+    Geofence._notify(
+      '📍 Arrived at ' + (pick.clientName || 'job site') + ' (test)',
+      'Capture notes while the job is fresh — tap to start the mic.',
+      'arrived-job',
+      function() { Geofence.captureNotes(pick.id); }
+    );
+    Geofence._showBanner('📍 At <strong>' + UI.esc(pick.clientName || '') + '</strong> — <a href="#" onclick="Geofence.captureNotes(\'' + pick.id + '\');return false;" style="color:#fff;font-weight:700;">🎤 Capture notes</a> &nbsp;·&nbsp; <a href="#" onclick="CrewView.startJob(\'' + pick.id + '\');Geofence._hideBanner();return false;" style="color:#fff;font-weight:700;">Start Job</a>');
   },
 
   // Open the job record and start the existing voice-memo flow
