@@ -1,5 +1,5 @@
 {
-  "version": 1088,
+  "version": 1089,
   "released": "2026-08-08",
-  "notes": "Atomic record numbers from DB on create (jobs/invoices/quotes + bulk-gen); verify-then-confirm on quote+invoice saves — two-device safe"
+  "notes": "Phone layouts: payroll week = per-crew stacked cards; books register reflows at <=720px (messaging was already fixed v1019)"
 }

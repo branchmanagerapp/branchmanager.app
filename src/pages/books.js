@@ -1112,8 +1112,19 @@ var BooksPage = (function() {
         + 'No transactions in this range. <a onclick="BooksPage.syncNow()" style="color:var(--green-dark);cursor:pointer;">Sync now</a> to pull the latest from Plaid.'
         + '</div>';
     } else {
+      // v1089: phone layout — the 4-col register (90+200+110px fixed) overflowed
+      // 375px. On <=720px the header hides and each row re-flows to
+      // date+amount / description / category, full-width. Desktop unchanged.
+      html += '<style>@media (max-width:720px){'
+        + '.bk-tx-head{display:none !important;}'
+        + '.bk-tx-row{grid-template-columns:1fr auto !important;gap:2px 10px !important;}'
+        + '.bk-tx-row>div:nth-child(1){grid-row:1;grid-column:1;}'
+        + '.bk-tx-row>div:nth-child(4){grid-row:1;grid-column:2;}'
+        + '.bk-tx-row>div:nth-child(2){grid-row:2;grid-column:1 / -1;}'
+        + '.bk-tx-row>div:nth-child(3){grid-row:3;grid-column:1 / -1;}'
+        + '}</style>';
       html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
-        + '<div style="display:grid;grid-template-columns:90px 1fr 200px 110px;gap:12px;padding:10px 16px;background:var(--bg);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">'
+        + '<div class="bk-tx-head" style="display:grid;grid-template-columns:90px 1fr 200px 110px;gap:12px;padding:10px 16px;background:var(--bg);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">'
         +   '<div>Date</div><div>Description</div><div>Category</div><div style="text-align:right;">Amount</div>'
         + '</div>';
 
@@ -1133,7 +1144,7 @@ var BooksPage = (function() {
         var ownerBadge = t.owner_funded
           ? '<span title="Paid from personal funds (owner-funded business expense)" style="background:#faf5ff;color:#7c3aed;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px;border:1px solid #ddd6fe;">👤 OWNER</span>'
           : '';
-        html += '<div style="display:grid;grid-template-columns:90px 1fr 200px 110px;gap:12px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;align-items:center;">'
+        html += '<div class="bk-tx-row" style="display:grid;grid-template-columns:90px 1fr 200px 110px;gap:12px;padding:11px 16px;border-top:1px solid var(--border);font-size:13px;align-items:center;">'
           +   '<div style="color:var(--text-light);font-size:12px;">' + _date(t.posted_date) + '</div>'
           +   '<div><strong>' + _esc(t.description) + '</strong>' + pending + matched + ownerBadge
           +     (t.merchant_name && t.merchant_name !== t.description ? '<div style="font-size:11px;color:var(--text-light);">' + _esc(t.merchant_name) + '</div>' : '')

@@ -179,9 +179,13 @@ var PayrollPage = {
       + '</div>';
 
     // ── Week Grid ──
+    // v1089: phones get a per-crew stacked card (the 9-col grid crushed at 375px);
+    // desktop keeps the original grid untouched.
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
 
     // Header row
+    if (!isMobile)
     html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">'
       + '<div style="padding:10px 12px;">Employee</div>';
     dates.forEach(function(d, i) {
@@ -194,6 +198,7 @@ var PayrollPage = {
 
     // Employee rows
     employees.forEach(function(emp) {
+      if (isMobile) { html += self._mobileEmpCard(emp, dates, approvals, today, weekStart); return; }
       var weekTotal = 0;
       var weekIssues = 0;
       var empKey = self._approvalKey(emp.name || emp.id, weekStart);
@@ -320,6 +325,77 @@ var PayrollPage = {
 
     html += '</div>';
     return html;
+  },
+
+  // v1089: phone layout — one card per crew member, days stacked vertically.
+  // Reuses the exact same data + approval logic as the desktop grid.
+  _mobileEmpCard: function(emp, dates, approvals, today, weekStart) {
+    var self = PayrollPage;
+    var dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var empKey = self._approvalKey(emp.name || emp.id, weekStart);
+    var weekExplicit = approvals[empKey] === 'approved';
+    var weekTotal = 0, weekIssues = 0, workingDaysCount = 0, daysApprovedCount = 0;
+    var rows = '';
+    dates.forEach(function(date, i) {
+      var entries = self._getEntriesForDate(emp.name || emp.id, date);
+      var dayHours = self._totalHours(entries);
+      weekTotal += dayHours;
+      var issues = self._hasIssues(entries, date);
+      if (issues.length) weekIssues++;
+      var cellKey = (emp.name || emp.id) + '_' + date;
+      var expanded = self._expandedCells[cellKey];
+      var dayKey = self._dayApprovalKey(emp.name || emp.id, date);
+      var dayApproved = approvals[dayKey] === 'approved';
+      var editedAfterApproval = dayApproved && approvals[dayKey + '_editedAfter'];
+      var barColor = issues.length > 0 ? '#ef4444' : (dayHours > 0 ? '#22c55e' : '#e5e7eb');
+      if (editedAfterApproval) barColor = '#f59e0b';
+      if (dayHours > 0 || entries.length > 0) {
+        workingDaysCount++;
+        if (dayApproved && !editedAfterApproval) daysApprovedCount++;
+      }
+      var isToday = date === today;
+      rows += '<div onclick="PayrollPage._toggleCell(\'' + cellKey + '\')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #f4f4f4;cursor:pointer;' + (isToday ? 'background:#f0fdf4;' : '') + '">'
+        + '<div style="width:52px;font-size:12px;font-weight:700;color:var(--text-light);">' + dayNames[i] + ' ' + new Date(date).getDate() + '</div>'
+        + '<div style="width:6px;align-self:stretch;border-radius:3px;background:' + barColor + ';"></div>'
+        + '<div style="flex:1;font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#bbb') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) + ' h' : '—') + '</div>'
+        + (entries.some(function(e) { return e.notes; }) ? '<span style="font-size:11px;">📝</span>' : '')
+        + (dayApproved && !editedAfterApproval ? '<span style="font-size:11px;color:#22c55e;">✓</span>' : '')
+        + (editedAfterApproval ? '<span style="font-size:11px;color:#f59e0b;">⚠</span>' : '')
+        + '<span style="color:#ccc;font-size:12px;">' + (expanded ? '▾' : '▸') + '</span>'
+        + '</div>';
+      if (expanded) {
+        rows += '<div style="padding:4px 12px 10px 68px;font-size:12px;" onclick="event.stopPropagation()">';
+        issues.forEach(function(iss) { rows += '<div style="color:#ef4444;font-size:11px;">⚠ ' + iss + '</div>'; });
+        entries.forEach(function(e) {
+          rows += '<div style="color:var(--text-light);margin-top:2px;">'
+            + (e.clockIn ? new Date(e.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '') + (e.clockOut ? '–' + new Date(e.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '') + ' ' + (e.hours ? e.hours.toFixed(1) + 'h' : '')
+            + '</div>';
+          if (e.notes) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(e.notes) + '</div>';
+        });
+        rows += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:6px;font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>';
+        if (dayApproved && !editedAfterApproval) rows += '<div style="font-size:10px;color:#22c55e;margin-top:3px;">✓ Approved</div>';
+        if (editedAfterApproval) rows += '<div style="font-size:10px;color:#f59e0b;margin-top:3px;">⚠ Re-approval needed</div>';
+        rows += '</div>';
+      }
+    });
+    var overtime = Math.max(0, weekTotal - 40);
+    var allDaysOk = workingDaysCount > 0 && daysApprovedCount === workingDaysCount;
+    var weekApproved = weekExplicit || allDaysOk;
+    var avatar = emp.photo_url
+      ? '<img src="' + UI.esc(emp.photo_url) + '" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;background:#f3f4f6;">'
+      : '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">' + (emp.name || '?').charAt(0).toUpperCase() + '</div>';
+    return '<div style="border-bottom:8px solid var(--bg);">'
+      + '<div onclick="if(typeof TeamPage!==\'undefined\')TeamPage.showDetail(\'' + UI.esc(emp.id) + '\')" style="display:flex;align-items:center;gap:10px;padding:12px;background:' + (weekApproved ? '#f0fdf4' : 'var(--bg)') + ';cursor:pointer;">'
+      + avatar
+      + '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(emp.name || '') + '</div>'
+      + (weekIssues > 0 ? '<div style="font-size:11px;color:#ef4444;">' + weekIssues + ' issue' + (weekIssues > 1 ? 's' : '') + '</div>' : '')
+      + '</div>'
+      + '<div style="text-align:right;"><div style="font-weight:800;font-size:17px;">' + weekTotal.toFixed(1) + '<span style="font-size:11px;font-weight:600;color:var(--text-light);"> h</span></div>'
+      + (overtime > 0 ? '<div style="font-size:10px;color:#ef4444;font-weight:600;">' + overtime.toFixed(1) + ' OT</div>' : '')
+      + (weekApproved ? '<div style="font-size:10px;color:#22c55e;">✓ approved</div>' : (daysApprovedCount > 0 ? '<div style="font-size:10px;color:#16a34a;">✓ ' + daysApprovedCount + '/' + workingDaysCount + '</div>' : ''))
+      + '</div></div>'
+      + rows
+      + '</div>';
   },
 
   // ── Weekly Review Panel ──
