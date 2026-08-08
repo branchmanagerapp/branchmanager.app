@@ -69,7 +69,7 @@ footer{margin-top:26px;padding:16px;background:#fff;border:1px solid var(--line)
 
 <div class="item red">
   <h4>⚠️ What still makes BM risky for two people at once</h4>
-  <p>Two save-integrity blockers matter once Doug AND Catherine are both in the app: <b>(1)</b> invoice/quote numbers are picked per-device and can collide — a record can strand on one phone; <b>(2)</b> quote &amp; bulk-invoice saves say "✓" without checking the save landed. Both get closed this week (Tue 8/12 below). Three screens are still broken at phone width (Payroll grid, Books register, Messaging) — fixed the same day.</p>
+  <p>✅ ALL CLOSED (v1088–v1089, shipped overnight 8/7→8/8): invoice/quote/job numbers now come from the database atomically — two phones can create at once safely · quote &amp; invoice saves verify before showing ✓ · Payroll and Books work at phone width (Messaging had already been fixed in v1019). Final real-world confirm = the Sat-morning two-phone session.</p>
 </div>
 
 <h2 class="part">The plan — day by day</h2>
@@ -95,8 +95,8 @@ footer{margin-top:26px;padding:16px;background:#fff;border:1px solid var(--line)
 </div>
 
 <div class="item">
-  <h4>Tue 8/11–Wed 8/12 — close the two-person blockers</h4>
-  <p><span class="who claude">CLAUDE</span> Ship + verify: atomic invoice/quote numbering from the database (no more per-device collisions) · verify-then-confirm on quote/invoice saves · the three phone-broken screens (Payroll, Books, Messaging). Each with a 375px screenshot; Doug's phone is final confirm.</p>
+  <h4>Tue 8/11–Wed 8/12 — polish day (blockers shipped early ✅)</h4>
+  <p><span class="who claude">CLAUDE</span> Numbering + save-verify + phone screens shipped early (v1088–1089). Now: payroll auto daily-notes (what the crew did, from real BM activity — payroll cross-check) · Doug's shop arrival from Bouncie · Day-by-Day view inside the app's Schedule (lazy-load only, nothing stored on the phone).</p>
 </div>
 
 <div class="item">
