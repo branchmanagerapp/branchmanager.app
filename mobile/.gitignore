@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Expo app deps MUST be committed (root .gitignore ignores these globally)
+!package.json
+!package-lock.json
