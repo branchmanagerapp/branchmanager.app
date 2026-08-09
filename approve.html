@@ -53,6 +53,25 @@
     .line-table tfoot td { padding: 8px 0; border: none; }
     .line-table .total-row td { font-weight: 800; font-size: 18px; border-top: 1px solid #eef0f3; padding-top: 14px; color: #0f172a; }
 
+    /* ── v1097: stacked line-item cards (mobile-first estimate) ── */
+    .li-list { margin-top: 4px; }
+    .li-card { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid #eef0f3; }
+    .li-pick-col { flex: none; padding-top: 2px; }
+    .li-body { flex: 1; min-width: 0; }
+    .li-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .li-name { font-weight: 700; font-size: 15px; color: #0f172a; line-height: 1.3; }
+    .li-head .li-amt { font-weight: 800; font-size: 15px; color: #0f172a; white-space: nowrap; }
+    .li-desc { font-size: 13px; color: #64748b; margin-top: 3px; line-height: 1.45; }
+    .li-qty { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+    .li-badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; vertical-align: middle; letter-spacing: .03em; margin-left: 4px; }
+    .li-photos { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .li-photos img { width: 74px; height: 74px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; display: block; }
+    .li-totals { margin-top: 12px; border-top: 2px solid #eef0f3; padding-top: 12px; }
+    .li-trow { display: flex; justify-content: space-between; font-size: 14px; color: #475569; padding: 3px 0; }
+    .li-trow span:last-child { font-weight: 600; color: #0f172a; }
+    .li-total-row { font-size: 18px; font-weight: 800; color: #0f172a; border-top: 1px solid #eef0f3; margin-top: 6px; padding-top: 10px; }
+    .li-total-row span { font-weight: 800; }
+
     /* ── Buttons ── */
     .actions { margin-top: 26px; }
     .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px 24px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; margin-bottom: 12px; transition: all .15s; line-height: 1; }
@@ -257,29 +276,29 @@
           }
           var isOptional = item.optional === true;
           var amtStr = Number(amt).toFixed(2);
-          var checkboxCell = '';
+          // v1097: stacked card layout (was a 6-col table that crushed on phones).
+          var pick = '';
           if (allowSelection) {
             if (hasOptional && !isOptional) {
-              // Required line — locked in, can't be opted out.
-              checkboxCell = '<td style="width:32px;text-align:center;"><input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" data-required="1" checked disabled title="Included" style="width:18px;height:18px;accent-color:#1a3c12;opacity:.5;"></td>';
+              pick = '<input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" data-required="1" checked disabled title="Included" style="width:20px;height:20px;accent-color:#1a3c12;opacity:.45;">';
             } else {
-              // Optional add-on = opt-IN (default off). Legacy quotes w/ no optional flag keep opt-OUT (default on).
               var defChecked = hasOptional ? '' : 'checked';
-              checkboxCell = '<td style="width:32px;text-align:center;"><input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" ' + defChecked + ' onchange="recalcSelected()" style="width:18px;height:18px;cursor:pointer;accent-color:#1a3c12;"></td>';
+              pick = '<input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" ' + defChecked + ' onchange="recalcSelected()" style="width:20px;height:20px;cursor:pointer;accent-color:#1a3c12;">';
             }
           }
-          var optBadge = isOptional ? ' <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;vertical-align:middle;letter-spacing:.03em;">OPTIONAL</span>' : '';
-          lineRows += '<tr data-li-row="' + idx + '"' + (isOptional ? ' style="background:#fffdf5;"' : '') + '>'
-            + checkboxCell
-            + '<td style="font-weight:600;">' + esc(item.service || 'Service') + optBadge + '</td>'
-            + '<td style="color:#666;font-size:13px;">' + esc(item.description || '') + photosHtml + '</td>'
-            + '<td>' + (item.qty || 1) + '</td>'
-            + '<td>' + money(item.rate) + '</td>'
-            + '<td><strong class="li-amt">' + money(amt) + '</strong></td>'
-            + '</tr>';
+          var optBadge = isOptional ? ' <span class="li-badge">OPTIONAL</span>' : '';
+          lineRows += '<div class="li-card" data-li-row="' + idx + '"' + (isOptional ? ' style="background:#fffdf5;"' : '') + '>'
+            + (pick ? '<div class="li-pick-col">' + pick + '</div>' : '')
+            + '<div class="li-body">'
+            +   '<div class="li-head"><span class="li-name">' + esc(item.service || 'Service') + optBadge + '</span><span class="li-amt">' + money(amt) + '</span></div>'
+            +   (item.description ? '<div class="li-desc">' + esc(item.description) + '</div>' : '')
+            +   photosHtml
+            +   '<div class="li-qty">' + (item.qty || 1) + ' × ' + money(item.rate) + '</div>'
+            + '</div>'
+            + '</div>';
         });
       } else {
-        lineRows = '<tr><td colspan="' + (allowSelection ? 6 : 5) + '" style="color:#999;font-size:13px;padding:16px 0;">See description above for scope of work.</td></tr>';
+        lineRows = '<div style="color:#999;font-size:13px;padding:16px 0;">See description above for scope of work.</div>';
       }
       // ── Full photo gallery: flatten ALL line-item photos, dedupe, show every one at the bottom ──
       var _seen = {}, _allPhotos = [];
@@ -471,16 +490,12 @@
 
         +     '<div class="section-label" style="margin-top:6px;">Services</div>'
         +     (window._pickHelpHtml || '')
-        +     '<table class="line-table"><thead><tr>'
-        +       (allowSelection ? '<th style="width:32px;text-align:center;">Pick</th>' : '')
-        +       '<th>Service</th><th>Description</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>'
-        +     '<tbody>' + lineRows + '</tbody>'
-        +     (items.length ? '<tfoot>'
-              + (q.subtotal && q.tax_rate ? '<tr><td colspan="' + (allowSelection ? 5 : 4) + '" style="font-weight:400;font-size:13px;color:#64748b;text-align:right;">Subtotal</td><td id="ft-subtotal" style="font-weight:600;font-size:13px;color:#0f172a;text-align:right;">' + money(q.subtotal) + '</td></tr>' : '')
-              + (q.tax_rate ? '<tr><td colspan="' + (allowSelection ? 5 : 4) + '" style="font-weight:400;font-size:13px;color:#64748b;text-align:right;">Tax (' + q.tax_rate + '%)</td><td id="ft-tax" style="font-weight:600;font-size:13px;color:#0f172a;text-align:right;">' + money(q.tax_amount || 0) + '</td></tr>' : '')
-              + '<tr class="total-row"><td colspan="' + (allowSelection ? 5 : 4) + '">Total</td><td id="ft-total">' + money(q.total) + '</td></tr>'
-              + '</tfoot>' : '')
-        +     '</table>'
+        +     '<div class="li-list">' + lineRows + '</div>'
+        +     (items.length ? '<div class="li-totals">'
+              + (q.subtotal && q.tax_rate ? '<div class="li-trow"><span>Subtotal</span><span id="ft-subtotal">' + money(q.subtotal) + '</span></div>' : '')
+              + (q.tax_rate ? '<div class="li-trow"><span>Tax (' + q.tax_rate + '%)</span><span id="ft-tax">' + money(q.tax_amount || 0) + '</span></div>' : '')
+              + '<div class="li-trow li-total-row"><span>Total</span><span id="ft-total">' + money(q.total) + '</span></div>'
+              + '</div>' : '')
         +     galleryHtml
         +     actionHtml
         +   '</div>' // .doc-pad
@@ -614,7 +629,7 @@
       var subtotal = 0;
       picks.forEach(function(cb) {
         var amt = parseFloat(cb.getAttribute('data-amt') || '0');
-        var row = document.querySelector('tr[data-li-row="' + cb.getAttribute('data-idx') + '"]');
+        var row = document.querySelector('[data-li-row="' + cb.getAttribute('data-idx') + '"]');
         if (cb.checked) {
           subtotal += amt;
           if (row) row.style.opacity = '1';
