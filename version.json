@@ -1,5 +1,5 @@
 {
-  "version": 1095,
+  "version": 1096,
   "released": "2026-08-08",
-  "notes": "Optional line items (Jobber-style): editor toggle marks a line optional; customer approval page shows required lines locked-in + optional add-ons opt-in with live total"
+  "notes": "Payroll Bouncie panel: collapsible per-day truck-day summary + suggested clock in/out (yard-buffer ±30m) from vehicle_positions, + per-day notes"
 }
