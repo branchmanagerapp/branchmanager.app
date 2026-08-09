@@ -1,5 +1,5 @@
 {
-  "version": 1094,
+  "version": 1095,
   "released": "2026-08-08",
-  "notes": "Settings: remove orphan Business Info details wrapper that collapsed the whole Business tab into one accordion (field-audit #4)"
+  "notes": "Optional line items (Jobber-style): editor toggle marks a line optional; customer approval page shows required lines locked-in + optional add-ons opt-in with live total"
 }

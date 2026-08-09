@@ -996,6 +996,7 @@ var QuotesPage = {
         description: (wrap.querySelector('.q-item-desc') || {}).value || '',
         qty: (wrap.querySelector('.q-item-qty') || {}).value || '1',
         rate: (wrap.querySelector('.q-item-rate') || {}).value || '',
+        optional: !!((wrap.querySelector('.q-item-optional') || {}).checked),
         photos: photos,
         photo: photos[0] || ''
       };
@@ -1217,6 +1218,15 @@ var QuotesPage = {
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Rate ($)</label><input type="number" inputmode="decimal" class="q-item-rate" value="' + (item.rate || '') + '" step="0.01" placeholder="0.00" oninput="QuotesPage.calcTotal();QuotesPage._syncSummary(this)" style="font-size:13px;">'
       +     formulaHint + '</div>'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Amount</label><div class="q-item-amount" style="font-size:14px;font-weight:700;color:var(--green-dark);padding:8px 0;">' + UI.money(lineTotal) + '</div></div>'
+      + '</div>'
+      // v1095: Optional add-on toggle. When checked, this line shows on the
+      // customer approval page as an opt-in add-on (default unchecked); the
+      // required lines stay locked in and the total updates as they pick.
+      + '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+      +   '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;font-weight:600;color:var(--text);">'
+      +     '<input type="checkbox" class="q-item-optional"' + (item.optional ? ' checked' : '') + ' style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on'
+      +   '</label>'
+      +   '<span style="font-size:11px;color:var(--text-light);">customer chooses whether to include it</span>'
       + '</div>'
       // v1039: clearly-LABELED delete (was a bare ✕ that read like "close/collapse"
       // but actually deleted). Confirm guards against accidental data loss.
@@ -2022,7 +2032,7 @@ var QuotesPage = {
         else if (photoRow && photoRow.dataset.photo) { photos = [photoRow.dataset.photo]; }
         var species = (wrap.querySelector('.q-item-species') || {}).value || '';
         var location = (wrap.querySelector('.q-item-location') || {}).value || '';
-        var liOut = { species: species, location: location, service: service, description: desc, qty: qty, rate: rate, amount: qty * rate, photos: photos, photo: photos[0] || '' };
+        var liOut = { species: species, location: location, service: service, description: desc, qty: qty, rate: rate, amount: qty * rate, photos: photos, photo: photos[0] || '', optional: !!((wrap.querySelector('.q-item-optional') || {}).checked) };
         // v780: persist material tagging so v774-A price-drift detector works
         if (wrap.dataset.kind === 'material') {
           liOut.kind = 'material';

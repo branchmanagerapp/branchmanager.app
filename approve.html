@@ -242,7 +242,8 @@
       // If quote has only 1 line item, hide the checkbox (no-op for them).
       var items = q.line_items || [];
       var lineRows = '';
-      var allowSelection = items.length > 1 && !isApproved && !isDeclined;
+      var hasOptional = items.some(function(it){ return it && it.optional === true; });
+      var allowSelection = (items.length > 1 || hasOptional) && !isApproved && !isDeclined;
       if (items.length) {
         items.forEach(function(item, idx) {
           var amt = item.amount || ((item.qty || 1) * (item.rate || 0));
@@ -254,12 +255,23 @@
             }).join('');
             photosHtml = '<div class="li-photos">' + thumbs + '</div>';
           }
-          var checkboxCell = allowSelection
-            ? '<td style="width:32px;text-align:center;"><input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + Number(amt).toFixed(2) + '" checked onchange="recalcSelected()" style="width:18px;height:18px;cursor:pointer;accent-color:#1a3c12;"></td>'
-            : '';
-          lineRows += '<tr data-li-row="' + idx + '">'
+          var isOptional = item.optional === true;
+          var amtStr = Number(amt).toFixed(2);
+          var checkboxCell = '';
+          if (allowSelection) {
+            if (hasOptional && !isOptional) {
+              // Required line — locked in, can't be opted out.
+              checkboxCell = '<td style="width:32px;text-align:center;"><input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" data-required="1" checked disabled title="Included" style="width:18px;height:18px;accent-color:#1a3c12;opacity:.5;"></td>';
+            } else {
+              // Optional add-on = opt-IN (default off). Legacy quotes w/ no optional flag keep opt-OUT (default on).
+              var defChecked = hasOptional ? '' : 'checked';
+              checkboxCell = '<td style="width:32px;text-align:center;"><input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" ' + defChecked + ' onchange="recalcSelected()" style="width:18px;height:18px;cursor:pointer;accent-color:#1a3c12;"></td>';
+            }
+          }
+          var optBadge = isOptional ? ' <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;vertical-align:middle;letter-spacing:.03em;">OPTIONAL</span>' : '';
+          lineRows += '<tr data-li-row="' + idx + '"' + (isOptional ? ' style="background:#fffdf5;"' : '') + '>'
             + checkboxCell
-            + '<td style="font-weight:600;">' + esc(item.service || 'Service') + '</td>'
+            + '<td style="font-weight:600;">' + esc(item.service || 'Service') + optBadge + '</td>'
             + '<td style="color:#666;font-size:13px;">' + esc(item.description || '') + photosHtml + '</td>'
             + '<td>' + (item.qty || 1) + '</td>'
             + '<td>' + money(item.rate) + '</td>'
@@ -283,10 +295,10 @@
       window._allowSelection = allowSelection;
       // Banner above table when selection is enabled
       if (allowSelection) {
-        var pickHelpHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;">'
-          + '☑️ Tap to opt out of any line item you don\'t want — the total below updates as you select.'
-          + '</div>';
-        window._pickHelpHtml = pickHelpHtml;
+        var pickMsg = hasOptional
+          ? '➕ Check any <b>optional</b> add-ons you\'d like — the total updates as you select. Items without a checkbox are already included.'
+          : '☑️ Tap to opt out of any line item you don\'t want — the total below updates as you select.';
+        window._pickHelpHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;">' + pickMsg + '</div>';
       } else {
         window._pickHelpHtml = '';
       }
@@ -444,7 +456,7 @@
         +       '<div class="meta-card"><div class="meta-row-rows">'
         +         '<div><div class="meta-label">' + docTerm + ' date</div><div class="meta-val">' + dateShort(q.created_at) + '</div></div>'
         +         '<div><div class="meta-label">Valid until</div><div class="meta-val">' + expiryMeta + '</div></div>'
-        +         '<div><div class="meta-label">Total</div><div class="meta-val meta-val-big">' + money(q.total) + '</div></div>'
+        +         '<div><div class="meta-label">Total</div><div class="meta-val meta-val-big" id="meta-total">' + money(q.total) + '</div></div>'
         +       '</div></div>'
         +     '</div>'
 
@@ -478,6 +490,8 @@
       // Store quote data for button handlers
       window._quoteId = q.id;
       window._quoteData = q;
+      // v1095: reflect required-only total on load when optional add-ons start unchecked.
+      if (window._allowSelection) { setTimeout(function(){ try { recalcSelected(); } catch(e){} }, 0); }
     }
 
     var QUOTE_NOTIFY_URL = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/quote-notify';
@@ -617,6 +631,8 @@
       if (sub) sub.textContent = money(subtotal);
       if (taxEl) taxEl.textContent = money(tax);
       if (totEl) totEl.textContent = money(total);
+      var metaTot = document.getElementById('meta-total');
+      if (metaTot) metaTot.textContent = money(total);
       // Disable approve if zero items selected
       var allUnchecked = Array.from(picks).every(function(cb){ return !cb.checked; });
       var approveBtn = document.getElementById('btn-approve-main');
