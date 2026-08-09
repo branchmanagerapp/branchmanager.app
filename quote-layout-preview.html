@@ -2,132 +2,91 @@
 <html><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quote editor v2 — multi-photo + click-to-enlarge</title>
+<title>Quote editor — final layout</title>
 <style>
   :root{--green-dark:#00836c;--accent:#00836c;--green-light:#8fd6c8;--white:#fff;--bg:#f5f6f8;--text:#212529;--text-light:#6c757d;--border:#dee2e6;--red:#dc3545;}
   *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);padding:14px;color:var(--text)}
-  .q-item-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .q-item-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
   input{width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;}
   .fg label{display:block;font-size:11px;font-weight:600;color:var(--text-light);margin-bottom:3px;}
   .fg{margin:0 0 8px;}
   h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-light);margin:18px 2px 8px;}
-
-  /* collapsed row */
-  .row{display:flex;align-items:center;gap:12px;cursor:pointer;}
-  .row .info{flex:1;min-width:0;}
-  .row .title{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .row .total{font-size:15px;font-weight:700;color:var(--green-dark);margin-top:3px;}
-  .thumbs{display:flex;gap:6px;flex:none;align-items:center;}
-  .thumbs img{object-fit:cover;border-radius:10px;background:#f0f1f3;}
-  .more{border-radius:10px;background:#e9ecef;color:var(--text-light);font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
-  .chev{font-size:16px;color:var(--text-light);flex:none;}
-
-  /* expanded: two-column — info LEFT, big photo RIGHT */
-  .exp{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start;}
-  @media(max-width:640px){ .exp{grid-template-columns:1fr;} .exp .photocol{order:-1;} }
+  .q-item-header{display:flex;align-items:center;gap:12px;cursor:pointer;}
+  .q-item-summary-title{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .q-item-summary-total{font-size:15px;font-weight:700;color:var(--green-dark);margin-top:3px;}
+  .q-item-chevron{font-size:16px;color:var(--text-light);flex:none;}
+  /* --- the real app's injected thumbnail CSS --- */
+  .q-thumbs-d{display:none}
+  .q-thumbs-m{display:flex;align-items:center}
+  @media(min-width:640px){.q-thumbs-d{display:flex;gap:6px;align-items:center}.q-thumbs-m{display:none}}
+  .q-item-wrap.q-open .q-collapsed-thumbs{display:none}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .hero{width:100%;aspect-ratio:1/1;max-height:300px;object-fit:cover;border-radius:12px;background:#f0f1f3;}
-  @media(max-width:640px){ .hero{aspect-ratio:4/3;max-height:240px;} }
-  .strip{display:flex;gap:6px;margin-top:8px;overflow-x:auto;}
-  .strip img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;flex:none;border:2px solid transparent;}
-  .strip img.sel{border-color:var(--green-dark);}
-  .addbtn{width:56px;height:56px;border-radius:8px;border:1.5px dashed var(--border);background:#fff;color:var(--text-light);font-size:20px;flex:none;cursor:pointer;}
-  .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
-  .actions button{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center;}
+  .actions button,.actions label{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;}
 </style>
 </head><body>
 
 <h3>Collapsed — line with several photos</h3>
-<div class="q-item-wrap">
-  <div class="row">
-    <div class="info"><div class="title">Remove 29" DBH oak leaning toward wires</div><div class="total">$2,900.00</div></div>
-    <div class="thumbs" id="tA"></div>
-    <div class="chev">›</div>
-  </div>
-</div>
+<div class="q-item-wrap" id="A"></div>
 
 <h3>Collapsed — line with one photo</h3>
-<div class="q-item-wrap">
-  <div class="row">
-    <div class="info"><div class="title">Deadwood prune along driveway</div><div class="total">$1,800.00</div></div>
-    <div class="thumbs" id="tB"></div>
-    <div class="chev">›</div>
-  </div>
-</div>
+<div class="q-item-wrap" id="B"></div>
 
-<h3>Expanded — click a thumbnail, photo enlarges, details stay clean on the left</h3>
-<div class="q-item-wrap">
-  <div class="row">
-    <div class="info"><div class="title">Remove 29" DBH oak leaning toward wires</div><div class="total">$2,900.00</div></div>
-    <div class="thumbs" id="tC"></div>
-    <div class="chev">▾</div>
-  </div>
-  <div class="exp">
-    <div class="infocol">
-      <div class="fg"><label>Service</label><input value="Removal"></div>
-      <div class="grid2">
-        <div class="fg"><label>Species</label><input value="White Oak"></div>
-        <div class="fg"><label>Location</label><input value="back, toward wires"></div>
-      </div>
-      <div class="fg"><label>Description</label><input value='Remove 29" DBH oak leaning toward wires'></div>
-      <div class="grid2" style="grid-template-columns:70px 1fr;">
-        <div class="fg"><label>Qty</label><input value="1" style="text-align:center;"></div>
-        <div class="fg"><label>Rate ($)</label><input value="2900"></div>
-      </div>
-      <div style="font-size:13px;color:var(--text-light);">Amount <b style="color:var(--green-dark);font-size:15px;">$2,900.00</b></div>
-      <div class="actions">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:7px 10px;"><input type="checkbox" style="width:16px;height:16px;accent-color:var(--green-dark);"> Optional add-on</label>
-        <button style="color:var(--red);border-color:var(--red);">🗑 Delete</button>
-        <button style="background:var(--green-dark);color:#fff;border:none;margin-left:auto;">✓ Done</button>
-      </div>
-    </div>
-    <div class="photocol">
-      <img class="hero" id="hero">
-      <div class="strip" id="strip"></div>
-    </div>
-  </div>
-</div>
+<h3>Expanded — photos on TOP, details below · tap a strip photo to enlarge</h3>
+<div class="q-item-wrap q-open" id="C"></div>
 
 <script>
-function ph(bg,trunk){return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="'+bg+'"/><circle cx="80" cy="62" r="42" fill="'+trunk+'"/><rect x="70" y="96" width="20" height="52" fill="#6b4423"/></svg>');}
-var P=[ph('#3a7d5c','#2c5f45'),ph('#4a8d6c','#356f4f'),ph('#2f6d4c','#245538'),ph('#5aa07c','#3f7a5a'),ph('#356b52','#28503d')];
+function ph(bg){return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="'+bg+'"/><circle cx="80" cy="62" r="42" fill="#2c5f45"/><rect x="70" y="96" width="20" height="52" fill="#6b4423"/></svg>');}
+var P=[ph('#3a7d5c'),ph('#4a8d6c'),ph('#2f6d4c'),ph('#5aa07c'),ph('#356b52')];
 
-// Viewport-aware: phone shows ONE big primary (96px, 1.5x of the old 64) + "+N"
-// badge; wider screens show a strip of up to 4 thumbnails (64px) + "+N".
-var mobile, THUMB, MAX;
-function renderThumbs(el, photos){
-  if(mobile){
-    // ONE big primary (96px) with a corner "+N" overlay if there are more —
-    // keeps the title full-width.
-    var extra=photos.length-1;
-    var badge = extra>0 ? '<div style="position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.66);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">+'+extra+'</div>' : '';
-    el.innerHTML='<div style="position:relative;flex:none;"><img src="'+photos[0]+'" style="width:'+THUMB+'px;height:'+THUMB+'px;">'+badge+'</div>';
-    return;
-  }
-  var html='';
-  var show=Math.min(photos.length, MAX);
-  for(var i=0;i<show;i++){ html+='<img src="'+photos[i]+'" style="width:'+THUMB+'px;height:'+THUMB+'px;">'; }
+/* ==== EXACT builders copied from quotes.js ==== */
+function collapsedThumbsHtml(photos){
+  if(!photos||!photos.length) return '';
+  var extra=photos.length-1;
+  var badge=extra>0?'<div style="position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.66);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">+'+extra+'</div>':'';
+  var mob='<div class="q-thumbs-m"><div style="position:relative;flex:none;"><img src="'+photos[0]+'" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:#f0f1f3;">'+badge+'</div></div>';
+  var show=Math.min(photos.length,4),dImgs='';
+  for(var i=0;i<show;i++)dImgs+='<img src="'+photos[i]+'" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:#f0f1f3;">';
   var rem=photos.length-show;
-  if(rem>0){ html+='<div class="more" style="width:64px;height:64px;font-size:13px;">+'+rem+'</div>'; }
-  el.innerHTML=html;
+  if(rem>0)dImgs+='<div style="width:64px;height:64px;border-radius:10px;background:#e9ecef;color:var(--text-light);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;">+'+rem+'</div>';
+  return '<div class="q-collapsed-thumbs" style="flex:none;">'+mob+'<div class="q-thumbs-d">'+dImgs+'</div></div>';
 }
-function render(){
-  mobile = window.innerWidth < 640;
-  THUMB = mobile ? 96 : 64;
-  MAX   = mobile ? 1 : 4;
-  renderThumbs(document.getElementById('tA'), [P[0],P[1],P[2],P[3],P[4]]);
-  renderThumbs(document.getElementById('tB'), [P[2]]);
-  renderThumbs(document.getElementById('tC'), [P[0],P[1],P[2],P[3],P[4]]);
+function bodyPhotoAreaHtml(photos){
+  if(!photos||!photos.length) return '';
+  var hero='<img class="q-hero" src="'+photos[0]+'" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:#f0f1f3;cursor:pointer;display:block;">';
+  var strip='';
+  if(photos.length>1){
+    strip='<div class="q-hero-strip" style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;">';
+    photos.forEach(function(u,pi){strip+='<img src="'+u+'" onclick="swapHero(this)" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex:none;cursor:pointer;border:2px solid '+(pi===0?'var(--green-dark)':'transparent')+';">';});
+    strip+='</div>';
+  }
+  return '<div class="q-photo-area" style="margin-bottom:14px;max-width:480px;">'+hero+strip+'</div>';
 }
-render();
-window.addEventListener('resize', render);
-setTimeout(render, 400);
+function swapHero(imgEl){var area=imgEl.closest('.q-photo-area');var h=area.querySelector('.q-hero');if(h)h.src=imgEl.src;area.querySelectorAll('.q-hero-strip img').forEach(function(im){im.style.borderColor='transparent';});imgEl.style.borderColor='var(--green-dark)';}
 
-// expanded photo column — big hero + clickable strip
-var expPhotos=[P[0],P[1],P[2],P[3],P[4]];
-var hero=document.getElementById('hero'), strip=document.getElementById('strip');
-function setHero(i){ hero.src=expPhotos[i]; [].forEach.call(strip.querySelectorAll('img'),function(im,ix){im.classList.toggle('sel',ix===i);}); }
-strip.innerHTML=expPhotos.map(function(u,i){return '<img src="'+u+'" onclick="setHero('+i+')">';}).join('')+'<button class="addbtn" title="Add photo">+</button>';
-setHero(0);
+function header(title,total,photos){
+  return '<div class="q-item-header">'
+    +'<div style="flex:1;min-width:0;"><div class="q-item-summary-title">'+title+'</div><div class="q-item-summary-total">'+total+'</div></div>'
+    +collapsedThumbsHtml(photos)
+    +'<div class="q-item-chevron">▾</div></div>';
+}
+var many=[P[0],P[1],P[2],P[3],P[4]];
+document.getElementById('A').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many).replace('▾','›');
+document.getElementById('B').innerHTML=header('Deadwood prune along driveway','$1,800.00',[P[2]]).replace('▾','›');
+
+// Expanded (q-open → collapsed thumbs hidden; photos on top of body)
+var formBody='<div class="q-item-body" style="margin-top:12px;">'
+  + bodyPhotoAreaHtml(many)
+  + '<div class="fg"><label>Service</label><input value="Removal"></div>'
+  + '<div class="grid2"><div class="fg"><label>Species</label><input value="White Oak"></div><div class="fg"><label>Location</label><input value="back, toward wires"></div></div>'
+  + '<div class="fg"><label>Description</label><input value=\'Remove 29" DBH oak leaning toward wires\'></div>'
+  + '<div class="grid2" style="grid-template-columns:70px 1fr;"><div class="fg"><label>Qty</label><input value="1" style="text-align:center;"></div><div class="fg"><label>Rate ($)</label><input value="2900"></div></div>'
+  + '<div style="font-size:13px;color:var(--text-light);">Amount <b style="color:var(--green-dark);font-size:15px;">$2,900.00</b></div>'
+  + '<div class="actions"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" style="width:16px;height:16px;accent-color:var(--green-dark);"> Optional add-on</label>'
+  + '<button style="color:var(--red);border-color:var(--red);">🗑 Delete</button>'
+  + '<button style="background:var(--green-dark);color:#fff;border:none;margin-left:auto;">✓ Done</button></div>'
+  + '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);"><div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;">Photo &amp; AI</div><div class="actions" style="margin-top:0;"><button>📷 Add Photos</button><button style="color:var(--accent);border-color:var(--green-light);">🤖 Run AI</button><button style="color:#15803d;border-color:#bbf7d0;">🌿 2nd</button></div></div>'
+  + '</div>';
+document.getElementById('C').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many)+formBody;
 </script>
 </body></html>

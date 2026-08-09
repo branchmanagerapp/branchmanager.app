@@ -1,5 +1,5 @@
 {
-  "version": 1098,
+  "version": 1099,
   "released": "2026-08-09",
-  "notes": "v1098: quote editor line items — details left, one primary photo right (big), removed orange photo-pool banner"
+  "notes": "v1099: quote editor — multi-photo rows (strip on desktop, big primary+badge on mobile), expanded photos-on-top hero+switch-strip, centralized photo refresh"
 }

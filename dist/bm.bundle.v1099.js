@@ -10185,7 +10185,7 @@ var QuotesPage = {
   _bodyPhotoAreaHtml: function(photos, index) {
     if (!photos || !photos.length) return '';
     var pjson = JSON.stringify(photos).replace(/"/g, '&quot;');
-    var hero = '<img class="q-hero" src="' + photos[0] + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + pjson + ',0,' + index + ')" style="width:100%;aspect-ratio:4/3;max-height:300px;object-fit:cover;border-radius:12px;background:#f0f1f3;cursor:pointer;">';
+    var hero = '<img class="q-hero" src="' + photos[0] + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + pjson + ',0,' + index + ')" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:#f0f1f3;cursor:pointer;display:block;">';
     var strip = '';
     if (photos.length > 1) {
       strip = '<div class="q-hero-strip" style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
@@ -10194,7 +10194,7 @@ var QuotesPage = {
       });
       strip += '</div>';
     }
-    return '<div class="q-photo-area" style="margin-bottom:14px;">' + hero + strip + '</div>';
+    return '<div class="q-photo-area" style="margin-bottom:14px;max-width:480px;">' + hero + strip + '</div>';
   },
 
   // Swap the enlarged hero when a strip thumbnail is tapped (view only).

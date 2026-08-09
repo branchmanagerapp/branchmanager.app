@@ -1150,32 +1150,74 @@ var QuotesPage = {
     'Firewood Cord': 400, 'Firewood Bundle': 10, 'Free Woodchips': 0, 'Free Estimate': 0
   },
 
+  // v1099: inject the responsive thumbnail CSS once. Collapsed rows show a
+  // strip of thumbnails on wide screens, one big primary + "+N" badge on phones;
+  // when a row is expanded (.q-open) the collapsed thumbs hide so photos aren't
+  // shown "top and bottom" — the expanded view carries the photos on top.
+  _thumbCssOnce: function() {
+    if (document.getElementById('q-thumb-css')) return;
+    var s = document.createElement('style');
+    s.id = 'q-thumb-css';
+    s.textContent =
+      '.q-thumbs-d{display:none}'
+      + '.q-thumbs-m{display:flex;align-items:center}'
+      + '@media(min-width:640px){.q-thumbs-d{display:flex;gap:6px;align-items:center}.q-thumbs-m{display:none}}'
+      + '.q-item-wrap.q-open .q-collapsed-thumbs{display:none}';
+    document.head.appendChild(s);
+  },
+
+  // Collapsed-row thumbnails. Phone: one 96px primary (1.5x the old size) with a
+  // "+N" corner badge. Wide: a strip of up to 4 (64px) then a "+N" tile.
+  _collapsedThumbsHtml: function(photos) {
+    if (!photos || !photos.length) return '';
+    var extra = photos.length - 1;
+    var badge = extra > 0 ? '<div style="position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.66);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;">+' + extra + '</div>' : '';
+    var mob = '<div class="q-thumbs-m"><div style="position:relative;flex:none;"><img src="' + photos[0] + '" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:#f0f1f3;">' + badge + '</div></div>';
+    var show = Math.min(photos.length, 4), dImgs = '';
+    for (var i = 0; i < show; i++) dImgs += '<img src="' + photos[i] + '" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:#f0f1f3;">';
+    var rem = photos.length - show;
+    if (rem > 0) dImgs += '<div style="width:64px;height:64px;border-radius:10px;background:#e9ecef;color:var(--text-light);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;">+' + rem + '</div>';
+    return '<div class="q-collapsed-thumbs" style="flex:none;">' + mob + '<div class="q-thumbs-d">' + dImgs + '</div></div>';
+  },
+
+  // Expanded-view photo area — big hero on top + a switch strip. Click a strip
+  // thumb to swap the hero (view only; the primary shown on the collapsed row
+  // stays photos[0]).
+  _bodyPhotoAreaHtml: function(photos, index) {
+    if (!photos || !photos.length) return '';
+    var pjson = JSON.stringify(photos).replace(/"/g, '&quot;');
+    var hero = '<img class="q-hero" src="' + photos[0] + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + pjson + ',0,' + index + ')" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:#f0f1f3;cursor:pointer;display:block;">';
+    var strip = '';
+    if (photos.length > 1) {
+      strip = '<div class="q-hero-strip" style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+      photos.forEach(function(u, pi) {
+        strip += '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._swapHero(this)" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex:none;cursor:pointer;border:2px solid ' + (pi === 0 ? 'var(--green-dark)' : 'transparent') + ';">';
+      });
+      strip += '</div>';
+    }
+    return '<div class="q-photo-area" style="margin-bottom:14px;max-width:480px;">' + hero + strip + '</div>';
+  },
+
+  // Swap the enlarged hero when a strip thumbnail is tapped (view only).
+  _swapHero: function(imgEl) {
+    var area = imgEl.closest('.q-photo-area'); if (!area) return;
+    var hero = area.querySelector('.q-hero'); if (hero) hero.src = imgEl.src;
+    Array.prototype.forEach.call(area.querySelectorAll('.q-hero-strip img'), function(im) { im.style.borderColor = 'transparent'; });
+    imgEl.style.borderColor = 'var(--green-dark)';
+  },
+
   _itemRow: function(index, item, services, expanded) {
     QuotesPage._dataListOnce(services);
+    QuotesPage._thumbCssOnce();
     var lineTotal = ((item.qty || 1) * (item.rate || 0));
     if (typeof expanded === 'undefined') expanded = true;
     var photos = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []);
     var photoStr = photos.length ? ' data-photos=\'' + JSON.stringify(photos).replace(/'/g,'&#39;') + '\'' : '';
     var hasContent = !!(item.service || item.description || item.rate);
 
-    // Photo grid (shown in both collapsed + expanded modes)
-    var photoHtml = '';
-    if (photos.length) {
-      photoHtml = '<div class="q-photo-grid" style="display:grid;grid-template-columns:repeat(' + Math.min(photos.length, 3) + ',1fr);gap:4px;margin-bottom:10px;">';
-      photos.forEach(function(p, pi) {
-        photoHtml += '<img src="' + p + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(photos).replace(/"/g, '&quot;') + ',' + pi + ',' + index + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
-      });
-      if (photos.length > 3) photoHtml += '<div style="grid-column:1/-1;font-size:11px;color:var(--text-light);text-align:center;">+' + (photos.length - 3) + ' more — tap any photo to view</div>';
-      photoHtml += '</div>';
-    }
-
-    // v1098: clean one-line summary — DETAILS LEFT, one PRIMARY PHOTO RIGHT.
-    // Left column: title (service · species · location) + price stacked.
-    // Right: the line's first/primary photo shown big (a line can hold many
-    // photos but only ONE displays here). Keeps the .q-item-header-thumb class
-    // so existing hooks that update the thumb src on photo change still work —
-    // it's now the visible primary photo (hidden only when the line has none).
-    var primaryPhoto = photos[0] || '';
+    // v1099: one-line summary — DETAILS LEFT, PHOTOS RIGHT. Wide screens show a
+    // strip of thumbnails; phones show one big primary + "+N" badge. Photos hide
+    // when the row is expanded (photos then live on top of the expanded view).
     var parts = [];
     if (item.service)  parts.push(UI.esc(item.service));
     if (item.species)  parts.push(UI.esc(item.species));
@@ -1187,7 +1229,7 @@ var QuotesPage = {
       +   '<div class="q-item-summary-title" style="font-size:14px;font-weight:600;color:' + (hasContent ? 'var(--text)' : 'var(--text-light)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + titleText + '</div>'
       +   '<div class="q-item-summary-total" style="font-size:15px;font-weight:700;color:var(--green-dark);margin-top:3px;">' + UI.money(lineTotal) + '</div>'
       + '</div>'
-      + '<img class="q-item-header-thumb" src="' + primaryPhoto + '" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f0f1f3;' + (primaryPhoto ? '' : 'display:none;') + '">'
+      + QuotesPage._collapsedThumbsHtml(photos)
       + '<div class="q-item-chevron" style="font-size:16px;color:var(--text-light);transition:transform .2s;flex:none;' + (expanded ? '' : 'transform:rotate(-90deg);') + '">▾</div>'
       + '</div>';
 
@@ -1196,10 +1238,10 @@ var QuotesPage = {
     var formulaHint = '<div class="q-item-formula" style="font-size:11px;color:var(--text-light);margin-top:4px;"></div>';
 
     // Expanded form body (hidden when collapsed)
-    // v629 order: Service → Species → Location → Description → Qty → Rate →
-    // photo grid + AI buttons LAST (Jobber pattern: enter the line first,
-    // then optionally enrich with photo/AI).
+    // v1099: PHOTOS ON TOP — big hero + switch strip lead the expanded view,
+    // then the form fields. AI buttons stay at the bottom.
     var body = '<div class="q-item-body" style="margin-top:12px;' + (expanded ? '' : 'display:none;') + '">'
+      + QuotesPage._bodyPhotoAreaHtml(photos, index)
       // Row 1: Service (full width, dropdown)
       + '<div class="form-group" style="margin:0 0 8px;"><label style="font-size:11px;font-weight:600;">Service</label>'
       +   '<input class="q-item-service" list="q-svc-datalist" value="' + UI.esc(item.service || '') + '" placeholder="Type or pick…" onchange="QuotesPage._onServiceChange(this)" oninput="QuotesPage._syncSummary(this)" style="font-size:13px;width:100%;box-sizing:border-box;">'
@@ -1232,9 +1274,8 @@ var QuotesPage = {
       + '<div style="margin-top:12px;">'
       +   '<button type="button" title="Delete this line item" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;padding:8px 14px;display:inline-flex;align-items:center;gap:6px;" onclick="if(confirm(\'Delete this line item?\')){this.closest(\'.q-item-wrap\').remove();QuotesPage.calcTotal();}">🗑 Delete line item</button>'
       + '</div>'
-      // v629: photo grid lives below the form fields now (above the photo/AI
-      // action buttons) — line entry first, then optional enrichment.
-      + (photoHtml ? '<div style="margin-top:14px;">' + photoHtml + '</div>' : '')
+      // v1099: photos now render on TOP of the body (hero + strip). The Photo &
+      // AI actions stay below for adding/analyzing.
       + '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);">'
       +   '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;">Photo &amp; AI</div>'
       +   '<div style="display:flex;gap:6px;justify-content:flex-start;flex-wrap:wrap;">'
@@ -1251,7 +1292,7 @@ var QuotesPage = {
     // attr + materialId on the wrap so the next save keeps the tag.
     var kindAttr = (item && (item.kind === 'material' || item.type === 'material')) ? ' data-kind="material"' : '';
     var matIdAttr = (item && item.materialId) ? ' data-material-id="' + UI.esc(String(item.materialId)) + '"' : '';
-    return '<div class="q-item-wrap" data-index="' + index + '"' + kindAttr + matIdAttr + ' style="margin-bottom:10px;padding:12px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+    return '<div class="q-item-wrap' + (expanded ? ' q-open' : '') + '" data-index="' + index + '"' + kindAttr + matIdAttr + ' style="margin-bottom:10px;padding:12px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
       + summary
       + body
       + '</div>';
@@ -1266,6 +1307,7 @@ var QuotesPage = {
     var collapsed = body.style.display === 'none';
     body.style.display = collapsed ? 'block' : 'none';
     if (chev) chev.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(-90deg)';
+    wrap.classList.toggle('q-open', collapsed); // open → hide collapsed thumbs (photos live on top)
   },
 
   // Programmatically collapse the current row (called by "Done with this tree" button)
@@ -1275,6 +1317,7 @@ var QuotesPage = {
     var chev = wrap.querySelector('.q-item-chevron');
     if (body) body.style.display = 'none';
     if (chev) chev.style.transform = 'rotate(-90deg)';
+    wrap.classList.remove('q-open'); // collapsed → show the row thumbnails again
     // Flash confirmation
     wrap.style.transition = 'background .25s'; wrap.style.background = '#dcfce7';
     setTimeout(function() { wrap.style.background = 'var(--bg)'; }, 400);
@@ -1364,25 +1407,7 @@ var QuotesPage = {
     photos.splice(photoIndex, 1);
     row.dataset.photos = JSON.stringify(photos);
     row.dataset.photo = photos[0] || '';
-    // Re-render the grid
-    var body = wrap.querySelector('.q-item-body');
-    var existingGrid = body ? body.querySelector('.q-photo-grid') : null;
-    if (existingGrid) existingGrid.remove();
-    if (photos.length && body) {
-      var grid = document.createElement('div');
-      grid.className = 'q-photo-grid';
-      grid.style.cssText = 'display:grid;grid-template-columns:repeat(' + Math.min(photos.length, 3) + ',1fr);gap:4px;margin-bottom:10px;';
-      grid.innerHTML = photos.map(function(u, pi) {
-        return '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(photos).replace(/"/g,'&quot;') + ',' + pi + ',' + wrapIndex + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
-      }).join('');
-      body.insertBefore(grid, body.firstChild);
-    }
-    // Update header thumb
-    var headerThumb = wrap.querySelector('.q-item-header img');
-    if (headerThumb) {
-      if (photos[0]) { headerThumb.src = photos[0]; headerThumb.style.display = ''; }
-      else { headerThumb.src = ''; headerThumb.style.display = 'none'; }
-    }
+    QuotesPage._refreshRowPhotoUI(wrap, photos);
     UI.toast('Photo deleted');
     QuotesPage._autoSave();
   },
@@ -1428,25 +1453,7 @@ var QuotesPage = {
         var all = existing.concat(newUrls).slice(0, 5);
         row.dataset.photos = JSON.stringify(all);
         row.dataset.photo = all[0];
-        // Swap header thumb to the new photo
-        var newThumb = document.createElement('img');
-        newThumb.src = all[0];
-        newThumb.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;';
-        newThumb.onclick = function(ev) { ev.stopPropagation(); QuotesPage._uploadPhotoToRow(newThumb); };
-        thumbEl.replaceWith(newThumb);
-        // Refresh the body photo grid
-        var allWraps = document.querySelectorAll('.q-item-wrap');
-        var wrapIdx = Array.prototype.indexOf.call(allWraps, wrap);
-        var body = wrap.querySelector('.q-item-body');
-        var existingGrid = body ? body.querySelector('.q-photo-grid') : null;
-        if (existingGrid) existingGrid.remove();
-        var grid = document.createElement('div');
-        grid.className = 'q-photo-grid';
-        grid.style.cssText = 'display:grid;grid-template-columns:repeat(' + Math.min(all.length, 3) + ',1fr);gap:4px;margin-bottom:10px;';
-        grid.innerHTML = all.map(function(u, pi) {
-          return '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(all).replace(/"/g,'&quot;') + ',' + pi + ',' + wrapIdx + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
-        }).join('') + (all.length > 1 ? '<div style="grid-column:1/-1;font-size:11px;color:var(--text-light);text-align:center;">' + all.length + ' photos</div>' : '');
-        if (body) body.insertBefore(grid, body.firstChild);
+        QuotesPage._refreshRowPhotoUI(wrap, all);
         UI.toast('📷 ' + newUrls.length + ' photo(s) added');
         QuotesPage._autoSave();
         // Optional auto-AI if enabled + key present
@@ -1487,17 +1494,7 @@ var QuotesPage = {
         var all = existing.concat(newUrls).slice(0, 5); // cap at 5
         row.dataset.photos = JSON.stringify(all);
         row.dataset.photo = all[0];
-        // Re-render the photo grid in the body
-        var body = wrap.querySelector('.q-item-body');
-        var existingGrid = body ? body.querySelector('.q-photo-grid') : null;
-        if (existingGrid) existingGrid.remove();
-        var grid = document.createElement('div');
-        grid.className = 'q-photo-grid';
-        grid.style.cssText = 'display:grid;grid-template-columns:repeat(' + Math.min(all.length, 3) + ',1fr);gap:4px;margin-bottom:10px;';
-        grid.innerHTML = all.map(function(u, pi) {
-          return '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(all).replace(/"/g,'&quot;') + ',' + pi + ',' + wrapIdx + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
-        }).join('') + (all.length > 1 ? '<div style="grid-column:1/-1;font-size:11px;color:var(--text-light);text-align:center;">' + all.length + ' photos</div>' : '');
-        if (body) body.insertBefore(grid, body.firstChild);
+        QuotesPage._refreshRowPhotoUI(wrap, all);
         UI.toast('📷 ' + newUrls.length + ' more photo(s) added — tap 🤖 Run AI to analyze');
         QuotesPage._autoSave();
       });
@@ -2949,27 +2946,7 @@ var QuotesPage = {
           // Store photos on both the row (for save()) and the wrap (for display persistence)
           lastRow.dataset.photos = JSON.stringify(dataUrls);
           lastRow.dataset.photo = dataUrls[0];
-          // Replace any existing photo grid, then prepend a fresh one inside q-item-body
-          var body = lastWrap.querySelector('.q-item-body');
-          var existingGrid = body ? body.querySelector('.q-photo-grid') : null;
-          if (existingGrid) existingGrid.remove();
-          var grid = document.createElement('div');
-          grid.className = 'q-photo-grid';
-          grid.style.cssText = 'display:grid;grid-template-columns:repeat(' + Math.min(dataUrls.length, 3) + ',1fr);gap:4px;margin-bottom:10px;';
-          var lastIdx = wraps.length - 1;
-          grid.innerHTML = dataUrls.map(function(u, pi) {
-            return '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(dataUrls).replace(/"/g,'&quot;') + ',' + pi + ',' + lastIdx + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
-          }).join('') + (dataUrls.length > 1 ? '<div style="grid-column:1/-1;font-size:11px;color:var(--text-light);text-align:center;margin-top:2px;">' + dataUrls.length + ' photos — AI analyzing all</div>' : '');
-          body.insertBefore(grid, body.firstChild);
-          // Update header thumb
-          var headerThumb = lastWrap.querySelector('.q-item-header img, .q-item-header div[style*="dashed"]');
-          if (headerThumb) {
-            var newThumb = document.createElement('img');
-            newThumb.className = 'q-item-header-thumb';
-            newThumb.src = dataUrls[0];
-            newThumb.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f0f1f3;';
-            headerThumb.replaceWith(newThumb);
-          }
+          QuotesPage._refreshRowPhotoUI(lastWrap, dataUrls);
         }
         // Respect global AI toggle — if user turned off AI, skip the call entirely.
         // They can manually trigger it later via the 🤖 Run AI button on the row.
@@ -3192,32 +3169,42 @@ var QuotesPage = {
     UI.toast('📷 Assigned (' + QuotesPage._photoTray.length + ' left in tray)');
   },
 
-  // Re-render header thumb + body grid for a wrap after photos change.
-  // Mirrors the inline logic in _uploadPhotoToRow / _addPhotoFirst.
+  // v1099: single source of truth for re-rendering a row's photos after any
+  // add/delete — rebuilds the collapsed thumbnails (header) AND the expanded
+  // photo area (hero + strip). Used by every photo-change path so the render
+  // and the live update never drift.
   _refreshRowPhotoUI: function(wrap, urls) {
-    if (!wrap || !urls || !urls.length) return;
+    if (!wrap) return;
+    urls = urls || [];
     var allWraps = document.querySelectorAll('.q-item-wrap');
     var wrapIdx = Array.prototype.indexOf.call(allWraps, wrap);
-    var headerThumb = wrap.querySelector('.q-item-header img, .q-item-header div[style*="dashed"]');
-    if (headerThumb) {
-      var newThumb = document.createElement('img');
-      newThumb.className = 'q-item-header-thumb';
-      newThumb.src = urls[0];
-      newThumb.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f0f1f3;cursor:pointer;';
-      newThumb.onclick = function(ev) { ev.stopPropagation(); QuotesPage._uploadPhotoToRow(newThumb); };
-      headerThumb.replaceWith(newThumb);
+    // 1) collapsed thumbnails in the header
+    var header = wrap.querySelector('.q-item-header');
+    if (header) {
+      var oldThumbs = header.querySelector('.q-collapsed-thumbs');
+      var newThumbsHtml = QuotesPage._collapsedThumbsHtml(urls);
+      if (oldThumbs) {
+        if (newThumbsHtml) { var t = document.createElement('div'); t.innerHTML = newThumbsHtml; oldThumbs.replaceWith(t.firstChild); }
+        else oldThumbs.remove();
+      } else if (newThumbsHtml) {
+        var chev = header.querySelector('.q-item-chevron');
+        var t2 = document.createElement('div'); t2.innerHTML = newThumbsHtml;
+        header.insertBefore(t2.firstChild, chev);
+      }
     }
+    // 2) expanded photo area (hero + switch strip) on top of the body
     var body = wrap.querySelector('.q-item-body');
     if (!body) return;
-    var existingGrid = body.querySelector('.q-photo-grid');
-    if (existingGrid) existingGrid.remove();
-    var grid = document.createElement('div');
-    grid.className = 'q-photo-grid';
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(' + Math.min(urls.length, 3) + ',1fr);gap:4px;margin-bottom:10px;';
-    grid.innerHTML = urls.map(function(u, pi) {
-      return '<img src="' + u + '" onclick="event.stopPropagation();QuotesPage._openLightbox(' + JSON.stringify(urls).replace(/"/g, '&quot;') + ',' + pi + ',' + wrapIdx + ')" style="width:100%;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;">';
-    }).join('') + (urls.length > 1 ? '<div style="grid-column:1/-1;font-size:11px;color:var(--text-light);text-align:center;">' + urls.length + ' photos</div>' : '');
-    body.insertBefore(grid, body.firstChild);
+    var legacy = body.querySelector('.q-photo-grid'); if (legacy) legacy.remove(); // drop any old-style grid
+    var oldArea = body.querySelector('.q-photo-area');
+    var newAreaHtml = QuotesPage._bodyPhotoAreaHtml(urls, wrapIdx);
+    if (oldArea) {
+      if (newAreaHtml) { var a = document.createElement('div'); a.innerHTML = newAreaHtml; oldArea.replaceWith(a.firstChild); }
+      else oldArea.remove();
+    } else if (newAreaHtml) {
+      var a2 = document.createElement('div'); a2.innerHTML = newAreaHtml;
+      body.insertBefore(a2.firstChild, body.firstChild);
+    }
   },
 
   // Touch fallback — tap a tray photo to pick a line item from a modal list.
