@@ -687,16 +687,10 @@ var QuotesPage = {
     // accepts files dragged straight in from Finder/Photos on desktop.
     // v1015: bulk photo pool + drag-drop is a DESKTOP flow (Doug: bulk upload is desktop-only;
     // on mobile you add photos straight to each line item with the per-item 📷 Add Photos button).
-    // v1038: the whole yellow box is TAP-TO-UPLOAD (works on a phone — no drag
-    // needed) AND still accepts drag-drop on desktop. Default prompt paints
-    // immediately so the box is never a blank rectangle. (Was q-desktop-only +
-    // drop-only; Doug asked to click it and upload from the app on mobile.)
-    html += '<div id="q-photo-pool" onclick="QuotesPage._poolClick(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--green-dark)\';" ondragleave="this.style.borderColor=\'#d4a017\';" ondrop="QuotesPage._poolDrop(event)" style="background:#fff8e6;border:2px dashed #d4a017;border-radius:12px;padding:14px;margin-bottom:14px;cursor:pointer;">'
-      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;pointer-events:none;">'
-      +   '<span style="font-size:22px;">📸</span>'
-      +   '<div style="font-size:12.5px;color:#7c5a00;line-height:1.4;"><b>Tap to add job photos</b> — or drag files in. Then tap a photo and tap its line item to place it.</div>'
-      + '</div>'
-      + '</div>';
+    // v1098: removed the big orange "Tap to add job photos" pool banner
+    // (Doug: "get rid of the big orange thing"). Photos are now added per line
+    // item via the 📷 Add Photos button inside each expanded line, and the
+    // line's primary photo shows on the right of its row.
 
     // Line items list — newly-added items render expanded so user can fill in immediately.
     html += '<div id="q-items">';
@@ -1175,21 +1169,26 @@ var QuotesPage = {
       photoHtml += '</div>';
     }
 
-    // Summary strip: service · species · location · price (NO emojis).
-    // Hidden mini thumbnail stays so other code hooks (headerThumb selectors) keep working,
-    // but it's zero-width/zero-height — invisible to the user.
-    var summaryThumb = '<img class="q-item-header-thumb" src="' + (photos[0] || '') + '" style="display:none;">';
+    // v1098: clean one-line summary — DETAILS LEFT, one PRIMARY PHOTO RIGHT.
+    // Left column: title (service · species · location) + price stacked.
+    // Right: the line's first/primary photo shown big (a line can hold many
+    // photos but only ONE displays here). Keeps the .q-item-header-thumb class
+    // so existing hooks that update the thumb src on photo change still work —
+    // it's now the visible primary photo (hidden only when the line has none).
+    var primaryPhoto = photos[0] || '';
     var parts = [];
     if (item.service)  parts.push(UI.esc(item.service));
     if (item.species)  parts.push(UI.esc(item.species));
     else if (item.description && item.description.indexOf(' — ') > 0) parts.push(UI.esc(item.description.split(' — ')[0]));
     if (item.location) parts.push(UI.esc(item.location));
     var titleText = parts.length ? parts.join(' · ') : (hasContent ? UI.esc(item.description || 'Line item') : 'New line item — fill below');
-    var summary = '<div class="q-item-header" onclick="QuotesPage._toggleItem(this)" style="display:flex;align-items:center;gap:10px;cursor:pointer;">'
-      + summaryThumb
-      + '<div class="q-item-summary-title" style="flex:1;min-width:0;font-size:14px;font-weight:600;color:' + (hasContent ? 'var(--text)' : 'var(--text-light)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + titleText + '</div>'
-      + '<div class="q-item-summary-total" style="font-size:15px;font-weight:700;color:var(--green-dark);flex-shrink:0;">' + UI.money(lineTotal) + '</div>'
-      + '<div class="q-item-chevron" style="font-size:16px;color:var(--text-light);transition:transform .2s;' + (expanded ? '' : 'transform:rotate(-90deg);') + '">▾</div>'
+    var summary = '<div class="q-item-header" onclick="QuotesPage._toggleItem(this)" style="display:flex;align-items:center;gap:12px;cursor:pointer;">'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div class="q-item-summary-title" style="font-size:14px;font-weight:600;color:' + (hasContent ? 'var(--text)' : 'var(--text-light)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + titleText + '</div>'
+      +   '<div class="q-item-summary-total" style="font-size:15px;font-weight:700;color:var(--green-dark);margin-top:3px;">' + UI.money(lineTotal) + '</div>'
+      + '</div>'
+      + '<img class="q-item-header-thumb" src="' + primaryPhoto + '" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f0f1f3;' + (primaryPhoto ? '' : 'display:none;') + '">'
+      + '<div class="q-item-chevron" style="font-size:16px;color:var(--text-light);transition:transform .2s;flex:none;' + (expanded ? '' : 'transform:rotate(-90deg);') + '">▾</div>'
       + '</div>';
 
     // Pricing formula hint — shows under rate if the service has a known formula
@@ -1381,12 +1380,8 @@ var QuotesPage = {
     // Update header thumb
     var headerThumb = wrap.querySelector('.q-item-header img');
     if (headerThumb) {
-      if (photos[0]) headerThumb.src = photos[0];
-      else {
-        var placeholder = document.createElement('div');
-        placeholder.style.cssText = 'width:44px;height:44px;border:1px dashed var(--border);border-radius:6px;flex-shrink:0;';
-        headerThumb.replaceWith(placeholder);
-      }
+      if (photos[0]) { headerThumb.src = photos[0]; headerThumb.style.display = ''; }
+      else { headerThumb.src = ''; headerThumb.style.display = 'none'; }
     }
     UI.toast('Photo deleted');
     QuotesPage._autoSave();
@@ -2970,8 +2965,9 @@ var QuotesPage = {
           var headerThumb = lastWrap.querySelector('.q-item-header img, .q-item-header div[style*="dashed"]');
           if (headerThumb) {
             var newThumb = document.createElement('img');
+            newThumb.className = 'q-item-header-thumb';
             newThumb.src = dataUrls[0];
-            newThumb.style.cssText = 'width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;';
+            newThumb.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f0f1f3;';
             headerThumb.replaceWith(newThumb);
           }
         }
@@ -3205,8 +3201,9 @@ var QuotesPage = {
     var headerThumb = wrap.querySelector('.q-item-header img, .q-item-header div[style*="dashed"]');
     if (headerThumb) {
       var newThumb = document.createElement('img');
+      newThumb.className = 'q-item-header-thumb';
       newThumb.src = urls[0];
-      newThumb.style.cssText = 'width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;';
+      newThumb.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none;background:#f0f1f3;cursor:pointer;';
       newThumb.onclick = function(ev) { ev.stopPropagation(); QuotesPage._uploadPhotoToRow(newThumb); };
       headerThumb.replaceWith(newThumb);
     }

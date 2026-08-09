@@ -240,6 +240,15 @@ var SettingsPage = {
     // v404: PlantNet moved back to Advanced → API Keys & Integrations
     // (it's an API key, lives with the other integrations).
 
+    // ── Delete Account (v1097) — Apple App Store 5.1.1(v) requires in-app
+    // account deletion. Deletes ONLY the signed-in user's login + profile
+    // (never the company's records; owner-retained, disclosed below).
+    html += '<div style="background:#fff5f5;border:1px solid #f3c2c2;border-radius:12px;padding:16px 18px;margin-bottom:16px;">'
+      + '<div style="font-size:14px;font-weight:800;color:#b91c1c;">Delete Account</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin:4px 0 12px;line-height:1.5;">Permanently deletes your Branch Manager login and personal profile. Your company’s business records are kept by the account owner. This can’t be undone.</div>'
+      + '<button onclick="SettingsPage._deleteAccountModal()" style="background:#fff;border:1px solid #dc2626;color:#dc2626;font-weight:700;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer;">Delete my account</button>'
+      + '</div>';
+
     html += groupClose();
 
     // ════════════════════════════════════════════════════════════════════════
@@ -3637,6 +3646,61 @@ var SettingsPage = {
     var lr = document.getElementById('loc-reminders');
     if (lr) localStorage.setItem('bm-location-reminders', lr.checked ? 'true' : 'false');
     UI.toast('Location settings saved');
+  },
+
+  // ── v1097: In-app account deletion (Apple 5.1.1(v)) ──
+  _deleteAccountModal: function() {
+    var email = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) || '';
+    var ov = document.createElement('div');
+    ov.id = 'bm-del-acct';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
+      + '<div style="font-size:17px;font-weight:800;color:#b91c1c;margin-bottom:8px;">Delete your account?</div>'
+      + '<div style="font-size:13px;color:#444;line-height:1.5;margin-bottom:14px;">This permanently deletes the login <b>' + UI.esc(email) + '</b> and your personal profile. It cannot be undone. Your company’s business records stay with the account owner.</div>'
+      + '<label style="font-size:12px;font-weight:600;">Type DELETE to confirm</label>'
+      + '<input id="del-confirm" autocapitalize="characters" autocomplete="off" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin:4px 0 10px;font-size:14px;box-sizing:border-box;">'
+      + '<label style="font-size:12px;font-weight:600;">Your password</label>'
+      + '<input id="del-pw" type="password" autocomplete="current-password" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin:4px 0 12px;font-size:14px;box-sizing:border-box;">'
+      + '<div id="del-err" style="color:#b91c1c;font-size:12px;margin-bottom:10px;display:none;"></div>'
+      + '<div style="display:flex;gap:8px;">'
+      +   '<button onclick="var e=document.getElementById(\'bm-del-acct\');if(e)e.remove();" style="flex:1;padding:11px;border:1px solid var(--border);background:#fff;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>'
+      +   '<button id="del-go" onclick="SettingsPage._confirmDeleteAccount()" style="flex:1;padding:11px;border:none;background:#dc2626;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;">Delete</button>'
+      + '</div></div>';
+    document.body.appendChild(ov);
+  },
+  _confirmDeleteAccount: function() {
+    var err = document.getElementById('del-err'); var go = document.getElementById('del-go');
+    var setErr = function(m) { if (err) { err.textContent = m; err.style.display = 'block'; } if (go) { go.disabled = false; go.textContent = 'Delete'; } };
+    var conf = ((document.getElementById('del-confirm') || {}).value || '').trim().toUpperCase();
+    var pw = (document.getElementById('del-pw') || {}).value || '';
+    if (conf !== 'DELETE') { setErr('Type DELETE to confirm.'); return; }
+    if (!pw) { setErr('Enter your password.'); return; }
+    var email = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) || '';
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) { setErr('Not connected. Try again in a moment.'); return; }
+    if (go) { go.disabled = true; go.textContent = 'Deleting…'; }
+    var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
+    var apikey = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+    // Re-authenticate to confirm identity, then call the delete-account edge fn.
+    SupabaseDB.client.auth.signInWithPassword({ email: email, password: pw }).then(function(re) {
+      if (re.error) { setErr('Password incorrect.'); return; }
+      SupabaseDB.client.auth.getSession().then(function(s) {
+        var token = s && s.data && s.data.session && s.data.session.access_token;
+        if (!token) { setErr('Session expired — sign in again.'); return; }
+        fetch(url + '/functions/v1/delete-account', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'apikey': apikey, 'Content-Type': 'application/json' },
+          body: '{}'
+        }).then(function(resp) {
+          if (!resp.ok) { setErr('Could not complete (code ' + resp.status + '). Nothing was deleted — call support at (914) 391-5233.'); return; }
+          // Success — wipe local + sign out + back to login.
+          try { SupabaseDB.client.auth.signOut(); } catch (e) {}
+          try { Object.keys(localStorage).forEach(function(k) { if (k.indexOf('bm-') === 0 || k.indexOf('sb-') === 0) localStorage.removeItem(k); }); } catch (e) {}
+          var e2 = document.getElementById('bm-del-acct'); if (e2) e2.remove();
+          alert('Your account has been deleted.');
+          location.href = location.pathname;
+        }).catch(function(e) { setErr('Network error — nothing deleted. Try again or call support.'); });
+      });
+    }).catch(function(e) { setErr('Error verifying password — nothing deleted.'); });
   },
 
   // ── Passive Location Tracking (BETA) ──

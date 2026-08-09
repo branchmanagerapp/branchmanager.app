@@ -1,5 +1,5 @@
 {
-  "version": 1097,
+  "version": 1098,
   "released": "2026-08-09",
-  "notes": "Login fixes: idempotent login render (stop wiping typed fields on checkAuth re-fire) + wait for SupabaseDB ready before first-click falls to local auth"
+  "notes": "v1098: quote editor line items — details left, one primary photo right (big), removed orange photo-pool banner"
 }
