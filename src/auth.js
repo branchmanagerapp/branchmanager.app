@@ -345,6 +345,16 @@ var Auth = {
     btn.disabled = true;
     errEl.style.display = 'none';
 
+    // v1097: on a cold load the FIRST click can land before SupabaseDB has
+    // finished initializing, which used to skip the Supabase branch and fall
+    // through to local auth (which fails for Supabase users) → "have to click
+    // twice". Wait up to ~3s for it to be ready before deciding.
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB && !SupabaseDB.ready && navigator.onLine) {
+      for (var _w = 0; _w < 30 && !SupabaseDB.ready; _w++) {
+        await new Promise(function(r){ setTimeout(r, 100); });
+      }
+    }
+
     // Try Supabase auth
     if (SupabaseDB && SupabaseDB.ready) {
       try {

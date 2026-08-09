@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1096; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1097; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1582,7 +1582,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1096.min.js"></script>
+<script defer src="dist/bm.bundle.v1097.min.js"></script>
 
 
 
@@ -2272,26 +2272,32 @@ function checkAuth() {
       loginDiv.id = 'login-screen';
       document.body.insertBefore(loginDiv, document.body.firstChild);
     }
-    loginDiv.innerHTML = (/[?&]signup=/.test(location.search) && Auth.renderSignup)
-      ? Auth.renderSignup() : Auth.renderLogin();
-    // Self-serve signup existed only behind ?signup= — give the login screen a visible path in.
-    if (!/[?&]signup=/.test(location.search) && Auth.renderSignup) {
-      var _su = document.createElement('div');
-      _su.style.cssText = 'margin:16px auto 0;text-align:center;font-size:14px;color:#4b5563;';
-      _su.innerHTML = 'New to Branch Manager? <a href="?signup=1" style="color:#2e7d12;font-weight:700;">Start your free trial</a>';
-      loginDiv.appendChild(_su);
-    }
-    // If an email-confirmation return failed (expired/used link), say so
-    // instead of dropping them on a bare login screen with no explanation.
-    try {
-      if (sessionStorage.getItem('bm-confirm-failed') === '1') {
-        sessionStorage.removeItem('bm-confirm-failed');
-        var _cf = document.createElement('div');
-        _cf.style.cssText = 'max-width:420px;margin:14px auto 0;padding:12px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;font-size:13px;color:#8a6d00;text-align:center;';
-        _cf.textContent = 'That confirmation link expired or was already used. Sign in below — or sign up again to get a fresh link.';
-        loginDiv.appendChild(_cf);
+    // v1097: only (re)render the login form when it isn't already on screen.
+    // checkAuth() runs on every hash/page change; re-rendering it clobbered
+    // whatever the user was typing → the "first sign-in clears my entry, works
+    // on the 2nd try" bug. If a form's already there, leave the user's input.
+    if (!loginDiv.querySelector('input')) {
+      loginDiv.innerHTML = (/[?&]signup=/.test(location.search) && Auth.renderSignup)
+        ? Auth.renderSignup() : Auth.renderLogin();
+      // Self-serve signup existed only behind ?signup= — give the login screen a visible path in.
+      if (!/[?&]signup=/.test(location.search) && Auth.renderSignup) {
+        var _su = document.createElement('div');
+        _su.style.cssText = 'margin:16px auto 0;text-align:center;font-size:14px;color:#4b5563;';
+        _su.innerHTML = 'New to Branch Manager? <a href="?signup=1" style="color:#2e7d12;font-weight:700;">Start your free trial</a>';
+        loginDiv.appendChild(_su);
       }
-    } catch (e) {}
+      // If an email-confirmation return failed (expired/used link), say so
+      // instead of dropping them on a bare login screen with no explanation.
+      try {
+        if (sessionStorage.getItem('bm-confirm-failed') === '1') {
+          sessionStorage.removeItem('bm-confirm-failed');
+          var _cf = document.createElement('div');
+          _cf.style.cssText = 'max-width:420px;margin:14px auto 0;padding:12px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;font-size:13px;color:#8a6d00;text-align:center;';
+          _cf.textContent = 'That confirmation link expired or was already used. Sign in below — or sign up again to get a fresh link.';
+          loginDiv.appendChild(_cf);
+        }
+      } catch (e) {}
+    }
     return false;
   }
   var appEl = document.querySelector('.app');

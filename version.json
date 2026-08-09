@@ -1,5 +1,5 @@
 {
-  "version": 1096,
-  "released": "2026-08-08",
-  "notes": "Payroll Bouncie panel: collapsible per-day truck-day summary + suggested clock in/out (yard-buffer ±30m) from vehicle_positions, + per-day notes"
+  "version": 1097,
+  "released": "2026-08-09",
+  "notes": "Login fixes: idempotent login render (stop wiping typed fields on checkAuth re-fire) + wait for SupabaseDB ready before first-click falls to local auth"
 }
