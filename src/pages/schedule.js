@@ -416,7 +416,7 @@ var SchedulePage = {
       return '<button class="btn ' + (active ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'' + viewKey + '\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (!active ? 'background:none;border:none;color:var(--text-light);' : '') + '">' + label + '</button>';
     }
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">'
-      + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
       +   '<button class="btn btn-outline" onclick="SchedulePage.prev()" style="padding:4px 10px;">&larr;</button>'
       +   '<h3 id="cal-title" onclick="SchedulePage._openMonthPicker(event)" title="Jump to month" style="font-size:16px;font-weight:700;white-space:nowrap;margin:0 4px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:4px;">' + self._getTitle() + '<span style="font-size:10px;color:var(--text-light);">&#9662;</span></h3>'
       +   '<input type="month" id="cal-month-picker" value="' + self.currentDate.getFullYear() + '-' + String(self.currentDate.getMonth()+1).padStart(2,'0') + '" onchange="SchedulePage._jumpToMonth(this.value)" style="position:absolute;width:0;height:0;opacity:0;border:none;padding:0;">'

@@ -1,5 +1,5 @@
 {
-  "version": 1103,
+  "version": 1104,
   "released": "2026-08-10",
-  "notes": "Payroll Bouncie: one dropdown per day on top of the week grid (chips w/ suggested-clock peek + tap for full detail); grid stays visible"
+  "notes": "Schedule header wraps on mobile so the '+ Time off' button is reachable at 375px (was clipped off the right edge — you couldn't add time off on a phone)"
 }
