@@ -1,5 +1,5 @@
 {
-  "version": 1104,
+  "version": 1105,
   "released": "2026-08-10",
-  "notes": "Schedule header wraps on mobile so the '+ Time off' button is reachable at 375px (was clipped off the right edge — you couldn't add time off on a phone)"
+  "notes": "Per-day + on the calendar now opens a chooser (New Job / Time off / Personal / Bill / Note) instead of jumping straight to New Job"
 }

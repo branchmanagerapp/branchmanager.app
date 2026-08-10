@@ -160,18 +160,39 @@ var SchedulePage = {
       + icon + ' ' + UI.esc(label) + '</div>';
   },
   // Lightweight add/edit modal for a calendar event.
-  addEvent: function(dateStr) {
-    SchedulePage._openEventModal(null, dateStr);
+  addEvent: function(dateStr, type) {
+    SchedulePage._openEventModal(null, dateStr, type);
+  },
+  // v1105: the per-day "+" now asks what to add instead of jumping to New Job.
+  _addChooser: function(dateStr) {
+    var d = dateStr || SchedulePage._localDateStr(SchedulePage.currentDate);
+    var pretty = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    var ov = document.createElement('div'); ov.id = 'bm-add-chooser';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    function row(emoji, label, call) {
+      return '<button onclick="document.getElementById(\'bm-add-chooser\').remove();' + call + '" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:15px;font-weight:600;cursor:pointer;color:var(--text);"><span style="font-size:20px;flex:none;">' + emoji + '</span>' + label + '</button>';
+    }
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:18px;width:100%;max-width:340px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
+      + '<div style="font-weight:800;font-size:16px;margin-bottom:12px;">Add to ' + pretty + '</div>'
+      + row('🔨', 'New Job', "JobsPage.showForm(null,{date:'" + d + "'})")
+      + row('🌴', 'Time off', "SchedulePage.addEvent('" + d + "','time_off')")
+      + row('👤', 'Personal / day-rate', "SchedulePage.addEvent('" + d + "','personal')")
+      + row('💸', 'Bill / payment due', "SchedulePage.addEvent('" + d + "','bill')")
+      + row('📌', 'Note', "SchedulePage.addEvent('" + d + "','note')")
+      + '<button onclick="document.getElementById(\'bm-add-chooser\').remove()" style="width:100%;background:#eee;border:none;padding:10px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:2px;">Cancel</button>'
+      + '</div>';
+    document.body.appendChild(ov);
   },
   editEvent: function(id) {
     var ev = null, idx = window._bmCalEventsIndex || {};
     Object.keys(idx).some(function(k) { return idx[k].some(function(e) { if (e.id === id) { ev = e; return true; } }); });
     SchedulePage._openEventModal(ev, ev ? ev.start_date : null);
   },
-  _openEventModal: function(ev, dateStr) {
+  _openEventModal: function(ev, dateStr, presetType) {
     var d = (ev && ev.start_date) ? ev.start_date.substring(0,10) : (dateStr || SchedulePage._localDateStr(SchedulePage.currentDate));
     var end = (ev && ev.end_date) ? ev.end_date.substring(0,10) : d;
-    var type = ev ? ev.type : 'time_off';
+    var type = ev ? ev.type : (presetType || 'time_off');
     function opt(v, l) { return '<option value="' + v + '"' + (type === v ? ' selected' : '') + '>' + l + '</option>'; }
     var ov = document.createElement('div');
     ov.id = 'bm-event-modal';
@@ -1065,7 +1086,7 @@ var SchedulePage = {
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
         + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;transition:background .15s,box-shadow .15s;position:relative;"'
         + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
-        + '<button class="bm-cell-add" onclick="event.stopPropagation();JobsPage.showForm(null,{date:\'' + dateStr + '\'})" title="New job on ' + dateStr + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;z-index:2;">+</button>';
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();SchedulePage._addChooser(\'' + dateStr + '\')" title="Add on ' + dateStr + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;z-index:2;">+</button>';
       dayJobs.forEach(function(j) {
         var bgColor = j.status === 'completed' ? '#e8f5e9' : j.status === 'late' ? '#ffebee' : j.status === 'in_progress' ? '#fff3e0' : '#e3f2fd';
         var borderColor = j.status === 'completed' ? '#4caf50' : j.status === 'late' ? '#f44336' : j.status === 'in_progress' ? '#ff9800' : '#2196f3';
@@ -1199,7 +1220,7 @@ var SchedulePage = {
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
         + 'style="background:' + cellBg + ';min-height:80px;padding:4px;cursor:pointer;transition:background .15s;position:relative;"'
         + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
-        + '<button class="bm-cell-add" onclick="event.stopPropagation();JobsPage.showForm(null,{date:\'' + dateStr + '\'})" title="New job on ' + dateStr + '" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;">+</button>'
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();SchedulePage._addChooser(\'' + dateStr + '\')" title="Add on ' + dateStr + '" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;">+</button>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
         + (isToday
             ? '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + day + '</span>'
