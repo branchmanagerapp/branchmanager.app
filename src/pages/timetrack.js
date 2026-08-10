@@ -513,13 +513,17 @@ var TimeTrackPage = {
       return d >= weekStartStr && d <= weekEndStr && t.user === TimeTrackPage.currentUser;
     });
 
-    var totalHours = entries.reduce(function(s, t) {
-      if (!t.clockOut && t.clockIn) return s + (Date.now() - new Date(t.clockIn).getTime()) / 3600000;
-      return s + (t.hours || 0);
-    }, 0);
-
-    var regHours = Math.min(totalHours, 40);
-    var otHours = Math.max(0, totalHours - 40);
+    var laborHours = 0, salesHours = 0;
+    entries.forEach(function(t) {
+      var h = (!t.clockOut && t.clockIn) ? (Date.now() - new Date(t.clockIn).getTime()) / 3600000 : (t.hours || 0);
+      if (t.role === 'sales') salesHours += h; else laborHours += h;
+    });
+    var totalHours = laborHours + salesHours;
+    // Pay is on LABOR hours (OT > 40h at 1.5×). Sales/estimate hours are
+    // tracked separately — they feed Catherine's hourly-for-estimates option
+    // or her 10% commission election, never mixed into the labor wage.
+    var regHours = Math.min(laborHours, 40);
+    var otHours = Math.max(0, laborHours - 40);
     var grossPay = (regHours * rate) + (otHours * rate * 1.5);
 
     var fmtDate = function(d) { return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}); };
@@ -530,25 +534,27 @@ var TimeTrackPage = {
       + '<span style="font-size:12px;color:var(--text-light);">' + fmtDate(weekStart) + ' – ' + fmtDate(weekEnd) + '</span>'
       + '</div>'
       + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
+      + '<div style="text-align:center;background:var(--green-bg);border-radius:8px;padding:10px;">'
+      +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">🔧 Labor Hrs</div>'
+      +   '<div style="font-size:1.3rem;font-weight:700;color:var(--green-dark);">' + laborHours.toFixed(1) + '</div>'
+      +   (otHours > 0 ? '<div style="font-size:10px;color:var(--red);">incl. ' + otHours.toFixed(1) + ' OT</div>' : '')
+      + '</div>'
+      + '<div style="text-align:center;background:#f6edfb;border-radius:8px;padding:10px;">'
+      +   '<div style="font-size:11px;color:#8e44ad;margin-bottom:4px;">📋 Sales/Est Hrs</div>'
+      +   '<div style="font-size:1.3rem;font-weight:700;color:#8e44ad;">' + salesHours.toFixed(1) + '</div>'
+      + '</div>'
       + '<div style="text-align:center;background:var(--bg);border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Total Hours</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Total Hrs</div>'
       +   '<div style="font-size:1.3rem;font-weight:700;">' + totalHours.toFixed(1) + '</div>'
       + '</div>'
-      + '<div style="text-align:center;background:var(--bg);border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Regular</div>'
-      +   '<div style="font-size:1.3rem;font-weight:700;">' + regHours.toFixed(1) + '</div>'
-      + '</div>'
-      + '<div style="text-align:center;background:' + (otHours > 0 ? '#fff3f3' : 'var(--bg)') + ';border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Overtime</div>'
-      +   '<div style="font-size:1.3rem;font-weight:700;color:' + (otHours > 0 ? 'var(--red)' : 'inherit') + ';">' + otHours.toFixed(1) + '</div>'
-      + '</div>'
       + '<div style="text-align:center;background:var(--green-bg);border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">Est. Gross Pay</div>'
+      +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">Labor Gross</div>'
       +   '<div style="font-size:1.3rem;font-weight:700;color:var(--green-dark);">' + UI.money(grossPay) + '</div>'
       + '</div>'
       + '</div>'
+      + '<div style="margin-top:8px;font-size:11px;color:var(--text-light);line-height:1.4;">Labor gross = ' + regHours.toFixed(1) + ' reg' + (otHours > 0 ? ' + ' + otHours.toFixed(1) + ' OT @1.5×' : '') + ' at $' + rate.toFixed(0) + '/hr. Sales/estimate hours are tracked separately (hourly-for-estimates or commission — not added to labor pay).</div>'
       + '<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">'
-      + '<span style="font-size:12px;color:var(--text-light);">Hourly rate: $' + rate.toFixed(0) + '/hr</span>'
+      + '<span style="font-size:12px;color:var(--text-light);">Labor rate: $' + rate.toFixed(0) + '/hr</span>'
       + '<button onclick="TimeTrackPage.editMyRate()" class="btn btn-outline" style="font-size:12px;padding:4px 10px;">Edit Rate</button>'
       + '</div>'
       + '</div>';
@@ -672,47 +678,62 @@ var TimeTrackPage = {
       var elapsed = ((Date.now() - new Date(activeEntry.clockIn).getTime()) / 3600000).toFixed(1);
       var clockInMs = new Date(activeEntry.clockIn).getTime();
       html += '<div style="background:var(--green-bg);border:2px solid var(--green-dark);border-radius:10px;padding:16px;text-align:center;">'
-        + '<div style="font-size:13px;color:var(--green-dark);font-weight:600;">CLOCKED IN</div>'
+        + '<div style="font-size:13px;color:var(--green-dark);font-weight:600;">CLOCKED IN — ' + (activeEntry.role === 'sales' ? 'Sales / Estimate 📋' : 'Labor 🔧') + '</div>'
         + '<div id="tt-elapsed-display" style="font-size:2.5rem;font-weight:800;color:var(--green-dark);">' + elapsed + ' hrs</div>'
         + (job ? '<div style="font-size:14px;color:var(--text);">' + job.clientName + ' — #' + job.jobNumber + '</div>' : '')
         + '<button class="btn" style="background:var(--red);color:#fff;margin-top:12px;padding:12px 32px;font-size:16px;" onclick="TimeTrackPage.clockOut(\'' + activeEntry.id + '\')">Clock Out</button>'
         + '</div>';
     } else {
-      // Not clocked in — show available jobs
-      html += '<div style="text-align:center;padding:12px;color:var(--text-light);margin-bottom:12px;">Not clocked in</div>';
+      // Not clocked in — pick a ROLE: Labor (top) or Sales/Estimate (bottom).
+      // Hours are tagged so labor pay and sales/estimate time stay separate.
+      html += '<div style="text-align:center;padding:6px;color:var(--text-light);margin-bottom:12px;">Not clocked in — pick what you\'re starting</div>';
+      // ── LABOR (field / crew work) ──
+      html += '<div style="border:1.5px solid var(--green-dark);border-radius:10px;padding:12px;margin-bottom:12px;">'
+        + '<div style="font-size:13px;font-weight:800;color:var(--green-dark);margin-bottom:8px;">🔧 LABOR — field / crew work</div>';
       if (allJobs.length) {
-        html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">Clock in to a job:</div>';
+        html += '<div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">Clock in to a job:</div>';
         allJobs.forEach(function(j) {
-          html += '<button class="btn btn-outline" style="width:100%;margin-bottom:6px;justify-content:space-between;" onclick="TimeTrackPage.clockIn(\'' + j.id + '\')">'
-            + '<span>🔧 ' + j.clientName + ' — ' + (j.description || '#' + j.jobNumber) + '</span>'
-            + '<span style="font-weight:700;">' + UI.dateShort(j.scheduledDate) + '</span>'
+          html += '<button class="btn btn-outline" style="width:100%;margin-bottom:6px;justify-content:space-between;text-align:left;" onclick="TimeTrackPage.clockIn(\'' + j.id + '\', \'labor\')">'
+            + '<span>' + UI.esc(j.clientName || '') + ' — ' + UI.esc(j.description || ('#' + j.jobNumber)) + '</span>'
+            + '<span style="font-weight:700;white-space:nowrap;">' + UI.dateShort(j.scheduledDate) + '</span>'
             + '</button>';
         });
       }
-      html += '<button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="TimeTrackPage.clockIn(null)">Clock In (No Job)</button>';
+      html += '<button class="btn" style="width:100%;background:var(--green-dark);color:#fff;font-weight:700;" onclick="TimeTrackPage.clockIn(null, \'labor\')">🔧 Clock In — Labor (no job)</button>'
+        + '</div>';
+      // ── SALES / ESTIMATE ──
+      html += '<div style="border:1.5px solid #8e44ad;border-radius:10px;padding:12px;">'
+        + '<div style="font-size:13px;font-weight:800;color:#8e44ad;margin-bottom:8px;">📋 SALES — estimates / selling</div>'
+        + '<button class="btn" style="width:100%;background:#8e44ad;color:#fff;font-weight:700;" onclick="TimeTrackPage.clockIn(null, \'sales\')">📋 Clock In — Sales / Estimate</button>'
+        + '</div>';
     }
 
     // Today's entries
     if (todayEntries.length > 0) {
       html += '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">'
         + '<h4 style="font-size:13px;margin-bottom:8px;">Today\'s Time</h4>';
-      var totalHours = 0;
+      var laborHours = 0, salesHours = 0;
       todayEntries.forEach(function(t) {
         var job = t.jobId ? DB.jobs.getById(t.jobId) : null;
         var hours = t.hours || 0;
         if (!t.clockOut) hours = (Date.now() - new Date(t.clockIn).getTime()) / 3600000;
-        totalHours += hours;
+        var isSales = (t.role === 'sales');
+        if (isSales) salesHours += hours; else laborHours += hours;
         var clockInTime = new Date(t.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
         var clockOutTime = t.clockOut ? new Date(t.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'active';
 
         html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px;">'
-          + '<span>' + (job ? job.clientName + ' #' + job.jobNumber : 'General') + '</span>'
+          + '<span>' + (isSales ? '📋 ' : '🔧 ') + (job ? UI.esc(job.clientName) + ' #' + job.jobNumber : (isSales ? 'Estimate/Sales' : 'General')) + '</span>'
           + '<span>' + clockInTime + ' - ' + clockOutTime + '</span>'
           + '<span style="font-weight:700;">' + hours.toFixed(1) + ' hrs</span>'
           + '</div>';
       });
-      html += '<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;">'
-        + '<span>Total Today</span><span style="color:var(--green-dark);">' + totalHours.toFixed(1) + ' hrs</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;">'
+        + '<span>🔧 Labor</span><span style="font-weight:700;">' + laborHours.toFixed(1) + ' hrs</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;">'
+        + '<span>📋 Sales / Estimate</span><span style="font-weight:700;color:#8e44ad;">' + salesHours.toFixed(1) + ' hrs</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;border-top:1px solid var(--border);margin-top:2px;">'
+        + '<span>Total Today</span><span style="color:var(--green-dark);">' + (laborHours + salesHours).toFixed(1) + ' hrs</span></div>';
       html += '</div>';
     }
 
@@ -737,7 +758,7 @@ var TimeTrackPage = {
 
   _tickInterval: null,
 
-  clockIn: function(jobId) {
+  clockIn: function(jobId, role) {
     // v785: geofence soft-check. If clocking in to a specific job whose
     // property has lat/lng on file, sanity-check the device GPS to catch
     // accidental "clocked in from home" entries. Distances > 500m prompt
@@ -752,7 +773,7 @@ var TimeTrackPage = {
         var timedOut = false;
         var fallback = setTimeout(function() {
           timedOut = true;
-          TimeTrackPage._actuallyClockIn(jobId, null);
+          TimeTrackPage._actuallyClockIn(jobId, null, role);
         }, 3000);
         navigator.geolocation.getCurrentPosition(function(pos) {
           if (timedOut) return;
@@ -769,16 +790,16 @@ var TimeTrackPage = {
               return;
             }
           }
-          TimeTrackPage._actuallyClockIn(jobId, { lat: pos.coords.latitude, lng: pos.coords.longitude, distM: dist });
+          TimeTrackPage._actuallyClockIn(jobId, { lat: pos.coords.latitude, lng: pos.coords.longitude, distM: dist }, role);
         }, function() {
           if (timedOut) return;
           clearTimeout(fallback);
-          TimeTrackPage._actuallyClockIn(jobId, null);
+          TimeTrackPage._actuallyClockIn(jobId, null, role);
         }, { enableHighAccuracy: true, timeout: 3000, maximumAge: 30000 });
         return;
       }
     }
-    TimeTrackPage._actuallyClockIn(jobId, null);
+    TimeTrackPage._actuallyClockIn(jobId, null, role);
   },
 
   // v785: Haversine distance in meters.
@@ -795,8 +816,8 @@ var TimeTrackPage = {
     return 2 * R * Math.asin(Math.sqrt(h));
   },
 
-  _actuallyClockIn: function(jobId, geo) {
-    var entry = DB.timeEntries.clockIn(TimeTrackPage.currentUser, jobId);
+  _actuallyClockIn: function(jobId, geo, role) {
+    var entry = DB.timeEntries.clockIn(TimeTrackPage.currentUser, jobId, role);
     // v785: stash the clock-in GPS + distance so payroll review can audit
     // entries flagged as "clocked in off-site".
     if (entry && entry.id && geo) {
@@ -810,7 +831,7 @@ var TimeTrackPage = {
     if (jobId) {
       DB.jobs.update(jobId, { status: 'in_progress' });
     }
-    UI.toast('Clocked in' + (geo && geo.distM != null && geo.distM <= 500 ? ' ✓ on-site' : ''));
+    UI.toast('Clocked in — ' + (role === 'sales' ? 'Sales/Estimate' : 'Labor') + (geo && geo.distM != null && geo.distM <= 500 ? ' ✓ on-site' : ''));
     loadPage(currentPage);
   },
 

@@ -212,6 +212,15 @@ var CrewView = {
 
   _beginClock: function() {
     localStorage.setItem('bm-clock-in', new Date().toISOString());
+    // Cloud-first (global rule): create the time entry NOW so it syncs to the
+    // cloud immediately — not deferred to clock-out, where a dead phone or a
+    // forgotten punch loses it entirely. Crew field work = labor role.
+    try {
+      var userName = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : 'Crew';
+      var jobId = localStorage.getItem('bm-clock-job') || null;
+      var entry = DB.timeEntries.clockIn(userName, jobId, 'labor');
+      if (entry && entry.id) localStorage.setItem('bm-clock-entry-id', entry.id);
+    } catch(e) { console.warn('[CrewView] cloud clock-in failed', e); }
     UI.toast('Clocked in! ⏱');
     CrewView._startGPSTracker();
     loadPage('crewview');
@@ -224,17 +233,26 @@ var CrewView = {
       var hrs = (elapsed / 60).toFixed(1);
       localStorage.removeItem('bm-clock-in');
 
-      // Save time entry via DB so it syncs to Supabase
-      var userName = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : 'Crew';
-      DB.timeEntries.create({
-        userId: userName,
-        user: userName,
-        date: new Date().toISOString().split('T')[0],
-        hours: parseFloat(hrs),
-        jobId: localStorage.getItem('bm-clock-job') || null,
-        clockIn: startTime,
-        clockOut: new Date().toISOString()
-      });
+      // Close the entry created at clock-in (cloud-first). Fallback: older
+      // sessions that clocked in before this fix have no entry id — create
+      // the record now so nothing is lost.
+      var entryId = localStorage.getItem('bm-clock-entry-id');
+      if (entryId) {
+        DB.timeEntries.clockOut(entryId);
+        localStorage.removeItem('bm-clock-entry-id');
+      } else {
+        var userName = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : 'Crew';
+        DB.timeEntries.create({
+          userId: userName,
+          user: userName,
+          date: new Date().toISOString().split('T')[0],
+          hours: parseFloat(hrs),
+          jobId: localStorage.getItem('bm-clock-job') || null,
+          role: 'labor',
+          clockIn: startTime,
+          clockOut: new Date().toISOString()
+        });
+      }
       localStorage.removeItem('bm-clock-job');
 
       UI.toast('Clocked out! ' + hrs + ' hours logged');

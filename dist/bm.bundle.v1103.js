@@ -71477,40 +71477,61 @@ var PayrollPage = {
   // hours start at the yard (commute/Ram excluded); suggest ±30 min yard
   // buffer around truck first/last movement; per-person, Doug confirms.
   // Lazy-loads on expand so it never queries unless opened.
-  _bouncieLoaded: false,
+  // v1103: ONE dropdown per DAY, sitting on top of each grid day (Doug: "Monday
+  // on top of Monday") so the week grid stays visible. Each day chip shows a
+  // peek (suggested clock); tapping opens a full-width detail panel below with
+  // the truck window + suggested clock + a per-day note. Desktop chips align to
+  // the grid columns; mobile = a horizontal-scroll strip.
+  _bDayOpen: null,
   _renderBouncie: function(dates) {
-    var rows = dates.map(function(d) {
-      var dn = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'numeric', day:'numeric' });
-      var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
-      return '<div data-bday="' + d + '" style="border-top:1px solid var(--border);padding:10px 14px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
-        +   '<strong style="font-size:13px;">' + dn + '</strong>'
-        +   '<span class="bday-sum" style="font-size:12px;color:var(--text-light);">loading…</span>'
-        + '</div>'
-        + '<div class="bday-detail" style="font-size:11.5px;color:var(--text-light);margin-top:3px;"></div>'
-        + '<textarea placeholder="Notes…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:6px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:32px;resize:vertical;box-sizing:border-box;">' + (typeof UI !== 'undefined' ? UI.esc(note) : note) + '</textarea>'
-        + '</div>';
+    var dn = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
+    var chips = dates.map(function(d, i) {
+      var day = new Date(d + 'T12:00:00').getDate();
+      return '<button type="button" data-bday="' + d + '" onclick="PayrollPage._bounceToggle(\'' + d + '\')" '
+        + 'style="border:1px solid var(--border);background:var(--white);border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.2;' + (isMobile ? 'min-width:54px;flex:none;' : '') + '">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text);">' + dn[i] + '</div>'
+        + '<div style="font-size:10px;color:var(--text-light);">' + day + '</div>'
+        + '<div class="bpk" style="font-size:9px;font-weight:700;color:var(--green-dark);margin-top:2px;min-height:11px;">·</div>'
+        + '</button>';
     }).join('');
-    return '<details ontoggle="if(this.open)PayrollPage._loadBouncieWeek()" style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">'
-      + '<summary style="padding:12px 16px;cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center;">'
-      +   '<span>🛰 Bouncie — truck day &amp; suggested hours</span><span style="font-size:11px;color:var(--text-light);font-weight:500;">tap ▾</span>'
-      + '</summary>'
-      + '<div id="bouncie-week">' + rows + '</div>'
-      + '<div style="padding:8px 16px 12px;font-size:11px;color:var(--text-light);line-height:1.5;">Suggested clock = work-truck yard-out/return ±30 min buffer. Commute (Ram) excluded; hours start at the yard. Confirm per person — first arrival ≠ everyone in.</div>'
-      + '</details>';
+    var strip = isMobile
+      ? '<div style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">' + chips + '</div>'
+      : '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;gap:5px;"><div></div>' + chips + '<div></div></div>';
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🛰 GPS hours by day <span style="font-weight:400;">— tap a day for the truck window + suggested clock</span></div>'
+      + strip
+      + '<div id="bday-panel"></div>'
+      + '</div>';
   },
-  _loadBouncieWeek: function() {
-    if (PayrollPage._bouncieLoaded) return; PayrollPage._bouncieLoaded = true;
-    var rows = document.querySelectorAll('#bouncie-week [data-bday]');
-    Array.prototype.forEach.call(rows, function(row) {
-      var d = row.getAttribute('data-bday');
+  _loadBouncePeeks: function() {
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(btn) {
+      var d = btn.getAttribute('data-bday'); var pk = btn.querySelector('.bpk');
       PayrollPage._bouncieDay(d).then(function(r) {
-        var sum = row.querySelector('.bday-sum'); var det = row.querySelector('.bday-detail');
-        if (!r || !r.firstMove) { if (sum) sum.textContent = 'no truck movement'; return; }
-        if (sum) sum.innerHTML = '<span style="color:var(--green-dark);font-weight:700;">' + r.inSug + ' – ' + r.outSug + '</span>';
-        if (det) det.textContent = 'Truck out ' + r.firstMove + '–' + r.lastMove + ' (~' + r.movingHrs + 'h moving) · suggested clock in bold above';
-      });
+        if (!pk) return;
+        pk.textContent = (r && r.inSug) ? (r.inSug.replace(/:00/,'').replace(/ /g,'') + '-' + r.outSug.replace(/:00/,'').replace(/ /g,'')) : '–';
+      }).catch(function(){});
     });
+  },
+  _bounceToggle: function(d) {
+    var panel = document.getElementById('bday-panel'); if (!panel) return;
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(b) { b.style.outline = ''; });
+    if (PayrollPage._bDayOpen === d) { PayrollPage._bDayOpen = null; panel.innerHTML = ''; return; }
+    PayrollPage._bDayOpen = d;
+    var btn = document.querySelector('button[data-bday="' + d + '"]'); if (btn) btn.style.outline = '2px solid var(--green-dark)';
+    var dnFull = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+    var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
+    panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
+      + '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">' + dnFull + '</div>'
+      + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
+      + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + (typeof UI !== 'undefined' ? UI.esc(note) : note) + '</textarea>'
+      + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Suggested clock = work-truck yard-out/return ±30 min. Commute (Ram) excluded; hours start at the yard. Confirm per person.</div>'
+      + '</div>';
+    PayrollPage._bouncieDay(d).then(function(r) {
+      var sum = panel.querySelector('.bday-sum'); if (!sum) return;
+      if (!r || !r.firstMove) { sum.textContent = 'No truck movement logged this day.'; return; }
+      sum.innerHTML = 'Suggested clock: <b style="color:var(--green-dark);">' + r.inSug + ' – ' + r.outSug + '</b><br>Truck out ' + r.firstMove + '–' + r.lastMove + ' (~' + r.movingHrs + 'h moving)';
+    }).catch(function(){});
   },
   _bouncieDay: function(dateStr) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -71581,7 +71602,7 @@ var PayrollPage = {
 
   render: function() {
     var self = PayrollPage;
-    self._bouncieLoaded = false;
+    self._bDayOpen = null;
     var dates = self._getWeekDates(self._weekOffset);
     var employees = self._getEmployees();
     var weekStart = dates[0];
@@ -71604,6 +71625,7 @@ var PayrollPage = {
 
     // ── Bouncie GPS panel (v1096) — truck day + suggested hours ──
     html += self._renderBouncie(dates);
+    setTimeout(PayrollPage._loadBouncePeeks, 60);
 
     // ── Bulk Actions ──
     html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'
@@ -71752,8 +71774,9 @@ var PayrollPage = {
     html += '<div id="pay-ledger" style="margin-top:20px;"><div style="font-size:12px;color:var(--text-light);">Loading earnings ledger…</div></div>';
     setTimeout(PayrollPage._loadLedger, 0);
 
-    // ── Sales Commissions (v1097) — 8%, separate from hourly payroll ──
-    html += self._renderCommissions();
+    // ── Sales Commissions — DORMANT until spec settles (Catherine 10%/hourly
+    // election + per-person rates). Methods kept below; not rendered yet.
+    // html += self._renderCommissions();
 
     // v383: My Pay (employeecenter) folded under Payroll. Link at bottom for now;
     // will pull out to its own page once Crew View ships and crew-vs-admin nav splits.

@@ -1,5 +1,5 @@
 {
-  "version": 1105,
+  "version": 1106,
   "released": "2026-08-10",
-  "notes": "Per-day + on the calendar now opens a chooser (New Job / Time off / Personal / Bill / Note) instead of jumping straight to New Job"
+  "notes": "Role-tagged cloud-first clock in/out (Labor/Sales split) + schedule always-month on entry"
 }

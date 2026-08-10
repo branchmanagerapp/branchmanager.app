@@ -1120,8 +1120,8 @@ var DB = (function() {
         return true;
       });
     },
-    clockIn: function(userId, jobId) {
-      return create(KEYS.timeEntries, { userId: userId, user: userId, jobId: jobId, date: new Date().toISOString().split('T')[0], clockIn: _now(), clockOut: null, hours: 0 });
+    clockIn: function(userId, jobId, role) {
+      return create(KEYS.timeEntries, { userId: userId, user: userId, jobId: jobId, role: (role === 'sales' ? 'sales' : 'labor'), date: new Date().toISOString().split('T')[0], clockIn: _now(), clockOut: null, hours: 0 });
     },
     clockOut: function(entryId) {
       var entry = getById(KEYS.timeEntries, entryId);

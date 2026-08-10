@@ -2200,8 +2200,8 @@ var DB = (function() {
         return true;
       });
     },
-    clockIn: function(userId, jobId) {
-      return create(KEYS.timeEntries, { userId: userId, user: userId, jobId: jobId, date: new Date().toISOString().split('T')[0], clockIn: _now(), clockOut: null, hours: 0 });
+    clockIn: function(userId, jobId, role) {
+      return create(KEYS.timeEntries, { userId: userId, user: userId, jobId: jobId, role: (role === 'sales' ? 'sales' : 'labor'), date: new Date().toISOString().split('T')[0], clockIn: _now(), clockOut: null, hours: 0 });
     },
     clockOut: function(entryId) {
       var entry = getById(KEYS.timeEntries, entryId);
@@ -4923,7 +4923,7 @@ var DashboardPage = {
                 ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">First visit @ ' + UI.esc(firstUpcoming.startTime) + '</div>'
                 : '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">No visits scheduled today</div>')
         +   '</div>'
-        +   '<button class="dash-clock-btn" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockIn(' + (firstJobId ? '\'' + firstJobId + '\'' : 'null') + ');setTimeout(function(){loadPage(\'dashboard\');},150);}else{loadPage(\'timetrack\');}">▶ Clock In</button>'
+        +   '<button class="dash-clock-btn" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockIn(' + (firstJobId ? '\'' + firstJobId + '\'' : 'null') + ', \'labor\');setTimeout(function(){loadPage(\'dashboard\');},150);}else{loadPage(\'timetrack\');}">▶ Clock In</button>'
         + '</div>';
     }
 
@@ -17176,18 +17176,39 @@ var SchedulePage = {
       + icon + ' ' + UI.esc(label) + '</div>';
   },
   // Lightweight add/edit modal for a calendar event.
-  addEvent: function(dateStr) {
-    SchedulePage._openEventModal(null, dateStr);
+  addEvent: function(dateStr, type) {
+    SchedulePage._openEventModal(null, dateStr, type);
+  },
+  // v1105: the per-day "+" now asks what to add instead of jumping to New Job.
+  _addChooser: function(dateStr) {
+    var d = dateStr || SchedulePage._localDateStr(SchedulePage.currentDate);
+    var pretty = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    var ov = document.createElement('div'); ov.id = 'bm-add-chooser';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    function row(emoji, label, call) {
+      return '<button onclick="document.getElementById(\'bm-add-chooser\').remove();' + call + '" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:15px;font-weight:600;cursor:pointer;color:var(--text);"><span style="font-size:20px;flex:none;">' + emoji + '</span>' + label + '</button>';
+    }
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:18px;width:100%;max-width:340px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
+      + '<div style="font-weight:800;font-size:16px;margin-bottom:12px;">Add to ' + pretty + '</div>'
+      + row('🔨', 'New Job', "JobsPage.showForm(null,{date:'" + d + "'})")
+      + row('🌴', 'Time off', "SchedulePage.addEvent('" + d + "','time_off')")
+      + row('👤', 'Personal / day-rate', "SchedulePage.addEvent('" + d + "','personal')")
+      + row('💸', 'Bill / payment due', "SchedulePage.addEvent('" + d + "','bill')")
+      + row('📌', 'Note', "SchedulePage.addEvent('" + d + "','note')")
+      + '<button onclick="document.getElementById(\'bm-add-chooser\').remove()" style="width:100%;background:#eee;border:none;padding:10px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:2px;">Cancel</button>'
+      + '</div>';
+    document.body.appendChild(ov);
   },
   editEvent: function(id) {
     var ev = null, idx = window._bmCalEventsIndex || {};
     Object.keys(idx).some(function(k) { return idx[k].some(function(e) { if (e.id === id) { ev = e; return true; } }); });
     SchedulePage._openEventModal(ev, ev ? ev.start_date : null);
   },
-  _openEventModal: function(ev, dateStr) {
+  _openEventModal: function(ev, dateStr, presetType) {
     var d = (ev && ev.start_date) ? ev.start_date.substring(0,10) : (dateStr || SchedulePage._localDateStr(SchedulePage.currentDate));
     var end = (ev && ev.end_date) ? ev.end_date.substring(0,10) : d;
-    var type = ev ? ev.type : 'time_off';
+    var type = ev ? ev.type : (presetType || 'time_off');
     function opt(v, l) { return '<option value="' + v + '"' + (type === v ? ' selected' : '') + '>' + l + '</option>'; }
     var ov = document.createElement('div');
     ov.id = 'bm-event-modal';
@@ -17432,7 +17453,7 @@ var SchedulePage = {
       return '<button class="btn ' + (active ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'' + viewKey + '\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (!active ? 'background:none;border:none;color:var(--text-light);' : '') + '">' + label + '</button>';
     }
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">'
-      + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
       +   '<button class="btn btn-outline" onclick="SchedulePage.prev()" style="padding:4px 10px;">&larr;</button>'
       +   '<h3 id="cal-title" onclick="SchedulePage._openMonthPicker(event)" title="Jump to month" style="font-size:16px;font-weight:700;white-space:nowrap;margin:0 4px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:4px;">' + self._getTitle() + '<span style="font-size:10px;color:var(--text-light);">&#9662;</span></h3>'
       +   '<input type="month" id="cal-month-picker" value="' + self.currentDate.getFullYear() + '-' + String(self.currentDate.getMonth()+1).padStart(2,'0') + '" onchange="SchedulePage._jumpToMonth(this.value)" style="position:absolute;width:0;height:0;opacity:0;border:none;padding:0;">'
@@ -18081,7 +18102,7 @@ var SchedulePage = {
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
         + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;transition:background .15s,box-shadow .15s;position:relative;"'
         + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
-        + '<button class="bm-cell-add" onclick="event.stopPropagation();JobsPage.showForm(null,{date:\'' + dateStr + '\'})" title="New job on ' + dateStr + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;z-index:2;">+</button>';
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();SchedulePage._addChooser(\'' + dateStr + '\')" title="Add on ' + dateStr + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;z-index:2;">+</button>';
       dayJobs.forEach(function(j) {
         var bgColor = j.status === 'completed' ? '#e8f5e9' : j.status === 'late' ? '#ffebee' : j.status === 'in_progress' ? '#fff3e0' : '#e3f2fd';
         var borderColor = j.status === 'completed' ? '#4caf50' : j.status === 'late' ? '#f44336' : j.status === 'in_progress' ? '#ff9800' : '#2196f3';
@@ -18215,7 +18236,7 @@ var SchedulePage = {
         + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
         + 'style="background:' + cellBg + ';min-height:80px;padding:4px;cursor:pointer;transition:background .15s;position:relative;"'
         + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
-        + '<button class="bm-cell-add" onclick="event.stopPropagation();JobsPage.showForm(null,{date:\'' + dateStr + '\'})" title="New job on ' + dateStr + '" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;">+</button>'
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();SchedulePage._addChooser(\'' + dateStr + '\')" title="Add on ' + dateStr + '" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;">+</button>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
         + (isToday
             ? '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + day + '</span>'
@@ -25683,6 +25704,15 @@ var CrewView = {
 
   _beginClock: function() {
     localStorage.setItem('bm-clock-in', new Date().toISOString());
+    // Cloud-first (global rule): create the time entry NOW so it syncs to the
+    // cloud immediately — not deferred to clock-out, where a dead phone or a
+    // forgotten punch loses it entirely. Crew field work = labor role.
+    try {
+      var userName = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : 'Crew';
+      var jobId = localStorage.getItem('bm-clock-job') || null;
+      var entry = DB.timeEntries.clockIn(userName, jobId, 'labor');
+      if (entry && entry.id) localStorage.setItem('bm-clock-entry-id', entry.id);
+    } catch(e) { console.warn('[CrewView] cloud clock-in failed', e); }
     UI.toast('Clocked in! ⏱');
     CrewView._startGPSTracker();
     loadPage('crewview');
@@ -25695,17 +25725,26 @@ var CrewView = {
       var hrs = (elapsed / 60).toFixed(1);
       localStorage.removeItem('bm-clock-in');
 
-      // Save time entry via DB so it syncs to Supabase
-      var userName = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : 'Crew';
-      DB.timeEntries.create({
-        userId: userName,
-        user: userName,
-        date: new Date().toISOString().split('T')[0],
-        hours: parseFloat(hrs),
-        jobId: localStorage.getItem('bm-clock-job') || null,
-        clockIn: startTime,
-        clockOut: new Date().toISOString()
-      });
+      // Close the entry created at clock-in (cloud-first). Fallback: older
+      // sessions that clocked in before this fix have no entry id — create
+      // the record now so nothing is lost.
+      var entryId = localStorage.getItem('bm-clock-entry-id');
+      if (entryId) {
+        DB.timeEntries.clockOut(entryId);
+        localStorage.removeItem('bm-clock-entry-id');
+      } else {
+        var userName = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : 'Crew';
+        DB.timeEntries.create({
+          userId: userName,
+          user: userName,
+          date: new Date().toISOString().split('T')[0],
+          hours: parseFloat(hrs),
+          jobId: localStorage.getItem('bm-clock-job') || null,
+          role: 'labor',
+          clockIn: startTime,
+          clockOut: new Date().toISOString()
+        });
+      }
       localStorage.removeItem('bm-clock-job');
 
       UI.toast('Clocked out! ' + hrs + ' hours logged');
@@ -62814,13 +62853,17 @@ var TimeTrackPage = {
       return d >= weekStartStr && d <= weekEndStr && t.user === TimeTrackPage.currentUser;
     });
 
-    var totalHours = entries.reduce(function(s, t) {
-      if (!t.clockOut && t.clockIn) return s + (Date.now() - new Date(t.clockIn).getTime()) / 3600000;
-      return s + (t.hours || 0);
-    }, 0);
-
-    var regHours = Math.min(totalHours, 40);
-    var otHours = Math.max(0, totalHours - 40);
+    var laborHours = 0, salesHours = 0;
+    entries.forEach(function(t) {
+      var h = (!t.clockOut && t.clockIn) ? (Date.now() - new Date(t.clockIn).getTime()) / 3600000 : (t.hours || 0);
+      if (t.role === 'sales') salesHours += h; else laborHours += h;
+    });
+    var totalHours = laborHours + salesHours;
+    // Pay is on LABOR hours (OT > 40h at 1.5×). Sales/estimate hours are
+    // tracked separately — they feed Catherine's hourly-for-estimates option
+    // or her 10% commission election, never mixed into the labor wage.
+    var regHours = Math.min(laborHours, 40);
+    var otHours = Math.max(0, laborHours - 40);
     var grossPay = (regHours * rate) + (otHours * rate * 1.5);
 
     var fmtDate = function(d) { return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}); };
@@ -62831,25 +62874,27 @@ var TimeTrackPage = {
       + '<span style="font-size:12px;color:var(--text-light);">' + fmtDate(weekStart) + ' – ' + fmtDate(weekEnd) + '</span>'
       + '</div>'
       + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
+      + '<div style="text-align:center;background:var(--green-bg);border-radius:8px;padding:10px;">'
+      +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">🔧 Labor Hrs</div>'
+      +   '<div style="font-size:1.3rem;font-weight:700;color:var(--green-dark);">' + laborHours.toFixed(1) + '</div>'
+      +   (otHours > 0 ? '<div style="font-size:10px;color:var(--red);">incl. ' + otHours.toFixed(1) + ' OT</div>' : '')
+      + '</div>'
+      + '<div style="text-align:center;background:#f6edfb;border-radius:8px;padding:10px;">'
+      +   '<div style="font-size:11px;color:#8e44ad;margin-bottom:4px;">📋 Sales/Est Hrs</div>'
+      +   '<div style="font-size:1.3rem;font-weight:700;color:#8e44ad;">' + salesHours.toFixed(1) + '</div>'
+      + '</div>'
       + '<div style="text-align:center;background:var(--bg);border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Total Hours</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Total Hrs</div>'
       +   '<div style="font-size:1.3rem;font-weight:700;">' + totalHours.toFixed(1) + '</div>'
       + '</div>'
-      + '<div style="text-align:center;background:var(--bg);border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Regular</div>'
-      +   '<div style="font-size:1.3rem;font-weight:700;">' + regHours.toFixed(1) + '</div>'
-      + '</div>'
-      + '<div style="text-align:center;background:' + (otHours > 0 ? '#fff3f3' : 'var(--bg)') + ';border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Overtime</div>'
-      +   '<div style="font-size:1.3rem;font-weight:700;color:' + (otHours > 0 ? 'var(--red)' : 'inherit') + ';">' + otHours.toFixed(1) + '</div>'
-      + '</div>'
       + '<div style="text-align:center;background:var(--green-bg);border-radius:8px;padding:10px;">'
-      +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">Est. Gross Pay</div>'
+      +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">Labor Gross</div>'
       +   '<div style="font-size:1.3rem;font-weight:700;color:var(--green-dark);">' + UI.money(grossPay) + '</div>'
       + '</div>'
       + '</div>'
+      + '<div style="margin-top:8px;font-size:11px;color:var(--text-light);line-height:1.4;">Labor gross = ' + regHours.toFixed(1) + ' reg' + (otHours > 0 ? ' + ' + otHours.toFixed(1) + ' OT @1.5×' : '') + ' at $' + rate.toFixed(0) + '/hr. Sales/estimate hours are tracked separately (hourly-for-estimates or commission — not added to labor pay).</div>'
       + '<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">'
-      + '<span style="font-size:12px;color:var(--text-light);">Hourly rate: $' + rate.toFixed(0) + '/hr</span>'
+      + '<span style="font-size:12px;color:var(--text-light);">Labor rate: $' + rate.toFixed(0) + '/hr</span>'
       + '<button onclick="TimeTrackPage.editMyRate()" class="btn btn-outline" style="font-size:12px;padding:4px 10px;">Edit Rate</button>'
       + '</div>'
       + '</div>';
@@ -62973,47 +63018,62 @@ var TimeTrackPage = {
       var elapsed = ((Date.now() - new Date(activeEntry.clockIn).getTime()) / 3600000).toFixed(1);
       var clockInMs = new Date(activeEntry.clockIn).getTime();
       html += '<div style="background:var(--green-bg);border:2px solid var(--green-dark);border-radius:10px;padding:16px;text-align:center;">'
-        + '<div style="font-size:13px;color:var(--green-dark);font-weight:600;">CLOCKED IN</div>'
+        + '<div style="font-size:13px;color:var(--green-dark);font-weight:600;">CLOCKED IN — ' + (activeEntry.role === 'sales' ? 'Sales / Estimate 📋' : 'Labor 🔧') + '</div>'
         + '<div id="tt-elapsed-display" style="font-size:2.5rem;font-weight:800;color:var(--green-dark);">' + elapsed + ' hrs</div>'
         + (job ? '<div style="font-size:14px;color:var(--text);">' + job.clientName + ' — #' + job.jobNumber + '</div>' : '')
         + '<button class="btn" style="background:var(--red);color:#fff;margin-top:12px;padding:12px 32px;font-size:16px;" onclick="TimeTrackPage.clockOut(\'' + activeEntry.id + '\')">Clock Out</button>'
         + '</div>';
     } else {
-      // Not clocked in — show available jobs
-      html += '<div style="text-align:center;padding:12px;color:var(--text-light);margin-bottom:12px;">Not clocked in</div>';
+      // Not clocked in — pick a ROLE: Labor (top) or Sales/Estimate (bottom).
+      // Hours are tagged so labor pay and sales/estimate time stay separate.
+      html += '<div style="text-align:center;padding:6px;color:var(--text-light);margin-bottom:12px;">Not clocked in — pick what you\'re starting</div>';
+      // ── LABOR (field / crew work) ──
+      html += '<div style="border:1.5px solid var(--green-dark);border-radius:10px;padding:12px;margin-bottom:12px;">'
+        + '<div style="font-size:13px;font-weight:800;color:var(--green-dark);margin-bottom:8px;">🔧 LABOR — field / crew work</div>';
       if (allJobs.length) {
-        html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">Clock in to a job:</div>';
+        html += '<div style="font-size:12px;color:var(--text-light);margin-bottom:6px;">Clock in to a job:</div>';
         allJobs.forEach(function(j) {
-          html += '<button class="btn btn-outline" style="width:100%;margin-bottom:6px;justify-content:space-between;" onclick="TimeTrackPage.clockIn(\'' + j.id + '\')">'
-            + '<span>🔧 ' + j.clientName + ' — ' + (j.description || '#' + j.jobNumber) + '</span>'
-            + '<span style="font-weight:700;">' + UI.dateShort(j.scheduledDate) + '</span>'
+          html += '<button class="btn btn-outline" style="width:100%;margin-bottom:6px;justify-content:space-between;text-align:left;" onclick="TimeTrackPage.clockIn(\'' + j.id + '\', \'labor\')">'
+            + '<span>' + UI.esc(j.clientName || '') + ' — ' + UI.esc(j.description || ('#' + j.jobNumber)) + '</span>'
+            + '<span style="font-weight:700;white-space:nowrap;">' + UI.dateShort(j.scheduledDate) + '</span>'
             + '</button>';
         });
       }
-      html += '<button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="TimeTrackPage.clockIn(null)">Clock In (No Job)</button>';
+      html += '<button class="btn" style="width:100%;background:var(--green-dark);color:#fff;font-weight:700;" onclick="TimeTrackPage.clockIn(null, \'labor\')">🔧 Clock In — Labor (no job)</button>'
+        + '</div>';
+      // ── SALES / ESTIMATE ──
+      html += '<div style="border:1.5px solid #8e44ad;border-radius:10px;padding:12px;">'
+        + '<div style="font-size:13px;font-weight:800;color:#8e44ad;margin-bottom:8px;">📋 SALES — estimates / selling</div>'
+        + '<button class="btn" style="width:100%;background:#8e44ad;color:#fff;font-weight:700;" onclick="TimeTrackPage.clockIn(null, \'sales\')">📋 Clock In — Sales / Estimate</button>'
+        + '</div>';
     }
 
     // Today's entries
     if (todayEntries.length > 0) {
       html += '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">'
         + '<h4 style="font-size:13px;margin-bottom:8px;">Today\'s Time</h4>';
-      var totalHours = 0;
+      var laborHours = 0, salesHours = 0;
       todayEntries.forEach(function(t) {
         var job = t.jobId ? DB.jobs.getById(t.jobId) : null;
         var hours = t.hours || 0;
         if (!t.clockOut) hours = (Date.now() - new Date(t.clockIn).getTime()) / 3600000;
-        totalHours += hours;
+        var isSales = (t.role === 'sales');
+        if (isSales) salesHours += hours; else laborHours += hours;
         var clockInTime = new Date(t.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
         var clockOutTime = t.clockOut ? new Date(t.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'active';
 
         html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px;">'
-          + '<span>' + (job ? job.clientName + ' #' + job.jobNumber : 'General') + '</span>'
+          + '<span>' + (isSales ? '📋 ' : '🔧 ') + (job ? UI.esc(job.clientName) + ' #' + job.jobNumber : (isSales ? 'Estimate/Sales' : 'General')) + '</span>'
           + '<span>' + clockInTime + ' - ' + clockOutTime + '</span>'
           + '<span style="font-weight:700;">' + hours.toFixed(1) + ' hrs</span>'
           + '</div>';
       });
-      html += '<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;">'
-        + '<span>Total Today</span><span style="color:var(--green-dark);">' + totalHours.toFixed(1) + ' hrs</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;">'
+        + '<span>🔧 Labor</span><span style="font-weight:700;">' + laborHours.toFixed(1) + ' hrs</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;">'
+        + '<span>📋 Sales / Estimate</span><span style="font-weight:700;color:#8e44ad;">' + salesHours.toFixed(1) + ' hrs</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:14px;border-top:1px solid var(--border);margin-top:2px;">'
+        + '<span>Total Today</span><span style="color:var(--green-dark);">' + (laborHours + salesHours).toFixed(1) + ' hrs</span></div>';
       html += '</div>';
     }
 
@@ -63038,7 +63098,7 @@ var TimeTrackPage = {
 
   _tickInterval: null,
 
-  clockIn: function(jobId) {
+  clockIn: function(jobId, role) {
     // v785: geofence soft-check. If clocking in to a specific job whose
     // property has lat/lng on file, sanity-check the device GPS to catch
     // accidental "clocked in from home" entries. Distances > 500m prompt
@@ -63053,7 +63113,7 @@ var TimeTrackPage = {
         var timedOut = false;
         var fallback = setTimeout(function() {
           timedOut = true;
-          TimeTrackPage._actuallyClockIn(jobId, null);
+          TimeTrackPage._actuallyClockIn(jobId, null, role);
         }, 3000);
         navigator.geolocation.getCurrentPosition(function(pos) {
           if (timedOut) return;
@@ -63070,16 +63130,16 @@ var TimeTrackPage = {
               return;
             }
           }
-          TimeTrackPage._actuallyClockIn(jobId, { lat: pos.coords.latitude, lng: pos.coords.longitude, distM: dist });
+          TimeTrackPage._actuallyClockIn(jobId, { lat: pos.coords.latitude, lng: pos.coords.longitude, distM: dist }, role);
         }, function() {
           if (timedOut) return;
           clearTimeout(fallback);
-          TimeTrackPage._actuallyClockIn(jobId, null);
+          TimeTrackPage._actuallyClockIn(jobId, null, role);
         }, { enableHighAccuracy: true, timeout: 3000, maximumAge: 30000 });
         return;
       }
     }
-    TimeTrackPage._actuallyClockIn(jobId, null);
+    TimeTrackPage._actuallyClockIn(jobId, null, role);
   },
 
   // v785: Haversine distance in meters.
@@ -63096,8 +63156,8 @@ var TimeTrackPage = {
     return 2 * R * Math.asin(Math.sqrt(h));
   },
 
-  _actuallyClockIn: function(jobId, geo) {
-    var entry = DB.timeEntries.clockIn(TimeTrackPage.currentUser, jobId);
+  _actuallyClockIn: function(jobId, geo, role) {
+    var entry = DB.timeEntries.clockIn(TimeTrackPage.currentUser, jobId, role);
     // v785: stash the clock-in GPS + distance so payroll review can audit
     // entries flagged as "clocked in off-site".
     if (entry && entry.id && geo) {
@@ -63111,7 +63171,7 @@ var TimeTrackPage = {
     if (jobId) {
       DB.jobs.update(jobId, { status: 'in_progress' });
     }
-    UI.toast('Clocked in' + (geo && geo.distM != null && geo.distM <= 500 ? ' ✓ on-site' : ''));
+    UI.toast('Clocked in — ' + (role === 'sales' ? 'Sales/Estimate' : 'Labor') + (geo && geo.distM != null && geo.distM <= 500 ? ' ✓ on-site' : ''));
     loadPage(currentPage);
   },
 
@@ -71477,40 +71537,61 @@ var PayrollPage = {
   // hours start at the yard (commute/Ram excluded); suggest ±30 min yard
   // buffer around truck first/last movement; per-person, Doug confirms.
   // Lazy-loads on expand so it never queries unless opened.
-  _bouncieLoaded: false,
+  // v1103: ONE dropdown per DAY, sitting on top of each grid day (Doug: "Monday
+  // on top of Monday") so the week grid stays visible. Each day chip shows a
+  // peek (suggested clock); tapping opens a full-width detail panel below with
+  // the truck window + suggested clock + a per-day note. Desktop chips align to
+  // the grid columns; mobile = a horizontal-scroll strip.
+  _bDayOpen: null,
   _renderBouncie: function(dates) {
-    var rows = dates.map(function(d) {
-      var dn = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'numeric', day:'numeric' });
-      var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
-      return '<div data-bday="' + d + '" style="border-top:1px solid var(--border);padding:10px 14px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
-        +   '<strong style="font-size:13px;">' + dn + '</strong>'
-        +   '<span class="bday-sum" style="font-size:12px;color:var(--text-light);">loading…</span>'
-        + '</div>'
-        + '<div class="bday-detail" style="font-size:11.5px;color:var(--text-light);margin-top:3px;"></div>'
-        + '<textarea placeholder="Notes…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:6px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:32px;resize:vertical;box-sizing:border-box;">' + (typeof UI !== 'undefined' ? UI.esc(note) : note) + '</textarea>'
-        + '</div>';
+    var dn = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
+    var chips = dates.map(function(d, i) {
+      var day = new Date(d + 'T12:00:00').getDate();
+      return '<button type="button" data-bday="' + d + '" onclick="PayrollPage._bounceToggle(\'' + d + '\')" '
+        + 'style="border:1px solid var(--border);background:var(--white);border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.2;' + (isMobile ? 'min-width:54px;flex:none;' : '') + '">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text);">' + dn[i] + '</div>'
+        + '<div style="font-size:10px;color:var(--text-light);">' + day + '</div>'
+        + '<div class="bpk" style="font-size:9px;font-weight:700;color:var(--green-dark);margin-top:2px;min-height:11px;">·</div>'
+        + '</button>';
     }).join('');
-    return '<details ontoggle="if(this.open)PayrollPage._loadBouncieWeek()" style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">'
-      + '<summary style="padding:12px 16px;cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center;">'
-      +   '<span>🛰 Bouncie — truck day &amp; suggested hours</span><span style="font-size:11px;color:var(--text-light);font-weight:500;">tap ▾</span>'
-      + '</summary>'
-      + '<div id="bouncie-week">' + rows + '</div>'
-      + '<div style="padding:8px 16px 12px;font-size:11px;color:var(--text-light);line-height:1.5;">Suggested clock = work-truck yard-out/return ±30 min buffer. Commute (Ram) excluded; hours start at the yard. Confirm per person — first arrival ≠ everyone in.</div>'
-      + '</details>';
+    var strip = isMobile
+      ? '<div style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">' + chips + '</div>'
+      : '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;gap:5px;"><div></div>' + chips + '<div></div></div>';
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🛰 GPS hours by day <span style="font-weight:400;">— tap a day for the truck window + suggested clock</span></div>'
+      + strip
+      + '<div id="bday-panel"></div>'
+      + '</div>';
   },
-  _loadBouncieWeek: function() {
-    if (PayrollPage._bouncieLoaded) return; PayrollPage._bouncieLoaded = true;
-    var rows = document.querySelectorAll('#bouncie-week [data-bday]');
-    Array.prototype.forEach.call(rows, function(row) {
-      var d = row.getAttribute('data-bday');
+  _loadBouncePeeks: function() {
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(btn) {
+      var d = btn.getAttribute('data-bday'); var pk = btn.querySelector('.bpk');
       PayrollPage._bouncieDay(d).then(function(r) {
-        var sum = row.querySelector('.bday-sum'); var det = row.querySelector('.bday-detail');
-        if (!r || !r.firstMove) { if (sum) sum.textContent = 'no truck movement'; return; }
-        if (sum) sum.innerHTML = '<span style="color:var(--green-dark);font-weight:700;">' + r.inSug + ' – ' + r.outSug + '</span>';
-        if (det) det.textContent = 'Truck out ' + r.firstMove + '–' + r.lastMove + ' (~' + r.movingHrs + 'h moving) · suggested clock in bold above';
-      });
+        if (!pk) return;
+        pk.textContent = (r && r.inSug) ? (r.inSug.replace(/:00/,'').replace(/ /g,'') + '-' + r.outSug.replace(/:00/,'').replace(/ /g,'')) : '–';
+      }).catch(function(){});
     });
+  },
+  _bounceToggle: function(d) {
+    var panel = document.getElementById('bday-panel'); if (!panel) return;
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(b) { b.style.outline = ''; });
+    if (PayrollPage._bDayOpen === d) { PayrollPage._bDayOpen = null; panel.innerHTML = ''; return; }
+    PayrollPage._bDayOpen = d;
+    var btn = document.querySelector('button[data-bday="' + d + '"]'); if (btn) btn.style.outline = '2px solid var(--green-dark)';
+    var dnFull = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+    var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
+    panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
+      + '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">' + dnFull + '</div>'
+      + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
+      + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + (typeof UI !== 'undefined' ? UI.esc(note) : note) + '</textarea>'
+      + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Suggested clock = work-truck yard-out/return ±30 min. Commute (Ram) excluded; hours start at the yard. Confirm per person.</div>'
+      + '</div>';
+    PayrollPage._bouncieDay(d).then(function(r) {
+      var sum = panel.querySelector('.bday-sum'); if (!sum) return;
+      if (!r || !r.firstMove) { sum.textContent = 'No truck movement logged this day.'; return; }
+      sum.innerHTML = 'Suggested clock: <b style="color:var(--green-dark);">' + r.inSug + ' – ' + r.outSug + '</b><br>Truck out ' + r.firstMove + '–' + r.lastMove + ' (~' + r.movingHrs + 'h moving)';
+    }).catch(function(){});
   },
   _bouncieDay: function(dateStr) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -71581,7 +71662,7 @@ var PayrollPage = {
 
   render: function() {
     var self = PayrollPage;
-    self._bouncieLoaded = false;
+    self._bDayOpen = null;
     var dates = self._getWeekDates(self._weekOffset);
     var employees = self._getEmployees();
     var weekStart = dates[0];
@@ -71604,6 +71685,7 @@ var PayrollPage = {
 
     // ── Bouncie GPS panel (v1096) — truck day + suggested hours ──
     html += self._renderBouncie(dates);
+    setTimeout(PayrollPage._loadBouncePeeks, 60);
 
     // ── Bulk Actions ──
     html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'
@@ -71752,8 +71834,9 @@ var PayrollPage = {
     html += '<div id="pay-ledger" style="margin-top:20px;"><div style="font-size:12px;color:var(--text-light);">Loading earnings ledger…</div></div>';
     setTimeout(PayrollPage._loadLedger, 0);
 
-    // ── Sales Commissions (v1097) — 8%, separate from hourly payroll ──
-    html += self._renderCommissions();
+    // ── Sales Commissions — DORMANT until spec settles (Catherine 10%/hourly
+    // election + per-person rates). Methods kept below; not rendered yet.
+    // html += self._renderCommissions();
 
     // v383: My Pay (employeecenter) folded under Payroll. Link at bottom for now;
     // will pull out to its own page once Crew View ships and crew-vs-admin nav splits.

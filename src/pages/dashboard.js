@@ -1328,7 +1328,7 @@ var DashboardPage = {
                 ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">First visit @ ' + UI.esc(firstUpcoming.startTime) + '</div>'
                 : '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">No visits scheduled today</div>')
         +   '</div>'
-        +   '<button class="dash-clock-btn" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockIn(' + (firstJobId ? '\'' + firstJobId + '\'' : 'null') + ');setTimeout(function(){loadPage(\'dashboard\');},150);}else{loadPage(\'timetrack\');}">▶ Clock In</button>'
+        +   '<button class="dash-clock-btn" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockIn(' + (firstJobId ? '\'' + firstJobId + '\'' : 'null') + ', \'labor\');setTimeout(function(){loadPage(\'dashboard\');},150);}else{loadPage(\'timetrack\');}">▶ Clock In</button>'
         + '</div>';
     }
 
