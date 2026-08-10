@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1108; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1109; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1582,7 +1582,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1108.min.js"></script>
+<script defer src="dist/bm.bundle.v1109.min.js"></script>
 
 
 
@@ -2308,6 +2308,13 @@ function checkAuth() {
   // Update sidebar user info
   var userEl = document.querySelector('.sidebar-user');
   if (userEl) userEl.innerHTML = Auth.user.name + ' <span style="opacity:.6;">· ' + Auth.role.replace(/_/g, ' ') + '</span>';
+
+  // v1109: top-right avatar initials from the logged-in user (was hardcoded
+  // "DB" — every user, incl. Catherine, saw Doug's initials).
+  var avInit = document.getElementById('topbar-avatar-initials');
+  if (avInit && Auth.user && Auth.user.name) {
+    avInit.textContent = (Auth.user.name.trim().split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase()) || 'U';
+  }
 
   // Hide nav items user can't access
   document.querySelectorAll('.nav-item[data-page]').forEach(function(btn) {

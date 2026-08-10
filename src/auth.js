@@ -360,9 +360,25 @@ var Auth = {
       try {
         var { data, error } = await SupabaseDB.client.auth.signInWithPassword({ email: email, password: password });
         if (error) throw error;
-        Auth.user = { email: data.user.email, id: data.user.id, role: 'owner', name: (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('ownerName')) || 'Owner' };
-        Auth.role = 'owner';
+        // v1109 SECURITY: resolve the user's REAL role + name instead of
+        // hardcoding 'owner'. The old hardcode gave EVERY Supabase login owner
+        // access — a crew_lead (Catherine) could open Settings, all-employee
+        // payroll/hours, etc. Role comes from user_tenants (the RLS source of
+        // truth); name from the team roster. Fail CLOSED to crew_member.
+        var _role = 'crew_member', _name = null, _tid = null;
+        try {
+          var _ut = await SupabaseDB.client.from('user_tenants').select('tenant_id,role').eq('user_id', data.user.id).limit(1);
+          if (_ut && _ut.data && _ut.data[0]) { _role = _ut.data[0].role || _role; _tid = _ut.data[0].tenant_id; }
+        } catch (e) {}
+        try {
+          var _tm = await SupabaseDB.client.from('team_members').select('name').ilike('email', data.user.email).limit(1);
+          if (_tm && _tm.data && _tm.data[0] && _tm.data[0].name) _name = _tm.data[0].name;
+        } catch (e) {}
+        if (!_name) _name = ((data.user.email || '').split('@')[0] || 'User');
+        Auth.user = { email: data.user.email, id: data.user.id, role: _role, name: _name };
+        Auth.role = _role;
         localStorage.setItem('bm-session', JSON.stringify(Auth.user));
+        if (_tid) { try { localStorage.setItem('bm-tenant-id', _tid); } catch (e) {} }
         window.location.reload();
         return;
       } catch(e) {

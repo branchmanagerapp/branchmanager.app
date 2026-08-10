@@ -1,5 +1,5 @@
 {
-  "version": 1108,
+  "version": 1109,
   "released": "2026-08-10",
-  "notes": "Activity feed + notifier: exclude ALL unanswered inbound calls (Dialpad 'ringing' status was slipping missed calls through)"
+  "notes": "SECURITY: resolve real role+name at login (was hardcoded owner) + avatar initials per-user"
 }
