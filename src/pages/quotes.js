@@ -1162,7 +1162,14 @@ var QuotesPage = {
       '.q-thumbs-d{display:none}'
       + '.q-thumbs-m{display:flex;align-items:center}'
       + '@media(min-width:640px){.q-thumbs-d{display:flex;gap:6px;align-items:center}.q-thumbs-m{display:none}}'
-      + '.q-item-wrap.q-open .q-collapsed-thumbs{display:none}';
+      + '.q-item-wrap.q-open .q-collapsed-thumbs{display:none}'
+      // Expanded body: single column on phones (photo on top), two columns on
+      // wider screens (details LEFT, photo RIGHT). Source order is photo-first
+      // so the phone stack shows the photo on top; `order` swaps to details-left
+      // on desktop.
+      + '.q-body-grid{display:block}'
+      + '.q-body-right{margin-bottom:6px}'
+      + '@media(min-width:640px){.q-body-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}.q-body-left{order:1}.q-body-right{order:2;margin-bottom:0}}';
     document.head.appendChild(s);
   },
 
@@ -1238,10 +1245,13 @@ var QuotesPage = {
     var formulaHint = '<div class="q-item-formula" style="font-size:11px;color:var(--text-light);margin-top:4px;"></div>';
 
     // Expanded form body (hidden when collapsed)
-    // v1099: PHOTOS ON TOP — big hero + switch strip lead the expanded view,
-    // then the form fields. AI buttons stay at the bottom.
+    // v1099: two-column on wide screens — DETAILS LEFT, PHOTO RIGHT; stacks on
+    // phones with the photo on top. Photo is source-first (so it leads the phone
+    // stack) and CSS `order` moves details to the left on desktop.
     var body = '<div class="q-item-body" style="margin-top:12px;' + (expanded ? '' : 'display:none;') + '">'
-      + QuotesPage._bodyPhotoAreaHtml(photos, index)
+      + '<div class="q-body-grid">'
+      + '<div class="q-body-right">' + QuotesPage._bodyPhotoAreaHtml(photos, index) + '</div>'
+      + '<div class="q-body-left">'
       // Row 1: Service (full width, dropdown)
       + '<div class="form-group" style="margin:0 0 8px;"><label style="font-size:11px;font-weight:600;">Service</label>'
       +   '<input class="q-item-service" list="q-svc-datalist" value="' + UI.esc(item.service || '') + '" placeholder="Type or pick…" onchange="QuotesPage._onServiceChange(this)" oninput="QuotesPage._syncSummary(this)" style="font-size:13px;width:100%;box-sizing:border-box;">'
@@ -1285,6 +1295,8 @@ var QuotesPage = {
       +     '<button type="button" onclick="QuotesPage._collapseRow(this)" style="padding:8px 14px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">✓ Done</button>'
       +   '</div>'
       + '</div>'  // close Photo & AI wrapper
+      + '</div>'  // close .q-body-left
+      + '</div>'  // close .q-body-grid
       + '</div>'; // close .q-item-body
 
     // v780: round-trip material tagging — when the row is rendered from a
@@ -3202,8 +3214,9 @@ var QuotesPage = {
       if (newAreaHtml) { var a = document.createElement('div'); a.innerHTML = newAreaHtml; oldArea.replaceWith(a.firstChild); }
       else oldArea.remove();
     } else if (newAreaHtml) {
+      var right = body.querySelector('.q-body-right') || body;
       var a2 = document.createElement('div'); a2.innerHTML = newAreaHtml;
-      body.insertBefore(a2.firstChild, body.firstChild);
+      right.insertBefore(a2.firstChild, right.firstChild);
     }
   },
 

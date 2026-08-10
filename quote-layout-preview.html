@@ -20,6 +20,9 @@
   .q-thumbs-m{display:flex;align-items:center}
   @media(min-width:640px){.q-thumbs-d{display:flex;gap:6px;align-items:center}.q-thumbs-m{display:none}}
   .q-item-wrap.q-open .q-collapsed-thumbs{display:none}
+  .q-body-grid{display:block}
+  .q-body-right{margin-bottom:6px}
+  @media(min-width:640px){.q-body-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}.q-body-left{order:1}.q-body-right{order:2;margin-bottom:0}}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center;}
   .actions button,.actions label{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;}
@@ -32,7 +35,7 @@
 <h3>Collapsed — line with one photo</h3>
 <div class="q-item-wrap" id="B"></div>
 
-<h3>Expanded — photos on TOP, details below · tap a strip photo to enlarge</h3>
+<h3>Expanded — details LEFT, photo RIGHT (desktop) · stacks photo-on-top on phone · tap a strip photo to enlarge</h3>
 <div class="q-item-wrap q-open" id="C"></div>
 
 <script>
@@ -75,8 +78,9 @@ document.getElementById('A').innerHTML=header('Remove 29" DBH oak leaning toward
 document.getElementById('B').innerHTML=header('Deadwood prune along driveway','$1,800.00',[P[2]]).replace('▾','›');
 
 // Expanded (q-open → collapsed thumbs hidden; photos on top of body)
-var formBody='<div class="q-item-body" style="margin-top:12px;">'
-  + bodyPhotoAreaHtml(many)
+var formBody='<div class="q-item-body" style="margin-top:12px;"><div class="q-body-grid">'
+  + '<div class="q-body-right">' + bodyPhotoAreaHtml(many) + '</div>'
+  + '<div class="q-body-left">'
   + '<div class="fg"><label>Service</label><input value="Removal"></div>'
   + '<div class="grid2"><div class="fg"><label>Species</label><input value="White Oak"></div><div class="fg"><label>Location</label><input value="back, toward wires"></div></div>'
   + '<div class="fg"><label>Description</label><input value=\'Remove 29" DBH oak leaning toward wires\'></div>'
@@ -86,7 +90,7 @@ var formBody='<div class="q-item-body" style="margin-top:12px;">'
   + '<button style="color:var(--red);border-color:var(--red);">🗑 Delete</button>'
   + '<button style="background:var(--green-dark);color:#fff;border:none;margin-left:auto;">✓ Done</button></div>'
   + '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);"><div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;">Photo &amp; AI</div><div class="actions" style="margin-top:0;"><button>📷 Add Photos</button><button style="color:var(--accent);border-color:var(--green-light);">🤖 Run AI</button><button style="color:#15803d;border-color:#bbf7d0;">🌿 2nd</button></div></div>'
-  + '</div>';
+  + '</div></div>';
 document.getElementById('C').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many)+formBody;
 </script>
 </body></html>
