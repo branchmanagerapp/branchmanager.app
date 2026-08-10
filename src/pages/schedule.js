@@ -888,8 +888,8 @@ var SchedulePage = {
     var key = r.stage === 2 ? 'followup2SnoozedTo' : 'followupSnoozedTo';
     var patch = {};
     patch[key] = toDateStr + 'T12:00:00.000Z';
-    if (r.kind === 'quote') DB.quotes.update(r.id, patch);
-    else DB.invoices.update(r.id, patch);
+    if (r.kind === 'quote') DB.quotes.update(r.id, patch, { force: true });
+    else DB.invoices.update(r.id, patch, { force: true });
     window._bmRemindersCacheKey = null;
     UI.toast('Reminder moved to ' + toDateStr);
     setTimeout(function() { loadPage('schedule'); }, 250);
@@ -976,7 +976,7 @@ var SchedulePage = {
     var jobId = SchedulePage._dragJobId;
     if (!jobId) return;
     SchedulePage._flashDrop(el);
-    DB.jobs.update(jobId, { scheduledDate: dateStr });
+    DB.jobs.update(jobId, { scheduledDate: dateStr }, { force: true });
     UI.toast('Job scheduled to ' + dateStr);
     SchedulePage._dragJobId = null;
     setTimeout(function() { loadPage('schedule'); }, 300);
@@ -996,7 +996,7 @@ var SchedulePage = {
     var jobId = SchedulePage._dragJobId;
     if (!jobId) return;
     SchedulePage._flashDrop(el);
-    DB.jobs.update(jobId, { scheduledDate: null, startTime: null });
+    DB.jobs.update(jobId, { scheduledDate: null, startTime: null }, { force: true });
     UI.toast('Job unscheduled ✓');
     SchedulePage._dragJobId = null;
     setTimeout(function() { loadPage('schedule'); }, 300);
@@ -1011,7 +1011,7 @@ var SchedulePage = {
     var startTime = (hour < 10 ? '0' : '') + hour + ':00';
     var displayHour = hour > 12 ? hour - 12 : hour;
     var ampm = hour >= 12 ? 'PM' : 'AM';
-    DB.jobs.update(jobId, { scheduledDate: dateStr, startTime: startTime });
+    DB.jobs.update(jobId, { scheduledDate: dateStr, startTime: startTime }, { force: true });
     UI.toast('Job scheduled to ' + dateStr + ' at ' + displayHour + ':00 ' + ampm);
     SchedulePage._dragJobId = null;
     setTimeout(function() { loadPage('schedule'); }, 300);

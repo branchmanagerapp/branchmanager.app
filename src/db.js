@@ -685,7 +685,12 @@ var DB = (function() {
     // v891: was _pushToCloud(key, all[idx], 'update') — full-row upsert that
     // clobbered any field local was stale on (Quote #513 status bug). Now
     // sends just the diff via PATCH-by-id with updated_at precondition.
-    _pushUpdateToCloud(key, id, changes, preUpdatedAt, opts);
+    // opts.force = a deliberate user action (e.g. drag-drop reschedule) that
+    // must WIN over a concurrent/agent edit — skip the updated_at precondition
+    // so the PATCH lands by id instead of 0-rowing when local mtime is stale
+    // (the "drag a job, it snaps back" bug: agent-touched rows had newer cloud
+    // mtime, so every reschedule failed the precondition and reverted).
+    _pushUpdateToCloud(key, id, changes, (opts && opts.force) ? null : preUpdatedAt, opts);
     return all[idx];
   }
   // v761: Global tombstones — when you delete a row locally, we record
@@ -799,7 +804,7 @@ var DB = (function() {
     getAll: function() { return getAll(KEYS.clients); },
     getById: function(id) { return getById(KEYS.clients, id); },
     create: function(data) { data.status = data.status || 'lead'; return create(KEYS.clients, data); },
-    update: function(id, data) { return update(KEYS.clients, id, data); },
+    update: function(id, data, opts) { return update(KEYS.clients, id, data, opts); },
     remove: function(id) { remove(KEYS.clients, id); },
     search: function(q) { return search(KEYS.clients, q); },
     count: function(filterFn) { return count(KEYS.clients, filterFn); },
@@ -812,7 +817,7 @@ var DB = (function() {
     getAll: function() { return getAll(KEYS.requests); },
     getById: function(id) { return getById(KEYS.requests, id); },
     create: function(data) { data.status = data.status || 'new'; _resolveClientId(data); return create(KEYS.requests, data); },
-    update: function(id, data) { return update(KEYS.requests, id, data); },
+    update: function(id, data, opts) { return update(KEYS.requests, id, data, opts); },
     remove: function(id) { remove(KEYS.requests, id); },
     search: function(q) { return search(KEYS.requests, q); },
     count: function(filterFn) { return count(KEYS.requests, filterFn); },
@@ -866,7 +871,7 @@ var DB = (function() {
       _resolveClientId(data);
       return create(KEYS.quotes, data);
     },
-    update: function(id, data) { return update(KEYS.quotes, id, data); },
+    update: function(id, data, opts) { return update(KEYS.quotes, id, data, opts); },
     remove: function(id) { remove(KEYS.quotes, id); },
     search: function(q) { return search(KEYS.quotes, q); },
     count: function(filterFn) { return count(KEYS.quotes, filterFn); }
@@ -906,7 +911,7 @@ var DB = (function() {
       }
       return row;
     },
-    update: function(id, data) { return update(KEYS.jobs, id, data); },
+    update: function(id, data, opts) { return update(KEYS.jobs, id, data, opts); },
     remove: function(id) { remove(KEYS.jobs, id); },
     search: function(q) { return search(KEYS.jobs, q); },
     count: function(filterFn) { return count(KEYS.jobs, filterFn); },
@@ -968,7 +973,7 @@ var DB = (function() {
       }
       return row;
     },
-    update: function(id, data) { return update(KEYS.invoices, id, data); },
+    update: function(id, data, opts) { return update(KEYS.invoices, id, data, opts); },
     remove: function(id) { remove(KEYS.invoices, id); },
     search: function(q) { return search(KEYS.invoices, q); },
     count: function(filterFn) { return count(KEYS.invoices, filterFn); },
@@ -1008,7 +1013,7 @@ var DB = (function() {
   var services = {
     getAll: function() { return getAll(KEYS.services); },
     create: function(data) { return create(KEYS.services, data); },
-    update: function(id, data) { return update(KEYS.services, id, data); },
+    update: function(id, data, opts) { return update(KEYS.services, id, data, opts); },
     remove: function(id) { remove(KEYS.services, id); },
     seed: function() {
       // v1056: HARD-GATE seeding. This one-shot starter catalog was re-running
@@ -1106,7 +1111,7 @@ var DB = (function() {
   var timeEntries = {
     getAll: function() { return getAll(KEYS.timeEntries); },
     create: function(data) { return create(KEYS.timeEntries, data); },
-    update: function(id, data) { return update(KEYS.timeEntries, id, data); },
+    update: function(id, data, opts) { return update(KEYS.timeEntries, id, data, opts); },
     getByJob: function(jobId) { return getAll(KEYS.timeEntries).filter(function(t) { return t.jobId === jobId; }); },
     getByUser: function(userId, date) {
       return getAll(KEYS.timeEntries).filter(function(t) {
@@ -1215,7 +1220,7 @@ var DB = (function() {
     getAll: function() { return getAll(KEYS.team || 'bm-team'); },
     getById: function(id) { return getAll(KEYS.team || 'bm-team').find(function(m){ return m.id === id; }) || null; },
     create: function(data) { return create(KEYS.team || 'bm-team', data); },
-    update: function(id, data) { return update(KEYS.team || 'bm-team', id, data); },
+    update: function(id, data, opts) { return update(KEYS.team || 'bm-team', id, data, opts); },
     remove: function(id) { remove(KEYS.team || 'bm-team', id); }
   };
 
