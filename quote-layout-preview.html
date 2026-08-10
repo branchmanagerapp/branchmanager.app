@@ -32,6 +32,9 @@
 <h3>Collapsed — line with several photos</h3>
 <div class="q-item-wrap" id="A"></div>
 
+<h3>Expanded — NO photo yet (just "Add")</h3>
+<div class="q-item-wrap q-open" id="D"></div>
+
 <h3>Collapsed — line with one photo</h3>
 <div class="q-item-wrap" id="B"></div>
 
@@ -77,20 +80,31 @@ var many=[P[0],P[1],P[2],P[3],P[4]];
 document.getElementById('A').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many).replace('▾','›');
 document.getElementById('B').innerHTML=header('Deadwood prune along driveway','$1,800.00',[P[2]]).replace('▾','›');
 
-// Expanded — RIGHT col: photo + photo tools + optional; LEFT col: tight details
-var rightCol='<div class="q-body-right">'
-  + bodyPhotoAreaHtml(many)
-  + '<div class="actions" style="margin-top:10px;"><button>📷 Add Photos</button><button style="color:var(--accent);border-color:var(--green-light);">🤖 Run AI</button><button style="color:#15803d;border-color:#bbf7d0;">🌿 2nd</button></div>'
-  + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:600;cursor:pointer;"><input type="checkbox" style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on <span style="font-weight:400;color:var(--text-light);font-size:11px;">— customer picks</span></label>'
-  + '</div>';
-var leftCol='<div class="q-body-left">'
+// Photo tools: just "Add" when empty; AI + 2nd appear once a photo exists.
+function toolsHtml(hasPhoto){
+  var addLabel = hasPhoto ? '📷 Add' : '📷 Add photo';
+  var t='<div class="actions" style="margin-top:10px;"><button>'+addLabel+'</button>';
+  if(hasPhoto) t+='<button style="color:var(--accent);border-color:var(--green-light);">🤖 Run AI</button><button style="color:#15803d;border-color:#bbf7d0;">🌿 2nd</button>';
+  return t+'</div>';
+}
+function rightCol(photos){
+  return '<div class="q-body-right">'
+    + (photos.length?bodyPhotoAreaHtml(photos):'')
+    + toolsHtml(photos.length>0)
+    + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:600;cursor:pointer;"><input type="checkbox" style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on <span style="font-weight:400;color:var(--text-light);font-size:11px;">— customer picks</span></label>'
+    + '</div>';
+}
+function leftCol(){
+  return '<div class="q-body-left">'
   + '<div class="fg"><label>Service</label><input value="Removal"></div>'
   + '<div class="grid2"><div class="fg"><label>Species</label><input value="White Oak"></div><div class="fg"><label>Location</label><input value="back, toward wires"></div></div>'
   + '<div class="fg"><label>Description</label><input value=\'Remove 29" DBH oak leaning toward wires\'></div>'
   + '<div class="grid2" style="grid-template-columns:64px 1fr auto;align-items:end;"><div class="fg" style="margin-bottom:0;"><label>Qty</label><input value="1" style="text-align:center;"></div><div class="fg" style="margin-bottom:0;"><label>Rate ($)</label><input value="2900"></div><div style="text-align:right;font-size:11px;color:var(--text-light);">Amount<br><b style="color:var(--green-dark);font-size:16px;">$2,900.00</b></div></div>'
   + '<div style="display:flex;gap:8px;margin-top:14px;align-items:center;"><button style="color:var(--red);border:1px solid var(--red);background:#fff;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;">🗑 Delete</button><button style="background:var(--green-dark);color:#fff;border:none;margin-left:auto;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;">✓ Done</button></div>'
   + '</div>';
-var formBody='<div class="q-item-body" style="margin-top:12px;"><div class="q-body-grid">'+rightCol+leftCol+'</div></div>';
-document.getElementById('C').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many)+formBody;
+}
+function expanded(photos){ return '<div class="q-item-body" style="margin-top:12px;"><div class="q-body-grid">'+rightCol(photos)+leftCol()+'</div></div>'; }
+document.getElementById('C').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many)+expanded(many);
+document.getElementById('D').innerHTML=header('New line item — fill below','$0.00',[])+expanded([]);
 </script>
 </body></html>
