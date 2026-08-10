@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Shop &amp; Fridge — Clean &amp; Stocked</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--g:#1a3c12;--g2:#2e6b1f;--bg:#f4f5f2;--card:#fff;--ink:#1a2118;--dim:#5b6b57;--line:#e2e6dd;--amber:#b45309}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px 70px}
+header{background:linear-gradient(160deg,#245018,#12300b);color:#fff;border-radius:0 0 16px 16px;padding:24px 18px 22px;margin:0 -14px 18px}
+header h1{font-size:22px;font-weight:800;line-height:1.2}
+header p{font-size:14px;color:#cfe3c4;margin-top:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--g2);margin-bottom:10px}
+h3{font-size:15px;font-weight:800;margin:14px 0 6px}
+p,li{font-size:14.5px;color:var(--ink)}
+.dim{color:var(--dim)}
+ul{margin:6px 0 0 18px}li{margin-bottom:5px}
+.why li{color:var(--dim)}
+ol.works{counter-reset:w;list-style:none;margin:0}
+ol.works li{position:relative;padding:8px 0 8px 34px;border-top:1px solid var(--line)}
+ol.works li:first-child{border-top:none}
+ol.works li::before{counter-increment:w;content:counter(w);position:absolute;left:0;top:8px;width:24px;height:24px;background:var(--g);color:#fff;border-radius:50%;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
+ol.works b{color:var(--ink)}
+.chk{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+.chk:first-of-type{border-top:none}
+.chk input{width:20px;height:20px;margin-top:1px;accent-color:var(--g);flex:none}
+.chk span{font-size:14.5px}
+.chk input:checked + span{color:var(--dim);text-decoration:line-through}
+.steward{background:#eef6e8;border:1px solid #cfe3c4;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.steward b{color:var(--g)}
+.restock textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical}
+.reset{background:none;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--dim);cursor:pointer;margin-top:8px}
+footer{text-align:center;font-size:12px;color:var(--dim);margin-top:20px;line-height:1.7}
+.today{font-size:12px;color:var(--dim);margin-top:4px}
+</style></head><body>
+<div class="wrap">
+<header>
+  <h1>🧹 Shop &amp; Fridge — Clean &amp; Stocked</h1>
+  <p>A simple system for keeping the shop, break area, and fridge handled — one that actually sticks with a busy crew.</p>
+</header>
+
+<div class="card why">
+  <h2>Why it usually falls apart</h2>
+  <ul>
+    <li><b style="color:var(--ink)">"Everyone's job = nobody's job."</b> A shared space with no single owner gets ignored.</li>
+    <li>Vague asks ("keep it clean") don't get done. <b style="color:var(--ink)">Specific 60-second tasks</b> do.</li>
+    <li>No visibility = no accountability. If no one sees who did it, it slides.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>What actually works</h2>
+  <ol class="works">
+    <li><b>One owner at a time.</b> A rotating weekly <b>Shop Steward</b> — that week, the shop/fridge is their buck to stop. Rotation posted so it's fair.</li>
+    <li><b>Tiny, specific tasks.</b> A checklist of one-minute items, not "clean up." Anyone can finish the list in 5 minutes.</li>
+    <li><b>Tie it to clock-out.</b> The day's list gets done <b>before anyone leaves</b> — same as gear gets put away. (Can hang off Branch Manager clock-out.)</li>
+    <li><b>Make it visible.</b> A shared checklist everyone can see — done or not done, no ambiguity.</li>
+    <li><b>Restock is a running list.</b> Anyone adds "we're low on ___"; the steward refills it. Nothing runs out by surprise.</li>
+    <li><b>Reset weekly, reward lightly.</b> Clean week → coffee/lunch is on Doug. Cheap, and it keeps it a team thing, not a nag.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>The Second Nature plan</h2>
+  <div class="steward">
+    <b>This week's Shop Steward:</b> ______________ &nbsp;(rotates Doug → Catherine → Dave → repeat). Owns the fridge, break area, and shop tidy for the week.
+  </div>
+
+  <h3>Daily close-out — before clock-out</h3>
+  <div id="daily"></div>
+  <div class="today" id="daily-date"></div>
+  <button class="reset" onclick="resetDaily()">Reset for a new day</button>
+
+  <h3>Weekly — the steward's jobs</h3>
+  <div id="weekly"></div>
+
+  <h3>Restock list — anyone add what we're low on</h3>
+  <div class="restock">
+    <textarea id="restock" placeholder="Coffee, water, paper towels, TP, gloves, first-aid, trash bags…" oninput="saveRestock()"></textarea>
+    <div class="dim" style="font-size:12px;margin-top:5px;">Steward buys/refills these, then clears the line.</div>
+  </div>
+</div>
+
+<footer>
+  Second Nature Tree · keep it simple, keep it done.<br>
+  Checkboxes + list save on this device. Daily list clears when you tap "Reset for a new day."
+</footer>
+</div>
+<script>
+  var DAILY = [
+    'Trash out · chip &amp; debris bin emptied',
+    'Break table + counters wiped down',
+    'Fridge: toss old/spoiled food, wipe any spills',
+    'Coffee area reset · dishes done',
+    'Consumables checked (coffee, water, TP, paper towels, gloves)',
+    'Floor quick-swept · nothing left out'
+  ];
+  var WEEKLY = [
+    'Deep-wipe the fridge (shelves + door)',
+    'Sweep &amp; mop the shop floor',
+    'Restock everything on the list below',
+    'Wipe down the bathroom',
+    'Break down &amp; take out recycling/cardboard'
+  ];
+  function render(id, items, key){
+    var el=document.getElementById(id); var saved={};
+    try{ saved=JSON.parse(localStorage.getItem(key)||'{}'); }catch(e){}
+    el.innerHTML=items.map(function(t,i){
+      var c=saved[i]?' checked':'';
+      return '<label class="chk"><input type="checkbox" data-k="'+key+'" data-i="'+i+'"'+c+' onchange="saveChk(this)"><span>'+t+'</span></label>';
+    }).join('');
+  }
+  function saveChk(cb){
+    var key=cb.getAttribute('data-k'); var s={};
+    try{ s=JSON.parse(localStorage.getItem(key)||'{}'); }catch(e){}
+    s[cb.getAttribute('data-i')]=cb.checked; localStorage.setItem(key,JSON.stringify(s));
+  }
+  function resetDaily(){ localStorage.removeItem('bm-clean-daily'); render('daily',DAILY,'bm-clean-daily'); stamp(); }
+  function saveRestock(){ localStorage.setItem('bm-clean-restock', document.getElementById('restock').value); }
+  function stamp(){ document.getElementById('daily-date').textContent='List for: '+new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}); }
+  render('daily',DAILY,'bm-clean-daily');
+  render('weekly',WEEKLY,'bm-clean-weekly');
+  try{ document.getElementById('restock').value=localStorage.getItem('bm-clean-restock')||''; }catch(e){}
+  stamp();
+</script>
+</body></html>
