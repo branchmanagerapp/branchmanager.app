@@ -255,7 +255,11 @@ var Geofence = {
       //   - kill switch bm-late-text-disabled set
       var lateKey = 'bm-late-text-' + j.id;
       if (
-        minutesUntil < -15
+        false // v1102: HARD-DISABLED. This autonomous customer/staff SMS violated
+              // Doug's never-auto-send rule and misfired Aug 9 2026 (texted Michelle
+              // + Catherine, not the job's customer). Do NOT re-enable as an auto-send
+              // — rebuild as a DRAFT into Doug's approval queue first.
+        && minutesUntil < -15
         && minutesUntil > -180  // give up after 3hrs late — too late, call instead
         && !localStorage.getItem(lateKey)
         && localStorage.getItem('bm-late-text-disabled') !== 'true'
