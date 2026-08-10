@@ -735,8 +735,12 @@ var SupabaseDB = {
       // or the system at all"). Even though the activity feed already
       // filters them, the realtime notifier was still firing toast +
       // browser Notification + beep on every missed call. Drop here too.
-      if (c.channel === 'call' && (c.status === 'missed' || c.status === 'no_answer' || c.status === 'hangup' || c.status === 'no-answer')) {
-        return;
+      if (c.channel === 'call') {
+        // Suppress every inbound call that isn't genuinely answered (ringing,
+        // missed, no-answer, hangup, blank). Dialpad logs rings as 'ringing',
+        // which the old missed-set let through → beep/toast on every ring.
+        var _cs = (c.status || '').toLowerCase();
+        if (_cs !== 'completed' && _cs !== 'answered' && _cs !== 'connected') return;
       }
       var labelMap = {
         call: '📞 Inbound call',

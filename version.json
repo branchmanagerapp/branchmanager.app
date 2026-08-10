@@ -1,5 +1,5 @@
 {
-  "version": 1107,
+  "version": 1108,
   "released": "2026-08-10",
-  "notes": "Drag-drop reschedule now force-saves (bypass stale updated_at precondition that reverted agent-touched jobs)"
+  "notes": "Activity feed + notifier: exclude ALL unanswered inbound calls (Dialpad 'ringing' status was slipping missed calls through)"
 }

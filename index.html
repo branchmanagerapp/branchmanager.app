@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1107; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1108; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1582,7 +1582,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1107.min.js"></script>
+<script defer src="dist/bm.bundle.v1108.min.js"></script>
 
 
 
@@ -3284,8 +3284,14 @@ var NotifCenter = (function() {
   // Edge function (dialpad-webhook) drops new ones at ingest; this filter
   // is defense-in-depth for any historical rows already in the table.
   function _isMissedCallRow(c) {
-    return c && c.channel === 'call' &&
-      (c.status === 'missed' || c.status === 'no-answer' || c.status === 'hangup');
+    if (!c || c.channel !== 'call') return false;
+    // Only a genuinely answered/connected call is real activity. Everything
+    // else — ringing, missed, no-answer, hangup, blank — is a missed call and
+    // must never appear in the feed (Doug's standing rule). Dialpad logs each
+    // inbound ring as status 'ringing', which the old missed-set didn't catch,
+    // so the whole feed filled with "Missed call".
+    var s = (c.status || '').toLowerCase();
+    return s !== 'completed' && s !== 'answered' && s !== 'connected';
   }
 
   function _loadComms() {
