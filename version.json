@@ -1,5 +1,5 @@
 {
-  "version": 1100,
+  "version": 1101,
   "released": "2026-08-09",
-  "notes": "v1100: expanded quote line = details LEFT + photo RIGHT on desktop (stacks photo-on-top on phone)"
+  "notes": "v1101: quote editor — remove Line of Business, description subline on rows, right col = photo+tools+optional, Add-then-AI, tightened details"
 }

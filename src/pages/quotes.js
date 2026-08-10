@@ -795,7 +795,10 @@ var QuotesPage = {
 
     // Property Map moved to Step 2
 
-    html += UI.formField('Line of Business', 'select', 'q-line', q.line_of_business || 'tree', { options: ['tree', 'snow', 'smartlawn', 'firewood'] });
+    // v1101: Line of Business selector removed from the UI (redundant — the whole
+    // account is one business). Value preserved in a hidden field so save() keeps
+    // whatever the quote already had (defaults to 'tree').
+    html += '<input type="hidden" id="q-line" value="' + UI.esc(q.line_of_business || 'tree') + '">';
     html += UI.formField('Internal Notes', 'textarea', 'q-notes', q.notes, { placeholder: 'Notes (not shown to client)' });
 
     // Equipment block (moved to after Internal Notes per user request)
@@ -1213,6 +1216,17 @@ var QuotesPage = {
     imgEl.style.borderColor = 'var(--green-dark)';
   },
 
+  // v1101: photo action row. Empty line = just "Add photo" (no clutter). Once a
+  // photo exists, Run AI + 2nd opinion appear (nothing to analyze before that).
+  _photoToolsHtml: function(hasPhotos) {
+    var add = '<button type="button" onclick="QuotesPage._addMorePhotos(this)" style="padding:8px 12px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📷 ' + (hasPhotos ? 'Add' : 'Add photo') + '</button>';
+    var ai = hasPhotos
+      ? '<button type="button" onclick="QuotesPage._runAIOnRow(this)" style="padding:8px 12px;background:#fff;color:var(--accent);border:1px solid var(--green-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Let AI fill species, DBH, condition, rate">🤖 Run AI</button>'
+        + '<button type="button" onclick="QuotesPage._plantNetSecondOpinion(this)" style="padding:8px 12px;background:#fff;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Verify species with PlantNet (second opinion)">🌿 2nd</button>'
+      : '';
+    return '<div class="q-photo-tools" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">' + add + ai + '</div>';
+  },
+
   _itemRow: function(index, item, services, expanded) {
     QuotesPage._dataListOnce(services);
     QuotesPage._thumbCssOnce();
@@ -1234,6 +1248,7 @@ var QuotesPage = {
     var summary = '<div class="q-item-header" onclick="QuotesPage._toggleItem(this)" style="display:flex;align-items:center;gap:12px;cursor:pointer;">'
       + '<div style="flex:1;min-width:0;">'
       +   '<div class="q-item-summary-title" style="font-size:14px;font-weight:600;color:' + (hasContent ? 'var(--text)' : 'var(--text-light)') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + titleText + '</div>'
+      +   '<div class="q-item-summary-desc" style="font-size:12px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;' + (item.description && UI.esc(item.description) !== titleText ? '' : 'display:none;') + '">' + UI.esc(item.description || '') + '</div>'
       +   '<div class="q-item-summary-total" style="font-size:15px;font-weight:700;color:var(--green-dark);margin-top:3px;">' + UI.money(lineTotal) + '</div>'
       + '</div>'
       + QuotesPage._collapsedThumbsHtml(photos)
@@ -1250,51 +1265,38 @@ var QuotesPage = {
     // stack) and CSS `order` moves details to the left on desktop.
     var body = '<div class="q-item-body" style="margin-top:12px;' + (expanded ? '' : 'display:none;') + '">'
       + '<div class="q-body-grid">'
-      + '<div class="q-body-right">' + QuotesPage._bodyPhotoAreaHtml(photos, index) + '</div>'
+      // RIGHT column: photo (slot) + photo tools + optional add-on. On phones this
+      // stacks on TOP; on desktop it sits to the right of the details.
+      + '<div class="q-body-right">'
+      +   '<div class="q-photo-slot">' + QuotesPage._bodyPhotoAreaHtml(photos, index) + '</div>'
+      +   QuotesPage._photoToolsHtml(photos.length > 0)
+      +   '<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;font-weight:600;color:var(--text);">'
+      +     '<input type="checkbox" class="q-item-optional"' + (item.optional ? ' checked' : '') + ' style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on'
+      +     '<span style="font-weight:400;font-size:11px;color:var(--text-light);">— customer picks</span>'
+      +   '</label>'
+      + '</div>'
+      // LEFT column: the line details, tightened.
       + '<div class="q-body-left">'
-      // Row 1: Service (full width, dropdown)
       + '<div class="form-group" style="margin:0 0 8px;"><label style="font-size:11px;font-weight:600;">Service</label>'
       +   '<input class="q-item-service" list="q-svc-datalist" value="' + UI.esc(item.service || '') + '" placeholder="Type or pick…" onchange="QuotesPage._onServiceChange(this)" oninput="QuotesPage._syncSummary(this)" style="font-size:13px;width:100%;box-sizing:border-box;">'
       + '</div>'
-      // Row 2: Species + Location (half each)
       + '<div class="quote-item-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"' + photoStr + '>'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Species</label><input class="q-item-species" value="' + UI.esc(item.species || '') + '" placeholder="e.g. White Oak" oninput="QuotesPage._syncSummary(this)" style="font-size:13px;"></div>'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Location on property</label><input class="q-item-location" value="' + UI.esc(item.location || '') + '" placeholder="e.g. back yard near pool" oninput="QuotesPage._syncSummary(this)" style="font-size:13px;"></div>'
       + '</div>'
-      // Row 3: Description (full width)
       + '<div class="form-group" style="margin:0 0 8px;"><label style="font-size:11px;font-weight:600;">Description</label><input class="q-item-desc" value="' + UI.esc(item.description || '') + '" placeholder="Work details..." oninput="QuotesPage._syncSummary(this);QuotesPage._updateFormula(this)" style="font-size:13px;width:100%;box-sizing:border-box;"></div>'
-      // Row 4: Qty + Rate + Amount (delete moved to its own labeled row below)
-      + '<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:8px;align-items:end;">'
+      // Qty + Rate + inline Amount (no dead row)
+      + '<div style="display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:end;">'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Qty</label><input type="number" inputmode="numeric" class="q-item-qty" value="' + (item.qty || 1) + '" min="1" oninput="QuotesPage.calcTotal();QuotesPage._syncSummary(this)" style="font-size:13px;text-align:center;"></div>'
       +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Rate ($)</label><input type="number" inputmode="decimal" class="q-item-rate" value="' + (item.rate || '') + '" step="0.01" placeholder="0.00" oninput="QuotesPage.calcTotal();QuotesPage._syncSummary(this)" style="font-size:13px;">'
       +     formulaHint + '</div>'
-      +   '<div class="form-group" style="margin:0;"><label style="font-size:11px;font-weight:600;">Amount</label><div class="q-item-amount" style="font-size:14px;font-weight:700;color:var(--green-dark);padding:8px 0;">' + UI.money(lineTotal) + '</div></div>'
+      +   '<div style="text-align:right;padding-bottom:6px;"><div style="font-size:11px;color:var(--text-light);">Amount</div><div class="q-item-amount" style="font-size:16px;font-weight:700;color:var(--green-dark);">' + UI.money(lineTotal) + '</div></div>'
       + '</div>'
-      // v1095: Optional add-on toggle. When checked, this line shows on the
-      // customer approval page as an opt-in add-on (default unchecked); the
-      // required lines stay locked in and the total updates as they pick.
-      + '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
-      +   '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;font-weight:600;color:var(--text);">'
-      +     '<input type="checkbox" class="q-item-optional"' + (item.optional ? ' checked' : '') + ' style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on'
-      +   '</label>'
-      +   '<span style="font-size:11px;color:var(--text-light);">customer chooses whether to include it</span>'
+      // Footer: Delete (left) + Done (right)
+      + '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;">'
+      +   '<button type="button" title="Delete this line item" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;padding:8px 14px;" onclick="if(confirm(\'Delete this line item?\')){this.closest(\'.q-item-wrap\').remove();QuotesPage.calcTotal();}">🗑 Delete</button>'
+      +   '<button type="button" onclick="QuotesPage._collapseRow(this)" style="padding:8px 18px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">✓ Done</button>'
       + '</div>'
-      // v1039: clearly-LABELED delete (was a bare ✕ that read like "close/collapse"
-      // but actually deleted). Confirm guards against accidental data loss.
-      + '<div style="margin-top:12px;">'
-      +   '<button type="button" title="Delete this line item" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;padding:8px 14px;display:inline-flex;align-items:center;gap:6px;" onclick="if(confirm(\'Delete this line item?\')){this.closest(\'.q-item-wrap\').remove();QuotesPage.calcTotal();}">🗑 Delete line item</button>'
-      + '</div>'
-      // v1099: photos now render on TOP of the body (hero + strip). The Photo &
-      // AI actions stay below for adding/analyzing.
-      + '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);">'
-      +   '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;">Photo &amp; AI</div>'
-      +   '<div style="display:flex;gap:6px;justify-content:flex-start;flex-wrap:wrap;">'
-      +     '<button type="button" onclick="QuotesPage._addMorePhotos(this)" style="padding:8px 12px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">📷 Add Photos</button>'
-      +     '<button type="button" onclick="QuotesPage._runAIOnRow(this)" style="padding:8px 12px;background:#fff;color:var(--accent);border:1px solid var(--green-light);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Let AI fill species, DBH, condition, rate">🤖 Run AI</button>'
-      +     '<button type="button" onclick="QuotesPage._plantNetSecondOpinion(this)" style="padding:8px 12px;background:#fff;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Verify species with PlantNet (second opinion)">🌿 2nd</button>'
-      +     '<button type="button" onclick="QuotesPage._collapseRow(this)" style="padding:8px 14px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">✓ Done</button>'
-      +   '</div>'
-      + '</div>'  // close Photo & AI wrapper
       + '</div>'  // close .q-body-left
       + '</div>'  // close .q-body-grid
       + '</div>'; // close .q-item-body
@@ -1353,6 +1355,12 @@ var QuotesPage = {
       title.style.color = 'var(--text)';
     }
     if (total) total.textContent = UI.money(qty * rate);
+    var descEl = wrap.querySelector('.q-item-summary-desc');
+    if (descEl) {
+      var titleTxt = title ? title.textContent : '';
+      if (desc && desc !== titleTxt) { descEl.textContent = desc; descEl.style.display = ''; }
+      else { descEl.textContent = ''; descEl.style.display = 'none'; }
+    }
   },
 
   // Show a formula hint under the rate input when description mentions DBH inches
@@ -3204,20 +3212,15 @@ var QuotesPage = {
         header.insertBefore(t2.firstChild, chev);
       }
     }
-    // 2) expanded photo area (hero + switch strip) on top of the body
+    // 2) expanded photo area (hero + switch strip) — lives in .q-photo-slot
     var body = wrap.querySelector('.q-item-body');
     if (!body) return;
     var legacy = body.querySelector('.q-photo-grid'); if (legacy) legacy.remove(); // drop any old-style grid
-    var oldArea = body.querySelector('.q-photo-area');
-    var newAreaHtml = QuotesPage._bodyPhotoAreaHtml(urls, wrapIdx);
-    if (oldArea) {
-      if (newAreaHtml) { var a = document.createElement('div'); a.innerHTML = newAreaHtml; oldArea.replaceWith(a.firstChild); }
-      else oldArea.remove();
-    } else if (newAreaHtml) {
-      var right = body.querySelector('.q-body-right') || body;
-      var a2 = document.createElement('div'); a2.innerHTML = newAreaHtml;
-      right.insertBefore(a2.firstChild, right.firstChild);
-    }
+    var slot = body.querySelector('.q-photo-slot');
+    if (slot) { slot.innerHTML = QuotesPage._bodyPhotoAreaHtml(urls, wrapIdx); }
+    // 3) photo tools — Add-only when empty, Add+AI+2nd once a photo exists
+    var tools = body.querySelector('.q-photo-tools');
+    if (tools) { var tw = document.createElement('div'); tw.innerHTML = QuotesPage._photoToolsHtml(urls.length > 0); tools.replaceWith(tw.firstChild); }
   },
 
   // Touch fallback — tap a tray photo to pick a line item from a modal list.

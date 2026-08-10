@@ -70,15 +70,17 @@ function bodyPhotoAreaHtml(photos){
 }
 function swapHero(imgEl){var area=imgEl.closest('.q-photo-area');var h=area.querySelector('.q-hero');if(h)h.src=imgEl.src;area.querySelectorAll('.q-hero-strip img').forEach(function(im){im.style.borderColor='transparent';});imgEl.style.borderColor='var(--green-dark)';}
 
-function header(title,total,photos){
+function header(title,total,photos,desc){
   return '<div class="q-item-header">'
-    +'<div style="flex:1;min-width:0;"><div class="q-item-summary-title">'+title+'</div><div class="q-item-summary-total">'+total+'</div></div>'
+    +'<div style="flex:1;min-width:0;"><div class="q-item-summary-title">'+title+'</div>'
+    + (desc?'<div style="font-size:12px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;">'+desc+'</div>':'')
+    + '<div class="q-item-summary-total">'+total+'</div></div>'
     +collapsedThumbsHtml(photos)
     +'<div class="q-item-chevron">▾</div></div>';
 }
 var many=[P[0],P[1],P[2],P[3],P[4]];
-document.getElementById('A').innerHTML=header('Remove 29" DBH oak leaning toward wires','$2,900.00',many).replace('▾','›');
-document.getElementById('B').innerHTML=header('Deadwood prune along driveway','$1,800.00',[P[2]]).replace('▾','›');
+document.getElementById('A').innerHTML=header('Remove · White Oak · back, toward wires','$2,900.00',many,'29" DBH · hazard, leaning toward wires (DBH×$100)').replace('▾','›');
+document.getElementById('B').innerHTML=header('Pruning · Sugar Maple · driveway','$1,800.00',[P[2]],'Crown clean + deadwood, elevate over drive').replace('▾','›');
 
 // Photo tools: just "Add" when empty; AI + 2nd appear once a photo exists.
 function toolsHtml(hasPhoto){
