@@ -54,11 +54,11 @@ footer{text-align:center;font-size:12px;color:var(--dim);margin-top:20px;line-he
 <div class="card">
   <h2>What actually works</h2>
   <ol class="works">
-    <li><b>One owner at a time.</b> A rotating weekly <b>Shop Steward</b> — that week, the shop/fridge is their buck to stop. Rotation posted so it's fair.</li>
+    <li><b>Whoever works the day owns that day.</b> The person who closes runs that day's checklist before clocking out — no "weekly captain" needed for a crew whose makeup changes day to day. The day always has a name on it.</li>
     <li><b>Tiny, specific tasks.</b> A checklist of one-minute items, not "clean up." Anyone can finish the list in 5 minutes.</li>
     <li><b>Tie it to clock-out.</b> The day's list gets done <b>before anyone leaves</b> — same as gear gets put away. (Can hang off Branch Manager clock-out.)</li>
     <li><b>Make it visible.</b> A shared checklist everyone can see — done or not done, no ambiguity.</li>
-    <li><b>Restock is a running list.</b> Anyone adds "we're low on ___"; the steward refills it. Nothing runs out by surprise.</li>
+    <li><b>Restock is a running list.</b> Anyone adds "we're low on ___"; the next person in refills it. Nothing runs out by surprise.</li>
     <li><b>Reset weekly, reward lightly.</b> Clean week → coffee/lunch is on Doug. Cheap, and it keeps it a team thing, not a nag.</li>
   </ol>
 </div>
@@ -70,7 +70,7 @@ footer{text-align:center;font-size:12px;color:var(--dim);margin-top:20px;line-he
     <li><b>Friendly competition — a "most / least" board.</b> People respond to being seen. A simple weekly leaderboard of who did the most (and least) checklist items turns a chore into a game. (This is the same engine we'd use for the skate-shop clock-in/out app.)</li>
     <li><b>Small, immediate, frequent rewards beat big rare ones.</b> "Clean week → coffee/lunch's on me Friday" lands harder than a vague year-end bonus. Reward the streak, not perfection.</li>
     <li><b>Make it social &amp; visible.</b> A shared, checked-off list creates gentle peer pressure — nobody wants to be the empty column. Private = ignored.</li>
-    <li><b>One named owner.</b> A rotating steward outperforms "everyone's responsible" every time — accountability needs a name on it.</li>
+    <li><b>The day has an owner.</b> Whoever worked that day owns its checklist — "the closer" beats "everyone's responsible." Accountability needs a name on it, even if it's a different name each day.</li>
     <li><b>Streaks &amp; team goals.</b> "10 clean closes in a row = team lunch." Momentum is its own motivator; a broken streak stings just enough.</li>
     <li><b>The broken-windows effect.</b> A clean space stays clean; the first mess invites the next. Reset daily and the standard holds itself.</li>
   </ol>
@@ -79,7 +79,7 @@ footer{text-align:center;font-size:12px;color:var(--dim);margin-top:20px;line-he
 <div class="card">
   <h2>The Second Nature plan</h2>
   <div class="steward">
-    <b>This week's Shop Steward:</b> ______________ &nbsp;(rotates Doug → Catherine → Dave → repeat). Owns the fridge, break area, and shop tidy for the week.
+    <b>Each person owns the day they work.</b> Whoever closes the shop that day runs the daily checklist below before clocking out — fridge, break area, and shop tidy. Different day, different owner; the day always has a name on it.
   </div>
 
   <h3>Daily close-out — before clock-out</h3>
@@ -87,13 +87,13 @@ footer{text-align:center;font-size:12px;color:var(--dim);margin-top:20px;line-he
   <div class="today" id="daily-date"></div>
   <button class="reset" onclick="resetDaily()">Reset for a new day</button>
 
-  <h3>Weekly — the steward's jobs</h3>
+  <h3>Weekly deep-clean — split it / whoever's in Saturday</h3>
   <div id="weekly"></div>
 
   <h3>Restock list — anyone add what we're low on</h3>
   <div class="restock">
     <textarea id="restock" placeholder="Coffee, water, paper towels, TP, gloves, first-aid, trash bags…" oninput="saveRestock()"></textarea>
-    <div class="dim" style="font-size:12px;margin-top:5px;">Steward buys/refills these, then clears the line.</div>
+    <div class="dim" style="font-size:12px;margin-top:5px;">Whoever's doing the weekly deep-clean (or the next person in) buys/refills these, then clears the line.</div>
   </div>
 </div>
 
