@@ -30,7 +30,30 @@ var Auth = {
         if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
           SupabaseDB.client.auth.getSession().then(function(result) {
             if (result.data && result.data.session) {
-              // Supabase session valid — keep going
+              // Supabase session valid — keep going.
+              // v1111 SELF-HEAL: role used to be cached in bm-session and only
+              // re-resolved at a FRESH login, so an owner-side role/tenant change
+              // (e.g. crew_lead -> owner) never showed until the user fully
+              // logged out and back in ("logged in 5 times, still the old view").
+              // Re-read user_tenants on load; if it changed, update the session
+              // and reload ONCE so the new access takes effect automatically.
+              try {
+                var _uid = result.data.session.user && result.data.session.user.id;
+                if (_uid) {
+                  SupabaseDB.client.from('user_tenants').select('tenant_id,role').eq('user_id', _uid).limit(1).then(function(r3) {
+                    var row = r3 && r3.data && r3.data[0];
+                    if (!row) return;
+                    var changed = false;
+                    if (row.role && row.role !== Auth.role) { Auth.role = row.role; if (Auth.user) Auth.user.role = row.role; changed = true; }
+                    if (row.tenant_id && localStorage.getItem('bm-tenant-id') !== row.tenant_id) { try { localStorage.setItem('bm-tenant-id', row.tenant_id); } catch(e){} changed = true; }
+                    if (changed) {
+                      try { localStorage.setItem('bm-session', JSON.stringify(Auth.user)); } catch(e){}
+                      // bm-session now matches the DB, so the reload can't loop.
+                      try { location.reload(); } catch(e){}
+                    }
+                  }).catch(function(){});
+                }
+              } catch(e) {}
               return;
             }
             // No active Supabase session. BM is designed to tolerate this for
