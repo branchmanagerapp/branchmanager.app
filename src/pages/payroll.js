@@ -310,6 +310,7 @@ var PayrollPage = {
       + '<button onclick="PayrollPage.exportWeek(\'' + weekStart + '\')" class="btn btn-outline" style="font-size:12px;">📥 Export CSV</button>'
       + '<button onclick="TeamPage.showForm()" class="btn btn-outline" style="font-size:12px;">+ Add Crew</button>'
       + '<button onclick="window.open(\'onboarding/\',\'_blank\')" class="btn btn-outline" style="font-size:12px;">🎓 Onboarding</button>'
+      + '<button onclick="window.open(\'payroll-quarterly-guide-3a7f.html\',\'_blank\')" class="btn btn-outline" style="font-size:12px;">📋 How to file quarterly</button>'
       + '</div>';
 
     // ── Week Grid ──

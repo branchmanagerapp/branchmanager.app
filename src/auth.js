@@ -371,8 +371,18 @@ var Auth = {
           if (_ut && _ut.data && _ut.data[0]) { _role = _ut.data[0].role || _role; _tid = _ut.data[0].tenant_id; }
         } catch (e) {}
         try {
-          var _tm = await SupabaseDB.client.from('team_members').select('name').ilike('email', data.user.email).limit(1);
-          if (_tm && _tm.data && _tm.data[0] && _tm.data[0].name) _name = _tm.data[0].name;
+          var _tm = await SupabaseDB.client.from('team_members').select('name,tenant_id,role').ilike('email', data.user.email).limit(1);
+          if (_tm && _tm.data && _tm.data[0]) {
+            var _tm0 = _tm.data[0];
+            if (_tm0.name) _name = _tm0.name;
+            // v1110 PERMANENT FIX: a rostered employee always belongs to their
+            // team's tenant. If user_tenants had NO row (how crew like Catherine
+            // were set up — roster only), take tenant + real role from the roster
+            // so they are never locked out of their own company's data. RLS-safe:
+            // team_members.tenant_id is the same tenant RLS scopes to; role is the
+            // employee's real role (never escalates to owner).
+            if (!_tid && _tm0.tenant_id) { _tid = _tm0.tenant_id; if (_tm0.role) _role = _tm0.role; }
+          }
         } catch (e) {}
         if (!_name) _name = ((data.user.email || '').split('@')[0] || 'User');
         Auth.user = { email: data.user.email, id: data.user.id, role: _role, name: _name };

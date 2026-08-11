@@ -1,5 +1,5 @@
 {
-  "version": 1109,
-  "released": "2026-08-10",
-  "notes": "SECURITY: resolve real role+name at login (was hardcoded owner) + avatar initials per-user"
+  "version": 1110,
+  "released": "2026-08-11",
+  "notes": "PERMANENT FIX: crew tenant resolution — login falls back to team_members tenant+role when user_tenants has no row (fixes Catherine + any rostered crew seeing empty app after v1109); also payroll quarterly-filing guide link"
 }
