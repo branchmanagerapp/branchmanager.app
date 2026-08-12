@@ -1,5 +1,5 @@
 {
-  "version": 1114,
+  "version": 1115,
   "released": "2026-08-12",
-  "notes": "v1114 AUTO-PIPELINE: customer-signed quotes now auto-stamp approval date + auto-create a job (idempotent by quoteId, was blank+jobless on #514); tax carries through job→invoice at 8.375% default (Workflow.jobToInvoice added subtotal/taxRate/taxAmount); quote-update edge fn stamps approved_at"
+  "notes": "v1115 AUTO-PIPELINE hardening: quoteToJob no longer writes phantom 'source' col (cloud jobs has none) — on a fresh device the auto-convert sweep could create a job before the column set is learned, 400ing the push so the job never reached cloud (the Catherine-can't-see-it failure mode); quote linkage kept via quote_id"
 }

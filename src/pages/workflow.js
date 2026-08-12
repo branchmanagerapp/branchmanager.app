@@ -166,8 +166,12 @@ var Workflow = {
       status: 'scheduled',
       quoteId: quoteId,
       lineItems: quote.lineItems || [],
-      taxRate: quote.taxRate || parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375,
-      source: 'quote'
+      taxRate: quote.taxRate || parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375
+      // NOTE: no `source` field — the cloud `jobs` table has no such column, and
+      // on a fresh device (Catherine's first login) the auto-convert sweep can
+      // create a job BEFORE the first pull learns the column set, so `source`
+      // would 400 the push and the job would never reach the cloud. The quote
+      // linkage is already captured by quoteId → quote_id (a real column).
     });
 
     // Update quote status
