@@ -63,19 +63,21 @@ def main():
         has_auth = u is not None
         has_ut = has_auth and u['id'] in uts
         has_claim = has_auth and bool((u.get('app_metadata') or {}).get('tenant_id'))
-        # Tenant resolves from user_tenants (the RLS source of truth); app_metadata
-        # is a belt-and-suspenders copy. So the hard requirement is auth + a
-        # user_tenants row. Missing tenant_claim is a warning, not a failure.
-        ok = has_auth and has_ut
+        # The JWT tenant claim (what RLS scopes by) comes from EITHER a
+        # user_tenants row OR app_metadata.tenant_id. So a person is provisioned
+        # if they have an auth user AND at least one of those. (Role resolves
+        # from user_tenants, else the team_members roster fallback — v1112.)
+        # NOTE: user_tenants' role CHECK excludes 'sales', so a sales user is
+        # legitimately provisioned via app_metadata.tenant_id + roster role.
+        ok = has_auth and (has_ut or has_claim)
         flag = 'OK ' if ok else 'BROKEN'
         print("  [%s] %-18s auth=%s user_tenants=%s tenant_claim=%s role=%s" % (
             flag, m['name'], 'Y' if has_auth else 'N', 'Y' if has_ut else 'N',
             'Y' if has_claim else 'N', m.get('role')))
-        if ok and not has_claim:
-            print("       (warn: no app_metadata.tenant_id — works via user_tenants, but stamp it for resilience)")
         if not ok:
             problems.append("%s (%s): %s" % (m['name'], em, ", ".join(
-                x for x, present in [("no auth user", has_auth), ("no user_tenants row", has_ut)] if not present)))
+                x for x, present in [("no auth user", has_auth),
+                                     ("no tenant (need a user_tenants row OR app_metadata.tenant_id)", has_ut or has_claim)] if not present)))
     print()
     if problems:
         print("FAIL — %d crew would see an EMPTY app:" % len(problems))
