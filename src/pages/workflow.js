@@ -113,6 +113,44 @@ var Workflow = {
   },
 
   // Convert a quote to a job
+  // v1114: Auto-pipeline. When a CUSTOMER signs a quote, approve.html →
+  // quote-update edge fn writes status='approved' straight to the cloud; that
+  // never passes through QuotesPage.setStatus (which is the owner's manual
+  // path), so nothing ever created the job. Oswald #514 sat "approved" for days
+  // with no job and a BLANK approval date. This sweep closes that gap on the
+  // client: any approved-but-not-converted quote gets (a) its approval date
+  // stamped if missing, and (b) a job auto-created.
+  //
+  // Idempotency is device-independent: we key on an existing job whose
+  // quoteId === this quote's id (jobs sync to cloud), NOT just the local
+  // convertedJobId flag — so two owner devices (Doug + Catherine) can't each
+  // spawn a duplicate job for the same signature. Safe to call on every render.
+  autoConvertApprovedQuotes: function() {
+    if (typeof DB === 'undefined' || !DB.quotes || !DB.jobs) return [];
+    var quotes = DB.quotes.getAll();
+    var jobs = DB.jobs.getAll();
+    var created = [];
+    quotes.forEach(function(q) {
+      if (!q || q.status !== 'approved') return;
+      // Stamp the approval date the moment we see an approved quote missing it
+      // (mirrors the edge-fn approved_at gap so the date shows immediately).
+      if (!q.approvedAt) {
+        q.approvedAt = q.signedAt || new Date().toISOString();
+        DB.quotes.update(q.id, { approvedAt: q.approvedAt });
+      }
+      if (q.convertedJobId) return;
+      // Already has a job linked to this quote? Just reconcile the flag, no new job.
+      var existing = jobs.filter(function(j) { return j && j.quoteId === q.id; })[0];
+      if (existing) {
+        DB.quotes.update(q.id, { status: 'converted', convertedJobId: existing.id });
+        return;
+      }
+      var job = Workflow.quoteToJob(q.id);
+      if (job) created.push({ quote: q, job: job });
+    });
+    return created;
+  },
+
   quoteToJob: function(quoteId) {
     var quote = DB.quotes.getById(quoteId);
     if (!quote) { UI.toast('Quote not found', 'error'); return; }
@@ -154,6 +192,26 @@ var Workflow = {
       || firstItem.description
       || 'Job #' + (job.jobNumber || '');
 
+    // v1114: carry tax through job → invoice. Previously the invoice took only
+    // job.total with NO taxRate/taxAmount/subtotal, so auto-created invoices
+    // showed no tax line (Doug: "I don't see any tax on Oswald's invoice").
+    // Tax defaults ON at the shop rate; job.taxRate (set at quote→job) wins,
+    // else the saved rate, else 8.375%. If the job's total already baked tax in,
+    // we re-derive the subtotal from it so we never double-tax.
+    var _items = job.lineItems || [];
+    var _lineSum = _items.reduce(function(s, li) {
+      return s + (Number(li.total) || Number(li.amount) || Number(li.price) || 0);
+    }, 0);
+    var _taxRate = (job.taxRate !== undefined && job.taxRate !== null)
+      ? Number(job.taxRate)
+      : (parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375);
+    // Subtotal = the pre-tax line sum when we have line items; otherwise treat
+    // job.total as tax-inclusive and back it out so total stays unchanged.
+    var _subtotal = _lineSum > 0 ? _lineSum
+      : Math.round(((Number(job.total) || 0) / (1 + _taxRate / 100)) * 100) / 100;
+    var _taxAmount = Math.round(_subtotal * _taxRate / 100 * 100) / 100;
+    var _invTotal = Math.round((_subtotal + _taxAmount) * 100) / 100;
+
     var invoice = DB.invoices.create({
       clientName: job.clientName,
       clientId: job.clientId || '',
@@ -161,8 +219,11 @@ var Workflow = {
       clientPhone: job.clientPhone || '',
       property: job.property || '',
       subject: derivedSubject,
-      total: job.total || 0,
-      balance: job.total || 0,
+      subtotal: _subtotal,
+      taxRate: _taxRate,
+      taxAmount: _taxAmount,
+      total: _invTotal,
+      balance: _invTotal,
       amountPaid: 0,
       status: 'draft',
       jobId: jobId,

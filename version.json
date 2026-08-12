@@ -1,5 +1,5 @@
 {
-  "version": 1113,
+  "version": 1114,
   "released": "2026-08-12",
-  "notes": "v1113 SECURITY: page-authorization gate in loadPage (non-owner redirected from restricted pages — closes search/palette/deep-link/back-button bypasses); getVisiblePages fails closed for unknown roles"
+  "notes": "v1114 AUTO-PIPELINE: customer-signed quotes now auto-stamp approval date + auto-create a job (idempotent by quoteId, was blank+jobless on #514); tax carries through job→invoice at 8.375% default (Workflow.jobToInvoice added subtotal/taxRate/taxAmount); quote-update edge fn stamps approved_at"
 }

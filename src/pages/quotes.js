@@ -83,6 +83,16 @@ var QuotesPage = {
       self._pendingDetail = null;
       setTimeout(function() { QuotesPage.showDetail(_pid); }, 50);
     }
+    // v1114: convert any customer-signed (approved) quotes into jobs before we
+    // render, so a signature that synced in shows up as a booked job. Idempotent.
+    if (typeof Workflow !== 'undefined' && Workflow.autoConvertApprovedQuotes) {
+      try {
+        var _made = Workflow.autoConvertApprovedQuotes();
+        if (_made && _made.length) {
+          UI.toast('✅ ' + _made.length + ' signed quote' + (_made.length > 1 ? 's' : '') + ' → job' + (_made.length > 1 ? 's' : '') + ' created');
+        }
+      } catch (e) {}
+    }
     var all = DB.quotes.getAll();
     var now7ago = new Date(Date.now() - 7 * 86400000);
 

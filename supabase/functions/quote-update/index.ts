@@ -93,6 +93,7 @@ serve(async (req: Request) => {
 
   if (action === 'approve') {
     patch.status = 'approved';
+    patch.approved_at = now;               // v1114: was never stamped → blank approval date on #514
     patch.signed_name = trunc(body.signed_name, 200);
     patch.signed_at = now;
     patch.signed_ip = serverIp || trunc(body.signed_ip, 64);  // prefer trustworthy server IP

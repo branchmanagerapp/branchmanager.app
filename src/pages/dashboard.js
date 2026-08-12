@@ -204,6 +204,16 @@ var DashboardPage = {
   },
 
   render: function() {
+    // v1114: turn any customer-signed (approved) quotes into jobs on app open,
+    // so a signature that synced overnight is already booked when Doug lands here.
+    if (typeof Workflow !== 'undefined' && Workflow.autoConvertApprovedQuotes) {
+      try {
+        var _made = Workflow.autoConvertApprovedQuotes();
+        if (_made && _made.length) {
+          UI.toast('✅ ' + _made.length + ' signed quote' + (_made.length > 1 ? 's' : '') + ' → job' + (_made.length > 1 ? 's' : '') + ' created');
+        }
+      } catch (e) {}
+    }
     // One-time fix: mark legacy system-migrated completed jobs as already invoiced
     if (!localStorage.getItem('bm-legacy-jobs-fixed')) {
       DB.jobs.getAll().forEach(function(j) {
