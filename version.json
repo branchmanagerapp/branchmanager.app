@@ -1,5 +1,5 @@
 {
-  "version": 1111,
-  "released": "2026-08-11",
-  "notes": "v1111 SELF-HEAL: re-resolve role/tenant from user_tenants on load so access changes (e.g. crew_lead->owner) take effect on reload, not a fresh re-login"
+  "version": 1112,
+  "released": "2026-08-12",
+  "notes": "v1112 SECURITY: recovery/invite/magiclink login no longer hardcodes owner (resolve real role from user_tenants; only new signup=owner); session default fails closed to crew_member"
 }

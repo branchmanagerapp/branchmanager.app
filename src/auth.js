@@ -25,7 +25,11 @@ var Auth = {
           return;
         }
         Auth.user = parsed;
-        Auth.role = Auth.user.role || 'owner';
+        // v1112: fail CLOSED. A restored session with no role must NOT default to
+        // owner (that's how a stale/blank session could hand out owner access).
+        // The self-heal below re-reads the real role from user_tenants and
+        // corrects it on load anyway.
+        Auth.role = Auth.user.role || 'crew_member';
         // Async validate with Supabase (non-blocking)
         if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
           SupabaseDB.client.auth.getSession().then(function(result) {
@@ -308,10 +312,30 @@ var Auth = {
     var coName = pendCo
       || (sess.user.user_metadata && sess.user.user_metadata.business_name)
       || 'Owner';
-    Auth.user = { email: sess.user.email, id: sess.user.id, role: 'owner', name: coName };
-    Auth.role = 'owner';
+    // v1112 SECURITY: do NOT hardcode owner for every email-confirm / recovery /
+    // invite / magiclink return. That promoted ANY crew member who reset their
+    // password (or opened an invite) to full owner — Settings, Books, Payroll,
+    // Stripe keys. Resolve the REAL role from user_tenants; only a brand-new
+    // TENANT SIGNUP (no existing mapping) legitimately becomes owner.
+    var _role = 'crew_member', _tid = null;
+    try {
+      var _ut = await SupabaseDB.client.from('user_tenants').select('tenant_id,role').eq('user_id', sess.user.id).limit(1);
+      if (_ut && _ut.data && _ut.data[0]) { _role = _ut.data[0].role || _role; _tid = _ut.data[0].tenant_id; }
+    } catch (e) {}
+    // Fallback for a rostered crew member with no user_tenants row yet.
+    if (!_tid) {
+      try {
+        var _tm = await SupabaseDB.client.from('team_members').select('tenant_id,role').ilike('email', sess.user.email).limit(1);
+        if (_tm && _tm.data && _tm.data[0] && _tm.data[0].tenant_id) { _tid = _tm.data[0].tenant_id; if (_tm.data[0].role) _role = _tm.data[0].role; }
+      } catch (e) {}
+    }
+    var _isNewSignup = /[#&]type=signup/.test(hash) || !!pendCo;
+    if (!_tid && _isNewSignup) { _role = 'owner'; }  // provisioning a brand-new tenant
+    Auth.user = { email: sess.user.email, id: sess.user.id, role: _role, name: coName };
+    Auth.role = _role;
     try {
       localStorage.setItem('bm-session', JSON.stringify(Auth.user));
+      if (_tid) localStorage.setItem('bm-tenant-id', _tid);
       if (coName && coName !== 'Owner') localStorage.setItem('bm-co-name', coName);
     } catch (e) {}
 
