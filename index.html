@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1112; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1113; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1582,7 +1582,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1112.min.js"></script>
+<script defer src="dist/bm.bundle.v1113.min.js"></script>
 
 
 
@@ -2391,6 +2391,22 @@ function loadPage(page, opts) {
     if (typeof SocialBranch !== 'undefined') SocialBranch._tab = 'leads';
     page = 'socialbranch';
   }
+  // v1113 SECURITY: page authorization enforced HERE — loadPage is the single
+  // funnel every route passes through (sidebar, mobile nav, search, ⌘K, number
+  // keys, ?rec= deep links, back button, dashboard cards). Owner bypasses
+  // (sees everything). A non-owner requesting a page outside their role is
+  // sent to their own default instead of rendering a restricted screen
+  // (Invoices, Settings, Books, Payroll…). Closes the ~12 nav-bypass leaks.
+  try {
+    if (typeof Auth !== 'undefined' && Auth.user && typeof Auth.isOwner === 'function' && !Auth.isOwner()
+        && typeof Auth.canAccess === 'function' && !Auth.canAccess(page)) {
+      var _allowed = (typeof Auth.getVisiblePages === 'function') ? Auth.getVisiblePages() : ['dashboard'];
+      var _home = _allowed[0] || 'dashboard';
+      try { if (typeof UI !== 'undefined' && UI.toast) UI.toast('That page isn’t available for your access level', 'error'); } catch (e) {}
+      if (page !== _home) loadPage(_home);
+      return;
+    }
+  } catch (e) {}
   // v663: #weather is its own standalone page (Weather.renderPage — the
   // full hourly forecast). Restored after the v660 OPS redesign accidentally
   // dropped it. The Dispatch map's "🌧 Radar" toggle is a separate layer.

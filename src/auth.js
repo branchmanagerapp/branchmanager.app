@@ -615,7 +615,11 @@ var Auth = {
     if (Auth.role === 'crew_lead') {
       return ['dashboard','dispatch','schedule','clients','jobs','quotes','timesheet','messaging','employeecenter','budget','notifications','expenses'];
     }
-    return all; // owner sees everything
+    if (Auth.role === 'owner') return all; // owner sees everything
+    // v1113: fail CLOSED. Any unrecognized/blank role (e.g. a legacy
+    // team_members 'crew' or user_tenants 'viewer') used to fall through to
+    // `all` = full owner nav. Give it the minimal crew set instead.
+    return ['crewview','dispatch','schedule','timesheet','employeecenter','notifications'];
   },
 
   // Check if current user can see a page
