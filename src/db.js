@@ -270,6 +270,22 @@ var DB = (function() {
     return stripped;
   }
 
+  // v1117: a KNOWN column can still 400 the whole row when it's typed
+  // uuid/date/timestamp and the value is an empty string —
+  // "invalid input syntax for type uuid: ''". _stripUnknownCols can't catch it
+  // (the column exists). This coerces '' → null for id/date/timestamp-shaped
+  // columns (all such columns are nullable; `id` never holds ''). Runs on every
+  // push AND on queue replay, so a payload stuck 400-looping on an empty uuid
+  // (e.g. a quote→job with no client_id) self-heals instead of re-firing the
+  // "Save did NOT reach the cloud" banner forever.
+  function _coerceEmptyTyped(obj) {
+    try {
+      Object.keys(obj).forEach(function(k) {
+        if (obj[k] === '' && /(_id|_at|_date)$/.test(k)) obj[k] = null;
+      });
+    } catch (e) {}
+  }
+
   // Cross-device write reliability — was: fetch().catch(console.warn) which
   // never checked response.ok; an RLS rejection / 4xx / wrong tenant_id =
   // silent loss. Local localStorage shows the row; Supabase never gets it;
@@ -404,6 +420,7 @@ var DB = (function() {
       (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeRow[f]; });
       // v1047: dynamic schema-aware strip (supersedes the static list above).
       _stripUnknownCols(table, snakeRow);
+      _coerceEmptyTyped(snakeRow);  // v1117: '' → null for uuid/date/timestamp cols
 
       // v891 (2026-05-31): use upsert ONLY on create. Full-row upsert on update
       // clobbers any field that the local cache is stale on (the Quote #513
@@ -485,6 +502,7 @@ var DB = (function() {
       (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeChanges[f]; });
       // v1047: dynamic schema-aware strip (supersedes the static list above).
       _stripUnknownCols(table, snakeChanges);
+      _coerceEmptyTyped(snakeChanges);  // v1117: '' → null for uuid/date/timestamp cols
       snakeChanges.updated_at = _now();  // always wins — fresh mtime guaranteed
       // Build URL with id filter; add updated_at precondition if supplied.
       var qs = 'id=eq.' + encodeURIComponent(id);
@@ -617,7 +635,7 @@ var DB = (function() {
       // column and 400 FOREVER on replay (e.g. services.updated_at). Re-run the
       // schema-aware strip against the CURRENT known columns so the replay always
       // matches the live table instead of looping on a stale bad column.
-      try { if (op.payload) _stripUnknownCols(op.table, op.payload); } catch (e) {}
+      try { if (op.payload) { _stripUnknownCols(op.table, op.payload); _coerceEmptyTyped(op.payload); } } catch (e) {}  // v1117: also fix stuck empty-uuid payloads
       var url2 = isUpdate
         ? (url + '/rest/v1/' + op.table + '?id=eq.' + encodeURIComponent(op.id))
         : (url + '/rest/v1/' + op.table + '?on_conflict=id');

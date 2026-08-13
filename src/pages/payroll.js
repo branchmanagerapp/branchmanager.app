@@ -13,6 +13,12 @@ var PayrollPage = {
   _lastRun: null,
 
   // ── Helpers ──
+  // v1117: parse a 'YYYY-MM-DD' at NOON local. new Date('2026-08-10') parses as
+  // UTC midnight → in the evening ET that's still Aug 9 locally, so getDate()
+  // showed the wrong day (grid read "MON 9 … THU 12" for the Aug 10–16 week).
+  _pDate: function(s) {
+    return (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)) ? new Date(s + 'T12:00:00') : new Date(s);
+  },
   _getWeekDates: function(offset) {
     var now = new Date();
     now.setHours(12, 0, 0, 0);   // v1116: noon-anchor so toISOString/tz never rolls the day.
@@ -333,7 +339,7 @@ var PayrollPage = {
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
       + '<button onclick="PayrollPage._weekOffset--;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">← Prev</button>'
       + '<div style="text-align:center;">'
-      + '<div style="font-size:18px;font-weight:800;">Week of ' + new Date(weekStart).toLocaleDateString('en-US', { month:'short', day:'numeric' }) + ' – ' + new Date(weekEnd).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) + '</div>'
+      + '<div style="font-size:18px;font-weight:800;">Week of ' + PayrollPage._pDate(weekStart).toLocaleDateString('en-US', { month:'short', day:'numeric' }) + ' – ' + PayrollPage._pDate(weekEnd).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) + '</div>'
       + (self._weekOffset === 0 ? '<span style="font-size:11px;color:var(--green-dark);font-weight:600;">Current Week</span>' : '<button onclick="PayrollPage._weekOffset=0;loadPage(\'payroll\')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline;">Go to current week</button>')
       + '</div>'
       + '<button onclick="PayrollPage._weekOffset++;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">Next →</button>'
@@ -365,7 +371,7 @@ var PayrollPage = {
     dates.forEach(function(d, i) {
       var isToday = d === today;
       html += '<div style="padding:10px 6px;text-align:center;' + (isToday ? 'background:var(--green-bg);color:var(--green-dark);' : '') + '">'
-        + dayNames[i] + '<br><span style="font-weight:400;font-size:10px;">' + new Date(d).getDate() + '</span></div>';
+        + dayNames[i] + '<br><span style="font-weight:400;font-size:10px;">' + PayrollPage._pDate(d).getDate() + '</span></div>';
     });
     html += '<div style="padding:10px 6px;text-align:center;">Total</div>';
     html += '</div>';
@@ -533,7 +539,7 @@ var PayrollPage = {
       }
       var isToday = date === today;
       rows += '<div onclick="PayrollPage._toggleCell(\'' + cellKey + '\')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #f4f4f4;cursor:pointer;' + (isToday ? 'background:#f0fdf4;' : '') + '">'
-        + '<div style="width:52px;font-size:12px;font-weight:700;color:var(--text-light);">' + dayNames[i] + ' ' + new Date(date).getDate() + '</div>'
+        + '<div style="width:52px;font-size:12px;font-weight:700;color:var(--text-light);">' + dayNames[i] + ' ' + PayrollPage._pDate(date).getDate() + '</div>'
         + '<div style="width:6px;align-self:stretch;border-radius:3px;background:' + barColor + ';"></div>'
         + '<div style="flex:1;font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#bbb') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) + ' h' : '—') + '</div>'
         + (entries.some(function(e) { return e.notes; }) ? '<span style="font-size:11px;">📝</span>' : '')
@@ -663,7 +669,7 @@ var PayrollPage = {
   // ── Day Detail Modal ──
   showDayDetail: function(userId, date) {
     var entries = PayrollPage._getEntriesForDate(userId, date);
-    var dayName = new Date(date).toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+    var dayName = PayrollPage._pDate(date).toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
 
     var html = '<div style="margin-bottom:16px;font-size:14px;color:var(--text-light);">' + dayName + '</div>';
 
@@ -815,11 +821,13 @@ var PayrollPage = {
     PayrollPage._approvals[dayKey] = 'approved';
     delete PayrollPage._approvals[dayKey + '_editedAfter'];
     PayrollPage._saveApprovals();
-    // Derive week_start for cloud row
-    var d = new Date(date);
+    // Derive week_start for cloud row (TZ-safe — was new Date(str)+toISOString,
+    // which in the evening ET filed the approval under the wrong week).
+    var d = PayrollPage._pDate(date);
     var monday = new Date(d);
     monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    var weekStart = monday.toISOString().substring(0, 10);
+    var _p2 = function(n) { return (n < 10 ? '0' : '') + n; };
+    var weekStart = monday.getFullYear() + '-' + _p2(monday.getMonth() + 1) + '-' + _p2(monday.getDate());
     PayrollPage._pushCloudApproval(userId, weekStart, date, 'approved', false);
     UI.closeModal();
     UI.toast('Day approved ✓');
@@ -919,7 +927,7 @@ var PayrollPage = {
     // Last run banner if any payroll_run exists for this week
     html += '<div id="last-run-banner" style="margin-top:12px;"></div>';
 
-    UI.showModal('Payroll Summary — Week of ' + new Date(weekStart).toLocaleDateString(), html, { wide: true,
+    UI.showModal('Payroll Summary — Week of ' + PayrollPage._pDate(weekStart).toLocaleDateString(), html, { wide: true,
       footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
         + ' <button class="btn btn-outline" onclick="PayrollPage.exportACH(\'' + weekStart + '\')">📥 ACH-Ready CSV</button>'
         + ' <button class="btn btn-primary" onclick="PayrollPage.markPaid(\'' + weekStart + '\')">💰 Mark Paid</button>'

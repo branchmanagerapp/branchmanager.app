@@ -1,5 +1,5 @@
 {
-  "version": 1116,
+  "version": 1117,
   "released": "2026-08-12",
-  "notes": "v1116 PAYROLL GPS: fix week off-by-one (evening ET toISOString rolled Monday to the 11th) + replace suggested-clock with per-truck YARD IN/OUT times (F-750/F-550/Ram left & returned to Peekskill HQ), via bm_yard_trips RPC (geofence trips, <15min jitter hidden)"
+  "notes": "v1117 FIX: (1) jobs/quotes 'Save did NOT reach cloud (400)' — coerce empty-string uuid/date/timestamp columns to null on push AND queue replay (self-heals stuck write-queue items looping on client_id=''); (2) payroll grid/title date off-by-one — parse YYYY-MM-DD at noon-local not UTC (grid showed MON 9..THU 12 for the Aug 10-16 week)"
 }
