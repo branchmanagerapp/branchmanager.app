@@ -1,5 +1,5 @@
 {
-  "version": 1119,
+  "version": 1120,
   "released": "2026-08-13",
-  "notes": "Payroll: Add-Hours pre-fills Clock In/Out from the work-truck Bouncie yard times (editable, +/-30 min buffer)"
+  "notes": "Payroll prefill = F-550 out-of-yard window (time on jobs), no buffer; hint shows job time + reminder to add yard time"
 }

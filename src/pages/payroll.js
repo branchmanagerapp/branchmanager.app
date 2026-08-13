@@ -808,24 +808,31 @@ var PayrollPage = {
     var hint = function(t) { var el = document.getElementById('ph-suggest-hint'); if (el) el.innerHTML = t; };
     PayrollPage._yardTrips(date).then(function(trips) {
       if (!trips || !trips.length) { hint('No Bouncie truck movement for this day — enter times manually.'); return; }
-      // Work trucks = F-750 / F-550 (rank <=1); exclude the Ram (commute).
-      var work = trips.filter(function(t) { return PayrollPage._truckRank(t.name, t.model) <= 1 && t.left_yard; });
-      var use = work.length ? work : trips.filter(function(t) { return t.left_yard; });
-      if (!use.length) { hint('No yard trips logged — enter times manually.'); return; }
+      // Prefer the F-550 chip truck (Doug's rule: the 550 leaving/entering the
+      // yard IS the time on jobs). Fall back to F-750, then any non-Ram work
+      // truck. The out-of-yard window (first left → last back) = job time and
+      // is what pre-fills the clock; no buffer (yard prep is separate).
+      var byRank = function(r) { return trips.filter(function(t) { return PayrollPage._truckRank(t.name, t.model) === r && t.left_yard; }); };
+      var f550 = byRank(1), f750 = byRank(0);
+      var use = f550.length ? f550 : (f750.length ? f750 : trips.filter(function(t) { return PayrollPage._truckRank(t.name, t.model) <= 1 && t.left_yard; }));
+      if (!use.length) { hint('No work-truck yard trips — enter times manually.'); return; }
+      var label = f550.length ? 'F-550 chip truck' : (f750.length ? 'F-750' : 'work truck');
       var lefts = use.map(function(t) { return new Date(t.left_yard); }).sort(function(a, b) { return a - b; });
       var backs = use.filter(function(t) { return t.back_yard; }).map(function(t) { return new Date(t.back_yard); }).sort(function(a, b) { return a - b; });
       var pad = function(x) { return (x < 10 ? '0' : '') + x; };
       var hhmm = function(dt) { return pad(dt.getHours()) + ':' + pad(dt.getMinutes()); };
       var et = function(dt) { return dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }); };
-      var inDt = new Date(lefts[0].getTime() - 30 * 60000);
+      // Job time = total minutes the truck is OUT of the yard across all trips.
+      var jobMins = use.reduce(function(s, t) { return s + (t.back_yard ? (new Date(t.back_yard) - new Date(t.left_yard)) / 60000 : 0); }, 0);
+      var inDt = lefts[0];
       var inEl = document.getElementById('ph-in'); if (inEl && !inEl.value) inEl.value = hhmm(inDt);
       var outStr = '';
       if (backs.length) {
-        var outDt = new Date(backs[backs.length - 1].getTime() + 30 * 60000);
+        var outDt = backs[backs.length - 1];
         var outEl = document.getElementById('ph-out'); if (outEl && !outEl.value) outEl.value = hhmm(outDt);
-        outStr = ' – ' + et(outDt);
+        outStr = '–' + et(outDt);
       }
-      hint('🛰 Suggested from truck yard times (' + et(inDt) + outStr + ', ±30 min buffer) — edit if off.');
+      hint('🛰 ' + label + ' out of yard ' + et(inDt) + outStr + ' = ~' + PayrollPage._fmtDur(jobMins) + ' on jobs. Pre-filled as the clock — add yard time if you paid it. Edit if off.');
     }).catch(function() { hint(''); });
   },
 
