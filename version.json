@@ -1,5 +1,5 @@
 {
-  "version": 1118,
-  "released": "2026-08-12",
-  "notes": "v1118 PAYROLL GPS: truck panel moved BELOW the employee grid; each truck is now tap-to-expand → shows its stops with TIME ON SITE (reverse-geocoded to the client's street address) + a maps link, plus yard in/out. New bm_truck_stops RPC (stationary clusters away from yard)."
+  "version": 1119,
+  "released": "2026-08-13",
+  "notes": "Payroll: Add-Hours pre-fills Clock In/Out from the work-truck Bouncie yard times (editable, +/-30 min buffer)"
 }

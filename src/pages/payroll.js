@@ -789,12 +789,44 @@ var PayrollPage = {
       + UI.field('Job', '<select id="ph-job">' + opts + '</select>')
       + UI.field('Clock In', '<input type="time" id="ph-in">')
       + UI.field('Clock Out', '<input type="time" id="ph-out">')
+      + '<div id="ph-suggest-hint" style="font-size:11px;color:var(--text-light);margin:-6px 0 10px;"></div>'
       + UI.field('Notes', '<textarea id="ph-notes" placeholder="Optional notes..."></textarea>');
 
     UI.showModal('Add Hours — ' + UI.esc(userId), html, {
       footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
         + ' <button class="btn btn-primary" onclick="PayrollPage._saveHours(\'' + userId + '\',\'' + date + '\')">Save</button>'
     });
+    // v1119: pre-fill Clock In/Out with the Bouncie work-truck yard times for
+    // this date (editable). Hours start at the yard, so ±30 min buffer around
+    // the truck's first-out / last-back; Ram (commute) excluded.
+    PayrollPage._prefillSuggested(date);
+  },
+
+  // Pre-fill the Add-Hours time inputs from the work truck's yard crossings.
+  // Only fills blank inputs; the user can override. Non-blocking (async RPC).
+  _prefillSuggested: function(date) {
+    var hint = function(t) { var el = document.getElementById('ph-suggest-hint'); if (el) el.innerHTML = t; };
+    PayrollPage._yardTrips(date).then(function(trips) {
+      if (!trips || !trips.length) { hint('No Bouncie truck movement for this day — enter times manually.'); return; }
+      // Work trucks = F-750 / F-550 (rank <=1); exclude the Ram (commute).
+      var work = trips.filter(function(t) { return PayrollPage._truckRank(t.name, t.model) <= 1 && t.left_yard; });
+      var use = work.length ? work : trips.filter(function(t) { return t.left_yard; });
+      if (!use.length) { hint('No yard trips logged — enter times manually.'); return; }
+      var lefts = use.map(function(t) { return new Date(t.left_yard); }).sort(function(a, b) { return a - b; });
+      var backs = use.filter(function(t) { return t.back_yard; }).map(function(t) { return new Date(t.back_yard); }).sort(function(a, b) { return a - b; });
+      var pad = function(x) { return (x < 10 ? '0' : '') + x; };
+      var hhmm = function(dt) { return pad(dt.getHours()) + ':' + pad(dt.getMinutes()); };
+      var et = function(dt) { return dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }); };
+      var inDt = new Date(lefts[0].getTime() - 30 * 60000);
+      var inEl = document.getElementById('ph-in'); if (inEl && !inEl.value) inEl.value = hhmm(inDt);
+      var outStr = '';
+      if (backs.length) {
+        var outDt = new Date(backs[backs.length - 1].getTime() + 30 * 60000);
+        var outEl = document.getElementById('ph-out'); if (outEl && !outEl.value) outEl.value = hhmm(outDt);
+        outStr = ' – ' + et(outDt);
+      }
+      hint('🛰 Suggested from truck yard times (' + et(inDt) + outStr + ', ±30 min buffer) — edit if off.');
+    }).catch(function() { hint(''); });
   },
 
   _saveHours: function(userId, date) {
