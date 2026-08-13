@@ -1,5 +1,5 @@
 {
-  "version": 1117,
+  "version": 1118,
   "released": "2026-08-12",
-  "notes": "v1117 FIX: (1) jobs/quotes 'Save did NOT reach cloud (400)' — coerce empty-string uuid/date/timestamp columns to null on push AND queue replay (self-heals stuck write-queue items looping on client_id=''); (2) payroll grid/title date off-by-one — parse YYYY-MM-DD at noon-local not UTC (grid showed MON 9..THU 12 for the Aug 10-16 week)"
+  "notes": "v1118 PAYROLL GPS: truck panel moved BELOW the employee grid; each truck is now tap-to-expand → shows its stops with TIME ON SITE (reverse-geocoded to the client's street address) + a maps link, plus yard in/out. New bm_truck_stops RPC (stationary clusters away from yard)."
 }

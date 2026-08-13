@@ -193,7 +193,7 @@ var PayrollPage = {
       ? '<div style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">' + chips + '</div>'
       : '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">' + chips + '</div>';
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
-      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day to see when each truck left &amp; returned to the yard</span></div>'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day, then a truck for its stops &amp; time on site</span></div>'
       + strip
       + '<div id="bday-panel"></div>'
       + '</div>';
@@ -246,31 +246,95 @@ var PayrollPage = {
       + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + esc(note) + '</textarea>'
       + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Yard = Peekskill HQ. Times = when a truck crossed the yard line (short in/out under 15 min hidden). Bouncie sleeps when parked, so first out / last back are real.</div>'
       + '</div>';
-    PayrollPage._yardTrips(d).then(function(rows) {
+    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d)]).then(function(res) {
+      var trips = res[0] || [], stops = res[1] || [];
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
-      if (!rows || !rows.length) { sum.textContent = 'No truck movement logged this day.'; return; }
-      var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
       var byV = {};
-      rows.forEach(function(r) {
-        if (!byV[r.vehicle_id]) byV[r.vehicle_id] = { name:r.name, model:r.model, trips:[] };
-        byV[r.vehicle_id].trips.push(r);
-      });
-      var ids = Object.keys(byV).sort(function(a,b){
-        return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model);
-      });
+      trips.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).trips.push(r); });
+      stops.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).stops.push(r); });
+      var ids = Object.keys(byV);
+      if (!ids.length) { sum.textContent = 'No truck movement logged this day.'; return; }
+      ids.sort(function(a,b){ return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model); });
+      PayrollPage._dayCache[d] = byV;
+      var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
       sum.innerHTML = ids.map(function(vid) {
         var v = byV[vid];
-        var trips = v.trips.map(function(t) {
-          return '<div style="font-size:12.5px;padding:1px 0;">left <b style="color:var(--green-dark);">' + et(t.left_yard)
-            + '</b> &rarr; back <b style="color:var(--green-dark);">' + et(t.back_yard)
-            + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ' out)</span></div>';
-        }).join('');
-        return '<div style="margin-bottom:8px;">'
-          + '<div style="font-weight:700;font-size:13px;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</div>'
-          + trips + '</div>';
+        var firstOut = v.trips.length ? et(v.trips[0].left_yard) : null;
+        var lastBack = v.trips.length ? et(v.trips[v.trips.length - 1].back_yard) : null;
+        var siteMins = v.stops.reduce(function(s,x){ return s + (x.mins || 0); }, 0);
+        var summary = (firstOut ? ('out ' + firstOut + '–' + lastBack) : 'no yard trips')
+          + (v.stops.length ? (' · ' + v.stops.length + ' site' + (v.stops.length > 1 ? 's' : '') + ' · ' + PayrollPage._fmtDur(siteMins) + ' on site') : '');
+        var rid = 'trk-' + d + '-' + vid.slice(0, 8);
+        return '<div style="margin-bottom:6px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">'
+          + '<div onclick="PayrollPage._truckExpand(\'' + d + '\',\'' + vid + '\',\'' + rid + '\')" style="cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:6px;background:var(--surface,#f7f7f7);">'
+            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:11px;">▸</span>'
+            + '<span style="font-weight:700;font-size:13px;white-space:nowrap;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</span>'
+            + '<span style="font-size:11px;color:var(--text-light);margin-left:auto;text-align:right;">' + summary + '</span>'
+          + '</div>'
+          + '<div id="' + rid + '" style="display:none;padding:8px 10px;border-top:1px solid var(--border);"></div>'
+        + '</div>';
       }).join('');
     }).catch(function() {
       var sum = panel.querySelector('.bday-sum'); if (sum) sum.textContent = 'Could not load truck data.';
+    });
+  },
+  _dayCache: {},
+  _truckStops: function(dateStr) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !C.rpc) return Promise.resolve(null);
+    return C.rpc('bm_truck_stops', { p_day: dateStr }).then(function(res) {
+      if (res.error) { console.warn('[truck_stops]', res.error.message); return null; }
+      return res.data || [];
+    }).catch(function(){ return null; });
+  },
+  // Reverse-geocode a stop to a street address (= the client's address). Cached
+  // in localStorage so we hit Nominatim at most once per location.
+  _revGeo: function(lat, lon) {
+    var key = 'bm-revgeo-' + lat.toFixed(4) + ',' + lon.toFixed(4);
+    try { var c = localStorage.getItem(key); if (c) return Promise.resolve(c); } catch(e) {}
+    return fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&lat=' + lat + '&lon=' + lon)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var a = d.address || {};
+        var road = ((a.house_number ? a.house_number + ' ' : '') + (a.road || '')).trim();
+        var town = a.town || a.city || a.hamlet || a.village || a.suburb || '';
+        var label = [road, town].filter(Boolean).join(', ') || d.display_name || (lat.toFixed(4) + ',' + lon.toFixed(4));
+        try { localStorage.setItem(key, label); } catch(e) {}
+        return label;
+      }).catch(function(){ return null; });
+  },
+  _truckExpand: function(d, vid, rid) {
+    var box = document.getElementById(rid); if (!box) return;
+    var caret = document.getElementById(rid + '-caret');
+    if (box.style.display !== 'none') { box.style.display = 'none'; if (caret) caret.textContent = '▸'; return; }
+    box.style.display = 'block'; if (caret) caret.textContent = '▾';
+    var v = (PayrollPage._dayCache[d] || {})[vid]; if (!v) { box.textContent = '—'; return; }
+    if (box.getAttribute('data-loaded') === '1') return; // already rendered
+    box.setAttribute('data-loaded', '1');
+    var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var tripsHtml = v.trips.length
+      ? '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:2px;">YARD</div>' + v.trips.map(function(t){
+          return '<div style="font-size:12.5px;">left <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ')</span></div>';
+        }).join('')
+      : '';
+    var stopsHtml = v.stops.length
+      ? '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin:8px 0 2px;">ON SITE</div>' + v.stops.map(function(s, i){
+          var sid = rid + '-s' + i;
+          var maps = 'https://maps.google.com/?q=' + s.stop_lat + ',' + s.stop_lon;
+          return '<div style="font-size:12.5px;padding:2px 0;"><b>' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</b> '
+            + '<span style="color:var(--green-dark);font-weight:700;">' + PayrollPage._fmtDur(s.mins) + '</span> '
+            + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);">📍 map</a> · <span style="color:var(--text-light);">locating…</span></span></div>';
+        }).join('')
+      : '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">No stops away from the yard.</div>';
+    box.innerHTML = tripsHtml + stopsHtml;
+    v.stops.forEach(function(s, i){
+      var sid = rid + '-s' + i;
+      PayrollPage._revGeo(s.stop_lat, s.stop_lon).then(function(addr){
+        var el = document.getElementById(sid); if (!el || !addr) return;
+        var maps = 'https://maps.google.com/?q=' + s.stop_lat + ',' + s.stop_lon;
+        el.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);">📍 ' + esc(addr) + '</a>';
+      }).catch(function(){});
     });
   },
   _saveBouncieNote: function(d, v) { try { localStorage.setItem('bm-payroll-note-' + d, v); if (typeof UI !== 'undefined') UI.toast('Note saved'); } catch(e) {} },
@@ -344,9 +408,6 @@ var PayrollPage = {
       + '</div>'
       + '<button onclick="PayrollPage._weekOffset++;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">Next →</button>'
       + '</div>';
-
-    // ── Bouncie GPS panel (v1116) — per-truck yard in/out times, tap a day ──
-    html += self._renderBouncie(dates);
 
     // ── Bulk Actions ──
     html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'
@@ -488,6 +549,10 @@ var PayrollPage = {
     });
 
     html += '</div>'; // end grid
+
+    // ── Bouncie GPS panel (v1118) — under the employee dates, per Doug. Tap a
+    // day → each truck's yard in/out; tap a truck → its stops + time on site. ──
+    html += self._renderBouncie(dates);
 
     // ── Weekly Review Panel ──
     html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
