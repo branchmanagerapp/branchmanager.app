@@ -15,14 +15,18 @@ var PayrollPage = {
   // ── Helpers ──
   _getWeekDates: function(offset) {
     var now = new Date();
+    now.setHours(12, 0, 0, 0);   // v1116: noon-anchor so toISOString/tz never rolls the day.
     now.setDate(now.getDate() + (offset || 0) * 7);
     var monday = new Date(now);
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    var pad = function(n) { return (n < 10 ? '0' : '') + n; };
     var dates = [];
     for (var i = 0; i < 7; i++) {
       var d = new Date(monday);
       d.setDate(d.getDate() + i);
-      dates.push(d.toISOString().split('T')[0]);
+      // Build the Y-M-D from LOCAL parts — NOT toISOString() (which is UTC and,
+      // in the evening ET, shifted Monday to the 11th → whole week off by one).
+      dates.push(d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()));
     }
     return dates;
   },
@@ -159,35 +163,67 @@ var PayrollPage = {
   // the truck window + suggested clock + a per-day note. Desktop chips align to
   // the grid columns; mobile = a horizontal-scroll strip.
   _bDayOpen: null,
+  // v1116: "Truck yard times" — tap a day to see when EACH truck left and
+  // returned to the yard (Peekskill HQ), computed server-side by the
+  // bm_yard_trips RPC (geofence crossings on Bouncie positions, jitter under
+  // 15 min hidden). Replaces the old single "suggested clock" that mixed all
+  // vehicles together. Priority per Doug: F-750 / F-550 in/out of the yard.
   _renderBouncie: function(dates) {
     var dn = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
+    var todayStr = (function(){ var n=new Date(); var p=function(x){return(x<10?'0':'')+x;}; return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate()); })();
     var chips = dates.map(function(d, i) {
-      var day = new Date(d + 'T12:00:00').getDate();
+      // Derive the weekday from the DATE itself (not positional) so a label can
+      // never drift from its date again.
+      var dt = new Date(d + 'T12:00:00');
+      var isToday = d === todayStr;
       return '<button type="button" data-bday="' + d + '" onclick="PayrollPage._bounceToggle(\'' + d + '\')" '
-        + 'style="border:1px solid var(--border);background:var(--white);border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.2;' + (isMobile ? 'min-width:54px;flex:none;' : '') + '">'
+        + 'style="border:1px solid ' + (isToday ? 'var(--green-dark)' : 'var(--border)') + ';background:' + (isToday ? '#f0f9f1' : 'var(--white)') + ';border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.25;' + (isMobile ? 'min-width:52px;flex:none;' : '') + '">'
         + '<div style="font-size:11px;font-weight:700;color:var(--text);">' + dn[i] + '</div>'
-        + '<div style="font-size:10px;color:var(--text-light);">' + day + '</div>'
-        + '<div class="bpk" style="font-size:9px;font-weight:700;color:var(--green-dark);margin-top:2px;min-height:11px;">·</div>'
+        + '<div style="font-size:13px;font-weight:700;color:var(--text);">' + dt.getDate() + '</div>'
         + '</button>';
     }).join('');
     var strip = isMobile
       ? '<div style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">' + chips + '</div>'
-      : '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;gap:5px;"><div></div>' + chips + '<div></div></div>';
+      : '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">' + chips + '</div>';
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
-      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🛰 GPS hours by day <span style="font-weight:400;">— tap a day for the truck window + suggested clock</span></div>'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day to see when each truck left &amp; returned to the yard</span></div>'
       + strip
       + '<div id="bday-panel"></div>'
       + '</div>';
   },
-  _loadBouncePeeks: function() {
-    Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(btn) {
-      var d = btn.getAttribute('data-bday'); var pk = btn.querySelector('.bpk');
-      PayrollPage._bouncieDay(d).then(function(r) {
-        if (!pk) return;
-        pk.textContent = (r && r.inSug) ? (r.inSug.replace(/:00/,'').replace(/ /g,'') + '-' + r.outSug.replace(/:00/,'').replace(/ /g,'')) : '–';
-      }).catch(function(){});
-    });
+  // Clean short label from the (nickname-swapped) vehicle record — key off model/name, never nickname.
+  _truckLabel: function(name, model) {
+    var s = ((name || '') + ' ' + (model || ''));
+    if (/750/.test(s)) return 'F-750 Bucket';
+    if (/550/.test(s)) return 'F-550 Chip';
+    if (/ram|2500/i.test(s)) return 'Ram 2500';
+    return name || 'Truck';
+  },
+  _truckIcon: function(name, model) {
+    var s = ((name || '') + ' ' + (model || ''));
+    if (/ram|2500/i.test(s)) return '🛻';
+    return '🚚';
+  },
+  _truckRank: function(name, model) {
+    var s = ((name || '') + ' ' + (model || ''));
+    if (/750/.test(s)) return 0;
+    if (/550/.test(s)) return 1;
+    if (/ram|2500/i.test(s)) return 2;
+    return 3;
+  },
+  _fmtDur: function(mins) {
+    mins = Math.round(mins || 0);
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return h ? (h + 'h' + (m ? ' ' + m + 'm' : '')) : (m + 'm');
+  },
+  _yardTrips: function(dateStr) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !C.rpc) return Promise.resolve(null);
+    return C.rpc('bm_yard_trips', { p_day: dateStr }).then(function(res) {
+      if (res.error) { console.warn('[yard_trips]', res.error.message); return null; }
+      return res.data || [];
+    }).catch(function(){ return null; });
   },
   _bounceToggle: function(d) {
     var panel = document.getElementById('bday-panel'); if (!panel) return;
@@ -197,35 +233,39 @@ var PayrollPage = {
     var btn = document.querySelector('button[data-bday="' + d + '"]'); if (btn) btn.style.outline = '2px solid var(--green-dark)';
     var dnFull = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
     var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
     panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
-      + '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">' + dnFull + '</div>'
+      + '<div style="font-weight:700;font-size:13px;margin-bottom:6px;">' + dnFull + '</div>'
       + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
-      + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + (typeof UI !== 'undefined' ? UI.esc(note) : note) + '</textarea>'
-      + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Suggested clock = work-truck yard-out/return ±30 min. Commute (Ram) excluded; hours start at the yard. Confirm per person.</div>'
+      + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + esc(note) + '</textarea>'
+      + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Yard = Peekskill HQ. Times = when a truck crossed the yard line (short in/out under 15 min hidden). Bouncie sleeps when parked, so first out / last back are real.</div>'
       + '</div>';
-    PayrollPage._bouncieDay(d).then(function(r) {
+    PayrollPage._yardTrips(d).then(function(rows) {
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
-      if (!r || !r.firstMove) { sum.textContent = 'No truck movement logged this day.'; return; }
-      sum.innerHTML = 'Suggested clock: <b style="color:var(--green-dark);">' + r.inSug + ' – ' + r.outSug + '</b><br>Truck out ' + r.firstMove + '–' + r.lastMove + ' (~' + r.movingHrs + 'h moving)';
-    }).catch(function(){});
-  },
-  _bouncieDay: function(dateStr) {
-    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
-    if (!C) return Promise.resolve(null);
-    var next = new Date(new Date(dateStr + 'T00:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
-    function et(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : null; }
-    function shift(ts, m) { return new Date(new Date(ts).getTime() + m * 60000); }
-    var q = function(asc) { return C.from('vehicle_positions').select('ts').gte('ts', dateStr).lt('ts', next).gt('speed_mph', 1).order('ts', { ascending: asc }).limit(1); };
-    return Promise.all([q(true), q(false)]).then(function(res) {
-      var fm = res[0].data && res[0].data[0] && res[0].data[0].ts;
-      var lm = res[1].data && res[1].data[0] && res[1].data[0].ts;
-      if (!fm || !lm) return null;
-      return {
-        firstMove: et(fm), lastMove: et(lm),
-        movingHrs: ((new Date(lm) - new Date(fm)) / 3600000).toFixed(1),
-        inSug: et(shift(fm, -30)), outSug: et(shift(lm, 30))
-      };
-    }).catch(function() { return null; });
+      if (!rows || !rows.length) { sum.textContent = 'No truck movement logged this day.'; return; }
+      var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
+      var byV = {};
+      rows.forEach(function(r) {
+        if (!byV[r.vehicle_id]) byV[r.vehicle_id] = { name:r.name, model:r.model, trips:[] };
+        byV[r.vehicle_id].trips.push(r);
+      });
+      var ids = Object.keys(byV).sort(function(a,b){
+        return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model);
+      });
+      sum.innerHTML = ids.map(function(vid) {
+        var v = byV[vid];
+        var trips = v.trips.map(function(t) {
+          return '<div style="font-size:12.5px;padding:1px 0;">left <b style="color:var(--green-dark);">' + et(t.left_yard)
+            + '</b> &rarr; back <b style="color:var(--green-dark);">' + et(t.back_yard)
+            + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ' out)</span></div>';
+        }).join('');
+        return '<div style="margin-bottom:8px;">'
+          + '<div style="font-weight:700;font-size:13px;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</div>'
+          + trips + '</div>';
+      }).join('');
+    }).catch(function() {
+      var sum = panel.querySelector('.bday-sum'); if (sum) sum.textContent = 'Could not load truck data.';
+    });
   },
   _saveBouncieNote: function(d, v) { try { localStorage.setItem('bm-payroll-note-' + d, v); if (typeof UI !== 'undefined') UI.toast('Note saved'); } catch(e) {} },
 
@@ -299,9 +339,8 @@ var PayrollPage = {
       + '<button onclick="PayrollPage._weekOffset++;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">Next →</button>'
       + '</div>';
 
-    // ── Bouncie GPS panel (v1096) — truck day + suggested hours ──
+    // ── Bouncie GPS panel (v1116) — per-truck yard in/out times, tap a day ──
     html += self._renderBouncie(dates);
-    setTimeout(PayrollPage._loadBouncePeeks, 60);
 
     // ── Bulk Actions ──
     html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'

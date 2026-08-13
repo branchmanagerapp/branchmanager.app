@@ -1,5 +1,5 @@
 {
-  "version": 1115,
+  "version": 1116,
   "released": "2026-08-12",
-  "notes": "v1115 AUTO-PIPELINE hardening: quoteToJob no longer writes phantom 'source' col (cloud jobs has none) — on a fresh device the auto-convert sweep could create a job before the column set is learned, 400ing the push so the job never reached cloud (the Catherine-can't-see-it failure mode); quote linkage kept via quote_id"
+  "notes": "v1116 PAYROLL GPS: fix week off-by-one (evening ET toISOString rolled Monday to the 11th) + replace suggested-clock with per-truck YARD IN/OUT times (F-750/F-550/Ram left & returned to Peekskill HQ), via bm_yard_trips RPC (geofence trips, <15min jitter hidden)"
 }
