@@ -1,5 +1,5 @@
 {
-  "version": 1120,
+  "version": 1121,
   "released": "2026-08-13",
-  "notes": "Payroll prefill = F-550 out-of-yard window (time on jobs), no buffer; hint shows job time + reminder to add yard time"
+  "notes": "Force cache self-heal on all devices (Catherine seeing zero clients \u2014 stale cached bundle; backend verified healthy)"
 }
