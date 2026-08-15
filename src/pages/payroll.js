@@ -175,26 +175,22 @@ var PayrollPage = {
   // 15 min hidden). Replaces the old single "suggested clock" that mixed all
   // vehicles together. Priority per Doug: F-750 / F-550 in/out of the yard.
   _renderBouncie: function(dates) {
-    var dn = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
-    var todayStr = (function(){ var n=new Date(); var p=function(x){return(x<10?'0':'')+x;}; return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate()); })();
-    var chips = dates.map(function(d, i) {
-      // Derive the weekday from the DATE itself (not positional) so a label can
-      // never drift from its date again.
-      var dt = new Date(d + 'T12:00:00');
-      var isToday = d === todayStr;
-      return '<button type="button" data-bday="' + d + '" onclick="PayrollPage._bounceToggle(\'' + d + '\')" '
-        + 'style="border:1px solid ' + (isToday ? 'var(--green-dark)' : 'var(--border)') + ';background:' + (isToday ? '#f0f9f1' : 'var(--white)') + ';border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.25;' + (isMobile ? 'min-width:52px;flex:none;' : '') + '">'
-        + '<div style="font-size:11px;font-weight:700;color:var(--text);">' + dn[i] + '</div>'
-        + '<div style="font-size:13px;font-weight:700;color:var(--text);">' + dt.getDate() + '</div>'
-        + '</button>';
-    }).join('');
-    var strip = isMobile
-      ? '<div style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">' + chips + '</div>'
-      : '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">' + chips + '</div>';
+    var self = PayrollPage;
+    var p = function(x){ return (x < 10 ? '0' : '') + x; };
+    var today = (function(){ var n = new Date(); return n.getFullYear() + '-' + p(n.getMonth()+1) + '-' + p(n.getDate()); })();
+    if (!self._bDate) self._bDate = today;
+    var lbl = new Date(self._bDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    // Auto-load the current date's truck data once the panel is in the DOM.
+    self._bDayOpen = null;
+    setTimeout(function(){ try { PayrollPage._bounceToggle(PayrollPage._bDate); } catch(e) {} }, 0);
+    var arrow = function(delta, ch){ return '<button type="button" onclick="PayrollPage._bounceDateShift(' + delta + ')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;width:38px;height:36px;font-size:18px;line-height:1;cursor:pointer;">' + ch + '</button>'; };
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
-      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day, then a truck for its stops &amp; time on site</span></div>'
-      + strip
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— pick a day, tap a truck for its stops &amp; time on site</span></div>'
+      + '<div style="display:flex;align-items:center;justify-content:center;gap:14px;">'
+      +   arrow(-1, '‹')
+      +   '<div id="bounce-date-label" style="font-size:14px;font-weight:800;min-width:150px;text-align:center;">' + lbl + '</div>'
+      +   arrow(1, '›')
+      + '</div>'
       + '<div id="bday-panel"></div>'
       + '</div>';
   },
@@ -338,6 +334,55 @@ var PayrollPage = {
     });
   },
   _saveBouncieNote: function(d, v) { try { localStorage.setItem('bm-payroll-note-' + d, v); if (typeof UI !== 'undefined') UI.toast('Note saved'); } catch(e) {} },
+
+  // ── v1122: inline quick-edit of clock in/out right in the calendar cell ──
+  // Saves straight to the day's time entry (creates one if none). Recomputes
+  // hours when both ends are set; keeps the cell expanded across the reload.
+  _hm: function(ts) { if (!ts) return ''; var x = new Date(ts); return ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2); },
+  _saveInline: function(user, date, entryId, field, hhmm) {
+    if (!hhmm) return;
+    var iso = date + 'T' + hhmm + ':00';
+    var col = field === 'in' ? 'clockIn' : 'clockOut';
+    var e = entryId ? DB.timeEntries.getAll().find(function(t) { return t.id === entryId; }) : null;
+    if (e) {
+      var upd = {}; upd[col] = iso;
+      var ci = field === 'in' ? iso : e.clockIn, co = field === 'out' ? iso : e.clockOut;
+      if (ci && co) upd.hours = Math.round((new Date(co) - new Date(ci)) / 3600000 * 100) / 100;
+      DB.timeEntries.update(e.id, upd);
+    } else {
+      var ne = { userId: user, user: user, date: date }; ne[col] = iso;
+      DB.timeEntries.create(ne);
+    }
+    var dk = PayrollPage._dayApprovalKey(user, date);
+    if (PayrollPage._getApprovals()[dk] === 'approved') { PayrollPage._approvals[dk + '_editedAfter'] = true; PayrollPage._saveApprovals(); }
+    PayrollPage._expandedCells[user + '_' + date] = true; // keep the cell open after re-render
+    if (typeof UI !== 'undefined') UI.toast('Saved');
+    if (typeof loadPage === 'function') loadPage('payroll');
+  },
+  // Inline in/out editor markup for one entry (or a blank creator row when e is null)
+  _inlineTimeRow: function(user, date, e) {
+    var self = PayrollPage; e = e || {};
+    var mk = function(field, val) {
+      return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value)" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 3px;width:70px;">';
+    };
+    return '<div style="margin-top:3px;display:flex;align-items:center;gap:3px;flex-wrap:wrap;justify-content:center;">'
+      + mk('in', self._hm(e.clockIn)) + '<span style="font-size:11px;color:var(--text-light);">–</span>' + mk('out', self._hm(e.clockOut))
+      + '<span style="font-size:11px;color:var(--text-light);margin-left:2px;">' + (e.hours ? e.hours.toFixed(1) + 'h' : '') + '</span>'
+      + '</div>';
+  },
+
+  // ── v1122: Bouncie truck panel = single date + ‹ › arrows (was a 7-day strip) ──
+  _bDate: null,
+  _bounceDateShift: function(delta) {
+    var base = PayrollPage._bDate || new Date().toISOString().slice(0, 10);
+    var nd = new Date(base + 'T12:00:00'); nd.setDate(nd.getDate() + delta);
+    var p = function(x) { return (x < 10 ? '0' : '') + x; };
+    PayrollPage._bDate = nd.getFullYear() + '-' + p(nd.getMonth() + 1) + '-' + p(nd.getDate());
+    var lbl = document.getElementById('bounce-date-label');
+    if (lbl) lbl.textContent = nd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    PayrollPage._bDayOpen = null;           // force _bounceToggle to open (not toggle off)
+    PayrollPage._bounceToggle(PayrollPage._bDate);
+  },
 
   // ── v1097: Sales commissions (separate from hourly payroll) ──
   // 8% of the job total for work SOLD by each salesperson. Attribution:
@@ -513,11 +558,10 @@ var PayrollPage = {
             });
           }
           entries.forEach(function(e) {
-            html += '<div style="font-size:10px;color:var(--text-light);margin-top:2px;">'
-              + (e.clockIn ? new Date(e.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '') + (e.clockOut ? '–' + new Date(e.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '') + ' ' + (e.hours ? e.hours.toFixed(1) + 'h' : '')
-              + '</div>';
+            html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
             if (e.notes) html += '<div style="font-size:10px;color:var(--text-light);font-style:italic;">' + UI.esc(e.notes) + '</div>';
           });
+          if (!entries.length) html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
           // Day detail button
           html += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:4px;font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>';
           // Approval indicator
@@ -616,11 +660,10 @@ var PayrollPage = {
         rows += '<div style="padding:4px 12px 10px 68px;font-size:12px;" onclick="event.stopPropagation()">';
         issues.forEach(function(iss) { rows += '<div style="color:#ef4444;font-size:11px;">⚠ ' + iss + '</div>'; });
         entries.forEach(function(e) {
-          rows += '<div style="color:var(--text-light);margin-top:2px;">'
-            + (e.clockIn ? new Date(e.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '') + (e.clockOut ? '–' + new Date(e.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '') + ' ' + (e.hours ? e.hours.toFixed(1) + 'h' : '')
-            + '</div>';
+          rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
           if (e.notes) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(e.notes) + '</div>';
         });
+        if (!entries.length) rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
         rows += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:6px;font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>';
         if (dayApproved && !editedAfterApproval) rows += '<div style="font-size:10px;color:#22c55e;margin-top:3px;">✓ Approved</div>';
         if (editedAfterApproval) rows += '<div style="font-size:10px;color:#f59e0b;margin-top:3px;">⚠ Re-approval needed</div>';

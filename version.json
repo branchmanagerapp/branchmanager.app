@@ -1,5 +1,5 @@
 {
-  "version": 1121,
-  "released": "2026-08-13",
-  "notes": "Force cache self-heal on all devices (Catherine seeing zero clients \u2014 stale cached bundle; backend verified healthy)"
+  "version": 1122,
+  "released": "2026-08-14",
+  "notes": "Payroll: inline-editable clock in/out in the calendar cell + truck panel collapsed to single date with prev/next arrows"
 }
