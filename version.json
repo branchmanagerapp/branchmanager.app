@@ -1,5 +1,5 @@
 {
-  "version": 1132,
+  "version": 1133,
   "released": "2026-08-15",
-  "notes": "Recap chip shows the day's job name(s) instead of generic recap label"
+  "notes": "Leads Center send debounced \u2014 no more double texts to customers"
 }

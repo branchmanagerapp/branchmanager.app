@@ -1173,6 +1173,12 @@ var CallCenter = {
   },
 
   _sendReply: async function() {
+    // v1133: in-flight guard — Enter + click (or any double trigger) was
+    // firing two Dialpad sends ~400ms apart (Nicholas got the invoice text
+    // twice, Aug 15). One send at a time, period.
+    if (CallCenter._replyInFlight) return;
+    CallCenter._replyInFlight = true;
+    setTimeout(function() { CallCenter._replyInFlight = false; }, 3000);
     var thr = CallCenter._activeThread;
     if (!thr) return;
     var inp = document.getElementById('cc-reply-input');
