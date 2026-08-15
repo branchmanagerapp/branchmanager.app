@@ -1,5 +1,5 @@
 {
-  "version": 1127,
+  "version": 1128,
   "released": "2026-08-15",
-  "notes": "Send Invoice hits both channels: after the email sends, the text flow auto-opens prefilled with the pay link when a mobile is on file"
+  "notes": "THE drag-revert fix: cloud writes now use the authed session token (RLS was silently zero-rowing every anon PATCH since Jul 8); zero-row writes now trip the loud banner + beacon"
 }

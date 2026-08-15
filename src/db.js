@@ -460,7 +460,7 @@ var DB = (function() {
         headers: {
           'Content-Type': 'application/json',
           'apikey': apiKey,
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer ' + (_writeAuthToken() || apiKey),
           'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify(snakeRow)
@@ -497,6 +497,23 @@ var DB = (function() {
   // updated_at BEFORE this edit), we add ?updated_at=lte.<that> to the PATCH
   // so PostgREST refuses to overwrite a cloud row that has since changed.
   // 0 rows affected → re-pull and retry with the user's diff on top.
+  // v1128: cloud writes must ride the AUTHED session token. The Jul 8 RLS
+  // lockdown left jobs/invoices/etc. with authenticated-role-only policies, so
+  // every anon-key PATCH since then matched ZERO rows: HTTP 200, empty body,
+  // nothing saved, no error anywhere — the "drag a job, it reverts" ghost
+  // (Doug, Aug 15). Anon stays as fallback for the pre-auth boot window.
+  function _writeAuthToken() {
+    try {
+      var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
+      var ref = (url.match(/https:\/\/([a-z0-9]+)\.supabase\.co/) || [])[1];
+      if (!ref) return null;
+      var raw = localStorage.getItem('sb-' + ref + '-auth-token');
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      return s.access_token || (s.currentSession && s.currentSession.access_token) || null;
+    } catch (e) { return null; }
+  }
+
   function _pushUpdateToCloud(key, id, changes, precheckUpdatedAt, opts) {
     try {
       var table = REMOTE_TABLE[key];
@@ -566,7 +583,7 @@ var DB = (function() {
         headers: {
           'Content-Type': 'application/json',
           'apikey': apiKey,
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer ' + (_writeAuthToken() || apiKey),
           'Prefer': 'return=representation,count=exact'
         },
         body: JSON.stringify(snakeChanges)
@@ -592,6 +609,17 @@ var DB = (function() {
           // 0 affected = cloud has moved on past precheckUpdatedAt → re-pull
           // the row and re-apply this user's diff on top so we don't drop the
           // user's edit but also don't clobber the concurrent server-side edit.
+          if (Array.isArray(rows) && rows.length === 0 && !precheckUpdatedAt) {
+            // v1128: 0 rows matched with NO precondition = the write hit nothing
+            // (RLS filtered it or the row is missing in cloud). This must never
+            // be silent again — loud banner + beacon + queue for replay.
+            try { window.BMBeacon && window.BMBeacon('zero-rows', 'PATCH matched 0 rows: ' + table + ' ' + id, table, 200); } catch (e) {}
+            if (!(opts && opts.silent)) {
+              _loudPushFail(table, 200);
+              _queueAdd({ key: key, table: table, id: id, method: 'update', payload: snakeChanges, queuedAt: Date.now(), lastStatus: 200 });
+            }
+            return;
+          }
           if (Array.isArray(rows) && rows.length === 0 && precheckUpdatedAt) {
             console.debug('[DB cloud patch] precondition failed for', table, id, '— re-pulling');
             _resyncRowFromCloud(key, id).then(function() {
@@ -628,7 +656,7 @@ var DB = (function() {
         var apiKey = localStorage.getItem('bm-supabase-key');
         if (!url || !apiKey) return resolve();
         fetch(url + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id) + '&limit=1', {
-          headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + apiKey }
+          headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + (_writeAuthToken() || apiKey) }
         }).then(function(r) {
           if (!r.ok) return resolve();
           return r.json();
@@ -685,7 +713,7 @@ var DB = (function() {
         headers: {
           'Content-Type': 'application/json',
           'apikey': apiKey,
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer ' + (_writeAuthToken() || apiKey),
           'Prefer': isUpdate ? 'return=minimal' : 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify(op.payload)
@@ -846,7 +874,7 @@ var DB = (function() {
       if (!url || !apiKey) return;
       fetch(url + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id), {
         method: 'DELETE',
-        headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + apiKey }
+        headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + (_writeAuthToken() || apiKey) }
       }).then(function(r) {
         // Cloud confirms gone → tombstone can be dropped immediately.
         // Anything that's not 2xx (or 404 = already gone) keeps the
