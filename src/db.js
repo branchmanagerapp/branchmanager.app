@@ -334,6 +334,7 @@ var DB = (function() {
       if (status === 401 || status === 403) return;
       if (!(status >= 400 && status < 500)) return;
       var msg = '⚠️ Save did NOT reach the cloud (' + table + ', error ' + status + '). Fully close and reopen the app. If this repeats, delete the home-screen icon and re-add it from branchmanager.app.';
+      try { window.BMBeacon && window.BMBeacon('save-reject', msg, table, status); } catch (e) {}
       if (typeof UI !== 'undefined' && UI.toast) UI.toast(msg);
       if (!document.getElementById('bm-pushfail-banner')) {
         var b = document.createElement('div');
@@ -428,6 +429,13 @@ var DB = (function() {
       // draft, BM's stale local cache still had sent, autosave pushed the
       // whole row back including stale status). Updates go through
       // _pushUpdateToCloud which only sends the changed fields.
+      // v1123: stale build = do NOT attempt the cloud write. A stale-schema
+      // payload would just 400; queue it locally and surface the update banner.
+      if (window.__bmWriteBlocked) {
+        _queueAdd({ key: key, table: table, id: record.id, method: method, payload: snakeRow, queuedAt: Date.now(), lastStatus: -1 });
+        try { window.bmShowStaleBanner(window.__bmWriteBlocked); } catch (e) {}
+        return;
+      }
       fetch(url + '/rest/v1/' + table + '?on_conflict=id', {
         method: 'POST',
         headers: {
@@ -519,6 +527,12 @@ var DB = (function() {
         // If cloud has moved on (server-side PATCH between local read & this push),
         // affected rows = 0 and we re-pull.
         qs += '&updated_at=lte.' + encodeURIComponent(precheckUpdatedAt);
+      }
+      // v1123: stale-build write gate (see push gate above).
+      if (window.__bmWriteBlocked) {
+        _queueAdd({ key: key, table: table, id: id, method: 'update', payload: snakeChanges, queuedAt: Date.now(), lastStatus: -1 });
+        try { window.bmShowStaleBanner(window.__bmWriteBlocked); } catch (e) {}
+        return;
       }
       fetch(url + '/rest/v1/' + table + '?' + qs, {
         method: 'PATCH',

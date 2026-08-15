@@ -1,5 +1,5 @@
 {
-  "version": 1122,
-  "released": "2026-08-14",
-  "notes": "Payroll: inline-editable clock in/out in the calendar cell + truck panel collapsed to single date with prev/next arrows"
+  "version": 1123,
+  "released": "2026-08-15",
+  "notes": "Trust hardening: mid-session stale watchdog blocks writes on old builds (loud update banner instead of silent 400s), client error beacon to client_errors table"
 }

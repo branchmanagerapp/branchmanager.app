@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1122; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1123; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -98,6 +98,65 @@
     })
     .catch(function(){ /* offline is fine — skip check */ });
 })();
+
+// v1123: trust hardening — mid-session staleness watchdog + client error beacon.
+// The boot check above cannot help an iOS PWA that stays open for days: it boots
+// once on old code and then 400s every save (Aug 15 incident — jobs 400 on a
+// stale build). So: re-check version.json when the app returns to the foreground
+// and every 5 minutes; on staleness BLOCK cloud writes (db.js gates on
+// __bmWriteBlocked and queues locally) and show the loud update banner.
+(function() {
+  function bmStaleCheck() {
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data || typeof data.version !== 'number') return;
+        if (data.version > window.BUNDLED_VERSION && !window.__bmWriteBlocked) {
+          window.__bmWriteBlocked = data.version;
+          try { window.bmShowStaleBanner(data.version); } catch (e) {}
+          try { window.BMBeacon('stale-block', 'writes blocked: bundled v' + window.BUNDLED_VERSION + ' < server v' + data.version, null, null); } catch (e) {}
+        }
+      }).catch(function() {});
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') bmStaleCheck();
+  });
+  setInterval(bmStaleCheck, 5 * 60 * 1000);
+})();
+
+// v1123: client error beacon — real client failures land in the client_errors
+// table (insert-only via RLS; readable only via service role). Capped at 10 per
+// session so the beacon can never become its own flood.
+window.BMBeacon = function(kind, message, tableName, status) {
+  try {
+    var n = parseInt(sessionStorage.getItem('bm-beacon-count') || '0', 10) || 0;
+    if (n >= 10) return;
+    sessionStorage.setItem('bm-beacon-count', String(n + 1));
+    var K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/rest/v1/client_errors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': K, 'Authorization': 'Bearer ' + K, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        version: window.BUNDLED_VERSION || 0,
+        kind: String(kind || 'unknown').slice(0, 40),
+        message: String(message || '').slice(0, 600),
+        table_name: tableName ? String(tableName).slice(0, 60) : null,
+        status: (typeof status === 'number') ? status : null,
+        ua: String(navigator.userAgent || '').slice(0, 300),
+        url: String(location.pathname + location.hash).slice(0, 300)
+      })
+    }).catch(function() {});
+  } catch (e) {}
+};
+window.addEventListener('error', function(ev) {
+  try { window.BMBeacon('js-error', (ev.message || '') + ' @ ' + (ev.filename || '') + ':' + (ev.lineno || 0), null, null); } catch (e) {}
+});
+window.addEventListener('unhandledrejection', function(ev) {
+  try {
+    var m = ev && ev.reason ? (ev.reason.message || String(ev.reason)) : 'unhandled rejection';
+    window.BMBeacon('promise-reject', String(m).slice(0, 500), null, null);
+  } catch (e) {}
+});
 
 // v1044: loud stale-version banner. Shown when the silent auto-updater tried to
 // pull the new bundle but couldn't (stuck service worker). Gives a one-tap
@@ -1582,7 +1641,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1122.min.js"></script>
+<script defer src="dist/bm.bundle.v1123.min.js"></script>
 
 
 
