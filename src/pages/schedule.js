@@ -14,6 +14,53 @@ var SchedulePage = {
     return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
   },
 
+  // ── v1130: Day recaps (photos/video per past day, lazy-loaded) ──
+  RECAP_BASE: 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/day-recaps/',
+  loadRecapManifest: function() {
+    if (window._bmRecaps || window._bmRecapsLoading) return;
+    window._bmRecapsLoading = true;
+    fetch(SchedulePage.RECAP_BASE + 'manifest.json', { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(m) {
+        window._bmRecapsLoading = false;
+        if (!m) return;
+        window._bmRecaps = m;
+        if (window._currentPage === 'schedule') { try { loadPage('schedule'); } catch (e) {} }
+      })
+      .catch(function() { window._bmRecapsLoading = false; });
+  },
+  showDayRecap: function(dateStr) {
+    var files = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
+    var jobs = DB.jobs.getAll().filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0, 10) === dateStr && j.status !== 'archived';
+    });
+    var html = '<div style="max-height:70vh;overflow-y:auto;">';
+    if (jobs.length) {
+      html += '<div style="margin-bottom:10px;">';
+      jobs.forEach(function(j) {
+        html += '<div onclick="UI.closeModal();JobsPage.showDetail(\'' + j.id + '\')" style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:8px;margin-bottom:5px;cursor:pointer;font-size:13px;">'
+          + '<span>' + UI.esc(j.clientName || ('#' + j.jobNumber)) + '</span>'
+          + '<span style="font-weight:700;color:var(--green-dark);">' + UI.moneyInt(j.total) + '</span></div>';
+      });
+      html += '</div>';
+    }
+    // Media grid — images lazy-load on scroll, videos never preload.
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">';
+    files.forEach(function(f) {
+      var url = SchedulePage.RECAP_BASE + dateStr + '/' + f;
+      if (/\.(mp4|mov|webm)$/i.test(f)) {
+        html += '<video controls preload="none" style="width:100%;border-radius:8px;background:#000;aspect-ratio:1;object-fit:cover;" src="' + url + '"></video>';
+      } else {
+        html += '<img loading="lazy" src="' + url + '" onclick="window.open(\'' + url + '\', \'_blank\')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;background:var(--bg);">';
+      }
+    });
+    html += '</div></div>';
+    var d = new Date(dateStr + 'T12:00:00');
+    UI.showModal('\ud83d\udcf8 ' + SchedulePage._formatDate(d, 'full'), html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+    });
+  },
+
   // v677: Reminders inline on the calendar (matches Jobber pattern)
   // - Quote follow-ups: 5d + 10d after sentAt for status=sent (skip if already sent)
   // - Invoice follow-ups: 1d + 4d after dueDate for status=sent/overdue (skip if paid/draft)
@@ -723,6 +770,7 @@ var SchedulePage = {
     var self = SchedulePage;
     var d = SchedulePage.currentDate;
     var dateStr = SchedulePage._localDateStr(d);
+    SchedulePage.loadRecapManifest();  // v1130: no-op after first fetch
     var allJobs = DB.jobs.getAll();
     if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
     var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
@@ -1261,6 +1309,14 @@ var SchedulePage = {
       }
       if (SchedulePage._eventsEnabled()) {
         SchedulePage._getCalEventsForDate(dateStr).forEach(function(ev) { html += SchedulePage._renderEventPill(ev); });
+      }
+      // v1130: day-recap chip — past days with staged recap photos (Ground
+      // Control history migrated to the schedule). Manifest is a one-time ~2KB
+      // fetch; NO image loads until the chip is tapped (field-bandwidth rule).
+      if (dateStr < today && window._bmRecaps && window._bmRecaps[dateStr]) {
+        html += '<div onclick="event.stopPropagation();SchedulePage.showDayRecap(\'' + dateStr + '\')" '
+          + 'style="font-size:9.5px;font-weight:700;color:#6a4b16;background:#fdf3dc;border-radius:8px;padding:1px 5px;margin-top:2px;display:inline-block;cursor:pointer;">'
+          + '\ud83d\udcf8 recap \u00b7 ' + window._bmRecaps[dateStr].length + '</div>';
       }
       html += '</div>';
       _tick(dateStr);

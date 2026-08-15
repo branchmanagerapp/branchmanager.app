@@ -1,5 +1,5 @@
 {
-  "version": 1129,
+  "version": 1130,
   "released": "2026-08-15",
-  "notes": "_id() returns real UUIDs \u2014 kills the unsyncable ghost-job generator (dashboard auto-convert sweep)"
+  "notes": "Day recaps on the schedule: past days with photos get a recap chip; tap opens that day's jobs + photo/video grid. Media lazy-loads only when opened (2KB manifest is the only upfront fetch). Ground Control photo history now lives here."
 }
