@@ -1317,9 +1317,15 @@ var SchedulePage = {
       // Control history migrated to the schedule). Manifest is a one-time ~2KB
       // fetch; NO image loads until the chip is tapped (field-bandwidth rule).
       if (dateStr < today && window._bmRecaps && window._bmRecaps[dateStr]) {
+        // v1132: chip carries the day's job name(s), not a generic "recap" (Doug, Aug 15)
+        var _rLabel = 'recap';
+        if (dayJobs.length) {
+          _rLabel = String(dayJobs[0].clientName || ('#' + dayJobs[0].jobNumber)).slice(0, 16);
+          if (dayJobs.length > 1) _rLabel += ' +' + (dayJobs.length - 1);
+        }
         html += '<div onclick="event.stopPropagation();SchedulePage.showDayRecap(\'' + dateStr + '\')" '
-          + 'style="font-size:9.5px;font-weight:700;color:#6a4b16;background:#fdf3dc;border-radius:8px;padding:1px 5px;margin-top:2px;display:inline-block;cursor:pointer;">'
-          + '\ud83d\udcf8 recap \u00b7 ' + window._bmRecaps[dateStr].length + '</div>';
+          + 'style="font-size:9.5px;font-weight:700;color:#6a4b16;background:#fdf3dc;border-radius:8px;padding:1px 5px;margin-top:2px;display:inline-block;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+          + '\ud83d\udcf8 ' + UI.esc(_rLabel) + ' \u00b7 ' + window._bmRecaps[dateStr].length + '</div>';
       }
       html += '</div>';
       _tick(dateStr);

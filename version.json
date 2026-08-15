@@ -1,5 +1,5 @@
 {
-  "version": 1131,
+  "version": 1132,
   "released": "2026-08-15",
-  "notes": "Unscheduled tray cards are tappable \u2014 opens the job detail (drag still reschedules)"
+  "notes": "Recap chip shows the day's job name(s) instead of generic recap label"
 }
