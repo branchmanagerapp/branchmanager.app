@@ -82,7 +82,18 @@ var DB = (function() {
     return freed;
   }
   try { window.BM_freePhotoStorage = _freePhotoCache; } catch(_e) {}
-  function _id() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+  // v1129: _id() MUST return a real uuid — cloud id columns are uuid-typed, so
+  // the old base36 ids ("msue64…") made every row created through this helper
+  // permanently unsyncable (the Aug 13 + Aug 15 ghost-job batches: the
+  // dashboard auto-convert sweep built jobs the cloud rejected forever).
+  function _id() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    // RFC4122-ish fallback for ancient WebViews
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
   function _now() { return new Date().toISOString(); }
 
   // ── Multi-tenant context ──

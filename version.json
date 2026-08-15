@@ -1,5 +1,5 @@
 {
-  "version": 1128,
+  "version": 1129,
   "released": "2026-08-15",
-  "notes": "THE drag-revert fix: cloud writes now use the authed session token (RLS was silently zero-rowing every anon PATCH since Jul 8); zero-row writes now trip the loud banner + beacon"
+  "notes": "_id() returns real UUIDs \u2014 kills the unsyncable ghost-job generator (dashboard auto-convert sweep)"
 }
