@@ -1,5 +1,5 @@
 {
-  "version": 1126,
+  "version": 1127,
   "released": "2026-08-15",
-  "notes": "Activity feed auto-prunes to last 30 days on boot"
+  "notes": "Send Invoice hits both channels: after the email sends, the text flow auto-opens prefilled with the pay link when a mobile is on file"
 }

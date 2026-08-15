@@ -673,6 +673,25 @@ var InvoicesPage = {
     loadPage('invoices');
   },
 
+  // v1127: dual-channel send (Doug, Aug 15 — "why did it not send to both?").
+  // After the email lands, if the client also has a mobile on file, the text
+  // flow opens prefilled with the pay link — one tap sends it (instantly via
+  // Dialpad when configured, else the Messages composer). The tap stays so no
+  // customer text ever fires without Doug seeing it.
+  _alsoTextAfterEmail: function(id) {
+    try {
+      var inv = DB.invoices.getById(id);
+      if (!inv) return;
+      var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+      var ph = (inv.clientPhone || (client && client.phone) || '').replace(/\D/g, '');
+      if (!ph) return;
+      setTimeout(function() {
+        UI.toast('Emailed ✓ — mobile on file too: one tap to text it');
+        InvoicesPage._chooserSendSMS(id);
+      }, 700);
+    } catch (e) {}
+  },
+
   _chooserSendSMS: function(id) {
     var inv = DB.invoices.getById(id);
     if (!inv) return;
@@ -840,6 +859,7 @@ var InvoicesPage = {
             // Email.send returns {success:true,...} on success — Email itself toasts the user
             if (result && result.success) {
               DB.invoices.update(id, { status: 'sent', sentAt: new Date().toISOString() });
+              InvoicesPage._alsoTextAfterEmail(id);  // v1127: both channels from one Send
             }
             // Email.send already toasts on failure (with hint + mailto fallback) — don't double-toast
             InvoicesPage.showDetail(id);
@@ -850,6 +870,7 @@ var InvoicesPage = {
       Email.send(email, subject, body, { htmlBody: htmlBody }).then(function(result) {
         if (result && result.success) {
           DB.invoices.update(id, { status: 'sent', sentAt: new Date().toISOString() });
+          InvoicesPage._alsoTextAfterEmail(id);  // v1127: both channels from one Send
         }
         InvoicesPage.showDetail(id);
       });
