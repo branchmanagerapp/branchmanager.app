@@ -1,5 +1,5 @@
 {
-  "version": 1124,
+  "version": 1125,
   "released": "2026-08-15",
-  "notes": "Send invoice / follow-up: no email = auto-fallback to text when phone on file (error only when neither exists)"
+  "notes": "Schedule drag reverts fixed: sync lock released via try/finally (jammed lock silently ate every save), bounded 10s lock wait forces writes through + beacons, background pull no longer teleports detail views to dashboard"
 }

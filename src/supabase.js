@@ -324,6 +324,13 @@ var SupabaseDB = {
     if (SupabaseDB._pulling) { console.debug('[Pull] already in progress, skipping'); return; }
     SupabaseDB._pulling = true;
     window._bmSyncLock = true; // DB.js will check this before pushing
+    // v1125: the lock MUST be released no matter how this pull dies. Before
+    // this guard, any thrown await (network blip, render error in the
+    // loadPage tail) left _bmSyncLock=true forever — after which every save
+    // deferred in an in-memory retry loop: no PATCH, no 400, no beacon, and a
+    // refresh lost the edit + re-pulled old data ("my job dates revert",
+    // Aug 15). try/finally makes a jammed lock impossible.
+    try {
     var sb = SupabaseDB.client;
 
     var tables = [
@@ -416,13 +423,19 @@ var SupabaseDB = {
         var activeNav = document.querySelector('.nav-item.active');
         if (activeNav && activeNav.dataset.page) {
           loadPage(activeNav.dataset.page);
-        } else {
-          loadPage('dashboard');
+        } else if (window._currentPage) {
+          // v1125: no active nav = user is inside a record detail (e.g. job
+          // opened from the schedule). Re-render THAT page, never dashboard —
+          // the old fallback teleported Doug "home" mid-task after every
+          // background pull.
+          loadPage(window._currentPage);
         }
       }
     }
-    SupabaseDB._pulling = false;
-    window._bmSyncLock = false;
+    } finally {
+      SupabaseDB._pulling = false;
+      window._bmSyncLock = false;
+    }
   },
 
   // Poll for new requests submitted via book.html (every 3 min)

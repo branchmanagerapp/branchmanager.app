@@ -397,12 +397,20 @@ var DB = (function() {
         } catch(e) {}
         return;
       }
-      // If a full cloud pull is in progress, defer the push so it can't be overwritten
-      if (window._bmSyncLock) {
+      // If a full cloud pull is in progress, defer the push so it can't be overwritten.
+      // v1125: BOUNDED — after ~10s assume the lock is stuck, force through + beacon.
+      window.__bmPushLockTries = window.__bmPushLockTries || {};
+      var _plt = window.__bmPushLockTries[record.id] || 0;
+      if (window._bmSyncLock && _plt < 20) {
+        window.__bmPushLockTries[record.id] = _plt + 1;
         console.debug('[DB push] sync lock active, deferring', table, record.id);
         setTimeout(function() { _pushToCloud(key, record, method); }, 500);
         return;
       }
+      if (_plt >= 20) {
+        try { window.BMBeacon && window.BMBeacon('sync-lock-stuck', 'create forced through after 10s lock wait: ' + table, table, null); } catch (e) {}
+      }
+      delete window.__bmPushLockTries[record.id];
       var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
       var apiKey = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
       if (!url || !apiKey) return;
@@ -490,9 +498,17 @@ var DB = (function() {
         console.error('[DB patch BLOCKED] fabricated-data fingerprint in update changes — refusing to push', table, changes);
         return;
       }
-      if (window._bmSyncLock) {
-        setTimeout(function() { _pushUpdateToCloud(key, id, changes, precheckUpdatedAt); }, 500);
+      var _lockTries = (opts && opts._lockTries) || 0;
+      if (window._bmSyncLock && _lockTries < 20) {
+        // v1125: BOUNDED wait. If the lock is stuck (pull died pre-v1125, or
+        // anything else jams it), force the write through after ~10s and say
+        // so, instead of deferring in memory forever and losing the edit on
+        // refresh.
+        setTimeout(function() { _pushUpdateToCloud(key, id, changes, precheckUpdatedAt, Object.assign({}, opts, { _lockTries: _lockTries + 1 })); }, 500);
         return;
+      }
+      if (_lockTries >= 20) {
+        try { window.BMBeacon && window.BMBeacon('sync-lock-stuck', 'write forced through after 10s lock wait: ' + table, table, null); } catch (e) {}
       }
       var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
       var apiKey = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
@@ -801,10 +817,19 @@ var DB = (function() {
     try {
       var table = REMOTE_TABLE[key];
       if (!table || !id) return;
-      if (window._bmSyncLock) {
+      // v1125: BOUNDED lock wait (deletes are tombstoned, so forcing through
+      // after ~10s is safe — the tombstone keeps pulls from resurrecting).
+      window.__bmDelLockTries = window.__bmDelLockTries || {};
+      var _dlt = window.__bmDelLockTries[id] || 0;
+      if (window._bmSyncLock && _dlt < 20) {
+        window.__bmDelLockTries[id] = _dlt + 1;
         setTimeout(function() { _deleteFromCloud(key, id); }, 500);
         return;
       }
+      if (_dlt >= 20) {
+        try { window.BMBeacon && window.BMBeacon('sync-lock-stuck', 'delete forced through after 10s lock wait: ' + (REMOTE_TABLE[key] || key), REMOTE_TABLE[key] || key, null); } catch (e) {}
+      }
+      delete window.__bmDelLockTries[id];
       var url = localStorage.getItem('bm-supabase-url') || 'https://ltpivkqahvplapyagljt.supabase.co';
       var apiKey = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
       if (!url || !apiKey) return;
