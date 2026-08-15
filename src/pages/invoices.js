@@ -700,7 +700,15 @@ var InvoicesPage = {
     if (_lbb && _lbb.companyName) { _coB.name = _lbb.companyName; if (_lbb.websiteUrl) _coB.website = _lbb.websiteUrl; }
     var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
     var email = inv.clientEmail || (client && client.email) || '';
-    if (!email) { UI.toast('No email address for this client', 'error'); return; }
+    if (!email) {
+      // v1124: no email is NOT a dead end (Doug, Aug 15 — Matt Green #1013). If a
+      // phone is on file, hand off to the same text flow as the Text button.
+      // Error only when the client has neither channel.
+      var _ph = (inv.clientPhone || (client && client.phone) || '').replace(/\D/g, '');
+      if (_ph) { UI.toast('No email on file — sending by text instead'); return InvoicesPage._chooserSendSMS(id); }
+      UI.toast('No email or phone on file — add one on the client record', 'error');
+      return;
+    }
     var firstName = (inv.clientName || '').split(' ')[0] || 'there';
     var payLink = InvoicesPage._getPayLink(id);
     var amtDue = UI.money(inv.balance || inv.total);

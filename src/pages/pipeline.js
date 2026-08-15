@@ -913,7 +913,19 @@ var PipelinePage = {
     var firstName = (deal.clientName || '').split(' ')[0];
 
     if (!email) {
-      UI.toast('No email address for this client', 'error');
+      // v1124: fall back to text when a phone is on file (see invoices.js).
+      var _ph = (client && client.phone ? String(client.phone) : '').replace(/\D/g, '');
+      if (_ph) {
+        var _co2 = PipelinePage._co();
+        var _msg = 'Hi ' + firstName + ' — following up on the estimate we discussed'
+          + (deal.description ? ' for ' + deal.description : '')
+          + '. Any questions? Call/text ' + _co2.phone + '. — Doug, ' + _co2.name;
+        UI.toast('No email on file — sending by text instead');
+        if (typeof Dialpad !== 'undefined' && Dialpad.showTextModal) { Dialpad.showTextModal(deal.clientId || '', '', _ph, _msg); }
+        else { window.open('sms:' + _ph + '?&body=' + encodeURIComponent(_msg)); }
+        return;
+      }
+      UI.toast('No email or phone on file — add one on the client record', 'error');
       return;
     }
 

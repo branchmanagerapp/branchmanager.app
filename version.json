@@ -1,5 +1,5 @@
 {
-  "version": 1123,
+  "version": 1124,
   "released": "2026-08-15",
-  "notes": "Trust hardening: mid-session stale watchdog blocks writes on old builds (loud update banner instead of silent 400s), client error beacon to client_errors table"
+  "notes": "Send invoice / follow-up: no email = auto-fallback to text when phone on file (error only when neither exists)"
 }
