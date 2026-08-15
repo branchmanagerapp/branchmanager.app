@@ -785,6 +785,7 @@ var SchedulePage = {
         + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       globalUnscheduled.slice(0, 10).forEach(function(j) {
         html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
           + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:0 0 170px;overflow:hidden;">'
           + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
@@ -1090,6 +1091,7 @@ var SchedulePage = {
       html += '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       unscheduled.slice(0, 10).forEach(function(j) {
         html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
           + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:0 0 170px;overflow:hidden;">'
           + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
@@ -1202,6 +1204,7 @@ var SchedulePage = {
       html += '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       unscheduled.slice(0, 10).forEach(function(j) {
         html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
           + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:0 0 170px;overflow:hidden;">'
           + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
           + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
