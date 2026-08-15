@@ -207,6 +207,17 @@ var DB = (function() {
   // ── Audit Log ──
   var AUDIT_KEY = 'bm-audit-log';
   var AUDIT_MAX = 500;
+  // v1126: keep the activity feed to the last 30 days (Doug, Aug 15 —
+  // "anything over thirty days get rid of"). Runs once per boot.
+  (function _pruneAudit() {
+    try {
+      var log = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+      var cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+      var kept = log.filter(function(e) { return e && e.ts && new Date(e.ts).getTime() > cutoff; });
+      if (kept.length !== log.length) localStorage.setItem(AUDIT_KEY, JSON.stringify(kept));
+    } catch (e) {}
+  })();
+
   function _audit(action, table, recordId, details) {
     try {
       var log = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');

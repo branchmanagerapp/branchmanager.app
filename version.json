@@ -1,5 +1,5 @@
 {
-  "version": 1125,
+  "version": 1126,
   "released": "2026-08-15",
-  "notes": "Schedule drag reverts fixed: sync lock released via try/finally (jammed lock silently ate every save), bounded 10s lock wait forces writes through + beacons, background pull no longer teleports detail views to dashboard"
+  "notes": "Activity feed auto-prunes to last 30 days on boot"
 }
