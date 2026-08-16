@@ -1,6 +1,6 @@
-/* Second Nature shared nav — injected on internal pages only. One source of truth for structure. */
+/* Second Nature shared nav v3 — traditional top bar + dropdowns (desktop), hamburger drawer (mobile). */
 (function () {
-  if (window.__sntNav) return; window.__sntNav = 1;
+  if (window.__sntNav) return; window.__sntNav = 3;
   var SECTIONS = [
     ["🎯 Daily", [
       ["🛰 Ground Control", "ground-control-7c3f9a.html"],
@@ -13,13 +13,14 @@
       ["🗺 Estimates map", "estimates-map-3f9c21.html"],
       ["🕊 Enough", "enough-snt-7b7e05.html"]
     ]],
-    ["🏛 Bids & growth", [
+    ["🏛 Bids", [
+      ["🏛 Bid Command Center", "bids-snt-4e7b2c.html"],
       ["🤝 Bid partners", "bids-partners-4e7a91.html"],
       ["🔨 Brink jobs", "brink-jobs-9e4c17.html"],
       ["⚡ Line clearance & rates", "line-clearance-9f3a72.html"],
       ["🌩 Storm work", "storm-work-4e7a21.html"]
     ]],
-    ["🌳 Money & fleet", [
+    ["🌳 Money", [
       ["📊 Fleet & budget", "fleet-budget-b1e454.html"],
       ["🚛 Fleet detail", "fleet-full-5e88b2.html"],
       ["🏦 Tree cash 0606", "tree-cash-0606-9f2c.html"],
@@ -34,18 +35,31 @@
       ["🏷 Navimow promos", "navimow-promos-8a3f.html"],
       ["📞 Follow-ups", "smartlawn-followups-8d42c7.html"]
     ]],
-    ["🔗 Other sites", [
+    ["🔗 Sites", [
       ["🌿 Branch Manager app", "https://branchmanager.app/"],
       ["🌲 peekskilltree.com", "https://peekskilltree.com"],
       ["🛼 skateOS /j2", "https://skateos.com/j2"],
       ["📣 Marketing hub", "marketing-hub.html"]
     ]],
-    ["🗂 Everything", [
-      ["🗂 Full Index (all 148 pages)", "hub-570301.html"]
+    ["🗂 Index", [
+      ["🗂 Full Index (all pages)", "hub-570301.html"]
     ]]
   ];
-  var css = '#snt-nav-btn{position:fixed;right:14px;bottom:14px;z-index:2147483000;width:48px;height:48px;border-radius:50%;background:#1f7a43;color:#fff;border:none;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer}'
-    + '#snt-nav-ovl{position:fixed;inset:0;z-index:2147483001;background:rgba(10,16,12,.96);overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
+  var css = ''
+    + '#snt-top{position:fixed;top:0;left:0;right:0;z-index:2147483000;background:#131b16;border-bottom:1px solid #26312a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.35)}'
+    + '#snt-top .in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:2px;height:48px;padding:0 10px}'
+    + '#snt-brand{color:#e8eee9;font-weight:800;font-size:15px;text-decoration:none;margin-right:10px;white-space:nowrap}'
+    + '.snt-mi{position:relative}'
+    + '.snt-mi>button{background:none;border:none;color:#cdd8d0;font-size:13.5px;font-weight:600;padding:8px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}'
+    + '.snt-mi>button:hover,.snt-mi.open>button{background:#1e2a22;color:#fff}'
+    + '.snt-dd{display:none;position:absolute;top:100%;left:0;min-width:230px;background:#18211b;border:1px solid #2a362e;border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.5)}'
+    + '.snt-mi.open .snt-dd{display:block}'
+    + '.snt-dd a{display:block;color:#dfe8e1;text-decoration:none;font-size:13.5px;padding:9px 10px;border-radius:8px;white-space:nowrap}'
+    + '.snt-dd a:hover,.snt-dd a.here{background:#22302a}'
+    + '.snt-dd a.here{color:#4fc47f}'
+    + '#snt-burger{display:none;margin-left:auto;background:none;border:none;color:#e8eee9;font-size:22px;cursor:pointer;padding:6px 10px}'
+    + '@media(max-width:767px){.snt-mi{display:none}#snt-burger{display:block}}'
+    + '#snt-nav-ovl{position:fixed;inset:0;z-index:2147483001;background:rgba(10,16,12,.97);overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
     + '#snt-nav-ovl.open{display:block}'
     + '.snt-nav-in{max-width:560px;margin:0 auto;padding:18px 16px 60px}'
     + '.snt-nav-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}'
@@ -56,22 +70,53 @@
     + '.snt-nav-a:active,.snt-nav-a.here{background:#1c2620}'
     + '.snt-nav-a.here{color:#4fc47f}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-  var btn = document.createElement('button'); btn.id = 'snt-nav-btn'; btn.type = 'button'; btn.title = 'Site navigation'; btn.textContent = '🗂';
-  var ovl = document.createElement('div'); ovl.id = 'snt-nav-ovl';
+
   var here = location.pathname.split('/').pop();
-  var h = '<div class="snt-nav-in"><div class="snt-nav-top"><b>🌳 Second Nature — navigate</b><button id="snt-nav-x" type="button">✕</button></div>';
-  SECTIONS.forEach(function (sec) {
-    h += '<div class="snt-nav-h">' + sec[0] + '</div>';
-    sec[1].forEach(function (it) {
-      var href = it[1], abs = /^https?:/i.test(href) ? href : '/' + href;
-      var cls = (!/^https?:/i.test(href) && href === here) ? 'snt-nav-a here' : 'snt-nav-a';
-      h += '<a class="' + cls + '" href="' + abs + '">' + it[0] + '</a>';
-    });
+  function linkHtml(it, cls) {
+    var href = it[1], abs = /^https?:/i.test(href) ? href : '/' + href;
+    var isHere = !/^https?:/i.test(href) && href === here;
+    return '<a class="' + cls + (isHere ? ' here' : '') + '" href="' + abs + '">' + it[0] + '</a>';
+  }
+
+  // ── Top bar ──
+  var bar = document.createElement('nav'); bar.id = 'snt-top';
+  var h = '<div class="in"><a id="snt-brand" href="/ground-control-7c3f9a.html">🌳 Second Nature</a>';
+  SECTIONS.forEach(function (sec, i) {
+    h += '<div class="snt-mi" data-i="' + i + '"><button type="button">' + sec[0] + ' ▾</button><div class="snt-dd">';
+    sec[1].forEach(function (it) { h += linkHtml(it, ''); });
+    h += '</div></div>';
   });
-  h += '</div>';
-  ovl.innerHTML = h;
-  document.body.appendChild(btn); document.body.appendChild(ovl);
-  btn.addEventListener('click', function () { ovl.classList.add('open'); });
+  h += '<button id="snt-burger" type="button" title="Menu">☰</button></div>';
+  bar.innerHTML = h;
+  document.body.appendChild(bar);
+  // push page content below the fixed bar
+  var curPad = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
+  document.body.style.paddingTop = (curPad + 52) + 'px';
+
+  // dropdown toggling (click; one open at a time; outside click closes)
+  bar.addEventListener('click', function (e) {
+    var mi = e.target.closest('.snt-mi');
+    if (mi && e.target.tagName === 'BUTTON') {
+      var was = mi.classList.contains('open');
+      bar.querySelectorAll('.snt-mi.open').forEach(function (m) { m.classList.remove('open'); });
+      if (!was) mi.classList.add('open');
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#snt-top')) bar.querySelectorAll('.snt-mi.open').forEach(function (m) { m.classList.remove('open'); });
+  });
+
+  // ── Mobile drawer (hamburger) ──
+  var ovl = document.createElement('div'); ovl.id = 'snt-nav-ovl';
+  var oh = '<div class="snt-nav-in"><div class="snt-nav-top"><b>🌳 Second Nature — navigate</b><button id="snt-nav-x" type="button">✕</button></div>';
+  SECTIONS.forEach(function (sec) {
+    oh += '<div class="snt-nav-h">' + sec[0] + '</div>';
+    sec[1].forEach(function (it) { oh += linkHtml(it, 'snt-nav-a'); });
+  });
+  oh += '</div>';
+  ovl.innerHTML = oh;
+  document.body.appendChild(ovl);
+  document.getElementById('snt-burger').addEventListener('click', function () { ovl.classList.add('open'); });
   ovl.addEventListener('click', function (e) { if (e.target.id === 'snt-nav-x') ovl.classList.remove('open'); });
 })();
 
@@ -106,7 +151,7 @@
     "networth-4a91c7.html": "The full balance-sheet picture across everything."
   };
   var here = location.pathname.split('/').pop();
-  var txt = HELP[here] || "Internal Second Nature page. Tap the 🗂 button (bottom right) to jump anywhere; the Full Index lists every page ever built. Content on these pages is maintained by Claude — if something looks stale or wrong, say so in chat and it gets fixed.";
+  var txt = HELP[here] || "Internal Second Nature page. Use the top menu (or ☰ on your phone) to jump anywhere; the Full Index lists every page ever built. Content on these pages is maintained by Claude — if something looks stale or wrong, say so in chat and it gets fixed.";
   var d = document.createElement('details');
   d.style.cssText = 'max-width:640px;margin:34px auto 70px;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
   d.innerHTML = '<summary style="cursor:pointer;color:#8a948f;font-size:13px;padding:8px 0">❓ How this page works</summary>'
