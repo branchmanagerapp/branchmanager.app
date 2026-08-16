@@ -56,6 +56,7 @@ header .sub{font-size:13px;opacity:.9}
   .lbl.sug{background:#fbf3d6;color:#7a5f12}
 }
 
+.evtm{color:#e8b64c;font-weight:800;font-size:12px}
 /* day agenda panel */
 .day-panel{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
 .day-panel h3{margin:0 0 8px;font-size:14px;color:var(--green-d)}
@@ -183,7 +184,7 @@ footer a{color:var(--green)}
 <script>
 (function(){
   var EVENTS = [
-    {d:'2026-08-21', t:'Emory appt — 206 Veterans Rd, Yorktown', k:'big', ic:'📍', note:'4:15 PM', link:'https://maps.apple.com/?q=206+Veterans+Road+Yorktown+NY'},
+    {d:'2026-08-21', tm:'16:15', t:'Emory appt — 206 Veterans Rd, Yorktown', k:'big', ic:'📍', link:'https://maps.apple.com/?q=206+Veterans+Road+Yorktown+NY'},
     {d:'2026-08-18', t:'BPCA addendum posts — Claude pulls it, packet update', k:'task', ic:'🏛', link:'https://branchmanager.app/bids-snt-4e7b2c.html'},
     {d:'2026-08-25', t:'BPCA PROPOSAL DUE 5pm (email)', k:'big', ic:'🏛', link:'https://branchmanager.app/bids-snt-4e7b2c.html'},
     // ---- Aug 3 2026 session adds ----
@@ -958,7 +959,7 @@ footer a{color:var(--green)}
   var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   elToday.textContent=days[now.getDay()]+', '+MON[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
 
-  function evFor(k){return EVENTS.filter(function(e){return e.d===k;});}
+  function evFor(k){return EVENTS.filter(function(e){return e.d===k;}).sort(function(a,b){return (a.tm||'99')<(b.tm||'99')?-1:1;});}
 
   function renderMonth(){
     document.getElementById('molabel').textContent=MON[view.getMonth()]+' '+view.getFullYear();
@@ -999,10 +1000,11 @@ footer a{color:var(--green)}
     evs.forEach(function(e){h+=evHtml(e);});
     p.innerHTML=h;
   }
+  function fmtTm(tm){var p=tm.split(':'),h=+p[0],m=p[1];var ap=h>=12?'PM':'AM';h=h%12;if(h===0)h=12;return h+':'+m+' '+ap;}
   function evHtml(e){
     var open=e.link?'<a class="ev '+e.k+'" href="'+e.link+'">':'<div class="ev '+e.k+'">';
     var close=e.link?'<span class="go">›</span></a>':'</div>';
-    var row=open+'<span class="ic">'+(e.ic||'•')+'</span><span><b>'+e.t+'</b>'+(e.note?'<small>'+e.note+'</small>':'')+'</span>'+close;
+    var row=open+'<span class="ic">'+(e.ic||'•')+'</span><span><b>'+(e.tm?'<span class="evtm">'+fmtTm(e.tm)+'</span> ':'')+e.t+'</b>'+(e.note?'<small>'+e.note+'</small>':'')+'</span>'+close;
     if(e.photos&&e.photos.length){row+='<div class="ephotos">'+e.photos.map(function(p){return '<a href="'+p+'" target="_blank" rel="noopener"><img loading="lazy" src="'+p+'" alt=""></a>';}).join('')+'</div>';}
     return row;
   }
@@ -1011,7 +1013,7 @@ footer a{color:var(--green)}
     // show the last 14 days + everything upcoming, oldest → newest
     var low=new Date(now.getFullYear(),now.getMonth(),now.getDate()-14);
     var lowKey=key(low.getFullYear(),low.getMonth(),low.getDate());
-    var list=EVENTS.filter(function(e){return e.d>=lowKey;}).sort(function(a,b){return a.d<b.d?-1:1;});
+    var list=EVENTS.filter(function(e){return e.d>=lowKey;}).sort(function(a,b){return a.d!==b.d?(a.d<b.d?-1:1):((a.tm||'99')<(b.tm||'99')?-1:1);});
     if(!list.length){v.innerHTML='<div class="empty">No items.</div>';return;}
     var h='',cur='';
     list.forEach(function(e){
