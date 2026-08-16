@@ -35,6 +35,12 @@
       ["🏷 Navimow promos", "navimow-promos-8a3f.html"],
       ["📞 Follow-ups", "smartlawn-followups-8d42c7.html"]
     ]],
+    ["💡 Ideas", [
+      ["💡 Business Ideas", "ideas-snt-6b3d91.html"],
+      ["🐐 Goat land clearing", "goat-clearing-9a4e17.html"],
+      ["🤝 SNT × BrinkStar options", "snt-brinkstar-7e4a2c.html"],
+      ["🚜 Northeast Intrepid", "northeast-intrepid-c83567.html"]
+    ]],
     ["🔗 Sites", [
       ["🌿 Branch Manager app", "https://branchmanager.app/"],
       ["🌲 peekskilltree.com", "https://peekskilltree.com"],
