@@ -67,5 +67,5 @@ var done=JSON.parse(localStorage.getItem(K)||'{}');
 document.querySelectorAll('.row').forEach(function(r){var id=r.dataset.id;if(done[id]){r.querySelector('.ck').classList.add('on');r.querySelector('.ck').textContent='✓';}});
 function tog(el){var r=el.closest('.row');var id=r.dataset.id;done[id]=!done[id];el.classList.toggle('on',done[id]);el.textContent=done[id]?'✓':'';localStorage.setItem(K,JSON.stringify(done));}
 </script>
-<script src="nav-snt.js?v=4" defer></script>
+<script src="nav-snt.js?v=5" defer></script>
 </body></html>
