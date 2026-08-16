@@ -86,7 +86,7 @@
 
   // ── Top bar ──
   var bar = document.createElement('nav'); bar.id = 'snt-top';
-  var h = '<div class="in"><a id="snt-brand" href="/ground-control-7c3f9a.html">🌳 Second Nature</a>';
+  var h = '<div class="in"><a id="snt-brand" href="/home-snt-3f8b12.html">🌳 Second Nature</a>';
   SECTIONS.forEach(function (sec, i) {
     h += '<div class="snt-mi" data-i="' + i + '"><button type="button">' + sec[0] + ' ▾</button><div class="snt-dd">';
     sec[1].forEach(function (it) { h += linkHtml(it, ''); });
