@@ -30,6 +30,13 @@ input[type=number]:focus{outline:2px solid var(--green);border-color:var(--green
 footer{text-align:center;color:var(--faint);font-size:11px;padding:16px 0 40px}
 .who{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
 .rate{font-size:11px;color:var(--muted)}
+details.exp{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden}
+details.exp>summary{list-style:none;cursor:pointer;padding:13px 14px;font-size:16px;font-weight:800;color:var(--green-d);display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--green-l)}
+details.exp>summary::-webkit-details-marker{display:none}
+details.exp>summary .chev{font-size:13px;color:var(--green);transition:transform .2s;flex:none}
+details.exp[open]>summary .chev{transform:rotate(90deg)}
+details.exp>.body{padding:12px 14px 14px}
+details.exp>summary .amt{font-size:13px;font-weight:800;margin-left:auto;font-variant-numeric:tabular-nums}
 button.clr{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--muted)}
 </style></head><body>
 <header><div class="wrap">
@@ -71,8 +78,7 @@ button.clr{background:none;border:1px solid var(--line);border-radius:8px;paddin
 <div id="otflag"></div>
 
 
-<h2>Job P&amp;L &mdash; Salem (Michelle Melagrano, 4 Terrace Dr)</h2>
-<div class="card">
+<details class="exp" open><summary><span class="chev">&#9656;</span> Job P&amp;L &mdash; Salem <span class="amt" id="sum-gp">$0</span></summary><div class="body">
 <table>
 <tbody>
 <tr><td>Job total <span class="pill real">you said</span></td><td class="r" style="color:var(--green-d);font-weight:800">$<input type="number" id="pl-rev" value="7500" step="50" style="width:82px"></td></tr>
@@ -92,8 +98,8 @@ button.clr{background:none;border:1px solid var(--line);border-radius:8px;paddin
 <div class="note flag"><b>Not included above:</b> overhead (insurance, truck payments, phones, storage). Gross profit is not take-home. Your fleet/budget page carries the real monthly nut &mdash; a rough overhead share on a one-day job runs several hundred dollars.</div>
 </div>
 
-<h2>Last week P&amp;L &mdash; Aug 10&ndash;16</h2>
-<div class="card">
+</div></details>
+<details class="exp" open><summary><span class="chev">&#9656;</span> Last week P&amp;L &mdash; Aug 10&ndash;16 <span class="amt">$0 collected</span></summary><div class="body">
 <p style="font-size:13px;margin:0 0 8px"><b>What actually exists in Branch Manager for that week</b> <span class="pill real">real</span>:</p>
 <table><thead><tr><th>Item</th><th class="r">Amount</th><th>Status</th></tr></thead><tbody>
 <tr><td>Invoice #1017 &mdash; Oswald Roche</td><td class="r">$2,709.38</td><td><b style="color:var(--red)">DRAFT</b> &mdash; not sent</td></tr>
@@ -104,8 +110,8 @@ button.clr{background:none;border:1px solid var(--line);border-radius:8px;paddin
 <div class="note flag"><b>That's the headline: last week billed $2,709.38 and collected nothing</b>, because invoice #1017 is still sitting in draft. The last money that actually landed was Aug 7&ndash;8 &mdash; Hector Arroyo $1,500, Nicholas Anthony $1,000, David Coats $2,200 (all paid). <b>Sending #1017 is the single highest-value thing you can do today.</b></div>
 <div class="note warn"><b>Cost side can't be computed for last week</b> &mdash; no hours were clocked Aug 10&ndash;16, and there are no fuel or dump entries in BM. Once you fill in the hours at the top of this page, labor cost for the week = those hours &times; $30. Everything else (fuel, dump, disposal) isn't tracked anywhere I can read.</div>
 </div>
-<h2>What IS confirmed in Branch Manager</h2>
-<div class="card">
+</div></details>
+<details class="exp"><summary><span class="chev">&#9656;</span> What IS confirmed in Branch Manager</summary><div class="body">
 <p style="font-size:13px;margin:0 0 8px"><b>Rates on file</b> <span class="pill real">real</span> — Doug $30/hr · Catherine Conway $30/hr · David Beers $30/hr · (Braxton Kari $50/hr, inactive)</p>
 <p style="font-size:13px;margin:0 0 8px"><b>Last logged hours</b> — Fri Aug 7: Doug 11.5 hrs, Catherine 11.5 hrs. That is the most recent timeclock entry in the system.</p>
 <table><thead><tr><th>Week</th><th>Person</th><th class="r">Hrs</th><th class="r">Gross</th></tr></thead><tbody>
@@ -124,6 +130,7 @@ button.clr{background:none;border:1px solid var(--line);border-radius:8px;paddin
 <div class="note flag" style="margin-top:8px"><b>Catherine is barely in the timeclock.</b> One single entry (Aug 7) in the entire month. If she's been working the days you have, her logged pay is drastically understated &mdash; that gap is the biggest risk in this payroll.</div>
 </div>
 
+</div></details>
 <div class="note warn"><b>Also found:</b> <code>team_members</code> has <b>duplicate rows</b> — a second David Beers, Braxton Kari and Michelle Melagrano with <b>no rate set</b>. If payroll picks the wrong row it computes $0. Worth cleaning up in Settings before the next run.</div>
 
 <footer>Second Nature Tree — internal · unlisted &amp; noindex · entries save to this device only</footer>
@@ -182,6 +189,7 @@ function pl(){
   document.getElementById('pl-cost').textContent='$'+cost.toFixed(2);
   document.getElementById('pl-gp').textContent='$'+gp.toFixed(2);
   document.getElementById('pl-gp').style.color = gp<0 ? '#c0392b' : '#0d3a20';
+  var sg=document.getElementById('sum-gp'); if(sg){sg.textContent='$'+gp.toFixed(0); sg.style.color = gp<0 ? '#c0392b' : '#0d3a20';}
   document.getElementById('pl-margin').textContent = rev>0 ? (gp/rev*100).toFixed(1)+'%' : '\u2014';
 }
 ['pl-rev','pl-comm','pl-hd','pl-hc','pl-hv','pl-dump','pl-fuel','pl-other'].forEach(function(id){
