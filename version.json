@@ -1,5 +1,5 @@
 {
-  "version": 1134,
+  "version": 1135,
   "released": "2026-08-19",
-  "notes": "Payroll hours fix — time entries with user_id NULL now match by name; Michelle set to commission (off hours grid); duplicate crew rows deactivated"
+  "notes": "Subcontractors excluded from payroll hours grid (Braxton) — subs invoice, they are not on payroll"
 }

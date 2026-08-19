@@ -123,7 +123,12 @@ var PayrollPage = {
     // v1086: commission roles (Michelle) are excluded from the hours grid —
     // they're paid per-sale, not per-hour (Doug 8/6). Commission enters
     // payroll as its own run line when a payout is recorded, never as time.
-    return team.filter(function(t) { return t.active !== false && t.employment_type !== 'commission'; });
+    // v1135: subcontractors (Braxton) likewise — a sub invoices us, he is not
+    // on payroll at all (Doug 8/19). Payroll = people we cut a paycheck to.
+    var OFF_PAYROLL = ['commission', 'subcontractor'];
+    return team.filter(function(t) {
+      return t.active !== false && OFF_PAYROLL.indexOf(t.employment_type) === -1;
+    });
   },
 
   // v1134: callers pass emp.name, but only ~1/3 of cloud time_entries carry the
