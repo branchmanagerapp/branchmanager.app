@@ -70,6 +70,40 @@ button.clr{background:none;border:1px solid var(--line);border-radius:8px;paddin
 <div class="note warn"><b>Overtime:</b> figures above are straight $30/hr. Anything over 40 hrs in a week is normally 1.5&times; ($45). Weeks over 40 are flagged in red below the totals as you type &mdash; decide how you're handling OT for owners vs. crew before you pay.</div>
 <div id="otflag"></div>
 
+
+<h2>Job P&amp;L &mdash; Salem (Michelle Melagrano, 4 Terrace Dr)</h2>
+<div class="card">
+<table>
+<tbody>
+<tr><td>Job total <span class="pill real">you said</span></td><td class="r" style="color:var(--green-d);font-weight:800">$<input type="number" id="pl-rev" value="7500" step="50" style="width:82px"></td></tr>
+<tr><td>Michelle commission <span class="pill real">you said</span></td><td class="r">&minus; $<input type="number" id="pl-comm" value="750" step="25" style="width:82px"></td></tr>
+<tr><td>Doug hours <span class="rate">&times; $30</span></td><td class="r"><input type="number" id="pl-hd" step="0.5" min="0" placeholder="0"></td></tr>
+<tr><td>Catherine hours <span class="rate">&times; $30</span></td><td class="r"><input type="number" id="pl-hc" step="0.5" min="0" placeholder="0"></td></tr>
+<tr><td>David hours <span class="rate">&times; $30</span></td><td class="r"><input type="number" id="pl-hv" step="0.5" min="0" placeholder="0"></td></tr>
+<tr><td>Dump / disposal <span class="pill guess">fill in</span></td><td class="r">&minus; $<input type="number" id="pl-dump" step="25" placeholder="0" style="width:82px"></td></tr>
+<tr><td>Fuel <span class="pill guess">fill in</span></td><td class="r">&minus; $<input type="number" id="pl-fuel" step="10" placeholder="0" style="width:82px"></td></tr>
+<tr><td>Subs / rental / other <span class="pill guess">fill in</span></td><td class="r">&minus; $<input type="number" id="pl-other" step="25" placeholder="0" style="width:82px"></td></tr>
+<tr class="tot"><td>Labor cost</td><td class="r" id="pl-labor">$0.00</td></tr>
+<tr class="tot"><td>Total direct cost</td><td class="r" id="pl-cost">$0.00</td></tr>
+<tr class="tot"><td><b>Gross profit</b></td><td class="r" id="pl-gp" style="font-size:17px">$0.00</td></tr>
+<tr class="tot"><td>Margin</td><td class="r" id="pl-margin">&mdash;</td></tr>
+</tbody></table>
+<div class="note warn"><b>BM still says $7,200 on this job (job #343)</b>, one line item: "Tree removal &mdash; big trees (two in front)". You told me $7,500. <b>I did not change the record</b> &mdash; update it in the app so the invoice bills the right number. Job is still <b>scheduled</b>, not completed, and has <b>no invoice yet</b>. Its crew field is empty, which is why the timeclock has nobody on it.</div>
+<div class="note flag"><b>Not included above:</b> overhead (insurance, truck payments, phones, storage). Gross profit is not take-home. Your fleet/budget page carries the real monthly nut &mdash; a rough overhead share on a one-day job runs several hundred dollars.</div>
+</div>
+
+<h2>Last week P&amp;L &mdash; Aug 10&ndash;16</h2>
+<div class="card">
+<p style="font-size:13px;margin:0 0 8px"><b>What actually exists in Branch Manager for that week</b> <span class="pill real">real</span>:</p>
+<table><thead><tr><th>Item</th><th class="r">Amount</th><th>Status</th></tr></thead><tbody>
+<tr><td>Invoice #1017 &mdash; Oswald Roche</td><td class="r">$2,709.38</td><td><b style="color:var(--red)">DRAFT</b> &mdash; not sent</td></tr>
+<tr><td>Job Aug 14 &mdash; Oswald Roche, Cortlandt Manor</td><td class="r">$2,500.00</td><td>scheduled (not marked complete)</td></tr>
+<tr class="tot"><td>Revenue invoiced</td><td class="r">$2,709.38</td><td>&mdash;</td></tr>
+<tr class="tot"><td>Cash actually collected</td><td class="r" style="color:var(--red)">$0.00</td><td>nothing paid</td></tr>
+</tbody></table>
+<div class="note flag"><b>That's the headline: last week billed $2,709.38 and collected nothing</b>, because invoice #1017 is still sitting in draft. The last money that actually landed was Aug 7&ndash;8 &mdash; Hector Arroyo $1,500, Nicholas Anthony $1,000, David Coats $2,200 (all paid). <b>Sending #1017 is the single highest-value thing you can do today.</b></div>
+<div class="note warn"><b>Cost side can't be computed for last week</b> &mdash; no hours were clocked Aug 10&ndash;16, and there are no fuel or dump entries in BM. Once you fill in the hours at the top of this page, labor cost for the week = those hours &times; $30. Everything else (fuel, dump, disposal) isn't tracked anywhere I can read.</div>
+</div>
 <h2>What IS confirmed in Branch Manager</h2>
 <div class="card">
 <p style="font-size:13px;margin:0 0 8px"><b>Rates on file</b> <span class="pill real">real</span> — Doug $30/hr · Catherine Conway $30/hr · David Beers $30/hr · (Braxton Kari $50/hr, inactive)</p>
@@ -137,5 +171,23 @@ function upd(){
 }
 function clearAll(){if(confirm('Clear every hour you have entered?')){localStorage.removeItem(KEY);location.reload();}}
 upd();
+
+function pl(){
+  var g=function(id){var v=parseFloat((document.getElementById(id)||{}).value);return isNaN(v)?0:v;};
+  var rev=g('pl-rev'), comm=g('pl-comm');
+  var labor=(g('pl-hd')+g('pl-hc')+g('pl-hv'))*30;
+  var cost=comm+labor+g('pl-dump')+g('pl-fuel')+g('pl-other');
+  var gp=rev-cost;
+  document.getElementById('pl-labor').textContent='$'+labor.toFixed(2);
+  document.getElementById('pl-cost').textContent='$'+cost.toFixed(2);
+  document.getElementById('pl-gp').textContent='$'+gp.toFixed(2);
+  document.getElementById('pl-gp').style.color = gp<0 ? '#c0392b' : '#0d3a20';
+  document.getElementById('pl-margin').textContent = rev>0 ? (gp/rev*100).toFixed(1)+'%' : '\u2014';
+}
+['pl-rev','pl-comm','pl-hd','pl-hc','pl-hv','pl-dump','pl-fuel','pl-other'].forEach(function(id){
+  var el=document.getElementById(id); if(el) el.addEventListener('input',pl);
+});
+pl();
+
 </script>
 </body></html>
