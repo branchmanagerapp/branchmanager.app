@@ -126,9 +126,13 @@ var PayrollPage = {
     return team.filter(function(t) { return t.active !== false && t.employment_type !== 'commission'; });
   },
 
+  // v1134: callers pass emp.name, but only ~1/3 of cloud time_entries carry the
+  // name in user_id — the rest have user_id NULL and the name in user_name
+  // (→ userName after snake→camel sync). Matching on userId alone made 211 of
+  // 323 entries invisible, so every hours cell rendered 0.0.
   _getEntriesForDate: function(userId, date) {
     return DB.timeEntries.getAll().filter(function(t) {
-      var user = t.userId || t.user || '';
+      var user = t.userId || t.user || t.userName || '';
       var entryDate = (t.date || (t.clockIn || '').substring(0, 10));
       return user === userId && entryDate === date;
     });

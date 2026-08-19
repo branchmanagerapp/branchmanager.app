@@ -1,5 +1,5 @@
 {
-  "version": 1133,
-  "released": "2026-08-15",
-  "notes": "Leads Center send debounced \u2014 no more double texts to customers"
+  "version": 1134,
+  "released": "2026-08-19",
+  "notes": "Payroll hours fix — time entries with user_id NULL now match by name; Michelle set to commission (off hours grid); duplicate crew rows deactivated"
 }

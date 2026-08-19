@@ -1222,8 +1222,9 @@ var DB = (function() {
     getByJob: function(jobId) { return getAll(KEYS.timeEntries).filter(function(t) { return t.jobId === jobId; }); },
     getByUser: function(userId, date) {
       return getAll(KEYS.timeEntries).filter(function(t) {
-        // Support both 'userId' (DB clockIn) and 'user' (crewview clockOut) field names
-        var entryUser = t.userId || t.user || '';
+        // Support 'userId' (DB clockIn), 'user' (crewview clockOut), and
+        // 'userName' (v1134 — cloud rows with user_id NULL carry the name here)
+        var entryUser = t.userId || t.user || t.userName || '';
         if (entryUser !== userId) return false;
         if (date) {
           var entryDate = (t.date || t.clockIn || '').substring(0, 10);
