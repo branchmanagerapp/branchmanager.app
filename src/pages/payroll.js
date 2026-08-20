@@ -730,15 +730,18 @@ var PayrollPage = {
 
     html += '</div>'; // end grid
 
-    // v1142: action buttons render here, AFTER the hours, not above them.
-    html += bulkActionsHtml;
-
     // ── Bouncie GPS panel (v1118) — under the employee dates, per Doug. Tap a
     // day → each truck's yard in/out; tap a truck → its stops + time on site. ──
     html += self._renderBouncie(dates);
 
     // ── Weekly Review Panel ──
     html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
+
+    // v1143: action buttons sit BELOW the weekly review, per Doug. You read the
+    // hours, then the truck/phone detail, then the review — and only then do you
+    // approve or export. Actions come last because they are what you do after
+    // you have checked the numbers, not before.
+    html += bulkActionsHtml;
 
     // ── Earnings Ledger (v1082) — earned vs paid per member ──
     html += '<div id="pay-ledger" style="margin-top:20px;"><div style="font-size:12px;color:var(--text-light);">Loading earnings ledger…</div></div>';
