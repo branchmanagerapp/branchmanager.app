@@ -1,5 +1,5 @@
 {
-  "version": 1148,
+  "version": 1149,
   "released": "2026-08-20",
-  "notes": "v1148: drop the 'Truck yard times' header line; phone strip first, trucks below it"
+  "notes": "v1149: truck rows collapse to one line, neighbouring stops merge into one work address, phone+truck block back above weekly review, driver list limited to actual drivers"
 }

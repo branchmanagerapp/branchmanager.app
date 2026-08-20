@@ -366,24 +366,49 @@ var PayrollPage = {
         var firstOut = v.trips.length ? et(v.trips[0].left_yard) : null;
         var lastBack = v.trips.length ? et(v.trips[v.trips.length - 1].back_yard) : null;
         var siteMins = v.stops.reduce(function(s,x){ return s + (x.mins || 0); }, 0);
-        var summary = (firstOut ? ('out ' + firstOut + '–' + lastBack) : 'no yard trips')
-          + (v.stops.length ? (' · ' + v.stops.length + ' site' + (v.stops.length > 1 ? 's' : '') + ' · ' + PayrollPage._fmtDur(siteMins) + ' on site') : '');
+        // v1149: whole truck-day on ONE collapsed line. Neighbouring stops are
+        // merged first, so a two-house-numbers-same-property job shows once.
         var rid = 'trk-' + d + '-' + vid.slice(0, 8);
+        var merged = PayrollPage._mergeStops(v.stops);
+        v.merged = merged;
+        var yardBit = firstOut
+          ? ('<b style="color:var(--green-dark);">' + firstOut + '</b>→<b style="color:var(--green-dark);">' + lastBack + '</b>'
+             + (v.trips.length ? ' <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(v.trips.reduce(function(a,t){return a+(t.mins_out||0);},0)) + ')</span>' : ''))
+          : '<span style="color:var(--text-light);">no yard trips</span>';
+        var siteBit = merged.length
+          ? (' · <span id="' + rid + '-hdaddr" style="color:var(--link,#1565c0);font-weight:600;">📍…</span>'
+             + (merged.length > 1 ? ' <span style="color:var(--text-light);">+' + (merged.length - 1) + '</span>' : '')
+             + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(siteMins) + '</b>')
+          : ' · <span style="color:var(--text-light);">no stops</span>';
+        var summary = yardBit + siteBit;
         return '<div style="margin-bottom:4px;border:1px solid var(--border);border-radius:7px;overflow:hidden;">'
           + '<div onclick="PayrollPage._truckExpand(\'' + d + '\',\'' + vid + '\',\'' + rid + '\')" style="cursor:pointer;padding:5px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface,#f7f7f7);">'
-            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:10px;">▾</span>'
+            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:10px;">▸</span>'
             + '<span style="font-weight:700;font-size:12.5px;white-space:nowrap;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</span>'
             + PayrollPage._driverSel(vid, v.name)
-            + '<span style="font-size:10.5px;color:var(--text-light);margin-left:auto;text-align:right;">' + summary + '</span>'
+            + '<span style="font-size:11px;color:var(--text-light);margin-left:auto;text-align:right;min-width:0;">' + summary + '</span>'
           + '</div>'
-          + '<div id="' + rid + '" style="display:block;padding:5px 8px;border-top:1px solid var(--border);"></div>'
+          + '<div id="' + rid + '" style="display:none;padding:5px 8px;border-top:1px solid var(--border);"></div>'
         + '</div>';
       }).join('');
-      // v1142: trucks start EXPANDED — the stops and time-on-site are the whole
-      // point of opening a day, and Doug was having to tap every truck.
+      // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
+      // line, so there is nothing to open unless you want the individual stops.
+      // (This reverses v1142's auto-expand, per Doug: "Could fit on one line.
+      // Would need to be collapsible.") We still resolve the primary address so
+      // the collapsed line names the job site rather than showing coordinates.
       setTimeout(function() {
         Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
-          try { PayrollPage._truckFill(d, vid, 'trk-' + d + '-' + vid.slice(0, 8)); } catch (e) {}
+          var vv = PayrollPage._dayCache[d][vid];
+          var rid = 'trk-' + d + '-' + vid.slice(0, 8);
+          var top = (vv.merged || []).slice().sort(function(a,b){ return b.mins - a.mins; })[0];
+          if (!top) return;
+          PayrollPage._revGeo(top.lat, top.lon).then(function(addr) {
+            var el = document.getElementById(rid + '-hdaddr');
+            if (!el || !addr) return;
+            var esc2 = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+            el.textContent = '📍 ' + esc2(String(addr).split(',')[0]);
+            el.title = addr;
+          }).catch(function(){});
         });
       }, 0);
     }).catch(function() {
@@ -391,6 +416,41 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // ── v1149: merge neighbouring stops into ONE work address ─────────────────
+  // Doug: "I don't need the neighbor's address. It's the same address. Open the
+  // geofence wider or just if their neighbors lump it into the work address."
+  // Reverse-geocoding two stops 40 m apart on the same property returned
+  // "4 Terrace Drive" and "2 Terrace Drive" — one job, shown as two. Anything
+  // within MERGE_M of an existing cluster folds into it: minutes add up, the
+  // visit count is kept, and the address shown is the cluster's longest stop.
+  _MERGE_M: 180,
+  _metres: function(a, b) {
+    var R = 6371000, r = Math.PI / 180;
+    var dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+    var h = Math.sin(dLat/2) * Math.sin(dLat/2)
+          + Math.cos(a[0]*r) * Math.cos(b[0]*r) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  },
+  _mergeStops: function(stops) {
+    var out = [];
+    (stops || []).forEach(function(s) {
+      for (var i = 0; i < out.length; i++) {
+        if (PayrollPage._metres([out[i].lat, out[i].lon], [s.stop_lat, s.stop_lon]) <= PayrollPage._MERGE_M) {
+          var c = out[i];
+          c.mins += (s.mins || 0);
+          c.visits += 1;
+          if (new Date(s.arrive_ts) < new Date(c.arrive_ts)) c.arrive_ts = s.arrive_ts;
+          if (new Date(s.depart_ts) > new Date(c.depart_ts)) c.depart_ts = s.depart_ts;
+          if ((s.mins || 0) > c.bestMins) { c.bestMins = s.mins || 0; c.lat = s.stop_lat; c.lon = s.stop_lon; }
+          return;
+        }
+      }
+      out.push({ lat:s.stop_lat, lon:s.stop_lon, mins:s.mins || 0, visits:1,
+                 arrive_ts:s.arrive_ts, depart_ts:s.depart_ts, bestMins:s.mins || 0 });
+    });
+    out.sort(function(a,b){ return new Date(a.arrive_ts) - new Date(b.arrive_ts); });
+    return out;
+  },
   // ── v1146: assumed driver per truck ──────────────────────────────────────
   // vehicles.default_driver_name is the "assumed to be driving" value. Doug
   // changes it from the dropdown right on the truck row; it saves immediately
@@ -401,11 +461,20 @@ var PayrollPage = {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!C) return Promise.resolve(null);
     var jobs = [
-      C.from('team_members').select('name,active').then(function(r){
+      C.from('team_members').select('name,active,role,employment_type').then(function(r){
         if (r.error || !r.data) return;
+        // v1149 — only people who actually drive a company truck belong in this
+        // dropdown. Doug: "Only Doug, David, or Catherine driving. Don't need
+        // Braxton or [Michelle] or anyone else in there as an option."
+        // Filtered by employment type rather than by name, so a future hourly
+        // hire shows up on its own but a subcontractor or commission-only
+        // salesperson never does.
         var seen = {}, out = [];
         r.data.forEach(function(t){
           if (t.active === false || !t.name || seen[t.name]) return;
+          var et = String(t.employment_type || '').toLowerCase();
+          var role = String(t.role || '').toLowerCase();
+          if (et === 'subcontractor' || et === 'commission' || role === 'sales') return;
           seen[t.name] = 1; out.push(t.name);
         });
         out.sort(); PayrollPage._team = out;
@@ -488,26 +557,30 @@ var PayrollPage = {
           return '<div style="white-space:nowrap;">left yard <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ')</span></div>';
         }).join('')
       : '<div style="color:var(--text-light);">no yard trips</div>';
-    var stopsHtml = v.stops.length
-      ? v.stops.map(function(s, i){
+    // v1149: expanded view lists MERGED sites (neighbouring stops folded into
+    // one work address), with a visit count when a site was returned to.
+    var mstops = v.merged || PayrollPage._mergeStops(v.stops);
+    var stopsHtml = mstops.length
+      ? mstops.map(function(s, i){
           var sid = rid + '-s' + i;
-          var maps = 'https://maps.google.com/?q=' + s.stop_lat + ',' + s.stop_lon;
+          var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
           return '<div style="padding:1px 0;">'
             + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a></span>'
             + ' <span style="white-space:nowrap;"><span style="color:var(--text-light);">' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</span>'
-            + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(s.mins) + '</b></span>'
-            + '</div>';
+            + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(s.mins) + '</b>'
+            + (s.visits > 1 ? ' <span style="color:var(--text-light);">(' + s.visits + ' visits)</span>' : '')
+            + '</span></div>';
         }).join('')
       : '<div style="color:var(--text-light);">No stops away from the yard.</div>';
     box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:2px 18px;font-size:12px;line-height:1.5;">'
       + '<div style="flex:1 1 185px;min-width:0;">' + tripsHtml + '</div>'
       + '<div style="flex:1.7 1 235px;min-width:0;">' + stopsHtml + '</div>'
       + '</div>';
-    v.stops.forEach(function(s, i){
+    mstops.forEach(function(s, i){
       var sid = rid + '-s' + i;
-      PayrollPage._revGeo(s.stop_lat, s.stop_lon).then(function(addr){
+      PayrollPage._revGeo(s.lat, s.lon).then(function(addr){
         var el = document.getElementById(sid); if (!el || !addr) return;
-        var maps = 'https://maps.google.com/?q=' + s.stop_lat + ',' + s.stop_lon;
+        var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
         el.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 ' + esc(addr) + '</a>';
       }).catch(function(){});
     });
@@ -790,16 +863,15 @@ var PayrollPage = {
 
     html += '</div>'; // end grid
 
+    // ── Phone + truck data (v1149) — ABOVE the weekly review, per Doug:
+    // "The data from the trucks and my phone should go above weekly review."
+    // (v1147 had moved it below; this puts it back.) Order inside the block is
+    // phone first, then the trucks under it. Action buttons still come last —
+    // the v1143 rule: read the hours, then the detail, then approve. ──
+    html += self._renderBouncie(dates);
+
     // ── Weekly Review Panel ──
     html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
-
-    // ── Truck yard times (v1147) — MOVED OUT of the hours-entry area, per Doug:
-    // "I don't want them clogged up where I enter employee hours." The grid and
-    // the weekly review are what you fill in; the truck/phone detail is
-    // reference you drop to afterwards, so it now sits below the review.
-    // Action buttons still come last (the v1143 rule) — you check the numbers,
-    // then the truck detail, and only then approve or export. ──
-    html += self._renderBouncie(dates);
 
     // v1143: action buttons sit BELOW the weekly review, per Doug. You read the
     // hours, then the truck/phone detail, then the review — and only then do you
