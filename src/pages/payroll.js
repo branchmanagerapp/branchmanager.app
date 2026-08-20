@@ -5,6 +5,20 @@
  * v1
  */
 var PayrollPage = {
+
+  // "2026-08-18T16:17:00Z" -> "4:17 PM"
+  _ampm: function(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  },
+
+  // Tapping a day in the grid header drives the truck panel below.
+  _pickDay: function(d) {
+    PayrollPage._bDate = d;
+    if (typeof loadPage === 'function') loadPage('payroll');
+  },
   _weekOffset: 0,
   _expandedCells: {},
   _selectedEmployees: {},
@@ -223,13 +237,11 @@ var PayrollPage = {
     // Auto-load the current date's truck data once the panel is in the DOM.
     self._bDayOpen = null;
     setTimeout(function(){ try { PayrollPage._bounceToggle(PayrollPage._bDate); } catch(e) {} }, 0);
-    var arrow = function(delta, ch){ return '<button type="button" onclick="PayrollPage._bounceDateShift(' + delta + ')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;width:38px;height:36px;font-size:18px;line-height:1;cursor:pointer;">' + ch + '</button>'; };
+
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
-      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— pick a day, tap a truck for its stops &amp; time on site</span></div>'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day above, then tap a truck for its stops &amp; time on site</span></div>'
       + '<div style="display:flex;align-items:center;justify-content:center;gap:14px;">'
-      +   arrow(-1, '‹')
       +   '<div id="bounce-date-label" style="font-size:14px;font-weight:800;min-width:150px;text-align:center;">' + lbl + '</div>'
-      +   arrow(1, '›')
       + '</div>'
       + '<div id="bday-panel"></div>'
       + '</div>';
@@ -403,12 +415,19 @@ var PayrollPage = {
   _inlineTimeRow: function(user, date, e) {
     var self = PayrollPage; e = e || {};
     var mk = function(field, val) {
-      return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value)" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 3px;width:70px;">';
+      return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value)" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 2px;width:100%;min-width:0;max-width:104px;box-sizing:border-box;">';
     };
-    return '<div style="margin-top:3px;display:flex;align-items:center;gap:3px;flex-wrap:wrap;justify-content:center;">'
+    return '<div style="margin-top:3px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center;min-width:0;">'
       + mk('in', self._hm(e.clockIn)) + '<span style="font-size:11px;color:var(--text-light);">–</span>' + mk('out', self._hm(e.clockOut))
       + '<span style="font-size:11px;color:var(--text-light);margin-left:2px;">' + (e.hours ? e.hours.toFixed(1) + 'h' : '') + '</span>'
-      + '</div>';
+      + '</div>'
+      // v1140: spell the times out in AM/PM. The narrow time inputs clipped the
+      // meridiem, so a 4:17 PM start read as 4:17 and Doug could not tell an
+      // evening job from a morning one.
+      + (e.clockIn || e.clockOut
+          ? '<div style="font-size:10.5px;color:var(--text-light);text-align:center;margin-top:1px;">'
+            + PayrollPage._ampm(e.clockIn) + ' – ' + PayrollPage._ampm(e.clockOut) + '</div>'
+          : '');
   },
 
   // ── v1122: Bouncie truck panel = single date + ‹ › arrows (was a 7-day strip) ──
@@ -516,7 +535,14 @@ var PayrollPage = {
       + '<div style="padding:10px 12px;">Employee</div>';
     dates.forEach(function(d, i) {
       var isToday = d === today;
-      html += '<div style="padding:10px 6px;text-align:center;' + (isToday ? 'background:var(--green-bg);color:var(--green-dark);' : '') + '">'
+      // v1140: tapping a day header drives the truck panel below — the panel's
+      // own < > date selector is gone, so there is ONE date in play, not two
+      // that could disagree.
+      var isSel = (PayrollPage._bDate === d);
+      var bg = isSel ? 'background:var(--green-dark);color:#fff;'
+                     : (isToday ? 'background:var(--green-bg);color:var(--green-dark);' : '');
+      html += '<div onclick="PayrollPage._pickDay(\'' + d + '\')" title="Show this day\'s truck times below"'
+        + ' style="padding:10px 6px;text-align:center;cursor:pointer;border-radius:6px 6px 0 0;' + bg + '">'
         + dayNames[i] + '<br><span style="font-weight:400;font-size:10px;">' + PayrollPage._pDate(d).getDate() + '</span></div>';
     });
     html += '<div style="padding:10px 6px;text-align:center;">Total</div>';

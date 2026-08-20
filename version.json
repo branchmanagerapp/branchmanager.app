@@ -1,5 +1,5 @@
 {
-  "version": 1139,
+  "version": 1140,
   "released": "2026-08-20",
-  "notes": "Payroll: hide subs/commission from hours grid + drop stale cached auto rows (Wed read double)"
+  "notes": "Payroll: tap a day to drive the truck panel, AM/PM on all times, one date selector not two"
 }
