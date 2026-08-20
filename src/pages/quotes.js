@@ -2788,8 +2788,9 @@ var QuotesPage = {
     if (doSms && typeof Dialpad !== 'undefined') {
       jobs.push(Dialpad.sendSMS(phone, smsBody, q.clientId)
         .then(function(r) {
-          // sendSMS returns { success, method } — counts sms_app fallback as ok too
-          var ok = r && (r.success || r.method === 'sms_app');
+          // v1136: sms_app is a HAND-OFF to the Messages app, not a delivery.
+          // Counting it as success marked quotes "sent" that never went out.
+          var ok = r && r.success === true && r.method !== 'sms_app';
           if (ok) sentVia.push('text');
           return { kind: 'sms', ok: ok, hint: r && (r.error || r.hint) };
         })

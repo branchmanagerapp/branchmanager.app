@@ -1,5 +1,5 @@
 {
-  "version": 1135,
-  "released": "2026-08-19",
-  "notes": "Subcontractors excluded from payroll hours grid (Braxton) — subs invoice, they are not on payroll"
+  "version": 1136,
+  "released": "2026-08-20",
+  "notes": "SMS hand-off to Messages app no longer counts as a delivered send — quotes were being marked sent when the text never went out"
 }

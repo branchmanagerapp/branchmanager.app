@@ -64,10 +64,15 @@ var Dialpad = {
       // Edge fn returned an error (e.g. DIALPAD_API_KEY not set) — fall back
       console.warn('[Dialpad] sendSMS edge fn error:', data.error);
       if (data.error && data.error.includes('not configured')) {
-        // No key set — open SMS app silently
+        // v1136: handing off to the Messages app is NOT a confirmed send.
+        // This used to return success:true, so a quote got marked "sent" even
+        // though Doug still had to press Send in Messages (and on desktop the
+        // sms: link does nothing at all). That is how quotes showed as sent to
+        // customers who never received them.
         window.open('sms:' + cleanPhone + '?body=' + encodeURIComponent(message));
-        UI.toast('Opening Messages app');
-        return { success: true, method: 'sms_app' };
+        UI.toast('Opened Messages — you must press Send there', 'warning');
+        return { success: false, method: 'sms_app', unverified: true,
+                 error: 'Handed to Messages app — delivery NOT confirmed' };
       }
       throw new Error(data.error || 'Send failed');
     } catch (e) {
