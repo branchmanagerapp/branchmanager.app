@@ -131,8 +131,6 @@ var ReportsPage = {
     // Why it exists: three code paths used to report messages as SENT that never
     // went out (see memory bm-silent-send-failures). This is the safety net that
     // makes a silent drop visible.
-    html += ReportsPage._deliveryAudit();
-
     // v717: 10X Tools snapshot removed from Reports top per Doug —
     // can be re-added later when actually filling out the numbers.
     // CardoneTools module + standalone page still exist.

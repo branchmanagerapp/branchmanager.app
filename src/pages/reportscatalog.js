@@ -18,6 +18,15 @@ var ReportsCatalog = {
     var html = '';
     // Sales tax counter banner (always visible at the top of the catalog)
     html += SalesTaxCounter.renderBanner();
+    // v1138: Delivery & Follow-up Audit. This was first added to
+    // ReportsPage.render(), which only powers the hidden "Export" tab — Doug
+    // never saw it. The Catalog tab is the default Reports view, so it belongs
+    // HERE, above the report cards.
+    try {
+      if (typeof ReportsPage !== 'undefined' && ReportsPage._deliveryAudit) {
+        html += ReportsPage._deliveryAudit();
+      }
+    } catch (e) {}
     html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;align-items:start;max-width:1180px;">';
     html +=   ReportsCatalog._section('Financial reports', [
       ['taxation',          'Taxation',             'Sales tax collected + remitted, by quarter and rate'],

@@ -1,5 +1,5 @@
 {
-  "version": 1137,
+  "version": 1138,
   "released": "2026-08-20",
-  "notes": "Delivery & follow-up audit built into Reports + dropped-ball banner on dashboard"
+  "notes": "Delivery audit moved to the Reports CATALOG tab (was on the hidden Export tab)"
 }
