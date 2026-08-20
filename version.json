@@ -1,5 +1,5 @@
 {
-  "version": 1140,
+  "version": 1141,
   "released": "2026-08-20",
-  "notes": "Payroll: tap a day to drive the truck panel, AM/PM on all times, one date selector not two"
+  "notes": "Payroll: date shown once (green day only); dedupe catches stale rows with any source"
 }

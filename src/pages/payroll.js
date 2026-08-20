@@ -170,15 +170,25 @@ var PayrollPage = {
     // Auto rows are one-per-person-per-day by design (partial unique index),
     // so more than one here is always a stale duplicate — keep the newest.
     // Manual entries are NEVER collapsed: a real split shift is legitimate.
-    var autos = hits.filter(function(t) { return (t.source || '') === 'auto-bouncie'; });
+    // v1141: match ANY auto-generated row, not just source==='auto-bouncie'.
+    // David's stale Wed row carried a different/blank source (older sync format)
+    // so it survived the first pass and his cell still read 15.0 (stale 8.0 +
+    // new 7.0). Manual rows are still never collapsed.
+    var autos = hits.filter(function(t) {
+      var src = String(t.source || '');
+      if (src === 'manual') return false;
+      return src.indexOf('auto') === 0 || !!t.autoMeta || !!t.auto_meta || src === '';
+    });
     if (autos.length > 1) {
       var newest = autos.slice().sort(function(a, b) {
         var at = a.updatedAt || a.createdAt || a.clockIn || '';
         var bt = b.updatedAt || b.createdAt || b.clockIn || '';
         return String(bt).localeCompare(String(at));
       })[0];
+      var keepIds = {};
+      keepIds[newest.id] = true;
       hits = hits.filter(function(t) {
-        return (t.source || '') !== 'auto-bouncie' || t.id === newest.id;
+        return autos.indexOf(t) === -1 || keepIds[t.id];
       });
       if (window.console && console.warn) {
         console.warn('[Payroll] dropped ' + (autos.length - 1) +
@@ -240,9 +250,7 @@ var PayrollPage = {
 
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
       + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day above, then tap a truck for its stops &amp; time on site</span></div>'
-      + '<div style="display:flex;align-items:center;justify-content:center;gap:14px;">'
-      +   '<div id="bounce-date-label" style="font-size:14px;font-weight:800;min-width:150px;text-align:center;">' + lbl + '</div>'
-      + '</div>'
+      + '<div id="bounce-date-label" style="display:none;">' + lbl + '</div>'
       + '<div id="bday-panel"></div>'
       + '</div>';
   },
@@ -289,7 +297,7 @@ var PayrollPage = {
     var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
     panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
-      + '<div style="font-weight:700;font-size:13px;margin-bottom:6px;">' + dnFull + '</div>'
+
       + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
       + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + esc(note) + '</textarea>'
       + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Yard = Peekskill HQ. Times = when a truck crossed the yard line (short in/out under 15 min hidden). Bouncie sleeps when parked, so first out / last back are real.</div>'
