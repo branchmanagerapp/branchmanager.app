@@ -1,5 +1,5 @@
 {
-  "version": 1138,
+  "version": 1139,
   "released": "2026-08-20",
-  "notes": "Delivery audit moved to the Reports CATALOG tab (was on the hidden Export tab)"
+  "notes": "Payroll: hide subs/commission from hours grid + drop stale cached auto rows (Wed read double)"
 }

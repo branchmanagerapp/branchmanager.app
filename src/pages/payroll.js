@@ -127,7 +127,12 @@ var PayrollPage = {
     // on payroll at all (Doug 8/19). Payroll = people we cut a paycheck to.
     var OFF_PAYROLL = ['commission', 'subcontractor'];
     return team.filter(function(t) {
-      return t.active !== false && OFF_PAYROLL.indexOf(t.employment_type) === -1;
+      // v1139: the cloud column is employment_type, but the snake->camel sync
+      // hands the client employmentType — so reading only the snake_case name
+      // returned undefined and NOBODY was ever filtered. Braxton (sub) and
+      // Michelle (commission) kept showing in the hours grid. Read both.
+      var et = t.employmentType || t.employment_type || '';
+      return t.active !== false && OFF_PAYROLL.indexOf(et) === -1;
     });
   },
 
@@ -136,11 +141,37 @@ var PayrollPage = {
   // (→ userName after snake→camel sync). Matching on userId alone made 211 of
   // 323 entries invisible, so every hours cell rendered 0.0.
   _getEntriesForDate: function(userId, date) {
-    return DB.timeEntries.getAll().filter(function(t) {
+    var hits = DB.timeEntries.getAll().filter(function(t) {
       var user = t.userId || t.user || t.userName || '';
       var entryDate = (t.date || (t.clockIn || '').substring(0, 10));
       return user === userId && entryDate === date;
     });
+
+    // v1139: DE-DUPE AUTO ROWS.
+    // The GPS sync deletes and re-inserts auto rows when crew attribution
+    // changes, so the replacement gets a NEW id. A device holding the old row
+    // in its local cache then showed BOTH — Doug's Wed Aug 19 rendered 7.0h
+    // twice as 14.0, and David's stale 8.0 + new 7.0 read as 15.0. The cloud
+    // table was correct the whole time; only the cached copy was stale.
+    // Auto rows are one-per-person-per-day by design (partial unique index),
+    // so more than one here is always a stale duplicate — keep the newest.
+    // Manual entries are NEVER collapsed: a real split shift is legitimate.
+    var autos = hits.filter(function(t) { return (t.source || '') === 'auto-bouncie'; });
+    if (autos.length > 1) {
+      var newest = autos.slice().sort(function(a, b) {
+        var at = a.updatedAt || a.createdAt || a.clockIn || '';
+        var bt = b.updatedAt || b.createdAt || b.clockIn || '';
+        return String(bt).localeCompare(String(at));
+      })[0];
+      hits = hits.filter(function(t) {
+        return (t.source || '') !== 'auto-bouncie' || t.id === newest.id;
+      });
+      if (window.console && console.warn) {
+        console.warn('[Payroll] dropped ' + (autos.length - 1) +
+                     ' stale cached auto row(s) for ' + userId + ' ' + date);
+      }
+    }
+    return hits;
   },
 
   _totalHours: function(entries) {
