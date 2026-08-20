@@ -423,6 +423,27 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // v1158 — what this person actually earned on this day, shown beside Details.
+  // Doug: "instead of saying the hours seven point five... it can just say
+  // details, and then to the right of that, it can say the amount of money that
+  // employee made that day." Rate comes from team_members.rate, the same source
+  // the weekly totals use.
+  _dayPay: function(userId, date, emp) {
+    var hrs = 0;
+    PayrollPage._getEntriesForDate(userId, date).forEach(function(e){ hrs += (e.hours || 0); });
+    if (!hrs) return '';
+    // prefer the employee record the caller already has; fall back to a lookup
+    var rate = Number((emp && (emp.rate || emp.payRate)) || 0);
+    if (!rate) {
+      try {
+        var team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
+        var m = team.filter(function(t){ return (t.name || t.id) === userId; })[0];
+        rate = Number((m && (m.rate || m.payRate)) || 0);
+      } catch (e) {}
+    }
+    if (!rate) return '';
+    return '$' + (hrs * rate).toFixed(2);
+  },
   // v1153 — Doug's phone as a ROW IN THE SAME TABLE as the trucks, with him as
   // the driver. Doug: "just list my phone same as you list the trucks, cleaner
   // this way. List me as the driver." Putting it on the same grid is what lets
@@ -673,9 +694,12 @@ var PayrollPage = {
     var mk = function(field, val) {
       return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value,\'' + m + '\')" style="font-size:' + (m ? '13' : '11') + 'px;border:1px solid var(--border);border-radius:4px;padding:' + (m ? '4px 6px' : '2px 2px') + ';width:100%;min-width:0;max-width:' + (m ? '120' : '104') + 'px;box-sizing:border-box;">';
     };
-    return '<div style="margin-top:3px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center;min-width:0;">'
-      + mk('in', self._hm(e.clockIn)) + '<span style="font-size:11px;color:var(--text-light);">–</span>' + mk('out', self._hm(e.clockOut))
-      + '<span style="font-size:11px;color:var(--text-light);margin-left:2px;">' + (e.hours ? e.hours.toFixed(1) + 'h' : '') + '</span>'
+    // v1158: no dash between the fields and no hours restatement — Doug: "You
+    // don't need a dash there... You can just have the in and out so it's
+    // tighter." The day total is already at the top of the cell and the day's
+    // pay now sits beside Details, so the per-entry hours had nothing to add.
+    return '<div style="margin-top:3px;display:flex;align-items:center;gap:3px;flex-wrap:wrap;justify-content:center;min-width:0;">'
+      + mk('in', self._hm(e.clockIn)) + mk('out', self._hm(e.clockOut))
       + '</div>';
     // v1155: the AM/PM restatement under the inputs is gone. It was added in
     // v1140 because the narrow time inputs clipped the meridiem; they no longer
@@ -889,7 +913,11 @@ var PayrollPage = {
           });
           if (!entries.length) html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
           // Day detail button
-          html += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:4px;font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>';
+          var _pay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+          html += '<div style="margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">'
+            + '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>'
+            + (_pay ? '<span style="font-size:12px;font-weight:700;color:var(--green-dark);">' + _pay + '</span>' : '')
+            + '</div>';
           // Approval indicator
           if (dayApproved && !editedAfterApproval) html += '<div style="font-size:9px;color:#22c55e;margin-top:2px;">✓ Approved</div>';
           if (editedAfterApproval) html += '<div style="font-size:9px;color:#f59e0b;margin-top:2px;">⚠ Re-approval needed</div>';
@@ -1000,7 +1028,11 @@ var PayrollPage = {
           if (cn2) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(cn2) + '</div>';
         });
         if (!entries.length) rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
-        rows += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:6px;font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>';
+        var _payM = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+        rows += '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+          + '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>'
+          + (_payM ? '<span style="font-size:13px;font-weight:700;color:var(--green-dark);">' + _payM + '</span>' : '')
+          + '</div>';
         if (dayApproved && !editedAfterApproval) rows += '<div style="font-size:10px;color:#22c55e;margin-top:3px;">✓ Approved</div>';
         if (editedAfterApproval) rows += '<div style="font-size:10px;color:#f59e0b;margin-top:3px;">⚠ Re-approval needed</div>';
         rows += '</div>';
