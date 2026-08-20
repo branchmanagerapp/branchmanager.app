@@ -416,6 +416,19 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // v1150 — keep GPS boilerplate OUT of the hours cells. Doug: "no gps data in
+  // hours fields." The auto writer stamps every row with
+  // "Auto from GPS — <truck> (N pings)", which buried the cell you actually
+  // type in. That detail still lives in the truck panel below and in Details;
+  // here we strip it and show only what a human would have written (e.g.
+  // "overridden by Doug Aug 20"). Returns '' when nothing human remains.
+  _cellNote: function(notes) {
+    var n = String(notes || '');
+    if (!n) return '';
+    n = n.replace(/Auto from GPS\s*[—-][^·|]*/i, '');
+    n = n.replace(/^[\s·|,-]+/, '').replace(/[\s·|,-]+$/, '');
+    return n;
+  },
   // ── v1149: merge neighbouring stops into ONE work address ─────────────────
   // Doug: "I don't need the neighbor's address. It's the same address. Open the
   // geofence wider or just if their neighbors lump it into the work address."
@@ -814,7 +827,7 @@ var PayrollPage = {
         html += '<div style="height:' + (expanded ? '0' : '4') + 'px;background:' + barColor + ';border-radius:2px;margin:4px 2px 0;transition:height .2s;"></div>';
 
         // Icons
-        if (entries.some(function(e) { return e.notes; })) html += '<span style="font-size:9px;position:absolute;top:2px;right:3px;">📝</span>';
+        if (entries.some(function(e) { return PayrollPage._cellNote(e.notes); })) html += '<span style="font-size:9px;position:absolute;top:2px;right:3px;">📝</span>';
 
         // Expanded content
         if (expanded) {
@@ -828,7 +841,8 @@ var PayrollPage = {
           }
           entries.forEach(function(e) {
             html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
-            if (e.notes) html += '<div style="font-size:10px;color:var(--text-light);font-style:italic;">' + UI.esc(e.notes) + '</div>';
+            var cn1 = PayrollPage._cellNote(e.notes);
+            if (cn1) html += '<div style="font-size:10px;color:var(--text-light);font-style:italic;">' + UI.esc(cn1) + '</div>';
           });
           if (!entries.length) html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
           // Day detail button
@@ -929,7 +943,7 @@ var PayrollPage = {
         + '<div style="width:52px;font-size:12px;font-weight:700;color:var(--text-light);">' + dayNames[i] + ' ' + PayrollPage._pDate(date).getDate() + '</div>'
         + '<div style="width:6px;align-self:stretch;border-radius:3px;background:' + barColor + ';"></div>'
         + '<div style="flex:1;font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#bbb') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) + ' h' : '—') + '</div>'
-        + (entries.some(function(e) { return e.notes; }) ? '<span style="font-size:11px;">📝</span>' : '')
+        + (entries.some(function(e) { return PayrollPage._cellNote(e.notes); }) ? '<span style="font-size:11px;">📝</span>' : '')
         + (dayApproved && !editedAfterApproval ? '<span style="font-size:11px;color:#22c55e;">✓</span>' : '')
         + (editedAfterApproval ? '<span style="font-size:11px;color:#f59e0b;">⚠</span>' : '')
         + '<span style="color:#ccc;font-size:12px;">' + (expanded ? '▾' : '▸') + '</span>'
@@ -939,7 +953,8 @@ var PayrollPage = {
         issues.forEach(function(iss) { rows += '<div style="color:#ef4444;font-size:11px;">⚠ ' + iss + '</div>'; });
         entries.forEach(function(e) {
           rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
-          if (e.notes) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(e.notes) + '</div>';
+          var cn2 = PayrollPage._cellNote(e.notes);
+          if (cn2) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(cn2) + '</div>';
         });
         if (!entries.length) rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
         rows += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:6px;font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>';

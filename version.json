@@ -1,5 +1,5 @@
 {
-  "version": 1149,
+  "version": 1150,
   "released": "2026-08-20",
-  "notes": "v1149: truck rows collapse to one line, neighbouring stops merge into one work address, phone+truck block back above weekly review, driver list limited to actual drivers"
+  "notes": "v1150: no GPS boilerplate in the hours cells"
 }
