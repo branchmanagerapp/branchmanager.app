@@ -1,5 +1,5 @@
 {
-  "version": 1144,
+  "version": 1145,
   "released": "2026-08-20",
-  "notes": "Quote send: server-verified delivery confirmation instead of a client-side toast"
+  "notes": "Invoice send: choose email + text up front in the modal, no surprise SMS prompt after"
 }

@@ -2,6 +2,39 @@
  * Branch Manager — Invoices Page
  */
 var InvoicesPage = {
+
+  // Adds an "Also text it" line to the invoice review modal. Doug: "I feel like
+  // I should have a drop down for text. Maybe both be collapsible." Both
+  // channels are now chosen BEFORE sending — no surprise prompt afterwards.
+  _injectTextOption: function(id) {
+    try {
+      if (document.getElementById('inv-also-text')) return;
+      var inv = DB.invoices.getById(id); if (!inv) return;
+      var client = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+      var raw = (inv.clientPhone || (client && client.phone) || '');
+      var ph = String(raw).replace(/\D/g, '');
+      var pretty = ph.length === 10
+        ? '(' + ph.slice(0,3) + ') ' + ph.slice(3,6) + '-' + ph.slice(6)
+        : (raw || 'no mobile on file');
+
+      // sit it directly above the Send button inside the modal
+      var btn = Array.prototype.slice.call(document.querySelectorAll('button'))
+        .filter(function(b) { return /Send Invoice/i.test(b.textContent || ''); })[0];
+      if (!btn || !btn.parentNode) return;
+
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'padding:10px 14px;margin:0 0 8px;background:var(--bg,#f4f7f5);'
+        + 'border:1px solid var(--border,#e6ebe6);border-radius:8px;font-size:13px;';
+      wrap.innerHTML =
+        '<label style="display:flex;align-items:center;gap:9px;cursor:' + (ph ? 'pointer' : 'default') + ';">'
+        + '<input type="checkbox" id="inv-also-text" ' + (ph ? 'checked' : 'disabled')
+        + ' style="width:17px;height:17px;cursor:' + (ph ? 'pointer' : 'default') + ';">'
+        + '<span>📱 <b>Also text it</b> to ' + pretty + '</span></label>'
+        + (ph ? '' : '<div style="font-size:11px;color:var(--text-light,#5b6660);margin-top:4px;">'
+                    + 'Add a mobile number to the client to enable texting.</div>');
+      btn.parentNode.insertBefore(wrap, btn.parentNode.firstChild);
+    } catch (e) {}
+  },
   _co: function() {
     return {
       name:          CompanyInfo.get('name'),
@@ -855,17 +888,26 @@ var InvoicesPage = {
         to: email, subject: subject, html: htmlBody, sendLabel: '📤 Send Invoice',
         onSend: function(to2, subj2) {
           if (to2 !== email) DB.invoices.update(id, { clientEmail: to2 });
+          // v1145: read the "also text" choice made UP FRONT in the modal.
+          var alsoText = false;
+          try {
+            var cb = document.getElementById('inv-also-text');
+            alsoText = !!(cb && cb.checked && !cb.disabled);
+          } catch (e) {}
           Email.send(to2, subj2, body, { htmlBody: htmlBody }).then(function(result) {
-            // Email.send returns {success:true,...} on success — Email itself toasts the user
             if (result && result.success) {
               DB.invoices.update(id, { status: 'sent', sentAt: new Date().toISOString() });
-              InvoicesPage._alsoTextAfterEmail(id);  // v1127: both channels from one Send
+              // Only text if Doug asked for it in the modal. It used to ambush him
+              // with a chooser 700ms AFTER the email went — he never picked it.
+              if (alsoText) InvoicesPage._chooserSendSMS(id);
             }
-            // Email.send already toasts on failure (with hint + mailto fallback) — don't double-toast
             InvoicesPage.showDetail(id);
           });
         }
       });
+      // v1145: inject the channel choice INTO the review modal, so both options
+      // are visible before sending instead of one ambushing him afterwards.
+      setTimeout(function() { InvoicesPage._injectTextOption(id); }, 60);
     } else if (typeof Email !== 'undefined') {
       Email.send(email, subject, body, { htmlBody: htmlBody }).then(function(result) {
         if (result && result.success) {
