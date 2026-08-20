@@ -341,8 +341,6 @@ var PayrollPage = {
     panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
 
       + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
-      + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + esc(note) + '</textarea>'
-      + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Yard = Peekskill HQ. Times = when a truck crossed the yard line (short in/out under 15 min hidden). Bouncie sleeps when parked, so first out / last back are real.</div>'
       + '</div>';
     // phone first — it is the primary source for Doug's own hours
     Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers(), PayrollPage._loadPhoneDay(d)]).then(function(res) {
