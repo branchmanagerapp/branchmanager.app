@@ -638,7 +638,7 @@ var PayrollPage = {
   // Saves straight to the day's time entry (creates one if none). Recomputes
   // hours when both ends are set; keeps the cell expanded across the reload.
   _hm: function(ts) { if (!ts) return ''; var x = new Date(ts); return ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2); },
-  _saveInline: function(user, date, entryId, field, hhmm) {
+  _saveInline: function(user, date, entryId, field, hhmm, mode) {
     if (!hhmm) return;
     var iso = date + 'T' + hhmm + ':00';
     var col = field === 'in' ? 'clockIn' : 'clockOut';
@@ -656,13 +656,22 @@ var PayrollPage = {
     if (PayrollPage._getApprovals()[dk] === 'approved') { PayrollPage._approvals[dk + '_editedAfter'] = true; PayrollPage._saveApprovals(); }
     PayrollPage._expandedCells[user + '_' + date] = true; // keep the cell open after re-render
     if (typeof UI !== 'undefined') UI.toast('Saved');
+    if (mode === 'detail') {
+      // re-open Details so the edit is visible and the evidence panel refreshes
+      try { PayrollPage.showDayDetail(user, date); } catch (err) {}
+      return;
+    }
     if (typeof loadPage === 'function') loadPage('payroll');
   },
   // Inline in/out editor markup for one entry (or a blank creator row when e is null)
-  _inlineTimeRow: function(user, date, e) {
+  _inlineTimeRow: function(user, date, e, mode) {
     var self = PayrollPage; e = e || {};
+    // v1157: `mode` lets the SAME editor run inside the Details modal. Without
+    // it the save ends in loadPage('payroll'), which tears the modal down
+    // mid-edit. In 'detail' mode we re-open Details instead.
+    var m = mode === 'detail' ? 'detail' : '';
     var mk = function(field, val) {
-      return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value)" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 2px;width:100%;min-width:0;max-width:104px;box-sizing:border-box;">';
+      return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value,\'' + m + '\')" style="font-size:' + (m ? '13' : '11') + 'px;border:1px solid var(--border);border-radius:4px;padding:' + (m ? '4px 6px' : '2px 2px') + ';width:100%;min-width:0;max-width:' + (m ? '120' : '104') + 'px;box-sizing:border-box;">';
     };
     return '<div style="margin-top:3px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center;min-width:0;">'
       + mk('in', self._hm(e.clockIn)) + '<span style="font-size:11px;color:var(--text-light);">–</span>' + mk('out', self._hm(e.clockOut))
@@ -1116,12 +1125,15 @@ var PayrollPage = {
         html += '<div style="padding:12px;background:var(--bg);border-radius:8px;margin-bottom:8px;">'
           + '<div style="display:flex;justify-content:space-between;align-items:center;">'
           + '<div><strong>' + (e.hours ? e.hours.toFixed(1) + ' hrs' : '—') + '</strong>'
-          + (e.clockIn ? '<span style="font-size:12px;color:var(--text-light);margin-left:8px;">' + new Date(e.clockIn).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + (e.clockOut ? ' – ' + new Date(e.clockOut).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ' (no clock-out)') + '</span>' : '')
+          + (e.clockOut ? '' : '<span style="font-size:12px;color:var(--text-light);margin-left:8px;">(no clock-out)</span>')
           + '</div>'
           + '<div style="display:flex;gap:4px;">'
           + '<button onclick="PayrollPage.editHours(\'' + e.id + '\')" class="btn btn-outline" style="font-size:11px;padding:3px 8px;">Edit</button>'
           + '<button onclick="PayrollPage.deleteHours(\'' + e.id + '\',\'' + userId + '\',\'' + date + '\')" class="btn btn-outline" style="font-size:11px;padding:3px 8px;color:var(--red);">×</button>'
-          + '</div></div>';
+          + '</div></div>'
+          // v1157: in/out editable right here, per Doug: "In and out time should
+          // be editable on the details page also."
+          + '<div style="display:flex;justify-content:flex-start;">' + PayrollPage._inlineTimeRow(userId, date, e, 'detail') + '</div>';
         if (e.jobId) {
           var job = DB.jobs.getById(e.jobId);
           html += '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Job: ' + (job ? '#' + job.jobNumber + ' ' + (job.clientName || '') : e.jobId) + '</div>';
