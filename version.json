@@ -1,5 +1,5 @@
 {
-  "version": 1147,
+  "version": 1148,
   "released": "2026-08-20",
-  "notes": "v1147: Truck yard times moved below the weekly review (out of the hours-entry area); phone strip shows all sources instead of hiding the dominant one"
+  "notes": "v1148: drop the 'Truck yard times' header line; phone strip first, trucks below it"
 }

@@ -249,7 +249,6 @@ var PayrollPage = {
     setTimeout(function(){ try { PayrollPage._bounceToggle(PayrollPage._bDate); } catch(e) {} }, 0);
 
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
-      + '<div style="font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:8px;">🚚 Truck yard times <span style="font-weight:400;">— tap a day above, then tap a truck for its stops &amp; time on site</span></div>'
       + '<div id="bounce-date-label" style="display:none;">' + lbl + '</div>'
       + '<div id="bday-panel"></div>'
       + '</div>';
