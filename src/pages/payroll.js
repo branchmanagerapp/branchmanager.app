@@ -347,7 +347,7 @@ var PayrollPage = {
       var el = panel.querySelector('.bday-phone');
       if (el) el.innerHTML = PayrollPage._phoneBlock(ph, d);
     });
-    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d)]).then(function(res) {
+    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers()]).then(function(res) {
       var trips = res[0] || [], stops = res[1] || [];
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
       var byV = {};
@@ -366,13 +366,14 @@ var PayrollPage = {
         var summary = (firstOut ? ('out ' + firstOut + '–' + lastBack) : 'no yard trips')
           + (v.stops.length ? (' · ' + v.stops.length + ' site' + (v.stops.length > 1 ? 's' : '') + ' · ' + PayrollPage._fmtDur(siteMins) + ' on site') : '');
         var rid = 'trk-' + d + '-' + vid.slice(0, 8);
-        return '<div style="margin-bottom:6px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">'
-          + '<div onclick="PayrollPage._truckExpand(\'' + d + '\',\'' + vid + '\',\'' + rid + '\')" style="cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:6px;background:var(--surface,#f7f7f7);">'
-            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:11px;">▾</span>'
-            + '<span style="font-weight:700;font-size:13px;white-space:nowrap;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</span>'
-            + '<span style="font-size:11px;color:var(--text-light);margin-left:auto;text-align:right;">' + summary + '</span>'
+        return '<div style="margin-bottom:4px;border:1px solid var(--border);border-radius:7px;overflow:hidden;">'
+          + '<div onclick="PayrollPage._truckExpand(\'' + d + '\',\'' + vid + '\',\'' + rid + '\')" style="cursor:pointer;padding:5px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface,#f7f7f7);">'
+            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:10px;">▾</span>'
+            + '<span style="font-weight:700;font-size:12.5px;white-space:nowrap;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</span>'
+            + PayrollPage._driverSel(vid, v.name)
+            + '<span style="font-size:10.5px;color:var(--text-light);margin-left:auto;text-align:right;">' + summary + '</span>'
           + '</div>'
-          + '<div id="' + rid + '" style="display:block;padding:8px 10px;border-top:1px solid var(--border);"></div>'
+          + '<div id="' + rid + '" style="display:block;padding:5px 8px;border-top:1px solid var(--border);"></div>'
         + '</div>';
       }).join('');
       // v1142: trucks start EXPANDED — the stops and time-on-site are the whole
@@ -387,6 +388,54 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // ── v1146: assumed driver per truck ──────────────────────────────────────
+  // vehicles.default_driver_name is the "assumed to be driving" value. Doug
+  // changes it from the dropdown right on the truck row; it saves immediately
+  // and is what job-costing will attribute the labour hours to.
+  _team: null,
+  _drivers: {},
+  _loadTeamAndDrivers: function() {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve(null);
+    var jobs = [
+      C.from('team_members').select('name,active').then(function(r){
+        if (r.error || !r.data) return;
+        var seen = {}, out = [];
+        r.data.forEach(function(t){
+          if (t.active === false || !t.name || seen[t.name]) return;
+          seen[t.name] = 1; out.push(t.name);
+        });
+        out.sort(); PayrollPage._team = out;
+      }),
+      C.from('vehicles').select('id,default_driver_name').then(function(r){
+        if (r.error || !r.data) return;
+        r.data.forEach(function(v){ PayrollPage._drivers[v.id] = v.default_driver_name || ''; });
+      })
+    ];
+    return Promise.all(jobs).catch(function(){ return null; });
+  },
+  _driverSel: function(vid, vname) {
+    var cur = PayrollPage._drivers[vid] || '';
+    var names = PayrollPage._team || [];
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var opts = '<option value="">— driver —</option>';
+    names.forEach(function(n){
+      opts += '<option value="' + esc(n) + '"' + (n === cur ? ' selected' : '') + '>' + esc(n.split(' ')[0]) + '</option>';
+    });
+    return '<select onclick="event.stopPropagation()" onchange="event.stopPropagation();PayrollPage._setDriver(\'' + vid + '\',this.value)" '
+      + 'title="Assumed driver — change it here" '
+      + 'style="font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:5px;background:#fff;color:'
+      + (cur ? 'var(--green-dark)' : 'var(--text-light)') + ';max-width:110px;">' + opts + '</select>';
+  },
+  _setDriver: function(vid, name) {
+    PayrollPage._drivers[vid] = name;
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return;
+    C.from('vehicles').update({ default_driver_name: name || null }).eq('id', vid).then(function(r){
+      if (r.error) { console.warn('[setDriver]', r.error.message); if (typeof UI !== 'undefined') UI.toast('Could not save driver'); return; }
+      if (typeof UI !== 'undefined') UI.toast(name ? ('Driver set to ' + name) : 'Driver cleared');
+    });
+  },
   _truckStops: function(dateStr) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!C || !C.rpc) return Promise.resolve(null);
@@ -428,27 +477,35 @@ var PayrollPage = {
     box.setAttribute('data-loaded', '1');
     var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    // v1146: tightened + laid out ACROSS the page; the ADDRESS leads each site
+    // line instead of an "ON SITE" label. Two flex columns on desktop, stacks
+    // at phone width.
     var tripsHtml = v.trips.length
-      ? '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:2px;">YARD</div>' + v.trips.map(function(t){
-          return '<div style="font-size:12.5px;">left <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ')</span></div>';
+      ? v.trips.map(function(t){
+          return '<div style="white-space:nowrap;">left yard <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ')</span></div>';
         }).join('')
-      : '';
+      : '<div style="color:var(--text-light);">no yard trips</div>';
     var stopsHtml = v.stops.length
-      ? '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin:8px 0 2px;">ON SITE</div>' + v.stops.map(function(s, i){
+      ? v.stops.map(function(s, i){
           var sid = rid + '-s' + i;
           var maps = 'https://maps.google.com/?q=' + s.stop_lat + ',' + s.stop_lon;
-          return '<div style="font-size:12.5px;padding:2px 0;"><b>' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</b> '
-            + '<span style="color:var(--green-dark);font-weight:700;">' + PayrollPage._fmtDur(s.mins) + '</span> '
-            + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);">📍 map</a> · <span style="color:var(--text-light);">locating…</span></span></div>';
+          return '<div style="padding:1px 0;">'
+            + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a></span>'
+            + ' <span style="white-space:nowrap;"><span style="color:var(--text-light);">' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</span>'
+            + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(s.mins) + '</b></span>'
+            + '</div>';
         }).join('')
-      : '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">No stops away from the yard.</div>';
-    box.innerHTML = tripsHtml + stopsHtml;
+      : '<div style="color:var(--text-light);">No stops away from the yard.</div>';
+    box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:2px 18px;font-size:12px;line-height:1.5;">'
+      + '<div style="flex:1 1 185px;min-width:0;">' + tripsHtml + '</div>'
+      + '<div style="flex:1.7 1 235px;min-width:0;">' + stopsHtml + '</div>'
+      + '</div>';
     v.stops.forEach(function(s, i){
       var sid = rid + '-s' + i;
       PayrollPage._revGeo(s.stop_lat, s.stop_lon).then(function(addr){
         var el = document.getElementById(sid); if (!el || !addr) return;
         var maps = 'https://maps.google.com/?q=' + s.stop_lat + ',' + s.stop_lon;
-        el.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);">📍 ' + esc(addr) + '</a>';
+        el.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 ' + esc(addr) + '</a>';
       }).catch(function(){});
     });
   },

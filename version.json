@@ -1,5 +1,5 @@
 {
-  "version": 1145,
+  "version": 1146,
   "released": "2026-08-20",
-  "notes": "Invoice send: choose email + text up front in the modal, no surprise SMS prompt after"
+  "notes": "v1146: Truck yard times — tighter rows, full-width layout, address leads each site line, assumed-driver dropdown per truck"
 }
