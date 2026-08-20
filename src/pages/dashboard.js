@@ -2,6 +2,38 @@
  * Branch Manager — Dashboard Page
  */
 var DashboardPage = {
+
+  // Surfaces unanswered leads + quotes drafted-but-never-sent. Taps through to
+  // the full breakdown on the Reports page.
+  _droppedBallBanner: function() {
+    if (typeof DB === 'undefined' || !DB.requests || !DB.quotes) return '';
+    var now = Date.now();
+    var age = function(d) { return d ? Math.floor((now - new Date(d).getTime()) / 86400000) : 0; };
+
+    var leads = DB.requests.getAll().filter(function(r) { return (r.status || '') === 'new'; });
+    var drafts = DB.quotes.getAll().filter(function(q) { return (q.status || '') === 'draft'; });
+    if (!leads.length && !drafts.length) return '';
+
+    var val = drafts.reduce(function(s2, q) { return s2 + (+q.total || 0); }, 0);
+    var oldest = 0;
+    leads.concat(drafts).forEach(function(x) { var a = age(x.createdAt); if (a > oldest) oldest = a; });
+
+    var bits = [];
+    if (leads.length)  bits.push(leads.length + ' lead' + (leads.length > 1 ? 's' : '') + ' unanswered');
+    if (drafts.length) bits.push(drafts.length + ' quote' + (drafts.length > 1 ? 's' : '') + ' never sent (' + UI.moneyInt(val) + ')');
+
+    return '<div onclick="loadPage(\'reports\')" style="cursor:pointer;background:linear-gradient(135deg,#991b1b,#b91c1c);'
+      + 'color:#fff;border-radius:12px;padding:13px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;'
+      + 'box-shadow:0 4px 14px rgba(0,0,0,.12);">'
+      + '<div style="font-size:22px;line-height:1;">🚨</div>'
+      + '<div style="min-width:0;flex:1;">'
+      +   '<div style="font-weight:800;font-size:15px;">Follow-ups waiting</div>'
+      +   '<div style="font-size:12.5px;opacity:.92;margin-top:2px;">' + bits.join(' · ')
+      +   (oldest ? ' · oldest ' + oldest + ' days' : '') + '</div>'
+      + '</div>'
+      + '<div style="font-size:12px;opacity:.9;white-space:nowrap;">View →</div>'
+      + '</div>';
+  },
   // v720: kill switch for the "Needs your attention" inbox card. Persists
   // in localStorage; when hidden the dashboard collapses to just the
   // quick-add bar plus a small "Show" toggle.
@@ -234,6 +266,13 @@ var DashboardPage = {
     // Show sync banner if no local data but Supabase is connected
     var localClients = JSON.parse(localStorage.getItem('bm-clients') || '[]');
     var html = '';
+
+    // v1137: DROPPED-BALL BANNER. Three send paths used to report messages as
+    // SENT that never went out (memory: bm-silent-send-failures), which left
+    // leads unanswered and quotes never delivered. This banner surfaces the
+    // backlog on the FIRST screen Doug sees, and only appears when there is
+    // something to act on — it disappears at zero rather than nagging.
+    try { html += DashboardPage._droppedBallBanner(); } catch (e) {}
 
     // v943: "Next best action" chip and the sales-tax counter banner removed
     // from the dashboard per Doug (Jun 2026). _computeNextBestAction +

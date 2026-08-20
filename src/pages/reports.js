@@ -3,6 +3,114 @@
  * Download CSV reports for clients, jobs, invoices, quotes
  */
 var ReportsPage = {
+
+  // ── Delivery & follow-up audit ─────────────────────────────────────────
+  // Answers: who never got answered, what never got sent, what failed to deliver.
+  _deliveryAudit: function() {
+    var reqs = (typeof DB !== 'undefined' && DB.requests) ? DB.requests.getAll() : [];
+    var quotes = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
+    var today = Date.now();
+    var ageOf = function(d) {
+      if (!d) return 0;
+      return Math.max(0, Math.floor((today - new Date(d).getTime()) / 86400000));
+    };
+
+    var newReqs = reqs.filter(function(r) { return (r.status || '') === 'new'; })
+                      .sort(function(a, b) { return ageOf(b.createdAt) - ageOf(a.createdAt); });
+    var drafts = quotes.filter(function(q) { return (q.status || '') === 'draft'; })
+                       .sort(function(a, b) { return ageOf(b.createdAt) - ageOf(a.createdAt); });
+    var draftVal = drafts.reduce(function(s2, q) { return s2 + (+q.total || 0); }, 0);
+
+    var chip = function(days) {
+      var c = days >= 30 ? '#991b1b' : (days >= 7 ? '#ca8a04' : '#15803d');
+      return '<span style="display:inline-block;background:' + c + ';color:#fff;font-size:10px;'
+           + 'font-weight:800;padding:1px 6px;border-radius:20px;margin-left:6px;">' + days + 'd</span>';
+    };
+
+    var h = '<div class="card" style="margin-bottom:14px;border-left:3px solid #991b1b;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
+      +   '<h3 style="margin:0;font-size:15px;font-weight:700;">🚨 Delivery &amp; Follow-up Audit</h3>'
+      +   '<span style="font-size:11px;color:var(--text-light);">live — recalculated on open</span>'
+      + '</div>';
+
+    // headline tiles
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'
+      + '<div style="flex:1 1 30%;background:var(--bg);border-radius:8px;padding:9px 10px;">'
+      +   '<div style="font-size:19px;font-weight:800;color:#991b1b;">' + newReqs.length + '</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);">Leads unanswered</div></div>'
+      + '<div style="flex:1 1 30%;background:var(--bg);border-radius:8px;padding:9px 10px;">'
+      +   '<div style="font-size:19px;font-weight:800;color:#ca8a04;">' + drafts.length + '</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);">Quotes never sent</div></div>'
+      + '<div style="flex:1 1 30%;background:var(--bg);border-radius:8px;padding:9px 10px;">'
+      +   '<div style="font-size:19px;font-weight:800;color:var(--green-dark);">' + UI.moneyInt(draftVal) + '</div>'
+      +   '<div style="font-size:11px;color:var(--text-light);">Sitting in drafts</div></div>'
+      + '</div>';
+
+    // unanswered leads (top 8, tap to open)
+    if (newReqs.length) {
+      h += '<div style="font-size:12px;font-weight:700;margin:10px 0 4px;">Never answered</div>';
+      newReqs.slice(0, 8).forEach(function(r) {
+        var nm = (r.clientName || r.name || 'Unnamed lead');
+        h += '<div onclick="loadPage(\'requests\')" style="cursor:pointer;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;">'
+          +  UI.esc(nm) + chip(ageOf(r.createdAt)) + '</div>';
+      });
+      if (newReqs.length > 8) {
+        h += '<div style="font-size:11px;color:var(--text-light);padding-top:6px;">+ ' + (newReqs.length - 8) + ' more</div>';
+      }
+    }
+
+    // drafted but never sent (top 8)
+    if (drafts.length) {
+      h += '<div style="font-size:12px;font-weight:700;margin:12px 0 4px;">Drafted, never sent</div>';
+      drafts.slice(0, 8).forEach(function(q) {
+        h += '<div onclick="QuotesPage.showDetail(\'' + q.id + '\')" style="cursor:pointer;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;gap:8px;">'
+          +  '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">#' + UI.esc(q.quoteNumber || '') + ' ' + UI.esc(q.clientName || '') + chip(ageOf(q.createdAt)) + '</span>'
+          +  '<b style="white-space:nowrap;">' + UI.moneyInt(+q.total || 0) + '</b></div>';
+      });
+    }
+
+    // send failures come from `communications`, which is not in the local cache
+    h += '<div id="bm-send-failures" style="margin-top:12px;font-size:12px;color:var(--text-light);">Checking delivery failures…</div>';
+    h += '</div>';
+
+    setTimeout(ReportsPage._loadSendFailures, 60);
+    return h;
+  },
+
+  _loadSendFailures: function() {
+    var el = document.getElementById('bm-send-failures');
+    if (!el) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { el.innerHTML = '<i>Delivery log unavailable offline.</i>'; return; }
+    var since = new Date(Date.now() - 120 * 86400000).toISOString();
+    sb.from('communications')
+      .select('created_at,channel,status,subject,to_email,to_number')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(400)
+      .then(function(res) {
+        if (res.error || !res.data) { el.innerHTML = '<i>Could not load delivery log.</i>'; return; }
+        var bad = res.data.filter(function(c) {
+          var st = (c.status || '').toLowerCase();
+          return st.indexOf('fail') !== -1 || st.indexOf('not sent') !== -1 || st.indexOf('bounce') !== -1;
+        });
+        if (!bad.length) {
+          el.innerHTML = '<span style="color:var(--green-dark);font-weight:600;">✓ No delivery failures in the last 120 days.</span>';
+          return;
+        }
+        var out = '<div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:4px;">'
+                + 'Never reached the customer (' + bad.length + ')</div>';
+        bad.slice(0, 12).forEach(function(c) {
+          var who = c.to_email || c.to_number || '(unknown)';
+          out += '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);">'
+              +  UI.esc(who) + '<div style="font-size:11px;color:var(--text-light);">'
+              +  String(c.created_at).substring(0, 10) + ' · ' + UI.esc(c.channel || '') + ' · '
+              +  UI.esc(c.status || '') + ' · ' + UI.esc((c.subject || '').substring(0, 44)) + '</div></div>';
+        });
+        if (bad.length > 12) out += '<div style="font-size:11px;color:var(--text-light);padding-top:6px;">+ ' + (bad.length - 12) + ' more</div>';
+        el.innerHTML = out;
+      });
+  },
   render: function() {
     var html = '';
 
@@ -15,6 +123,15 @@ var ReportsPage = {
       + '<h2 style="margin:0;font-size:20px;font-weight:700;">Reports</h2>'
       + '<button onclick="ReportsPage._sendWeeklyDigest()" style="background:var(--white);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);" title="Email this week\'s KPI summary to the owner email on file">📨 Email weekly KPI</button>'
       + '</div>';
+
+    // v1137: DELIVERY & FOLLOW-UP AUDIT — built INTO the app (was a one-off
+    // standalone HTML page, which went stale the moment it was generated and
+    // duplicated a surface that belongs here). This block is LIVE: it recomputes
+    // from DB on every render, and pulls send failures from communications.
+    // Why it exists: three code paths used to report messages as SENT that never
+    // went out (see memory bm-silent-send-failures). This is the safety net that
+    // makes a silent drop visible.
+    html += ReportsPage._deliveryAudit();
 
     // v717: 10X Tools snapshot removed from Reports top per Doug —
     // can be re-added later when actually filling out the numbers.
