@@ -1,5 +1,5 @@
 {
-  "version": 1151,
+  "version": 1152,
   "released": "2026-08-20",
-  "notes": "v1151: Details page carries full day evidence — job/yard/travel split, truck yard in-out, sites with addresses, phone span, and reasons to distrust the number"
+  "notes": "v1152: truck panel is a spreadsheet-style grid — one permanent row per truck, driver beside it, left-yard and back-at-yard up front"
 }

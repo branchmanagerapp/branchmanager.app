@@ -361,36 +361,50 @@ var PayrollPage = {
       ids.sort(function(a,b){ return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model); });
       PayrollPage._dayCache[d] = byV;
       var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
-      sum.innerHTML = ids.map(function(vid) {
+      // ── v1152: spreadsheet-style truck grid ────────────────────────────────
+      // Doug: "if you could kinda make it more of, like, a spreadsheet style,
+      // kinda like the payroll thing is... so the trucks would correlate to the
+      // people." One permanent row per truck — NOT collapsible — because
+      // left-yard → back-at-yard is the number he verifies hours against:
+      // "that's the metric that I'm going to use to verify hours."
+      var rows = ids.map(function(vid) {
         var v = byV[vid];
-        var firstOut = v.trips.length ? et(v.trips[0].left_yard) : null;
-        var lastBack = v.trips.length ? et(v.trips[v.trips.length - 1].back_yard) : null;
-        var siteMins = v.stops.reduce(function(s,x){ return s + (x.mins || 0); }, 0);
-        // v1149: whole truck-day on ONE collapsed line. Neighbouring stops are
-        // merged first, so a two-house-numbers-same-property job shows once.
         var rid = 'trk-' + d + '-' + vid.slice(0, 8);
         var merged = PayrollPage._mergeStops(v.stops);
         v.merged = merged;
-        var yardBit = firstOut
-          ? ('<b style="color:var(--green-dark);">' + firstOut + '</b>→<b style="color:var(--green-dark);">' + lastBack + '</b>'
-             + (v.trips.length ? ' <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(v.trips.reduce(function(a,t){return a+(t.mins_out||0);},0)) + ')</span>' : ''))
-          : '<span style="color:var(--text-light);">no yard trips</span>';
-        var siteBit = merged.length
-          ? (' · <span id="' + rid + '-hdaddr" style="color:var(--link,#1565c0);font-weight:600;">📍…</span>'
-             + (merged.length > 1 ? ' <span style="color:var(--text-light);">+' + (merged.length - 1) + '</span>' : '')
-             + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(siteMins) + '</b>')
-          : ' · <span style="color:var(--text-light);">no stops</span>';
-        var summary = yardBit + siteBit;
-        return '<div style="margin-bottom:4px;border:1px solid var(--border);border-radius:7px;overflow:hidden;">'
-          + '<div onclick="PayrollPage._truckExpand(\'' + d + '\',\'' + vid + '\',\'' + rid + '\')" style="cursor:pointer;padding:5px 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface,#f7f7f7);">'
-            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:10px;">▸</span>'
-            + '<span style="font-weight:700;font-size:12.5px;white-space:nowrap;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</span>'
-            + PayrollPage._driverSel(vid, v.name)
-            + '<span style="font-size:11px;color:var(--text-light);margin-left:auto;text-align:right;min-width:0;">' + summary + '</span>'
-          + '</div>'
-          + '<div id="' + rid + '" style="display:none;padding:5px 8px;border-top:1px solid var(--border);"></div>'
-        + '</div>';
+        var siteMins = v.stops.reduce(function(a,x){ return a + (x.mins || 0); }, 0);
+        var outMins = v.trips.reduce(function(a,t){ return a + (t.mins_out || 0); }, 0);
+        var firstOut = v.trips.length ? et(v.trips[0].left_yard) : '—';
+        var lastBack = v.trips.length ? et(v.trips[v.trips.length - 1].back_yard) : '—';
+        var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;';
+        return '<tr>'
+          + '<td style="' + td + 'font-weight:700;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</td>'
+          + '<td style="' + td + '">' + PayrollPage._driverSel(vid, v.name) + '</td>'
+          + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + firstOut + '</td>'
+          + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + lastBack + '</td>'
+          + '<td style="' + td + '">' + (outMins ? PayrollPage._fmtDur(outMins) : '—') + '</td>'
+          + '<td style="' + td + 'white-space:normal;min-width:120px;">'
+              + (merged.length
+                  ? '<span id="' + rid + '-hdaddr" style="color:var(--link,#1565c0);font-weight:600;">📍…</span>'
+                    + (merged.length > 1 ? ' <span style="color:var(--text-light);">+' + (merged.length - 1) + '</span>'
+                                         : '')
+                  : '<span style="color:var(--text-light);">—</span>')
+            + '</td>'
+          + '<td style="' + td + 'font-weight:700;color:var(--green-dark);">' + (siteMins ? PayrollPage._fmtDur(siteMins) : '—') + '</td>'
+          + '</tr>';
       }).join('');
+      var th = 'padding:4px 7px;text-align:left;font-size:10px;font-weight:700;color:var(--text-light);border-bottom:1px solid var(--border);white-space:nowrap;';
+      sum.innerHTML = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
+        + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead><tr>'
+          + '<th style="' + th + '">TRUCK</th>'
+          + '<th style="' + th + '">DRIVER</th>'
+          + '<th style="' + th + '">LEFT YARD</th>'
+          + '<th style="' + th + '">BACK</th>'
+          + '<th style="' + th + '">OUT</th>'
+          + '<th style="' + th + '">JOB SITE</th>'
+          + '<th style="' + th + '">ON SITE</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
       // (This reverses v1142's auto-expand, per Doug: "Could fit on one line.
