@@ -319,7 +319,11 @@ var PayrollPage = {
     if (ph.span_hours) bits.push('<b>' + (+ph.span_hours).toFixed(2) + 'h</b> span');
     bits.push(yin ? ('yard ' + yin + (yout ? ' → ' + yout : '')) : 'never at yard');
     bits.push(ph.pings + ' pings');
-    if (ph.sources) bits.push(String(ph.sources).replace('foreground,', '').replace('background,', ''));
+    // v1147: show EVERY source, not sources-minus-the-first. The old
+    // .replace('foreground,','') stripped the dominant source and displayed the
+    // leftover, so a day with 164 foreground pings and 13 dead owntracks pings
+    // read as "owntracks" — making background tracking look alive when it was not.
+    if (ph.sources) bits.push(String(ph.sources).split(',').filter(Boolean).join(' + '));
     return '<div style="background:#e8f5e9;border:1px solid #cfe5d6;border-left:3px solid var(--green-dark);'
       + 'border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;color:#14321f;">'
       + '📱 <b>Your phone</b> — ' + bits.join(' · ')
@@ -787,12 +791,16 @@ var PayrollPage = {
 
     html += '</div>'; // end grid
 
-    // ── Bouncie GPS panel (v1118) — under the employee dates, per Doug. Tap a
-    // day → each truck's yard in/out; tap a truck → its stops + time on site. ──
-    html += self._renderBouncie(dates);
-
     // ── Weekly Review Panel ──
     html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
+
+    // ── Truck yard times (v1147) — MOVED OUT of the hours-entry area, per Doug:
+    // "I don't want them clogged up where I enter employee hours." The grid and
+    // the weekly review are what you fill in; the truck/phone detail is
+    // reference you drop to afterwards, so it now sits below the review.
+    // Action buttons still come last (the v1143 rule) — you check the numbers,
+    // then the truck detail, and only then approve or export. ──
+    html += self._renderBouncie(dates);
 
     // v1143: action buttons sit BELOW the weekly review, per Doug. You read the
     // hours, then the truck/phone detail, then the review — and only then do you
