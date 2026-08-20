@@ -287,6 +287,45 @@ var PayrollPage = {
       return res.data || [];
     }).catch(function(){ return null; });
   },
+
+  // v1142: Doug's OWN day, straight from his phone. Truck GPS badly undercounts
+  // him — Mon Aug 17 read 3.8h and Tue 4.3h against a real 10-12h and 8:30-8:30,
+  // because the trucks sat parked while he kept working. His phone is the
+  // PRIMARY source for his hours; the trucks are corroboration.
+  _loadPhoneDay: function(dateStr) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !C.rpc) return Promise.resolve(null);
+    return C.rpc('bm_phone_day', { p_day: dateStr }).then(function(res) {
+      if (res.error) { console.warn('[phone_day]', res.error.message); return null; }
+      return (res.data && res.data[0]) || null;
+    }).catch(function(){ return null; });
+  },
+
+  _phoneBlock: function(ph, dateStr) {
+    var t = function(iso) {
+      if (!iso) return null;
+      var d = new Date(iso);
+      return isNaN(d.getTime()) ? null : d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    };
+    if (!ph || !ph.pings) {
+      return '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;color:#7a6a1f;">'
+           + '📱 <b>Your phone:</b> no location for this day — hours below come from truck GPS only, which undercounts you.'
+           + '</div>';
+    }
+    var first = t(ph.first_ping), last = t(ph.last_ping);
+    var yin = t(ph.yard_arrive), yout = t(ph.yard_leave);
+    var bits = [];
+    bits.push('<b>' + (first || '?') + '</b> → <b>' + (last || '?') + '</b>');
+    if (ph.span_hours) bits.push('<b>' + (+ph.span_hours).toFixed(2) + 'h</b> span');
+    bits.push(yin ? ('yard ' + yin + (yout ? ' → ' + yout : '')) : 'never at yard');
+    bits.push(ph.pings + ' pings');
+    if (ph.sources) bits.push(String(ph.sources).replace('foreground,', '').replace('background,', ''));
+    return '<div style="background:#e8f5e9;border:1px solid #cfe5d6;border-left:3px solid var(--green-dark);'
+      + 'border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;color:#14321f;">'
+      + '📱 <b>Your phone</b> — ' + bits.join(' · ')
+      + '<div style="font-size:11px;color:#4a6b55;margin-top:2px;">Your day, not the truck\'s. Use this to set your hours.</div>'
+      + '</div>';
+  },
   _bounceToggle: function(d) {
     var panel = document.getElementById('bday-panel'); if (!panel) return;
     Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(b) { b.style.outline = ''; });
@@ -298,10 +337,16 @@ var PayrollPage = {
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
     panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
 
+      + '<div class="bday-phone" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;">📱 loading your phone…</div>'
       + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
       + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + esc(note) + '</textarea>'
       + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Yard = Peekskill HQ. Times = when a truck crossed the yard line (short in/out under 15 min hidden). Bouncie sleeps when parked, so first out / last back are real.</div>'
       + '</div>';
+    // phone first — it is the primary source for Doug's own hours
+    PayrollPage._loadPhoneDay(d).then(function(ph) {
+      var el = panel.querySelector('.bday-phone');
+      if (el) el.innerHTML = PayrollPage._phoneBlock(ph, d);
+    });
     Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d)]).then(function(res) {
       var trips = res[0] || [], stops = res[1] || [];
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
@@ -323,13 +368,20 @@ var PayrollPage = {
         var rid = 'trk-' + d + '-' + vid.slice(0, 8);
         return '<div style="margin-bottom:6px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">'
           + '<div onclick="PayrollPage._truckExpand(\'' + d + '\',\'' + vid + '\',\'' + rid + '\')" style="cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:6px;background:var(--surface,#f7f7f7);">'
-            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:11px;">▸</span>'
+            + '<span id="' + rid + '-caret" style="color:var(--text-light);font-size:11px;">▾</span>'
             + '<span style="font-weight:700;font-size:13px;white-space:nowrap;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</span>'
             + '<span style="font-size:11px;color:var(--text-light);margin-left:auto;text-align:right;">' + summary + '</span>'
           + '</div>'
-          + '<div id="' + rid + '" style="display:none;padding:8px 10px;border-top:1px solid var(--border);"></div>'
+          + '<div id="' + rid + '" style="display:block;padding:8px 10px;border-top:1px solid var(--border);"></div>'
         + '</div>';
       }).join('');
+      // v1142: trucks start EXPANDED — the stops and time-on-site are the whole
+      // point of opening a day, and Doug was having to tap every truck.
+      setTimeout(function() {
+        Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
+          try { PayrollPage._truckFill(d, vid, 'trk-' + d + '-' + vid.slice(0, 8)); } catch (e) {}
+        });
+      }, 0);
     }).catch(function() {
       var sum = panel.querySelector('.bday-sum'); if (sum) sum.textContent = 'Could not load truck data.';
     });
@@ -364,6 +416,13 @@ var PayrollPage = {
     var caret = document.getElementById(rid + '-caret');
     if (box.style.display !== 'none') { box.style.display = 'none'; if (caret) caret.textContent = '▸'; return; }
     box.style.display = 'block'; if (caret) caret.textContent = '▾';
+    PayrollPage._truckFill(d, vid, rid);
+  },
+
+  // v1142: population split out of _truckExpand so rows can render already
+  // expanded — the stops and time-on-site are the reason you open a day.
+  _truckFill: function(d, vid, rid) {
+    var box = document.getElementById(rid); if (!box) return;
     var v = (PayrollPage._dayCache[d] || {})[vid]; if (!v) { box.textContent = '—'; return; }
     if (box.getAttribute('data-loaded') === '1') return; // already rendered
     box.setAttribute('data-loaded', '1');
@@ -522,7 +581,10 @@ var PayrollPage = {
       + '</div>';
 
     // ── Bulk Actions ──
-    html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">'
+    // v1142: built here but rendered BELOW the grid. On a phone this row of six
+    // buttons pushed the actual hours off-screen — the numbers are the point of
+    // the page, the actions are what you do after reading them.
+    var bulkActionsHtml = '<div style="display:flex;gap:8px;margin-top:14px;margin-bottom:12px;flex-wrap:wrap;">'
       + '<button onclick="PayrollPage.approveAll(\'' + weekStart + '\')" class="btn btn-primary" style="font-size:12px;">✓ Approve All</button>'
       + '<button onclick="PayrollPage.showPayrollSummary(\'' + weekStart + '\')" class="btn btn-outline" style="font-size:12px;">📊 Payroll Summary</button>'
       + '<button onclick="PayrollPage.exportWeek(\'' + weekStart + '\')" class="btn btn-outline" style="font-size:12px;">📥 Export CSV</button>'
@@ -667,6 +729,9 @@ var PayrollPage = {
     });
 
     html += '</div>'; // end grid
+
+    // v1142: action buttons render here, AFTER the hours, not above them.
+    html += bulkActionsHtml;
 
     // ── Bouncie GPS panel (v1118) — under the employee dates, per Doug. Tap a
     // day → each truck's yard in/out; tap a truck → its stops + time on site. ──

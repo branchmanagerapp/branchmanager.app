@@ -1,5 +1,5 @@
 {
-  "version": 1141,
+  "version": 1142,
   "released": "2026-08-20",
-  "notes": "Payroll: date shown once (green day only); dedupe catches stale rows with any source"
+  "notes": "Payroll day panel: your phone data first, trucks expanded, actions moved below the grid"
 }
