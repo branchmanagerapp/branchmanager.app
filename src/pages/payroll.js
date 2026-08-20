@@ -340,24 +340,19 @@ var PayrollPage = {
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
     panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
 
-      + '<div class="bday-phone" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;">📱 loading your phone…</div>'
       + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
       + '<textarea placeholder="Notes for this day…" onchange="PayrollPage._saveBouncieNote(\'' + d + '\',this.value)" style="width:100%;margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;min-height:34px;resize:vertical;box-sizing:border-box;">' + esc(note) + '</textarea>'
       + '<div style="font-size:10.5px;color:var(--text-light);margin-top:6px;line-height:1.5;">Yard = Peekskill HQ. Times = when a truck crossed the yard line (short in/out under 15 min hidden). Bouncie sleeps when parked, so first out / last back are real.</div>'
       + '</div>';
     // phone first — it is the primary source for Doug's own hours
-    PayrollPage._loadPhoneDay(d).then(function(ph) {
-      var el = panel.querySelector('.bday-phone');
-      if (el) el.innerHTML = PayrollPage._phoneBlock(ph, d);
-    });
-    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers()]).then(function(res) {
-      var trips = res[0] || [], stops = res[1] || [];
+    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers(), PayrollPage._loadPhoneDay(d)]).then(function(res) {
+      var trips = res[0] || [], stops = res[1] || [], phone = res[3];
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
       var byV = {};
       trips.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).trips.push(r); });
       stops.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).stops.push(r); });
       var ids = Object.keys(byV);
-      if (!ids.length) { sum.textContent = 'No truck movement logged this day.'; return; }
+      if (!ids.length && !(phone && phone.pings)) { sum.textContent = 'No truck or phone data logged this day.'; return; }
       ids.sort(function(a,b){ return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model); });
       PayrollPage._dayCache[d] = byV;
       var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
@@ -404,7 +399,7 @@ var PayrollPage = {
           + '<th style="' + th + '">OUT</th>'
           + '<th style="' + th + '">JOB SITE</th>'
           + '<th style="' + th + '">ON SITE</th>'
-        + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+        + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + '</tbody></table></div>';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
       // (This reverses v1142's auto-expand, per Doug: "Could fit on one line.
@@ -430,6 +425,33 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // v1153 — Doug's phone as a ROW IN THE SAME TABLE as the trucks, with him as
+  // the driver. Doug: "just list my phone same as you list the trucks, cleaner
+  // this way. List me as the driver." Putting it on the same grid is what lets
+  // him read his day-start against each truck's yard time on one line — the
+  // gap between "phone on at 7:39" and "truck left yard at 11:07" is the yard
+  // time the truck cannot see.
+  _phoneRow: function(ph) {
+    if (!ph || !ph.pings) return '';
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:#f2faf4;';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var src = ph.sources ? String(ph.sources).split(',').filter(Boolean).join(' + ') : '';
+    var span = ph.span_hours ? PayrollPage._fmtDur(Math.round(+ph.span_hours * 60)) : '—';
+    var yard = (ph.yard_hours != null && ph.yard_hours !== '') ? PayrollPage._fmtDur(Math.round(+ph.yard_hours * 60)) : '—';
+    return '<tr>'
+      + '<td style="' + td + 'font-weight:700;">📱 My Phone</td>'
+      + '<td style="' + td + 'color:var(--green-dark);font-weight:600;">Doug</td>'
+      + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(ph.first_ping) + '</td>'
+      + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(ph.last_ping) + '</td>'
+      + '<td style="' + td + '">' + span + '</td>'
+      + '<td style="' + td + 'white-space:normal;min-width:120px;color:var(--text-light);">'
+          + (ph.yard_arrive ? 'at yard ' + et(ph.yard_arrive) : 'never at yard')
+          + ' · ' + ph.pings + ' pings' + (src ? ' · ' + esc(src) : '')
+        + '</td>'
+      + '<td style="' + td + 'font-weight:700;color:var(--green-dark);">' + yard + '</td>'
+      + '</tr>';
+  },
   // v1150 — keep GPS boilerplate OUT of the hours cells. Doug: "no gps data in
   // hours fields." The auto writer stamps every row with
   // "Auto from GPS — <truck> (N pings)", which buried the cell you actually
