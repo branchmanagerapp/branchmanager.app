@@ -3,6 +3,75 @@
  * Quote list, builder with line items, status management
  */
 var QuotesPage = {
+
+  // Reads the real delivery rows back from the server and paints a persistent
+  // panel on the record — no navigating away, no trusting the client.
+  _confirmDelivery: function(id, sentVia) {
+    var q = DB.quotes.getById(id); if (!q) return;
+    var host = document.getElementById('bm-send-confirm');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'bm-send-confirm';
+      host.style.cssText = 'margin:12px 0;';
+      var main = document.querySelector('#page-content') || document.body;
+      main.insertBefore(host, main.firstChild);
+    }
+    host.innerHTML = '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:10px;'
+      + 'padding:12px 14px;font-size:13px;color:#6b5d16;">⏳ Checking with the server whether it actually went out…</div>';
+
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) {
+      host.innerHTML = '<div style="background:#fdecea;border:1px solid #f5c6c0;border-radius:10px;padding:12px 14px;font-size:13px;color:#8a2a1d;">'
+        + '⚠️ <b>Not confirmed.</b> No connection to the server, so I cannot verify this was delivered. Check the record before assuming it sent.</div>';
+      return;
+    }
+    // give the edge functions a moment to write their log rows
+    setTimeout(function() {
+      var since = new Date(Date.now() - 4 * 60000).toISOString();
+      C.from('communications')
+        .select('channel,status,to_email,to_number,created_at,notes')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(25)
+        .then(function(res) {
+          var rows = (res && res.data) || [];
+          var num = String(q.quoteNumber || '');
+          var mine = rows.filter(function(r) {
+            var blob = ((r.notes || '') + ' ' + (r.to_email || '') + ' ' + (r.to_number || ''));
+            return !num || blob.indexOf(num) !== -1 || rows.length <= 4;
+          });
+          var ok = mine.filter(function(r) { return String(r.status || '').toLowerCase() === 'sent'; });
+          var bad = mine.filter(function(r) {
+            var st = String(r.status || '').toLowerCase();
+            return st.indexOf('fail') !== -1 || st.indexOf('not sent') !== -1 || st.indexOf('bounce') !== -1;
+          });
+          var t = function(x) { return new Date(x).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }); };
+          var html;
+          if (bad.length) {
+            html = '<div style="background:#fdecea;border:1px solid #f5c6c0;border-left:4px solid #b00020;border-radius:10px;padding:12px 14px;font-size:13px;color:#8a2a1d;">'
+              + '<b>❌ DID NOT SEND.</b> The server recorded a failure:<br>'
+              + bad.map(function(r){ return '· ' + (r.channel||'?') + ' — ' + (r.status||'') + (r.notes ? ' (' + String(r.notes).slice(0,80) + ')' : ''); }).join('<br>')
+              + '<br><br>The customer did <b>not</b> receive this. Try again or send another way.</div>';
+          } else if (ok.length) {
+            html = '<div style="background:#eaf6ee;border:1px solid #cfe5d6;border-left:4px solid #1f7a43;border-radius:10px;padding:12px 14px;font-size:13px;color:#0d3a20;">'
+              + '<b>✅ Confirmed delivered by the server</b><br>'
+              + ok.map(function(r){
+                  return '· <b>' + (r.channel||'?') + '</b> to ' + (r.to_email || r.to_number || 'client') + ' at ' + t(r.created_at);
+                }).join('<br>')
+              + '</div>';
+          } else {
+            html = '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-left:4px solid #b9770f;border-radius:10px;padding:12px 14px;font-size:13px;color:#6b5d16;">'
+              + '<b>⚠️ NOT CONFIRMED.</b> The app reported ' + (sentVia.length ? sentVia.join(' + ') : 'a send')
+              + ', but the server has no delivery record for it yet. Wait a few seconds and reopen, or check the customer received it before assuming it went.</div>';
+          }
+          host.innerHTML = html;
+        })
+        .catch(function() {
+          host.innerHTML = '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:10px;padding:12px 14px;font-size:13px;color:#6b5d16;">'
+            + '⚠️ <b>Could not verify.</b> Check the record before assuming it sent.</div>';
+        });
+    }, 2500);
+  },
   _page: 0, _perPage: 50, _search: '', _filter: 'active', _sortCol: 'quoteNumber', _sortDir: 'desc',
 
   // v735: right-click context menu on quote rows
@@ -2812,6 +2881,14 @@ var QuotesPage = {
         UI.toast('Send failed — ' + (failBlurb || 'no channel succeeded'), 'error');
         console.warn('[Quote send] all channels failed:', results);
       }
+
+      // v1144: TRUE confirmation. The toast above reports what the CLIENT thinks
+      // happened. Doug has been burned by that exact lie — the app said "sent"
+      // for messages that never left. So we stay on the record and read the
+      // delivery back out of `communications` (written server-side by the send
+      // functions) and show what the SERVER actually logged. If the server has
+      // no record, we say so instead of claiming success.
+      QuotesPage._confirmDelivery(id, sentVia);
 
       // Mark as sent only when at least one channel succeeded
       if (sentVia.length) {

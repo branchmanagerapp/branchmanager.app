@@ -1,5 +1,5 @@
 {
-  "version": 1143,
+  "version": 1144,
   "released": "2026-08-20",
-  "notes": "Payroll: action buttons moved below the weekly review"
+  "notes": "Quote send: server-verified delivery confirmation instead of a client-side toast"
 }
