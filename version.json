@@ -1,5 +1,5 @@
 {
-  "version": 1150,
+  "version": 1151,
   "released": "2026-08-20",
-  "notes": "v1150: no GPS boilerplate in the hours cells"
+  "notes": "v1151: Details page carries full day evidence — job/yard/travel split, truck yard in-out, sites with addresses, phone span, and reasons to distrust the number"
 }

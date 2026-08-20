@@ -1097,6 +1097,19 @@ var PayrollPage = {
       });
     }
 
+    // ── v1151: EVIDENCE panel ────────────────────────────────────────────────
+    // Doug: "The details page should be much more detailed. Have a lot of this
+    // stuff. So in case there was a harder time figuring it out, all the info is
+    // more laid out there." Everything we know about this person on this day,
+    // in one place: the truck's yard in/out, each site with its address, the
+    // yard / job / travel split, the phone span, and any reason to distrust the
+    // number. Filled async — the RPCs are the same ones the day panel uses.
+    var evId = 'dayev-' + Math.random().toString(36).slice(2, 9);
+    html += '<div id="' + evId + '" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px;">EVIDENCE FOR THIS DAY</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">loading GPS + phone…</div></div>';
+    setTimeout(function(){ PayrollPage._fillDayEvidence(evId, userId, date); }, 0);
+
     // Actions
     html += '<div style="display:flex;gap:8px;margin-top:12px;">'
       + '<button onclick="PayrollPage.addHours(\'' + userId + '\',\'' + date + '\')" class="btn btn-primary" style="flex:1;">+ Add Hours</button>'
@@ -1113,6 +1126,124 @@ var PayrollPage = {
       + '</div>';
 
     UI.showModal(UI.esc(userId) + ' — ' + dayName, html);
+  },
+
+  // ── v1151: day evidence for the Details modal ─────────────────────────────
+  _fillDayEvidence: function(elId, userId, date) {
+    var box = document.getElementById(elId); if (!box) return;
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var fd = PayrollPage._fmtDur;
+    Promise.all([
+      PayrollPage._yardTrips(date),
+      PayrollPage._truckStops(date),
+      PayrollPage._loadPhoneDay(date),
+      PayrollPage._loadTeamAndDrivers()
+    ]).then(function(res) {
+      var trips = res[0] || [], stops = res[1] || [], ph = res[2];
+      // which trucks is THIS person the assumed driver of?
+      var mine = {};
+      Object.keys(PayrollPage._drivers || {}).forEach(function(vid) {
+        if ((PayrollPage._drivers[vid] || '') === userId) mine[vid] = true;
+      });
+      var anyMine = Object.keys(mine).length > 0;
+      var byV = {};
+      trips.forEach(function(r){ (byV[r.vehicle_id] = byV[r.vehicle_id] || {name:r.name, model:r.model, trips:[], stops:[]}).trips.push(r); });
+      stops.forEach(function(r){ (byV[r.vehicle_id] = byV[r.vehicle_id] || {name:r.name, model:r.model, trips:[], stops:[]}).stops.push(r); });
+      var ids = Object.keys(byV).filter(function(vid){ return !anyMine || mine[vid]; });
+
+      var h = '<div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px;">EVIDENCE FOR THIS DAY</div>';
+
+      // ── the yard / job / travel split ──
+      var jobMin = 0, siteMin = 0;
+      ids.forEach(function(vid){
+        byV[vid].trips.forEach(function(t){ jobMin += (t.mins_out || 0); });
+        byV[vid].stops.forEach(function(x){ siteMin += (x.mins || 0); });
+      });
+      var travelMin = Math.max(0, jobMin - siteMin);
+      var paidMin = 0;
+      PayrollPage._getEntriesForDate(userId, date).forEach(function(e){ paidMin += (e.hours || 0) * 60; });
+      var yardMin = Math.max(0, paidMin - jobMin);
+      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
+        + '<div style="flex:1 1 96px;background:var(--bg);border-radius:8px;padding:7px 9px;">'
+          + '<div style="font-size:10px;color:var(--text-light);">JOB TIME</div>'
+          + '<div style="font-size:15px;font-weight:700;color:var(--green-dark);">' + fd(jobMin) + '</div>'
+          + '<div style="font-size:10px;color:var(--text-light);">on site ' + fd(siteMin) + ' + travel ' + fd(travelMin) + '</div>'
+        + '</div>'
+        + '<div style="flex:1 1 96px;background:var(--bg);border-radius:8px;padding:7px 9px;">'
+          + '<div style="font-size:10px;color:var(--text-light);">YARD TIME</div>'
+          + '<div style="font-size:15px;font-weight:700;">' + fd(yardMin) + '</div>'
+          + '<div style="font-size:10px;color:var(--text-light);">paid ' + fd(paidMin) + ' − job</div>'
+        + '</div></div>';
+
+      // ── per truck ──
+      if (!ids.length) {
+        h += '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">No truck movement recorded for '
+          + esc(userId) + ' this day' + (anyMine ? '' : ' (no truck assigned to them)') + '.</div>';
+      }
+      ids.forEach(function(vid) {
+        var v = byV[vid];
+        var m = PayrollPage._mergeStops(v.stops);
+        h += '<div style="border:1px solid var(--border);border-radius:8px;padding:7px 9px;margin-bottom:6px;">'
+          + '<div style="font-weight:700;font-size:12.5px;margin-bottom:3px;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</div>';
+        v.trips.forEach(function(t){
+          h += '<div style="font-size:12px;">left yard <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + fd(t.mins_out) + ')</span></div>';
+        });
+        if (!v.trips.length) h += '<div style="font-size:12px;color:var(--text-light);">never crossed the yard line</div>';
+        m.forEach(function(x, i) {
+          var sid = elId + '-ev' + vid.slice(0,4) + i;
+          h += '<div style="font-size:12px;padding:1px 0;"><span id="' + sid + '" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</span> '
+            + '<span style="color:var(--text-light);">' + et(x.arrive_ts) + '–' + et(x.depart_ts) + '</span> <b style="color:var(--green-dark);">' + fd(x.mins) + '</b>'
+            + (x.visits > 1 ? ' <span style="color:var(--text-light);">(' + x.visits + ' visits)</span>' : '') + '</div>';
+        });
+        h += '</div>';
+        setTimeout(function(){
+          m.forEach(function(x, i) {
+            var sid = elId + '-ev' + vid.slice(0,4) + i;
+            PayrollPage._revGeo(x.lat, x.lon).then(function(a){
+              var el = document.getElementById(sid); if (el && a) el.textContent = '📍 ' + a;
+            }).catch(function(){});
+          });
+        }, 0);
+      });
+
+      // ── phone ──
+      if (ph && ph.pings) {
+        h += '<div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:7px 9px;font-size:12px;margin-bottom:6px;">'
+          + '📱 <b>' + et(ph.first_ping) + '</b> → <b>' + et(ph.last_ping) + '</b>'
+          + (ph.span_hours ? ' · <b>' + (+ph.span_hours).toFixed(2) + 'h</b> span' : '')
+          + ' · ' + ph.pings + ' pings'
+          + (ph.sources ? ' · ' + esc(String(ph.sources).split(',').filter(Boolean).join(' + ')) : '')
+          + '<div style="font-size:10.5px;color:#4b6b4f;">Doug\'s phone, not the truck\'s. Covers time away from any tracked vehicle.</div>'
+          + '</div>';
+      }
+
+      // ── why the number might be wrong ──
+      var warn = [];
+      var totalPings = ids.reduce(function(a,vid){
+        return a + byV[vid].trips.length; }, 0);
+      PayrollPage._getEntriesForDate(userId, date).forEach(function(e){
+        if (e.confidence === 'low') warn.push('An entry is flagged <b>low confidence</b> by the auto writer.');
+        var mm = /\((\d+) pings\)/.exec(e.notes || '');
+        if (mm && +mm[1] < 200) warn.push('Only <b>' + mm[1] + ' GPS pings</b> behind this entry — the tracker was mostly silent, so the span is probably short.');
+      });
+      if (!ids.length && paidMin > 0) warn.push('Hours are recorded but <b>no truck data</b> backs them up.');
+      if (jobMin > 0 && siteMin === 0) warn.push('The truck left the yard but <b>logged no stop</b> — either a short visit under the stop threshold, or it never parked.');
+      if (jobMin > 60 && siteMin > 0 && siteMin < jobMin * 0.25) warn.push('The truck was out <b>' + fd(jobMin) + '</b> but logged only <b>' + fd(siteMin) + '</b> of stops — most of the day reads as travel.');
+      if (ph && ph.pings && paidMin > 0) {
+        var phMin = (+ph.span_hours || 0) * 60;
+        if (phMin > paidMin + 60) warn.push('The phone shows a <b>' + fd(phMin) + '</b> day — <b>' + fd(phMin - paidMin) + '</b> longer than the hours recorded. Work off the truck is not counted.');
+      }
+      if (warn.length) {
+        h += '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:7px 9px;font-size:11.5px;color:#7a6a1f;">'
+          + '<b>⚠ Reasons to check this number</b>'
+          + warn.map(function(w){ return '<div style="margin-top:3px;">• ' + w + '</div>'; }).join('')
+          + '</div>';
+      }
+      box.innerHTML = h;
+    }).catch(function(){
+      box.innerHTML = '<div style="font-size:12px;color:var(--text-light);">Could not load GPS/phone evidence.</div>';
+    });
   },
 
   // ── Add Hours Modal ──
