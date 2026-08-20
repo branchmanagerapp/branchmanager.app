@@ -667,14 +667,12 @@ var PayrollPage = {
     return '<div style="margin-top:3px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center;min-width:0;">'
       + mk('in', self._hm(e.clockIn)) + '<span style="font-size:11px;color:var(--text-light);">–</span>' + mk('out', self._hm(e.clockOut))
       + '<span style="font-size:11px;color:var(--text-light);margin-left:2px;">' + (e.hours ? e.hours.toFixed(1) + 'h' : '') + '</span>'
-      + '</div>'
-      // v1140: spell the times out in AM/PM. The narrow time inputs clipped the
-      // meridiem, so a 4:17 PM start read as 4:17 and Doug could not tell an
-      // evening job from a morning one.
-      + (e.clockIn || e.clockOut
-          ? '<div style="font-size:10.5px;color:var(--text-light);text-align:center;margin-top:1px;">'
-            + PayrollPage._ampm(e.clockIn) + ' – ' + PayrollPage._ampm(e.clockOut) + '</div>'
-          : '');
+      + '</div>';
+    // v1155: the AM/PM restatement under the inputs is gone. It was added in
+    // v1140 because the narrow time inputs clipped the meridiem; they no longer
+    // do (they render "11:07 AM" in full), so the line only repeated what was
+    // directly above it. Doug: "just details and 7.5 h. does not need to repeat
+    // what is written above."
   },
 
   // ── v1122: Bouncie truck panel = single date + ‹ › arrows (was a 7-day strip) ──
@@ -873,12 +871,14 @@ var PayrollPage = {
               html += '<div style="color:#ef4444;font-size:10px;">⚠ ' + iss + '</div>';
             });
           }
+          // v1155: the cell is for READING. The day total already sits above it,
+          // so the clock in/out inputs and the per-entry hour restatement are
+          // gone — Doug: "actually just have details, says total above."
+          // Editing lives in Details, which now carries the full evidence.
           entries.forEach(function(e) {
-            html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
             var cn1 = PayrollPage._cellNote(e.notes);
             if (cn1) html += '<div style="font-size:10px;color:var(--text-light);font-style:italic;">' + UI.esc(cn1) + '</div>';
           });
-          if (!entries.length) html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
           // Day detail button
           html += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:4px;font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>';
           // Approval indicator
@@ -986,11 +986,9 @@ var PayrollPage = {
         rows += '<div style="padding:4px 12px 10px 68px;font-size:12px;" onclick="event.stopPropagation()">';
         issues.forEach(function(iss) { rows += '<div style="color:#ef4444;font-size:11px;">⚠ ' + iss + '</div>'; });
         entries.forEach(function(e) {
-          rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
           var cn2 = PayrollPage._cellNote(e.notes);
           if (cn2) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(cn2) + '</div>';
         });
-        if (!entries.length) rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
         rows += '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="margin-top:6px;font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>';
         if (dayApproved && !editedAfterApproval) rows += '<div style="font-size:10px;color:#22c55e;margin-top:3px;">✓ Approved</div>';
         if (editedAfterApproval) rows += '<div style="font-size:10px;color:#f59e0b;margin-top:3px;">⚠ Re-approval needed</div>';

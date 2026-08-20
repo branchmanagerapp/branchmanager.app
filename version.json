@@ -1,5 +1,5 @@
 {
-  "version": 1154,
+  "version": 1155,
   "released": "2026-08-20",
-  "notes": "v1154: drop the yard-line footer note and the notes-for-this-day box"
+  "notes": "v1155: payroll cells show total + Details only"
 }
