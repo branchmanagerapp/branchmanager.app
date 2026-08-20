@@ -1,5 +1,5 @@
 {
-  "version": 1155,
+  "version": 1156,
   "released": "2026-08-20",
-  "notes": "v1155: payroll cells show total + Details only"
+  "notes": "v1156: restore the clock in/out inputs in the payroll cell; only the repeated line below them stays removed"
 }
