@@ -718,6 +718,14 @@ var PayrollPage = {
   // invoice always beats the job it was raised from (otherwise the same work
   // is counted twice on one day).
   _REV_WINDOW_D: 45,
+  // v1189 - the match radius was 250 m, which is tighter than the data can
+  // support. A geocoder returns a street or parcel centroid, and on these
+  // rural properties the truck parks well down a driveway. Nicholas Anthony's
+  // job (78 Andrews Road) sits 250 m from where the truck actually sat on
+  // Aug 7 - right on the boundary - so Friday showed no revenue. 400 m is
+  // still far tighter than the gap to the next property, and the +/-45 day
+  // window does the real work of keeping old jobs out.
+  _MATCH_M: 400,
   _recDate: function(r) {
     return String(r.completedDate || r.completed_date || r.scheduledDate || r.scheduled_date
                   || r.issuedDate || r.issued_date || '').substring(0, 10);
@@ -811,7 +819,7 @@ var PayrollPage = {
         return Promise.resolve(stored).then(function(g) {
           if (!g) return null;
           c.d = PayrollPage._metres([lat, lon], [g.lat, g.lon]);
-          return c.d <= 250 ? c : null;
+          return c.d <= PayrollPage._MATCH_M ? c : null;
         }).catch(function(){ return null; });
       })).then(function(rs) {
         var hits = rs.filter(Boolean);

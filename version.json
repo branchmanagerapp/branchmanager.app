@@ -1,5 +1,5 @@
 {
-  "version": 1188,
+  "version": 1189,
   "released": "2026-08-21",
-  "notes": "v1188: a site that matched a job or invoice wins the day over a longer route slice"
+  "notes": "v1189: widen the job match radius to 400m"
 }
