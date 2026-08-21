@@ -504,8 +504,10 @@ var PayrollPage = {
           var comm = 0, share = 0;
           if (best) {
             if (jb) {
-              jb.textContent = PayrollPage._jobLabel(best.rev, best.addr);
-              jb.title = (best.addr || '') + (best.rev ? ('  ·  job #' + best.rev.num) : '  ·  no job matched');
+              jb.innerHTML = PayrollPage._jobLabel(best.rev, best.addr);
+              jb.title = (best.rev && best.rev.client ? best.rev.client + '\n' : '')
+                       + (best.rev && best.rev.property ? best.rev.property : (best.addr || ''))
+                       + (best.rev ? ('\njob #' + best.rev.num) : '\nno job matched');
             }
             if (best.rev) {
               share = best.rev.total / best.n;
@@ -517,7 +519,7 @@ var PayrollPage = {
               }
             } else if (rv) { rv.textContent = '—'; }
           } else {
-            if (jb) jb.textContent = '—';
+            if (jb) jb.innerHTML = '—';
             if (rv) rv.textContent = '—';
           }
           // v1173 — expenses now include the 10% sales commission, per Doug.
@@ -579,23 +581,30 @@ var PayrollPage = {
   // street. Showing the raw client_name gave "Michelle Mela..." truncated to
   // nothing useful.
   _jobLabel: function(rev, fallbackAddr) {
-    if (!rev) return fallbackAddr ? String(fallbackAddr).split(',')[0] : '—';
-    var street = String(rev.property || fallbackAddr || '').split(',')[0].trim();
-    var who = rev.job ? PayrollPage._salesPerson(rev.job) : null;
-    if (!who) {
-      var c = String(rev.client || '');
-      var m = /^\s*([DCM])\s*[—\-]/.exec(c);           // already "M — ..."
-      if (m) who = { D:'Doug', C:'Catherine', M:'Michelle' }[m[1]];
-      else {                                            // or the name spelled out
-        var lc = c.toLowerCase();
-        if (lc.indexOf('mich') >= 0 || lc.indexOf('melagrano') >= 0) who = 'Michelle';
-        else if (lc.indexOf('cath') >= 0 || lc.indexOf('conway') >= 0) who = 'Catherine';
-        else if (lc.indexOf('doug') >= 0) who = 'Doug';
-      }
-    }
-    var ini = who ? who.charAt(0) : '';
-    if (!street) return rev.client || ('#' + rev.num);
-    return (ini ? ini + ' — ' : '') + street;
+    // v1175 — Doug: "put in the first ... maybe do ten characters of the client
+    // name and ten characters of the address, ten characters of the city that
+    // fits, something like that, or shorten it to five each if you have to."
+    // Day columns are ~130px, so the cell gets a clipped three-part label and
+    // the full text lives in the tooltip.
+    var clip = function(t, n) {
+      t = String(t || '').trim();
+      return t.length > n ? t.slice(0, n).trim() + '…' : t;
+    };
+    var addr = String(rev && rev.property ? rev.property : (fallbackAddr || ''));
+    var parts = addr.split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+    var street = parts[0] || '';
+    var city = parts[1] || '';
+    // strip a salesperson prefix off the client so the name itself shows
+    var client = String(rev && rev.client ? rev.client : '').replace(/^\s*[DCM]\s*[—-]\s*/, '');
+    client = client.replace(/\s*\(.*?\)\s*/g, ' ').split('—')[0].trim();
+    // Two lines: the cell is ~130px, so one 38-char string would clip to
+    // nothing useful. Client on top, street · city beneath, ~14 chars each.
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var l2 = [street && clip(street, 14), city && clip(city, 12)].filter(Boolean).join(' · ');
+    if (!client && !l2) return rev ? ('#' + rev.num) : '—';
+    return (client ? '<b style="font-weight:700;">' + esc(clip(client, 14)) + '</b>' : '')
+         + (client && l2 ? '<br>' : '')
+         + (l2 ? '<span style="color:var(--text-light);">' + esc(l2) + '</span>' : '');
   },
   _jobDayCount: function(lat, lon) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -1369,7 +1378,7 @@ var PayrollPage = {
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;font-size:11px;align-items:center;">'
         + '<div style="' + LBL + '">Job</div>';
       dates.forEach(function(d){
-        html += '<div id="wkjob-' + d + '" style="padding:6px 4px;text-align:center;font-size:10px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">·</div>';
+        html += '<div id="wkjob-' + d + '" style="padding:5px 4px;text-align:center;font-size:9.5px;line-height:1.3;color:var(--text);overflow:hidden;">·</div>';
       });
       html += '<div style="padding:6px 4px;"></div></div>';
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid var(--border);font-size:11px;align-items:center;background:var(--green-bg);">'

@@ -1,5 +1,5 @@
 {
-  "version": 1174,
+  "version": 1175,
   "released": "2026-08-21",
-  "notes": "v1174: job label as 'M — 4 Terrace Drive'"
+  "notes": "v1175: two-line job cell — client, street, city"
 }
