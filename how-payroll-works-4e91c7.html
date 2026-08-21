@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>How Payroll & Job Costing Work — Second Nature Tree</title>
+<style>
+:root{--g:#00836c;--bg:#f5f6f8;--tx:#212529;--mut:#6c757d;--bd:#dee2e6;--warn:#fff8e1;--warnb:#f0e0a0;--red:#dc3545}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+line-height:1.55;padding:16px;max-width:900px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:26px 0 8px;color:var(--g);
+border-bottom:2px solid var(--bd);padding-bottom:4px}h3{font-size:13px;margin:16px 0 4px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:18px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);
+border-bottom:1px solid var(--bd);padding:5px 6px}
+td{padding:5px 6px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:12px}
+.warn{background:var(--warn);border:1px solid var(--warnb);border-radius:8px;padding:10px 12px;font-size:13px;margin:10px 0}
+.ok{color:var(--g);font-weight:700}.bad{color:var(--red);font-weight:700}
+.rule{background:#f0f9f4;border-left:3px solid var(--g);padding:8px 12px;margin:6px 0;font-size:13px}
+.small{font-size:11.5px;color:var(--mut)}
+@media(prefers-color-scheme:dark){:root{--bg:#15171c;--tx:#e8eaed;--mut:#9aa0a6;--bd:#2d3748;--warn:#2b2410;--warnb:#5c4d1a}
+.card{background:#1c1f26}code{background:#2d3748}.rule{background:#12281f}}
+</style></head><body>
+
+<h1>How Payroll &amp; Job Costing Work</h1>
+<div class="sub">Second Nature Tree · Branch Manager · last updated 21 Aug 2026</div>
+
+<div class="warn"><b>Why this page exists.</b> On 20 Aug 2026 the automatic payroll writer put 36 rows
+into the books from GPS alone. Three were wrong and Doug caught them by eye: six hours paid to two
+people for a Sunday he spent in Hampton Bays; David credited 0.75&nbsp;h for a full day; Doug credited
+4.25&nbsp;h for a twelve-hour Tuesday. Every one traced to the same design flaw — <b>hours were attached
+to trucks, not people</b>, so a dead tracker silently erases someone's workday.</div>
+
+<h2>1 · Each person's hours are measured differently</h2>
+<div class="card">
+<div class="rule"><b>David</b> — job-site arrival → job-site departure. He meets the crew at the job,
+so his clock is the <i>site</i>, never the yard.</div>
+<div class="rule"><b>Catherine</b> — her truck out of the yard → back at the yard.</div>
+<div class="rule"><b>Doug</b> — the Ram <i>arriving</i> at the yard → the Ram leaving for home.
+Commute is excluded on both ends.</div>
+<p class="small">These are not interchangeable. Deriving David's hours from a truck's yard times was
+wrong even on days the tracker worked — it just didn't show until the dongle failed.</p>
+</div>
+
+<h2>2 · What counts as a work day</h2>
+<div class="card">
+<p>A site counts toward a job only with <b>60+ minutes on site</b>. Below that it is treated as an estimate
+or a drive-by.</p>
+<p class="small">Doug, on 8 Aug at 4 Terrace Drive: <i>“we were just looking at the tree because it was
+down the road from another job.”</i> That visit spanned 50 minutes. The three real work days spanned
+436, 492 and 366 minutes.</p>
+</div>
+
+<h2>3 · Revenue splits across the days actually worked</h2>
+<div class="card">
+<p>A multi-day job divides evenly. The number of days is <b>derived from GPS presence</b>, not from the
+job record — jobs carry one date, but a job can run three days.</p>
+<p><code>$7,500 job ÷ 3 days on site = $2,500 per day</code></p>
+<p class="small">The whole week's stops are clustered into <b>sites</b> first, and each site is geocoded and
+matched to a job <b>once</b>. An earlier version re-derived an address every day, so one job read as
+“2 Terrace Drive” Monday, “4 Orchard Drive” Tuesday and “4 Terrace Drive” Wednesday — a 40&nbsp;m
+difference in parking broke the match.</p>
+</div>
+
+<h2>4 · What a job costs</h2>
+<div class="card">
+<table>
+<tr><th>Line</th><th>Where it comes from</th><th>Status</th></tr>
+<tr><td>Wages</td><td>real hours × each person's rate — what you owe them</td><td class="ok">live</td></tr>
+<tr><td>Payroll costs</td><td>employer taxes + WC + insurance, 28% of wages</td><td>placeholder</td></tr>
+<tr><td>Sales commission</td><td>10% of job revenue</td><td class="ok">live</td></tr>
+<tr><td>Dump fees</td><td><b>crew texts only</b> — never hits the card</td><td>not wired</td></tr>
+<tr><td>Fuel + truck</td><td>$1.48/mi blended rate</td><td>not wired</td></tr>
+<tr><td>Yearly overhead</td><td>—</td><td>not built</td></tr>
+</table>
+<div class="warn" style="margin-top:10px"><b>Dump fees exist in no system but the texts.</b> On 19 Aug
+Catherine wrote “$142 total for logs” and “$20 for chips”. The transfer station runs on a house account,
+so $162 of real cost would never appear in the books. That is why crew messages are synced.</div>
+</div>
+
+<h2>5 · The $1.48/mile truck rate, and where it came from</h2>
+<div class="card">
+<table>
+<tr><th>2025 spend</th><th>Total</th><th>Per mile</th></tr>
+<tr><td>Fuel</td><td>$7,972</td><td>$0.26</td></tr>
+<tr><td><b>Vehicle repair + DMV</b></td><td><b>$31,844</b></td><td><b>$1.03</b></td></tr>
+<tr><td>Truck loan (Ram)</td><td>$6,065</td><td>$0.20</td></tr>
+<tr><td colspan="2"><b>Blended rate</b></td><td><b>$1.48</b></td></tr>
+</table>
+<p class="small">Against ~31,000 estimated annual fleet miles. <b>Repair is four times the fuel</b> — HBA
+Automotive alone was $20,157. Fuel sits <i>inside</i> the rate rather than as line items, because a tank
+fill spans jobs: 17 Aug carried $469 of fuel mostly burned later.</p>
+</div>
+
+<h2>6 · The daily automated check</h2>
+<div class="card">
+<p><code>~/Desktop/scripts/daily-payroll-audit.py</code> — runs <b>7:12am daily</b> via launchd
+(<code>com.doug.payroll-audit</code>), writes <code>~/Desktop/_ops/payroll-audit.json</code>.</p>
+<table>
+<tr><th>Check</th><th>Catches</th></tr>
+<tr><td>Tracker health</td><td>a truck silent on working days — hours for its driver are unreliable</td></tr>
+<tr><td>Short days</td><td>an entry far below that person's own median</td></tr>
+<tr><td>Unlocked auto rows</td><td>rows the 2-hourly cron can still overwrite</td></tr>
+<tr><td>Texts vs booked</td><td>crew texting across more hours than they are paid for</td></tr>
+</table>
+<p class="small">If the script fails it writes <code>"ok": false</code> with the error, and the run is logged to
+<code>payroll-audit.log</code>.</p>
+</div>
+
+<h2>7 · Known limits — read before trusting a number</h2>
+<div class="card">
+<ul style="margin:0;padding-left:18px;font-size:13px">
+<li><b>The Ram's dongle is failing.</b> On 17 Aug it logged 241 pings all in motion then died 7&nbsp;km from
+home. Silent 18 and 20 Aug. Every hour of David's depends on it.</li>
+<li><b>Bouncie reports while moving.</b> It sleeps when parked, so idle and PTO time is largely invisible —
+no gear, no engine hours, no odometer.</li>
+<li><b>A manual edit is only safe if it locks.</b> The cron rewrites the last 4 days every 2 hours; edits now
+set <code>locked</code>, which that function skips.</li>
+<li><b>Job / Revenue / Expenses / P&amp;L rows are desktop-only</b> — they do not render on a phone yet.</li>
+<li><b>Payroll hours are the unverified auto rows</b> until each is checked against texts.</li>
+</ul>
+</div>
+
+<div class="small" style="margin-top:20px;text-align:center">
+Unlisted &amp; noindex. Rules here are Doug's own — do not change them without asking him.
+</div>
+</body></html>
