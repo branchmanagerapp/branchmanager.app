@@ -533,13 +533,13 @@ var PayrollPage = {
     h += '<div style="' + row + '"><span style="color:var(--text-light);">REVENUE</span>'
        + '<b style="color:var(--green-dark);">' + (rev ? money(rev.total) : '—') + '</b></div>';
     // payroll, one line per person
+    // v1163: NO per-person repeat here. Every person's hours are already on the
+    // grid directly above — Doug: "At no point in this bill do I want you to
+    // duplicate things... You don't need to repeat the person's name as an
+    // hours. Just keep it clean and just give me the total."
     if (lines.length) {
       h += '<div style="border-top:1px dashed var(--border);margin-top:6px;padding-top:5px;"></div>';
-      lines.forEach(function(l) {
-        h += '<div style="' + row + '"><span>' + esc(l.who) + ' <span style="color:var(--text-light);">' + l.h.toFixed(2) + 'h</span></span>'
-           + '<span>-' + money(l.pay) + '</span></div>';
-      });
-      h += '<div style="' + row + 'border-top:1px solid var(--border);margin-top:4px;padding-top:4px;font-weight:700;">'
+      h += '<div style="' + row + 'font-weight:700;">'
          + '<span>WAGES <span style="color:var(--text-light);font-weight:400;">' + totH.toFixed(2) + 'h</span></span>'
          + '<span>-' + money(totPay) + '</span></div>';
     }
@@ -558,10 +558,10 @@ var PayrollPage = {
     if (rev) {
       var net = rev.total - totPay - burden;
       h += '<div style="' + row + 'border-top:2px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;font-size:14px;">'
-         + '<span>LEFT</span><span style="color:' + (net >= 0 ? 'var(--green-dark)' : 'var(--red,#dc3545)') + ';">' + money(net)
+         + '<span>GROSS PROFIT</span><span style="color:' + (net >= 0 ? 'var(--green-dark)' : 'var(--red,#dc3545)') + ';">' + money(net)
          + ' <span style="font-size:11px;font-weight:600;color:var(--text-light);">' + Math.round(net / rev.total * 100) + '%</span></span></div>';
     }
-    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Wages = what you owe them at their hourly rate. Payroll costs = taxes, WC and insurance on top (placeholder %). No dump fees, fuel or truck cost in this yet.</div>';
+    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Gross profit — before yearly overhead. Wages = what you owe them; payroll costs = taxes, WC and insurance on top (placeholder %).</div>';
     return h + '</div>';
   },
   // v1160 — tap a truck (or the phone) row to expand the full day for it.

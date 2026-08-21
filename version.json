@@ -1,5 +1,5 @@
 {
-  "version": 1162,
+  "version": 1163,
   "released": "2026-08-20",
-  "notes": "v1162: wages separated from employer payroll costs"
+  "notes": "v1163: no duplication in job costing; GROSS PROFIT"
 }
