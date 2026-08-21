@@ -542,11 +542,21 @@ var PayrollPage = {
           // A site that actually matched a job or invoice always wins; the
           // longest-dwell site is only the fallback for labelling a day we
           // could not match to a record.
+          // v1192 - the same work can match from two nearby clusters, one
+          // landing on the JOB and one on the INVOICE raised from it. Picking
+          // purely by dwell showed Fri 8/7 as \$800 (job #341) when the real
+          // figure is the \$1,000 actually collected on invoice #1015. An
+          // invoice is what was billed, so it wins the day; dwell only breaks
+          // ties within the same kind.
           var best = null, bestMatched = null;
           sites.forEach(function(st) {
             if (!st.days[d]) return;
             if (!best || st.days[d] > best.days[d]) best = st;
-            if (st.rev && (!bestMatched || st.days[d] > bestMatched.days[d])) bestMatched = st;
+            if (!st.rev) return;
+            if (!bestMatched) { bestMatched = st; return; }
+            var a = st.rev.kind === 'invoice', b = bestMatched.rev.kind === 'invoice';
+            if (a !== b) { if (a) bestMatched = st; return; }
+            if (st.days[d] > bestMatched.days[d]) bestMatched = st;
           });
           if (bestMatched) best = bestMatched;
           var jb = document.getElementById('wkjob-' + d);

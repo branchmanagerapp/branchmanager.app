@@ -1,5 +1,5 @@
 {
-  "version": 1191,
+  "version": 1192,
   "released": "2026-08-21",
-  "notes": "v1191: tighten revenue date windows per record kind"
+  "notes": "v1192: an invoice wins the day over the job it was raised from"
 }
