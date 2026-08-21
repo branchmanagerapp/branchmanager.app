@@ -343,14 +343,14 @@ var PayrollPage = {
       + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
       + '</div>';
     // phone first — it is the primary source for Doug's own hours
-    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers(), PayrollPage._loadPhoneDay(d)]).then(function(res) {
-      var trips = res[0] || [], stops = res[1] || [], phone = res[3];
+    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers(), PayrollPage._loadPhoneDay(d), PayrollPage._crewMessages(d)]).then(function(res) {
+      var trips = res[0] || [], stops = res[1] || [], phone = res[3], msgs = res[4] || [];
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
       var byV = {};
       trips.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).trips.push(r); });
       stops.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).stops.push(r); });
       var ids = Object.keys(byV);
-      if (!ids.length && !(phone && phone.pings)) { sum.textContent = 'No truck or phone data logged this day.'; return; }
+      if (!ids.length && !(phone && phone.pings) && !msgs.length) { sum.textContent = 'No truck, phone or message data for this day.'; return; }
       ids.sort(function(a,b){ return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model); });
       PayrollPage._dayCache[d] = byV;
       var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
@@ -399,7 +399,7 @@ var PayrollPage = {
           + '<th style="' + th + '">OUT</th>'
           + '<th style="' + th + '">JOB SITE</th>'
           + '<th style="' + th + '">ON SITE</th>'
-        + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + '</tbody></table></div>'
+        + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + PayrollPage._textRows(msgs) + '</tbody></table></div>'
         + '';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
@@ -427,6 +427,76 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // ── v1166: crew TEXTS as rows in the same grid ───────────────────────────
+  // Doug: "add in relevant text messages as one of the trucks." A person's
+  // messages bracket their day exactly the way a truck's yard times bracket
+  // its day — and on days the tracker is dark (the Ram, repeatedly) the texts
+  // are the ONLY evidence of when someone started and stopped.
+  // Source is crew_messages: four verified crew numbers, synced from chat.db.
+  _crewMessages: function(day) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve([]);
+    return C.from('crew_messages').select('person,direction,ts,body')
+      .eq('day', day).order('ts', { ascending: true })
+      .then(function(r){ return (r.error || !r.data) ? [] : r.data; })
+      .catch(function(){ return []; });
+  },
+  // What the day looked like, in their own words. No summarising engine here —
+  // it picks the longest inbound message per two-hour window, which in practice
+  // is the status update ("200 back together and tuned") rather than the "ok".
+  _daySummary: function(msgs) {
+    var picks = {}, esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    msgs.forEach(function(m) {
+      var b = String(m.body || '').trim();
+      if (b.length < 12) return;
+      if (/^(ok|yes|no|thanks|great|perfect|love|lol|got it)\b/i.test(b)) return;
+      if (/^https?:/i.test(b)) return;
+      var slot = new Date(m.ts).getHours() >> 1;
+      if (!picks[slot] || b.length > picks[slot].body.length) picks[slot] = { ts: m.ts, body: b, who: m.person };
+    });
+    var keys = Object.keys(picks).sort(function(a,b){ return a-b; });
+    if (!keys.length) return '';
+    var et = function(ts){ return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    return '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:3px;">WHAT HAPPENED</div>'
+      + keys.map(function(k){
+          var p = picks[k];
+          return '<div style="font-size:12px;padding:1px 0;"><span style="color:var(--text-light);">' + et(p.ts) + '</span> '
+               + esc(p.body.slice(0, 120)) + (p.body.length > 120 ? '…' : '') + '</div>';
+        }).join('');
+  },
+  _textRows: function(msgs) {
+    if (!msgs || !msgs.length) return '';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    var by = {};
+    msgs.forEach(function(m){ (by[m.person] = by[m.person] || []).push(m); });
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:#fffdf2;';
+    return Object.keys(by).sort(function(a,b){ return by[b].length - by[a].length; }).map(function(person) {
+      var v = by[person];
+      var rid = 'txt-' + person.replace(/[^a-z0-9]/gi,'').slice(0,10);
+      var mins = (new Date(v[v.length-1].ts) - new Date(v[0].ts)) / 60000;
+      var body = '<div style="padding:8px 10px;background:#fffdf2;font-size:12px;line-height:1.6;">'
+        + PayrollPage._daySummary(v)
+        + '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin:7px 0 3px;">ALL ' + v.length + ' MESSAGES</div>'
+        + v.map(function(m){
+            return '<div style="padding:1px 0;"><span style="color:var(--text-light);">' + et(m.ts) + '</span> '
+                 + '<b style="color:' + (m.direction === 'out' ? 'var(--green-dark)' : 'var(--text)') + ';">'
+                 + (m.direction === 'out' ? 'You' : esc(person.split(' ')[0])) + '</b> '
+                 + esc(String(m.body).slice(0, 220)) + '</div>';
+          }).join('')
+        + '</div>';
+      return '<tr onclick="PayrollPage._rowToggle(\'' + rid + '\')" style="cursor:pointer;">'
+        + '<td style="' + td + 'font-weight:700;"><span id="' + rid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>💬 Texts</td>'
+        + '<td style="' + td + 'font-weight:600;">' + esc(person.split(' ')[0]) + '</td>'
+        + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(v[0].ts) + '</td>'
+        + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(v[v.length-1].ts) + '</td>'
+        + '<td style="' + td + '">' + PayrollPage._fmtDur(mins) + '</td>'
+        + '<td style="' + td + 'white-space:normal;min-width:120px;color:var(--text-light);">' + v.length + ' messages — tap to read</td>'
+        + '<td style="' + td + 'color:var(--text-light);">—</td>'
+        + '</tr>'
+        + '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + body + '</td></tr>';
+    }).join('');
+  },
   // ── v1161: JOB COSTING right in the day panel ────────────────────────────
   // Doug: "Build the job costing right into the calendar here. Have the revenue
   // and the job on top as two lines, and then have lines below for the total
