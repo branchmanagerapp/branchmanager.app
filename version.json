@@ -1,5 +1,5 @@
 {
-  "version": 1187,
+  "version": 1188,
   "released": "2026-08-21",
-  "notes": "v1187: match revenue on stored client coordinates; runtime geocoding is blocked"
+  "notes": "v1188: a site that matched a job or invoice wins the day over a longer route slice"
 }

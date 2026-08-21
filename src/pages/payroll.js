@@ -513,8 +513,22 @@ var PayrollPage = {
       })).then(function() {
         var total = 0;
         dates.forEach(function(d) {
-          var best = null;
-          sites.forEach(function(st) { if (st.days[d] && (!best || st.days[d] > best.days[d])) best = st; });
+          // v1188 - 'biggest site wins the day' was picking the wrong site.
+          // A drive route gets sliced into 250 m clusters whose first and last
+          // ping are hours apart, so they report a BIGGER span than the job
+          // site itself: on Aug 4 the real site (David Coats, invoice #1016,
+          // matched at 138 m) reported 570 min and lost to five route slices
+          // at 572-684 min, so the day showed no client, job or revenue.
+          // A site that actually matched a job or invoice always wins; the
+          // longest-dwell site is only the fallback for labelling a day we
+          // could not match to a record.
+          var best = null, bestMatched = null;
+          sites.forEach(function(st) {
+            if (!st.days[d]) return;
+            if (!best || st.days[d] > best.days[d]) best = st;
+            if (st.rev && (!bestMatched || st.days[d] > bestMatched.days[d])) bestMatched = st;
+          });
+          if (bestMatched) best = bestMatched;
           var jb = document.getElementById('wkjob-' + d);
           var rv = document.getElementById('wkrev-' + d);
           var pl = document.getElementById('wkpl-' + d);
