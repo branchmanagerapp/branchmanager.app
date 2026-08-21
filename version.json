@@ -1,5 +1,5 @@
 {
-  "version": 1158,
+  "version": 1159,
   "released": "2026-08-20",
-  "notes": "v1158: tighter in/out fields, day pay beside Details"
+  "notes": "v1159: whole-dollar pay, week pay in the total column, overtime removed"
 }

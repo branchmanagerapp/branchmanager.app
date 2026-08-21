@@ -442,7 +442,9 @@ var PayrollPage = {
       } catch (e) {}
     }
     if (!rate) return '';
-    return '$' + (hrs * rate).toFixed(2);
+    // v1159: no cents — Doug: "take out the cent dot zero zero in the dollar
+    // fields, so it's shorter."
+    return '$' + Math.round(hrs * rate).toLocaleString();
   },
   // v1153 — Doug's phone as a ROW IN THE SAME TABLE as the trucks, with him as
   // the driver. Doug: "just list my phone same as you list the trucks, cleaner
@@ -936,9 +938,12 @@ var PayrollPage = {
       var partialBadge = (!weekApproved && daysApprovedCount > 0)
         ? '<div style="font-size:9px;color:#16a34a;">✓ ' + daysApprovedCount + '/' + workingDaysCount + '</div>'
         : '';
+      // v1159: week PAY under the week hours; OT line gone — Doug: "No
+      // overtime. Yeah. There is no overtime."
+      var _wRate = Number((emp.rate || emp.payRate) || 0);
       html += '<div style="padding:10px 6px;text-align:center;font-weight:800;font-size:15px;background:' + (weekApproved ? '#f0fdf4' : 'var(--bg)') + ';border-left:2px solid var(--border);">'
         + weekTotal.toFixed(1)
-        + (overtime > 0 ? '<div style="font-size:10px;color:#ef4444;font-weight:600;">' + overtime.toFixed(1) + ' OT</div>' : '')
+        + (_wRate ? '<div style="font-size:12px;color:var(--green-dark);font-weight:800;">$' + Math.round(weekTotal * _wRate).toLocaleString() + '</div>' : '')
         + (weekApproved ? '<div style="font-size:9px;color:#22c55e;">✓</div>' : partialBadge)
         + (weekIssues > 0 ? '<div style="font-size:9px;color:#ef4444;">' + weekIssues + ' issues</div>' : '')
         + '</div>';
@@ -1051,7 +1056,7 @@ var PayrollPage = {
       + (weekIssues > 0 ? '<div style="font-size:11px;color:#ef4444;">' + weekIssues + ' issue' + (weekIssues > 1 ? 's' : '') + '</div>' : '')
       + '</div>'
       + '<div style="text-align:right;"><div style="font-weight:800;font-size:17px;">' + weekTotal.toFixed(1) + '<span style="font-size:11px;font-weight:600;color:var(--text-light);"> h</span></div>'
-      + (overtime > 0 ? '<div style="font-size:10px;color:#ef4444;font-weight:600;">' + overtime.toFixed(1) + ' OT</div>' : '')
+      + ((Number((emp.rate || emp.payRate) || 0)) ? '<div style="font-size:13px;color:var(--green-dark);font-weight:800;">$' + Math.round(weekTotal * Number(emp.rate || emp.payRate)).toLocaleString() + '</div>' : '')
       + (weekApproved ? '<div style="font-size:10px;color:#22c55e;">✓ approved</div>' : (daysApprovedCount > 0 ? '<div style="font-size:10px;color:#16a34a;">✓ ' + daysApprovedCount + '/' + workingDaysCount + '</div>' : ''))
       + '</div></div>'
       + rows
@@ -1104,9 +1109,8 @@ var PayrollPage = {
     html += '<h3 style="font-size:16px;margin:0 0 16px;">Weekly Review</h3>';
 
     // Stats
-    html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;">';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">';
     html += '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;"><div style="font-size:22px;font-weight:800;">' + totalHours.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">Total Hours</div></div>';
-    html += '<div style="text-align:center;padding:12px;background:' + (totalOT > 0 ? '#fef3c7' : 'var(--bg)') + ';border-radius:10px;"><div style="font-size:22px;font-weight:800;color:' + (totalOT > 0 ? '#d97706' : 'var(--text)') + ';">' + totalOT.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">Overtime</div></div>';
     html += '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;"><div style="font-size:22px;font-weight:800;">' + totalPTO.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">PTO</div></div>';
     html += '<div style="text-align:center;padding:12px;background:' + (warnings.length > 0 ? '#fef2f2' : 'var(--bg)') + ';border-radius:10px;"><div style="font-size:22px;font-weight:800;color:' + (warnings.length > 0 ? '#dc2626' : 'var(--text)') + ';">' + warnings.length + '</div><div style="font-size:11px;color:var(--text-light);">Warnings</div></div>';
     html += '<div style="text-align:center;padding:12px;background:' + (allApproved ? '#f0fdf4' : '#fef3c7') + ';border-radius:10px;"><div style="font-size:22px;font-weight:800;color:' + (allApproved ? '#16a34a' : '#d97706') + ';">' + approved + '/' + (approved + pending) + '</div><div style="font-size:11px;color:var(--text-light);">Approved</div></div>';
