@@ -1,5 +1,5 @@
 {
-  "version": 1196,
+  "version": 1197,
   "released": "2026-08-21",
-  "notes": "v1196: fix week-34 revenue regression; truck panel rebuilds sites from GPS"
+  "notes": "v1197: say plainly when 'left yard' was never a yard crossing"
 }

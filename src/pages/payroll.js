@@ -1667,6 +1667,25 @@ var PayrollPage = {
 
   // v1142: population split out of _truckExpand so rows can render already
   // expanded — the stops and time-on-site are the reason you open a day.
+  // v1197 - did this truck actually touch the yard on this day? Doug asked
+  // "is 9:37 where it left the yard?" for the F-550 on Tue 8/18. It was not:
+  // that first ping sat 114 m from 4 Terrace and 30 KM from the yard, and the
+  // truck never pinged within 500 m of the yard all day. The dongle was
+  // asleep for the entire drive out, woke on site, then went silent again for
+  // 458 minutes. Reporting first/last ping as 'LEFT YARD / BACK' turns a gap
+  // in the data into a fact, so say plainly when there was no yard crossing.
+  _yardTouched: function(day, vehicleId) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve(true);          // unknown - don't cry wolf
+    var Y = PayrollPage._YARD, R = 0.0035;         // ~380 m box around the yard
+    var q = C.from('vehicle_positions').select('ts')
+      .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59')
+      .gte('lat', Y[0] - R).lte('lat', Y[0] + R)
+      .gte('lon', Y[1] - R).lte('lon', Y[1] + R).limit(1);
+    if (vehicleId) q = q.eq('vehicle_id', vehicleId);
+    return q.then(function(r) { return !!(r && r.data && r.data.length); })
+            .catch(function(){ return true; });
+  },
   _truckFill: function(d, vid, rid) {
     var box = document.getElementById(rid); if (!box) return;
     var v = (PayrollPage._dayCache[d] || {})[vid]; if (!v) { box.textContent = '—'; return; }
@@ -1698,9 +1717,18 @@ var PayrollPage = {
         }).join('')
       : '<div id="' + rid + '-gps" style="color:var(--text-light);">rebuilding sites from GPS…</div>';
     box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:2px 18px;font-size:12px;line-height:1.5;">'
-      + '<div style="flex:1 1 185px;min-width:0;">' + tripsHtml + '</div>'
+      + '<div style="flex:1 1 185px;min-width:0;">' + tripsHtml + '<div id="' + rid + '-yw"></div></div>'
       + '<div style="flex:1.7 1 235px;min-width:0;">' + stopsHtml + '</div>'
       + '</div>';
+    // v1197 - warn when these times are NOT a yard crossing
+    PayrollPage._yardTouched(d, vid).then(function(touched) {
+      if (touched) return;
+      var w = document.getElementById(rid + '-yw');
+      if (!w) return;
+      w.innerHTML = '<div style="color:#b45309;font-size:11px;line-height:1.35;margin-top:3px;">'
+        + '⚠ never pinged at the yard today — these are the first and last GPS pings, '
+        + 'not a yard departure. The tracker was asleep for the drive out.</div>';
+    }).catch(function(){});
     // v1196 - the stops RPC is sparse (Bouncie sleeps when parked), so when it
     // returns nothing rebuild this truck's sites from raw positions. Doug:
     // "it says no stops away from the yard, yet it clearly was at the job
