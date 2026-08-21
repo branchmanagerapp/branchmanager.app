@@ -569,6 +569,24 @@ var PayrollPage = {
               jb.innerHTML = PayrollPage._jobLabel(best.rev, best.addr);
               var cl = document.getElementById('wkcli-' + d);
               if (cl) { cl.textContent = PayrollPage._clientLabel(best.rev); cl.title = (best.rev && best.rev.client) || ''; }
+              // v1193 - Doug: "at least put the addresses in for the days if
+              // you don't know the jobs, then that can help me figure them
+              // out". A day we could not match to a record still knows WHERE
+              // the trucks sat, so look that up and show it. Only for the
+              // site that actually won the day - not all ~42 sites in a week.
+              if (!best.rev && !best.addr) {
+                (function(site, day, cell) {
+                  PayrollPage._revGeo(site.lat, site.lon).then(function(label) {
+                    if (!label) return;
+                    site.addr = label;
+                    var el = document.getElementById('wkjob-' + day);
+                    if (el) {
+                      el.innerHTML = PayrollPage._jobLabel(null, label);
+                      el.title = label + '\nno job or invoice matched — worked here, revenue unaccounted for';
+                    }
+                  }).catch(function(){});
+                })(best, d, jb);
+              }
               jb.title = (best.rev && best.rev.client ? best.rev.client + '\n' : '')
                        + (best.rev && best.rev.property ? best.rev.property : (best.addr || ''))
                        + (best.rev ? ('\njob #' + best.rev.num) : '\nno job matched');
@@ -720,10 +738,15 @@ var PayrollPage = {
       var c = localStorage.getItem(key);
       if (c) { var p = JSON.parse(c); return Promise.resolve(p && p.lat ? p : null); }
     } catch (e) {}
-    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(addr))
+    // v1193 - Nominatim sends no Access-Control-Allow-Origin, so every call
+    // from the app died as 'Failed to fetch'. Photon (Komoot) is the same
+    // OpenStreetMap data, free and keyless, and DOES send the CORS header.
+    return fetch('https://photon.komoot.io/api/?limit=1&q=' + encodeURIComponent(addr))
       .then(function(r){ return r.json(); })
       .then(function(d){
-        var out = (d && d[0]) ? { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) } : null;
+        var f = d && d.features && d.features[0];
+        var c = f && f.geometry && f.geometry.coordinates;
+        var out = c ? { lat: c[1], lon: c[0] } : null;                 // GeoJSON is [lon, lat]
         try { localStorage.setItem(key, JSON.stringify(out || {})); } catch (e) {}
         return out;
       }).catch(function(){ return null; });
@@ -1647,15 +1670,20 @@ var PayrollPage = {
   // Reverse-geocode a stop to a street address (= the client's address). Cached
   // in localStorage so we hit Nominatim at most once per location.
   _revGeo: function(lat, lon) {
-    var key = 'bm-revgeo-' + lat.toFixed(4) + ',' + lon.toFixed(4);
+    // v1193 - same CORS problem as _fwdGeo, and this one mattered just as
+    // much: with it failing, a day whose site matched no job or invoice had
+    // NOTHING to show, so the JOB row read '—' on every unaccounted day.
+    // Doug: "at least put the addresses in for the days if you don't know
+    // the jobs". Photon returns the same OSM data with CORS allowed.
+    var key = 'bm-revgeo2-' + lat.toFixed(4) + ',' + lon.toFixed(4);
     try { var c = localStorage.getItem(key); if (c) return Promise.resolve(c); } catch(e) {}
-    return fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&lat=' + lat + '&lon=' + lon)
+    return fetch('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon)
       .then(function(r){ return r.json(); })
       .then(function(d){
-        var a = d.address || {};
-        var road = ((a.house_number ? a.house_number + ' ' : '') + (a.road || '')).trim();
-        var town = a.town || a.city || a.hamlet || a.village || a.suburb || '';
-        var label = [road, town].filter(Boolean).join(', ') || d.display_name || (lat.toFixed(4) + ',' + lon.toFixed(4));
+        var f = (d && d.features && d.features[0] && d.features[0].properties) || {};
+        var road = ((f.housenumber ? f.housenumber + ' ' : '') + (f.street || f.name || '')).trim();
+        var town = f.city || f.district || f.locality || f.county || '';
+        var label = [road, town].filter(Boolean).join(', ') || (lat.toFixed(4) + ',' + lon.toFixed(4));
         try { localStorage.setItem(key, label); } catch(e) {}
         return label;
       }).catch(function(){ return null; });

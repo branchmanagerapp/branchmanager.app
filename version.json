@@ -1,5 +1,5 @@
 {
-  "version": 1192,
+  "version": 1193,
   "released": "2026-08-21",
-  "notes": "v1192: an invoice wins the day over the job it was raised from"
+  "notes": "v1193: Photon geocoder (CORS-safe); show the address on days with no job matched"
 }
