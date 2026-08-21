@@ -1,5 +1,5 @@
 {
-  "version": 1182,
+  "version": 1183,
   "released": "2026-08-21",
-  "notes": "v1182: per-day expense columns, small in/out in the cell, click-cell for reasoning"
+  "notes": "v1183: cell shows hours - pay on top, clock in/out under the green bar"
 }

@@ -1519,6 +1519,28 @@ var PayrollPage = {
   // give us some details on why specifically you chose that time in and that
   // time out." So the grid cell shows the times as small text, not inputs, and
   // the whole cell opens the reasoning popover. Editing lives in that popover.
+  // v1183 - Doug: "under green line have the time in as 9:00a - 5:00pm and on
+  // the top have the total. 8 - $240". Earliest clock-in, latest clock-out.
+  _dayInOut: function(userId, date) {
+    var t = function(ms) {
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return '';
+      var h = d.getHours(), mn = d.getMinutes();
+      var ap = h < 12 ? 'a' : 'p'; h = h % 12 || 12;
+      return h + ':' + ('0' + mn).slice(-2) + ap;
+    };
+    var ins = [], outs = [];
+    PayrollPage._getEntriesForDate(userId, date).forEach(function(e) {
+      if (e.clockIn)  { var a = new Date(e.clockIn).getTime();  if (!isNaN(a)) ins.push(a); }
+      if (e.clockOut) { var b = new Date(e.clockOut).getTime(); if (!isNaN(b)) outs.push(b); }
+    });
+    if (!ins.length && !outs.length) return '';
+    var a = ins.length ? t(Math.min.apply(null, ins)) : '';
+    var b = outs.length ? t(Math.max.apply(null, outs)) : '';
+    if (!a && !b) return '';
+    return '<div style="font-size:9px;color:var(--text-light);line-height:1.2;margin-top:3px;white-space:nowrap;overflow:hidden;">'
+      + (a || '?') + ' - ' + (b || '?') + '</div>';
+  },
   _cellTimes: function(user, date, e) {
     var t = function(iso) {
       if (!iso) return '—';
@@ -1763,11 +1785,18 @@ var PayrollPage = {
           + ' title="why these times?"'
           + ' style="padding:6px 4px;text-align:center;cursor:pointer;border-right:1px solid #f8f8f8;' + (isToday ? 'background:#f0fdf4;' : '') + 'position:relative;min-height:50px;">';
 
-        // Hours
-        html += '<div style="font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#ccc') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) : '—') + '</div>';
+        // Hours + pay on ONE line (v1183): "8 - $240"
+        var _cellPay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+        html += '<div style="font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#ccc') + ';white-space:nowrap;">'
+          + (dayHours > 0 ? dayHours.toFixed(1) : '—')
+          + (dayHours > 0 && _cellPay ? '<span style="font-size:12px;font-weight:600;color:var(--green-dark);"> - ' + _cellPay + '</span>' : '')
+          + '</div>';
 
         // Status bar (collapsed)
         html += '<div style="height:' + (expanded ? '0' : '4') + 'px;background:' + barColor + ';border-radius:2px;margin:4px 2px 0;transition:height .2s;"></div>';
+
+        // v1183 - in/out under the green line (collapsed view only)
+        if (!expanded) html += PayrollPage._dayInOut(emp.name || emp.id, date);
 
         // Icons
         if (entries.some(function(e) { return PayrollPage._cellNote(e.notes); })) html += '<span style="font-size:9px;position:absolute;top:2px;right:3px;">📝</span>';
