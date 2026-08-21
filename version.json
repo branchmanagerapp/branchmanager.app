@@ -1,5 +1,5 @@
 {
-  "version": 1166,
+  "version": 1167,
   "released": "2026-08-20",
-  "notes": "v1166: crew texts as rows in the grid, with a what-happened summary"
+  "notes": "v1167: job rows on top, one collapsible expenses line, GPM"
 }

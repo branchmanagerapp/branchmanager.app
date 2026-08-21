@@ -399,7 +399,7 @@ var PayrollPage = {
           + '<th style="' + th + '">OUT</th>'
           + '<th style="' + th + '">JOB SITE</th>'
           + '<th style="' + th + '">ON SITE</th>'
-        + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + PayrollPage._textRows(msgs) + '</tbody></table></div>'
+        + '</tr></thead><tbody>' + '<tbody id="jobrows-' + d + '"></tbody>' + PayrollPage._phoneRow(phone) + rows + PayrollPage._textRows(msgs) + '<tbody id="exprows-' + d + '"></tbody>' + '</tbody></table></div>'
         + '';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
@@ -420,6 +420,24 @@ var PayrollPage = {
             el.title = addr;
           }).catch(function(){});
         });
+        // v1167: resolve the day's primary site once, then fill the job rows at
+        // the top and the expenses + GPM rows at the bottom.
+        var all2 = [];
+        Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
+          (PayrollPage._dayCache[d][vid].merged || []).forEach(function(x){ all2.push(x); });
+        });
+        all2.sort(function(a, b){ return b.mins - a.mins; });
+        var jb = document.getElementById('jobrows-' + d), xb = document.getElementById('exprows-' + d);
+        if (!all2.length) {
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, null, 1);
+          return;
+        }
+        PayrollPage._revGeo(all2[0].lat, all2[0].lon).then(function(a) {
+          if (jb) jb.innerHTML = PayrollPage._jobRows(a || null, 1);
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, a || null, 1);
+        }).catch(function(){
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, null, 1);
+        });
 
       }, 0);
     }).catch(function() {
@@ -427,6 +445,76 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // ── v1167: job rows on top, ONE collapsible expenses line, then GPM ──────
+  // Doug: "I want new rows above employee... address and then client name and
+  // amount made in revenue", then "one line of expenses and then GPM... I wanna
+  // keep that really clean. So don't go crazy there. Just add the bare minimum
+  // to show the picture."
+  _jobRows: function(addr, dayCount) {
+    if (!addr) return '';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var rev = PayrollPage._findRevenue(addr);
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:#f4f8ff;';
+    var n = dayCount && dayCount > 1 ? dayCount : 1;
+    var share = rev ? rev.total / n : 0;
+    var money = function(x){ return '$' + Math.round(x).toLocaleString(); };
+    var h = '<tr><td style="' + td + 'font-weight:700;">📍 Address</td>'
+      + '<td colspan="6" style="' + td + 'white-space:normal;font-weight:600;">' + esc(addr) + '</td></tr>';
+    h += '<tr><td style="' + td + 'font-weight:700;">👤 Client</td>'
+      + '<td colspan="6" style="' + td + 'white-space:normal;font-weight:600;">'
+      + (rev ? ('#' + esc(String(rev.num || '')) + ' ' + esc(rev.client || ''))
+             : '<span style="color:var(--text-light);font-weight:400;">no job matched this address</span>') + '</td></tr>';
+    if (rev) {
+      h += '<tr><td style="' + td + 'font-weight:700;">💵 Revenue</td>'
+        + '<td colspan="6" style="' + td + 'white-space:normal;">'
+        + '<b style="color:var(--green-dark);font-size:13px;">' + money(share) + '</b>'
+        + (n > 1 ? ' <span style="color:var(--text-light);font-size:11px;">1 of ' + n + ' days · ' + money(rev.total) + ' job</span>' : '')
+        + '</td></tr>';
+    }
+    return h;
+  },
+  _expenseRows: function(d, addr, dayCount) {
+    var team = [];
+    try { team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : []; } catch (e) {}
+    var totH = 0, wages = 0;
+    team.forEach(function(t) {
+      var h = 0;
+      PayrollPage._getEntriesForDate(t.name || t.id, d).forEach(function(e){ h += (e.hours || 0); });
+      if (!h) return;
+      totH += h; wages += h * Number(t.rate || t.payRate || 0);
+    });
+    var rev = PayrollPage._findRevenue(addr);
+    var n = dayCount && dayCount > 1 ? dayCount : 1;
+    var share = rev ? rev.total / n : 0;
+    var burden = wages * PayrollPage._BURDEN_PCT;
+    var sales  = share * PayrollPage._JOB_COMMISSION;
+    var total  = wages + burden + sales;
+    if (!total && !share) return '';
+    var money = function(x){ return '$' + Math.round(x).toLocaleString(); };
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;';
+    var rid = 'exp-' + d;
+    var lines = [['Employees (' + totH.toFixed(2) + 'h)', wages],
+                 ['Payroll costs (' + Math.round(PayrollPage._BURDEN_PCT*100) + '%)', burden],
+                 ['Sales (' + Math.round(PayrollPage._JOB_COMMISSION*100) + '%)', sales]];
+    var detail = '<div style="padding:8px 10px;background:var(--bg);font-size:12px;line-height:1.7;">'
+      + lines.map(function(l){
+          return '<div style="display:flex;justify-content:space-between;"><span>' + l[0] + '</span><span>-' + money(l[1]) + '</span></div>';
+        }).join('')
+      + '<div style="color:var(--text-light);font-size:10.5px;margin-top:4px;">Other expenses and amortized yearly costs not in yet.</div></div>';
+    var h = '<tr onclick="PayrollPage._rowToggle(\'' + rid + '\')" style="cursor:pointer;">'
+      + '<td style="' + td + 'font-weight:700;"><span id="' + rid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>💸 Expenses</td>'
+      + '<td colspan="5" style="' + td + 'color:var(--text-light);white-space:normal;">employees · payroll costs · sales</td>'
+      + '<td style="' + td + 'font-weight:700;text-align:right;">-' + money(total) + '</td></tr>'
+      + '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + detail + '</td></tr>';
+    if (share) {
+      var gp = share - total;
+      h += '<tr><td style="' + td + 'font-weight:800;background:#f4f8ff;">GPM</td>'
+        + '<td colspan="5" style="' + td + 'background:#f4f8ff;"></td>'
+        + '<td style="' + td + 'background:#f4f8ff;font-weight:800;text-align:right;color:' + (gp>=0?'var(--green-dark)':'var(--red,#dc3545)') + ';">'
+        + money(gp) + ' <span style="font-size:11px;color:var(--text-light);">' + Math.round(gp/share*100) + '%</span></td></tr>';
+    }
+    return h;
+  },
   // ── v1166: crew TEXTS as rows in the same grid ───────────────────────────
   // Doug: "add in relevant text messages as one of the trucks." A person's
   // messages bracket their day exactly the way a truck's yard times bracket
