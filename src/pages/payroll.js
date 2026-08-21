@@ -370,8 +370,9 @@ var PayrollPage = {
         var firstOut = v.trips.length ? et(v.trips[0].left_yard) : '—';
         var lastBack = v.trips.length ? et(v.trips[v.trips.length - 1].back_yard) : '—';
         var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;';
-        return '<tr>'
-          + '<td style="' + td + 'font-weight:700;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</td>'
+        var drid = rid + '-det';
+        return '<tr onclick="PayrollPage._rowToggle(\'' + drid + '\')" style="cursor:pointer;">'
+          + '<td style="' + td + 'font-weight:700;"><span id="' + drid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</td>'
           + '<td style="' + td + '">' + PayrollPage._driverSel(vid, v.name) + '</td>'
           + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + firstOut + '</td>'
           + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + lastBack + '</td>'
@@ -384,7 +385,8 @@ var PayrollPage = {
                   : '<span style="color:var(--text-light);">—</span>')
             + '</td>'
           + '<td style="' + td + 'font-weight:700;color:var(--green-dark);">' + (siteMins ? PayrollPage._fmtDur(siteMins) : '—') + '</td>'
-          + '</tr>';
+          + '</tr>'
+          + PayrollPage._truckDetailRow(drid, v);
       }).join('');
       var th = 'padding:4px 7px;text-align:left;font-size:10px;font-weight:700;color:var(--text-light);border-bottom:1px solid var(--border);white-space:nowrap;';
       sum.innerHTML = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
@@ -423,6 +425,64 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // v1160 — tap a truck (or the phone) row to expand the full day for it.
+  // Doug: "If I click on a truck or the phone below the hours there, it should
+  // expand to give me all of the information for that day for that truck."
+  _rowToggle: function(rid) {
+    var el = document.getElementById(rid); if (!el) return;
+    var open = el.style.display !== 'none';
+    el.style.display = open ? 'none' : '';
+    var c = document.getElementById(rid + '-c'); if (c) c.textContent = open ? '▸' : '▾';
+    if (!open && el.getAttribute('data-geo') !== '1') {
+      el.setAttribute('data-geo', '1');
+      var slots = el.querySelectorAll('[data-lat]');
+      Array.prototype.forEach.call(slots, function(sp) {
+        PayrollPage._revGeo(parseFloat(sp.getAttribute('data-lat')), parseFloat(sp.getAttribute('data-lon')))
+          .then(function(a){ if (a) sp.textContent = '📍 ' + a; }).catch(function(){});
+      });
+    }
+  },
+  _truckDetailRow: function(rid, v) {
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var fd = PayrollPage._fmtDur;
+    var m = v.merged || PayrollPage._mergeStops(v.stops);
+    var h = '<div style="padding:8px 10px;background:var(--bg);font-size:12px;line-height:1.6;">';
+    h += '<div style="font-weight:700;font-size:10.5px;color:var(--text-light);">YARD TRIPS</div>';
+    if (v.trips.length) {
+      v.trips.forEach(function(t){
+        h += '<div>left <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + fd(t.mins_out) + ')</span></div>';
+      });
+    } else h += '<div style="color:var(--text-light);">never crossed the yard line</div>';
+    h += '<div style="font-weight:700;font-size:10.5px;color:var(--text-light);margin-top:6px;">SITES</div>';
+    if (m.length) {
+      m.forEach(function(x, i){
+        var maps = 'https://maps.google.com/?q=' + x.lat + ',' + x.lon;
+        h += '<div><a href="' + maps + '" target="_blank" rel="noopener" data-lat="' + x.lat + '" data-lon="' + x.lon + '" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a> '
+           + '<span style="color:var(--text-light);">' + et(x.arrive_ts) + '–' + et(x.depart_ts) + '</span> '
+           + '<b style="color:var(--green-dark);">' + fd(x.mins) + '</b>'
+           + (x.visits > 1 ? ' <span style="color:var(--text-light);">(' + x.visits + ' visits)</span>' : '') + '</div>';
+      });
+    } else h += '<div style="color:var(--text-light);">no stops away from the yard</div>';
+    var raw = v.stops.length;
+    if (raw > m.length) h += '<div style="color:var(--text-light);font-size:10.5px;margin-top:4px;">' + raw + ' raw stops merged into ' + m.length + ' site' + (m.length>1?'s':'') + ' (neighbouring addresses)</div>';
+    h += '</div>';
+    return '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + h + '</td></tr>';
+  },
+  _phoneDetailRow: function(rid, ph) {
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var fd = PayrollPage._fmtDur;
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var h = '<div style="padding:8px 10px;background:#f2faf4;font-size:12px;line-height:1.6;">';
+    h += '<div>first ping <b>' + et(ph.first_ping) + '</b> · last ping <b>' + et(ph.last_ping) + '</b>'
+       + (ph.span_hours ? ' · span <b>' + (+ph.span_hours).toFixed(2) + 'h</b>' : '') + '</div>';
+    h += '<div>' + (ph.yard_arrive ? 'at yard <b>' + et(ph.yard_arrive) + '</b>' + (ph.yard_leave ? ' → left <b>' + et(ph.yard_leave) + '</b>' : '') : 'never at the yard') + '</div>';
+    if (ph.yard_hours != null && ph.yard_hours !== '') h += '<div>yard time <b>' + fd(Math.round(+ph.yard_hours * 60)) + '</b></div>';
+    if (ph.commute_out_min) h += '<div>commute out <b>' + fd(ph.commute_out_min) + '</b>' + (ph.commute_back_min ? ' · back <b>' + fd(ph.commute_back_min) + '</b>' : '') + '</div>';
+    h += '<div style="color:var(--text-light);">' + ph.pings + ' pings' + (ph.sources ? ' · ' + esc(String(ph.sources).split(',').filter(Boolean).join(' + ')) : '') + '</div>';
+    h += '<div style="color:#4b6b4f;font-size:10.5px;margin-top:3px;">Doug\'s phone, not a truck. Covers time away from any tracked vehicle.</div>';
+    h += '</div>';
+    return '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + h + '</td></tr>';
+  },
   // v1158 — what this person actually earned on this day, shown beside Details.
   // Doug: "instead of saying the hours seven point five... it can just say
   // details, and then to the right of that, it can say the amount of money that
@@ -460,8 +520,9 @@ var PayrollPage = {
     var src = ph.sources ? String(ph.sources).split(',').filter(Boolean).join(' + ') : '';
     var span = ph.span_hours ? PayrollPage._fmtDur(Math.round(+ph.span_hours * 60)) : '—';
     var yard = (ph.yard_hours != null && ph.yard_hours !== '') ? PayrollPage._fmtDur(Math.round(+ph.yard_hours * 60)) : '—';
-    return '<tr>'
-      + '<td style="' + td + 'font-weight:700;">📱 My Phone</td>'
+    var prid = 'phone-det-' + (ph.first_ping || '').replace(/[^0-9]/g, '').slice(0, 12);
+    return '<tr onclick="PayrollPage._rowToggle(\'' + prid + '\')" style="cursor:pointer;">'
+      + '<td style="' + td + 'font-weight:700;"><span id="' + prid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>📱 My Phone</td>'
       + '<td style="' + td + 'color:var(--green-dark);font-weight:600;">Doug</td>'
       + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(ph.first_ping) + '</td>'
       + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(ph.last_ping) + '</td>'
@@ -471,7 +532,8 @@ var PayrollPage = {
           + ' · ' + ph.pings + ' pings' + (src ? ' · ' + esc(src) : '')
         + '</td>'
       + '<td style="' + td + 'font-weight:700;color:var(--green-dark);">' + yard + '</td>'
-      + '</tr>';
+      + '</tr>'
+      + PayrollPage._phoneDetailRow(prid, ph);
   },
   // v1150 — keep GPS boilerplate OUT of the hours cells. Doug: "no gps data in
   // hours fields." The auto writer stamps every row with
