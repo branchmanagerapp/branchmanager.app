@@ -490,8 +490,12 @@ var PayrollPage = {
       return Promise.all(sites.map(function(site) {
         return Promise.all([
           PayrollPage._revGeo(site.lat, site.lon),
-          PayrollPage._jobDayCount(site.lat, site.lon)
-        ]).then(function(r) { site.addr = r[0]; site.n = r[1] || 1; site.rev = PayrollPage._findRevenue(r[0]); });
+          PayrollPage._jobDayCount(site.lat, site.lon),
+          PayrollPage._jobNearSite(site.lat, site.lon)
+        ]).then(function(r) {
+          site.addr = r[0]; site.n = r[1] || 1;
+          site.rev = r[2] || PayrollPage._findRevenue(r[0]);   // proximity first, address string as fallback
+        });
       })).then(function() {
         var total = 0;
         dates.forEach(function(d) {
@@ -505,6 +509,8 @@ var PayrollPage = {
           if (best) {
             if (jb) {
               jb.innerHTML = PayrollPage._jobLabel(best.rev, best.addr);
+              var cl = document.getElementById('wkcli-' + d);
+              if (cl) { cl.textContent = PayrollPage._clientLabel(best.rev); cl.title = (best.rev && best.rev.client) || ''; }
               jb.title = (best.rev && best.rev.client ? best.rev.client + '\n' : '')
                        + (best.rev && best.rev.property ? best.rev.property : (best.addr || ''))
                        + (best.rev ? ('\njob #' + best.rev.num) : '\nno job matched');
@@ -520,6 +526,7 @@ var PayrollPage = {
             } else if (rv) { rv.textContent = '—'; }
           } else {
             if (jb) jb.innerHTML = '—';
+            var cl0 = document.getElementById('wkcli-' + d); if (cl0) cl0.textContent = '—';
             if (rv) rv.textContent = '—';
           }
           // v1173 — expenses now include the 10% sales commission, per Doug.
@@ -581,30 +588,84 @@ var PayrollPage = {
   // street. Showing the raw client_name gave "Michelle Mela..." truncated to
   // nothing useful.
   _jobLabel: function(rev, fallbackAddr) {
-    // v1175 — Doug: "put in the first ... maybe do ten characters of the client
-    // name and ten characters of the address, ten characters of the city that
-    // fits, something like that, or shorten it to five each if you have to."
-    // Day columns are ~130px, so the cell gets a clipped three-part label and
-    // the full text lives in the tooltip.
-    var clip = function(t, n) {
-      t = String(t || '').trim();
-      return t.length > n ? t.slice(0, n).trim() + '…' : t;
-    };
-    var addr = String(rev && rev.property ? rev.property : (fallbackAddr || ''));
-    var parts = addr.split(',').map(function(x){ return x.trim(); }).filter(Boolean);
-    var street = parts[0] || '';
-    var city = parts[1] || '';
-    // strip a salesperson prefix off the client so the name itself shows
-    var client = String(rev && rev.client ? rev.client : '').replace(/^\s*[DCM]\s*[—-]\s*/, '');
-    client = client.replace(/\s*\(.*?\)\s*/g, ' ').split('—')[0].trim();
-    // Two lines: the cell is ~130px, so one 38-char string would clip to
-    // nothing useful. Client on top, street · city beneath, ~14 chars each.
+    // v1176 — ONE line, no ellipsis, clickable. Doug: "Make the job address
+    // clickable. Also, it can just be one line... and it doesn't need the three
+    // dots. Just make it fit however long there."
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
-    var l2 = [street && clip(street, 14), city && clip(city, 12)].filter(Boolean).join(' · ');
-    if (!client && !l2) return rev ? ('#' + rev.num) : '—';
-    return (client ? '<b style="font-weight:700;">' + esc(clip(client, 14)) + '</b>' : '')
-         + (client && l2 ? '<br>' : '')
-         + (l2 ? '<span style="color:var(--text-light);">' + esc(l2) + '</span>' : '');
+    var addr = String(rev && rev.property ? rev.property : (fallbackAddr || ''));
+    var street = addr.split(',')[0].trim();
+    if (!street) return rev ? ('#' + rev.num) : '—';
+    var maps = 'https://maps.google.com/?q=' + encodeURIComponent(addr);
+    return '<a href="' + maps + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"'
+      + ' title="' + esc(addr) + '" style="color:var(--link,#1565c0);font-weight:600;text-decoration:none;">'
+      + esc(street) + '</a>';
+  },
+  // v1176 — "M — <client>" in Doug's convention; falls back to the literal
+  // "M — client name" when the job carries no client, per his instruction.
+  _clientLabel: function(rev) {
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    if (!rev) return '—';
+    var raw = String(rev.client || '').replace(/^\s*[DCM]\s*[—-]\s*/, '')
+                                      .replace(/\s*\(.*?\)\s*/g, ' ').split('—')[0].trim();
+    var who = rev.job ? PayrollPage._salesPerson(rev.job) : null;
+    if (!who) {
+      var lc = String(rev.client || '').toLowerCase();
+      if (lc.indexOf('mich') >= 0 || lc.indexOf('melagrano') >= 0) who = 'Michelle';
+      else if (lc.indexOf('cath') >= 0 || lc.indexOf('conway') >= 0) who = 'Catherine';
+      else if (lc.indexOf('doug') >= 0) who = 'Doug';
+    }
+    var ini = who ? who.charAt(0) + ' — ' : '';
+    return esc(ini + (raw || 'client name'));
+  },
+  // v1176 — forward-geocode a JOB address and cache it. Matching by
+  // reverse-geocoding the truck's position was unreliable: the Aug 17-19
+  // cluster sits 122 m from 4 Terrace Drive but reverse-geocodes to
+  // "4 Orchard Drive", so it never matched and revenue stayed blank. Going the
+  // other way — geocode the job, measure to the GPS cluster — is stable,
+  // because a job address does not move.
+  _fwdGeo: function(addr) {
+    if (!addr) return Promise.resolve(null);
+    var key = 'bm-fwdgeo-' + String(addr).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 48);
+    try {
+      var c = localStorage.getItem(key);
+      if (c) { var p = JSON.parse(c); return Promise.resolve(p && p.lat ? p : null); }
+    } catch (e) {}
+    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(addr))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var out = (d && d[0]) ? { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) } : null;
+        try { localStorage.setItem(key, JSON.stringify(out || {})); } catch (e) {}
+        return out;
+      }).catch(function(){ return null; });
+  },
+  // Nearest job to a GPS site. Reverse-geocode once for the TOWN, shortlist jobs
+  // in that town, forward-geocode only those, take the closest inside 250 m.
+  _jobNearSite: function(lat, lon) {
+    return PayrollPage._revGeo(lat, lon).then(function(addr) {
+      var town = '';
+      if (addr) { var parts = String(addr).split(','); town = (parts[1] || '').trim().toLowerCase(); }
+      town = town.replace(/^town of\s+/, '').replace(/^city of\s+/, '');
+      var jobs = [];
+      try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
+      var cand = jobs.filter(function(j) {
+        if (!j.property || !Number(j.total)) return false;
+        return town ? String(j.property).toLowerCase().indexOf(town) >= 0 : false;
+      }).slice(0, 12);
+      if (!cand.length) return null;
+      return Promise.all(cand.map(function(j) {
+        return PayrollPage._fwdGeo(j.property).then(function(g) {
+          if (!g) return null;
+          return { job: j, d: PayrollPage._metres([lat, lon], [g.lat, g.lon]) };
+        });
+      })).then(function(rs) {
+        var best = null;
+        rs.filter(Boolean).forEach(function(x){ if (x.d <= 250 && (!best || x.d < best.d)) best = x; });
+        if (!best) return null;
+        var j = best.job;
+        return { kind:'job', num: j.jobNumber || j.job_number, client: j.clientName || j.client_name,
+                 total: Number(j.total), job: j, property: j.property, metres: Math.round(best.d) };
+      });
+    }).catch(function(){ return null; });
   },
   _jobDayCount: function(lat, lon) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -1376,9 +1437,15 @@ var PayrollPage = {
     var LBL = 'padding:6px 12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;';
     if (!isMobile) {
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Client</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkcli-' + d + '" style="padding:5px 4px;text-align:center;font-size:10px;font-weight:600;overflow:hidden;white-space:nowrap;">·</div>';
+      });
+      html += '<div style="padding:5px 4px;"></div></div>';
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;font-size:11px;align-items:center;">'
         + '<div style="' + LBL + '">Job</div>';
       dates.forEach(function(d){
-        html += '<div id="wkjob-' + d + '" style="padding:5px 4px;text-align:center;font-size:9.5px;line-height:1.3;color:var(--text);overflow:hidden;">·</div>';
+        html += '<div id="wkjob-' + d + '" style="padding:5px 3px;text-align:center;font-size:9.5px;line-height:1.2;color:var(--text);overflow:hidden;white-space:nowrap;">·</div>';
       });
       html += '<div style="padding:6px 4px;"></div></div>';
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid var(--border);font-size:11px;align-items:center;background:var(--green-bg);">'

@@ -1,5 +1,5 @@
 {
-  "version": 1175,
+  "version": 1176,
   "released": "2026-08-21",
-  "notes": "v1175: two-line job cell — client, street, city"
+  "notes": "v1176: proximity job matching (fixes blank revenue), client row, clickable one-line address"
 }
