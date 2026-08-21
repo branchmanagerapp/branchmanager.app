@@ -460,6 +460,24 @@ var PayrollPage = {
   // more profitable than they are. Belongs in Settings once there is a store
   // for it.
   _BURDEN_PCT: 0.28,
+  // v1164 — COMMISSION and the TRUCK RATE.
+  // Doug confirmed 10% ("Keep commission at ten percent. That's fine.").
+  // NOTE: PayrollPage._COMMISSION_RATE elsewhere in this file is 0.08 and drives
+  // the separate sales-commission roll-up; this is the job-costing figure.
+  _JOB_COMMISSION: 0.10,
+  // Truck cost per mile, derived from the 2025 books against ~31,000 est.
+  // annual fleet miles:
+  //     fuel            $7,972  = $0.26/mi
+  //     repair + DMV   $31,844  = $1.03/mi   <- 4x the fuel
+  //     truck loan      $6,065  = $0.20/mi
+  //                              = $1.48/mi
+  // Doug's call: fuel belongs INSIDE this rate rather than as per-transaction
+  // line items, because a tank fill spans jobs — on Aug 17 a single day carried
+  // $469 of fuel that was mostly consumed later. A blended rate also carries the
+  // repair burden of ageing trucks, which is the cost he flagged as needing to
+  // land somewhere. $1.48 sits mid-range for medium-duty (F-550/F-750 typically
+  // $1.20-2.00/mi). Revisit yearly, or when odometer data starts accruing.
+  _TRUCK_RATE_MI: 1.48,
   _normAddr: function(a) {
     var t = String(a || '').toLowerCase().split(',')[0];   // house number + street only
     // Expand abbreviations to a canonical full word so "4 Terrace Dr" and
@@ -555,13 +573,19 @@ var PayrollPage = {
          + '<span style="font-size:10px;">taxes · WC · ins · ' + Math.round(PayrollPage._BURDEN_PCT * 100) + '%</span></span>'
          + '<span>-' + money(burden) + '</span></div>';
     }
+    var comm = rev ? rev.total * PayrollPage._JOB_COMMISSION : 0;
+    if (comm) {
+      h += '<div style="' + row + '"><span style="color:var(--text-light);">COMMISSION '
+         + '<span style="font-size:10px;">' + Math.round(PayrollPage._JOB_COMMISSION * 100) + '%</span></span>'
+         + '<span>-' + money(comm) + '</span></div>';
+    }
     if (rev) {
-      var net = rev.total - totPay - burden;
+      var net = rev.total - totPay - burden - comm;
       h += '<div style="' + row + 'border-top:2px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;font-size:14px;">'
          + '<span>GROSS PROFIT</span><span style="color:' + (net >= 0 ? 'var(--green-dark)' : 'var(--red,#dc3545)') + ';">' + money(net)
          + ' <span style="font-size:11px;font-weight:600;color:var(--text-light);">' + Math.round(net / rev.total * 100) + '%</span></span></div>';
     }
-    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Gross profit — before yearly overhead. Wages = what you owe them; payroll costs = taxes, WC and insurance on top (placeholder %).</div>';
+    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Gross profit — before yearly overhead. Wages = what you owe them; payroll costs = taxes/WC/insurance on top (placeholder %). Truck miles and dump fees not in this yet.</div>';
     return h + '</div>';
   },
   // v1160 — tap a truck (or the phone) row to expand the full day for it.

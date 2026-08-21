@@ -1,5 +1,5 @@
 {
-  "version": 1163,
+  "version": 1164,
   "released": "2026-08-20",
-  "notes": "v1163: no duplication in job costing; GROSS PROFIT"
+  "notes": "v1164: commission 10% in job costing; truck rate derived from the books"
 }
