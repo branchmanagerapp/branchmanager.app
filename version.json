@@ -1,5 +1,5 @@
 {
-  "version": 1180,
+  "version": 1181,
   "released": "2026-08-21",
-  "notes": "v1180: Details explains WHY each in/out time was chosen"
+  "notes": "v1181: Details is a click-to-open popover, not a page"
 }

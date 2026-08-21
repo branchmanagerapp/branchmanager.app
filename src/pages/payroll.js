@@ -1490,8 +1490,8 @@ var PayrollPage = {
     PayrollPage._expandedCells[user + '_' + date] = true; // keep the cell open after re-render
     if (typeof UI !== 'undefined') UI.toast('Saved');
     if (mode === 'detail') {
-      // re-open Details so the edit is visible and the evidence panel refreshes
-      try { PayrollPage.showDayDetail(user, date); } catch (err) {}
+      // v1181: no modal to reopen — the popover is closed by the edit flow
+      if (typeof loadPage === 'function') loadPage('payroll');
       return;
     }
     if (typeof loadPage === 'function') loadPage('payroll');
@@ -1753,7 +1753,7 @@ var PayrollPage = {
           // Day detail button
           var _pay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
           html += '<div style="margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">'
-            + '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>'
+            + '<button onclick="PayrollPage._toggleWhy(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\',event)" style="font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>'
             + (_pay ? '<span style="font-size:12px;font-weight:700;color:var(--green-dark);">' + _pay + '</span>' : '')
             + '</div>';
           // Approval indicator
@@ -1903,7 +1903,7 @@ var PayrollPage = {
         if (!entries.length) rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
         var _payM = PayrollPage._dayPay(emp.name || emp.id, date, emp);
         rows += '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-          + '<button onclick="event.stopPropagation();PayrollPage.showDayDetail(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\')" style="font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>'
+          + '<button onclick="PayrollPage._toggleWhy(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\',event)" style="font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>'
           + (_payM ? '<span style="font-size:13px;font-weight:700;color:var(--green-dark);">' + _payM + '</span>' : '')
           + '</div>';
         if (dayApproved && !editedAfterApproval) rows += '<div style="font-size:10px;color:#22c55e;margin-top:3px;">✓ Approved</div>';
@@ -2091,6 +2091,47 @@ var PayrollPage = {
     'Doug Brown':       ['the Ram arriving at the yard', 'the Ram leaving the yard for home',
                          'Doug drives the Ram home, so his paid day starts when he REACHES the yard — the commute is excluded.']
   },
+  // v1181 — Doug: "I don't wanna have the details pop up under the time
+  // automatically… I want it when you click details for them to pop up, not go
+  // to another page." So Details is a POPOVER anchored to the button, not a
+  // modal and not always-on. A grid cell is ~130px, far too narrow for prose,
+  // so it is positioned absolutely at a readable width.
+  _whyPop: null,
+  _closeWhy: function() {
+    if (PayrollPage._whyPop && PayrollPage._whyPop.parentNode) PayrollPage._whyPop.parentNode.removeChild(PayrollPage._whyPop);
+    PayrollPage._whyPop = null;
+    document.removeEventListener('click', PayrollPage._whyOutside, true);
+  },
+  _whyOutside: function(ev) {
+    var p = PayrollPage._whyPop;
+    if (p && !p.contains(ev.target)) PayrollPage._closeWhy();
+  },
+  _toggleWhy: function(user, date, ev) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    var btn = ev && (ev.currentTarget || ev.target);
+    var already = PayrollPage._whyPop && PayrollPage._whyPop.getAttribute('data-key') === user + '|' + date;
+    PayrollPage._closeWhy();
+    if (already) return;                       // second click closes
+    var pop = document.createElement('div');
+    pop.setAttribute('data-key', user + '|' + date);
+    pop.id = 'whypop';
+    var r = btn ? btn.getBoundingClientRect() : { left: 20, bottom: 80 };
+    var W = Math.min(320, window.innerWidth - 24);
+    var left = Math.max(12, Math.min(r.left, window.innerWidth - W - 12));
+    pop.style.cssText = 'position:fixed;z-index:9999;width:' + W + 'px;left:' + left + 'px;top:'
+      + Math.min(r.bottom + 6, window.innerHeight - 120) + 'px;max-height:60vh;overflow:auto;'
+      + 'background:var(--white,#fff);border:1px solid var(--border);border-radius:10px;'
+      + 'box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px 12px;text-align:left;';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    pop.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      + '<b style="font-size:12px;">' + esc(user) + ' · ' + esc(PayrollPage._pDate(date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})) + '</b>'
+      + '<span onclick="PayrollPage._closeWhy()" style="cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;">&times;</span></div>'
+      + '<div id="whypop-body" style="font-size:12px;"></div>';
+    document.body.appendChild(pop);
+    PayrollPage._whyPop = pop;
+    PayrollPage._fillWhy('whypop-body', user, date);
+    setTimeout(function(){ document.addEventListener('click', PayrollPage._whyOutside, true); }, 0);
+  },
   _fillWhy: function(elId, userId, date) {
     var box = document.getElementById(elId); if (!box) return;
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
@@ -2109,8 +2150,14 @@ var PayrollPage = {
       var pings = /\((\d+)\s*pings\)/.exec(note);
       var truck = /Auto from GPS\s*[—-]\s*([^(]+)/.exec(note);
       out += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-        + '<b style="font-size:15px;">' + hrs + ' h</b>' + pill + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px;">'
+        + '<b style="font-size:15px;">' + hrs + ' h</b>'
+        + '<span style="display:flex;align-items:center;gap:5px;">' + pill
+        + '<button onclick="PayrollPage._closeWhy();PayrollPage.editHours(\'' + e.id + '\')" '
+        + 'style="font-size:10px;padding:2px 7px;border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;">Edit</button>'
+        + '<button onclick="PayrollPage._closeWhy();PayrollPage.deleteHours(\'' + e.id + '\',\'' + String(userId).replace(/'/g,"") + '\',\'' + date + '\')" '
+        + 'style="font-size:10px;padding:2px 7px;border:1px solid var(--border);background:#fff;color:var(--red,#dc3545);border-radius:5px;cursor:pointer;">&times;</button>'
+        + '</span></div>'
         + '<div style="font-size:13px;margin-bottom:6px;"><b style="color:var(--green-dark);">IN ' + et(e.clockIn) + '</b>'
         + '<div style="color:var(--text-light);">' + esc(rule[0]) + '.</div></div>'
         + '<div style="font-size:13px;margin-bottom:8px;"><b style="color:var(--green-dark);">OUT ' + et(e.clockOut) + '</b>'
@@ -2369,9 +2416,9 @@ var PayrollPage = {
     if (!confirm('Delete these hours?')) return;
     var all = DB.timeEntries.getAll().filter(function(t) { return t.id !== entryId; });
     localStorage.setItem('bm-time-entries', JSON.stringify(all));
-    UI.closeModal();
     UI.toast('Hours deleted');
-    PayrollPage.showDayDetail(userId, date);
+    // v1181: Details is a popover now, not a modal — just refresh the page
+    if (typeof loadPage === 'function') loadPage('payroll');
   },
 
   addNote: function(userId, date) {
