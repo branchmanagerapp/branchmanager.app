@@ -1,5 +1,5 @@
 {
-  "version": 1168,
+  "version": 1169,
   "released": "2026-08-20",
-  "notes": "v1168: derive the job's day span so revenue splits per day"
+  "notes": "v1169: work-day threshold 2h -> 1h so fast jobs count"
 }

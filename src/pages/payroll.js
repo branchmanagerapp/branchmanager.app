@@ -457,11 +457,14 @@ var PayrollPage = {
   // v1168 — how many DAYS was this job actually worked, so revenue can be split.
   // Doug: a 3-day \$7,500 job reads \$2,500 a day. Derived from GPS presence at
   // the site rather than from the job record, which carries only one date.
-  // THRESHOLD = 2 hours on site. Doug on Aug 8 at 4 Terrace Drive: "we were
-  // just looking at the tree because it was down the road from another job. You
-  // don't have to count that." That visit spanned 50 min; the three real work
-  // days spanned 366-492 min. A 7x gap, so the rule is not finely tuned.
-  _JOB_DAY_MIN_MINUTES: 120,
+  // THRESHOLD = 1 hour on site. Doug: "Sometimes we do fast jobs, so you don't
+  // have to hold that two-hour thing. But under a half an hour you can generally
+  // assume it's an estimate — under an hour."
+  // 60 min still excludes the Aug 8 visit to 4 Terrace Drive (50 min, "we were
+  // just looking at the tree because it was down the road from another job"),
+  // while counting a genuinely quick job. The real work days there spanned
+  // 366-492 min, so there is still a 6x margin above the line.
+  _JOB_DAY_MIN_MINUTES: 60,
   _jobDayCount: function(lat, lon) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!C) return Promise.resolve(1);
