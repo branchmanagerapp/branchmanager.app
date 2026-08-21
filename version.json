@@ -1,5 +1,5 @@
 {
-  "version": 1190,
+  "version": 1191,
   "released": "2026-08-21",
-  "notes": "v1190: week number in the header; only page GPS history for matched sites"
+  "notes": "v1191: tighten revenue date windows per record kind"
 }

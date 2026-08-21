@@ -737,7 +737,7 @@ var PayrollPage = {
   // days of the day being priced, scored on distance, and de-duped so an
   // invoice always beats the job it was raised from (otherwise the same work
   // is counted twice on one day).
-  _REV_WINDOW_D: 45,
+  _REV_WINDOW_D: 6,
   // v1189 - the match radius was 250 m, which is tighter than the data can
   // support. A geocoder returns a street or parcel centroid, and on these
   // rural properties the truck parks well down a driveway. Nicholas Anthony's
@@ -789,17 +789,37 @@ var PayrollPage = {
         var c = clientRec(client);
         return (c && c.addr) || null;
       };
+      // v1191 - a flat +/-45 day window was far too loose. The trucks pass
+      // near North Salem on the way to other work, so the 4 Terrace job
+      // (scheduled Aug 17) matched Aug 4, 5 AND 6 as well - three days of
+      // \$2,500 that never happened, and it outranked the David Coats job
+      // that really was worked on Aug 4. Doug: that job was Mon 17, Tue 18,
+      // Wed 19. Each kind of record now gets a window that matches how it
+      // relates to the work:
+      //   job     - worked on or about its scheduled date. A multi-day job
+      //             runs a few days past it, so allow a short run, and use
+      //             the completed date as a hard end when we have one.
+      //   invoice - raised AFTER the work, sometimes a couple of weeks later,
+      //             but never meaningfully before it.
       var anchor = day ? new Date(day + 'T12:00:00').getTime() : null;
-      var inWindow = function(r) {
+      var DAY = 86400000;
+      var inWindow = function(r, kind) {
         if (!anchor) return true;
         var d = PayrollPage._recDate(r);
         if (!d) return false;
-        var gap = Math.abs(new Date(d + 'T12:00:00').getTime() - anchor) / 86400000;
-        return gap <= PayrollPage._REV_WINDOW_D;
+        var t = new Date(d + 'T12:00:00').getTime();
+        if (kind === 'invoice') return anchor <= t + 3 * DAY && anchor >= t - 21 * DAY;
+        var sched = String(r.scheduledDate || r.scheduled_date || '').substring(0, 10);
+        var done  = String(r.completedDate || r.completed_date || '').substring(0, 10);
+        if (sched && done) {
+          var a = new Date(sched + 'T12:00:00').getTime(), b = new Date(done + 'T12:00:00').getTime();
+          return anchor >= Math.min(a, b) - DAY && anchor <= Math.max(a, b) + DAY;
+        }
+        return Math.abs(t - anchor) <= PayrollPage._REV_WINDOW_D * DAY;
       };
       var pool = [];
       jobs.forEach(function(j) {
-        if (!Number(j.total) || !inWindow(j)) return;
+        if (!Number(j.total) || !inWindow(j, 'job')) return;
         var cn = j.clientName || j.client_name;
         var ad = addrOf(j, cn);
         if (!ad) return;
@@ -809,7 +829,7 @@ var PayrollPage = {
                     lat:(cr && cr.lat) || null, lng:(cr && cr.lng) || null });
       });
       invs.forEach(function(v) {
-        if (!Number(v.total) || !inWindow(v)) return;
+        if (!Number(v.total) || !inWindow(v, 'invoice')) return;
         if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
         var cn = v.clientName || v.client_name;
         var ad = addrOf(v, cn);
@@ -850,8 +870,7 @@ var PayrollPage = {
           if (!best) { best = h; return; }
           var sameClient = String(h.client || '').toLowerCase().indexOf(String(best.client || '').toLowerCase()) >= 0
                         || String(best.client || '').toLowerCase().indexOf(String(h.client || '').toLowerCase()) >= 0;
-          if (sameClient && h.kind === 'invoice' && best.kind === 'job') { best = h; return; }
-          if (sameClient && h.kind === 'job' && best.kind === 'invoice') return;
+          if (sameClient && h.kind !== best.kind) { if (h.kind === 'invoice') best = h; return; }
           if (h.d < best.d) best = h;
         });
         return { kind: best.kind, num: best.num, client: best.client, total: best.total,
