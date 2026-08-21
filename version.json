@@ -1,5 +1,5 @@
 {
-  "version": 1189,
+  "version": 1190,
   "released": "2026-08-21",
-  "notes": "v1189: widen the job match radius to 400m"
+  "notes": "v1190: week number in the header; only page GPS history for matched sites"
 }

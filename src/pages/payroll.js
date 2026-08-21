@@ -460,6 +460,21 @@ var PayrollPage = {
   // find the day's biggest stop away from the yard, reverse-geocode it, match a
   // job by address, then divide that job's total by the days it was worked so a
   // three-day job reads as its daily share rather than three full totals.
+  // v1190 - Doug: "Week of Aug 17 - Aug 23, 2026 -> WEEK 35 - AUGUST 17 -
+  // 23, 2026, or whatever 35 of 52 is this week". ISO-8601 week number: week
+  // 1 is the one containing the first Thursday of the year.
+  _isoWeek: function(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));          // shift to that week's Thursday
+    var jan1 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil((((t - jan1) / 86400000) + 1) / 7);
+  },
+  // Weeks in the year: 53 when 1 Jan is a Thursday, or a Wednesday in a leap year.
+  _isoWeeksInYear: function(y) {
+    var jan1 = new Date(y, 0, 1).getDay();
+    var leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    return (jan1 === 4 || (leap && jan1 === 3)) ? 53 : 52;
+  },
   _fillWeekJobRow: function(dates) {
     // v1173 — REWRITTEN. The previous version re-derived an address from GPS on
     // EVERY day, so the same job resolved as "2 Terrace Drive" on Monday,
@@ -501,15 +516,20 @@ var PayrollPage = {
         });
       });
       // biggest site wins a day when two overlap
+      // v1190 - _jobDayCount pages the whole GPS history around a site to work
+      // out how many days that job ran, so the revenue can be split across
+      // them. It used to run for EVERY site. With sites now coming from raw
+      // positions that is ~42 a week instead of the 2-3 the sparse RPC gave,
+      // and the row often never finished filling - Fri 8/7 stayed blank even
+      // though its match succeeded when called directly. It is only needed
+      // once a site has matched a record, so match FIRST and count second.
       return Promise.all(sites.map(function(site) {
-        return Promise.all([
-          PayrollPage._revGeo(site.lat, site.lon),
-          PayrollPage._jobDayCount(site.lat, site.lon, Object.keys(site.days).sort()[0]),
-          PayrollPage._jobNearSite(site.lat, site.lon, Object.keys(site.days).sort()[0])
-        ]).then(function(r) {
-          site.addr = r[0]; site.n = r[1] || 1;
-          site.rev = r[2] || PayrollPage._findRevenue(r[0]);   // proximity first, address string as fallback
-        });
+        var day0 = Object.keys(site.days).sort()[0];
+        return PayrollPage._jobNearSite(site.lat, site.lon, day0).then(function(rev) {
+          site.rev = rev; site.n = 1;
+          if (!rev) return;
+          return PayrollPage._jobDayCount(site.lat, site.lon, day0).then(function(n) { site.n = n || 1; });
+        }).catch(function(){ site.rev = null; site.n = 1; });
       })).then(function() {
         var total = 0;
         dates.forEach(function(d) {
@@ -1842,7 +1862,18 @@ var PayrollPage = {
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
       + '<button onclick="PayrollPage._weekOffset--;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">← Prev</button>'
       + '<div style="text-align:center;">'
-      + '<div style="font-size:18px;font-weight:800;">Week of ' + PayrollPage._pDate(weekStart).toLocaleDateString('en-US', { month:'short', day:'numeric' }) + ' – ' + PayrollPage._pDate(weekEnd).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) + '</div>'
+      + (function() {
+          var ws = PayrollPage._pDate(weekStart), we = PayrollPage._pDate(weekEnd);
+          var wk = PayrollPage._isoWeek(ws), of = PayrollPage._isoWeeksInYear(ws.getFullYear());
+          var mon = ws.toLocaleDateString('en-US', { month:'long' }).toUpperCase();
+          var endMon = we.toLocaleDateString('en-US', { month:'long' }).toUpperCase();
+          var span = (mon === endMon)
+            ? mon + ' ' + ws.getDate() + ' – ' + we.getDate()
+            : mon + ' ' + ws.getDate() + ' – ' + endMon + ' ' + we.getDate();
+          return '<div style="font-size:18px;font-weight:800;letter-spacing:.02em;">'
+            + 'WEEK ' + wk + '<span style="font-weight:600;color:var(--text-light);">/' + of + '</span>'
+            + ' · ' + span + ', ' + we.getFullYear() + '</div>';
+        })()
       + (self._weekOffset === 0 ? '<span style="font-size:11px;color:var(--green-dark);font-weight:600;">Current Week</span>' : '<button onclick="PayrollPage._weekOffset=0;loadPage(\'payroll\')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline;">Go to current week</button>')
       + '</div>'
       + '<button onclick="PayrollPage._weekOffset++;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">Next →</button>'
