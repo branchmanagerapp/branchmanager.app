@@ -1,5 +1,5 @@
 {
-  "version": 1195,
+  "version": 1196,
   "released": "2026-08-21",
-  "notes": "v1195: revenue matching is pure arithmetic — no network call per site"
+  "notes": "v1196: fix week-34 revenue regression; truck panel rebuilds sites from GPS"
 }

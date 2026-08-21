@@ -783,80 +783,97 @@ var PayrollPage = {
     return String(r.completedDate || r.completed_date || r.scheduledDate || r.scheduled_date
                   || r.issuedDate || r.issued_date || '').substring(0, 10);
   },
+  // v1196 - candidate list is built ONCE per day and cached, then every site
+  // match against it is pure arithmetic.
+  //
+  // v1195 made matching network-free by using only stored client coordinates,
+  // and that broke the 4 Terrace job. Job #343 has client_id NULL - "Michelle
+  // Melagrano (broker)" is not a client record at all - so there is no stored
+  // point for it, and the whole current week lost its revenue. The job does
+  // carry its own address, which is what used to resolve it.
+  //
+  // So the address geocode is back, but in the right place. The expensive
+  // version called out per SITE (~42 a week). This resolves each in-window
+  // RECORD once - roughly 5 jobs and 6 invoices in an August week, and only
+  // the ones with no client coordinate need the network at all.
+  _candCache: {},
+  _revCandidates: function(day) {
+    if (PayrollPage._candCache[day]) return PayrollPage._candCache[day];
+    var jobs = [], invs = [], clients = [];
+    try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
+    try { invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : []; } catch (e) {}
+    try { clients = (typeof DB !== 'undefined' && DB.clients && DB.clients.getAll) ? DB.clients.getAll() : []; } catch (e) {}
+    var byClient = {};
+    clients.forEach(function(c) {
+      if (!c.name) return;
+      byClient[String(c.name).toLowerCase().trim()] = {
+        lat: Number(c.lat) || null, lng: Number(c.lng) || null,
+        addr: [c.address, c.city, c.state].filter(Boolean).join(', ') || null };
+    });
+    var clientRec = function(name) {
+      var k = String(name || '').toLowerCase().trim();
+      if (byClient[k]) return byClient[k];
+      if (k.length > 3) for (var n in byClient) { if (n.indexOf(k) === 0) return byClient[n]; }
+      return null;
+    };
+    var anchor = new Date(day + 'T12:00:00').getTime(), DAY = 86400000;
+    var inWindow = function(r, kind) {
+      var d = PayrollPage._recDate(r);
+      if (!d) return false;
+      var t = new Date(d + 'T12:00:00').getTime();
+      if (kind === 'invoice') return anchor <= t + 3 * DAY && anchor >= t - 21 * DAY;
+      var sched = String(r.scheduledDate || r.scheduled_date || '').substring(0, 10);
+      var done  = String(r.completedDate || r.completed_date || '').substring(0, 10);
+      if (sched && done) {
+        var a = new Date(sched + 'T12:00:00').getTime(), b = new Date(done + 'T12:00:00').getTime();
+        return anchor >= Math.min(a, b) - DAY && anchor <= Math.max(a, b) + DAY;
+      }
+      return Math.abs(t - anchor) <= PayrollPage._REV_WINDOW_D * DAY;
+    };
+    var pool = [];
+    var add = function(rec, kind, num, cn) {
+      if (!Number(rec.total) || !inWindow(rec, kind)) return;
+      var cr = clientRec(cn);
+      pool.push({ kind:kind, rec:rec, num:num, client:cn, total:Number(rec.total),
+                  property: rec.property || (cr && cr.addr) || null,
+                  lat: (cr && cr.lat) || null, lon: (cr && cr.lng) || null });
+    };
+    jobs.forEach(function(j) { add(j, 'job', j.jobNumber || j.job_number, j.clientName || j.client_name); });
+    invs.forEach(function(v) {
+      if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
+      add(v, 'invoice', v.invoiceNumber || v.invoice_number, v.clientName || v.client_name);
+    });
+    var pr = Promise.all(pool.map(function(c) {
+      if (c.lat && c.lon) return c;                       // client already has a point
+      if (!c.property) return null;
+      return PayrollPage._fwdGeo(c.property).then(function(g) {
+        if (!g) return null;
+        c.lat = g.lat; c.lon = g.lon; return c;
+      }).catch(function(){ return null; });
+    })).then(function(rs) { return rs.filter(Boolean); }).catch(function(){ return []; });
+    PayrollPage._candCache[day] = pr;
+    return pr;
+  },
   _jobNearSite: function(lat, lon, day) {
-    // v1195 - this used to begin with _revGeo(), a network round-trip, purely
-    // to get a town name for a string pre-filter. With sites now derived from
-    // raw GPS that is ~42 calls a week instead of 2-3, and the week of Aug 3-9
-    // never finished rendering at all - every cell sat on its loading dot.
-    //
-    // 97% of clients now carry stored coordinates, so the match is pure
-    // arithmetic and needs no network. The old town heuristic (and the
-    // _fwdGeo call behind it) is gone: a record with no stored point simply
-    // does not match, which is the honest outcome. Addresses for days that
-    // match nothing are looked up separately, once per day, not per site.
-    try {
-      var jobs = [], invs = [], clients = [];
-      try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
-      try { invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : []; } catch (e) {}
-      try { clients = (typeof DB !== 'undefined' && DB.clients && DB.clients.getAll) ? DB.clients.getAll() : []; } catch (e) {}
-      var byClient = {};
-      clients.forEach(function(c) {
-        if (!c.name || !c.lat || !c.lng) return;
-        byClient[String(c.name).toLowerCase().trim()] = { lat:Number(c.lat), lng:Number(c.lng),
-          addr:[c.address, c.city, c.state].filter(Boolean).join(', ') || null };
-      });
-      var clientRec = function(name) {
-        var k = String(name || '').toLowerCase().trim();
-        if (byClient[k]) return byClient[k];
-        if (k.length > 3) for (var n in byClient) { if (n.indexOf(k) === 0) return byClient[n]; }
-        return null;
-      };
-      var anchor = day ? new Date(day + 'T12:00:00').getTime() : null;
-      var DAY = 86400000;
-      var inWindow = function(r, kind) {
-        if (!anchor) return true;
-        var d = PayrollPage._recDate(r);
-        if (!d) return false;
-        var t = new Date(d + 'T12:00:00').getTime();
-        if (kind === 'invoice') return anchor <= t + 3 * DAY && anchor >= t - 21 * DAY;
-        var sched = String(r.scheduledDate || r.scheduled_date || '').substring(0, 10);
-        var done  = String(r.completedDate || r.completed_date || '').substring(0, 10);
-        if (sched && done) {
-          var a = new Date(sched + 'T12:00:00').getTime(), b = new Date(done + 'T12:00:00').getTime();
-          return anchor >= Math.min(a, b) - DAY && anchor <= Math.max(a, b) + DAY;
-        }
-        return Math.abs(t - anchor) <= PayrollPage._REV_WINDOW_D * DAY;
-      };
+    if (!day) return Promise.resolve(null);
+    return PayrollPage._revCandidates(day).then(function(cands) {
       var hits = [];
-      var consider = function(rec, kind, num, cn) {
-        if (!Number(rec.total) || !inWindow(rec, kind)) return;
-        var cr = clientRec(cn);
-        var pt = null;
-        if (rec.lat && rec.lng) pt = { lat:Number(rec.lat), lon:Number(rec.lng) };
-        else if (cr) pt = { lat:cr.lat, lon:cr.lng };
-        if (!pt) return;
-        var dm = PayrollPage._metres([lat, lon], [pt.lat, pt.lon]);
-        if (dm > PayrollPage._MATCH_M) return;
-        hits.push({ kind:kind, rec:rec, num:num, client:cn, total:Number(rec.total),
-                    property: rec.property || (cr && cr.addr) || null, d:dm });
-      };
-      jobs.forEach(function(j) { consider(j, 'job', j.jobNumber || j.job_number, j.clientName || j.client_name); });
-      invs.forEach(function(v) {
-        if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
-        consider(v, 'invoice', v.invoiceNumber || v.invoice_number, v.clientName || v.client_name);
+      cands.forEach(function(c) {
+        var dm = PayrollPage._metres([lat, lon], [c.lat, c.lon]);
+        if (dm <= PayrollPage._MATCH_M) hits.push({ c:c, d:dm });
       });
-      if (!hits.length) return Promise.resolve(null);
+      if (!hits.length) return null;
       var best = null;
       hits.forEach(function(h) {
         if (!best) { best = h; return; }
-        var a = String(h.client || '').toLowerCase(), b = String(best.client || '').toLowerCase();
+        var a = String(h.c.client || '').toLowerCase(), b = String(best.c.client || '').toLowerCase();
         var sameClient = a && b && (a.indexOf(b) >= 0 || b.indexOf(a) >= 0);
-        if (sameClient && h.kind !== best.kind) { if (h.kind === 'invoice') best = h; return; }
+        if (sameClient && h.c.kind !== best.c.kind) { if (h.c.kind === 'invoice') best = h; return; }
         if (h.d < best.d) best = h;
       });
-      return Promise.resolve({ kind:best.kind, num:best.num, client:best.client, total:best.total,
-                               job:best.rec, property:best.property, metres:Math.round(best.d) });
-    } catch (e) { return Promise.resolve(null); }
+      return { kind:best.c.kind, num:best.c.num, client:best.c.client, total:best.c.total,
+               job:best.c.rec, property:best.c.property, metres:Math.round(best.d) };
+    }).catch(function(){ return null; });
   },
   // v1178 — the rest of the cost picture, per day.
   //   DUMP  — parsed out of crew texts. It exists NOWHERE else: the transfer
@@ -1489,13 +1506,18 @@ var PayrollPage = {
   // Yard and Doug's house are excluded - neither is billable work.
   _YARD: [41.30483, -73.92349],
   _HOME: [41.36112, -73.88646],
-  _daySites: function(day) {
+  // v1196 - optional vehicleId so ONE truck's sites can be rebuilt. The truck
+  // expand panel read bm_truck_stops, which on Tue 8/18 reported 'no stops away
+  // from the yard' for the F-550 even though it sat at 4 Terrace all day.
+  _daySites: function(day, vehicleId) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!C) return Promise.resolve([]);
     var all = [];
     var page = function(off) {
-      return C.from('vehicle_positions').select('lat,lon,ts')
-        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59')
+      var q = C.from('vehicle_positions').select('lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59');
+      if (vehicleId) q = q.eq('vehicle_id', vehicleId);
+      return q
         .order('ts', { ascending: true }).range(off, off + 999)
         .then(function(r) {
           if (r.error || !r.data || !r.data.length) return;
@@ -1674,11 +1696,41 @@ var PayrollPage = {
             + (s.visits > 1 ? ' <span style="color:var(--text-light);">(' + s.visits + ' visits)</span>' : '')
             + '</span></div>';
         }).join('')
-      : '<div style="color:var(--text-light);">No stops away from the yard.</div>';
+      : '<div id="' + rid + '-gps" style="color:var(--text-light);">rebuilding sites from GPS…</div>';
     box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:2px 18px;font-size:12px;line-height:1.5;">'
       + '<div style="flex:1 1 185px;min-width:0;">' + tripsHtml + '</div>'
       + '<div style="flex:1.7 1 235px;min-width:0;">' + stopsHtml + '</div>'
       + '</div>';
+    // v1196 - the stops RPC is sparse (Bouncie sleeps when parked), so when it
+    // returns nothing rebuild this truck's sites from raw positions. Doug:
+    // "it says no stops away from the yard, yet it clearly was at the job
+    // that Tuesday the eighteenth".
+    if (!mstops.length) {
+      PayrollPage._daySites(d, vid).then(function(gs) {
+        var el = document.getElementById(rid + '-gps');
+        if (!el) return;
+        if (!gs || !gs.length) { el.textContent = 'No stops away from the yard.'; return; }
+        el.innerHTML = gs.map(function(s, i) {
+          var sid = rid + '-g' + i;
+          var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
+          return '<div style="padding:1px 0;">'
+            + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a></span>'
+            + ' <span style="white-space:nowrap;"><span style="color:var(--text-light);">' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</span>'
+            + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(s.mins) + '</b>'
+            + ' <span style="color:var(--text-light);font-size:11px;">from GPS</span></span></div>';
+        }).join('');
+        gs.forEach(function(s, i) {
+          PayrollPage._revGeo(s.lat, s.lon).then(function(addr) {
+            var e2 = document.getElementById(rid + '-g' + i); if (!e2 || !addr) return;
+            var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
+            e2.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 ' + esc(addr) + '</a>';
+          }).catch(function(){});
+        });
+      }).catch(function() {
+        var el = document.getElementById(rid + '-gps');
+        if (el) el.textContent = 'No stops away from the yard.';
+      });
+    }
     mstops.forEach(function(s, i){
       var sid = rid + '-s' + i;
       PayrollPage._revGeo(s.lat, s.lon).then(function(addr){
