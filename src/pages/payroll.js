@@ -449,6 +449,50 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  // v1170 — fill the JOB / REVENUE row across the week. One pass per day:
+  // find the day's biggest stop away from the yard, reverse-geocode it, match a
+  // job by address, then divide that job's total by the days it was worked so a
+  // three-day job reads as its daily share rather than three full totals.
+  _fillWeekJobRow: function(dates) {
+    var total = 0;
+    var seq = dates.reduce(function(chain, d) {
+      return chain.then(function() {
+        return PayrollPage._truckStops(d).then(function(stops) {
+          var jb = document.getElementById('wkjob-' + d);
+          var rv = document.getElementById('wkrev-' + d);
+          if (!stops || !stops.length) { if (jb) jb.textContent = '—'; if (rv) rv.textContent = '—'; return; }
+          var m = PayrollPage._mergeStops(stops);
+          m.sort(function(a, b){ return b.mins - a.mins; });
+          var top = m[0];
+          if (!top) { if (jb) jb.textContent = '—'; if (rv) rv.textContent = '—'; return; }
+          return Promise.all([
+            PayrollPage._revGeo(top.lat, top.lon),
+            PayrollPage._jobDayCount(top.lat, top.lon)
+          ]).then(function(r) {
+            var addr = r[0], n = r[1] || 1;
+            var rev = PayrollPage._findRevenue(addr);
+            var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+            if (jb) {
+              jb.textContent = rev ? (rev.client || ('#' + rev.num)) : (addr ? String(addr).split(',')[0] : '—');
+              jb.title = (addr || '') + (rev ? ('  ·  job #' + rev.num) : '  ·  no job matched');
+            }
+            if (rv) {
+              if (rev) {
+                var share = rev.total / n;
+                total += share;
+                rv.textContent = '$' + Math.round(share).toLocaleString();
+                rv.title = '$' + Math.round(rev.total).toLocaleString() + ' job over ' + n + ' day' + (n>1?'s':'');
+              } else { rv.textContent = '—'; }
+            }
+          });
+        }).catch(function(){});
+      });
+    }, Promise.resolve());
+    seq.then(function() {
+      var t = document.getElementById('wkrev-total');
+      if (t) t.textContent = total ? '$' + Math.round(total).toLocaleString() : '';
+    });
+  },
   // ── v1167: job rows on top, ONE collapsible expenses line, then GPM ──────
   // Doug: "I want new rows above employee... address and then client name and
   // amount made in revenue", then "one line of expenses and then GPM... I wanna
@@ -1223,6 +1267,26 @@ var PayrollPage = {
     var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
 
+    // ── v1170: JOB and REVENUE rows ABOVE the dates — Doug: "rev above dates and
+    // job name". Filled async: the job comes from the day's work site, revenue is
+    // that job's total split across the days it was actually worked.
+    var LBL = 'padding:6px 12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;';
+    if (!isMobile) {
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Job</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkjob-' + d + '" style="padding:6px 4px;text-align:center;font-size:10px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">·</div>';
+      });
+      html += '<div style="padding:6px 4px;"></div></div>';
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid var(--border);font-size:11px;align-items:center;background:var(--green-bg);">'
+        + '<div style="' + LBL + '">Revenue</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkrev-' + d + '" style="padding:6px 4px;text-align:center;font-weight:800;color:var(--green-dark);">·</div>';
+      });
+      html += '<div id="wkrev-total" style="padding:6px 4px;text-align:center;font-weight:800;color:var(--green-dark);"></div></div>';
+      setTimeout(function(){ PayrollPage._fillWeekJobRow(dates); }, 0);
+    }
+
     // Header row
     if (!isMobile)
     html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">'
@@ -1361,6 +1425,29 @@ var PayrollPage = {
 
       html += '</div>'; // end employee row
     });
+
+    // ── v1170: LABOR and EXPENSES below the employees, totals to the right —
+    // Doug: "total labor and expenses below and to right". ──
+    if (!isMobile) {
+      var labD = {}, labWk = 0;
+      dates.forEach(function(d){
+        var t = 0;
+        employees.forEach(function(emp){
+          var rate = Number(emp.rate || emp.payRate || 0);
+          PayrollPage._getEntriesForDate(emp.name || emp.id, d).forEach(function(e){ t += (e.hours || 0) * rate; });
+        });
+        labD[d] = t; labWk += t;
+      });
+      var mny = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:2px solid var(--border);font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Labor</div>';
+      dates.forEach(function(d){ html += '<div style="padding:8px 4px;text-align:center;font-weight:700;">' + mny(labD[d]) + '</div>'; });
+      html += '<div style="padding:8px 4px;text-align:center;font-weight:800;">' + mny(labWk) + '</div></div>';
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:1px solid #f0f0f0;font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Expenses</div>';
+      dates.forEach(function(d){ html += '<div id="wkexp-' + d + '" style="padding:8px 4px;text-align:center;color:var(--text-light);">·</div>'; });
+      html += '<div id="wkexp-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
+    }
 
     html += '</div>'; // end grid
 
