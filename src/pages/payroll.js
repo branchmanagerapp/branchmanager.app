@@ -451,6 +451,15 @@ var PayrollPage = {
   // and look for a job or invoice at the same address. No geocoding of the
   // whole job list, and no guessing — an unmatched day says so rather than
   // inventing a number.
+  // v1162 — employer burden on top of wages: payroll taxes + workers' comp +
+  // the insurance allocation. 28% is the CONSERVATIVE end of the range derived
+  // from the 2025 books (10% employer payroll tax, plus WC at a real tree-class
+  // rate). It is a PLACEHOLDER until the Erie declaration page settles what that
+  // policy actually covers — the booked NYSIF premium is only 1.7% of payroll,
+  // which is implausible for tree work. Erring high keeps jobs from looking
+  // more profitable than they are. Belongs in Settings once there is a store
+  // for it.
+  _BURDEN_PCT: 0.28,
   _normAddr: function(a) {
     var t = String(a || '').toLowerCase().split(',')[0];   // house number + street only
     // Expand abbreviations to a canonical full word so "4 Terrace Dr" and
@@ -531,16 +540,28 @@ var PayrollPage = {
            + '<span>-' + money(l.pay) + '</span></div>';
       });
       h += '<div style="' + row + 'border-top:1px solid var(--border);margin-top:4px;padding-top:4px;font-weight:700;">'
-         + '<span>PAYROLL <span style="color:var(--text-light);font-weight:400;">' + totH.toFixed(2) + 'h</span></span>'
+         + '<span>WAGES <span style="color:var(--text-light);font-weight:400;">' + totH.toFixed(2) + 'h</span></span>'
          + '<span>-' + money(totPay) + '</span></div>';
     }
+    // v1162: the lines above are WHAT DOUG OWES THEM — flat hourly, no burden
+    // baked in. Doug: "That should be what I owe them, what I'm paying them...
+    // That should be thirty an hour set, and then payroll costs can go on this
+    // line here as a separate line below dump fees."
+    // Everything the employer pays ON TOP — payroll taxes, workers' comp, the
+    // insurance allocation — is this one line.
+    var burden = totPay * PayrollPage._BURDEN_PCT;
+    if (totPay) {
+      h += '<div style="' + row + 'margin-top:5px;"><span style="color:var(--text-light);">PAYROLL COSTS '
+         + '<span style="font-size:10px;">taxes · WC · ins · ' + Math.round(PayrollPage._BURDEN_PCT * 100) + '%</span></span>'
+         + '<span>-' + money(burden) + '</span></div>';
+    }
     if (rev) {
-      var net = rev.total - totPay;
+      var net = rev.total - totPay - burden;
       h += '<div style="' + row + 'border-top:2px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;font-size:14px;">'
          + '<span>LEFT</span><span style="color:' + (net >= 0 ? 'var(--green-dark)' : 'var(--red,#dc3545)') + ';">' + money(net)
          + ' <span style="font-size:11px;font-weight:600;color:var(--text-light);">' + Math.round(net / rev.total * 100) + '%</span></span></div>';
     }
-    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Payroll only — no dump fees, fuel, or truck cost yet.</div>';
+    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Wages = what you owe them at their hourly rate. Payroll costs = taxes, WC and insurance on top (placeholder %). No dump fees, fuel or truck cost in this yet.</div>';
     return h + '</div>';
   },
   // v1160 — tap a truck (or the phone) row to expand the full day for it.
