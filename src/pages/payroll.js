@@ -504,8 +504,7 @@ var PayrollPage = {
           var comm = 0, share = 0;
           if (best) {
             if (jb) {
-              jb.textContent = best.rev ? (best.rev.client || ('#' + best.rev.num))
-                                        : (best.addr ? String(best.addr).split(',')[0] : '—');
+              jb.textContent = PayrollPage._jobLabel(best.rev, best.addr);
               jb.title = (best.addr || '') + (best.rev ? ('  ·  job #' + best.rev.num) : '  ·  no job matched');
             }
             if (best.rev) {
@@ -574,6 +573,30 @@ var PayrollPage = {
   // while counting a genuinely quick job. The real work days there spanned
   // 366-492 min, so there is still a 6x margin above the line.
   _JOB_DAY_MIN_MINUTES: 60,
+  // v1174 — job label in Doug's own convention: "M — 4 Terrace Drive". The
+  // leading letter is the SALESPERSON (D Doug / C Catherine / M Michelle), the
+  // same D—/C—/M— prefix the commission roll-up already reads, followed by the
+  // street. Showing the raw client_name gave "Michelle Mela..." truncated to
+  // nothing useful.
+  _jobLabel: function(rev, fallbackAddr) {
+    if (!rev) return fallbackAddr ? String(fallbackAddr).split(',')[0] : '—';
+    var street = String(rev.property || fallbackAddr || '').split(',')[0].trim();
+    var who = rev.job ? PayrollPage._salesPerson(rev.job) : null;
+    if (!who) {
+      var c = String(rev.client || '');
+      var m = /^\s*([DCM])\s*[—\-]/.exec(c);           // already "M — ..."
+      if (m) who = { D:'Doug', C:'Catherine', M:'Michelle' }[m[1]];
+      else {                                            // or the name spelled out
+        var lc = c.toLowerCase();
+        if (lc.indexOf('mich') >= 0 || lc.indexOf('melagrano') >= 0) who = 'Michelle';
+        else if (lc.indexOf('cath') >= 0 || lc.indexOf('conway') >= 0) who = 'Catherine';
+        else if (lc.indexOf('doug') >= 0) who = 'Doug';
+      }
+    }
+    var ini = who ? who.charAt(0) : '';
+    if (!street) return rev.client || ('#' + rev.num);
+    return (ini ? ini + ' — ' : '') + street;
+  },
   _jobDayCount: function(lat, lon) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!C) return Promise.resolve(1);
@@ -801,7 +824,7 @@ var PayrollPage = {
         if (!j.property) return;
         if (PayrollPage._normAddr(j.property) !== key) return;
         var t = Number(j.total || 0);
-        if (!best || t > best.total) best = { kind:'job', num:j.jobNumber || j.job_number, client:j.clientName || j.client_name, total:t };
+        if (!best || t > best.total) best = { kind:'job', num:j.jobNumber || j.job_number, client:j.clientName || j.client_name, total:t, job:j, property:j.property };
       });
       if (!best) {
         var invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : [];
@@ -809,7 +832,7 @@ var PayrollPage = {
           if (!v.property) return;
           if (PayrollPage._normAddr(v.property) !== key) return;
           var t = Number(v.total || 0);
-          if (!best || t > best.total) best = { kind:'invoice', num:v.invoiceNumber || v.invoice_number, client:v.clientName || v.client_name, total:t };
+          if (!best || t > best.total) best = { kind:'invoice', num:v.invoiceNumber || v.invoice_number, client:v.clientName || v.client_name, total:t, property:v.property };
         });
       }
     } catch (e) {}
