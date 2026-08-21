@@ -473,10 +473,17 @@ var PayrollPage = {
     PayrollPage._weekPL = {};
     var perDay = {};
     Promise.all(dates.map(function(d) {
-      return PayrollPage._truckStops(d).then(function(st) {
-        if (st && st.length) { perDay[d] = PayrollPage._mergeStops(st); return; }
-        // v1184 - RPC had nothing for this day; rebuild from raw GPS.
-        return PayrollPage._daySites(d).then(function(sites) { perDay[d] = sites || []; });
+      // v1186 - UNION both sources. bm_truck_stops is sparse everywhere in
+      // this window (0-4 stops a day), but the few it does return are good,
+      // and Aug 17-19 already matched off them. Taking the RPC whenever it
+      // was non-empty meant the GPS fallback never ran on the days that
+      // needed it most - Aug 4 had 2 stops and 55 real sites. Both feed the
+      // same 250 m clustering below, which de-dupes any overlap.
+      return Promise.all([
+        PayrollPage._truckStops(d).catch(function(){ return null; }),
+        PayrollPage._daySites(d).catch(function(){ return []; })
+      ]).then(function(r) {
+        perDay[d] = PayrollPage._mergeStops(r[0] || []).concat(r[1] || []);
       }).catch(function(){ perDay[d] = []; });
     })).then(function() {
       var sites = [];
@@ -1438,11 +1445,15 @@ var PayrollPage = {
         }
         cl.push({ lat: r.lat, lon: r.lon, n: 1, first: r.ts, last: r.ts });
       });
+      // v1186 - a long drive day slices the ROUTE into dozens of 250 m
+      // clusters that all clear the ping/dwell test (Aug 4 produced 55).
+      // Every extra site costs a Nominatim geocode, so keep only the
+      // strongest few by ping count - a real job site always dominates.
       return cl.filter(function(c) {
         if (c.n < 20) return false;
         c.mins = (new Date(c.last) - new Date(c.first)) / 60000;
         return c.mins >= 60;
-      }).map(function(c) {
+      }).sort(function(a,b){ return b.n - a.n; }).slice(0, 6).map(function(c) {
         return { lat:c.lat, lon:c.lon, mins:c.mins, visits:1,
                  arrive_ts:c.first, depart_ts:c.last, bestMins:c.mins };
       }).sort(function(a,b){ return new Date(a.arrive_ts) - new Date(b.arrive_ts); });

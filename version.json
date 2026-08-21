@@ -1,5 +1,5 @@
 {
-  "version": 1185,
+  "version": 1186,
   "released": "2026-08-21",
-  "notes": "v1185: fall back to the client address when a job or invoice has none"
+  "notes": "v1186: union RPC stops with GPS-derived sites; cap sites per day"
 }
