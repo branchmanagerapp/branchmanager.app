@@ -399,7 +399,8 @@ var PayrollPage = {
           + '<th style="' + th + '">OUT</th>'
           + '<th style="' + th + '">JOB SITE</th>'
           + '<th style="' + th + '">ON SITE</th>'
-        + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + '</tbody></table></div>';
+        + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + '</tbody></table></div>'
+        + '<div id="daycost-' + d + '"></div>';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
       // (This reverses v1142's auto-expand, per Doug: "Could fit on one line.
@@ -419,12 +420,129 @@ var PayrollPage = {
             el.title = addr;
           }).catch(function(){});
         });
+        // v1161: the day's PRIMARY site (longest stop of any truck) drives the
+        // job match for costing. Rendered after the geocode so the block can
+        // name the job rather than a coordinate.
+        var allStops = [];
+        Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
+          (PayrollPage._dayCache[d][vid].merged || []).forEach(function(x){ allStops.push(x); });
+        });
+        allStops.sort(function(a, b){ return b.mins - a.mins; });
+        var box = document.getElementById('daycost-' + d);
+        if (!box) return;
+        if (!allStops.length) { box.innerHTML = PayrollPage._renderDayCost(d, null); return; }
+        PayrollPage._revGeo(allStops[0].lat, allStops[0].lon).then(function(a) {
+          box.innerHTML = PayrollPage._renderDayCost(d, a || null);
+        }).catch(function(){ box.innerHTML = PayrollPage._renderDayCost(d, null); });
       }, 0);
     }).catch(function() {
       var sum = panel.querySelector('.bday-sum'); if (sum) sum.textContent = 'Could not load truck data.';
     });
   },
   _dayCache: {},
+  // ── v1161: JOB COSTING right in the day panel ────────────────────────────
+  // Doug: "Build the job costing right into the calendar here. Have the revenue
+  // and the job on top as two lines, and then have lines below for the total
+  // payroll cost for everyone." Dump fees and fuel deliberately left out for
+  // now, at his call.
+  //
+  // Revenue is matched by ADDRESS: the day's primary work site is already
+  // reverse-geocoded for the grid, so we normalise its house-number + street
+  // and look for a job or invoice at the same address. No geocoding of the
+  // whole job list, and no guessing — an unmatched day says so rather than
+  // inventing a number.
+  _normAddr: function(a) {
+    var t = String(a || '').toLowerCase().split(',')[0];   // house number + street only
+    // Expand abbreviations to a canonical full word so "4 Terrace Dr" and
+    // "4 Terrace Drive" match. An earlier version collapsed them to a single
+    // letter, which turned "4 Terrace Drive" into "4td" — short enough that the
+    // min-length guard then threw the match away.
+    var MAP = { rd:'road', st:'street', dr:'drive', ln:'lane', ave:'avenue', av:'avenue',
+                ct:'court', pl:'place', ter:'terrace', trl:'trail', hwy:'highway',
+                blvd:'boulevard', cir:'circle', pkwy:'parkway', n:'north', s:'south',
+                e:'east', w:'west' };
+    t = t.replace(/[^a-z0-9\s]/g, ' ')
+         .split(/\s+/)
+         .filter(Boolean)
+         .map(function(w){ return MAP[w] || w; })
+         .join('');
+    return t;
+  },
+  _findRevenue: function(addr) {
+    if (!addr) return null;
+    var key = PayrollPage._normAddr(addr);
+    if (key.length < 4) return null;
+    var best = null;
+    try {
+      var jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : [];
+      jobs.forEach(function(j) {
+        if (!j.property) return;
+        if (PayrollPage._normAddr(j.property) !== key) return;
+        var t = Number(j.total || 0);
+        if (!best || t > best.total) best = { kind:'job', num:j.jobNumber || j.job_number, client:j.clientName || j.client_name, total:t };
+      });
+      if (!best) {
+        var invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : [];
+        invs.forEach(function(v) {
+          if (!v.property) return;
+          if (PayrollPage._normAddr(v.property) !== key) return;
+          var t = Number(v.total || 0);
+          if (!best || t > best.total) best = { kind:'invoice', num:v.invoiceNumber || v.invoice_number, client:v.clientName || v.client_name, total:t };
+        });
+      }
+    } catch (e) {}
+    return best;
+  },
+  _renderDayCost: function(d, addr) {
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var rev = PayrollPage._findRevenue(addr);
+    var team = [];
+    try { team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : []; } catch (e) {}
+    var lines = [], totH = 0, totPay = 0;
+    team.forEach(function(t) {
+      var who = t.name || t.id;
+      var h = 0;
+      PayrollPage._getEntriesForDate(who, d).forEach(function(e){ h += (e.hours || 0); });
+      if (!h) return;
+      var rate = Number(t.rate || t.payRate || 0);
+      var pay = h * rate;
+      totH += h; totPay += pay;
+      lines.push({ who: who, h: h, pay: pay, rate: rate });
+    });
+    if (!lines.length && !rev) return '';
+    var money = function(n){ return '$' + Math.round(n).toLocaleString(); };
+    var row = 'display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-size:12.5px;';
+    var h = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:9px;">'
+      + '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:5px;">JOB COSTING</div>';
+    // two lines on top: the job, then the revenue
+    h += '<div style="' + row + '"><span style="color:var(--text-light);">JOB</span>'
+       + '<span style="font-weight:600;text-align:right;min-width:0;">'
+       + (rev ? ('#' + esc(String(rev.num || '')) + ' ' + esc(rev.client || ''))
+              : (addr ? esc(addr) + ' <span style="color:var(--text-light);font-weight:400;">(no job matched)</span>'
+                      : '<span style="color:var(--text-light);font-weight:400;">no work site this day</span>'))
+       + '</span></div>';
+    h += '<div style="' + row + '"><span style="color:var(--text-light);">REVENUE</span>'
+       + '<b style="color:var(--green-dark);">' + (rev ? money(rev.total) : '—') + '</b></div>';
+    // payroll, one line per person
+    if (lines.length) {
+      h += '<div style="border-top:1px dashed var(--border);margin-top:6px;padding-top:5px;"></div>';
+      lines.forEach(function(l) {
+        h += '<div style="' + row + '"><span>' + esc(l.who) + ' <span style="color:var(--text-light);">' + l.h.toFixed(2) + 'h</span></span>'
+           + '<span>-' + money(l.pay) + '</span></div>';
+      });
+      h += '<div style="' + row + 'border-top:1px solid var(--border);margin-top:4px;padding-top:4px;font-weight:700;">'
+         + '<span>PAYROLL <span style="color:var(--text-light);font-weight:400;">' + totH.toFixed(2) + 'h</span></span>'
+         + '<span>-' + money(totPay) + '</span></div>';
+    }
+    if (rev) {
+      var net = rev.total - totPay;
+      h += '<div style="' + row + 'border-top:2px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;font-size:14px;">'
+         + '<span>LEFT</span><span style="color:' + (net >= 0 ? 'var(--green-dark)' : 'var(--red,#dc3545)') + ';">' + money(net)
+         + ' <span style="font-size:11px;font-weight:600;color:var(--text-light);">' + Math.round(net / rev.total * 100) + '%</span></span></div>';
+    }
+    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Payroll only — no dump fees, fuel, or truck cost yet.</div>';
+    return h + '</div>';
+  },
   // v1160 — tap a truck (or the phone) row to expand the full day for it.
   // Doug: "If I click on a truck or the phone below the hours there, it should
   // expand to give me all of the information for that day for that truck."
