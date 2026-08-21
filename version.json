@@ -1,5 +1,5 @@
 {
-  "version": 1178,
+  "version": 1179,
   "released": "2026-08-21",
-  "notes": "v1178: expandable expenses with the true cost — dump, fuel, truck miles, yearly overhead"
+  "notes": "v1179: no double-counting — job cost and yearly overhead split"
 }

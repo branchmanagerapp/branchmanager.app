@@ -778,23 +778,46 @@ var PayrollPage = {
       var m = function(n){ return '$' + Math.round(n).toLocaleString(); };
       var rows = [
         ['Wages', wages, 'real hours x each rate'],
-        ['Payroll costs 28%', burden, 'taxes + WC + insurance — PLACEHOLDER'],
+        ['Payroll taxes 10%', burden, 'employer FICA/FUTA/SUTA — WC + ins are in yearly'],
         ['Sales commission 10%', comm, 'of this day\'s revenue'],
         ['Dump fees', x.dump, x.dump ? 'from crew texts — not in the books' : 'none found in texts'],
         ['Fuel', x.fuel, 'Plaid, category 6200 — a fill spans jobs'],
-        ['Truck ' + x.miles.toFixed(1) + ' mi', truck, '@ $' + PayrollPage._TRUCK_RATE_MI + '/mi (repair 4x fuel)'],
-        ['Yearly overhead', yearly, '$' + PayrollPage._YEARLY_FIXED.toLocaleString() + '/yr ÷ ' + PayrollPage._WORKING_DAYS + ' days']
+        ['Truck ' + x.miles.toFixed(1) + ' mi', truck, '@ $' + PayrollPage._TRUCK_RATE_MI + '/mi — repair + loan, fuel charged above'],
       ];
-      var tot = rows.reduce(function(a, r){ return a + r[1]; }, 0);
+      var jobCost = rows.reduce(function(a, r){ return a + r[1]; }, 0);
+      var tot = jobCost + yearly;
+      // v1179 — TWO blocks, nothing counted twice: direct job cost, then the
+      // yearly overhead broken out on its own with its components.
+      var YR = [
+        ['Insurance',            16359],
+        ['Workers comp (NYSIF)',  1001],
+        ['Equipment lease',      23710],
+        ['Office / admin',        7330],
+        ['Subscriptions',         3045]
+      ];
+      var line = function(l, v, note, bold) {
+        return '<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0;'
+             + (v ? '' : 'opacity:.5;') + (bold ? 'font-weight:800;' : '') + '">'
+             + '<span>' + l + (note ? ' <span style="color:var(--text-light);font-size:10px;">' + note + '</span>' : '') + '</span>'
+             + '<span style="font-weight:600;white-space:nowrap;">' + m(v) + '</span></div>';
+      };
       box.innerHTML = '<div style="padding:8px 12px;background:var(--bg);font-size:12px;">'
-        + rows.map(function(r) {
-            return '<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0;'
-                 + (r[1] ? '' : 'opacity:.5;') + '">'
-                 + '<span>' + r[0] + ' <span style="color:var(--text-light);font-size:10px;">' + r[2] + '</span></span>'
-                 + '<span style="font-weight:600;white-space:nowrap;">' + m(r[1]) + '</span></div>';
-          }).join('')
-        + '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;">'
-        + '<span>TRUE COST</span><span>' + m(tot) + '</span></div></div>';
+        + '<div style="font-size:10px;font-weight:700;color:var(--text-light);letter-spacing:.5px;">JOB COST — this day</div>'
+        + rows.map(function(r){ return line(r[0], r[1], r[2]); }).join('')
+        + '<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">'
+        + line('JOB COST', jobCost, '', true) + '</div>'
+        + '<div style="font-size:10px;font-weight:700;color:var(--text-light);letter-spacing:.5px;margin-top:10px;">'
+        + 'YEARLY OVERHEAD — not job costs, counted once here</div>'
+        + YR.map(function(r){ return line(r[0], r[1] / PayrollPage._WORKING_DAYS,
+              '$' + r[1].toLocaleString() + '/yr'); }).join('')
+        + '<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">'
+        + line('YEARLY / DAY', yearly, '$' + PayrollPage._YEARLY_FIXED.toLocaleString() + ' ÷ ' + PayrollPage._WORKING_DAYS + ' days', true) + '</div>'
+        + '<div style="border-top:2px solid var(--border);margin-top:6px;padding-top:6px;">'
+        + line('TRUE COST', tot, '', true) + '</div>'
+        + '<div style="font-size:10px;color:var(--text-light);margin-top:6px;">'
+        + 'Workers comp and insurance sit in YEARLY only — the payroll line is employer taxes. '
+        + 'Fuel is the real charge; the truck rate is repair + loan, so fuel is not billed twice.</div>'
+        + '</div>';
     });
   },
   _jobDayCount: function(lat, lon, anchorDay) {
@@ -1005,7 +1028,14 @@ var PayrollPage = {
   // which is implausible for tree work. Erring high keeps jobs from looking
   // more profitable than they are. Belongs in Settings once there is a store
   // for it.
-  _BURDEN_PCT: 0.28,
+  // v1179 — DOUBLE-COUNT FIXED. Doug: "make sure to not count things twice…
+  // the yearly cost should be the admin, the insurance that's separate from
+  // job costs."
+  //   was: 28% = payroll taxes + workers comp + insurance
+  //   but WC ($1,001) and insurance ($16,359) are ALSO in the yearly line.
+  // So the per-job burden is EMPLOYER PAYROLL TAXES ONLY (~10% of gross:
+  // FICA 7.65% + FUTA/SUTA). WC and insurance are carried once, in yearly.
+  _BURDEN_PCT: 0.10,
   // v1164 — COMMISSION and the TRUCK RATE.
   // Doug confirmed 10% ("Keep commission at ten percent. That's fine.").
   // NOTE: PayrollPage._COMMISSION_RATE elsewhere in this file is 0.08 and drives
@@ -1023,7 +1053,10 @@ var PayrollPage = {
   // repair burden of ageing trucks, which is the cost he flagged as needing to
   // land somewhere. $1.48 sits mid-range for medium-duty (F-550/F-750 typically
   // $1.20-2.00/mi). Revisit yearly, or when odometer data starts accruing.
-  _TRUCK_RATE_MI: 1.48,
+  // v1179 — was $1.48 = fuel $0.26 + repair $1.03 + loan $0.20. Actual fuel is
+  // now charged separately from Plaid 6200, so keeping $0.26 in here billed it
+  // twice. Repair + loan only.
+  _TRUCK_RATE_MI: 1.23,
   _normAddr: function(a) {
     var t = String(a || '').toLowerCase().split(',')[0];   // house number + street only
     // Expand abbreviations to a canonical full word so "4 Terrace Dr" and
