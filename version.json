@@ -1,5 +1,5 @@
 {
-  "version": 1194,
+  "version": 1195,
   "released": "2026-08-21",
-  "notes": "v1194: allow the Photon geocoder through the page CSP"
+  "notes": "v1195: revenue matching is pure arithmetic — no network call per site"
 }

@@ -784,32 +784,26 @@ var PayrollPage = {
                   || r.issuedDate || r.issued_date || '').substring(0, 10);
   },
   _jobNearSite: function(lat, lon, day) {
-    return PayrollPage._revGeo(lat, lon).then(function(addr) {
-      var town = '';
-      if (addr) { var parts = String(addr).split(','); town = (parts[1] || '').trim().toLowerCase(); }
-      town = town.replace(/^town of\s+/, '').replace(/^city of\s+/, '');
+    // v1195 - this used to begin with _revGeo(), a network round-trip, purely
+    // to get a town name for a string pre-filter. With sites now derived from
+    // raw GPS that is ~42 calls a week instead of 2-3, and the week of Aug 3-9
+    // never finished rendering at all - every cell sat on its loading dot.
+    //
+    // 97% of clients now carry stored coordinates, so the match is pure
+    // arithmetic and needs no network. The old town heuristic (and the
+    // _fwdGeo call behind it) is gone: a record with no stored point simply
+    // does not match, which is the honest outcome. Addresses for days that
+    // match nothing are looked up separately, once per day, not per site.
+    try {
       var jobs = [], invs = [], clients = [];
       try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
       try { invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : []; } catch (e) {}
       try { clients = (typeof DB !== 'undefined' && DB.clients && DB.clients.getAll) ? DB.clients.getAll() : []; } catch (e) {}
-      // v1185 - some invoices carry no service address at all. Continental
-      // Village Park's \$2,600 (inv #1019) is one: the GPS had the site right
-      // (50 Highland Drive, Philipstown) but the invoice had nothing to match
-      // against, so Tue 8/11 showed no revenue. The address already exists on
-      // the CLIENT record, so fall back to it rather than dropping the record.
-      // v1187 - Nominatim is unreachable from the app ('Failed to fetch'),
-      // so _fwdGeo returns null for virtually every address at runtime and
-      // the whole week of Aug 3-9 showed no revenue. Only addresses that
-      // happened to sit in localStorage from an earlier session ever matched.
-      // Coordinates are now stored on the CLIENT record (clients.lat/lng,
-      // backfilled server-side) and read straight from there; _fwdGeo is kept
-      // only as a last resort for a client that has no stored point yet.
       var byClient = {};
       clients.forEach(function(c) {
-        if (!c.name) return;
-        var a = [c.address, c.city, c.state].filter(Boolean).join(', ');
-        var k = String(c.name).toLowerCase().trim();
-        if (a || (c.lat && c.lng)) byClient[k] = { addr: a || null, lat: Number(c.lat) || null, lng: Number(c.lng) || null };
+        if (!c.name || !c.lat || !c.lng) return;
+        byClient[String(c.name).toLowerCase().trim()] = { lat:Number(c.lat), lng:Number(c.lng),
+          addr:[c.address, c.city, c.state].filter(Boolean).join(', ') || null };
       });
       var clientRec = function(name) {
         var k = String(name || '').toLowerCase().trim();
@@ -817,23 +811,6 @@ var PayrollPage = {
         if (k.length > 3) for (var n in byClient) { if (n.indexOf(k) === 0) return byClient[n]; }
         return null;
       };
-      var addrOf = function(rec, client) {
-        if (rec.property) return rec.property;
-        var c = clientRec(client);
-        return (c && c.addr) || null;
-      };
-      // v1191 - a flat +/-45 day window was far too loose. The trucks pass
-      // near North Salem on the way to other work, so the 4 Terrace job
-      // (scheduled Aug 17) matched Aug 4, 5 AND 6 as well - three days of
-      // \$2,500 that never happened, and it outranked the David Coats job
-      // that really was worked on Aug 4. Doug: that job was Mon 17, Tue 18,
-      // Wed 19. Each kind of record now gets a window that matches how it
-      // relates to the work:
-      //   job     - worked on or about its scheduled date. A multi-day job
-      //             runs a few days past it, so allow a short run, and use
-      //             the completed date as a hard end when we have one.
-      //   invoice - raised AFTER the work, sometimes a couple of weeks later,
-      //             but never meaningfully before it.
       var anchor = day ? new Date(day + 'T12:00:00').getTime() : null;
       var DAY = 86400000;
       var inWindow = function(r, kind) {
@@ -850,66 +827,36 @@ var PayrollPage = {
         }
         return Math.abs(t - anchor) <= PayrollPage._REV_WINDOW_D * DAY;
       };
-      var pool = [];
-      jobs.forEach(function(j) {
-        if (!Number(j.total) || !inWindow(j, 'job')) return;
-        var cn = j.clientName || j.client_name;
-        var ad = addrOf(j, cn);
-        if (!ad) return;
+      var hits = [];
+      var consider = function(rec, kind, num, cn) {
+        if (!Number(rec.total) || !inWindow(rec, kind)) return;
         var cr = clientRec(cn);
-        pool.push({ kind:'job', rec:j, num:j.jobNumber || j.job_number, client:cn,
-                    total:Number(j.total), property:ad,
-                    lat:(cr && cr.lat) || null, lng:(cr && cr.lng) || null });
-      });
+        var pt = null;
+        if (rec.lat && rec.lng) pt = { lat:Number(rec.lat), lon:Number(rec.lng) };
+        else if (cr) pt = { lat:cr.lat, lon:cr.lng };
+        if (!pt) return;
+        var dm = PayrollPage._metres([lat, lon], [pt.lat, pt.lon]);
+        if (dm > PayrollPage._MATCH_M) return;
+        hits.push({ kind:kind, rec:rec, num:num, client:cn, total:Number(rec.total),
+                    property: rec.property || (cr && cr.addr) || null, d:dm });
+      };
+      jobs.forEach(function(j) { consider(j, 'job', j.jobNumber || j.job_number, j.clientName || j.client_name); });
       invs.forEach(function(v) {
-        if (!Number(v.total) || !inWindow(v, 'invoice')) return;
         if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
-        var cn = v.clientName || v.client_name;
-        var ad = addrOf(v, cn);
-        if (!ad) return;
-        var cr = clientRec(cn);
-        pool.push({ kind:'invoice', rec:v, num:v.invoiceNumber || v.invoice_number, client:cn,
-                    total:Number(v.total), property:ad,
-                    lat:(cr && cr.lat) || null, lng:(cr && cr.lng) || null });
+        consider(v, 'invoice', v.invoiceNumber || v.invoice_number, v.clientName || v.client_name);
       });
-      // v1187 - the old pre-filter narrowed candidates by matching the town
-      // name from _revGeo against the address string. _revGeo is Nominatim
-      // too, so with the network path blocked `town` is always '' and this
-      // returned an empty candidate list every single time - no revenue could
-      // ever match. Anything with a stored point skips the heuristic entirely
-      // and goes straight to a distance test, which is pure arithmetic and
-      // needs no network at all. The town match is kept only for records that
-      // still have no coordinates.
-      var withPt = pool.filter(function(c) { return c.lat && c.lng; });
-      var noPt = pool.filter(function(c) {
-        return !(c.lat && c.lng) && town && String(c.property || '').toLowerCase().indexOf(town) >= 0;
-      }).slice(0, 12);
-      var cand = withPt.concat(noPt);
-      if (!cand.length) return null;
-      return Promise.all(cand.map(function(c) {
-        var stored = (c.lat && c.lng) ? Promise.resolve({ lat:c.lat, lon:c.lng })
-                                      : PayrollPage._fwdGeo(c.property);
-        return Promise.resolve(stored).then(function(g) {
-          if (!g) return null;
-          c.d = PayrollPage._metres([lat, lon], [g.lat, g.lon]);
-          return c.d <= PayrollPage._MATCH_M ? c : null;
-        }).catch(function(){ return null; });
-      })).then(function(rs) {
-        var hits = rs.filter(Boolean);
-        if (!hits.length) return null;
-        // an invoice supersedes the job it came from - never bill both
-        var best = null;
-        hits.forEach(function(h) {
-          if (!best) { best = h; return; }
-          var sameClient = String(h.client || '').toLowerCase().indexOf(String(best.client || '').toLowerCase()) >= 0
-                        || String(best.client || '').toLowerCase().indexOf(String(h.client || '').toLowerCase()) >= 0;
-          if (sameClient && h.kind !== best.kind) { if (h.kind === 'invoice') best = h; return; }
-          if (h.d < best.d) best = h;
-        });
-        return { kind: best.kind, num: best.num, client: best.client, total: best.total,
-                 job: best.rec, property: best.property, metres: Math.round(best.d) };
+      if (!hits.length) return Promise.resolve(null);
+      var best = null;
+      hits.forEach(function(h) {
+        if (!best) { best = h; return; }
+        var a = String(h.client || '').toLowerCase(), b = String(best.client || '').toLowerCase();
+        var sameClient = a && b && (a.indexOf(b) >= 0 || b.indexOf(a) >= 0);
+        if (sameClient && h.kind !== best.kind) { if (h.kind === 'invoice') best = h; return; }
+        if (h.d < best.d) best = h;
       });
-    }).catch(function(){ return null; });
+      return Promise.resolve({ kind:best.kind, num:best.num, client:best.client, total:best.total,
+                               job:best.rec, property:best.property, metres:Math.round(best.d) });
+    } catch (e) { return Promise.resolve(null); }
   },
   // v1178 — the rest of the cost picture, per day.
   //   DUMP  — parsed out of crew texts. It exists NOWHERE else: the transfer
