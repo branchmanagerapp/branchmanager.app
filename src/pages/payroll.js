@@ -400,7 +400,7 @@ var PayrollPage = {
           + '<th style="' + th + '">JOB SITE</th>'
           + '<th style="' + th + '">ON SITE</th>'
         + '</tr></thead><tbody>' + PayrollPage._phoneRow(phone) + rows + '</tbody></table></div>'
-        + '<div id="daycost-' + d + '"></div>';
+        + '';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
       // (This reverses v1142's auto-expand, per Doug: "Could fit on one line.
@@ -420,20 +420,7 @@ var PayrollPage = {
             el.title = addr;
           }).catch(function(){});
         });
-        // v1161: the day's PRIMARY site (longest stop of any truck) drives the
-        // job match for costing. Rendered after the geocode so the block can
-        // name the job rather than a coordinate.
-        var allStops = [];
-        Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
-          (PayrollPage._dayCache[d][vid].merged || []).forEach(function(x){ allStops.push(x); });
-        });
-        allStops.sort(function(a, b){ return b.mins - a.mins; });
-        var box = document.getElementById('daycost-' + d);
-        if (!box) return;
-        if (!allStops.length) { box.innerHTML = PayrollPage._renderDayCost(d, null); return; }
-        PayrollPage._revGeo(allStops[0].lat, allStops[0].lon).then(function(a) {
-          box.innerHTML = PayrollPage._renderDayCost(d, a || null);
-        }).catch(function(){ box.innerHTML = PayrollPage._renderDayCost(d, null); });
+
       }, 0);
     }).catch(function() {
       var sum = panel.querySelector('.bday-sum'); if (sum) sum.textContent = 'Could not load truck data.';
