@@ -1,5 +1,5 @@
 {
-  "version": 1197,
+  "version": 1198,
   "released": "2026-08-21",
-  "notes": "v1197: say plainly when 'left yard' was never a yard crossing"
+  "notes": "v1198: label a day YARD DAY or ESTIMATES instead of blank revenue"
 }

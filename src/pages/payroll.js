@@ -574,18 +574,35 @@ var PayrollPage = {
               // out". A day we could not match to a record still knows WHERE
               // the trucks sat, so look that up and show it. Only for the
               // site that actually won the day - not all ~42 sites in a week.
-              if (!best.rev && !best.addr) {
-                (function(site, day, cell) {
-                  PayrollPage._revGeo(site.lat, site.lon).then(function(label) {
-                    if (!label) return;
-                    site.addr = label;
+              // v1198 - a day with no match is not automatically missing
+              // revenue. Classify it first: a yard day or a run of estimates
+              // SHOULD have a blank revenue cell, and saying so is the point.
+              if (!best.rev) {
+                (function(site, day) {
+                  PayrollPage._dayKind(day).then(function(k) {
                     var el = document.getElementById('wkjob-' + day);
-                    if (el) {
-                      el.innerHTML = PayrollPage._jobLabel(null, label);
-                      el.title = label + '\nno job or invoice matched — worked here, revenue unaccounted for';
+                    if (!el) return;
+                    var lab = PayrollPage._kindLabel(k);
+                    if (lab) {
+                      el.innerHTML = '<span style="font-size:10px;font-weight:700;color:var(--text-light);'
+                        + 'letter-spacing:.03em;white-space:nowrap;">' + lab.text + '</span>';
+                      el.title = lab.tip;
+                      var cl2 = document.getElementById('wkcli-' + day);
+                      if (cl2 && !cl2.textContent.trim()) cl2.textContent = '—';
+                      return;
                     }
+                    // real work, but nothing in BM accounts for it — show where
+                    if (site.addr) return;
+                    PayrollPage._revGeo(site.lat, site.lon).then(function(label) {
+                      if (!label) return;
+                      site.addr = label;
+                      var e2 = document.getElementById('wkjob-' + day);
+                      if (!e2) return;
+                      e2.innerHTML = PayrollPage._jobLabel(null, label);
+                      e2.title = label + '\nworked here for an hour or more, but no job or invoice matches it';
+                    }).catch(function(){});
                   }).catch(function(){});
-                })(best, d, jb);
+                })(best, d);
               }
               jb.title = (best.rev && best.rev.client ? best.rev.client + '\n' : '')
                        + (best.rev && best.rev.property ? best.rev.property : (best.addr || ''))
@@ -1550,6 +1567,84 @@ var PayrollPage = {
                  arrive_ts:c.first, depart_ts:c.last, bestMins:c.mins };
       }).sort(function(a,b){ return new Date(a.arrive_ts) - new Date(b.arrive_ts); });
     }).catch(function(){ return []; });
+  },
+  // v1198 - classify a day that matched no job or invoice, instead of leaving
+  // it looking like missing revenue. Doug: "if you think the day might have
+  // been yard or estimates, write that."
+  //
+  // Thu 8/13 is the case that prompted it. The trucks ran 7:57am-6:31pm, but
+  // the day was: pick the bucket truck up in Yorktown, three short stops, and
+  // 3h26m at the yard. Nothing billable happened, so a blank revenue cell is
+  // CORRECT there - it just needs to say why.
+  //
+  // Built on a time-ordered itinerary rather than spatial clustering. Walking
+  // the track in time order and calling a stop 'consecutive pings that stay
+  // inside 200 m for 10+ min' is the only method that has held up here - plain
+  // clustering slices a drive route into dozens of fake sites whose first and
+  // last ping are hours apart, which is what made Aug 4 report 55 of them.
+  _dayItinerary: function(day, vehicleId) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve([]);
+    var all = [];
+    var page = function(off) {
+      var q = C.from('vehicle_positions').select('lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59');
+      if (vehicleId) q = q.eq('vehicle_id', vehicleId);
+      return q.order('ts', { ascending: true }).range(off, off + 999).then(function(r) {
+        if (r.error || !r.data || !r.data.length) return;
+        all = all.concat(r.data);
+        if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+      });
+    };
+    return page(0).then(function() {
+      var out = [], i = 0;
+      while (i < all.length) {
+        var a = all[i], j = i + 1;
+        while (j < all.length && PayrollPage._metres([a.lat, a.lon], [all[j].lat, all[j].lon]) <= 200) j++;
+        var mins = (new Date(all[j-1].ts) - new Date(a.ts)) / 60000;
+        if (mins >= 10) {
+          var la = 0, lo = 0;
+          for (var k = i; k < j; k++) { la += all[k].lat; lo += all[k].lon; }
+          la /= (j - i); lo /= (j - i);
+          out.push({ from: a.ts, to: all[j-1].ts, mins: mins, lat: la, lon: lo,
+                     atYard: PayrollPage._metres(PayrollPage._YARD, [la, lo]) <= 300,
+                     atHome: PayrollPage._metres(PayrollPage._HOME, [la, lo]) <= 300 });
+        }
+        i = (j > i) ? j : i + 1;
+      }
+      return out;
+    }).catch(function(){ return []; });
+  },
+  // What KIND of day was this? Uses Doug's own threshold: a stop under an hour
+  // is an estimate, not a job.
+  _dayKind: function(day) {
+    return PayrollPage._dayItinerary(day).then(function(st) {
+      if (!st.length) return { kind: 'none' };
+      var yard = 0, away = [];
+      st.forEach(function(x) {
+        if (x.atYard) { yard += x.mins; return; }
+        if (x.atHome) return;
+        away.push(x);
+      });
+      var worked = away.filter(function(x) { return x.mins >= PayrollPage._JOB_DAY_MIN_MINUTES; });
+      if (worked.length) return { kind: 'work', stops: worked, yard: yard };
+      if (away.length) return { kind: 'estimates', stops: away, yard: yard };
+      if (yard > 0) return { kind: 'yard', stops: [], yard: yard };
+      return { kind: 'none' };
+    }).catch(function(){ return { kind: 'none' }; });
+  },
+  _kindLabel: function(k) {
+    var hrs = function(m) { return (m / 60).toFixed(1) + 'h'; };
+    if (k.kind === 'yard')
+      return { text: 'YARD DAY', tip: 'No stop away from the yard — ' + hrs(k.yard) + ' at the yard. Nothing billable.' };
+    if (k.kind === 'estimates')
+      return { text: k.stops.length + ' ESTIMATE' + (k.stops.length > 1 ? 'S' : '')
+                     + (k.yard >= 60 ? ' + YARD' : ''),
+               tip: 'No stop reached an hour, so none of these are jobs:\n'
+                    + k.stops.map(function(x){ return '  ' + Math.round(x.mins) + ' min'; }).join('\n')
+                    + (k.yard >= 60 ? ('\nplus ' + hrs(k.yard) + ' at the yard') : '') };
+    if (k.kind === 'none') return { text: 'no truck movement', tip: 'No GPS for this day.' };
+    return null;
   },
   _mergeStops: function(stops) {
     var out = [];
