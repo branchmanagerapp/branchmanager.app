@@ -722,17 +722,30 @@ var PayrollPage = {
       // (50 Highland Drive, Philipstown) but the invoice had nothing to match
       // against, so Tue 8/11 showed no revenue. The address already exists on
       // the CLIENT record, so fall back to it rather than dropping the record.
+      // v1187 - Nominatim is unreachable from the app ('Failed to fetch'),
+      // so _fwdGeo returns null for virtually every address at runtime and
+      // the whole week of Aug 3-9 showed no revenue. Only addresses that
+      // happened to sit in localStorage from an earlier session ever matched.
+      // Coordinates are now stored on the CLIENT record (clients.lat/lng,
+      // backfilled server-side) and read straight from there; _fwdGeo is kept
+      // only as a last resort for a client that has no stored point yet.
       var byClient = {};
       clients.forEach(function(c) {
+        if (!c.name) return;
         var a = [c.address, c.city, c.state].filter(Boolean).join(', ');
-        if (c.name && a) byClient[String(c.name).toLowerCase().trim()] = a;
+        var k = String(c.name).toLowerCase().trim();
+        if (a || (c.lat && c.lng)) byClient[k] = { addr: a || null, lat: Number(c.lat) || null, lng: Number(c.lng) || null };
       });
+      var clientRec = function(name) {
+        var k = String(name || '').toLowerCase().trim();
+        if (byClient[k]) return byClient[k];
+        if (k.length > 3) for (var n in byClient) { if (n.indexOf(k) === 0) return byClient[n]; }
+        return null;
+      };
       var addrOf = function(rec, client) {
         if (rec.property) return rec.property;
-        var k = String(client || '').toLowerCase().trim();
-        if (byClient[k]) return byClient[k];
-        for (var n in byClient) { if (n.indexOf(k) === 0 && k.length > 3) return byClient[n]; }
-        return null;
+        var c = clientRec(client);
+        return (c && c.addr) || null;
       };
       var anchor = day ? new Date(day + 'T12:00:00').getTime() : null;
       var inWindow = function(r) {
@@ -748,8 +761,10 @@ var PayrollPage = {
         var cn = j.clientName || j.client_name;
         var ad = addrOf(j, cn);
         if (!ad) return;
+        var cr = clientRec(cn);
         pool.push({ kind:'job', rec:j, num:j.jobNumber || j.job_number, client:cn,
-                    total:Number(j.total), property:ad });
+                    total:Number(j.total), property:ad,
+                    lat:(cr && cr.lat) || null, lng:(cr && cr.lng) || null });
       });
       invs.forEach(function(v) {
         if (!Number(v.total) || !inWindow(v)) return;
@@ -757,19 +772,33 @@ var PayrollPage = {
         var cn = v.clientName || v.client_name;
         var ad = addrOf(v, cn);
         if (!ad) return;
+        var cr = clientRec(cn);
         pool.push({ kind:'invoice', rec:v, num:v.invoiceNumber || v.invoice_number, client:cn,
-                    total:Number(v.total), property:ad });
+                    total:Number(v.total), property:ad,
+                    lat:(cr && cr.lat) || null, lng:(cr && cr.lng) || null });
       });
-      var cand = pool.filter(function(c) {
-        return town ? String(c.property).toLowerCase().indexOf(town) >= 0 : false;
-      }).slice(0, 16);
+      // v1187 - the old pre-filter narrowed candidates by matching the town
+      // name from _revGeo against the address string. _revGeo is Nominatim
+      // too, so with the network path blocked `town` is always '' and this
+      // returned an empty candidate list every single time - no revenue could
+      // ever match. Anything with a stored point skips the heuristic entirely
+      // and goes straight to a distance test, which is pure arithmetic and
+      // needs no network at all. The town match is kept only for records that
+      // still have no coordinates.
+      var withPt = pool.filter(function(c) { return c.lat && c.lng; });
+      var noPt = pool.filter(function(c) {
+        return !(c.lat && c.lng) && town && String(c.property || '').toLowerCase().indexOf(town) >= 0;
+      }).slice(0, 12);
+      var cand = withPt.concat(noPt);
       if (!cand.length) return null;
       return Promise.all(cand.map(function(c) {
-        return PayrollPage._fwdGeo(c.property).then(function(g) {
+        var stored = (c.lat && c.lng) ? Promise.resolve({ lat:c.lat, lon:c.lng })
+                                      : PayrollPage._fwdGeo(c.property);
+        return Promise.resolve(stored).then(function(g) {
           if (!g) return null;
           c.d = PayrollPage._metres([lat, lon], [g.lat, g.lon]);
           return c.d <= 250 ? c : null;
-        });
+        }).catch(function(){ return null; });
       })).then(function(rs) {
         var hits = rs.filter(Boolean);
         if (!hits.length) return null;

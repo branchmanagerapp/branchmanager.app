@@ -1,5 +1,5 @@
 {
-  "version": 1186,
+  "version": 1187,
   "released": "2026-08-21",
-  "notes": "v1186: union RPC stops with GPS-derived sites; cap sites per day"
+  "notes": "v1187: match revenue on stored client coordinates; runtime geocoding is blocked"
 }
