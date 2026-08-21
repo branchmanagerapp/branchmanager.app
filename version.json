@@ -1,5 +1,5 @@
 {
-  "version": 1170,
+  "version": 1171,
   "released": "2026-08-21",
-  "notes": "v1170: job + revenue above the dates, labor + expenses below"
+  "notes": "v1171: Expenses row becomes a calculated Profit / Loss"
 }

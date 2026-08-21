@@ -449,6 +449,8 @@ var PayrollPage = {
     });
   },
   _dayCache: {},
+  _weekLabor: {},
+  _weekPL: {},
   // v1170 — fill the JOB / REVENUE row across the week. One pass per day:
   // find the day's biggest stop away from the yard, reverse-geocode it, match a
   // job by address, then divide that job's total by the days it was worked so a
@@ -483,6 +485,22 @@ var PayrollPage = {
                 rv.textContent = '$' + Math.round(share).toLocaleString();
                 rv.title = '$' + Math.round(rev.total).toLocaleString() + ' job over ' + n + ' day' + (n>1?'s':'');
               } else { rv.textContent = '—'; }
+              // v1171 — Profit / Loss for the day. Revenue minus labour, which is
+              // the only cost row on this grid; it is NOT a full P&L and the
+              // title says so.
+              var pl = document.getElementById('wkpl-' + d);
+              if (pl) {
+                var lab = PayrollPage._weekLabor[d] || 0;
+                if (rev || lab) {
+                  var v = (rev ? rev.total / n : 0) - lab;
+                  PayrollPage._weekPL[d] = v;
+                  pl.textContent = (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString();
+                  pl.style.color = v < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+                  pl.title = 'revenue ' + (rev ? '$' + Math.round(rev.total / n).toLocaleString() : '$0')
+                           + ' − labour $' + Math.round(lab).toLocaleString()
+                           + '  (labour only — no dump, fuel, truck or payroll costs)';
+                } else { pl.textContent = '—'; }
+              }
             }
           });
         }).catch(function(){});
@@ -491,6 +509,13 @@ var PayrollPage = {
     seq.then(function() {
       var t = document.getElementById('wkrev-total');
       if (t) t.textContent = total ? '$' + Math.round(total).toLocaleString() : '';
+      var pt = document.getElementById('wkpl-total');
+      if (pt) {
+        var sum = 0;
+        Object.keys(PayrollPage._weekPL).forEach(function(k){ if (dates.indexOf(k) >= 0) sum += PayrollPage._weekPL[k]; });
+        pt.textContent = (sum < 0 ? '-$' : '$') + Math.abs(Math.round(sum)).toLocaleString();
+        pt.style.color = sum < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+      }
     });
   },
   // ── v1167: job rows on top, ONE collapsible expenses line, then GPM ──────
@@ -1430,6 +1455,7 @@ var PayrollPage = {
     // Doug: "total labor and expenses below and to right". ──
     if (!isMobile) {
       var labD = {}, labWk = 0;
+      PayrollPage._weekLabor = {}; PayrollPage._weekPL = {};
       dates.forEach(function(d){
         var t = 0;
         employees.forEach(function(emp){
@@ -1437,6 +1463,7 @@ var PayrollPage = {
           PayrollPage._getEntriesForDate(emp.name || emp.id, d).forEach(function(e){ t += (e.hours || 0) * rate; });
         });
         labD[d] = t; labWk += t;
+        PayrollPage._weekLabor[d] = t;
       });
       var mny = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:2px solid var(--border);font-size:11px;align-items:center;">'
@@ -1444,9 +1471,9 @@ var PayrollPage = {
       dates.forEach(function(d){ html += '<div style="padding:8px 4px;text-align:center;font-weight:700;">' + mny(labD[d]) + '</div>'; });
       html += '<div style="padding:8px 4px;text-align:center;font-weight:800;">' + mny(labWk) + '</div></div>';
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:1px solid #f0f0f0;font-size:11px;align-items:center;">'
-        + '<div style="' + LBL + '">Expenses</div>';
-      dates.forEach(function(d){ html += '<div id="wkexp-' + d + '" style="padding:8px 4px;text-align:center;color:var(--text-light);">·</div>'; });
-      html += '<div id="wkexp-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
+        + '<div style="' + LBL + '">Profit / Loss</div>';
+      dates.forEach(function(d){ html += '<div id="wkpl-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;color:var(--text-light);">·</div>'; });
+      html += '<div id="wkpl-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
     }
 
     html += '</div>'; // end grid
