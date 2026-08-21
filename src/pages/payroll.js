@@ -452,6 +452,8 @@ var PayrollPage = {
   _weekLabor: {},
   _weekPL: {},
   _weekExp: {},
+  _weekComm: {},
+  _weekRev: {},
   // v1170 — fill the JOB / REVENUE row across the week. One pass per day:
   // find the day's biggest stop away from the yard, reverse-geocode it, match a
   // job by address, then divide that job's total by the days it was worked so a
@@ -518,7 +520,7 @@ var PayrollPage = {
             if (best.rev) {
               share = best.rev.total / best.n;
               comm = share * PayrollPage._JOB_COMMISSION;
-              total += share;
+              total += share; PayrollPage._weekRev[d] = share;
               if (rv) {
                 rv.textContent = '$' + Math.round(share).toLocaleString();
                 rv.title = '$' + Math.round(best.rev.total).toLocaleString() + ' job over ' + best.n + ' day' + (best.n>1?'s':'');
@@ -530,7 +532,8 @@ var PayrollPage = {
             if (rv) rv.textContent = '—';
           }
           // v1173 — expenses now include the 10% sales commission, per Doug.
-          var exp = lab + comm;
+          PayrollPage._weekComm[d] = comm;
+          var exp = lab + comm;   // provisional; the true cost lands below
           PayrollPage._weekExp[d] = exp;
           var ex = document.getElementById('wkexp-' + d);
           if (ex) {
@@ -551,6 +554,36 @@ var PayrollPage = {
         });
         var t = document.getElementById('wkrev-total');
         if (t) t.textContent = total ? '$' + Math.round(total).toLocaleString() : '';
+        // v1178 — now fold in dump, fuel, truck miles, burden and yearly overhead
+        // so the headline Expenses and P/L are the TRUE cost, not labour-only.
+        dates.forEach(function(d) {
+          var lab = PayrollPage._weekLabor[d] || 0;
+          var cm  = PayrollPage._weekComm[d] || 0;
+          if (!lab && !cm) return;
+          PayrollPage._dayExtras(d).then(function(x) {
+            var full = lab + cm + lab * PayrollPage._BURDEN_PCT
+                     + x.dump + x.fuel + x.miles * PayrollPage._TRUCK_RATE_MI
+                     + PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS;
+            PayrollPage._weekExp[d] = full;
+            var ex = document.getElementById('wkexp-' + d);
+            if (ex) { ex.textContent = '$' + Math.round(full).toLocaleString(); ex.style.opacity = 1; }
+            var rev = PayrollPage._weekRev[d] || 0;
+            var pl2 = document.getElementById('wkpl-' + d);
+            if (pl2) {
+              var v2 = rev - full;
+              PayrollPage._weekPL[d] = v2;
+              pl2.textContent = (v2 < 0 ? '-$' : '$') + Math.abs(Math.round(v2)).toLocaleString();
+              pl2.style.color = v2 < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+            }
+            var xt2 = document.getElementById('wkexp-total');
+            if (xt2) { var se2 = 0; dates.forEach(function(k){ se2 += PayrollPage._weekExp[k] || 0; });
+                       xt2.textContent = '$' + Math.round(se2).toLocaleString(); }
+            var pt2 = document.getElementById('wkpl-total');
+            if (pt2) { var sp2 = 0; dates.forEach(function(k){ sp2 += PayrollPage._weekPL[k] || 0; });
+                       pt2.textContent = (sp2 < 0 ? '-$' : '$') + Math.abs(Math.round(sp2)).toLocaleString();
+                       pt2.style.color = sp2 < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)'; }
+          });
+        });
         var xt = document.getElementById('wkexp-total');
         if (xt) {
           var se = 0; dates.forEach(function(d){ se += PayrollPage._weekExp[d] || 0; });
@@ -666,6 +699,103 @@ var PayrollPage = {
                  total: Number(j.total), job: j, property: j.property, metres: Math.round(best.d) };
       });
     }).catch(function(){ return null; });
+  },
+  // v1178 — the rest of the cost picture, per day.
+  //   DUMP  — parsed out of crew texts. It exists NOWHERE else: the transfer
+  //           station runs on a house account, so "$142 total for logss" on
+  //           19 Aug never touches the card or the books. Note the typo — the
+  //           pattern matches a 'log'/'chip' STEM, not the exact word, because
+  //           a stricter regex missed that $142 entirely.
+  //   FUEL  — Plaid transactions already categorised 6200.
+  //   TRUCK — GPS miles x $1.48/mi (fuel is inside that rate; see the doc page).
+  //   YEARLY— fixed annual overhead spread over ~250 working days.
+  _YEARLY_FIXED: 51445,      // insurance 16,359 + WC 1,001 + equip lease 23,710
+  _WORKING_DAYS: 250,        //   + office 7,330 + subscriptions 3,045  (2025 books)
+  _toggleExp: function(day) {
+    var box = document.getElementById('wkexpd-' + day); if (!box) return;
+    var open = box.style.display !== 'none';
+    // one open at a time — this sits inside a 9-column grid
+    Array.prototype.forEach.call(document.querySelectorAll('[id^="wkexpd-"]'), function(el){ el.style.display = 'none'; });
+    if (open) return;
+    box.style.display = 'block';
+    PayrollPage._expenseDetail(day, PayrollPage._weekLabor[day] || 0, PayrollPage._weekComm[day] || 0);
+  },
+  _dayExtras: function(day) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve({ dump: 0, fuel: 0, miles: 0 });
+    var out = { dump: 0, fuel: 0, miles: 0 };
+    var jobs = [];
+    jobs.push(C.from('crew_messages').select('body').eq('day', day).then(function(r) {
+      if (r.error || !r.data) return;
+      var stem = /(dump|log|chip|tip|transfer station)/i;
+      r.data.forEach(function(m) {
+        var b = String(m.body || '');
+        if (!stem.test(b)) return;
+        var mm = b.match(/\$\s?([\d,]+(?:\.\d\d)?)/g) || [];
+        mm.forEach(function(x){ out.dump += parseFloat(x.replace(/[^0-9.]/g, '')) || 0; });
+      });
+    }));
+    jobs.push(C.from('bank_transactions').select('amount').eq('posted_date', day).eq('category', '6200').then(function(r) {
+      if (r.error || !r.data) return;
+      r.data.forEach(function(t){ out.fuel += Math.abs(Number(t.amount) || 0); });
+    }));
+    // PAGED — PostgREST caps at 1000 rows whatever .limit() says, and a busy
+    // day runs 3,000-4,000 pings across three trucks. An unpaged read here
+    // silently undercounts the miles, which is the same cap that made the
+    // day-count return 4 instead of 3.
+    var all = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('vehicle_id,lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59')
+        .order('ts', { ascending: true }).range(off, off + 999)
+        .then(function(r) {
+          if (r.error || !r.data || !r.data.length) return;
+          all = all.concat(r.data);
+          if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+        });
+    };
+    jobs.push(page(0).then(function() {
+      if (all.length < 2) return;
+      var byv = {};
+      all.forEach(function(x){ (byv[x.vehicle_id] = byv[x.vehicle_id] || []).push(x); });
+      Object.keys(byv).forEach(function(v) {
+        var pts = byv[v];
+        for (var i = 1; i < pts.length; i++)
+          out.miles += PayrollPage._metres([pts[i-1].lat, pts[i-1].lon], [pts[i].lat, pts[i].lon]) / 1609.34;
+      });
+    }));
+    return Promise.all(jobs).then(function(){ return out; }).catch(function(){ return out; });
+  },
+  _expenseDetail: function(day, wages, comm) {
+    var box = document.getElementById('wkexpd-' + day);
+    if (!box) return;
+    if (box.getAttribute('data-loaded') === '1') return;
+    box.setAttribute('data-loaded', '1');
+    PayrollPage._dayExtras(day).then(function(x) {
+      var burden = wages * PayrollPage._BURDEN_PCT;
+      var truck  = x.miles * PayrollPage._TRUCK_RATE_MI;
+      var yearly = PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS;
+      var m = function(n){ return '$' + Math.round(n).toLocaleString(); };
+      var rows = [
+        ['Wages', wages, 'real hours x each rate'],
+        ['Payroll costs 28%', burden, 'taxes + WC + insurance — PLACEHOLDER'],
+        ['Sales commission 10%', comm, 'of this day\'s revenue'],
+        ['Dump fees', x.dump, x.dump ? 'from crew texts — not in the books' : 'none found in texts'],
+        ['Fuel', x.fuel, 'Plaid, category 6200 — a fill spans jobs'],
+        ['Truck ' + x.miles.toFixed(1) + ' mi', truck, '@ $' + PayrollPage._TRUCK_RATE_MI + '/mi (repair 4x fuel)'],
+        ['Yearly overhead', yearly, '$' + PayrollPage._YEARLY_FIXED.toLocaleString() + '/yr ÷ ' + PayrollPage._WORKING_DAYS + ' days']
+      ];
+      var tot = rows.reduce(function(a, r){ return a + r[1]; }, 0);
+      box.innerHTML = '<div style="padding:8px 12px;background:var(--bg);font-size:12px;">'
+        + rows.map(function(r) {
+            return '<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0;'
+                 + (r[1] ? '' : 'opacity:.5;') + '">'
+                 + '<span>' + r[0] + ' <span style="color:var(--text-light);font-size:10px;">' + r[2] + '</span></span>'
+                 + '<span style="font-weight:600;white-space:nowrap;">' + m(r[1]) + '</span></div>';
+          }).join('')
+        + '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;">'
+        + '<span>TRUE COST</span><span>' + m(tot) + '</span></div></div>';
+    });
   },
   _jobDayCount: function(lat, lon, anchorDay) {
     // v1177 — TWO bugs fixed here, both of which made revenue wrong.
@@ -1628,7 +1758,7 @@ var PayrollPage = {
     // Doug: "total labor and expenses below and to right". ──
     if (!isMobile) {
       var labD = {}, labWk = 0;
-      PayrollPage._weekLabor = {}; PayrollPage._weekPL = {};
+      PayrollPage._weekLabor = {}; PayrollPage._weekPL = {}; PayrollPage._weekComm = {}; PayrollPage._weekRev = {};
       dates.forEach(function(d){
         var t = 0;
         employees.forEach(function(emp){
@@ -1640,9 +1770,16 @@ var PayrollPage = {
       });
       var mny = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:2px solid var(--border);font-size:11px;align-items:center;">'
-        + '<div style="' + LBL + '" title="labour + 10% sales commission. Dump, fuel, truck and yearly costs are not in here yet.">Expenses</div>';
-      dates.forEach(function(d){ html += '<div id="wkexp-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;">·</div>'; });
+        + '<div style="' + LBL + '" title="tap a day to see the full breakdown">Expenses</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkexp-' + d + '" onclick="PayrollPage._toggleExp(\'' + d + '\')"'
+          + ' title="tap for the full breakdown"'
+          + ' style="padding:8px 4px;text-align:center;font-weight:700;cursor:pointer;">·</div>';
+      });
       html += '<div id="wkexp-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
+      dates.forEach(function(d){
+        html += '<div id="wkexpd-' + d + '" style="display:none;border-bottom:1px solid var(--border);"></div>';
+      });
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:1px solid #f0f0f0;font-size:11px;align-items:center;">'
         + '<div style="' + LBL + '">Profit / Loss</div>';
       dates.forEach(function(d){ html += '<div id="wkpl-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;color:var(--text-light);">·</div>'; });

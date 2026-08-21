@@ -1,5 +1,5 @@
 {
-  "version": 1177,
+  "version": 1178,
   "released": "2026-08-21",
-  "notes": "v1177: fix the day-count — PostgREST 1000-row cap + contiguous run"
+  "notes": "v1178: expandable expenses with the true cost — dump, fuel, truck miles, yearly overhead"
 }
