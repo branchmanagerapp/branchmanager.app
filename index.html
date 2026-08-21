@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1193; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1194; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -271,6 +271,7 @@ window.bmShowStaleBanner = function(version) {
               https://api.anthropic.com https://api.stripe.com
               https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.qrserver.com
               https://epqs.nationalmap.gov https://nominatim.openstreetmap.org
+              https://photon.komoot.io https://geocoding.geo.census.gov
               https://my-api.plantnet.org https://dialpad.com
               https://server.arcgisonline.com https://s3.amazonaws.com
               https://*.tile.openstreetmap.org
@@ -1641,7 +1642,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1193.min.js"></script>
+<script defer src="dist/bm.bundle.v1194.min.js"></script>
 
 
 

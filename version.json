@@ -1,5 +1,5 @@
 {
-  "version": 1193,
+  "version": 1194,
   "released": "2026-08-21",
-  "notes": "v1193: Photon geocoder (CORS-safe); show the address on days with no job matched"
+  "notes": "v1194: allow the Photon geocoder through the page CSP"
 }
