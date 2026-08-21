@@ -1,5 +1,5 @@
 {
-  "version": 1181,
+  "version": 1182,
   "released": "2026-08-21",
-  "notes": "v1181: Details is a click-to-open popover, not a page"
+  "notes": "v1182: per-day expense columns, small in/out in the cell, click-cell for reasoning"
 }

@@ -454,6 +454,8 @@ var PayrollPage = {
   _weekExp: {},
   _weekComm: {},
   _weekRev: {},
+  _weekExtras: {},
+  _weekDates: [],
   // v1170 — fill the JOB / REVENUE row across the week. One pass per day:
   // find the day's biggest stop away from the yard, reverse-geocode it, match a
   // job by address, then divide that job's total by the days it was worked so a
@@ -561,6 +563,7 @@ var PayrollPage = {
           var cm  = PayrollPage._weekComm[d] || 0;
           if (!lab && !cm) return;
           PayrollPage._dayExtras(d).then(function(x) {
+            PayrollPage._weekExtras[d] = x;          // v1182: reused by the breakdown
             var full = lab + cm + lab * PayrollPage._BURDEN_PCT
                      + x.dump + x.fuel + x.miles * PayrollPage._TRUCK_RATE_MI
                      + PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS;
@@ -712,13 +715,11 @@ var PayrollPage = {
   _YEARLY_FIXED: 51445,      // insurance 16,359 + WC 1,001 + equip lease 23,710
   _WORKING_DAYS: 250,        //   + office 7,330 + subscriptions 3,045  (2025 books)
   _toggleExp: function(day) {
-    var box = document.getElementById('wkexpd-' + day); if (!box) return;
-    var open = box.style.display !== 'none';
-    // one open at a time — this sits inside a 9-column grid
-    Array.prototype.forEach.call(document.querySelectorAll('[id^="wkexpd-"]'), function(el){ el.style.display = 'none'; });
-    if (open) return;
+    // v1182 — one breakdown for the whole week; every line keeps its own day column
+    var box = document.getElementById('wkexpd'); if (!box) return;
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
     box.style.display = 'block';
-    PayrollPage._expenseDetail(day, PayrollPage._weekLabor[day] || 0, PayrollPage._weekComm[day] || 0);
+    PayrollPage._expenseDetail(PayrollPage._weekDates || []);
   },
   _dayExtras: function(day) {
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
@@ -766,59 +767,75 @@ var PayrollPage = {
     }));
     return Promise.all(jobs).then(function(){ return out; }).catch(function(){ return out; });
   },
-  _expenseDetail: function(day, wages, comm) {
-    var box = document.getElementById('wkexpd-' + day);
-    if (!box) return;
-    if (box.getAttribute('data-loaded') === '1') return;
-    box.setAttribute('data-loaded', '1');
-    PayrollPage._dayExtras(day).then(function(x) {
-      var burden = wages * PayrollPage._BURDEN_PCT;
-      var truck  = x.miles * PayrollPage._TRUCK_RATE_MI;
-      var yearly = PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS;
-      var m = function(n){ return '$' + Math.round(n).toLocaleString(); };
-      var rows = [
-        ['Wages', wages, 'real hours x each rate'],
-        ['Payroll taxes 10%', burden, 'employer FICA/FUTA/SUTA — WC + ins are in yearly'],
-        ['Sales commission 10%', comm, 'of this day\'s revenue'],
-        ['Dump fees', x.dump, x.dump ? 'from crew texts — not in the books' : 'none found in texts'],
-        ['Fuel', x.fuel, 'Plaid, category 6200 — a fill spans jobs'],
-        ['Truck ' + x.miles.toFixed(1) + ' mi', truck, '@ $' + PayrollPage._TRUCK_RATE_MI + '/mi — repair + loan, fuel charged above'],
-      ];
-      var jobCost = rows.reduce(function(a, r){ return a + r[1]; }, 0);
-      var tot = jobCost + yearly;
-      // v1179 — TWO blocks, nothing counted twice: direct job cost, then the
-      // yearly overhead broken out on its own with its components.
-      var YR = [
-        ['Insurance',            16359],
-        ['Workers comp (NYSIF)',  1001],
-        ['Equipment lease',      23710],
-        ['Office / admin',        7330],
-        ['Subscriptions',         3045]
-      ];
-      var line = function(l, v, note, bold) {
-        return '<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0;'
-             + (v ? '' : 'opacity:.5;') + (bold ? 'font-weight:800;' : '') + '">'
-             + '<span>' + l + (note ? ' <span style="color:var(--text-light);font-size:10px;">' + note + '</span>' : '') + '</span>'
-             + '<span style="font-weight:600;white-space:nowrap;">' + m(v) + '</span></div>';
+  // v1182 — Doug: "Keep the job costs per day going in the row per day, so it
+  // stays in the right column. And then the totals where they are now should be
+  // per week." The breakdown was a flat list, so every figure landed under the
+  // TOTAL column. It is now the same 9-column grid as the rest of the table:
+  // label · Mon-Sun · week total. Labels are allowed to clip, per Doug.
+  _expenseDetail: function(dates) {
+    var box = document.getElementById('wkexpd'); if (!box) return;
+    var G = 'display:grid;grid-template-columns:140px repeat(7,1fr) 70px;';
+    var m = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
+    var YR = [['Insurance',16359],['Workers comp',1001],['Equipment lease',23710],
+              ['Office / admin',7330],['Subscriptions',3045]];
+    var per = {};   // per-day figures for every line
+    dates.forEach(function(d) {
+      var w = PayrollPage._weekLabor[d] || 0;
+      var c = PayrollPage._weekComm[d] || 0;
+      var x = PayrollPage._weekExtras[d] || { dump:0, fuel:0, miles:0 };
+      var hasDay = !!(w || c || x.dump || x.fuel || x.miles);
+      per[d] = {
+        wages: w,
+        tax:   w * PayrollPage._BURDEN_PCT,
+        comm:  c,
+        dump:  x.dump,
+        fuel:  x.fuel,
+        truck: x.miles * PayrollPage._TRUCK_RATE_MI,
+        miles: x.miles,
+        yearly: hasDay ? PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS : 0
       };
-      box.innerHTML = '<div style="padding:8px 12px;background:var(--bg);font-size:12px;">'
-        + '<div style="font-size:10px;font-weight:700;color:var(--text-light);letter-spacing:.5px;">JOB COST — this day</div>'
-        + rows.map(function(r){ return line(r[0], r[1], r[2]); }).join('')
-        + '<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">'
-        + line('JOB COST', jobCost, '', true) + '</div>'
-        + '<div style="font-size:10px;font-weight:700;color:var(--text-light);letter-spacing:.5px;margin-top:10px;">'
-        + 'YEARLY OVERHEAD — not job costs, counted once here</div>'
-        + YR.map(function(r){ return line(r[0], r[1] / PayrollPage._WORKING_DAYS,
-              '$' + r[1].toLocaleString() + '/yr'); }).join('')
-        + '<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">'
-        + line('YEARLY / DAY', yearly, '$' + PayrollPage._YEARLY_FIXED.toLocaleString() + ' ÷ ' + PayrollPage._WORKING_DAYS + ' days', true) + '</div>'
-        + '<div style="border-top:2px solid var(--border);margin-top:6px;padding-top:6px;">'
-        + line('TRUE COST', tot, '', true) + '</div>'
-        + '<div style="font-size:10px;color:var(--text-light);margin-top:6px;">'
-        + 'Workers comp and insurance sit in YEARLY only — the payroll line is employer taxes. '
-        + 'Fuel is the real charge; the truck rate is repair + loan, so fuel is not billed twice.</div>'
-        + '</div>';
+      per[d].jobCost = per[d].wages + per[d].tax + per[d].comm + per[d].dump + per[d].fuel + per[d].truck;
+      per[d].total   = per[d].jobCost + per[d].yearly;
     });
+    var row = function(label, note, pick, bold, top) {
+      var sum = 0;
+      var cells = dates.map(function(d) {
+        var v = pick(per[d]); sum += v;
+        return '<div style="padding:3px 4px;text-align:center;' + (bold ? 'font-weight:800;' : '') + (v ? '' : 'opacity:.35;') + '">' + m(v) + '</div>';
+      }).join('');
+      return '<div style="' + G + 'font-size:11px;align-items:center;'
+        + (top ? 'border-top:1px solid var(--border);' : '') + '">'
+        + '<div style="padding:3px 12px;overflow:hidden;white-space:nowrap;' + (bold ? 'font-weight:800;' : '') + '">'
+        + label + (note ? ' <span style="color:var(--text-light);font-size:9px;">' + note + '</span>' : '') + '</div>'
+        + cells
+        + '<div style="padding:3px 4px;text-align:center;font-weight:800;">' + m(sum) + '</div></div>';
+    };
+    var head = function(t) {
+      return '<div style="' + G + 'font-size:9.5px;font-weight:700;color:var(--text-light);letter-spacing:.5px;padding-top:6px;">'
+        + '<div style="padding:3px 12px;overflow:hidden;white-space:nowrap;">' + t + '</div></div>';
+    };
+    box.innerHTML = '<div style="background:var(--bg);padding:4px 0 8px;">'
+      + head('JOB COST — per day')
+      + row('Wages', 'hours × rate', function(p){ return p.wages; })
+      + row('Payroll taxes 10%', 'employer FICA/FUTA', function(p){ return p.tax; })
+      + row('Sales commission', '10% of revenue', function(p){ return p.comm; })
+      + row('Dump fees', 'from crew texts', function(p){ return p.dump; })
+      + row('Fuel', 'Plaid 6200', function(p){ return p.fuel; })
+      + row('Truck', '$' + PayrollPage._TRUCK_RATE_MI + '/mi repair+loan', function(p){ return p.truck; })
+      + row('JOB COST', '', function(p){ return p.jobCost; }, true, true)
+      + head('YEARLY OVERHEAD — not job costs, counted once')
+      + YR.map(function(y) {
+          return row(y[0], '$' + y[1].toLocaleString() + '/yr', function(p) {
+            return p.yearly ? y[1] / PayrollPage._WORKING_DAYS : 0;
+          });
+        }).join('')
+      + row('YEARLY / DAY', '$' + PayrollPage._YEARLY_FIXED.toLocaleString() + ' ÷ ' + PayrollPage._WORKING_DAYS, function(p){ return p.yearly; }, true, true)
+      + row('TRUE COST', '', function(p){ return p.total; }, true, true)
+      + '<div style="font-size:9.5px;color:var(--text-light);padding:6px 12px 0;">'
+      + 'Workers comp and insurance sit in YEARLY only — the payroll line is employer taxes. '
+      + 'Fuel is the real charge; the truck rate is repair + loan, so fuel is not billed twice.</div>'
+      + '</div>';
+
   },
   _jobDayCount: function(lat, lon, anchorDay) {
     // v1177 — TWO bugs fixed here, both of which made revenue wrong.
@@ -1497,6 +1514,24 @@ var PayrollPage = {
     if (typeof loadPage === 'function') loadPage('payroll');
   },
   // Inline in/out editor markup for one entry (or a blank creator row when e is null)
+  // v1182 — Doug: "On the bottom of the green line, have it in smaller font…
+  // have the time in and time out. And then if we click into the cell, it will
+  // give us some details on why specifically you chose that time in and that
+  // time out." So the grid cell shows the times as small text, not inputs, and
+  // the whole cell opens the reasoning popover. Editing lives in that popover.
+  _cellTimes: function(user, date, e) {
+    var t = function(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '—';
+      var h = d.getHours(), mn = d.getMinutes();
+      var ap = h < 12 ? 'a' : 'p'; h = h % 12 || 12;
+      return h + ':' + ('0' + mn).slice(-2) + ap;
+    };
+    if (!e || (!e.clockIn && !e.clockOut)) return '';
+    return '<div style="font-size:9px;color:var(--text-light);line-height:1.25;margin-top:2px;white-space:nowrap;">'
+      + t(e.clockIn) + '–' + t(e.clockOut) + '</div>';
+  },
   _inlineTimeRow: function(user, date, e, mode) {
     var self = PayrollPage; e = e || {};
     // v1157: `mode` lets the SAME editor run inside the Details modal. Without
@@ -1721,7 +1756,12 @@ var PayrollPage = {
 
         if (editedAfterApproval) barColor = '#f59e0b';
 
-        html += '<div onclick="PayrollPage._toggleCell(\'' + cellKey + '\')" style="padding:6px 4px;text-align:center;cursor:pointer;border-right:1px solid #f8f8f8;' + (isToday ? 'background:#f0fdf4;' : '') + 'position:relative;min-height:50px;">';
+        // v1182 — clicking the cell opens the WHY popover for that person/day.
+        // Doug: "if we click into the cell, it will give us some details on why
+        // specifically you chose that time in and that time out."
+        html += '<div onclick="PayrollPage._toggleWhy(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\',event)"'
+          + ' title="why these times?"'
+          + ' style="padding:6px 4px;text-align:center;cursor:pointer;border-right:1px solid #f8f8f8;' + (isToday ? 'background:#f0fdf4;' : '') + 'position:relative;min-height:50px;">';
 
         // Hours
         html += '<div style="font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#ccc') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) : '—') + '</div>';
@@ -1745,11 +1785,10 @@ var PayrollPage = {
           // v1156: the clock in/out inputs STAY — Doug only wanted the line that
           // REPEATED them underneath removed, not the entries themselves.
           entries.forEach(function(e) {
-            html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
+            html += PayrollPage._cellTimes(emp.name || emp.id, date, e);
             var cn1 = PayrollPage._cellNote(e.notes);
-            if (cn1) html += '<div style="font-size:10px;color:var(--text-light);font-style:italic;">' + UI.esc(cn1) + '</div>';
+            if (cn1) html += '<div style="font-size:9px;color:var(--text-light);font-style:italic;overflow:hidden;white-space:nowrap;">' + UI.esc(cn1) + '</div>';
           });
-          if (!entries.length) html += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
           // Day detail button
           var _pay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
           html += '<div style="margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">'
@@ -1791,7 +1830,8 @@ var PayrollPage = {
     // Doug: "total labor and expenses below and to right". ──
     if (!isMobile) {
       var labD = {}, labWk = 0;
-      PayrollPage._weekLabor = {}; PayrollPage._weekPL = {}; PayrollPage._weekComm = {}; PayrollPage._weekRev = {};
+      PayrollPage._weekDates = dates;
+      PayrollPage._weekLabor = {}; PayrollPage._weekPL = {}; PayrollPage._weekComm = {}; PayrollPage._weekRev = {}; PayrollPage._weekExtras = {};
       dates.forEach(function(d){
         var t = 0;
         employees.forEach(function(emp){
@@ -1810,9 +1850,7 @@ var PayrollPage = {
           + ' style="padding:8px 4px;text-align:center;font-weight:700;cursor:pointer;">·</div>';
       });
       html += '<div id="wkexp-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
-      dates.forEach(function(d){
-        html += '<div id="wkexpd-' + d + '" style="display:none;border-bottom:1px solid var(--border);"></div>';
-      });
+      html += '<div id="wkexpd" style="display:none;border-bottom:1px solid var(--border);"></div>';
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:1px solid #f0f0f0;font-size:11px;align-items:center;">'
         + '<div style="' + LBL + '">Profit / Loss</div>';
       dates.forEach(function(d){ html += '<div id="wkpl-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;color:var(--text-light);">·</div>'; });
