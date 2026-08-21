@@ -490,7 +490,7 @@ var PayrollPage = {
       return Promise.all(sites.map(function(site) {
         return Promise.all([
           PayrollPage._revGeo(site.lat, site.lon),
-          PayrollPage._jobDayCount(site.lat, site.lon),
+          PayrollPage._jobDayCount(site.lat, site.lon, Object.keys(site.days).sort()[0]),
           PayrollPage._jobNearSite(site.lat, site.lon)
         ]).then(function(r) {
           site.addr = r[0]; site.n = r[1] || 1;
@@ -667,31 +667,59 @@ var PayrollPage = {
       });
     }).catch(function(){ return null; });
   },
-  _jobDayCount: function(lat, lon) {
+  _jobDayCount: function(lat, lon, anchorDay) {
+    // v1177 — TWO bugs fixed here, both of which made revenue wrong.
+    //
+    // 1. PostgREST caps a response at 1000 rows no matter what .limit() says.
+    //    The old call asked for 5000, got the OLDEST 1000, and so only saw
+    //    Aug 4/5/6/8/17 — it never reached Aug 18 or 19. Now paged in 1000s.
+    //
+    // 2. A flat 30-day window counted every day the crew were anywhere in that
+    //    neighbourhood. Aug 4, 5 and 6 were DIFFERENT work near the same spot,
+    //    which is how a 3-day job came out as 4 days and $7,500 read as $1,875.
+    //    Now: take only the CONTIGUOUS run of qualifying days containing the day
+    //    being rendered (a 1-day gap is allowed so a weekend does not split a job).
     var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     if (!C) return Promise.resolve(1);
-    var dLat = 0.0023, dLon = 0.0028;                 // ~250 m box
+    var dLat = 0.0023, dLon = 0.0028;
     var from = new Date(Date.now() - 30 * 864e5).toISOString();
-    return C.from('vehicle_positions').select('ts')
-      .gte('lat', lat - dLat).lte('lat', lat + dLat)
-      .gte('lon', lon - dLon).lte('lon', lon + dLon)
-      .gte('ts', from).order('ts', { ascending: true }).limit(5000)
-      .then(function(r) {
-        if (r.error || !r.data || !r.data.length) return 1;
-        var by = {};
-        r.data.forEach(function(x) {
-          var t = new Date(x.ts);
-          var k = t.getFullYear() + '-' + (t.getMonth()+1) + '-' + t.getDate();
-          if (!by[k]) by[k] = { a: t, b: t };
-          if (t < by[k].a) by[k].a = t;
-          if (t > by[k].b) by[k].b = t;
+    var rows = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('ts')
+        .gte('lat', lat - dLat).lte('lat', lat + dLat)
+        .gte('lon', lon - dLon).lte('lon', lon + dLon)
+        .gte('ts', from).order('ts', { ascending: true })
+        .range(off, off + 999)
+        .then(function(r) {
+          if (r.error || !r.data || !r.data.length) return rows;
+          rows = rows.concat(r.data);
+          if (r.data.length < 1000 || off > 12000) return rows;
+          return page(off + 1000);
         });
-        var n = 0;
-        Object.keys(by).forEach(function(k) {
-          if ((by[k].b - by[k].a) / 60000 >= PayrollPage._JOB_DAY_MIN_MINUTES) n++;
-        });
-        return n || 1;
-      }).catch(function(){ return 1; });
+    };
+    return page(0).then(function(all) {
+      if (!all.length) return 1;
+      var by = {};
+      all.forEach(function(x) {
+        var t = new Date(x.ts);
+        var k = t.getFullYear() + '-' + ('0'+(t.getMonth()+1)).slice(-2) + '-' + ('0'+t.getDate()).slice(-2);
+        if (!by[k]) by[k] = { a: t, b: t };
+        if (t < by[k].a) by[k].a = t;
+        if (t > by[k].b) by[k].b = t;
+      });
+      var qualifying = Object.keys(by).filter(function(k) {
+        return (by[k].b - by[k].a) / 60000 >= PayrollPage._JOB_DAY_MIN_MINUTES;
+      }).sort();
+      if (!qualifying.length) return 1;
+      if (!anchorDay || qualifying.indexOf(anchorDay) < 0) return qualifying.length;
+      var idx = qualifying.indexOf(anchorDay);
+      var dayNum = function(k){ var p = k.split('-'); return Date.UTC(+p[0], +p[1]-1, +p[2]) / 864e5; };
+      var lo = idx, hi = idx;
+      while (lo > 0 && dayNum(qualifying[lo]) - dayNum(qualifying[lo-1]) <= 2) lo--;
+      while (hi < qualifying.length - 1 && dayNum(qualifying[hi+1]) - dayNum(qualifying[hi]) <= 2) hi++;
+      return (hi - lo + 1) || 1;
+    }).catch(function(){ return 1; });
+
   },
   _jobRows: function(addr, dayCount) {
     if (!addr) return '';

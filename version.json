@@ -1,5 +1,5 @@
 {
-  "version": 1176,
+  "version": 1177,
   "released": "2026-08-21",
-  "notes": "v1176: proximity job matching (fixes blank revenue), client row, clickable one-line address"
+  "notes": "v1177: fix the day-count — PostgREST 1000-row cap + contiguous run"
 }
