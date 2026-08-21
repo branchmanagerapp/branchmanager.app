@@ -1,5 +1,5 @@
 {
-  "version": 1184,
+  "version": 1185,
   "released": "2026-08-21",
-  "notes": "v1184: revenue row reads invoices too, date-windowed, GPS fallback for missing stops"
+  "notes": "v1185: fall back to the client address when a job or invoice has none"
 }

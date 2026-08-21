@@ -706,9 +706,27 @@ var PayrollPage = {
       var town = '';
       if (addr) { var parts = String(addr).split(','); town = (parts[1] || '').trim().toLowerCase(); }
       town = town.replace(/^town of\s+/, '').replace(/^city of\s+/, '');
-      var jobs = [], invs = [];
+      var jobs = [], invs = [], clients = [];
       try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
       try { invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : []; } catch (e) {}
+      try { clients = (typeof DB !== 'undefined' && DB.clients && DB.clients.getAll) ? DB.clients.getAll() : []; } catch (e) {}
+      // v1185 - some invoices carry no service address at all. Continental
+      // Village Park's \$2,600 (inv #1019) is one: the GPS had the site right
+      // (50 Highland Drive, Philipstown) but the invoice had nothing to match
+      // against, so Tue 8/11 showed no revenue. The address already exists on
+      // the CLIENT record, so fall back to it rather than dropping the record.
+      var byClient = {};
+      clients.forEach(function(c) {
+        var a = [c.address, c.city, c.state].filter(Boolean).join(', ');
+        if (c.name && a) byClient[String(c.name).toLowerCase().trim()] = a;
+      });
+      var addrOf = function(rec, client) {
+        if (rec.property) return rec.property;
+        var k = String(client || '').toLowerCase().trim();
+        if (byClient[k]) return byClient[k];
+        for (var n in byClient) { if (n.indexOf(k) === 0 && k.length > 3) return byClient[n]; }
+        return null;
+      };
       var anchor = day ? new Date(day + 'T12:00:00').getTime() : null;
       var inWindow = function(r) {
         if (!anchor) return true;
@@ -719,15 +737,21 @@ var PayrollPage = {
       };
       var pool = [];
       jobs.forEach(function(j) {
-        if (!j.property || !Number(j.total) || !inWindow(j)) return;
-        pool.push({ kind:'job', rec:j, num:j.jobNumber || j.job_number, client:j.clientName || j.client_name,
-                    total:Number(j.total), property:j.property });
+        if (!Number(j.total) || !inWindow(j)) return;
+        var cn = j.clientName || j.client_name;
+        var ad = addrOf(j, cn);
+        if (!ad) return;
+        pool.push({ kind:'job', rec:j, num:j.jobNumber || j.job_number, client:cn,
+                    total:Number(j.total), property:ad });
       });
       invs.forEach(function(v) {
-        if (!v.property || !Number(v.total) || !inWindow(v)) return;
+        if (!Number(v.total) || !inWindow(v)) return;
         if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
-        pool.push({ kind:'invoice', rec:v, num:v.invoiceNumber || v.invoice_number, client:v.clientName || v.client_name,
-                    total:Number(v.total), property:v.property });
+        var cn = v.clientName || v.client_name;
+        var ad = addrOf(v, cn);
+        if (!ad) return;
+        pool.push({ kind:'invoice', rec:v, num:v.invoiceNumber || v.invoice_number, client:cn,
+                    total:Number(v.total), property:ad });
       });
       var cand = pool.filter(function(c) {
         return town ? String(c.property).toLowerCase().indexOf(town) >= 0 : false;
