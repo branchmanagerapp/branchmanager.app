@@ -473,12 +473,15 @@ var PayrollPage = {
     PayrollPage._weekPL = {};
     var perDay = {};
     Promise.all(dates.map(function(d) {
-      return PayrollPage._truckStops(d).then(function(st) { perDay[d] = st || []; })
-        .catch(function(){ perDay[d] = []; });
+      return PayrollPage._truckStops(d).then(function(st) {
+        if (st && st.length) { perDay[d] = PayrollPage._mergeStops(st); return; }
+        // v1184 - RPC had nothing for this day; rebuild from raw GPS.
+        return PayrollPage._daySites(d).then(function(sites) { perDay[d] = sites || []; });
+      }).catch(function(){ perDay[d] = []; });
     })).then(function() {
       var sites = [];
       dates.forEach(function(d) {
-        PayrollPage._mergeStops(perDay[d]).forEach(function(m) {
+        (perDay[d] || []).forEach(function(m) {
           for (var i = 0; i < sites.length; i++) {
             if (PayrollPage._metres([sites[i].lat, sites[i].lon], [m.lat, m.lon]) <= 250) {
               sites[i].days[d] = (sites[i].days[d] || 0) + m.mins;
@@ -495,7 +498,7 @@ var PayrollPage = {
         return Promise.all([
           PayrollPage._revGeo(site.lat, site.lon),
           PayrollPage._jobDayCount(site.lat, site.lon, Object.keys(site.days).sort()[0]),
-          PayrollPage._jobNearSite(site.lat, site.lon)
+          PayrollPage._jobNearSite(site.lat, site.lon, Object.keys(site.days).sort()[0])
         ]).then(function(r) {
           site.addr = r[0]; site.n = r[1] || 1;
           site.rev = r[2] || PayrollPage._findRevenue(r[0]);   // proximity first, address string as fallback
@@ -676,30 +679,81 @@ var PayrollPage = {
   },
   // Nearest job to a GPS site. Reverse-geocode once for the TOWN, shortlist jobs
   // in that town, forward-geocode only those, take the closest inside 250 m.
-  _jobNearSite: function(lat, lon) {
+  // v1184 - REWRITTEN. Two bugs made the revenue row wrong for most of August:
+  //
+  //  1. It only ever looked at JOBS. Half the real revenue in the Aug 3-21
+  //     window exists only as an INVOICE with no job behind it - Oswald Roche
+  //     $4,909.38 (#1017) and Continental Village Park $2,600 (#1019) could
+  //     never appear no matter how good the GPS match was.
+  //  2. There was no date filter, so ANY job whose address sits near where a
+  //     truck happened to park could win - including jobs finished months ago.
+  //     Matching purely on proximity over Aug 3-21 returned 47 'matched' jobs
+  //     when the real answer was 5 jobs and 6 invoices; rural addresses like
+  //     '308 Sprout Brook Road' geocode to a road centerline the trucks drive
+  //     past every day.
+  //
+  // Now: candidates are jobs AND invoices, both restricted to +/- _REV_WINDOW_D
+  // days of the day being priced, scored on distance, and de-duped so an
+  // invoice always beats the job it was raised from (otherwise the same work
+  // is counted twice on one day).
+  _REV_WINDOW_D: 45,
+  _recDate: function(r) {
+    return String(r.completedDate || r.completed_date || r.scheduledDate || r.scheduled_date
+                  || r.issuedDate || r.issued_date || '').substring(0, 10);
+  },
+  _jobNearSite: function(lat, lon, day) {
     return PayrollPage._revGeo(lat, lon).then(function(addr) {
       var town = '';
       if (addr) { var parts = String(addr).split(','); town = (parts[1] || '').trim().toLowerCase(); }
       town = town.replace(/^town of\s+/, '').replace(/^city of\s+/, '');
-      var jobs = [];
+      var jobs = [], invs = [];
       try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
-      var cand = jobs.filter(function(j) {
-        if (!j.property || !Number(j.total)) return false;
-        return town ? String(j.property).toLowerCase().indexOf(town) >= 0 : false;
-      }).slice(0, 12);
+      try { invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : []; } catch (e) {}
+      var anchor = day ? new Date(day + 'T12:00:00').getTime() : null;
+      var inWindow = function(r) {
+        if (!anchor) return true;
+        var d = PayrollPage._recDate(r);
+        if (!d) return false;
+        var gap = Math.abs(new Date(d + 'T12:00:00').getTime() - anchor) / 86400000;
+        return gap <= PayrollPage._REV_WINDOW_D;
+      };
+      var pool = [];
+      jobs.forEach(function(j) {
+        if (!j.property || !Number(j.total) || !inWindow(j)) return;
+        pool.push({ kind:'job', rec:j, num:j.jobNumber || j.job_number, client:j.clientName || j.client_name,
+                    total:Number(j.total), property:j.property });
+      });
+      invs.forEach(function(v) {
+        if (!v.property || !Number(v.total) || !inWindow(v)) return;
+        if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
+        pool.push({ kind:'invoice', rec:v, num:v.invoiceNumber || v.invoice_number, client:v.clientName || v.client_name,
+                    total:Number(v.total), property:v.property });
+      });
+      var cand = pool.filter(function(c) {
+        return town ? String(c.property).toLowerCase().indexOf(town) >= 0 : false;
+      }).slice(0, 16);
       if (!cand.length) return null;
-      return Promise.all(cand.map(function(j) {
-        return PayrollPage._fwdGeo(j.property).then(function(g) {
+      return Promise.all(cand.map(function(c) {
+        return PayrollPage._fwdGeo(c.property).then(function(g) {
           if (!g) return null;
-          return { job: j, d: PayrollPage._metres([lat, lon], [g.lat, g.lon]) };
+          c.d = PayrollPage._metres([lat, lon], [g.lat, g.lon]);
+          return c.d <= 250 ? c : null;
         });
       })).then(function(rs) {
+        var hits = rs.filter(Boolean);
+        if (!hits.length) return null;
+        // an invoice supersedes the job it came from - never bill both
         var best = null;
-        rs.filter(Boolean).forEach(function(x){ if (x.d <= 250 && (!best || x.d < best.d)) best = x; });
-        if (!best) return null;
-        var j = best.job;
-        return { kind:'job', num: j.jobNumber || j.job_number, client: j.clientName || j.client_name,
-                 total: Number(j.total), job: j, property: j.property, metres: Math.round(best.d) };
+        hits.forEach(function(h) {
+          if (!best) { best = h; return; }
+          var sameClient = String(h.client || '').toLowerCase().indexOf(String(best.client || '').toLowerCase()) >= 0
+                        || String(best.client || '').toLowerCase().indexOf(String(h.client || '').toLowerCase()) >= 0;
+          if (sameClient && h.kind === 'invoice' && best.kind === 'job') { best = h; return; }
+          if (sameClient && h.kind === 'job' && best.kind === 'invoice') return;
+          if (h.d < best.d) best = h;
+        });
+        return { kind: best.kind, num: best.num, client: best.client, total: best.total,
+                 job: best.rec, property: best.property, metres: Math.round(best.d) };
       });
     }).catch(function(){ return null; });
   },
@@ -1321,6 +1375,54 @@ var PayrollPage = {
     var h = Math.sin(dLat/2) * Math.sin(dLat/2)
           + Math.cos(a[0]*r) * Math.cos(b[0]*r) * Math.sin(dLon/2) * Math.sin(dLon/2);
     return 2 * R * Math.asin(Math.sqrt(h));
+  },
+  // v1184 - bm_truck_stops is far too sparse to drive the revenue row: over
+  // Aug 3-21 it returned 18 stops for 19 days, and Aug 19 (a confirmed work
+  // day at 4 Terrace) was missing entirely. Bouncie SLEEPS when parked, so a
+  // job site often never registers as a 'stop'. This rebuilds the day's work
+  // sites from raw positions instead, and is used whenever the RPC is empty.
+  //
+  // Two rules keep a DRIVING ROUTE from masquerading as a job site:
+  //   * >= 20 pings in the 250 m cluster (a drive-through leaves a handful)
+  //   * >= 60 min between first and last ping in it
+  // Yard and Doug's house are excluded - neither is billable work.
+  _YARD: [41.30483, -73.92349],
+  _HOME: [41.36112, -73.88646],
+  _daySites: function(day) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve([]);
+    var all = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59')
+        .order('ts', { ascending: true }).range(off, off + 999)
+        .then(function(r) {
+          if (r.error || !r.data || !r.data.length) return;
+          all = all.concat(r.data);
+          if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+        });
+    };
+    return page(0).then(function() {
+      var cl = [];
+      all.forEach(function(r) {
+        if (PayrollPage._metres(PayrollPage._YARD, [r.lat, r.lon]) <= 250) return;
+        if (PayrollPage._metres(PayrollPage._HOME, [r.lat, r.lon]) <= 250) return;
+        for (var i = 0; i < cl.length; i++) {
+          if (PayrollPage._metres([cl[i].lat, cl[i].lon], [r.lat, r.lon]) <= 250) {
+            cl[i].n += 1; cl[i].last = r.ts; return;
+          }
+        }
+        cl.push({ lat: r.lat, lon: r.lon, n: 1, first: r.ts, last: r.ts });
+      });
+      return cl.filter(function(c) {
+        if (c.n < 20) return false;
+        c.mins = (new Date(c.last) - new Date(c.first)) / 60000;
+        return c.mins >= 60;
+      }).map(function(c) {
+        return { lat:c.lat, lon:c.lon, mins:c.mins, visits:1,
+                 arrive_ts:c.first, depart_ts:c.last, bestMins:c.mins };
+      }).sort(function(a,b){ return new Date(a.arrive_ts) - new Date(b.arrive_ts); });
+    }).catch(function(){ return []; });
   },
   _mergeStops: function(stops) {
     var out = [];
