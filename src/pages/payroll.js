@@ -432,9 +432,13 @@ var PayrollPage = {
           if (xb) xb.innerHTML = PayrollPage._expenseRows(d, null, 1);
           return;
         }
-        PayrollPage._revGeo(all2[0].lat, all2[0].lon).then(function(a) {
-          if (jb) jb.innerHTML = PayrollPage._jobRows(a || null, 1);
-          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, a || null, 1);
+        Promise.all([
+          PayrollPage._revGeo(all2[0].lat, all2[0].lon),
+          PayrollPage._jobDayCount(all2[0].lat, all2[0].lon)
+        ]).then(function(r) {
+          var a = r[0], n = r[1] || 1;
+          if (jb) jb.innerHTML = PayrollPage._jobRows(a || null, n);
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, a || null, n);
         }).catch(function(){
           if (xb) xb.innerHTML = PayrollPage._expenseRows(d, null, 1);
         });
@@ -450,6 +454,40 @@ var PayrollPage = {
   // amount made in revenue", then "one line of expenses and then GPM... I wanna
   // keep that really clean. So don't go crazy there. Just add the bare minimum
   // to show the picture."
+  // v1168 — how many DAYS was this job actually worked, so revenue can be split.
+  // Doug: a 3-day \$7,500 job reads \$2,500 a day. Derived from GPS presence at
+  // the site rather than from the job record, which carries only one date.
+  // THRESHOLD = 2 hours on site. Doug on Aug 8 at 4 Terrace Drive: "we were
+  // just looking at the tree because it was down the road from another job. You
+  // don't have to count that." That visit spanned 50 min; the three real work
+  // days spanned 366-492 min. A 7x gap, so the rule is not finely tuned.
+  _JOB_DAY_MIN_MINUTES: 120,
+  _jobDayCount: function(lat, lon) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve(1);
+    var dLat = 0.0023, dLon = 0.0028;                 // ~250 m box
+    var from = new Date(Date.now() - 30 * 864e5).toISOString();
+    return C.from('vehicle_positions').select('ts')
+      .gte('lat', lat - dLat).lte('lat', lat + dLat)
+      .gte('lon', lon - dLon).lte('lon', lon + dLon)
+      .gte('ts', from).order('ts', { ascending: true }).limit(5000)
+      .then(function(r) {
+        if (r.error || !r.data || !r.data.length) return 1;
+        var by = {};
+        r.data.forEach(function(x) {
+          var t = new Date(x.ts);
+          var k = t.getFullYear() + '-' + (t.getMonth()+1) + '-' + t.getDate();
+          if (!by[k]) by[k] = { a: t, b: t };
+          if (t < by[k].a) by[k].a = t;
+          if (t > by[k].b) by[k].b = t;
+        });
+        var n = 0;
+        Object.keys(by).forEach(function(k) {
+          if ((by[k].b - by[k].a) / 60000 >= PayrollPage._JOB_DAY_MIN_MINUTES) n++;
+        });
+        return n || 1;
+      }).catch(function(){ return 1; });
+  },
   _jobRows: function(addr, dayCount) {
     if (!addr) return '';
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
