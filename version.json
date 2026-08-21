@@ -1,5 +1,5 @@
 {
-  "version": 1171,
+  "version": 1173,
   "released": "2026-08-21",
-  "notes": "v1171: Expenses row becomes a calculated Profit / Loss"
+  "notes": "v1173: site-first job matching, commission in expenses, manual-edit lock"
 }

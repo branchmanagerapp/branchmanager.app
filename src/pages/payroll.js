@@ -451,72 +451,112 @@ var PayrollPage = {
   _dayCache: {},
   _weekLabor: {},
   _weekPL: {},
+  _weekExp: {},
   // v1170 — fill the JOB / REVENUE row across the week. One pass per day:
   // find the day's biggest stop away from the yard, reverse-geocode it, match a
   // job by address, then divide that job's total by the days it was worked so a
   // three-day job reads as its daily share rather than three full totals.
   _fillWeekJobRow: function(dates) {
-    var total = 0;
-    var seq = dates.reduce(function(chain, d) {
-      return chain.then(function() {
-        return PayrollPage._truckStops(d).then(function(stops) {
+    // v1173 — REWRITTEN. The previous version re-derived an address from GPS on
+    // EVERY day, so the same job resolved as "2 Terrace Drive" on Monday,
+    // "4 Orchard Drive" on Tuesday and "4 Terrace Drive" on Wednesday — a 40 m
+    // difference in where the truck parked broke the match and two of three days
+    // showed no revenue. Doug: "all those jobs are the same."
+    //
+    // Now: collect the week's stops FIRST, cluster them into sites (250 m),
+    // geocode and job-match each site ONCE, then attribute every day that
+    // touched it. Revenue = job total / number of days that site was worked.
+    PayrollPage._weekPL = {};
+    var perDay = {};
+    Promise.all(dates.map(function(d) {
+      return PayrollPage._truckStops(d).then(function(st) { perDay[d] = st || []; })
+        .catch(function(){ perDay[d] = []; });
+    })).then(function() {
+      var sites = [];
+      dates.forEach(function(d) {
+        PayrollPage._mergeStops(perDay[d]).forEach(function(m) {
+          for (var i = 0; i < sites.length; i++) {
+            if (PayrollPage._metres([sites[i].lat, sites[i].lon], [m.lat, m.lon]) <= 250) {
+              sites[i].days[d] = (sites[i].days[d] || 0) + m.mins;
+              if (m.mins > sites[i].best) { sites[i].best = m.mins; sites[i].lat = m.lat; sites[i].lon = m.lon; }
+              return;
+            }
+          }
+          var o = { lat: m.lat, lon: m.lon, best: m.mins, days: {} };
+          o.days[d] = m.mins; sites.push(o);
+        });
+      });
+      // biggest site wins a day when two overlap
+      return Promise.all(sites.map(function(site) {
+        return Promise.all([
+          PayrollPage._revGeo(site.lat, site.lon),
+          PayrollPage._jobDayCount(site.lat, site.lon)
+        ]).then(function(r) { site.addr = r[0]; site.n = r[1] || 1; site.rev = PayrollPage._findRevenue(r[0]); });
+      })).then(function() {
+        var total = 0;
+        dates.forEach(function(d) {
+          var best = null;
+          sites.forEach(function(st) { if (st.days[d] && (!best || st.days[d] > best.days[d])) best = st; });
           var jb = document.getElementById('wkjob-' + d);
           var rv = document.getElementById('wkrev-' + d);
-          if (!stops || !stops.length) { if (jb) jb.textContent = '—'; if (rv) rv.textContent = '—'; return; }
-          var m = PayrollPage._mergeStops(stops);
-          m.sort(function(a, b){ return b.mins - a.mins; });
-          var top = m[0];
-          if (!top) { if (jb) jb.textContent = '—'; if (rv) rv.textContent = '—'; return; }
-          return Promise.all([
-            PayrollPage._revGeo(top.lat, top.lon),
-            PayrollPage._jobDayCount(top.lat, top.lon)
-          ]).then(function(r) {
-            var addr = r[0], n = r[1] || 1;
-            var rev = PayrollPage._findRevenue(addr);
-            var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+          var pl = document.getElementById('wkpl-' + d);
+          var lab = PayrollPage._weekLabor[d] || 0;
+          var comm = 0, share = 0;
+          if (best) {
             if (jb) {
-              jb.textContent = rev ? (rev.client || ('#' + rev.num)) : (addr ? String(addr).split(',')[0] : '—');
-              jb.title = (addr || '') + (rev ? ('  ·  job #' + rev.num) : '  ·  no job matched');
+              jb.textContent = best.rev ? (best.rev.client || ('#' + best.rev.num))
+                                        : (best.addr ? String(best.addr).split(',')[0] : '—');
+              jb.title = (best.addr || '') + (best.rev ? ('  ·  job #' + best.rev.num) : '  ·  no job matched');
             }
-            if (rv) {
-              if (rev) {
-                var share = rev.total / n;
-                total += share;
+            if (best.rev) {
+              share = best.rev.total / best.n;
+              comm = share * PayrollPage._JOB_COMMISSION;
+              total += share;
+              if (rv) {
                 rv.textContent = '$' + Math.round(share).toLocaleString();
-                rv.title = '$' + Math.round(rev.total).toLocaleString() + ' job over ' + n + ' day' + (n>1?'s':'');
-              } else { rv.textContent = '—'; }
-              // v1171 — Profit / Loss for the day. Revenue minus labour, which is
-              // the only cost row on this grid; it is NOT a full P&L and the
-              // title says so.
-              var pl = document.getElementById('wkpl-' + d);
-              if (pl) {
-                var lab = PayrollPage._weekLabor[d] || 0;
-                if (rev || lab) {
-                  var v = (rev ? rev.total / n : 0) - lab;
-                  PayrollPage._weekPL[d] = v;
-                  pl.textContent = (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString();
-                  pl.style.color = v < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
-                  pl.title = 'revenue ' + (rev ? '$' + Math.round(rev.total / n).toLocaleString() : '$0')
-                           + ' − labour $' + Math.round(lab).toLocaleString()
-                           + '  (labour only — no dump, fuel, truck or payroll costs)';
-                } else { pl.textContent = '—'; }
+                rv.title = '$' + Math.round(best.rev.total).toLocaleString() + ' job over ' + best.n + ' day' + (best.n>1?'s':'');
               }
-            }
-          });
-        }).catch(function(){});
+            } else if (rv) { rv.textContent = '—'; }
+          } else {
+            if (jb) jb.textContent = '—';
+            if (rv) rv.textContent = '—';
+          }
+          // v1173 — expenses now include the 10% sales commission, per Doug.
+          var exp = lab + comm;
+          PayrollPage._weekExp[d] = exp;
+          var ex = document.getElementById('wkexp-' + d);
+          if (ex) {
+            ex.textContent = exp ? '$' + Math.round(exp).toLocaleString() : '—';
+            ex.title = 'labour $' + Math.round(lab).toLocaleString()
+                     + (comm ? '  ·  sales commission 10% $' + Math.round(comm).toLocaleString() : '')
+                     + '   (no dump, fuel, truck or yearly costs yet)';
+          }
+          if (pl) {
+            if (share || exp) {
+              var v = share - exp;
+              PayrollPage._weekPL[d] = v;
+              pl.textContent = (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString();
+              pl.style.color = v < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+              pl.title = 'revenue $' + Math.round(share).toLocaleString() + ' − expenses $' + Math.round(exp).toLocaleString();
+            } else { pl.textContent = '—'; }
+          }
+        });
+        var t = document.getElementById('wkrev-total');
+        if (t) t.textContent = total ? '$' + Math.round(total).toLocaleString() : '';
+        var xt = document.getElementById('wkexp-total');
+        if (xt) {
+          var se = 0; dates.forEach(function(d){ se += PayrollPage._weekExp[d] || 0; });
+          xt.textContent = se ? '$' + Math.round(se).toLocaleString() : '';
+        }
+        var pt = document.getElementById('wkpl-total');
+        if (pt) {
+          var sp = 0; dates.forEach(function(d){ sp += PayrollPage._weekPL[d] || 0; });
+          pt.textContent = (sp < 0 ? '-$' : '$') + Math.abs(Math.round(sp)).toLocaleString();
+          pt.style.color = sp < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+        }
       });
-    }, Promise.resolve());
-    seq.then(function() {
-      var t = document.getElementById('wkrev-total');
-      if (t) t.textContent = total ? '$' + Math.round(total).toLocaleString() : '';
-      var pt = document.getElementById('wkpl-total');
-      if (pt) {
-        var sum = 0;
-        Object.keys(PayrollPage._weekPL).forEach(function(k){ if (dates.indexOf(k) >= 0) sum += PayrollPage._weekPL[k]; });
-        pt.textContent = (sum < 0 ? '-$' : '$') + Math.abs(Math.round(sum)).toLocaleString();
-        pt.style.color = sum < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
-      }
-    });
+    }).catch(function(){});
+
   },
   // ── v1167: job rows on top, ONE collapsible expenses line, then GPM ──────
   // Doug: "I want new rows above employee... address and then client name and
@@ -1150,9 +1190,15 @@ var PayrollPage = {
       var upd = {}; upd[col] = iso;
       var ci = field === 'in' ? iso : e.clockIn, co = field === 'out' ? iso : e.clockOut;
       if (ci && co) upd.hours = Math.round((new Date(co) - new Date(ci)) / 3600000 * 100) / 100;
+      // v1172 — LOCK a hand-edited row. compute_auto_timesheets runs on cron
+      // every 2 hours over the last 4 days and rewrites any row still marked
+      // 'auto-bouncie'. Without this, a correction typed into a cell is silently
+      // recomputed away within two hours. The function skips rows that are
+      // locked OR source='manual', on insert, update AND prune — so set both.
+      upd.locked = true; upd.source = 'manual';
       DB.timeEntries.update(e.id, upd);
     } else {
-      var ne = { userId: user, user: user, date: date }; ne[col] = iso;
+      var ne = { userId: user, user: user, date: date, locked: true, source: 'manual' }; ne[col] = iso;
       DB.timeEntries.create(ne);
     }
     var dk = PayrollPage._dayApprovalKey(user, date);
@@ -1467,9 +1513,9 @@ var PayrollPage = {
       });
       var mny = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:2px solid var(--border);font-size:11px;align-items:center;">'
-        + '<div style="' + LBL + '">Labor</div>';
-      dates.forEach(function(d){ html += '<div style="padding:8px 4px;text-align:center;font-weight:700;">' + mny(labD[d]) + '</div>'; });
-      html += '<div style="padding:8px 4px;text-align:center;font-weight:800;">' + mny(labWk) + '</div></div>';
+        + '<div style="' + LBL + '" title="labour + 10% sales commission. Dump, fuel, truck and yearly costs are not in here yet.">Expenses</div>';
+      dates.forEach(function(d){ html += '<div id="wkexp-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;">·</div>'; });
+      html += '<div id="wkexp-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
       html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:1px solid #f0f0f0;font-size:11px;align-items:center;">'
         + '<div style="' + LBL + '">Profit / Loss</div>';
       dates.forEach(function(d){ html += '<div id="wkpl-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;color:var(--text-light);">·</div>'; });
@@ -1931,6 +1977,7 @@ var PayrollPage = {
       }
     }
 
+    entry.locked = true; entry.source = 'manual';   // v1172: hand-entered, cron must not touch it
     DB.timeEntries.create(entry);
 
     // Mark as edited after approval if day was approved
@@ -1959,7 +2006,8 @@ var PayrollPage = {
   _updateHours: function(entryId) {
     DB.timeEntries.update(entryId, {
       hours: parseFloat(document.getElementById('eh-hours').value) || 0,
-      notes: document.getElementById('eh-notes').value
+      notes: document.getElementById('eh-notes').value,
+      locked: true, source: 'manual'      // v1172: keep the cron off a hand-edit
     });
     UI.closeModal();
     UI.toast('Hours updated');
