@@ -1,5 +1,5 @@
 {
-  "version": 1179,
+  "version": 1180,
   "released": "2026-08-21",
-  "notes": "v1179: no double-counting — job cost and yearly overhead split"
+  "notes": "v1180: Details explains WHY each in/out time was chosen"
 }

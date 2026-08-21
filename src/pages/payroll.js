@@ -2056,9 +2056,9 @@ var PayrollPage = {
     // number. Filled async — the RPCs are the same ones the day panel uses.
     var evId = 'dayev-' + Math.random().toString(36).slice(2, 9);
     html += '<div id="' + evId + '" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">'
-      + '<div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px;">EVIDENCE FOR THIS DAY</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">loading GPS + phone…</div></div>';
-    setTimeout(function(){ PayrollPage._fillDayEvidence(evId, userId, date); }, 0);
+      + '<div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px;">WHY THESE TIMES</div>'
+      + '<div id="' + evId + '-why"></div></div>';
+    setTimeout(function(){ PayrollPage._fillWhy(evId + '-why', userId, date); }, 0);
 
     // Actions
     html += '<div style="display:flex;gap:8px;margin-top:12px;">'
@@ -2079,6 +2079,60 @@ var PayrollPage = {
   },
 
   // ── v1151: day evidence for the Details modal ─────────────────────────────
+  // v1180 — Doug: "have details just open up the explanation of why you set the
+  // in or out time when you did… the details should be just the reasoning why
+  // you chose that time." The truck/phone/text grid stays below the calendar as
+  // the evidence; this panel now explains the DECISION rather than repeating it.
+  _RULE_TEXT: {
+    'David Beers':      ['first arrival at the job site', 'last ping at the job site',
+                         'David rides to the job, so his clock is the SITE — the yard never starts or ends his day.'],
+    'Catherine Conway': ['her truck leaving the yard', 'her truck back at the yard',
+                         'Catherine takes a truck out and brings it back, so the yard line brackets her day.'],
+    'Doug Brown':       ['the Ram arriving at the yard', 'the Ram leaving the yard for home',
+                         'Doug drives the Ram home, so his paid day starts when he REACHES the yard — the commute is excluded.']
+  },
+  _fillWhy: function(elId, userId, date) {
+    var box = document.getElementById(elId); if (!box) return;
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var entries = PayrollPage._getEntriesForDate(userId, date);
+    if (!entries.length) { box.innerHTML = '<div style="color:var(--text-light);font-size:13px;">No hours recorded for this day.</div>'; return; }
+    var rule = PayrollPage._RULE_TEXT[userId] || ['the first movement recorded', 'the last movement recorded', ''];
+    var out = '';
+    entries.forEach(function(e) {
+      var manual = (e.source === 'manual') || e.locked;
+      var note = String(e.notes || '');
+      var hrs = e.hours ? e.hours.toFixed(2) : '—';
+      var pill = manual
+        ? '<span style="background:#e8f5e9;color:var(--green-dark);font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;">SET BY HAND · LOCKED</span>'
+        : '<span style="background:#fff8e1;color:#7a6a1f;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;">AUTO FROM GPS</span>';
+      var pings = /\((\d+)\s*pings\)/.exec(note);
+      var truck = /Auto from GPS\s*[—-]\s*([^(]+)/.exec(note);
+      out += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+        + '<b style="font-size:15px;">' + hrs + ' h</b>' + pill + '</div>'
+        + '<div style="font-size:13px;margin-bottom:6px;"><b style="color:var(--green-dark);">IN ' + et(e.clockIn) + '</b>'
+        + '<div style="color:var(--text-light);">' + esc(rule[0]) + '.</div></div>'
+        + '<div style="font-size:13px;margin-bottom:8px;"><b style="color:var(--green-dark);">OUT ' + et(e.clockOut) + '</b>'
+        + '<div style="color:var(--text-light);">' + esc(rule[1]) + '.</div></div>'
+        + '<div style="font-size:12px;color:var(--text-light);border-top:1px solid var(--border);padding-top:7px;">'
+        + esc(rule[2])
+        + (truck ? '<br>Source: <b>' + esc(truck[1].trim()) + '</b>' + (pings ? ' — ' + pings[1] + ' GPS pings' : '') : '')
+        + (manual && note ? '<br><span style="color:var(--text);">' + esc(note) + '</span>' : '')
+        + '</div>';
+      // why you might not trust it
+      var warn = [];
+      if (pings && +pings[1] < 200) warn.push('Only ' + pings[1] + ' pings behind this — the tracker was mostly asleep, so the span is probably short.');
+      if (!manual && e.hours && e.hours < 2) warn.push('Under 2 hours. On this crew that usually means a tracker dropped out, not a short day.');
+      if (!manual) warn.push('Not locked — the 2-hourly recompute can still overwrite this. Editing it locks it.');
+      if (warn.length) {
+        out += '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:6px;padding:7px 9px;margin-top:8px;font-size:11.5px;color:#7a6a1f;">'
+             + warn.map(function(w){ return '• ' + esc(w); }).join('<br>') + '</div>';
+      }
+      out += '</div>';
+    });
+    box.innerHTML = out;
+  },
   _fillDayEvidence: function(elId, userId, date) {
     var box = document.getElementById(elId); if (!box) return;
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
