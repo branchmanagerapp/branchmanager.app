@@ -2636,6 +2636,76 @@ var PayrollPage = {
     PayrollPage._fillWhy('whypop-body', user, date);
     setTimeout(function(){ document.addEventListener('click', PayrollPage._whyOutside, true); }, 0);
   },
+  // v1201 - Doug: "doesn't say which truck". The popover said 'her truck
+  // leaving the yard' and never named it, which is the one fact that makes the
+  // explanation checkable. Worse, on a hand-set row there was nothing at all
+  // tying the time to a vehicle.
+  //
+  // This finds which truck actually produced a time: pull the day's positions,
+  // and for each vehicle find its ping nearest clock-in and nearest clock-out.
+  // The vehicle with the smallest combined gap is the one those times came
+  // from. It also reports whether that ping was AT THE YARD, so the panel can
+  // say 'left the yard' honestly instead of assuming it (see v1197 - the F-550
+  // on Aug 18 never touched the yard at all).
+  _truckCache: {},
+  _truckForEntry: function(date, clockIn, clockOut) {
+    var key = date + '|' + (clockIn || '') + '|' + (clockOut || '');
+    if (PayrollPage._truckCache[key]) return PayrollPage._truckCache[key];
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || (!clockIn && !clockOut)) return Promise.resolve(null);
+    var all = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('vehicle_id,lat,lon,ts')
+        .gte('ts', date + 'T04:00:00').lt('ts', date + 'T23:59:59')
+        .order('ts', { ascending: true }).range(off, off + 999).then(function(r) {
+          if (r.error || !r.data || !r.data.length) return;
+          all = all.concat(r.data);
+          if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+        });
+    };
+    var pr = page(0).then(function() {
+      if (!all.length) return null;
+      var tIn = clockIn ? new Date(clockIn).getTime() : null;
+      var tOut = clockOut ? new Date(clockOut).getTime() : null;
+      var byV = {};
+      all.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || []).push(r); });
+      var best = null;
+      Object.keys(byV).forEach(function(vid) {
+        var pts = byV[vid], nIn = null, nOut = null;
+        pts.forEach(function(r) {
+          var t = new Date(r.ts).getTime();
+          if (tIn !== null && (!nIn || Math.abs(t - tIn) < Math.abs(new Date(nIn.ts).getTime() - tIn))) nIn = r;
+          if (tOut !== null && (!nOut || Math.abs(t - tOut) < Math.abs(new Date(nOut.ts).getTime() - tOut))) nOut = r;
+        });
+        var dIn = nIn ? Math.abs(new Date(nIn.ts).getTime() - tIn) / 60000 : 9999;
+        var dOut = nOut ? Math.abs(new Date(nOut.ts).getTime() - tOut) / 60000 : 9999;
+        var score = (tIn !== null ? dIn : 0) + (tOut !== null ? dOut : 0);
+        if (!best || score < best.score)
+          best = { vid: vid, score: score, dIn: dIn, dOut: dOut, pings: pts.length,
+                   inAtYard:  nIn  ? PayrollPage._metres(PayrollPage._YARD, [nIn.lat,  nIn.lon])  <= 300 : false,
+                   outAtYard: nOut ? PayrollPage._metres(PayrollPage._YARD, [nOut.lat, nOut.lon]) <= 300 : false };
+      });
+      if (!best) return null;
+      return C.from('vehicles').select('id,name,model').then(function(r) {
+        var v = (r.data || []).filter(function(x){ return x.id === best.vid; })[0];
+        best.label = v ? PayrollPage._truckLabel(v.name, v.model) : 'a truck';
+        return best;
+      }).catch(function(){ best.label = 'a truck'; return best; });
+    }).catch(function(){ return null; });
+    PayrollPage._truckCache[key] = pr;
+    return pr;
+  },
+  _truckLine: function(b) {
+    if (!b) return 'No truck movement matches these times.';
+    var near = function(d) { return d <= 20; };
+    if (!near(b.dIn) && !near(b.dOut))
+      return 'Closest truck was the <b>' + b.label + '</b>, but its pings are '
+           + Math.round(Math.min(b.dIn, b.dOut)) + '+ min away — these times were set by hand.';
+    var bits = [];
+    if (near(b.dIn))  bits.push('IN matches the ' + b.label + (b.inAtYard  ? ' at the yard'  : ' away from the yard'));
+    if (near(b.dOut)) bits.push('OUT matches it ' + (b.outAtYard ? 'back at the yard' : 'away from the yard'));
+    return '<b>' + b.label + '</b> — ' + bits.join('; ') + '.';
+  },
   _fillWhy: function(elId, userId, date) {
     var box = document.getElementById(elId); if (!box) return;
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
@@ -2679,6 +2749,7 @@ var PayrollPage = {
         + 'style="font-size:13px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;"></span>'
         + '<div style="color:var(--text-light);">' + esc(rule[1]) + '.</div></div>'
         + '<div style="font-size:12px;color:var(--text-light);border-top:1px solid var(--border);padding-top:7px;">'
+        + '<div id="whytruck-' + e.id + '" style="color:var(--text);margin-bottom:5px;">which truck… </div>'
         + esc(rule[2])
         + (truck ? '<br>Source: <b>' + esc(truck[1].trim()) + '</b>' + (pings ? ' — ' + pings[1] + ' GPS pings' : '') : '')
         + (manual && note ? '<br><span style="color:var(--text);">' + esc(note) + '</span>' : '')
@@ -2695,6 +2766,16 @@ var PayrollPage = {
       out += '</div>';
     });
     box.innerHTML = out;
+    // v1201 - name the truck behind each row
+    entries.forEach(function(e) {
+      PayrollPage._truckForEntry(date, e.clockIn, e.clockOut).then(function(b) {
+        var el = document.getElementById('whytruck-' + e.id);
+        if (el) el.innerHTML = PayrollPage._truckLine(b);
+      }).catch(function() {
+        var el = document.getElementById('whytruck-' + e.id);
+        if (el) el.textContent = '';
+      });
+    });
   },
   _fillDayEvidence: function(elId, userId, date) {
     var box = document.getElementById(elId); if (!box) return;

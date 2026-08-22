@@ -1,5 +1,5 @@
 {
-  "version": 1200,
+  "version": 1201,
   "released": "2026-08-21",
-  "notes": "v1200: new hand-entered rows carry user_name"
+  "notes": "v1201: name the truck behind each in/out time"
 }
