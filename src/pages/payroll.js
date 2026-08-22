@@ -206,6 +206,12 @@ var PayrollPage = {
     var issues = [];
     if (entries.length === 0) return issues;
     entries.forEach(function(e) {
+      // v1205 - a day you deliberately zeroed is SETTLED, not broken. Doug:
+      // "one issues, one issues, red lines. I don't know that we need all
+      // that." Answering 'Didn't work' leaves hours 0 and clock-in null, which
+      // is precisely the shape 'Missing hours' looked for — so every correctly
+      // resolved day lit up red and counted toward the week's issue tally.
+      if (e.locked || e.source === 'manual') return;
       if (e.clockIn && !e.clockOut) issues.push('Missing clock-out');
       if (!e.hours && !e.clockIn) issues.push('Missing hours');
     });
@@ -2205,7 +2211,7 @@ var PayrollPage = {
         var expanded = self._expandedCells[cellKey];
         var dayKey = self._dayApprovalKey(emp.name || emp.id, date);
         var dayApproved = approvals[dayKey] === 'approved';
-        var barColor = issues.length > 0 ? '#ef4444' : (dayHours > 0 ? '#22c55e' : '#e5e7eb');
+        var barColor = issues.length > 0 ? '#ef4444' : (dayHours > 0 ? '#22c55e' : '#e5e7eb');   // v1205: settled zero days fall through to grey
         var editedAfterApproval = dayApproved && approvals[dayKey + '_editedAfter'];
         // v745: track per-day rollup. Only days with hours OR entries count.
         if (dayHours > 0 || entries.length > 0) {
@@ -2286,7 +2292,7 @@ var PayrollPage = {
         + weekTotal.toFixed(1)
         + (_wRate ? '<div style="font-size:12px;color:var(--green-dark);font-weight:800;">$' + Math.round(weekTotal * _wRate).toLocaleString() + '</div>' : '')
         + (weekApproved ? '<div style="font-size:9px;color:#22c55e;">✓</div>' : partialBadge)
-        + (weekIssues > 0 ? '<div style="font-size:9px;color:#ef4444;">' + weekIssues + ' issues</div>' : '')
+        + (weekIssues > 0 ? '<div style="font-size:9px;color:#ef4444;">' + weekIssues + ' issue' + (weekIssues > 1 ? 's' : '') + '</div>' : '')
         + '</div>';
 
       html += '</div>'; // end employee row

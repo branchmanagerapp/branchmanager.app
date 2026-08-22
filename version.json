@@ -1,5 +1,5 @@
 {
-  "version": 1204,
+  "version": 1205,
   "released": "2026-08-21",
-  "notes": "v1204: time-entry edits finally sync to the cloud"
+  "notes": "v1205: fix the 400 on time-entry saves; stop flagging settled days as issues"
 }

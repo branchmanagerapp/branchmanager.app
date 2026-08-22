@@ -574,6 +574,15 @@ var DB = (function() {
       _stripUnknownCols(table, snakeChanges);
       _coerceEmptyTyped(snakeChanges);  // v1117: '' → null for uuid/date/timestamp cols
       snakeChanges.updated_at = _now();  // always wins — fresh mtime guaranteed
+      // v1205: …but only where that column EXISTS. time_entries has no
+      // updated_at (columns are: auto_meta, clock_in, clock_out, confidence,
+      // created_at, date, hours, id, job_id, locked, notes, source, tenant_id,
+      // user_id, user_name, vehicle_id). Stamping it there made PostgREST
+      // reject the whole PATCH with a 400 and fire the loud 'Save did NOT reach
+      // the cloud' banner — which is exactly what v1204 started doing the
+      // moment time_entries was finally allowed to push at all. Re-run the
+      // schema strip AFTER the stamp so the ordering intent above is kept.
+      _stripUnknownCols(table, snakeChanges);
       // Build URL with id filter; add updated_at precondition if supplied.
       var qs = 'id=eq.' + encodeURIComponent(id);
       // v1054: ONLY apply the updated_at precondition when the local mtime is a
@@ -584,6 +593,12 @@ var DB = (function() {
       // markOverdue/fixStatuses sweeps). A malformed mtime = skip the clobber
       // guard for this one write (PATCH by id only) rather than lose the save.
       var _isoPre = precheckUpdatedAt && typeof precheckUpdatedAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(precheckUpdatedAt);
+      // v1205: and a table with no updated_at column cannot carry the guard
+      // either — `?updated_at=lte.…` 400s the same way the body did.
+      try {
+        var _cc = (typeof window !== 'undefined' && window._bmCloudCols && window._bmCloudCols[table]);
+        if (_cc && _cc.length && _cc.indexOf('updated_at') === -1) _isoPre = false;
+      } catch (e) {}
       if (_isoPre) {
         // PostgREST: updated_at must be <= the local row's pre-edit mtime.
         // If cloud has moved on (server-side PATCH between local read & this push),
