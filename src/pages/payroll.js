@@ -1869,6 +1869,40 @@ var PayrollPage = {
   // Saves straight to the day's time entry (creates one if none). Recomputes
   // hours when both ends are set; keeps the cell expanded across the reload.
   _hm: function(ts) { if (!ts) return ''; var x = new Date(ts); return ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2); },
+  // v1199 - Doug: "should be able to edit hours here". The popover explained
+  // WHY a time was chosen but you had to leave it to change anything: the Edit
+  // button closed the popover and _saveInline always finished with a full
+  // loadPage('payroll'). Now IN, OUT and the hours total are editable in place
+  // and the popover re-renders itself without tearing the page down.
+  _hhmmLocal: function(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  },
+  // Set the TOTAL directly and keep clock-in, moving clock-out to match. Doug
+  // often knows the hours ('that was an eight hour day') without wanting to
+  // work out the two clock times.
+  _saveWhyHours: function(user, date, entryId, val) {
+    var h = parseFloat(val);
+    if (isNaN(h) || h < 0 || h > 24) { if (typeof UI !== 'undefined') UI.toast('Enter hours between 0 and 24', 'error'); return; }
+    var e = DB.timeEntries.getAll().filter(function(t){ return t.id === entryId; })[0];
+    var upd = { hours: Math.round(h * 100) / 100, locked: true, source: 'manual' };
+    if (e && e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + h * 3600000).toISOString();
+    if (e) DB.timeEntries.update(e.id, upd);
+    else DB.timeEntries.create({ userId:user, user:user, date:date, hours:upd.hours, locked:true, source:'manual' });
+    PayrollPage._afterWhyEdit(user, date);
+  },
+  _afterWhyEdit: function(user, date) {
+    var dk = PayrollPage._dayApprovalKey(user, date);
+    if (PayrollPage._getApprovals()[dk] === 'approved') {
+      PayrollPage._approvals[dk + '_editedAfter'] = true; PayrollPage._saveApprovals();
+    }
+    if (typeof UI !== 'undefined') UI.toast('Saved — locked so the cron cannot overwrite it');
+    PayrollPage._fillWhy('whypop-body', user, date);          // redraw the popover in place
+    var cell = document.getElementById('hcell-' + user + '-' + date);
+    if (cell) cell.setAttribute('data-stale', '1');
+  },
   _saveInline: function(user, date, entryId, field, hhmm, mode) {
     if (!hhmm) return;
     var iso = date + 'T' + hhmm + ':00';
@@ -1893,6 +1927,7 @@ var PayrollPage = {
     if (PayrollPage._getApprovals()[dk] === 'approved') { PayrollPage._approvals[dk + '_editedAfter'] = true; PayrollPage._saveApprovals(); }
     PayrollPage._expandedCells[user + '_' + date] = true; // keep the cell open after re-render
     if (typeof UI !== 'undefined') UI.toast('Saved');
+    if (mode === 'why') { PayrollPage._afterWhyEdit(user, date); return; }   // v1199 - stay put
     if (mode === 'detail') {
       // v1181: no modal to reopen — the popover is closed by the edit flow
       if (typeof loadPage === 'function') loadPage('payroll');
@@ -2604,6 +2639,7 @@ var PayrollPage = {
     var entries = PayrollPage._getEntriesForDate(userId, date);
     if (!entries.length) { box.innerHTML = '<div style="color:var(--text-light);font-size:13px;">No hours recorded for this day.</div>'; return; }
     var rule = PayrollPage._RULE_TEXT[userId] || ['the first movement recorded', 'the last movement recorded', ''];
+    var uid = String(userId).replace(/'/g, '');      // handlers are built into an attribute
     var out = '';
     entries.forEach(function(e) {
       var manual = (e.source === 'manual') || e.locked;
@@ -2616,16 +2652,27 @@ var PayrollPage = {
       var truck = /Auto from GPS\s*[—-]\s*([^(]+)/.exec(note);
       out += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px;">'
-        + '<b style="font-size:15px;">' + hrs + ' h</b>'
+        + '<span style="display:flex;align-items:center;gap:3px;">'
+        + '<input type="number" step="0.01" min="0" max="24" value="' + (e.hours || '') + '" '
+        + 'onclick="event.stopPropagation()" '
+        + 'onchange="PayrollPage._saveWhyHours(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',this.value)" '
+        + 'style="font-size:15px;font-weight:700;width:62px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;">'
+        + '<b style="font-size:13px;">h</b></span>'
         + '<span style="display:flex;align-items:center;gap:5px;">' + pill
-        + '<button onclick="PayrollPage._closeWhy();PayrollPage.editHours(\'' + e.id + '\')" '
-        + 'style="font-size:10px;padding:2px 7px;border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;">Edit</button>'
         + '<button onclick="PayrollPage._closeWhy();PayrollPage.deleteHours(\'' + e.id + '\',\'' + String(userId).replace(/'/g,"") + '\',\'' + date + '\')" '
         + 'style="font-size:10px;padding:2px 7px;border:1px solid var(--border);background:#fff;color:var(--red,#dc3545);border-radius:5px;cursor:pointer;">&times;</button>'
         + '</span></div>'
-        + '<div style="font-size:13px;margin-bottom:6px;"><b style="color:var(--green-dark);">IN ' + et(e.clockIn) + '</b>'
+        + '<div style="font-size:13px;margin-bottom:6px;">'
+        + '<span style="display:flex;align-items:center;gap:6px;"><b style="color:var(--green-dark);">IN</b>'
+        + '<input type="time" value="' + PayrollPage._hhmmLocal(e.clockIn) + '" onclick="event.stopPropagation()" '
+        + 'onchange="PayrollPage._saveInline(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',\'in\',this.value,\'why\')" '
+        + 'style="font-size:13px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;"></span>'
         + '<div style="color:var(--text-light);">' + esc(rule[0]) + '.</div></div>'
-        + '<div style="font-size:13px;margin-bottom:8px;"><b style="color:var(--green-dark);">OUT ' + et(e.clockOut) + '</b>'
+        + '<div style="font-size:13px;margin-bottom:8px;">'
+        + '<span style="display:flex;align-items:center;gap:6px;"><b style="color:var(--green-dark);">OUT</b>'
+        + '<input type="time" value="' + PayrollPage._hhmmLocal(e.clockOut) + '" onclick="event.stopPropagation()" '
+        + 'onchange="PayrollPage._saveInline(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',\'out\',this.value,\'why\')" '
+        + 'style="font-size:13px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;"></span>'
         + '<div style="color:var(--text-light);">' + esc(rule[1]) + '.</div></div>'
         + '<div style="font-size:12px;color:var(--text-light);border-top:1px solid var(--border);padding-top:7px;">'
         + esc(rule[2])

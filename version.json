@@ -1,5 +1,5 @@
 {
-  "version": 1198,
+  "version": 1199,
   "released": "2026-08-21",
-  "notes": "v1198: label a day YARD DAY or ESTIMATES instead of blank revenue"
+  "notes": "v1199: edit hours and in/out right in the Details popover"
 }
