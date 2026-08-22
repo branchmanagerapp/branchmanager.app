@@ -1889,7 +1889,7 @@ var PayrollPage = {
     var e = DB.timeEntries.getAll().filter(function(t){ return t.id === entryId; })[0];
     var upd = { hours: Math.round(h * 100) / 100, locked: true, source: 'manual' };
     if (e && e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + h * 3600000).toISOString();
-    if (e) DB.timeEntries.update(e.id, upd);
+    if (e) DB.timeEntries.update(e.id, upd, { force: true });
     // v1200 - the SERVER column is user_name. A row created with only
     // userId/user syncs with user_name NULL and effectively disappears, so set
     // userName too. _getEntriesForDate tolerates all three, which is why this
@@ -1922,7 +1922,7 @@ var PayrollPage = {
       // recomputed away within two hours. The function skips rows that are
       // locked OR source='manual', on insert, update AND prune — so set both.
       upd.locked = true; upd.source = 'manual';
-      DB.timeEntries.update(e.id, upd);
+      DB.timeEntries.update(e.id, upd, { force: true });
     } else {
       var ne = { userId: user, user: user, userName: user, date: date, locked: true, source: 'manual' }; ne[col] = iso;   // v1200 - user_name is the server column
       DB.timeEntries.create(ne);
@@ -2830,7 +2830,12 @@ var PayrollPage = {
       if (e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + (Number(val) || 0) * 3600000).toISOString();
       upd.notes = 'Answered in the app ' + stamp + ': corrected to ' + val + ' h to match the phone (yard + out).'; }
     else { upd.notes = 'Answered in the app ' + stamp + ': confirmed ' + (e.hours || 0) + ' h as worked.'; }
-    DB.timeEntries.update(e.id, upd);
+      // v1203 - {force:true}. DB.update PATCHes with an updated_at<=local
+      // precondition, and the 2-hourly recompute keeps bumping updated_at on
+      // these very rows - so a hand correction matched ZERO rows and silently
+      // never left the device. The cell said 0 h while the server still held
+      // 3.75 h auto-bouncie, ready to be recomputed straight back.
+    DB.timeEntries.update(e.id, upd, { force: true });
     PayrollPage._afterWhyEdit(user, date);
   },
   _fillWhy: function(elId, userId, date) {
@@ -3147,7 +3152,7 @@ var PayrollPage = {
       hours: parseFloat(document.getElementById('eh-hours').value) || 0,
       notes: document.getElementById('eh-notes').value,
       locked: true, source: 'manual'      // v1172: keep the cron off a hand-edit
-    });
+    }, { force: true });                  // v1203: and make sure it actually reaches the server
     UI.closeModal();
     UI.toast('Hours updated');
     loadPage('payroll');

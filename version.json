@@ -1,5 +1,5 @@
 {
-  "version": 1202,
+  "version": 1203,
   "released": "2026-08-21",
-  "notes": "v1202: phone evidence and one-tap day questions in the popover"
+  "notes": "v1203: payroll corrections actually reach the server"
 }
