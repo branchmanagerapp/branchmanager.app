@@ -1,5 +1,5 @@
 {
-  "version": 1206,
+  "version": 1207,
   "released": "2026-08-21",
-  "notes": "v1206: flag every day that is not certain"
+  "notes": "v1207: check flags on the mobile day rows too"
 }

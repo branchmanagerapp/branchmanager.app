@@ -2442,7 +2442,8 @@ var PayrollPage = {
       rows += '<div onclick="PayrollPage._toggleCell(\'' + cellKey + '\')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #f4f4f4;cursor:pointer;' + (isToday ? 'background:#f0fdf4;' : '') + '">'
         + '<div style="width:52px;font-size:12px;font-weight:700;color:var(--text-light);">' + dayNames[i] + ' ' + PayrollPage._pDate(date).getDate() + '</div>'
         + '<div style="width:6px;align-self:stretch;border-radius:3px;background:' + barColor + ';"></div>'
-        + '<div style="flex:1;font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#bbb') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) + ' h' : '—') + '</div>'
+        + '<div style="flex:1;font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#bbb') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) + ' h' : '—')
+          + PayrollPage._flagMark(self._checkFlags(emp.name || emp.id, date, entries).length) + '</div>'
         + (entries.some(function(e) { return PayrollPage._cellNote(e.notes); }) ? '<span style="font-size:11px;">📝</span>' : '')
         + (dayApproved && !editedAfterApproval ? '<span style="font-size:11px;color:#22c55e;">✓</span>' : '')
         + (editedAfterApproval ? '<span style="font-size:11px;color:#f59e0b;">⚠</span>' : '')
@@ -2451,6 +2452,12 @@ var PayrollPage = {
       if (expanded) {
         rows += '<div style="padding:4px 12px 10px 68px;font-size:12px;" onclick="event.stopPropagation()">';
         issues.forEach(function(iss) { rows += '<div style="color:#ef4444;font-size:11px;">⚠ ' + iss + '</div>'; });
+        // v1206 - on a phone the popover is a reach; put the reasons right here too
+        var _mf = self._checkFlags(emp.name || emp.id, date, entries);
+        if (_mf.length) {
+          rows += '<div style="background:#fff5e6;border:1px solid #f0d9b0;border-radius:6px;padding:6px 8px;margin:4px 0;font-size:11px;color:#7a4f12;">'
+            + '<b>⚑ check this</b><br>' + _mf.map(function(x){ return '• ' + UI.esc(x); }).join('<br>') + '</div>';
+        }
         entries.forEach(function(e) {
           rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
           var cn2 = PayrollPage._cellNote(e.notes);
