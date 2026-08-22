@@ -2706,6 +2706,133 @@ var PayrollPage = {
     if (near(b.dOut)) bits.push('OUT matches it ' + (b.outAtYard ? 'back at the yard' : 'away from the yard'));
     return '<b>' + b.label + '</b> — ' + bits.join('; ') + '.';
   },
+  // ── v1202: the PHONE, and the question it raises ────────────────────────
+  // Doug: "you should be able to tell whether or not I am driving the trucks
+  // as you also have my phone… I just want pop up questions on the day for me
+  // to answer in the app."
+  //
+  // Truck GPS says where a TRUCK was. The phone says where the PERSON was, and
+  // that is what hours are actually owed on. Fri 8/21 is the proof: the Ram
+  // moved 1:51-5:41pm so the system paid Doug AND David 3.8 h each, while
+  // Doug's phone had him at home 6h32m, at the yard 1.1h, and away 0.8h. He
+  // did not work. David has no phone at all, so his 3.8 h rested on nothing.
+  //
+  // location_pings.user_id is an AUTH id, so the phone belongs to whoever is
+  // signed in; team_members.email maps that back to a name (Doug =
+  // info@peekskilltree.com, Catherine = cat.conway@gmail.com), which means
+  // this lights up for her too once she signs in on her own phone.
+  _phoneOwner: null,
+  _phoneOwnerName: function() {
+    if (PayrollPage._phoneOwner !== null) return PayrollPage._phoneOwner;
+    var email = '';
+    try { email = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) ? String(Auth.user.email).toLowerCase() : ''; } catch (e) {}
+    var name = '';
+    if (email) {
+      try {
+        var tm = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
+        tm.forEach(function(t) { if (t.email && String(t.email).toLowerCase() === email) name = t.name || ''; });
+      } catch (e) {}
+    }
+    PayrollPage._phoneOwner = name;
+    return name;
+  },
+  _phoneCache: {},
+  _phoneDay: function(date) {
+    if (PayrollPage._phoneCache[date]) return PayrollPage._phoneCache[date];
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var uid = null;
+    try { uid = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.id : null; } catch (e) {}
+    if (!C || !uid) return Promise.resolve(null);
+    var pr = C.from('location_pings').select('client_ts,lat,lng,source')
+      .eq('user_id', uid)
+      .gte('client_ts', date + 'T04:00:00').lt('client_ts', date + 'T23:59:59')
+      .order('client_ts', { ascending: true }).limit(2000)
+      .then(function(r) {
+        var all = (r && r.data) ? r.data : [];
+        if (!all.length) return null;
+        var stops = [], i = 0;
+        while (i < all.length) {
+          var a = all[i], j = i + 1;
+          while (j < all.length && PayrollPage._metres([a.lat, a.lng], [all[j].lat, all[j].lng]) <= 200) j++;
+          var mins = (new Date(all[j-1].client_ts) - new Date(a.client_ts)) / 60000;
+          if (mins >= 10) {
+            var la = 0, lo = 0;
+            for (var k = i; k < j; k++) { la += all[k].lat; lo += all[k].lng; }
+            la /= (j - i); lo /= (j - i);
+            stops.push({ from: all[i].client_ts, to: all[j-1].client_ts, mins: mins,
+                         where: PayrollPage._metres(PayrollPage._HOME, [la, lo]) <= 300 ? 'home'
+                              : (PayrollPage._metres(PayrollPage._YARD, [la, lo]) <= 300 ? 'yard' : 'out') });
+          }
+          i = (j > i) ? j : i + 1;
+        }
+        var sum = { home: 0, yard: 0, out: 0 };
+        stops.forEach(function(x) { sum[x.where] += x.mins; });
+        return { pings: all.length, stops: stops, home: sum.home, yard: sum.yard, out: sum.out,
+                 first: all[0].client_ts, last: all[all.length-1].client_ts,
+                 owntracks: all.filter(function(x){ return x.source === 'owntracks'; }).length };
+      }).catch(function(){ return null; });
+    PayrollPage._phoneCache[date] = pr;
+    return pr;
+  },
+  _phoneLine: function(ph) {
+    if (!ph) return '';
+    var t = function(iso) {
+      var d = new Date(iso), h = d.getHours(), mn = d.getMinutes();
+      return (h % 12 || 12) + ':' + ('0' + mn).slice(-2) + (h < 12 ? 'a' : 'p');
+    };
+    var hh = function(m) { return (m / 60).toFixed(1) + 'h'; };
+    var bits = ph.stops.slice(0, 5).map(function(x) {
+      return (x.where === 'home' ? 'home' : x.where === 'yard' ? 'the yard' : 'out') + ' ' + t(x.from) + '–' + t(x.to);
+    });
+    return '<div style="background:#f4f8ff;border:1px solid #d7e4f7;border-radius:6px;padding:7px 9px;margin-top:8px;font-size:11.5px;color:#24405e;">'
+      + '<b>📱 Your phone that day</b> (' + ph.pings + ' pings' + (ph.owntracks ? ', ' + ph.owntracks + ' OwnTracks' : '') + ')<br>'
+      + bits.join(' · ')
+      + '<br><b>home ' + hh(ph.home) + ' · yard ' + hh(ph.yard) + ' · out ' + hh(ph.out) + '</b></div>';
+  },
+  // Turn a contradiction into a question with one-tap answers.
+  _dayQuestion: function(userId, date, e, ph) {
+    var booked = Number(e.hours) || 0;
+    if (!booked || e.locked) return '';                 // already settled by hand
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var uid = String(userId).replace(/'/g, '');
+    var q = '', suggest = null;
+    if (ph) {
+      var workedH = (ph.yard + ph.out) / 60;
+      if (booked - workedH > 1.5) {
+        suggest = Math.round(workedH * 100) / 100;
+        q = 'Your phone puts you at the yard or out for only <b>' + workedH.toFixed(1) + ' h</b>'
+          + (ph.home > 120 ? ' — and at home for ' + (ph.home / 60).toFixed(1) + ' h' : '')
+          + ', but <b>' + booked.toFixed(1) + ' h</b> is booked. Did you work this day?';
+      }
+    } else if (/Auto from GPS/.test(String(e.notes || ''))) {     // truck-only, no phone to check it against
+      q = 'The only thing behind these hours is a truck moving — no phone, no texts. Was ' + esc(userId) + ' actually on the clock?';
+    }
+    if (!q) return '';
+    var btn = function(label, ans, val, bg) {
+      return '<button onclick="event.stopPropagation();PayrollPage._answerDay(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',\'' + ans + '\',' + (val === null ? 'null' : val) + ')" '
+        + 'style="font-size:11px;font-weight:600;padding:5px 9px;border:1px solid var(--border);background:' + bg + ';border-radius:6px;cursor:pointer;margin:3px 4px 0 0;">' + label + '</button>';
+    };
+    return '<div style="background:#fffbea;border:1px solid #f0dfa0;border-radius:7px;padding:8px 10px;margin-top:8px;font-size:12px;color:#6b5a12;">'
+      + '<div style="margin-bottom:4px;">❓ ' + q + '</div>'
+      + btn('Yes — keep ' + booked.toFixed(1) + 'h', 'yes', null, '#fff')
+      + (suggest !== null ? btn('No — make it ' + suggest.toFixed(1) + 'h', 'set', suggest, '#fff') : '')
+      + btn('Didn\'t work', 'zero', null, '#ffecec')
+      + '</div>';
+  },
+  _answerDay: function(user, date, entryId, ans, val) {
+    var e = DB.timeEntries.getAll().filter(function(t){ return t.id === entryId; })[0];
+    if (!e) return;
+    var stamp = new Date().toISOString().substring(0, 16).replace('T', ' ');
+    var upd = { locked: true, source: 'manual' };
+    if (ans === 'zero') { upd.hours = 0; upd.clockIn = null; upd.clockOut = null;
+      upd.notes = 'Answered in the app ' + stamp + ': did NOT work this day. The hours came from a truck moving, not from this person.'; }
+    else if (ans === 'set') { upd.hours = Number(val) || 0;
+      if (e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + (Number(val) || 0) * 3600000).toISOString();
+      upd.notes = 'Answered in the app ' + stamp + ': corrected to ' + val + ' h to match the phone (yard + out).'; }
+    else { upd.notes = 'Answered in the app ' + stamp + ': confirmed ' + (e.hours || 0) + ' h as worked.'; }
+    DB.timeEntries.update(e.id, upd);
+    PayrollPage._afterWhyEdit(user, date);
+  },
   _fillWhy: function(elId, userId, date) {
     var box = document.getElementById(elId); if (!box) return;
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
@@ -2750,6 +2877,7 @@ var PayrollPage = {
         + '<div style="color:var(--text-light);">' + esc(rule[1]) + '.</div></div>'
         + '<div style="font-size:12px;color:var(--text-light);border-top:1px solid var(--border);padding-top:7px;">'
         + '<div id="whytruck-' + e.id + '" style="color:var(--text);margin-bottom:5px;">which truck… </div>'
+        + '<div id="whyphone-' + e.id + '"></div>'
         + esc(rule[2])
         + (truck ? '<br>Source: <b>' + esc(truck[1].trim()) + '</b>' + (pings ? ' — ' + pings[1] + ' GPS pings' : '') : '')
         + (manual && note ? '<br><span style="color:var(--text);">' + esc(note) + '</span>' : '')
@@ -2766,6 +2894,22 @@ var PayrollPage = {
       out += '</div>';
     });
     box.innerHTML = out;
+    // v1202 - the phone, and any question it raises. Only for the person whose
+    // phone it is: location_pings carries the AUTH id of whoever is signed in.
+    if (PayrollPage._phoneOwnerName() === userId) {
+      PayrollPage._phoneDay(date).then(function(ph) {
+        entries.forEach(function(e) {
+          var el = document.getElementById('whyphone-' + e.id);
+          if (!el) return;
+          el.innerHTML = PayrollPage._phoneLine(ph) + PayrollPage._dayQuestion(userId, date, e, ph);
+        });
+      }).catch(function(){});
+    } else {
+      entries.forEach(function(e) {
+        var el = document.getElementById('whyphone-' + e.id);
+        if (el) el.innerHTML = PayrollPage._dayQuestion(userId, date, e, null);
+      });
+    }
     // v1201 - name the truck behind each row
     entries.forEach(function(e) {
       PayrollPage._truckForEntry(date, e.clockIn, e.clockOut).then(function(b) {
