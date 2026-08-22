@@ -1,5 +1,5 @@
 {
-  "version": 1205,
+  "version": 1206,
   "released": "2026-08-21",
-  "notes": "v1205: fix the 400 on time-entry saves; stop flagging settled days as issues"
+  "notes": "v1206: flag every day that is not certain"
 }

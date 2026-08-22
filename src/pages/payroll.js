@@ -202,6 +202,48 @@ var PayrollPage = {
     return entries.reduce(function(s, e) { return s + (e.hours || 0); }, 0);
   },
 
+  // ── v1206: CHECK FLAGS ───────────────────────────────────────────────────
+  // Doug: "anytime you are not ninety nine percent certain something is right
+  // from all of the data you have checked, put a flagger on it for me to make
+  // sure that I check."
+  //
+  // A row is CERTAIN only when Doug settled it himself (locked + manual).
+  // Everything else carries a reason it cannot be trusted. These are all
+  // computed from data already in memory so a cell can render them
+  // synchronously; the phone-coverage check is async and is added in the
+  // popover, where there is room to explain it.
+  _checkFlags: function(userId, date, entries) {
+    var out = [];
+    if (!entries || !entries.length) return out;
+    entries.forEach(function(e) {
+      if (e.locked || e.source === 'manual') return;      // you already settled this one
+      var h = Number(e.hours) || 0;
+      var note = String(e.notes || '');
+      out.push('Never reviewed — still the raw GPS guess, and the 2-hourly recompute can still change it.');
+      // the systemic flaw: one truck paying two people
+      try {
+        var twins = DB.timeEntries.getAll().filter(function(t) {
+          if (t.date !== date || t.id === e.id) return false;
+          var who = t.userName || t.user || t.userId || '';
+          return who !== userId && Math.abs((Number(t.hours) || 0) - h) < 0.01 && h > 0;
+        }).map(function(t) { return (t.userName || t.user || t.userId || '').split(' ')[0]; });
+        if (twins.length) out.push('Exactly the same hours as ' + twins.join(' and ')
+          + ' — that is one truck paying more than one person, not two independent records.');
+      } catch (er) {}
+      var truck = /Auto from GPS\s*[—-]\s*([^(]+)/.exec(note);
+      if (truck) out.push('The only evidence is the ' + truck[1].trim() + ' moving. A truck says where a TRUCK was, not who was in it.');
+      var pings = /\((\d+)\s*pings\)/.exec(note);
+      if (pings && +pings[1] < 200) out.push('Only ' + pings[1] + ' GPS pings behind it — the tracker was mostly asleep, so the span is probably short.');
+      if (h > 13) out.push(h.toFixed(1) + ' h is a very long day — worth confirming it is not a tracker artefact.');
+      if (h > 0 && h < 2) out.push('Under 2 hours. On this crew that usually means a tracker dropped out, not a short day.');
+    });
+    return out;
+  },
+  _flagMark: function(n) {
+    if (!n) return '';
+    return '<span title="' + n + ' thing' + (n > 1 ? 's' : '') + ' to check — tap the cell" '
+      + 'style="font-size:9px;color:#b45309;font-weight:700;margin-left:2px;">⚑</span>';
+  },
   _hasIssues: function(entries, date) {
     var issues = [];
     if (entries.length === 0) return issues;
@@ -2230,8 +2272,10 @@ var PayrollPage = {
 
         // Hours + pay on ONE line (v1183): "8 - $240"
         var _cellPay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+        var _flags = PayrollPage._checkFlags(emp.name || emp.id, date, entries);   // v1206
         html += '<div style="font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#ccc') + ';white-space:nowrap;">'
           + (dayHours > 0 ? dayHours.toFixed(1) : '—')
+          + PayrollPage._flagMark(_flags.length)
           + (dayHours > 0 && _cellPay ? '<span style="font-size:12px;font-weight:600;color:var(--green-dark);"> - ' + _cellPay + '</span>' : '')
           + '</div>';
 
@@ -2374,6 +2418,7 @@ var PayrollPage = {
     var empKey = self._approvalKey(emp.name || emp.id, weekStart);
     var weekExplicit = approvals[empKey] === 'approved';
     var weekTotal = 0, weekIssues = 0, workingDaysCount = 0, daysApprovedCount = 0;
+    var weekFlagDays = 0;                                   // v1206
     var rows = '';
     dates.forEach(function(date, i) {
       var entries = self._getEntriesForDate(emp.name || emp.id, date);
@@ -2381,6 +2426,7 @@ var PayrollPage = {
       weekTotal += dayHours;
       var issues = self._hasIssues(entries, date);
       if (issues.length) weekIssues++;
+      if (self._checkFlags(emp.name || emp.id, date, entries).length) weekFlagDays++;   // v1206
       var cellKey = (emp.name || emp.id) + '_' + date;
       var expanded = self._expandedCells[cellKey];
       var dayKey = self._dayApprovalKey(emp.name || emp.id, date);
@@ -2432,6 +2478,7 @@ var PayrollPage = {
       + avatar
       + '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(emp.name || '') + '</div>'
       + (weekIssues > 0 ? '<div style="font-size:11px;color:#ef4444;">' + weekIssues + ' issue' + (weekIssues > 1 ? 's' : '') + '</div>' : '')
+      + (weekFlagDays > 0 ? '<div style="font-size:11px;color:#b45309;font-weight:600;">⚑ ' + weekFlagDays + ' to check</div>' : '')
       + '</div>'
       + '<div style="text-align:right;"><div style="font-weight:800;font-size:17px;">' + weekTotal.toFixed(1) + '<span style="font-size:11px;font-weight:600;color:var(--text-light);"> h</span></div>'
       + ((Number((emp.rate || emp.payRate) || 0)) ? '<div style="font-size:13px;color:var(--green-dark);font-weight:800;">$' + Math.round(weekTotal * Number(emp.rate || emp.payRate)).toLocaleString() + '</div>' : '')
@@ -2888,6 +2935,15 @@ var PayrollPage = {
         + '<div style="color:var(--text-light);">' + esc(rule[1]) + '.</div></div>'
         + '<div style="font-size:12px;color:var(--text-light);border-top:1px solid var(--border);padding-top:7px;">'
         + '<div id="whytruck-' + e.id + '" style="color:var(--text);margin-bottom:5px;">which truck… </div>'
+        + (function() {
+            // v1206 - say plainly what stops this being certain
+            var fl = PayrollPage._checkFlags(userId, date, [e]);
+            if (!fl.length) return '<div style="background:#eef8ee;border:1px solid #cfe6cf;border-radius:6px;padding:6px 9px;margin:6px 0;font-size:11.5px;color:#245c24;">'
+              + '✓ You settled this one by hand — treated as correct.</div>';
+            return '<div style="background:#fff5e6;border:1px solid #f0d9b0;border-radius:6px;padding:7px 9px;margin:6px 0;font-size:11.5px;color:#7a4f12;">'
+              + '<b>⚑ ' + fl.length + ' reason' + (fl.length > 1 ? 's' : '') + ' to check this</b><br>'
+              + fl.map(function(x){ return '• ' + esc(x); }).join('<br>') + '</div>';
+          })()
         + '<div id="whyphone-' + e.id + '"></div>'
         + esc(rule[2])
         + (truck ? '<br>Source: <b>' + esc(truck[1].trim()) + '</b>' + (pings ? ' — ' + pings[1] + ' GPS pings' : '') : '')
