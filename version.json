@@ -1,5 +1,5 @@
 {
-  "version": 1199,
+  "version": 1200,
   "released": "2026-08-21",
-  "notes": "v1199: edit hours and in/out right in the Details popover"
+  "notes": "v1200: new hand-entered rows carry user_name"
 }

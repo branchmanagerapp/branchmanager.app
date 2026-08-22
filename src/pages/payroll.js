@@ -1890,7 +1890,11 @@ var PayrollPage = {
     var upd = { hours: Math.round(h * 100) / 100, locked: true, source: 'manual' };
     if (e && e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + h * 3600000).toISOString();
     if (e) DB.timeEntries.update(e.id, upd);
-    else DB.timeEntries.create({ userId:user, user:user, date:date, hours:upd.hours, locked:true, source:'manual' });
+    // v1200 - the SERVER column is user_name. A row created with only
+    // userId/user syncs with user_name NULL and effectively disappears, so set
+    // userName too. _getEntriesForDate tolerates all three, which is why this
+    // looked fine locally.
+    else DB.timeEntries.create({ userId:user, user:user, userName:user, date:date, hours:upd.hours, locked:true, source:'manual' });
     PayrollPage._afterWhyEdit(user, date);
   },
   _afterWhyEdit: function(user, date) {
@@ -1920,7 +1924,7 @@ var PayrollPage = {
       upd.locked = true; upd.source = 'manual';
       DB.timeEntries.update(e.id, upd);
     } else {
-      var ne = { userId: user, user: user, date: date, locked: true, source: 'manual' }; ne[col] = iso;
+      var ne = { userId: user, user: user, userName: user, date: date, locked: true, source: 'manual' }; ne[col] = iso;   // v1200 - user_name is the server column
       DB.timeEntries.create(ne);
     }
     var dk = PayrollPage._dayApprovalKey(user, date);
