@@ -1,5 +1,5 @@
 {
-  "version": 1203,
+  "version": 1204,
   "released": "2026-08-21",
-  "notes": "v1203: payroll corrections actually reach the server"
+  "notes": "v1204: time-entry edits finally sync to the cloud"
 }

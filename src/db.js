@@ -258,7 +258,14 @@ var DB = (function() {
     'bm-services': 'services',
     'bm-team': 'team_members',
     // Apr 30: expenses was previously local-only (silent loss across devices)
-    'bm-expenses': 'expenses'
+    'bm-expenses': 'expenses',
+    // v1204: time entries were missing here, so _pushUpdateToCloud returned on
+    // its first line and EVERY hours correction stayed on the device. CloudSync
+    // wraps create and remove for time_entries but its update wrap was removed
+    // in v893, so an edit had no path to the cloud by any route. The app showed
+    // 0 h locked while Supabase still held 3.75 h auto-bouncie - and the
+    // 2-hourly recompute then rewrote it, which is why corrections 'came back'.
+    'bm-time-entries': 'time_entries'
   };
 
   // v976: per-remote-table list of snake_case fields that exist in local records
