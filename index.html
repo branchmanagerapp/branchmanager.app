@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1211; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1212; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1642,7 +1642,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1211.min.js"></script>
+<script defer src="dist/bm.bundle.v1212.min.js"></script>
 
 
 
@@ -2105,6 +2105,7 @@ var PayrollHub = {
     var tabs = [
       ['payroll', 'Payroll'],
       ['timesheets', 'Timesheets'],
+      ['ledger', 'Ledger'],
       ['mypay', 'My Pay']
     ];
     var r = _renderHubTabs('_payrollTab', tabs, 'payroll');
@@ -2112,6 +2113,7 @@ var PayrollHub = {
     try {
       if (r.tab === 'payroll') body = PayrollPage.render();
       else if (r.tab === 'timesheets') body = TimeTrackPage.render();
+      else if (r.tab === 'ledger') body = (typeof CrewLedgerPage !== 'undefined') ? CrewLedgerPage.render() : '<div style="padding:16px;color:var(--text-light);">Ledger module not loaded.</div>';
       else if (r.tab === 'mypay') body = (typeof EmployeeCenterPage !== 'undefined') ? EmployeeCenterPage.render() : '<div style="padding:16px;color:var(--text-light);">My Pay module not loaded.</div>';
       else body = PayrollPage.render(); // unknown tab → payroll
     } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }

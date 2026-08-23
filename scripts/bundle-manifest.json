@@ -109,6 +109,7 @@
     "src/pages/mediacenter.js",
     "src/pages/reminders.js",
     "src/pages/payroll.js",
+    "src/pages/crewledger.js",
     "src/pages/permissions.js",
     "src/pages/callcenter.js",
     "src/pages/permits.js",
