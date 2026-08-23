@@ -1,5 +1,5 @@
 {
-  "version": 1207,
-  "released": "2026-08-21",
-  "notes": "v1207: check flags on the mobile day rows too"
+  "version": 1208,
+  "released": "2026-08-23",
+  "notes": "v1208: a stale team cache can no longer hide people with hours"
 }

@@ -140,14 +140,49 @@ var PayrollPage = {
     // v1135: subcontractors (Braxton) likewise — a sub invoices us, he is not
     // on payroll at all (Doug 8/19). Payroll = people we cut a paycheck to.
     var OFF_PAYROLL = ['commission', 'subcontractor'];
-    return team.filter(function(t) {
+    var isOff = function(t) {
+      var et = t.employmentType || t.employment_type || '';
+      return OFF_PAYROLL.indexOf(et) !== -1;
+    };
+    var list = team.filter(function(t) {
       // v1139: the cloud column is employment_type, but the snake->camel sync
       // hands the client employmentType — so reading only the snake_case name
       // returned undefined and NOBODY was ever filtered. Braxton (sub) and
       // Michelle (commission) kept showing in the hours grid. Read both.
-      var et = t.employmentType || t.employment_type || '';
-      return t.active !== false && OFF_PAYROLL.indexOf(et) === -1;
+      return t.active !== false && !isOff(t);
     });
+
+    // ── v1208: a stale local team cache must NEVER hide someone who has hours.
+    // This function reads localStorage['bm-team']. On Doug's laptop that cache
+    // held only Doug, so Catherine (92.29 h) and David (96.25 h) rendered
+    // NOWHERE in the week grid for Aug 3-16 — about 188 hours / ~$5,650 of
+    // payroll invisible on the screen he approves from, while the cloud had all
+    // 35 entries the whole time. Anyone with a time entry is payroll by
+    // definition, so union them in and take their rate from the team record if
+    // one exists (even an inactive duplicate), which is where the rate lives.
+    var seen = {};
+    list.forEach(function(t) { seen[String(t.name || t.id)] = true; });
+    try {
+      var rateFor = function(nm) {
+        var hit = team.filter(function(t) { return String(t.name || t.id) === nm; })
+                      .sort(function(a, b) { return Number(b.rate || b.payRate || 0) - Number(a.rate || a.payRate || 0); })[0];
+        return hit ? Number(hit.rate || hit.payRate || 0) : 0;
+      };
+      var offByName = {};
+      team.forEach(function(t) { if (isOff(t)) offByName[String(t.name || t.id)] = true; });
+      DB.timeEntries.getAll().forEach(function(e) {
+        var nm = String(e.userName || e.user_name || e.userId || e.user || '').trim();
+        if (!nm || seen[nm] || offByName[nm]) return;
+        // Require actual HOURS. If the local cache is missing a person we cannot
+        // read their employment_type, so we cannot tell a subcontractor or a
+        // commission-only salesperson from crew. Someone with logged hours is
+        // payroll regardless; someone with none is not worth guessing about.
+        if (!(Number(e.hours) > 0)) return;
+        seen[nm] = true;
+        list.push({ id: nm, name: nm, rate: rateFor(nm), active: true, _fromEntries: true });
+      });
+    } catch (err) {}
+    return list;
   },
 
   // v1134: callers pass emp.name, but only ~1/3 of cloud time_entries carry the
