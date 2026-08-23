@@ -285,7 +285,7 @@ var CloudSync = {
           record.id = CloudSync._uuid();
         }
         var result = origCreate.call(dbSection, record);
-        var cloudRecord = CloudSync._toSnake(result);
+        var cloudRecord = CloudSync._toSnake(result, table);
         // tenant_id already stamped by db.js create() — no double-check needed
         // ID is already a UUID — no need to overwrite
         // Upsert (not insert): db.js's _pushToCloud also writes via upsert, so a
@@ -520,12 +520,19 @@ var CloudSync = {
   },
 
   // Convert camelCase object to snake_case
-  _toSnake: function(obj) {
+  _toSnake: function(obj, table) {
     var result = {};
     Object.keys(obj).forEach(function(key) {
       var snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
       result[snakeKey] = obj[key];
     });
+    // v1211: apply db.js's rename/coerce/strip rules here too. This path runs
+    // ALONGSIDE db.js's _pushToCloud on every create, so if only one of them
+    // normalized, the other would still send an unknown column and PostgREST
+    // would reject the whole row.
+    if (table && typeof DB !== 'undefined' && DB._normalizeForCloud) {
+      result = DB._normalizeForCloud(table, result);
+    }
     return result;
   },
 

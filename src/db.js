@@ -276,6 +276,49 @@ var DB = (function() {
     'quotes': ['photo', 'salesperson', 'lead_source']
   };
 
+  // v1211: per-remote-table RENAME map, applied BEFORE the strip above.
+  // Some local records use a field name that has no cloud column but DOES have
+  // a differently-named equivalent. Stripping those (the v976 fix) would
+  // silently drop real data; renaming keeps it.
+  //
+  // time_entries was the live case: every crew-side write path
+  // (timetrack saveManualEntry, crewview clock-out, DB.timeEntries.clockIn)
+  // emitted `user` and `manual`, neither of which is a column. PostgREST
+  // rejects the WHOLE row on an unknown column, so the entry saved to
+  // localStorage, showed a success toast, and NEVER reached the cloud. That is
+  // why crew-entered hours never appeared on the owner's device.
+  var _CLOUD_RENAME = {
+    'time_entries': { 'user': 'user_name' }
+  };
+
+  // v1211: value-level fixups, applied after renaming. `manual:true` is the local
+  // flag for a hand-entered row; the cloud models that as source='manual' —
+  // which is also what compute_auto_timesheets counts as human_owned
+  // (human_owned = locked OR source='manual') and therefore never overwrites
+  // or prunes. Without this, a crew-entered row that DID sync would be
+  // recomputed away by the 2-hourly cron.
+  var _CLOUD_COERCE = {
+    'time_entries': function(row) {
+      if (row.manual === true && !row.source) row.source = 'manual';
+      delete row.manual;
+      return row;
+    }
+  };
+
+  function _normalizeForCloud(table, row) {
+    var ren = _CLOUD_RENAME[table];
+    if (ren) Object.keys(ren).forEach(function(from) {
+      if (Object.prototype.hasOwnProperty.call(row, from)) {
+        if (row[ren[from]] === undefined || row[ren[from]] === null) row[ren[from]] = row[from];
+        delete row[from];
+      }
+    });
+    var co = _CLOUD_COERCE[table];
+    if (co) row = co(row);
+    (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete row[f]; });
+    return row;
+  }
+
   // v1047: SYSTEMIC fix for the recurring "Could not find the 'X' column of
   // '<table>'" whole-row rejection. CloudSync captures each table's real
   // snake_case column set (window._bmCloudCols[table]) from the data it already
@@ -455,7 +498,7 @@ var DB = (function() {
       // 'photo' column of 'quotes'"). These persist in localStorage; they're just
       // not synced. (photo = legacy stray; salesperson/lead_source = v975 jobber
       // rail fields with no column. Title is mapped to the existing `subject` col.)
-      (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeRow[f]; });
+      snakeRow = _normalizeForCloud(table, snakeRow);   // v1211: rename + coerce, then strip
       // v1047: dynamic schema-aware strip (supersedes the static list above).
       _stripUnknownCols(table, snakeRow);
       _coerceEmptyTyped(snakeRow);  // v1117: '' → null for uuid/date/timestamp cols
@@ -569,7 +612,7 @@ var DB = (function() {
         snakeChanges[sk] = changes[k];
       });
       // v976: same non-column strip as _pushToCloud (see note there).
-      (_CLOUD_LOCAL_ONLY[table] || []).forEach(function(f) { delete snakeChanges[f]; });
+      snakeChanges = _normalizeForCloud(table, snakeChanges);  // v1211: same as the create path
       // v1047: dynamic schema-aware strip (supersedes the static list above).
       _stripUnknownCols(table, snakeChanges);
       _coerceEmptyTyped(snakeChanges);  // v1117: '' → null for uuid/date/timestamp cols
@@ -1388,6 +1431,9 @@ var DB = (function() {
   }
 
   return {
+    // v1211: exposed so supacloud.js's push path applies identical rules.
+    // Two mappers that disagree is the bug class this fixes.
+    _normalizeForCloud: _normalizeForCloud,
     clients: clients,
     requests: requests,
     quotes: quotes,

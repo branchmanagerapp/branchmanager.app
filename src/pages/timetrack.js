@@ -613,15 +613,39 @@ var TimeTrackPage = {
     var hours = (new Date(clockOut) - new Date(clockIn)) / 3600000;
     if (hours <= 0) { UI.toast('Clock out must be after clock in', 'error'); return; }
 
+    // v1211: supersede any GPS-derived row for the same person-day.
+    // compute_auto_timesheets marks a day human_owned once a manual row
+    // exists, and its prune step SKIPS human-owned days — so the auto row
+    // would survive alongside this one and payroll would count both.
+    // Keep the GPS number in the note so it stays comparable.
+    var gpsNote = '';
+    try {
+      var sameDay = (DB.timeEntries.getAll() || []).filter(function(t) {
+        var d = t.date || (t.clockIn ? String(t.clockIn).split('T')[0] : '');
+        return d === date
+          && String(t.userName || t.user_name || t.user || '') === String(emp)
+          && String(t.source || '').indexOf('auto') === 0
+          && !t.locked;
+      });
+      sameDay.forEach(function(t) {
+        gpsNote = ' GPS had ' + (Number(t.hours) || 0).toFixed(2) + 'h for this day (superseded by this entry).';
+        if (DB.timeEntries.remove) DB.timeEntries.remove(t.id);
+      });
+    } catch (err) { /* the comparison is a nicety; never block the save */ }
+
     var entry = {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
-      user: emp,
+      userName: emp,
+      userId: emp,
       jobId: jobId || null,
       date: date,
       clockIn: clockIn,
       clockOut: clockOut,
       hours: hours,
-      manual: true
+      // source='manual' is what the cron reads as human_owned — without it the
+      // 2-hourly recompute would overwrite whatever the crew typed.
+      source: 'manual',
+      notes: 'Entered by ' + (TimeTrackPage.currentUser || 'crew') + '.' + gpsNote
     };
 
     // Save via DB if available, else direct localStorage
