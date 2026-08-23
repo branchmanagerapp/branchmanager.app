@@ -1,5 +1,5 @@
 {
-  "version": 1208,
+  "version": 1209,
   "released": "2026-08-23",
-  "notes": "v1208: a stale team cache can no longer hide people with hours"
+  "notes": "v1209: fix double-counted hours, rate lookup picking the null row, add day recap"
 }

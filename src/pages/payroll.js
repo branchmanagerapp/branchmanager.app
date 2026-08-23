@@ -428,6 +428,10 @@ var PayrollPage = {
     // phone first — it is the primary source for Doug's own hours
     Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers(), PayrollPage._loadPhoneDay(d), PayrollPage._crewMessages(d)]).then(function(res) {
       var trips = res[0] || [], stops = res[1] || [], phone = res[3], msgs = res[4] || [];
+      setTimeout(function(){
+        var rb = document.getElementById('recap-' + d);
+        if (rb) rb.innerHTML = PayrollPage._dayRecap(msgs);
+      }, 0);
       var sum = panel.querySelector('.bday-sum'); if (!sum) return;
       var byV = {};
       trips.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).trips.push(r); });
@@ -483,6 +487,7 @@ var PayrollPage = {
           + '<th style="' + th + '">JOB SITE</th>'
           + '<th style="' + th + '">ON SITE</th>'
         + '</tr></thead><tbody>' + '<tbody id="jobrows-' + d + '"></tbody>' + PayrollPage._phoneRow(phone) + rows + PayrollPage._textRows(msgs) + '<tbody id="exprows-' + d + '"></tbody>' + '</tbody></table></div>'
+        + '<div id="recap-' + d + '"></div>'
         + '';
       // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
       // line, so there is nothing to open unless you want the individual stops.
@@ -1187,12 +1192,22 @@ var PayrollPage = {
     return h;
   },
   _expenseRows: function(d, addr, dayCount) {
-    var team = [];
-    try { team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : []; } catch (e) {}
-    var totH = 0, wages = 0;
+    // v1209: was iterating DB.team.getAll() — the RAW list, which holds
+    // DUPLICATE rows per person (David Beers has an active row at $30 and an
+    // inactive one at rate null). Each row summed his entries again, so Mon
+    // Aug 17 rendered "Employees (35.08h)" against a true 27.88h — his 7.20h
+    // counted twice. The dollars stayed right only because the duplicate row
+    // carries rate 0. Doug: "seems like expenses counted twice on lower."
+    // _getEmployees() drops inactive rows and off-payroll people; the name
+    // guard below also protects against two ACTIVE rows for one person.
+    var team = PayrollPage._getEmployees();
+    var totH = 0, wages = 0, counted = {};
     team.forEach(function(t) {
+      var nm = String(t.name || t.id);
+      if (counted[nm]) return;
+      counted[nm] = true;
       var h = 0;
-      PayrollPage._getEntriesForDate(t.name || t.id, d).forEach(function(e){ h += (e.hours || 0); });
+      PayrollPage._getEntriesForDate(nm, d).forEach(function(e){ h += (e.hours || 0); });
       if (!h) return;
       totH += h; wages += h * Number(t.rate || t.payRate || 0);
     });
@@ -1264,6 +1279,44 @@ var PayrollPage = {
           return '<div style="font-size:12px;padding:1px 0;"><span style="color:var(--text-light);">' + et(p.ts) + '</span> '
                + esc(p.body.slice(0, 120)) + (p.body.length > 120 ? '…' : '') + '</div>';
         }).join('');
+  },
+  // v1209 — a plain-English recap of the day under the truck box. Doug: "I have
+  // a recap of the day, like, a little paragraph explanation of what happened
+  // that day underneath the truck box."
+  // Built from the crew texts, not generated: it takes the substantive message
+  // from each ~90-minute window and strings them together with times, so what
+  // you read is what someone actually wrote. Acknowledgements, bare links and
+  // one-word replies are dropped.
+  _dayRecap: function(msgs) {
+    if (!msgs || !msgs.length) return '';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    var picks = {};
+    msgs.forEach(function(m) {
+      var b = String(m.body || '').trim().replace(/\s+/g, ' ');
+      if (b.length < 15) return;
+      if (/^(ok|yes|no|thanks|thank you|great|perfect|love|lol|got it|sounds good|will do|copy)\b/i.test(b)) return;
+      if (/^https?:/i.test(b)) return;
+      var t = new Date(m.ts);
+      var slot = Math.floor((t.getHours() * 60 + t.getMinutes()) / 90);
+      if (!picks[slot] || b.length > picks[slot].b.length) picks[slot] = { ts: m.ts, b: b, who: m.person };
+    });
+    var keys = Object.keys(picks).sort(function(a, b){ return a - b; });
+    if (!keys.length) return '';
+    var first = msgs[0], last = msgs[msgs.length - 1];
+    var people = {};
+    msgs.forEach(function(m){ people[String(m.person).split(' ')[0]] = 1; });
+    var head = Object.keys(people).join(', ') + ' · ' + et(first.ts) + ' – ' + et(last.ts);
+    var body = keys.map(function(k) {
+      var p = picks[k];
+      return '<b style="color:var(--text-light);font-weight:600;">' + et(p.ts) + '</b> '
+           + esc(p.b.slice(0, 150)) + (p.b.length > 150 ? '…' : '');
+    }).join(' <span style="color:var(--border);">•</span> ');
+    return '<div style="margin-top:8px;background:#fffdf2;border:1px solid #f0e6c8;border-radius:8px;padding:9px 11px;">'
+      + '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:4px;">RECAP — ' + esc(head) + '</div>'
+      + '<div style="font-size:12.5px;line-height:1.65;">' + body + '</div>'
+      + '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">From the crew texts for this day — their words, not a summary.</div>'
+      + '</div>';
   },
   _textRows: function(msgs) {
     if (!msgs || !msgs.length) return '';
@@ -1391,11 +1444,14 @@ var PayrollPage = {
   _renderDayCost: function(d, addr) {
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
     var rev = PayrollPage._findRevenue(addr);
-    var team = [];
-    try { team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : []; } catch (e) {}
-    var lines = [], totH = 0, totPay = 0;
+    // v1209: same duplicate-row double-count that hit _expenseRows. Dormant
+    // (not rendered since v1165) but fixed so it cannot return wrong.
+    var team = PayrollPage._getEmployees();
+    var lines = [], totH = 0, totPay = 0, seenWho = {};
     team.forEach(function(t) {
       var who = t.name || t.id;
+      if (seenWho[who]) return;
+      seenWho[who] = true;
       var h = 0;
       PayrollPage._getEntriesForDate(who, d).forEach(function(e){ h += (e.hours || 0); });
       if (!h) return;
@@ -1528,7 +1584,12 @@ var PayrollPage = {
     if (!rate) {
       try {
         var team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
-        var m = team.filter(function(t){ return (t.name || t.id) === userId; })[0];
+        // v1209: was taking the FIRST matching row. People have duplicate team
+        // rows — an active one carrying the rate and an inactive one with rate
+        // null — and the null row can come first, which silently rendered NO
+        // pay for that person. Take the highest rate on file.
+        var m = team.filter(function(t){ return (t.name || t.id) === userId; })
+                    .sort(function(a, b){ return Number(b.rate || b.payRate || 0) - Number(a.rate || a.payRate || 0); })[0];
         rate = Number((m && (m.rate || m.payRate)) || 0);
       } catch (e) {}
     }
