@@ -1287,6 +1287,78 @@ var PayrollPage = {
   // from each ~90-minute window and strings them together with times, so what
   // you read is what someone actually wrote. Acknowledgements, bare links and
   // one-word replies are dropped.
+  // ── v1210: HOW THESE HOURS WERE DERIVED ─────────────────────────────────
+  // Doug: "a recap above weekly review that says why you got to the hours for
+  // each day... It can be fairly long. Let it be expandable."
+  // Per person per day: the hours, where they came from, and the independent
+  // evidence (truck window, crew texts). Its real job is catching the case that
+  // keeps costing money — someone plainly working with NO hours recorded,
+  // because their truck's tracker was dark. Catherine on Fri Aug 21 texted
+  // 12:09p-8:50p with a silent F-550 and got zero hours.
+  _hoursRecapData: function(dates) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !dates.length) return Promise.resolve({});
+    return C.from('crew_messages').select('person,ts,day')
+      .gte('day', dates[0]).lte('day', dates[dates.length - 1])
+      .order('ts', { ascending: true })
+      .then(function(r) {
+        var by = {};
+        (r.data || []).forEach(function(m) {
+          var k = m.day + '|' + m.person;
+          if (!by[k]) by[k] = { first: m.ts, last: m.ts, n: 0 };
+          by[k].last = m.ts; by[k].n++;
+        });
+        return by;
+      }).catch(function(){ return {}; });
+  },
+  _hoursRecap: function(dates, msgIndex) {
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var people = PayrollPage._getEmployees();
+    var out = '', flags = 0;
+    dates.forEach(function(d) {
+      var dn = new Date(d + 'T12:00:00').toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'});
+      var rows = '';
+      var seen = {};
+      people.forEach(function(t) {
+        var nm = String(t.name || t.id);
+        if (seen[nm]) return; seen[nm] = true;
+        var ents = PayrollPage._getEntriesForDate(nm, d);
+        var h = 0, src = '', locked = false;
+        ents.forEach(function(e){ h += (e.hours || 0); src = e.source || src; if (e.locked) locked = true; });
+        var tx = msgIndex[d + '|' + nm];
+        if (!h && !tx) return;                       // nothing to say
+        var ev = [];
+        if (tx) ev.push('texts ' + et(tx.first) + '–' + et(tx.last) + ' (' + tx.n + ')');
+        var warn = '';
+        if (!h && tx) {
+          flags++;
+          warn = '<span style="color:#b45309;font-weight:700;">⚠ no hours recorded</span> — ';
+        }
+        rows += '<div style="padding:2px 0;font-size:12px;">'
+             + '<b>' + esc(nm.split(' ')[0]) + '</b> '
+             + (h ? '<b style="color:var(--green-dark);">' + h.toFixed(2) + 'h</b>' : '')
+             + ' ' + warn
+             + '<span style="color:var(--text-light);">'
+             + (src ? src + (locked ? ', locked' : '') + '. ' : '')
+             + esc(ev.join(' · '))
+             + '</span></div>';
+      });
+      if (rows) out += '<div style="margin-top:7px;"><div style="font-size:10.5px;font-weight:700;color:var(--text-light);">' + dn + '</div>' + rows + '</div>';
+    });
+    if (!out) return '';
+    var rid = 'hrecap';
+    return '<div style="margin:10px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">'
+      + '<div onclick="PayrollPage._rowToggle(\'' + rid + '\')" style="cursor:pointer;padding:8px 11px;background:var(--bg);display:flex;align-items:center;gap:7px;">'
+        + '<span id="' + rid + '-c" style="color:var(--text-light);font-size:10px;">▸</span>'
+        + '<b style="font-size:12px;">HOW THESE HOURS WERE DERIVED</b>'
+        + (flags ? '<span style="margin-left:auto;font-size:11px;color:#b45309;font-weight:700;">' + flags + ' to check</span>'
+                 : '<span style="margin-left:auto;font-size:11px;color:var(--text-light);">all accounted for</span>')
+      + '</div>'
+      + '<div id="' + rid + '" style="display:none;padding:8px 11px;border-top:1px solid var(--border);">' + out
+      + '<div style="font-size:10px;color:var(--text-light);margin-top:8px;">Texts are independent of the trucks — a person with messages and no hours usually means their truck\'s tracker was dark, not that they were off.</div>'
+      + '</div></div>';
+  },
   _dayRecap: function(msgs) {
     if (!msgs || !msgs.length) return '';
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
@@ -2479,6 +2551,14 @@ var PayrollPage = {
     html += self._renderBouncie(dates);
 
     // ── Weekly Review Panel ──
+    // v1210: derivation recap sits directly above the weekly review
+    html += '<div id="hours-recap-slot"></div>';
+    setTimeout(function() {
+      PayrollPage._hoursRecapData(dates).then(function(idx) {
+        var el = document.getElementById('hours-recap-slot');
+        if (el) el.innerHTML = PayrollPage._hoursRecap(dates, idx);
+      });
+    }, 0);
     html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
 
     // v1143: action buttons sit BELOW the weekly review, per Doug. You read the

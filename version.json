@@ -1,5 +1,5 @@
 {
-  "version": 1209,
+  "version": 1210,
   "released": "2026-08-23",
-  "notes": "v1209: fix double-counted hours, rate lookup picking the null row, add day recap"
+  "notes": "v1210: hours-derivation recap above weekly review; flags people who worked but got no hours"
 }
