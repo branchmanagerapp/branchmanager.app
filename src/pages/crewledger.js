@@ -108,7 +108,13 @@ var CrewLedgerPage = {
       // gross is outstanding. Flag it instead of asserting a balance.
       a.reconciled = a.paidN > 0;
       return a;
-    }).sort(function(x, y) { return y.balance - x.balance; });
+    }).sort(function(x, y) {
+      // People with a real balance come first — they are the ones needing
+      // action. An unreconciled person's "balance" is just their gross, which
+      // would otherwise dominate the sort and bury the real numbers.
+      if (x.reconciled !== y.reconciled) return x.reconciled ? -1 : 1;
+      return (x.reconciled ? y.balance - x.balance : y.earned - x.earned);
+    });
   },
 
   render: function() {
@@ -163,19 +169,26 @@ var CrewLedgerPage = {
       }
       h += '</div>';
 
+      // Kept collapsed: the caveat must be reachable, but expanding it by
+      // default buries the people who actually have a balance.
       if (r.estHours > 0) {
-        h += '<div style="margin-top:10px;font-size:12px;color:var(--text-light);background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:8px 10px;">'
-          +  '<strong>' + r.estHours.toFixed(2) + ' h estimated from truck GPS</strong> (' + CrewLedgerPage._money(r.estValue) + ') is <em>not</em> in the balance. '
-          +  'GPS attributes a moving truck to whoever is assigned to it, which is not always who was working. '
-          +  'Confirm or clear these on the Timesheets tab and they will move into the balance.'
-          +  '</div>';
+        h += '<details style="margin-top:8px;">'
+          +  '<summary style="font-size:12px;color:var(--text-light);cursor:pointer;list-style:revert;">'
+          +    r.estHours.toFixed(2) + ' h GPS-estimated (' + CrewLedgerPage._money(r.estValue) + ') — not counted</summary>'
+          +  '<div style="font-size:12px;color:var(--text-light);margin-top:6px;line-height:1.5;">'
+          +    'GPS attributes a moving truck to whoever is assigned to it, which is not always who was working. '
+          +    'Confirm or clear these on the Timesheets tab and they move into the balance.'
+          +  '</div></details>';
       }
 
       if (!r.reconciled) {
-        h += '<div style="margin-top:10px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;">'
-          +  'No payments recorded for ' + e + ', so no balance is shown. This almost certainly means the payments were never written down — not that the full '
-          +  CrewLedgerPage._money(r.earned) + ' is outstanding. Record a payment to start the balance.'
-          +  '</div>';
+        h += '<details style="margin-top:8px;">'
+          +  '<summary style="font-size:12px;color:#92400e;cursor:pointer;list-style:revert;">No payments on file — why there is no balance</summary>'
+          +  '<div style="font-size:12px;color:#92400e;margin-top:6px;line-height:1.5;">'
+          +    'Nothing has been recorded as paid to ' + e + '. That almost certainly means the payments were never written down — '
+          +    'not that the full ' + CrewLedgerPage._money(r.earned) + ' is outstanding. '
+          +    '<button onclick="CrewLedgerPage.openEntry(\'payment\',\'' + e + '\')" style="background:none;border:none;padding:0;color:var(--green-dark);font-weight:700;font-size:12px;cursor:pointer;text-decoration:underline;">Record a payment</button> to start the balance.'
+          +  '</div></details>';
       }
       if (r.first) {
         h += '<div style="margin-top:8px;font-size:11px;color:var(--text-light);">hours on file: ' + r.first + ' to ' + r.last + '</div>';
