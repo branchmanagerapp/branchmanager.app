@@ -5,175 +5,185 @@
 <style>
 :root{--g:#00836c;--gl:#e8f5e9;--bg:#f5f6f8;--tx:#212529;--mut:#6c757d;--bd:#dee2e6;--red:#dc3545;--amb:#d97706;}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:14px;max-width:760px;margin:0 auto}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:14px;max-width:760px}
 h1{font-size:21px;margin:0 0 3px}
-.sub{color:var(--mut);font-size:13px;margin-bottom:16px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
 .card{background:#fff;border-radius:12px;padding:15px;margin-bottom:13px;border:1px solid var(--bd)}
 h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
 label{display:block;font-size:12px;color:var(--mut);margin:10px 0 3px;font-weight:600}
-input,select{width:100%;font-size:17px;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:#fff;color:var(--tx)}
+input{width:100%;font-size:17px;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:#fff;color:var(--tx)}
 .row{display:flex;gap:9px;flex-wrap:wrap}.row>div{flex:1 1 130px;min-width:0}
 .out{background:var(--gl);border:1px solid #c8e6c9;border-radius:10px;padding:12px;margin-top:13px}
-.big{font-size:30px;font-weight:800;color:var(--g);line-height:1.15}
+.big{font-size:29px;font-weight:800;color:var(--g);line-height:1.15}
 .lbl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
 table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
 th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);border-bottom:1px solid var(--bd);padding:5px 6px}
 td{padding:6px;border-bottom:1px solid var(--bd)}
 .you{background:#fff8e1}
-.verdict{border-radius:10px;padding:11px 13px;margin-top:12px;font-weight:700;font-size:14.5px}
+.v{border-radius:10px;padding:11px 13px;margin-top:12px;font-weight:700;font-size:14.5px}
 .ok{background:var(--gl);color:#14663f;border:1px solid #c8e6c9}
 .warn{background:#fff8e1;color:#7a5a00;border:1px solid #f0e0a0}
 .bad{background:#fdecea;color:#8a1c13;border:1px solid #f5c6c2}
 .note{font-size:11.5px;color:var(--mut);margin-top:9px;line-height:1.5}
 .src a{color:#1565c0;text-decoration:none}
-.hr{height:1px;background:var(--bd);margin:13px 0}
-b.money{color:var(--g)}
+.hr{height:1px;background:var(--bd);margin:12px 0}
+.fix{background:#eef4ff;border:1px solid #c9dcff;color:#1c3d70;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55;margin-bottom:13px}
 </style></head><body>
 
 <h1>Pricing Check</h1>
 <div class="sub">Second Nature Tree — what a crew-hour is worth, and whether a quote covers it.</div>
 
+<div class="fix"><b>Corrected 24 Aug.</b> An earlier version of this page used payroll from 20 Aug that was wrong — David's Monday read 0.75h instead of 7.20h, Doug's read 3.75h instead of 10.26h. Every rate on it was therefore wrong. Every figure here was re-queried from the live database on 24 Aug before publishing.</div>
+
 <div class="card">
-<h2>1 · Price → hours budget</h2>
-<div style="font-size:13.5px;color:var(--mut);margin-bottom:2px;">Enter what you quoted. This tells you how long the job can take before it stops being worth it.</div>
+<h2>1 · Job #343 — verified figures</h2>
+<div style="font-size:13px;color:var(--mut);margin-bottom:4px;">4 Terrace Drive, North Salem · Mon 17 – Wed 19 Aug 2026</div>
+<table>
+<tbody>
+<tr><td>Revenue <span style="color:var(--mut);font-size:11px">job record</span></td><td style="text-align:right"><b style="color:var(--g)">$7,500</b></td></tr>
+<tr><td>Person-hours <span style="color:var(--mut);font-size:11px">time_entries, 9 rows</span></td><td style="text-align:right"><b>78.88 h</b></td></tr>
+<tr><td>Crew-hours on site <span style="color:var(--mut);font-size:11px">GPS, 250 m</span></td><td style="text-align:right">21.57 h</td></tr>
+<tr><td>Crew density</td><td style="text-align:right">3.66 people</td></tr>
+<tr><td>Wages <span style="color:var(--mut);font-size:11px">78.88 h × $30</span></td><td style="text-align:right">$2,366</td></tr>
+</tbody></table>
+<div class="note">Every figure above was re-queried from the database on 24 Aug. Hours per day: Mon 27.46 · Tue 29.42 · Wed 22.00.</div>
+<div class="v ok" style="margin-top:10px;">For profit and expenses, read the <b>day panel in Branch Manager</b> — it carries the yearly amortisation and truck miles this page cannot see. Deliberately not repeated here.</div>
+</div>
+
+<div class="card">
+<h2>2 · Your rate vs Westchester</h2>
+<table>
+<thead><tr><th>Measure</th><th style="text-align:right">You</th></tr></thead>
+<tbody>
+<tr><td>Per person-hour</td><td style="text-align:right">$95</td></tr>
+<tr><td>Per crew-hour on site <span style="color:var(--mut);font-size:11px">crew of 3.66</span></td><td style="text-align:right">$348</td></tr>
+<tr class="you"><td><b>Normalised to a 3-person crew</b></td><td style="text-align:right"><b>$285</b></td></tr>
+<tr><td>Westchester, 3-person crew</td><td style="text-align:right">$261 – $348 &nbsp;(avg <b>$305</b>)</td></tr>
+</tbody></table>
+<div class="v warn">$285 is <b>below the $305 local average</b> — modestly under. Matching the average on this job = <b>$8,021</b>. Top of band = <b>$9,152</b>.</div>
+<div class="note">Normalising matters: your crew averaged 3.66 people, so the raw $348 flatters you against a benchmark quoted for 3.</div>
+</div>
+
+<div class="card">
+<h2>3 · The gap that is clearly yours</h2>
+<div style="font-size:13.5px;">The trade bills <b>equipment separately</b>, on top of the crew rate. You bill one blended number.</div>
+<table>
+<thead><tr><th>Asset</th><th>On site</th><th style="text-align:right">Market</th><th style="text-align:right">Unbilled</th></tr></thead>
+<tbody>
+<tr class="you"><td><b>F-550 chipper</b></td><td><b>19.8 h</b></td><td style="text-align:right">$150–300/h</td><td style="text-align:right"><b>$2,973 – $5,946</b></td></tr>
+<tr><td>F-750 bucket</td><td>1.7 h</td><td style="text-align:right">$200–400/h</td><td style="text-align:right">$342 – $684</td></tr>
+</tbody></table>
+<div class="v warn">The chipper sat on that job <b>nearly 20 hours</b> and earned nothing as a line item. The clearest money left behind.</div>
+<div class="note">2025 books: $31,844 of vehicle repair, <b>4× the fuel spend</b>. That cost is currently buried in the crew rate.</div>
+</div>
+
+<div class="card">
+<h2>4 · Price → hours budget</h2>
+<div style="font-size:13px;color:var(--mut);">What you quoted, and how long it can take before it stops working.</div>
 <div class="row">
   <div><label>Quote price ($)</label><input id="p" type="number" inputmode="decimal" value="7500"></div>
   <div><label>Crew size</label><input id="c" type="number" inputmode="numeric" value="3"></div>
 </div>
 <div class="out">
   <div class="lbl">Must be finished within</div>
-  <div class="big" id="hrsTarget">—</div>
-  <div style="font-size:13px;color:var(--mut);margin-top:2px;" id="hrsDetail">—</div>
+  <div class="big" id="hrs">—</div>
+  <div style="font-size:13px;color:var(--mut);margin-top:2px;" id="hrsD">—</div>
 </div>
 <table>
-<thead><tr><th>Rate</th><th>$/crew-hr</th><th>Max crew-hours</th><th>Max days</th></tr></thead>
-<tbody id="bandRows"></tbody>
+<thead><tr><th>Rate</th><th>$/crew-hr</th><th>Max crew-hrs</th><th>Days</th></tr></thead>
+<tbody id="bands"></tbody>
 </table>
-<div class="note">Crew-hours = hours the whole crew is on site. 3 people for 7 hours = 7 crew-hours, not 21.</div>
 </div>
 
 <div class="card">
-<h2>2 · Hours → what to charge</h2>
+<h2>5 · Hours → what to charge</h2>
+<div class="row"><div><label>Expected crew-hours on site</label><input id="h" type="number" inputmode="decimal" value="21.6"></div></div>
+<div class="out"><div class="lbl">Quote at least</div><div class="big" id="minP">—</div>
+<div style="font-size:13px;color:var(--mut);margin-top:2px;" id="pD">—</div></div>
+<div id="verd"></div>
+</div>
+
+<div class="card">
+<h2>6 · After the job — how far off were we?</h2>
 <div class="row">
-  <div><label>Expected crew-hours on site</label><input id="h" type="number" inputmode="decimal" value="21.6"></div>
+  <div><label>Quoted ($)</label><input id="ap" type="number" inputmode="decimal" value="7500"></div>
+  <div><label>Hours ESTIMATED</label><input id="ae" type="number" inputmode="decimal" value="16"></div>
+  <div><label>Hours ACTUAL</label><input id="aa" type="number" inputmode="decimal" value="21.6"></div>
 </div>
-<div class="out">
-  <div class="lbl">Quote at least</div>
-  <div class="big" id="minPrice">—</div>
-  <div style="font-size:13px;color:var(--mut);margin-top:2px;" id="priceDetail">—</div>
-</div>
-<div id="verdict"></div>
-</div>
-
-<div class="card">
-<h2>3 · After the job — how far off were we?</h2>
-<div style="font-size:13.5px;color:var(--mut);margin-bottom:2px;">Put in what actually happened. BM already knows the real crew-hours from GPS.</div>
-<div class="row">
-  <div><label>Quoted price ($)</label><input id="ap" type="number" inputmode="decimal" value="7500"></div>
-  <div><label>Hours we ESTIMATED</label><input id="ae" type="number" inputmode="decimal" value="16"></div>
-  <div><label>Hours it ACTUALLY took</label><input id="aa" type="number" inputmode="decimal" value="21.6"></div>
-</div>
-<div class="out">
-  <div class="lbl">What you really earned</div>
-  <div class="big" id="actRate">—</div>
-  <div style="font-size:13px;color:var(--mut);margin-top:2px;" id="actDetail">—</div>
-</div>
-<div id="actVerdict"></div>
-<div class="note">If the actual beats the estimate every time, the estimate is the thing to fix — not the price.</div>
+<div class="out"><div class="lbl">What you really earned</div><div class="big" id="aR">—</div>
+<div style="font-size:13px;color:var(--mut);margin-top:2px;" id="aD">—</div></div>
+<div id="aV"></div>
+<div class="note">If actual beats estimate every time, fix the estimate — not the price.</div>
 </div>
 
 <div class="card">
-<h2>4 · Where you actually sit</h2>
-<div style="font-size:13.5px;">Measured from job <b>#343</b> — 4 Terrace Drive, North Salem, Aug 17–19 2026. Real GPS hours, real payroll, real spend.</div>
+<h2>7 · The market</h2>
 <table>
-<thead><tr><th>Metric</th><th>Actual</th></tr></thead>
+<thead><tr><th>Setup</th><th style="text-align:right">$/crew-hour</th></tr></thead>
 <tbody>
-<tr><td>Revenue</td><td><b class="money">$7,500</b></td></tr>
-<tr><td>Crew-hours on site</td><td>21.6 h <span style="color:var(--mut)">(7.3 + 8.2 + 6.1)</span></td></tr>
-<tr class="you"><td><b>Charged per crew-hour</b></td><td><b>$348</b></td></tr>
-<tr><td>Your true cost per crew-hour</td><td>$142</td></tr>
-<tr><td>Wages ($30/hr flat)</td><td>$1,455</td></tr>
-<tr><td>Loaded wages (+28% burden)</td><td>$1,862</td></tr>
-<tr><td>Multiple of loaded wages</td><td><b>4.0×</b></td></tr>
-</tbody></table>
-<div class="verdict warn" style="margin-top:11px;">$348/crew-hour sits at the <b>bottom</b> of the $300–700 band for a bucket + chipper crew. Not losing money — leaving money on the table.</div>
-</div>
-
-<div class="card">
-<h2>5 · The market</h2>
-<table>
-<thead><tr><th>Setup</th><th>Industry $/crew-hour</th></tr></thead>
-<tbody>
-<tr><td>Solo operator</td><td>$90 – 130</td></tr>
-<tr><td>Two-person crew</td><td>$150 – 220</td></tr>
-<tr class="you"><td><b>Crew + bucket / crane</b> ← you</td><td><b>$300 – 700</b></td></tr>
-<tr><td>Below $90</td><td style="color:var(--red)">unprofitable once true costs land</td></tr>
+<tr><td>Solo operator</td><td style="text-align:right">$90 – 130</td></tr>
+<tr><td>Two-person crew</td><td style="text-align:right">$150 – 220</td></tr>
+<tr class="you"><td><b>Westchester, 3-person crew</b> ← you</td><td style="text-align:right"><b>$261 – 348</b></td></tr>
+<tr><td>National, crew + bucket/crane</td><td style="text-align:right">$300 – 700</td></tr>
+<tr><td>Bucket truck, billed on top</td><td style="text-align:right">+$200 – 400</td></tr>
+<tr><td>Chipper / stump grinder, on top</td><td style="text-align:right">+$150 – 300</td></tr>
 </tbody></table>
 <div class="hr"></div>
-<div style="font-size:13.5px;"><b>What it really costs to field a 3-man chip-truck crew:</b> $170–200/hr industry-wide. Yours is <b>$142</b> — your wages are modest and you carry little overhead. That's the advantage, and it's why a higher target is reachable without pricing yourself out.</div>
-<div class="hr"></div>
-<div style="font-size:13.5px;"><b>Why 3× is the wrong rule.</b> 3× loaded wages = <b>$259/crew-hour</b> — below the industry floor for a bucket crew, and below what you already charge. <b>4× is where you are. 5× is the target.</b></div>
+<div style="font-size:13.5px;"><b>On multiples.</b> A 3× rule gives about $259/crew-hour — under the local floor. Pricing off a wage multiple also breaks the moment you raise wages: hold the price and pay more, and the multiple falls without anything real changing. <b>Price in $/crew-hour; use the multiple only as a sanity check.</b></div>
 <div class="note src">Sources:
-<a href="https://treeguardinsurance.com/blog/how-to-price-tree-service-jobs-2026-guide/">TreeGuard 2026 pricing guide</a> ·
-<a href="https://arbostar.com/education-hub/how-to-price-your-tree-service-right">ArboStar</a> ·
-<a href="https://fieldcamp.ai/blog/how-much-to-charge-per-hour/">FieldCamp</a> ·
-<a href="https://www.housecallpro.com/resources/tree-trimming-removal-pricing/">Housecall Pro</a> ·
-<a href="https://tcimag.tcia.org/sales-marketing/estimating-simplified/">TCI Magazine</a>
-</div>
+<a href="https://www.homeblue.com/tree-service/westchester-ny-tree-trimming-cost.htm">HomeBlue Westchester trimming</a> ·
+<a href="https://www.homeblue.com/tree-service/westchester-ny-tree-removal-cost.htm">HomeBlue Westchester removal</a> ·
+<a href="https://treeguardinsurance.com/blog/how-to-price-tree-service-jobs-2026-guide/">TreeGuard 2026</a> ·
+<a href="https://www.housecallpro.com/resources/tree-trimming-removal-pricing/">Housecall Pro</a></div>
 </div>
 
 <div class="note" style="text-align:center;padding-bottom:20px;">
-Rates from Aug 2026 research. Your cost figures come from the 2025 books and live GPS — re-check yearly.
+Job figures from Branch Manager v1213 · market rates Aug 2026 · re-check yearly.
 </div>
 
 <script>
-var FLOOR=300, TARGET=432, STRETCH=550;
-var LOADED_HR=38.40;                       // $30 x 1.28 burden, per person
-function n(id){var v=parseFloat(document.getElementById(id).value);return isFinite(v)?v:0;}
-function money(x){return '$'+Math.round(x).toLocaleString();}
+var FLOOR=261, AVG=305, TOP=348;
+function n(i){var v=parseFloat(document.getElementById(i).value);return isFinite(v)?v:0;}
+function m(x){return '$'+Math.round(x).toLocaleString();}
 function draw(){
   var p=n('p'), crew=Math.max(1,n('c'));
-  var rows=[['Floor — never below',FLOOR],['Target — 5× loaded',TARGET],['Strong market',STRETCH]];
-  document.getElementById('bandRows').innerHTML=rows.map(function(r){
+  var rows=[['Local floor',FLOOR],['Local average',AVG],['Top of local band',TOP]];
+  document.getElementById('bands').innerHTML=rows.map(function(r){
     var h=p/r[1];
-    return '<tr'+(r[1]===TARGET?' class="you"':'')+'><td>'+r[0]+'</td><td>'+money(r[1])+'</td><td><b>'+h.toFixed(1)+' h</b></td><td>'+(h/8).toFixed(1)+'</td></tr>';
+    return '<tr'+(r[1]===AVG?' class="you"':'')+'><td>'+r[0]+'</td><td>'+m(r[1])+'</td><td><b>'+h.toFixed(1)+' h</b></td><td>'+(h/8).toFixed(1)+'</td></tr>';
   }).join('');
-  var ht=p/TARGET;
-  document.getElementById('hrsTarget').textContent=ht.toFixed(1)+' crew-hours';
-  document.getElementById('hrsDetail').innerHTML='at the '+money(TARGET)+'/crew-hour target — that is <b>'+(ht/8).toFixed(1)+' days</b> with a crew of '+crew+', or <b>'+(ht*crew).toFixed(0)+'</b> person-hours of payroll.';
+  var ht=p/AVG;
+  document.getElementById('hrs').textContent=ht.toFixed(1)+' crew-hours';
+  document.getElementById('hrsD').innerHTML='at the '+m(AVG)+' local average — <b>'+(ht/8).toFixed(1)+' days</b> with a crew of '+crew+', or <b>'+Math.round(ht*crew)+'</b> person-hours of payroll.';
 
   var h=n('h');
-  document.getElementById('minPrice').textContent=money(h*TARGET);
-  document.getElementById('priceDetail').innerHTML='floor '+money(h*FLOOR)+' · strong market '+money(h*STRETCH)+'. Loaded wages for '+h.toFixed(1)+' crew-hours × '+crew+' = <b>'+money(h*crew*LOADED_HR)+'</b>.';
+  document.getElementById('minP').textContent=m(h*AVG);
+  document.getElementById('pD').innerHTML='floor '+m(h*FLOOR)+' · top of band '+m(h*TOP)+'.';
+  var v=document.getElementById('verd');
+  if(p&&h){
+    var r=p/h, c='ok', t='';
+    if(r<FLOOR){c='bad';t='⚠ '+m(r)+'/crew-hour — below the local floor of '+m(FLOOR)+'.';}
+    else if(r<AVG){c='warn';t=m(r)+'/crew-hour — under the '+m(AVG)+' local average. '+m(h*AVG-p)+' short.';}
+    else{c='ok';t='✓ '+m(r)+'/crew-hour — at or above the local average.';}
+    v.className='v '+c; v.innerHTML=t;
+  } else v.innerHTML='';
 
-  var v=document.getElementById('verdict'); 
-  if(!p||!h){v.innerHTML='';return;}
-  var rate=p/h, cls='ok', msg='';
-  if(rate<FLOOR){cls='bad';msg='⚠ '+money(rate)+'/crew-hour — BELOW the '+money(FLOOR)+' floor. Re-quote or cut the hours.';}
-  else if(rate<TARGET){cls='warn';msg=''+money(rate)+'/crew-hour — inside the band but under target. Target price is '+money(h*TARGET)+' ('+money(h*TARGET-p)+' more).';}
-  else {cls='ok';msg='✓ '+money(rate)+'/crew-hour — at or above target.';}
-  v.className='verdict '+cls; v.innerHTML=msg;
-}
-  // ── after the job ──
-  var ap=n('ap'), ae=n('ae'), aa=n('aa');
-  var av=document.getElementById('actVerdict');
+  var ap=n('ap'), ae=n('ae'), aa=n('aa'), av=document.getElementById('aV');
   if(ap&&aa){
-    var ar=ap/aa;
-    document.getElementById('actRate').textContent=money(ar)+' /crew-hour';
-    var over=aa-ae;
-    document.getElementById('actDetail').innerHTML=
-      'Estimated <b>'+ae.toFixed(1)+'h</b>, took <b>'+aa.toFixed(1)+'h</b> — '+
-      (over>0?'<b style="color:var(--red)">'+over.toFixed(1)+'h over</b>':(over<0?'<b style="color:var(--g)">'+Math.abs(over).toFixed(1)+'h under</b>':'exactly on'))+
-      '. At target you should have quoted <b>'+money(aa*TARGET)+'</b>.';
-    var ac='ok', am='';
-    if(ar<FLOOR){ac='bad';am='⚠ Ended up at '+money(ar)+'/crew-hour — below the '+money(FLOOR)+' floor. This job lost ground.';}
-    else if(ar<TARGET){ac='warn';am='Ended up at '+money(ar)+'/crew-hour, under the '+money(TARGET)+' target. Short by '+money(aa*TARGET-ap)+'.';}
-    else{ac='ok';am='✓ Ended up at '+money(ar)+'/crew-hour — target met even after the overrun.';}
-    if(ae&&over>ae*0.25){am+=' Estimate was off by '+Math.round(over/ae*100)+'% — tighten the hours, not just the price.';}
-    av.className='verdict '+ac; av.innerHTML=am;
-  } else { av.innerHTML=''; }
-
-['p','c','h','ap','ae','aa'].forEach(function(id){document.getElementById(id).addEventListener('input',draw);});
+    var ar=ap/aa, over=aa-ae;
+    document.getElementById('aR').textContent=m(ar)+' /crew-hour';
+    document.getElementById('aD').innerHTML='Estimated <b>'+ae.toFixed(1)+'h</b>, took <b>'+aa.toFixed(1)+'h</b> — '+
+      (over>0?'<b style="color:var(--red)">'+over.toFixed(1)+'h over</b>':(over<0?'<b style="color:var(--g)">'+Math.abs(over).toFixed(1)+'h under</b>':'on the nose'))+
+      '. At the local average you should have quoted <b>'+m(aa*AVG)+'</b>.';
+    var c2='ok', t2='';
+    if(ar<FLOOR){c2='bad';t2='⚠ Ended at '+m(ar)+'/crew-hour — below the local floor.';}
+    else if(ar<AVG){c2='warn';t2='Ended at '+m(ar)+'/crew-hour, under the '+m(AVG)+' average. Short by '+m(aa*AVG-ap)+'.';}
+    else{c2='ok';t2='✓ Ended at '+m(ar)+'/crew-hour — average met even after the overrun.';}
+    if(ae&&over>ae*0.25) t2+=' Estimate off by '+Math.round(over/ae*100)+'% — tighten the hours.';
+    av.className='v '+c2; av.innerHTML=t2;
+  } else av.innerHTML='';
+}
+['p','c','h','ap','ae','aa'].forEach(function(i){document.getElementById(i).addEventListener('input',draw);});
 draw();
 </script>
 </body></html>
