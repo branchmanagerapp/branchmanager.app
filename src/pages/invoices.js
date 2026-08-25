@@ -1390,8 +1390,13 @@ var InvoicesPage = {
     // Render as full page (not modal)
     var pageHtml = '<div style="max-width:680px;margin:0 auto;padding-bottom:80px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
-      + '<button type="button" class="btn btn-outline" onclick="loadPage(\'invoices\')" style="font-size:13px;">\u2190 Back to Invoices</button>'
+      + '<button type="button" class="btn btn-outline" onclick="loadPage(\'invoices\',{force:true})" style="font-size:13px;">\u2190 Back to Invoices</button>'
       + '<div style="display:flex;gap:8px;">'
+      // v1214: invoices had NO delete path anywhere in the app — Doug: "I wanna
+      // delete this invoice, and I can't figure out how to do it." Quotes have
+      // had one since v?; invoices never did. Only shown for an EXISTING
+      // invoice, never on the New Invoice screen.
+      + (invoiceId ? '<button type="button" class="btn btn-outline" onclick="InvoicesPage._deleteInvoice(\'' + invoiceId + '\')" style="font-size:13px;color:#dc3545;">Delete</button>' : '')
       + '<button type="button" class="btn btn-outline" onclick="InvoicesPage.saveAs(\'draft\')">Save Draft</button>'
       + '<button type="button" class="btn btn-primary" onclick="InvoicesPage.saveAs(\'sent\')">Save & Send</button>'
       + '</div></div>'
@@ -1472,6 +1477,24 @@ var InvoicesPage = {
     if (subEl) subEl.textContent = UI.money(subtotal);
     if (taxEl) taxEl.textContent = UI.money(taxAmt);
     if (totEl) totEl.textContent = UI.money(total);
+  },
+
+  // v1214: delete an invoice. Mirrors QuotesPage._deleteQuote, with one extra
+  // guard: a PAID invoice is a financial record with money against it, so it
+  // takes a second, explicit confirmation naming the amount.
+  _deleteInvoice: function(invoiceId) {
+    var inv = DB.invoices.getById(invoiceId);
+    if (!inv) { UI.toast('Invoice not found', 'error'); return; }
+    var label = '#' + (inv.invoiceNumber || '') + (inv.clientName ? ' — ' + inv.clientName : '');
+    var paid = String(inv.status || '').toLowerCase() === 'paid' || Number(inv.amountPaid || 0) > 0;
+    if (!confirm('Delete invoice ' + label + ' permanently? This cannot be undone.')) return;
+    if (paid) {
+      var amt = Number(inv.amountPaid || inv.total || 0).toFixed(2);
+      if (!confirm('This invoice is marked PAID and has $' + amt + ' against it.\n\nDeleting it removes that record from the books. Are you sure?')) return;
+    }
+    DB.invoices.remove(invoiceId);
+    UI.toast('Invoice ' + label + ' deleted');
+    loadPage('invoices', { force: true });
   },
 
   saveAs: function(status) {

@@ -666,7 +666,7 @@ var RequestsPage = {
 
     // Top action bar
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
-      + '<button class="btn btn-outline" onclick="loadPage(\'requests\')" style="padding:6px 12px;font-size:12px;">← Back to Requests</button>'
+      + '<button class="btn btn-outline" onclick="loadPage(\'requests\',{force:true})" style="padding:6px 12px;font-size:12px;">← Back to Requests</button>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
       + '<button class="btn btn-primary" onclick="RequestsPage._fastCreateQuote(\'' + r.id + '\')" style="font-size:12px;background:#16a34a;border:none;">⚡ Fast Quote</button>'
       + '<button class="btn btn-outline" onclick="RequestsPage._createQuote(\'' + r.id + '\',\'' + (r.clientId||'') + '\',\'' + UI.esc(r.clientName||'') + '\')" style="font-size:12px;">📝 Build Quote</button>'

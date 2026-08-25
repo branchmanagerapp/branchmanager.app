@@ -949,7 +949,7 @@ var JobsPage = {
     // Render as full page (not modal)
     var pageHtml = '<div style="max-width:680px;margin:0 auto;padding-bottom:80px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
-      + '<button class="btn btn-outline" onclick="loadPage(\'jobs\')" style="font-size:13px;">\u2190 Back to Jobs</button>'
+      + '<button class="btn btn-outline" onclick="loadPage(\'jobs\',{force:true})" style="font-size:13px;">\u2190 Back to Jobs</button>'
       + '<button class="btn btn-primary" onclick="document.getElementById(\'job-form\').requestSubmit()">Save Job</button>'
       + '</div>'
       + '<h2 style="font-size:20px;margin-bottom:16px;">' + (jobId ? 'Edit Job #' + j.jobNumber : 'New Job') + '</h2>'
@@ -1046,7 +1046,7 @@ var JobsPage = {
     var html = '<div style="max-width:960px;margin:0 auto;">'
       // Top bar: back + actions
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
-      + '<button class="btn btn-outline" onclick="loadPage(\'jobs\')" style="padding:6px 12px;font-size:12px;">← Back to Jobs</button>'
+      + '<button class="btn btn-outline" onclick="loadPage(\'jobs\',{force:true})" style="padding:6px 12px;font-size:12px;">← Back to Jobs</button>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
       + (function() {
         var phone = j.clientPhone || (client && client.phone) || '';

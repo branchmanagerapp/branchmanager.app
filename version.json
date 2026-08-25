@@ -1,5 +1,5 @@
 {
-  "version": 1213,
-  "released": "2026-08-23",
-  "notes": "Crew Ledger layout"
+  "version": 1214,
+  "released": "2026-08-25",
+  "notes": "v1214: fix dead Back buttons; add invoice delete"
 }

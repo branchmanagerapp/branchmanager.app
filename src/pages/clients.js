@@ -1085,7 +1085,7 @@ var ClientsPage = {
       alert('Error opening client: ' + (err && err.message ? err.message : err) + '\n\nSee console for details.');
       var pc = document.getElementById('pageContent');
       if (pc) {
-        pc.innerHTML = '<div style="padding:20px;"><h2>Error loading client</h2><pre id="cli-err-pre" style="background:#fee;padding:12px;border-radius:8px;overflow:auto;"></pre><button onclick="loadPage(\'clients\')" style="padding:10px 20px;background:#1b5e20;color:#fff;border:none;border-radius:8px;">← Back to Clients</button></div>';
+        pc.innerHTML = '<div style="padding:20px;"><h2>Error loading client</h2><pre id="cli-err-pre" style="background:#fee;padding:12px;border-radius:8px;overflow:auto;"></pre><button onclick="loadPage(\'clients\',{force:true})" style="padding:10px 20px;background:#1b5e20;color:#fff;border:none;border-radius:8px;">← Back to Clients</button></div>';
         // Use textContent to avoid injecting stack traces as HTML (XSS via error messages)
         var pre = document.getElementById('cli-err-pre');
         if (pre) pre.textContent = (err && err.stack ? err.stack : String(err)).slice(0, 2000);
