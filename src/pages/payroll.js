@@ -823,8 +823,7 @@ var PayrollPage = {
     var who = rev.job ? PayrollPage._salesPerson(rev.job) : null;
     if (!who) {
       var lc = String(rev.client || '').toLowerCase();
-      if (lc.indexOf('mich') >= 0 || lc.indexOf('melagrano') >= 0) who = 'Michelle';
-      else if (lc.indexOf('cath') >= 0 || lc.indexOf('conway') >= 0) who = 'Catherine';
+      if (lc.indexOf('cath') >= 0 || lc.indexOf('conway') >= 0) who = 'Catherine';
       else if (lc.indexOf('doug') >= 0) who = 'Doug';
     }
     var ini = who ? who.charAt(0) + ' — ' : '';
@@ -2235,7 +2234,10 @@ var PayrollPage = {
   // ── v1097: Sales commissions (separate from hourly payroll) ──
   // 8% of the job total for work SOLD by each salesperson. Attribution:
   // a job.salesperson field if present, else the legacy "D —/C —/M —" name
-  // prefix. Doug + Catherine + Michelle only. Computed live from jobs; no
+  // prefix. Doug + Catherine ONLY. Michelle Melagrano removed 2026-08-28
+  // (Doug: "she doesn't get commissions, remove her from the code") - she no
+  // longer appears in the roll-up and M-prefixed jobs attribute to nobody.
+  // Computed live from jobs; no
   // new table (it's a read-only roll-up).
   _COMMISSION_RATE: 0.08,
   _salesPerson: function(job) {
@@ -2243,22 +2245,21 @@ var PayrollPage = {
     if (s) {
       if (s.indexOf('doug') >= 0) return 'Doug';
       if (s.indexOf('cath') >= 0 || s.indexOf('conway') >= 0) return 'Catherine';
-      if (s.indexOf('mich') >= 0 || s.indexOf('melagrano') >= 0) return 'Michelle';
-      if (s === 'd') return 'Doug'; if (s === 'c') return 'Catherine'; if (s === 'm') return 'Michelle';
+      if (s === 'd') return 'Doug'; if (s === 'c') return 'Catherine';
     }
-    var m = /^\s*([DCM])\s*[—\-]/.exec(job.clientName || job.client_name || '');
-    return m ? { D:'Doug', C:'Catherine', M:'Michelle' }[m[1]] : null;
+    var m = /^\s*([DC])\s*[—\-]/.exec(job.clientName || job.client_name || '');
+    return m ? { D:'Doug', C:'Catherine' }[m[1]] : null;
   },
   _renderCommissions: function() {
     var jobs = (typeof DB !== 'undefined' && DB.jobs) ? DB.jobs.getAll() : [];
-    var agg = { Doug:{n:0,t:0}, Catherine:{n:0,t:0}, Michelle:{n:0,t:0} };
+    var agg = { Doug:{n:0,t:0}, Catherine:{n:0,t:0} };
     var tagged = 0;
     jobs.forEach(function(j) {
       var w = PayrollPage._salesPerson(j);
       if (w && agg[w]) { agg[w].n++; agg[w].t += (parseFloat(j.total) || 0); tagged++; }
     });
     var money = (typeof UI !== 'undefined' && UI.money) ? UI.money : function(n){ return '$' + (n||0).toFixed(0); };
-    var rows = ['Doug','Catherine','Michelle'].map(function(p) {
+    var rows = ['Doug','Catherine'].map(function(p) {
       var a = agg[p], comm = a.t * PayrollPage._COMMISSION_RATE;
       return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:10px 14px;border-top:1px solid var(--border);align-items:baseline;">'
         + '<div style="font-weight:600;font-size:13px;">' + p + ' <span style="font-size:11px;color:var(--text-light);font-weight:400;">(' + a.n + ' sale' + (a.n === 1 ? '' : 's') + ')</span></div>'
