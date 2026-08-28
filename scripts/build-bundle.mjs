@@ -137,10 +137,28 @@ function build() {
   // Minify with esbuild — pure local-bin invocation, no globals required
   const esbuild = path.join(ROOT, 'node_modules', '.bin', 'esbuild');
   const minOut  = path.join(DIST, 'bm.bundle.v' + version + '.min.js');
+  // 2026-08-28: this used to console.warn and copy the UNMINIFIED file to
+  // *.min.js — a 4.5 MB artifact with a minified name, shipped to crews on
+  // phones, detectable only by reading a log line. A fresh `git clone` never
+  // has node_modules/.bin, so this fired every time. Now: self-heal the bin
+  // shim if the package is present, else FAIL HARD. Never emit a fake .min.js.
   if (!fs.existsSync(esbuild)) {
-    console.warn('esbuild not found at ' + esbuild + ' — skipping minify');
-    fs.copyFileSync(rawOut, minOut);
-  } else {
+    const pkgBin = path.join(ROOT, 'node_modules', 'esbuild', 'bin', 'esbuild');
+    if (fs.existsSync(pkgBin)) {
+      fs.mkdirSync(path.dirname(esbuild), { recursive: true });
+      try { fs.symlinkSync(path.relative(path.dirname(esbuild), pkgBin), esbuild); }
+      catch (e) { fs.copyFileSync(pkgBin, esbuild); fs.chmodSync(esbuild, 0o755); }
+      console.log('esbuild bin shim was missing — created it at ' + esbuild);
+    }
+  }
+  if (!fs.existsSync(esbuild)) {
+    console.error('\nBUILD FAILED: esbuild not found at ' + esbuild);
+    console.error('A fresh clone has no node_modules. Copy them in, e.g.:');
+    console.error('  cp -R "<working-tree>/node_modules/esbuild" "<working-tree>/node_modules/@esbuild" node_modules/');
+    console.error('Refusing to write an unminified bundle under a .min.js name.\n');
+    process.exit(1);
+  }
+  {
     execSync('"' + esbuild + '" "' + rawOut + '" --minify --target=es2020 --legal-comments=none --outfile="' + minOut + '"', { stdio: 'inherit' });
   }
 
@@ -150,6 +168,13 @@ function build() {
   console.log('In: ' + inKB + ' KB across ' + scripts.length + ' files');
   console.log('Concatenated: ' + rawKB + ' KB (' + path.relative(ROOT, rawOut) + ')');
   console.log('Minified:     ' + minKB + ' KB (' + path.relative(ROOT, minOut) + ')');
+  // Guard: a real minify shrinks this bundle by ~35%. If .min is >90% of raw,
+  // minification silently did not happen — do not let it reach production.
+  if (fs.statSync(minOut).size > fs.statSync(rawOut).size * 0.9) {
+    console.error('\nBUILD FAILED: ' + minKB + ' KB min vs ' + rawKB + ' KB raw — minification did not run.');
+    fs.unlinkSync(minOut);
+    process.exit(1);
+  }
 
   if (REWRITE_HTML) {
     if (isPostSwap) {
