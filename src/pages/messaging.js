@@ -143,7 +143,7 @@ var MessagingPage = {
     // Left: Contact list
     html += '<div class="msg-list" style="border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;">'
       + '<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;">'
-      + '<input type="text" placeholder="Search contacts..." oninput="MessagingPage.filterContacts(this.value)" style="flex:1;padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-size:13px;">'
+      + '<input type="text" placeholder="Search by client or phone number" oninput="MessagingPage.filterContacts(this.value)" style="flex:1;padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-size:13px;">'
       + '<button onclick="MessagingPage.newMessage()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New</button>'
       + '</div><div id="msg-contacts" style="flex:1;overflow-y:auto;">';
 
@@ -165,6 +165,7 @@ var MessagingPage = {
           + '<div style="display:flex;justify-content:space-between;align-items:center;">'
           + '<strong style="font-size:13px;">📵 ' + MessagingPage._fmtPhone(k) + '</strong>'
           + '<div style="display:flex;gap:5px;align-items:center;">'
+          + '<span style="background:#e8f0fe;color:#1a56b8;border-radius:10px;font-size:11px;padding:1px 8px;font-weight:700;flex:0 0 auto;">Lead</span>'
           + (unreadCount > 0 ? '<span style="background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;font-weight:700;">' + unreadCount + '</span>' : '')
           + '<span style="font-size:10px;color:var(--text-light);">' + time + '</span>'
           + '</div></div>'
@@ -181,13 +182,17 @@ var MessagingPage = {
       var unreadCount = unread[c.id] || 0;
 
       html += '<div onclick="MessagingPage.selectClient(\'' + c.id + '\')" style="padding:12px;border-bottom:1px solid #f0f0f0;cursor:pointer;background:' + (isActive ? 'var(--green-bg)' : 'var(--white)') + ';transition:background .1s;" onmouseover="this.style.background=\'' + (isActive ? 'var(--green-bg)' : '#fafafa') + '\'" onmouseout="this.style.background=\'' + (isActive ? 'var(--green-bg)' : 'var(--white)') + '\'">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-        + '<strong style="font-size:13px;">' + c.name + '</strong>'
-        + '<div style="display:flex;gap:5px;align-items:center;">'
-        + (unreadCount > 0 ? '<span style="background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;font-weight:700;">' + unreadCount + '</span>' : '')
-        + '<span style="font-size:10px;color:var(--text-light);">' + time + '</span>'
-        + '</div></div>'
-        + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + preview + '</div>'
+        // v1217: Jobber's row shape — "Name • (914) 261-7558" on top, preview
+        // under it, relative time on its own line. Bigger type because this is
+        // read on a phone in the field. Doug: "set up the whole page like
+        // jobber also."
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        + '<div style="font-size:15px;font-weight:700;min-width:0;">' + UI.esc(c.name || '')
+        + (c.phone ? ' <span style="font-weight:400;color:var(--text);">• ' + UI.phone(c.phone) + '</span>' : '') + '</div>'
+        + (unreadCount > 0 ? '<span style="background:var(--red);color:#fff;border-radius:10px;font-size:11px;padding:2px 7px;font-weight:700;flex:0 0 auto;">' + unreadCount + '</span>' : '')
+        + '</div>'
+        + '<div style="font-size:14px;color:var(--text-light);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + preview + '</div>'
+        + (time ? '<div style="font-size:13px;color:var(--text-light);margin-top:4px;">' + time + '</div>' : '')
         + '</div>';
     });
     html += '</div></div>';

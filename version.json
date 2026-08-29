@@ -1,5 +1,5 @@
 {
-  "version": 1216,
+  "version": 1217,
   "released": "2026-08-29",
-  "notes": "v1216: Messages in nav + message thread links on quotes and invoices"
+  "notes": "v1217: Messages list rebuilt to the Jobber shape"
 }
