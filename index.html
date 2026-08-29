@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1215; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1216; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -615,6 +615,7 @@ window.bmShowStaleBanner = function(version) {
   .nav-item[data-page="socialbranch"],
   .nav-item[data-page="reports"],
   .nav-item[data-page="callcenter"],
+  .nav-item[data-page="messaging"],
   .nav-item[data-page="permits"],
   .nav-item[data-page="books"],
   .nav-item[data-page="insurance"] { display:flex !important; }
@@ -1368,6 +1369,7 @@ window.bmShowStaleBanner = function(version) {
       <button class="nav-item" data-page="payments"><span class="icon"><i data-lucide="credit-card" class="li"></i></span> Payments</button>
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
       <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Receptionist<span class="cc-dot" id="cc-indicator-dot"></span></button>
+      <button class="nav-item" data-page="messaging"><span class="icon"><i data-lucide="message-square" class="li"></i></span> Messages</button>
       <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
       <button class="nav-item" data-page="insights"><span class="icon"><i data-lucide="line-chart" class="li"></i></span> Insights</button>
       <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
@@ -1642,7 +1644,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1215.min.js"></script>
+<script defer src="dist/bm.bundle.v1216.min.js"></script>
 
 
 

@@ -1,5 +1,5 @@
 {
-  "version": 1215,
-  "released": "2026-08-28",
-  "notes": "Remove Michelle Melagrano from sales commissions (Doug: she doesn't get commissions). _salesPerson no longer maps mich/melagrano/M-prefix; commission roll-up is Doug+Catherine only; _clientLabel no longer relabels her."
+  "version": 1216,
+  "released": "2026-08-29",
+  "notes": "v1216: Messages in nav + message thread links on quotes and invoices"
 }

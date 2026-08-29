@@ -1111,6 +1111,8 @@ var InvoicesPage = {
         +     '<div style="font-size:14px;color:var(--text);line-height:1.5;">' + (sameAddr ? '<span style="color:var(--text-light);font-style:italic;">(Same as billing address)</span>' : UI.esc(property)) + '</div>'
         +   '</div>'
         +   (clientPhone ? '<div style="margin-bottom:4px;"><a href="tel:' + clientPhone.replace(/\D/g,'') + '" style="font-size:14px;color:var(--text);text-decoration:none;">' + UI.phone(clientPhone) + '</a></div>' : '')
+        // v1216: message thread in context — same reason as quotes.js
+        +   (inv.clientId ? '<div style="margin-bottom:4px;"><a href="#" onclick="event.preventDefault();MessagingPage.selectClient(\'' + inv.clientId + '\');" style="font-size:14px;color:var(--accent);text-decoration:none;">💬 Messages</a></div>' : '')
         +   (clientEmail ? '<div><a href="mailto:' + clientEmail + '" style="font-size:14px;color:var(--green-dark);text-decoration:underline;">' + UI.esc(clientEmail) + '</a></div>' : '')
         + '</div>';
       })()

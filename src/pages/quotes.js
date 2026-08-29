@@ -2386,6 +2386,11 @@ var QuotesPage = {
       + (q.property ? '<div style="font-size:14px;color:var(--text-light);margin-top:4px;"><a href="https://maps.apple.com/?daddr=' + encodeURIComponent(q.property) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">📍 ' + UI.esc(q.property) + '</a></div>' : '')
       + ((q.clientPhone || (client&&client.phone)) ? '<div style="font-size:14px;margin-top:8px;"><a href="tel:' + (q.clientPhone||client.phone).replace(/\D/g,'') + '" style="color:var(--accent);text-decoration:none;">📞 ' + (q.clientPhone||client.phone) + '</a></div>' : '')
       + ((q.clientEmail || (client&&client.email)) ? '<div style="font-size:14px;margin-top:4px;"><a href="mailto:' + (q.clientEmail||client.email) + '" style="color:var(--accent);text-decoration:none;">✉️ ' + (q.clientEmail||client.email) + '</a></div>' : '')
+      // v1216: open the real message THREAD for this client, the way Jobber puts
+      // a message icon on every record. MessagingPage already holds the history,
+      // the reply box and templates — this just makes it reachable in context so
+      // you can text a customer while looking at their quote.
+      + ((q.clientId || (client && client.id)) ? '<div style="font-size:14px;margin-top:4px;"><a href="#" onclick="event.preventDefault();MessagingPage.selectClient(\'' + (q.clientId || client.id) + '\');" style="color:var(--accent);text-decoration:none;">💬 Messages</a></div>' : '')
       // Overview
       + '<div style="height:9px;background:var(--bg);margin:18px -18px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>'
       + '<div style="font-size:15px;font-weight:800;margin-bottom:10px;">Overview</div>'
