@@ -1,5 +1,1 @@
-{
-  "version": 1217,
-  "released": "2026-08-29",
-  "notes": "v1217: Messages list rebuilt to the Jobber shape"
-}
+{"version": 1218, "released": "2026-08-29", "notes": "remove redundant company chip from sidebar"}

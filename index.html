@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1217; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1218; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1563,29 +1563,12 @@ window.bmShowStaleBanner = function(version) {
           if (h1.getAttribute('data-bm-brand') === sig) return;
           h1.setAttribute('data-bm-brand', sig);
           h1.textContent = active.name;
-          // v1071: unmistakable company chip — Doug couldn't tell which
-          // company he was in (Smart Lawn vs Tree) or that the name was
-          // tappable. Full-width color-coded chip + explicit Switch button.
-          var chip = document.getElementById('bm-company-chip');
-          if (!chip) {
-            chip = document.createElement('div');
-            chip.id = 'bm-company-chip';
-            var hdr = document.querySelector('.sidebar-header');
-            if (hdr && hdr.parentNode) hdr.parentNode.insertBefore(chip, hdr.nextSibling);
-          }
-          var isLawn = /lawn/i.test(active.name || '');
-          var tint  = isLawn ? '#fff8e1' : '#e6f4ea';
-          var line  = isLawn ? '#f0c36d' : '#7bbf8e';
-          var ink   = isLawn ? '#7a5d00' : '#1a5c2a';
-          var icon  = isLawn ? '\uD83C\uDF31' : '\uD83C\uDF33';
-          chip.style.cssText = 'display:flex;align-items:center;gap:8px;margin:6px 10px 10px;padding:8px 10px;background:' + tint + ';border:1.5px solid ' + line + ';border-radius:10px;';
-          chip.innerHTML = '<div style="flex:1;min-width:0;">'
-            + '<div style="font-size:9px;font-weight:800;letter-spacing:.08em;color:' + ink + ';opacity:.75;text-transform:uppercase;">Working in</div>'
-            + '<div style="font-size:12.5px;font-weight:800;color:' + ink + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + icon + ' ' + active.name.replace(/</g,'&lt;') + '</div>'
-            + '</div>'
-            + (ts.length > 1
-                ? '<button onclick="TenantSwitcher.show()" style="flex-shrink:0;background:#fff;border:1.5px solid ' + line + ';color:' + ink + ';border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">\u21C4 Switch</button>'
-                : '');
+          // v1218: company chip REMOVED. Doug has exactly one tenant, so the
+          // '\u21C4 Switch' button never rendered and the chip just repeated the
+          // company name already shown in the sidebar header above it.
+          // Multi-tenant users still switch by tapping the header name (below).
+          var oldChip = document.getElementById('bm-company-chip');
+          if (oldChip && oldChip.parentNode) oldChip.parentNode.removeChild(oldChip);
           if (ts.length > 1) {
             h1.style.cursor = 'pointer';
             h1.title = 'Switch company';
