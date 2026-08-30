@@ -176,6 +176,47 @@ function build() {
     process.exit(1);
   }
 
+  // ── Self-prune old bundles ────────────────────────────────────────────────
+  // 2026-08-29: dist/ had reached 1,016 MB / 289 files because every deploy
+  // committed a superseded bundle forever and nothing ever removed one. Only
+  // the single .min.js named in index.html is ever served.
+  //
+  // Keep the newest KEEP_BUNDLES minified bundles so a phone still running a
+  // stale cached index.html can fetch its own version instead of 404ing, and
+  // ALWAYS keep whatever index.html currently points at, whatever its age.
+  const KEEP_BUNDLES = 10;
+  try {
+    let pinned = null;
+    try {
+      const m = fs.readFileSync(INDEX, 'utf8').match(/dist\/(bm\.bundle\.v\d+\.min\.js)/);
+      if (m) pinned = m[1];
+    } catch (e) { /* index unreadable — fall through, prune stays conservative */ }
+
+    const mins = fs.readdirSync(DIST)
+      .filter(f => /^bm\.bundle\.v\d+\.min\.js$/.test(f))
+      .sort((a, b) => (+a.match(/v(\d+)/)[1]) - (+b.match(/v(\d+)/)[1]));
+
+    const keep = new Set(mins.slice(-KEEP_BUNDLES));
+    keep.add('bm.bundle.v' + version + '.min.js');
+    if (pinned) keep.add(pinned);
+
+    let freed = 0, n = 0;
+    for (const f of fs.readdirSync(DIST)) {
+      const m = f.match(/^bm\.bundle\.v(\d+)(\.min)?\.js$/);
+      if (!m) continue;
+      // raw intermediates: keep only the one just built (it is gitignored)
+      const isRaw = !m[2];
+      const isCurrentRaw = isRaw && +m[1] === version;
+      if (keep.has(f) || isCurrentRaw) continue;
+      freed += fs.statSync(path.join(DIST, f)).size;
+      fs.unlinkSync(path.join(DIST, f));
+      n++;
+    }
+    if (n) console.log('Pruned ' + n + ' stale bundle file(s), freed ' + (freed / 1048576).toFixed(1) + ' MB');
+  } catch (e) {
+    console.warn('Bundle prune skipped: ' + e.message);
+  }
+
   if (REWRITE_HTML) {
     if (isPostSwap) {
       // In post-swap mode (manifest-driven), index.html already has exactly
