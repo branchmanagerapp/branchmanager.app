@@ -1,1 +1,5 @@
-{"version": 1218, "released": "2026-08-29", "notes": "remove redundant company chip from sidebar"}
+{
+  "version": 1219,
+  "released": "2026-09-01",
+  "notes": "v1219: fix the hours popover running off-screen"
+}

@@ -2856,13 +2856,37 @@ var PayrollPage = {
     var pop = document.createElement('div');
     pop.setAttribute('data-key', user + '|' + date);
     pop.id = 'whypop';
-    var r = btn ? btn.getBoundingClientRect() : { left: 20, bottom: 80 };
-    var W = Math.min(320, window.innerWidth - 24);
-    var left = Math.max(12, Math.min(r.left, window.innerWidth - W - 12));
-    pop.style.cssText = 'position:fixed;z-index:9999;width:' + W + 'px;left:' + left + 'px;top:'
-      + Math.min(r.bottom + 6, window.innerHeight - 120) + 'px;max-height:60vh;overflow:auto;'
-      + 'background:var(--white,#fff);border:1px solid var(--border);border-radius:10px;'
-      + 'box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px 12px;text-align:left;';
+    // v1219 — Doug: "this dialogue box does not allow me to scroll down and
+    // click 'worked that day'. Need to fix the format."
+    // The old rule set top to min(anchor.bottom+6, innerHeight-120) with a flat
+    // max-height:60vh. Anchored low, that put a 60vh box starting 120px off the
+    // bottom, so its lower half — including the buttons — sat below the fold and
+    // the internal scrollbar never engaged (content never exceeded 60vh).
+    // Now: height is clamped to the space actually available, the popover flips
+    // above the anchor when below is tight, and on a phone it becomes a bottom
+    // sheet, which is the only comfortable shape at 375px.
+    var r = btn ? btn.getBoundingClientRect() : { left: 20, top: 80, bottom: 80 };
+    var GAP = 6, M = 12, MINH = 180;
+    var narrow = window.innerWidth < 520;
+    if (narrow) {
+      pop.style.cssText = 'position:fixed;z-index:9999;left:' + M + 'px;right:' + M + 'px;bottom:' + M + 'px;'
+        + 'max-height:78vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;'
+        + 'background:var(--white,#fff);border:1px solid var(--border);border-radius:12px;'
+        + 'box-shadow:0 -6px 28px rgba(0,0,0,.22);padding:10px 12px;text-align:left;';
+    } else {
+      var W = Math.min(320, window.innerWidth - 24);
+      var left = Math.max(M, Math.min(r.left, window.innerWidth - W - M));
+      var below = window.innerHeight - r.bottom - GAP - M;
+      var above = r.top - GAP - M;
+      var flip = below < MINH && above > below;
+      var maxH = Math.max(MINH, Math.min(Math.round(window.innerHeight * 0.7), flip ? above : below));
+      var top = flip ? Math.max(M, r.top - GAP - maxH)
+                     : Math.min(r.bottom + GAP, window.innerHeight - maxH - M);
+      pop.style.cssText = 'position:fixed;z-index:9999;width:' + W + 'px;left:' + left + 'px;top:' + top + 'px;'
+        + 'max-height:' + maxH + 'px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;'
+        + 'background:var(--white,#fff);border:1px solid var(--border);border-radius:10px;'
+        + 'box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px 12px;text-align:left;';
+    }
     var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
     pop.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
       + '<b style="font-size:12px;">' + esc(user) + ' · ' + esc(PayrollPage._pDate(date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})) + '</b>'
