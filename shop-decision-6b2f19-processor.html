@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Square vs Shopify — 2nd Nature</title>
+<title>The processor question — 2nd Nature</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -114,81 +114,95 @@ a{color:var(--blue)}
 </style></head><body>
 <header class="top"><div class="wrap">
 <div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
-<h1>Square vs Shopify</h1><div class="sub">Should the shop live on Square or Shopify? Built from your real numbers, not a brochure.</div>
-<nav class="tabs"><a href="shop-decision-6b2f19.html" class="on">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html">Processor</a></nav></div></header>
+<h1>The processor question</h1><div class="sub">Helcim vs Square on your real volume, why the server round trip was my mistake, and the third path I did not give you.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html" class="on">Processor</a></nav></div></header>
 <main><div class="wrap">
-<div class="verdict"><div class="lbl">Bottom line</div>
-<h2>Stay on Square. Drop the Premium plan. Build the shop site on Square's APIs.</h2>
-<p>Shopify does not save you money once you staff the counter &mdash; at 7 employees it costs
-<span class="num">$803/yr more</span> than Square. The real money is somewhere else entirely:
-you appear to be paying for a Square plan that does not pay for itself, which is
-<span class="num">$1,040/yr</span> you can take back this week without changing anything.</p></div>
+<div class="verdict"><div class="lbl">Revised position</div>
+<h2>You were right about the money, and right about the round trip.</h2>
+<p>Helcim saves <span class="num">$1,757/yr</span> in processing on your real volume, and it holds up
+even if their rate lands far worse than advertised. The server round trip I proposed was an artifact of
+choosing Square &mdash; not good architecture. One narrow thing still stands, and it is not about
+whether skateOS is good.</p></div>
 
-<div class="kpis">
-<div class="kpi"><div class="v">$328,025</div><div class="k">Processed through Square, last 365 days</div></div>
-<div class="kpi"><div class="v">$8,348</div><div class="k">Processing fees actually paid (2.55% blended)</div></div>
-<div class="kpi"><div class="v">10,694</div><div class="k">Payments &middot; avg ticket $30.67</div></div>
-<div class="kpi"><div class="v">1,102</div><div class="k">Catalog items &middot; 95% already have photos</div></div>
-</div>
-
-<h2>The five things that actually decide this</h2>
-
-<div class="card"><h3>1. You are on a Square plan that costs more than it saves <span class="pill p-warn">verify</span></h3>
-<p>Your measured rate is <strong>2.40% + 15&cent;</strong> in person and <strong>2.90% + 30&cent;</strong> card-on-file.
-That is not Square's free-plan pricing &mdash; it matches <strong>Square Premium ($149/mo)</strong> exactly.</p>
-<p>Premium's discount saves you <strong>$748/yr</strong> in fees at your volume. It costs <strong>$1,788/yr</strong>.
-You would need roughly <strong>$660,000/yr</strong> in card volume for it to break even. You did $276,185.</p>
-<p class="src">I confirmed the rate from per-transaction fee data. I could <em>not</em> confirm the plan
-through the API &mdash; Square exposes no merchant-plan endpoint. Check your Square dashboard before acting.</p></div>
-
-<div class="card"><h3>2. Processing fees are a wash <span class="pill p-info">not the lever</span></h3>
-<p>Applied to your real mix, every scenario lands within about $750/yr of the others on fees alone.
-Shopify Basic would cost you <strong>$15/yr more</strong> than what you pay Square today. That is noise.
-Stop weighing the platforms on processing rate &mdash; it does not move.</p></div>
-
-<div class="card"><h3>3. Shopify's cheap tier cannot run your shop <span class="pill p-no">7 staff</span></h3>
-<p>Shopify caps staff by plan: Basic gives <strong>2 seats</strong> (0 for stores opened after 2024), Grow 5, Advanced 15.
-POS Lite inherits that cap. Unlimited register PINs only arrive with <strong>POS Pro at $89/mo</strong>.</p>
-<p>So the honest comparison is not "Shopify is $39." With seven people ringing sales it is
-<strong>$128/mo minimum</strong> &mdash; and at that price Square wins.</p></div>
-
-<div class="card"><h3>4. Square's commerce APIs are wide open <span class="pill p-ok">verified live</span></h3>
-<p>I tested this against your account today. Catalog, Inventory, Orders and
-<strong>Payment Links all respond</strong> &mdash; you already have 11 payment links created.
-Only Square's <em>website builder</em> is closed; there is no pages or content API.</p>
-<p>That distinction is the whole answer to your original question: <strong>Square will not let you
-rebuild its website, but it will happily sit behind yours.</strong></p></div>
-
-<div class="card"><h3>5. Your Square readers do not work on Shopify <span class="pill p-no">one-time cost</span></h3>
-<p>Shopify POS does not talk to Square hardware. Moving means buying Shopify's readers,
-re-training the counter, and re-keying a 1,102-item catalog &mdash; during a season you are
-already running at $33k/month.</p>
-<p class="src">Hardware cost not verified &mdash; depends on how many stations you run. Budget it as a real
-one-time number before deciding, not as zero.</p></div>
-
-<h2>Head to head</h2>
+<h2>1. The Helcim money is real</h2>
+<p>Modelled against verified volume: 6,838 card-present transactions on $178,356, and 782
+card-not-present on $97,829.</p>
 <div class="tblwrap"><table>
-<tr><th>&nbsp;</th><th>Square</th><th>Shopify</th></tr>
-<tr><td>Cost, 1 employee</td><td class="n">$9,126</td><td class="n">$8,861</td></tr>
-<tr class="win"><td>Cost, 7 employees</td><td class="n">$9,126</td><td class="n">$9,929</td></tr>
-<tr><td>Staff cost model</td><td>No per-staff fee</td><td>Capped by plan tier</td></tr>
-<tr><td>Custom storefront</td><td>Via API, self-hosted</td><td>Native themes</td></tr>
-<tr><td>Custom checkout</td><td>No &mdash; Square-branded</td><td>Yes</td></tr>
-<tr><td>Keep current hardware</td><td>Yes</td><td>No</td></tr>
-<tr><td>Keep 4 yrs of history</td><td>Yes</td><td>Migrate</td></tr>
-<tr><td>Register risk</td><td>None</td><td>Untested at the counter</td></tr>
+<tr><th>&nbsp;</th><th>Square (your actual rate)</th><th>Helcim</th><th>Saving</th></tr>
+<tr><td>Card-present</td><td class="n">$5,306</td><td class="n">$3,989</td><td class="n">$1,317</td></tr>
+<tr><td>Card-not-present</td><td class="n">$3,072</td><td class="n">$2,631</td><td class="n">$440</td></tr>
+<tr class="win"><td><strong>Processing</strong></td><td class="n">&mdash;</td><td class="n">&mdash;</td><td class="n"><strong>$1,757</strong></td></tr>
+<tr><td>Drop Square Premium</td><td class="n">&mdash;</td><td class="n">&mdash;</td><td class="n">$1,788</td></tr>
+<tr class="win"><td><strong>Total per year</strong></td><td class="n">&mdash;</td><td class="n">&mdash;</td><td class="n"><strong>$3,545</strong></td></tr>
 </table></div>
-<p class="scroll-hint">Annual totals. Full breakdown on the <a href="shop-decision-6b2f19-pricing.html">Pricing</a> page.</p>
 
-<div class="note bad"><div class="t">The one thing Shopify genuinely does better</div>
-<p>Shopify lets you style the checkout page. On Square, the customer browses your site and then
-hands off to a Square-branded payment screen you cannot restyle. For 782 card-not-present
-transactions a year, that is a cosmetic cost &mdash; not $1,000/yr and a register migration.</p></div>
+<h3>It survives pressure-testing</h3>
+<div class="tblwrap"><table>
+<tr><th>If Helcim actually lands at&hellip;</th><th>Card-present saving</th><th>&nbsp;</th></tr>
+<tr class="win"><td>1.93% + 8&cent; <em>(their published average)</em></td><td class="n">$1,317</td><td>wins</td></tr>
+<tr class="win"><td>2.10% + 8&cent;</td><td class="n">$1,014</td><td>wins</td></tr>
+<tr class="win"><td>2.30% + 8&cent;</td><td class="n">$657</td><td>wins</td></tr>
+<tr class="win"><td>2.50% + 8&cent;</td><td class="n">$300</td><td>still wins</td></tr>
+</table></div>
+<p>There is no plausible rate at which Helcim loses.</p>
 
-<div class="note good"><div class="t">What I would do, in order</div>
-<p><strong>1.</strong> Confirm the Square plan on your dashboard and downgrade if it is Premium &mdash; $1,040/yr, no downside at your volume.<br>
-<strong>2.</strong> Wire the shop page we already built to Square's Catalog and Payment Links APIs.<br>
-<strong>3.</strong> Revisit Shopify only if you cross roughly $660k in card volume or genuinely need a branded checkout.</p></div>
+<div class="note good"><div class="t">Why it fits your shop specifically</div>
+<p>Your average ticket is <strong>$26.08</strong>. The fixed fee dropping <strong>15&cent; to 8&cent;</strong>
+is worth <strong>$479/yr</strong> on its own, across 6,838 transactions. Small tickets punish
+per-transaction fees, and you have a lot of them. Interchange-plus suits your mix better than flat-rate
+does &mdash; that is a structural advantage, not a promotional one.</p></div>
+
+<h2>2. The round trip was my mistake, not a requirement</h2>
+<p>The proxy existed for exactly one reason: <strong>Square has no browser-safe credential.</strong>
+A Square access token grants full account power &mdash; read customers, create charges, issue refunds,
+see payouts. It can never touch page JavaScript. So every request has to detour through a server that
+holds it.</p>
+<p><strong>Supabase is the opposite.</strong> Its anon key is designed to be public, with row-level
+security as the boundary. That is why your shop page calls it directly today with no server in between.</p>
+<div class="note"><div class="t">So the conclusion flips</div>
+<p>The round trip was an artifact of choosing Square, not good practice. With skateOS as the back end it
+is browser &rarr; Supabase, exactly as it works now: no proxy, no detour, fewer moving parts.</p>
+<p>My Square-backed design was the clunkier one &mdash; and it was clunkier <em>because Square was never
+built to power someone else&rsquo;s storefront.</em> skateOS was.</p></div>
+
+<h2>3. Where I still hold &mdash; and it is narrow</h2>
+<p><strong>Do not put an untested register in front of a Saturday crowd.</strong></p>
+<p>Not because skateOS is bad. Because the risk is asymmetric. $3,545/yr is about <strong>$10 a day</strong>.
+One broken Saturday with a line out the door costs more than that in walked sales and goodwill.</p>
+<div class="note bad"><div class="t">And my &ldquo;0 orders&rdquo; argument was weak in one direction</div>
+<p>It will <em>always</em> be 0 until someone uses it. That is a reason to run a controlled test, not to
+avoid it forever. I stated it as though it were a permanent disqualifier. It is not.</p></div>
+
+<h2>4. The option I did not give you</h2>
+<p>Two decisions are being bundled that are actually separable:</p>
+<ul>
+<li><strong>Saving on fees</strong> is a <em>processor</em> decision.</li>
+<li><strong>Trusting skateOS</strong> is a <em>software</em> decision.</li>
+</ul>
+<div class="tblwrap"><table>
+<tr><th>Path</th><th>Fees</th><th>Risk carried</th></tr>
+<tr><td><strong>A.</strong> Stay on Square</td><td class="n">&mdash;</td><td>None. Status quo.</td></tr>
+<tr class="win"><td><strong>B.</strong> Helcim + Helcim&rsquo;s own POS</td><td class="n">saves $1,757</td><td>Vendor-supported software. No bet on skateOS.</td></tr>
+<tr><td><strong>C.</strong> Helcim + skateOS POS</td><td class="n">saves $1,757</td><td>Park features gained, but unproven at the counter.</td></tr>
+</table></div>
+<p><strong>Path B captures your entire savings argument without the risk argument.</strong> If fees are what
+is driving this, you can have them without betting the register on code we wrote.</p>
+<p class="src">Note that leaving Square necessarily changes the register software too &mdash; Square only
+processes Square. That coupling is the lock-in, and it is why the fee decision drags the POS decision
+along with it unless you pick B.</p>
+
+<h2>5. What I would do now</h2>
+<ol class="flow">
+<li><span class="ft">Downgrade Square Premium</span>$1,788/yr, independent of every other choice here. Do it regardless of which path you take.</li>
+<li><span class="ft">Get a real Helcim quote</span>Their 1.93% is a cross-merchant average, not an offer. Ask for pricing on your actual mix: $276k card volume, $26 average ticket, 7,620 transactions.</li>
+<li><span class="ft">Price the terminals</span>Square hardware will not carry over. This is the unbudgeted number.</li>
+<li><span class="ft">Put skateOS + Helcim behind the ONLINE store first</span>It has 0 orders today either way &mdash; there is no downside. Nobody is standing in line. It proves the payment path with real money and turns that 0 into evidence.</li>
+<li><span class="ft">Then decide the register on evidence</span>Parallel run, Square still plugged in, written rollback.</li>
+</ol>
+<div class="note"><div class="t">Honest caveat on step 4</div>
+<p>Your online volume is small &mdash; roughly 27 Square Online orders a quarter. Accumulating 20&ndash;30
+real transactions will take a couple of months. It is a slow proving ground. But it is a free one, and it
+is the only place where failure costs you nothing.</p></div>
 
 <footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
 <em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
