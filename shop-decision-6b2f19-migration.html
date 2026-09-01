@@ -1,0 +1,180 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Square as the back end — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+@media(min-width:600px){
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>Square as the back end</h1><div class="sub">How the shop page we already built plugs into Square as its back end &mdash; and what is genuinely missing today.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html" class="on">Migration</a></nav></div></header>
+<main><div class="wrap">
+<h2>The honest starting point</h2>
+<div class="note bad"><div class="t">The shop page we built does not take money</div>
+<p>I re-read <a href="https://skateos.com/2ntr/shop/">skateos.com/2ntr/shop/</a> today. Its checkout is titled
+<strong>&ldquo;Reserve for pickup&rdquo;</strong>, and the page tells the customer:
+<em>&ldquo;Online checkout reserves the item; payment is handled at pickup or on the phone.&rdquo;</em></p>
+<p>So &ldquo;make it work seamlessly with Square&rdquo; is not a styling job. The page is a catalogue
+with a reservation form bolted on. <strong>Two things are missing: live stock, and payment.</strong></p></div>
+
+<div class="note"><div class="t">And its product data is stale by design</div>
+<p>The page reads products from the skate Supabase project, which is filled by a <strong>manually run</strong>
+sync script. Stock is only as fresh as the last time someone ran it by hand &mdash; so the site can
+happily sell a deck that walked out of the shop an hour ago.</p></div>
+
+<h2>What Square can and cannot do</h2>
+<p>I tested each of these against your live account today.</p>
+<div class="tblwrap"><table>
+<tr><th>Square capability</th><th>Status</th><th>What I saw</th></tr>
+<tr><td>Catalog API</td><td><span class="pill p-ok">works</span></td><td>1,102 items, 1,557 variations</td></tr>
+<tr><td>Inventory API</td><td><span class="pill p-ok">works</span></td><td>1,128 variations stock-tracked</td></tr>
+<tr><td>Payment Links / Checkout</td><td><span class="pill p-ok">works</span></td><td>HTTP 200, 11 links already exist</td></tr>
+<tr><td>Orders API</td><td><span class="pill p-ok">works</span></td><td>Reads and writes orders</td></tr>
+<tr><td>Sites API</td><td><span class="pill p-ok">works</span></td><td>1 site &mdash; www.2ntr.com, published</td></tr>
+<tr><td>Snippets API</td><td><span class="pill p-warn">limited</span></td><td>One per site, &lt;head&gt; only, never on checkout</td></tr>
+<tr><td>Pages / content API</td><td><span class="pill p-no">none</span></td><td>404 &mdash; does not exist</td></tr>
+</table></div>
+<p><strong>Read those last two rows together and you have the answer.</strong> Square gives you no way to
+rebuild its own website &mdash; you cannot inject pages, and the one snippet you get is head-only and
+skips checkout entirely. But every commerce primitive you need to power <em>your own</em> site is open
+and working. Square is a bad website builder and a perfectly good back end.</p>
+
+<h2>How it fits together</h2>
+<ol class="flow">
+<li><span class="ft">Customer opens your page</span>The shop page we already built &mdash; same filters, same layout, hosted where you like.</li>
+<li><span class="ft">Page asks a small server, not Square</span>A Cloudflare Worker holds the Square token. <strong>The token never reaches the browser.</strong></li>
+<li><span class="ft">Worker reads live catalogue and stock</span>Square Catalog + Inventory APIs. No more manual sync, no more phantom stock.</li>
+<li><span class="ft">Customer hits Buy</span>The Worker creates a Square Payment Link and redirects to it.</li>
+<li><span class="ft">Square takes the payment</span>On Square's hosted checkout. PCI handled; no card data touches your code.</li>
+<li><span class="ft">The order lands in Square</span>Same place as the 6,838 in-person sales. Same inventory, same payouts, same reports. Nothing changes at the register.</li>
+</ol>
+
+<div class="note"><div class="t">Security, non-negotiable</div>
+<p>The Square access token has to stay server-side, in the Worker. It must never be embedded in page
+JavaScript &mdash; anyone viewing source could then read your catalogue, create charges and pull order data.
+This is the one part of the build with no shortcut.</p></div>
+
+<h2>Is your catalogue ready?</h2>
+<div class="kpis">
+<div class="kpi"><div class="v">95%</div><div class="k">1,048 of 1,102 items have a photo</div></div>
+<div class="kpi"><div class="v">78%</div><div class="k">857 items have a description</div></div>
+<div class="kpi"><div class="v">72%</div><div class="k">1,128 of 1,557 variations report live stock</div></div>
+<div class="kpi"><div class="v">88</div><div class="k">Categories, enough to drive the filters</div></div>
+</div>
+<p>Better shape than I expected. The gap that matters is the <strong>429 variations with stock tracking
+switched off</strong> &mdash; those cannot show real availability, so they either get tracking turned on or get
+hidden from the site. Everything else is polish.</p>
+
+<h2>The work, in order</h2>
+<ol class="flow">
+<li><span class="ft">Turn on stock tracking for the 429 untracked variations</span>Or exclude them. This is the only true blocker &mdash; do it first, in Square, no code needed.</li>
+<li><span class="ft">Stand up the Worker</span>Square token stored as a secret. Endpoints for catalogue, inventory, and create-checkout.</li>
+<li><span class="ft">Repoint the shop page at it</span>Swap the Supabase reads for Worker reads. Filters and layout stay exactly as they are.</li>
+<li><span class="ft">Replace &ldquo;Reserve for pickup&rdquo; with real checkout</span>Cart totals go to a Square Payment Link. This is the step that turns a catalogue into a store.</li>
+<li><span class="ft">Test with a real card, then refund it</span>Confirm the order appears in Square and inventory decrements. Nothing ships until I have watched that happen.</li>
+<li><span class="ft">Point the domain and retire the manual sync</span>The hand-run script goes away for good.</li>
+<li><span class="ft">Backfill the 245 missing descriptions</span>Optional, and it can happen after launch.</li>
+</ol>
+
+<h2>The same job on Shopify, for contrast</h2>
+<p>Shopify would give you storefront, cart, checkout and inventory in one box, with a fully styleable
+checkout. The cost is that you rebuild the page as a Shopify theme in their template language rather
+than keeping the HTML we already have, you re-key 1,102 items, you buy new readers because Square's
+do not work, and you put an untested register in front of a Saturday crowd.</p>
+<div class="note bad"><div class="t">And you would give up your rate</div>
+<p>Your measured 2.40% + 15&cent; is <em>better than Square's own published free-plan rate</em>. Whatever the
+reason &mdash; legacy pricing or the Premium plan &mdash; it is worth protecting. Walking to Shopify Basic
+means 2.6% + 10&cent;. On your mix that is a step backwards before a single subscription dollar is counted.</p></div>
+
+<div class="note good"><div class="t">Recommendation</div>
+<p>Keep the page. Keep Square. Wire them together with a Worker and Payment Links. You end up with the
+clean filtered storefront you wanted, live stock, real payments landing in the same system as the
+register, no hardware to buy, no catalogue to re-key, and no risk at the counter. The single compromise
+is a Square-branded payment screen at the very last step.</p></div>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>

@@ -1,0 +1,183 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>What each one really costs — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+@media(min-width:600px){
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>What each one really costs</h1><div class="sub">True annual cost at 1 employee and at 7 &mdash; subscription plus processing, on your actual transaction mix.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html" class="on">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a></nav></div></header>
+<main><div class="wrap">
+<h2>What it actually costs, per year</h2>
+<p>Subscription plus processing, over twelve months, using <strong>your real transaction mix</strong>:
+$178,356 card-present across 6,838 swipes, $97,829 keyed or card-on-file across 782, and $50,366 in cash
+that costs nothing either way.</p>
+
+<div class="toggle" id="tg">
+<button data-s="one" class="on">1 employee</button>
+<button data-s="seven">7 employees</button>
+</div>
+
+<div class="tblwrap"><table id="tbl">
+<tr><th>Scenario</th><th>Subscription</th><th>Processing</th><th>Total / yr</th></tr>
+<tr data-scope="both" class="win"><td>Square &mdash; Free plan</td><td class="n">$0</td><td class="n">$9,125.91</td><td class="n">$9,125.91</td></tr><tr data-scope="both" class=""><td>Square &mdash; Plus</td><td class="n">$588</td><td class="n">$8,556.23</td><td class="n">$9,144.23</td></tr><tr data-scope="both" class="hi"><td>Square &mdash; Premium <em>(what you appear to be on)</em></td><td class="n">$1,788</td><td class="n">$8,377.88</td><td class="n">$10,165.88</td></tr><tr data-scope="one" class="win"><td>Shopify Basic + POS Lite</td><td class="n">$468</td><td class="n">$8,392.69</td><td class="n">$8,860.69</td></tr><tr data-scope="seven" class=""><td>Shopify Basic + POS Pro</td><td class="n">$1,536</td><td class="n">$8,392.69</td><td class="n">$9,928.69</td></tr><tr data-scope="seven" class=""><td>Shopify Grow + POS Pro</td><td class="n">$2,328</td><td class="n">$8,018.68</td><td class="n">$10,346.68</td></tr><tr data-scope="seven" class=""><td>Shopify Advanced + POS Pro</td><td class="n">$5,856</td><td class="n">$7,644.66</td><td class="n">$13,500.66</td></tr>
+</table></div>
+<p class="scroll-hint" id="hint">Swipe the table sideways on a phone. Green = cheapest for this headcount.</p>
+
+<div class="note" id="verdict1"><div class="t">At 1 employee: Shopify is $265/yr cheaper &mdash; and it still is not worth it</div>
+<p>Shopify Basic with free POS Lite comes to <strong>$8,861</strong> against Square Free at <strong>$9,126</strong>.
+That $265 gap is erased by a single hardware purchase, and it only holds while exactly one person
+can ring a sale. It is a real number, but it is not a reason to move.</p></div>
+
+<div class="note good" id="verdict7" style="display:none"><div class="t">At 7 employees: Square wins by $803/yr</div>
+<p>Seven people at the register forces <strong>POS Pro at $89/mo</strong> &mdash; Shopify's plan tiers cap staff
+seats at 2 (Basic), 5 (Grow) and 15 (Advanced), and only POS Pro lifts the register PIN limit.
+That pushes Shopify to <strong>$9,929</strong> against Square Free at <strong>$9,126</strong>.
+Square charges nothing per employee, so its number does not move at all between these two columns.</p></div>
+
+<h2>Why the headcount changes Shopify but not Square</h2>
+<div class="tblwrap"><table>
+<tr><th>&nbsp;</th><th>1 employee</th><th>7 employees</th><th>Change</th></tr>
+<tr class="win"><td>Square</td><td class="n">$9,126</td><td class="n">$9,126</td><td class="n">$0</td></tr>
+<tr><td>Shopify</td><td class="n">$8,861</td><td class="n">$9,929</td><td class="n">+$1,068</td></tr>
+</table></div>
+<p>Square has no per-employee charge at any tier. Shopify's cost steps up the moment more than a
+couple of people need to touch the register &mdash; not as a per-seat fee, but by forcing you onto POS Pro.</p>
+
+<h2>The Premium plan question</h2>
+<div class="note bad"><div class="t">$1,040/yr, sitting on the table</div>
+<p>Premium buys you 0.2% off in-person and 0.4% off card-not-present. On your volume that is
+worth <strong>$748/yr</strong>. It costs <strong>$1,788/yr</strong>. You are paying $1,040 for a discount
+you are too small to use.</p>
+<p>Break-even is about <strong>$660,000</strong> in annual card volume. You are at <strong>$276,185</strong> &mdash;
+42% of the way there. Even a very good year does not close that gap.</p></div>
+
+<h2>Verified inputs</h2>
+<div class="tblwrap"><table>
+<tr><th>Input</th><th>Value</th><th>Source</th></tr>
+<tr><td>Card-present volume</td><td class="n">$178,356 / 6,838</td><td>Square API</td></tr>
+<tr><td>Keyed &amp; card-on-file</td><td class="n">$97,829 / 782</td><td>Square API</td></tr>
+<tr><td>Cash</td><td class="n">$50,366 / 3,066</td><td>Square API</td></tr>
+<tr><td>Fees actually paid</td><td class="n">$8,348.30</td><td>Square API</td></tr>
+<tr><td>Your in-person rate</td><td class="n">2.40% + 15&cent;</td><td>Measured per-txn</td></tr>
+<tr><td>Your card-on-file rate</td><td class="n">2.90% + 30&cent;</td><td>Measured per-txn</td></tr>
+<tr><td>Locations</td><td class="n">1</td><td>Square API</td></tr>
+</table></div>
+<div class="note good"><div class="t">Sanity check on my own math</div>
+<p>My model predicts <strong>$8,378</strong> in Square processing for the year. Square actually charged you
+<strong>$8,348</strong>. A 0.4% miss on a $328k base &mdash; the model tracks reality, so the Shopify
+columns built the same way should be trustworthy too.</p></div>
+
+<h2>What is not in these numbers</h2>
+<ul>
+<li><strong>Shopify hardware.</strong> Square readers are not compatible. New readers required &mdash; not verified, depends on station count.</li>
+<li><strong>Migration labour.</strong> 1,102 items, 1,557 variations, 88 categories, plus customer and order history.</li>
+<li><strong>Square Payroll</strong>, if you use it: $35/mo + $6/employee. At 7 staff that is $77/mo &mdash; but it is payroll, not POS, and Shopify has no native equivalent. I have not verified whether you use it.</li>
+<li><strong>Downtime risk</strong> at the counter, which you have already said you will not accept.</li>
+</ul>
+<p class="src">Subscription and rate figures for both platforms are published list prices as of Sept 2026,
+applied to your verified transaction mix. They are estimates in the sense that list prices can change &mdash;
+your Square volume and fees are hard data.</p>
+
+<script>
+(function(){
+ var btns=document.querySelectorAll('#tg button');
+ function set(s){
+  btns.forEach(function(b){b.classList.toggle('on',b.dataset.s===s)});
+  document.querySelectorAll('#tbl tr[data-scope]').forEach(function(r){
+   r.style.display=(r.dataset.scope===s||r.dataset.scope==='both')?'':'none';});
+  document.getElementById('verdict1').style.display=(s==='one')?'':'none';
+  document.getElementById('verdict7').style.display=(s==='seven')?'':'none';
+ }
+ btns.forEach(function(b){b.addEventListener('click',function(){set(b.dataset.s)})});
+ set('one');
+})();
+</script>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>
