@@ -1,0 +1,226 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Is skateOS ready? — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+
+.dg{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:15px;margin:0 0 8px;overflow-x:auto}
+.dg .lane{min-width:290px}
+.node{border:1.5px solid var(--line-strong);border-radius:11px;padding:9px 11px;background:var(--bg-soft);margin:0 0 6px}
+.node .nt{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+.node .nn{font-weight:700;font-size:14px;margin-top:1px}
+.node .nd{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+.node.live{border-color:var(--green);background:#f2faf7}
+.node.dead{border-color:var(--red);background:#fef6f7;border-style:dashed}
+.node.new{border-color:var(--blue);background:#f2f6fc;border-style:dashed}
+.node.sq{border-color:var(--ink);background:#fff}
+.arw{text-align:center;color:var(--ink-mute);font-size:11px;font-weight:600;margin:0 0 6px;line-height:1.35}
+.arw b{color:var(--ink);font-family:'SF Mono',Menlo,monospace;font-size:11px;font-weight:600}
+.brk{border:1.5px dashed var(--red);border-radius:11px;padding:10px 11px;background:#fef6f7;margin:0 0 6px;
+ text-align:center;color:var(--red-dark);font-weight:700;font-size:13px}
+.cls{border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;margin:0 0 9px;background:var(--bg)}
+.cls .ch{background:var(--ink);color:#fff;padding:7px 11px;font-weight:700;font-size:13.5px;
+ display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cls .ch span{font-size:10px;font-weight:600;color:#9a9da4;font-family:'SF Mono',Menlo,monospace}
+.cls .cb{padding:8px 11px;font-family:'SF Mono',Menlo,monospace;font-size:11.5px;line-height:1.85;color:var(--ink-soft)}
+.cls .cb i{color:var(--ink-mute);font-style:normal}
+.cls .cb b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:11.5px;color:var(--ink-soft)}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
+.sw.l{border-color:var(--green);background:#f2faf7} .sw.d{border-color:var(--red);background:#fef6f7}
+.sw.n{border-color:var(--blue);background:#f2f6fc}
+@media(min-width:600px){
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>Is skateOS ready?</h1><div class="sub">A straight answer on whether skateOS can run the shop, based on what is deployed and what the database shows.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html" class="on">skateOS audit</a></nav></div></header>
+<main><div class="wrap">
+<div class="note bad"><div class="t">Correction &mdash; my first read of this was wrong</div>
+<p>I audited <em>skateos.com</em> and concluded there was no POS, because <em>/admin</em>, <em>/pos</em> and
+<em>/checkout</em> all return 404. That was an incomplete audit. The application is on a different
+subdomain: <strong>app.skateos.com</strong> &mdash; a <strong>2.9 MB single-page app</strong>.</p>
+<p>skateOS is far more built than I first said. The findings below replace that earlier read.</p></div>
+
+<div class="verdict"><div class="lbl">Verdict</div>
+<h2>Not ready &mdash; but not because it is unbuilt. Because it is unproven.</h2>
+<p>skateOS has more skatepark-specific capability than Square will ever have. What it does not have is
+evidence that it works under load. Your park ran <span class="num">10,694 payments</span> and
+<span class="num">$328,025</span> through Square last year. In the same database, skateOS shows
+<span class="num">0 orders</span>, <span class="num">0 gift cards</span> and
+<span class="num">3 check-ins</span>. It is a finished-looking system that has never carried a real day.</p></div>
+
+<h2>What skateOS actually has</h2>
+<p>All verified by reading the deployed application, not from notes.</p>
+<div class="tblwrap"><table>
+<tr><th>Capability</th><th>Evidence in the shipped app</th></tr>
+<tr><td>Multi-tenant SaaS</td><td><em>tenants</em>, <em>user_tenants</em> &mdash; built to serve other parks</td></tr>
+<tr><td>Real authentication</td><td>Supabase auth, password reset, roles &amp; permissions (104 refs)</td></tr>
+<tr><td>Card payments</td><td>Helcim &mdash; HelcimPay.js hosted fields (415 refs), plus a stripe-checkout function</td></tr>
+<tr><td>Refunds</td><td>590 references &mdash; a real refund path, not a stub</td></tr>
+<tr><td>Barcode scanning</td><td>155 references</td></tr>
+<tr><td>Receipt printing</td><td>411 references</td></tr>
+<tr><td>Cash drawer / tender</td><td>17 references</td></tr>
+<tr><td>Time clock</td><td>148 references + a staff kiosk page</td></tr>
+<tr><td>Inventory adjust / reorder</td><td>310 references</td></tr>
+<tr><td>Door access</td><td>9 Brivo edge functions &mdash; lockdown, invites, event passes, sync</td></tr>
+<tr><td>Camera integration</td><td>frigate-webhook</td></tr>
+<tr><td>Waivers</td><td>smartwaiver-lookup, smartwaiver-webhook</td></tr>
+<tr><td>Messaging</td><td>send-email, send-sms</td></tr>
+<tr><td>Automations</td><td>lesson reminders &amp; follow-ups, overdue rentals, renewal reminders, birthday greetings, daily digest, weekly pre-order digest</td></tr>
+<tr><td>Document generation</td><td>receipts, gift cards, certificates, progress reports, insurance packets, member cards, packing slips, bus manifests, rosters, end-of-shift tape</td></tr>
+</table></div>
+<div class="note good"><div class="t">This is the part worth saying plainly</div>
+<p>Door access, waivers, lessons, camps, bus manifests, progress reports, member cards &mdash;
+<strong>Square does not do any of that and never will.</strong> On skatepark operations, skateOS is not
+behind Square. It is well ahead of it.</p></div>
+
+<h2>What it lacks that Square has</h2>
+<div class="tblwrap"><table>
+<tr><th>Gap</th><th>Why it matters at the counter</th></tr>
+<tr class="hi"><td>Any transaction history</td><td>0 orders. Nothing has been sold through it. Ever.</td></tr>
+<tr><td>Certified card hardware</td><td>Your Square readers do not work with Helcim. New terminals required.</td></tr>
+<tr><td>A proven processing rate</td><td>You have 2.40% + 15&cent; on Square. Helcim pricing is unverified &mdash; it may beat it or not.</td></tr>
+<tr><td>Proven offline behaviour</td><td>59 offline/PWA references exist. Whether the register survives a Wi-Fi drop mid-sale is untested.</td></tr>
+<tr><td>Dispute &amp; chargeback handling</td><td>Square absorbs this operationally today.</td></tr>
+<tr><td>Deposits &amp; reconciliation</td><td>Money has to land in the bank on a schedule you can predict.</td></tr>
+<tr><td>1099-K / tax reporting</td><td>Square files this. Helcim would.</td></tr>
+<tr><td>Someone to call at 7pm Saturday</td><td>Right now that is me, and I am not a support line.</td></tr>
+</table></div>
+
+<h2>The usage evidence &mdash; this is the whole argument</h2>
+<p>Row counts pulled straight from the skateOS database. I read counts only, never records.</p>
+<div class="tblwrap"><table>
+<tr><th>Table</th><th>Rows</th><th>Reading</th></tr>
+<tr class="hi"><td>orders</td><td class="n">0</td><td>Never processed a sale</td></tr>
+<tr class="hi"><td>gift_cards</td><td class="n">0</td><td>Feature built, never used</td></tr>
+<tr class="hi"><td>form_submissions</td><td class="n">0</td><td>No one has ever used the shop&rsquo;s reserve form</td></tr>
+<tr class="hi"><td>checkins</td><td class="n">3</td><td>A park this busy would log thousands</td></tr>
+<tr class="hi"><td>subscriptions</td><td class="n">2</td><td>Memberships not running here</td></tr>
+<tr><td>lessons</td><td class="n">141</td><td>The one area with genuine use</td></tr>
+<tr><td>customers</td><td class="n">27,639</td><td>Imported, not earned in-app</td></tr>
+<tr><td>sales</td><td class="n">10,751</td><td>Imported &mdash; tracks Square&rsquo;s 10,694 payments almost exactly</td></tr>
+<tr><td>products</td><td class="n">1,409</td><td>Only 30% match your Square catalog</td></tr>
+</table></div>
+<p>The shape is unmistakable: <strong>history was loaded in, but almost nothing has been created by
+using it.</strong> Lessons at 141 is the exception and shows the app does work when someone actually
+runs it. Everything transactional sits at zero.</p>
+
+<div class="note bad"><div class="t">Security &mdash; fix this whether or not you ever migrate</div>
+<p>The Supabase anon key is embedded in the public shop page. With it I confirmed
+<strong>27,639 customer records</strong> and <strong>10,751 sales records</strong> return HTTP 200.
+Row-level security is not restricting them.</p>
+<p>That is not a migration issue. That is live, today, on a key anyone can copy out of your page source
+in ten seconds. It outranks every other item here.</p></div>
+
+<h2>What a real migration would take</h2>
+<ol class="flow">
+<li><span class="ft">Lock down RLS</span>Non-negotiable and independent of everything else. 27,639 customer records are readable right now.</li>
+<li><span class="ft">Open and underwrite a Helcim merchant account</span>Application, underwriting, approval. Then compare its real rate against the 2.40% + 15&cent; you already have &mdash; do not assume it wins.</li>
+<li><span class="ft">Buy and test card terminals</span>Square hardware will not carry over.</li>
+<li><span class="ft">Reconcile the catalogue</span>1,409 rows against 1,102 Square items with 30% overlap. Decide what is real, once.</li>
+<li><span class="ft">Prove offline behaviour</span>Pull the Wi-Fi mid-sale, repeatedly, until you trust it. This is the test that actually predicts a bad Saturday.</li>
+<li><span class="ft">Parallel run for 30&ndash;60 days</span>skateOS ringing alongside Square, reconciled nightly. Do not cut over on faith.</li>
+<li><span class="ft">Train all seven staff</span>With Square still on the counter as the fallback.</li>
+<li><span class="ft">Cut over with a written rollback</span>Square stays plugged in for a full season.</li>
+</ol>
+<p class="src">Steps 2 and 3 carry real cost I have not verified &mdash; Helcim rates and terminal pricing
+need quoting before this becomes a budget rather than a plan.</p>
+
+<div class="note good"><div class="t">What I would actually do</div>
+<p><strong>Do not migrate the POS.</strong> You already said you cannot trust an untested register in
+front of a crowd, and the data agrees with you &mdash; 0 orders is not a system anyone should put in
+front of a Saturday line.</p>
+<p>But do not shelve skateOS either. Its real value was never as a Square replacement. Run it as the
+<strong>park-operations layer</strong> &mdash; door access, waivers, lessons, camps, check-ins, member
+cards, staff clock-in &mdash; all things Square genuinely cannot do, and where the lessons table already
+proves it works. Leave the money on Square, where 10,694 payments a year say it belongs.</p>
+<p>That splits the risk correctly: the part that is proven keeps taking money, and the part that is
+genuinely better gets used for what it is better at.</p></div>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>
