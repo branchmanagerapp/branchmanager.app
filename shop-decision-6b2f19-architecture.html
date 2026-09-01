@@ -1,0 +1,266 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>skateOS architecture — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+
+.dg{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:15px;margin:0 0 8px;overflow-x:auto}
+.dg .lane{min-width:290px}
+.node{border:1.5px solid var(--line-strong);border-radius:11px;padding:9px 11px;background:var(--bg-soft);margin:0 0 6px}
+.node .nt{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+.node .nn{font-weight:700;font-size:14px;margin-top:1px}
+.node .nd{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+.node.live{border-color:var(--green);background:#f2faf7}
+.node.dead{border-color:var(--red);background:#fef6f7;border-style:dashed}
+.node.new{border-color:var(--blue);background:#f2f6fc;border-style:dashed}
+.node.sq{border-color:var(--ink);background:#fff}
+.arw{text-align:center;color:var(--ink-mute);font-size:11px;font-weight:600;margin:0 0 6px;line-height:1.35}
+.arw b{color:var(--ink);font-family:'SF Mono',Menlo,monospace;font-size:11px;font-weight:600}
+.brk{border:1.5px dashed var(--red);border-radius:11px;padding:10px 11px;background:#fef6f7;margin:0 0 6px;
+ text-align:center;color:var(--red-dark);font-weight:700;font-size:13px}
+.cls{border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;margin:0 0 9px;background:var(--bg)}
+.cls .ch{background:var(--ink);color:#fff;padding:7px 11px;font-weight:700;font-size:13.5px;
+ display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cls .ch span{font-size:10px;font-weight:600;color:#9a9da4;font-family:'SF Mono',Menlo,monospace}
+.cls .cb{padding:8px 11px;font-family:'SF Mono',Menlo,monospace;font-size:11.5px;line-height:1.85;color:var(--ink-soft)}
+.cls .cb i{color:var(--ink-mute);font-style:normal}
+.cls .cb b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:11.5px;color:var(--ink-soft)}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
+.sw.l{border-color:var(--green);background:#f2faf7} .sw.d{border-color:var(--red);background:#fef6f7}
+.sw.n{border-color:var(--blue);background:#f2f6fc}
+@media(min-width:600px){
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>skateOS architecture</h1><div class="sub">UML of skateOS as it actually runs today, how it would attach to Square, and the database schema behind it.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html" class="on">Architecture</a></nav></div></header>
+<main><div class="wrap">
+<div class="note bad"><div class="t">Correction to what I told you earlier</div>
+<p>I said Supabase was a synced copy of Square. <strong>That is not true.</strong> I compared them directly:
+of 400 active Supabase products, only <strong>121 (30.2%)</strong> exist in your Square catalog by name.
+Supabase holds things Square does not (Orbit gum, Red Bull, youth sweatshirts) and Square holds
+roughly a thousand items the website has never seen.</p>
+<p>The local script I assumed was the sync &mdash; <em>square_sync.py</em> &mdash; runs the <strong>other
+direction</strong>: it pushes invoice line items <em>into</em> Square. <strong>There is no Square &rarr; website
+sync at all.</strong> These are two unrelated product databases that happen to share a third of their names.</p></div>
+
+<div class="legend">
+<span><i class="sw l"></i> verified working</span>
+<span><i class="sw d"></i> broken / missing</span>
+<span><i class="sw n"></i> proposed, not built</span>
+</div>
+
+<h2>Diagram 1 &mdash; skateOS as it exists today</h2>
+<p>UML deployment view. Every box here I confirmed by hitting it directly.</p>
+<div class="dg"><div class="lane">
+<div class="node"><div class="nt">&laquo;actor&raquo;</div><div class="nn">Customer browser</div>
+<div class="nd">Phone or desktop</div></div>
+<div class="arw">&darr; <b>HTTPS GET /2ntr/shop/</b></div>
+<div class="node live"><div class="nt">&laquo;device&raquo; Cloudflare edge</div><div class="nn">Worker &mdash; skateos.com</div>
+<div class="nd">Path &rarr; file. No server-side rendering. Byte-identical for every visitor (verified: same hash across user agents).</div></div>
+<div class="arw">&darr; returns <b>63 KB static HTML</b></div>
+<div class="node live"><div class="nt">&laquo;artifact&raquo;</div><div class="nn">shop page (1 file)</div>
+<div class="nd">Plain JS. No React, no framework, no build step. Contains the Supabase anon key in clear text.</div></div>
+<div class="arw">&darr; browser JS calls <b>fetch()</b> directly &mdash; no back end of yours involved</div>
+<div class="node live"><div class="nt">&laquo;service&raquo; auto-generated</div><div class="nn">PostgREST</div>
+<div class="nd">/rest/v1/products?select=&hellip;&amp;status=eq.active&amp;order=created_at.desc<br>Supabase generates this from the schema. Nobody wrote it.</div></div>
+<div class="arw">&darr;</div>
+<div class="node live"><div class="nt">&laquo;database&raquo;</div><div class="nn">Supabase &mdash; zecurmlenxyxanqucrga</div>
+<div class="nd">1,409 active products. 6 tables reachable with the public key.</div></div>
+<div class="arw">&darr; customer taps Buy</div>
+<div class="node dead"><div class="nt">&laquo;form&raquo;</div><div class="nn">&ldquo;Reserve for pickup&rdquo;</div>
+<div class="nd">Writes one row to form_submissions. <strong>No payment code exists on this page</strong> &mdash; no Stripe, no PayPal, no Square. Money is collected by hand at pickup or over the phone.</div></div>
+<div class="brk">&#10007; &nbsp;NO CONNECTION&nbsp; &#10007;</div>
+<div class="node sq"><div class="nt">&laquo;external system&raquo;</div><div class="nn">Square</div>
+<div class="nd">The real POS. 1,102 items, 1,557 variations, 6,838 in-person sales last year. <strong>The website cannot see any of it, and Square cannot see the website.</strong></div></div>
+</div></div>
+<p class="scroll-hint">Scroll the panel sideways on a phone if it clips.</p>
+
+<h2>Diagram 2 &mdash; with Square as the back end</h2>
+<p>The same front end. The database island is removed and Square becomes the single source of truth.</p>
+<div class="dg"><div class="lane">
+<div class="node"><div class="nt">&laquo;actor&raquo;</div><div class="nn">Customer browser</div></div>
+<div class="arw">&darr; <b>GET /shop</b></div>
+<div class="node live"><div class="nt">&laquo;device&raquo; Cloudflare edge</div><div class="nn">Worker &mdash; unchanged role</div>
+<div class="nd">Still serves the same static HTML you already have. Filters and layout survive as-is.</div></div>
+<div class="arw">&darr; page loads, then calls <b>your</b> API instead of the database</div>
+<div class="node new"><div class="nt">&laquo;service&raquo; to build</div><div class="nn">Worker API routes</div>
+<div class="nd">/api/catalog &middot; /api/stock &middot; /api/checkout<br><strong>Holds the Square token server-side.</strong> This is the one new component.</div></div>
+<div class="arw">&darr; server-to-server, token never reaches the browser</div>
+<div class="node sq"><div class="nt">&laquo;external system&raquo; verified live</div><div class="nn">Square Connect API</div>
+<div class="nd">Catalog &middot; Inventory &middot; Orders &middot; Payment Links &mdash; all responding on your account today.</div></div>
+<div class="arw">&darr; customer pays</div>
+<div class="node new"><div class="nt">&laquo;hosted page&raquo;</div><div class="nn">Square Checkout</div>
+<div class="nd">Square-branded and not styleable. PCI handled &mdash; no card data touches your code. This is the one real compromise.</div></div>
+<div class="arw">&darr;</div>
+<div class="node live"><div class="nt">&laquo;system of record&raquo;</div><div class="nn">Square</div>
+<div class="nd">Online order lands beside the in-person ones. Same inventory, same payouts, same reports. <strong>Nothing changes at the register.</strong></div></div>
+</div></div>
+
+<h2>Diagram 3 &mdash; UML class diagram, current data model</h2>
+<p>Only <em>products</em> is fully enumerated below &mdash; see the honesty note under the schema.</p>
+<div class="dg"><div class="lane">
+<div class="cls"><div class="ch">products <span>1,409 active</span></div><div class="cb">
+<b>id</b> <i>: uuid &laquo;PK&raquo;</i><br>
+<b>name</b> <i>: text</i><br>
+<b>price</b> <i>: numeric</i><br>
+<b>brand</b> <i>: text</i><br>
+<b>category_id</b> <i>: uuid &laquo;FK &rarr; categories&raquo;</i><br>
+<b>quantity</b> <i>: int</i><br>
+<b>low_stock_threshold</b> <i>: int</i><br>
+<b>status</b> <i>: text &mdash; filtered eq.active</i><br>
+<b>image_url</b> <i>: text</i><br>
+<b>image_thumb_url</b> <i>: text</i><br>
+<b>created_at</b> <i>: timestamptz</i></div></div>
+<div class="arw">&uarr; <b>category_id</b> &nbsp;many-to-one</div>
+<div class="cls"><div class="ch">categories <span>columns not enumerated</span></div>
+<div class="cb"><i>Exists, readable. Drives the ALL / DECKS / COMPLETES / TRUCKS filter bar.</i></div></div>
+<div class="cls"><div class="ch">form_submissions <span>columns not enumerated</span></div>
+<div class="cb"><i>The only table the website writes to. One row per &ldquo;Reserve for pickup&rdquo;.</i></div></div>
+<div class="cls"><div class="ch">customers <span>columns not enumerated</span></div>
+<div class="cb"><i>Readable with the public key. See the security note.</i></div></div>
+<div class="cls"><div class="ch">orders <span>columns not enumerated</span></div>
+<div class="cb"><i>Present but unused by the shop page &mdash; it has no checkout to create orders with.</i></div></div>
+<div class="cls"><div class="ch">sales <span>columns not enumerated</span></div>
+<div class="cb"><i>Readable with the public key. See the security note.</i></div></div>
+</div></div>
+
+<h2>Full schema &mdash; what I verified and what I did not</h2>
+<div class="tblwrap"><table>
+<tr><th>Table</th><th>Reachable w/ public key</th><th>Columns known</th><th>Used by the site</th></tr>
+<tr class="win"><td>products</td><td>HTTP 200</td><td>All 11 &mdash; verified</td><td>Read on every page load</td></tr>
+<tr><td>categories</td><td>HTTP 200</td><td>Not enumerated</td><td>Read &mdash; filter bar</td></tr>
+<tr><td>form_submissions</td><td>HTTP 200</td><td>Not enumerated</td><td>Written &mdash; reservations</td></tr>
+<tr class="hi"><td>customers</td><td>HTTP 200</td><td>Not enumerated</td><td>Not used</td></tr>
+<tr class="hi"><td>orders</td><td>HTTP 200</td><td>Not enumerated</td><td>Not used</td></tr>
+<tr class="hi"><td>sales</td><td>HTTP 200</td><td>Not enumerated</td><td>Not used</td></tr>
+<tr><td>inventory / variants / members / transactions</td><td>404</td><td>&mdash;</td><td>Do not exist</td></tr>
+</table></div>
+<div class="note"><div class="t">Why four tables say &ldquo;not enumerated&rdquo;</div>
+<p>The clean way to list every column is the service_role key, which returns the schema with
+<strong>zero rows</strong>. The service_role key on file is for <strong>Branch Manager</strong>
+(<em>ltpivkqahvplapyagljt</em>), not this project. The only other route is reading a live row, and for
+<em>customers</em>, <em>sales</em>, <em>orders</em> and <em>form_submissions</em> that means reading real
+customer data &mdash; which was blocked, correctly, and which I did not route around.</p>
+<p>Get me the skateOS service_role key and I will finish the schema in one pass without touching a single
+customer record.</p></div>
+
+<h2>Square-side schema, for comparison</h2>
+<p>All verified live against merchant <em>2nd Nature Skateboarding</em> (ML3DFVQZ88EVK).</p>
+<div class="tblwrap"><table>
+<tr><th>Square object</th><th>Count</th><th>Notes</th></tr>
+<tr><td>CatalogItem</td><td class="n">1,102</td><td>1,048 with photos, 857 with descriptions</td></tr>
+<tr><td>CatalogItemVariation</td><td class="n">1,557</td><td>1,128 stock-tracked, 429 not</td></tr>
+<tr><td>CatalogCategory</td><td class="n">88</td><td>Enough to drive the filters</td></tr>
+<tr><td>Location</td><td class="n">1</td><td>Indoor Skate Park &amp; Shop</td></tr>
+<tr><td>Payment</td><td class="n">10,694</td><td>Last 365 days, $328,025</td></tr>
+<tr><td>PaymentLink</td><td class="n">11</td><td>Checkout API already in use</td></tr>
+<tr><td>Site</td><td class="n">1</td><td>www.2ntr.com, published</td></tr>
+</table></div>
+
+<div class="note bad"><div class="t">Security finding &mdash; needs a decision</div>
+<p>The Supabase key is embedded in the public shop page; I pulled it out with one grep. With it,
+<strong>customers</strong>, <strong>sales</strong> and <strong>orders</strong> all return HTTP 200.
+That means row-level security is not restricting those tables to the people who should see them.</p>
+<p>This is the same failure class as the Branch Manager RLS breach in my notes. The key being public is
+normal and fine &mdash; <em>that is what an anon key is for</em>. What is not fine is that it can read
+customer and sales tables. The fix is RLS policies on the database, not hiding the key.</p>
+<p>I have not enumerated how much data is exposed, because doing so means reading the records themselves.
+Say the word and I will scope it properly.</p></div>
+
+<h2>What this means for the migration question</h2>
+<p>The 30% overlap changes the answer materially. There is no sync to repair &mdash; there is no sync.
+Pointing the site at Square is not a fix to a broken pipe, it is <strong>replacing a duplicate product
+database with the real one</strong>, and it makes the roughly 1,000 Square-only items sellable online
+for the first time.</p>
+<p>The reverse also becomes a question you have to answer: the Supabase-only items &mdash; gum, soda,
+youth sweatshirts &mdash; either get created in Square or they stop appearing on the site. I would not
+guess which. That is a real inventory decision, not a technical one.</p>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>
