@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Square vs Shopify — 2nd Nature</title>
+<title>How the site actually works — 2nd Nature</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -164,113 +164,117 @@ a{color:var(--blue)}
 <div class="announce">Verified from live Square data &middot; 365 days &middot; <b>$328,025</b> &middot; 10,694 payments</div>
 <header class="top"><div class="wrap">
 <div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
-<h1>Square vs Shopify</h1><div class="sub">Should the shop live on Square or Shopify? Built from your real numbers, not a brochure.</div>
-<nav class="tabs"><a href="shop-decision-6b2f19.html" class="on">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html">Processor</a><a href="shop-decision-6b2f19-stack.html">How it works</a></nav></div></header>
+<h1>How the site actually works</h1><div class="sub">Routing, data, and what React actually is — the technical model behind the shop page, verified rather than assumed.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html">Processor</a><a href="shop-decision-6b2f19-stack.html" class="on">How it works</a></nav></div></header>
 <main><div class="wrap">
-<div class="hero"><div class="hero-text">
-<span class="tag">Bottom line</span>
-<h1>Stay on Square. Drop&nbsp;Premium. Build the shop on Square&rsquo;s APIs.</h1>
-<p>Shopify does not save money once you staff the counter &mdash; at 7 employees it costs
-<span class="num">$803/yr more</span>. The real money is elsewhere: you appear to be paying for a Square
-plan that never pays for itself, which is <span class="num">$1,040/yr</span> you can take back this week
-without changing a thing.</p>
-<div class="btn-row">
-<a class="btn btn-prim" href="shop-decision-6b2f19-pricing.html">See the numbers &rarr;</a>
-<a class="btn btn-ghost-dark" href="shop-decision-6b2f19-audit.html">Is skateOS ready?</a>
-</div></div></div>
+<p>This page exists because the answer to &ldquo;what framework is it using?&rdquo; turned out to be
+<strong>none</strong>, and that is worth writing down properly rather than re-deriving next time.</p>
 
-<div class="statstrip">
-<div><div class="v">$328,025</div><div class="k">Processed through Square, 365 days</div></div>
-<div><div class="v">$8,348</div><div class="k">Processing fees paid &middot; 2.55% blended</div></div>
-<div><div class="v">10,694</div><div class="k">Payments &middot; avg ticket $30.67</div></div>
-<div><div class="v">1,102</div><div class="k">Catalog items &middot; 95% have photos</div></div>
-</div>
+<h2>How a page actually reaches a customer</h2>
+<p>There are two separate layers doing completely different jobs, and conflating them is what makes this
+confusing.</p>
 
-<div class="findgrid">
-<a class="find" href="shop-decision-6b2f19-pricing.html"><div class="n">Finding 01</div>
-<h3>You are on a plan that costs more than it saves</h3>
-<p>Your measured rate is 2.40% + 15&cent; &mdash; that is Square Premium, $149/mo. It saves $748/yr and
-costs $1,788. Break-even is about $660k in card volume. You did $276,185.</p></a>
-<a class="find" href="shop-decision-6b2f19-pricing.html"><div class="n">Finding 02</div>
-<h3>Processing fees are a wash</h3>
-<p>On your real mix every scenario lands within ~$750/yr on fees. Shopify Basic would cost $15/yr more
-than Square does today. Stop weighing the platforms on rate.</p></a>
-<a class="find" href="shop-decision-6b2f19-pricing.html"><div class="n">Finding 03</div>
-<h3>Shopify&rsquo;s cheap tier cannot run your shop</h3>
-<p>Staff caps by plan: Basic 2, Grow 5. Unlimited register PINs need POS Pro at $89/mo. With seven people
-the floor is $128/mo &mdash; and there Square wins.</p></a>
-<a class="find" href="shop-decision-6b2f19-migration.html"><div class="n">Finding 04</div>
-<h3>Square&rsquo;s commerce APIs are wide open</h3>
-<p>Tested live on your account: Catalog, Inventory, Orders and Payment Links all respond. Only the
-website builder is closed. Square will not let you rebuild its site &mdash; but it will sit behind yours.</p></a>
-<a class="find" href="shop-decision-6b2f19-audit.html"><div class="n">Finding 05</div>
-<h3>skateOS is built, but has never sold anything</h3>
-<p>A real 2.9 MB app with Helcim payments, door access and waivers &mdash; and <strong>0 orders</strong>,
-0 gift cards, 3 check-ins. Not unfinished. Unproven.</p></a>
-<a class="find" href="shop-decision-6b2f19-processor.html"><div class="n">Finding 06</div>
-<h3>Helcim would save $1,757/yr</h3>
-<p>Modelled on your volume, and it still wins even at 2.50%. Your $26 average ticket makes the
-15&cent;&rarr;8&cent; fixed-fee drop worth $479/yr on its own.</p></a>
-</div>
+<h3>Layer 1 &mdash; URL to page. This is the routing.</h3>
+<p>A <strong>Cloudflare Worker</strong>. It matches the path and hands back the matching file.
+<em>/2ntr/shop/</em> returns one 63 KB HTML file. That is the entire routing layer.</p>
+<p>No React Router, no Next.js, no Express, no framework. HTML pages with links between them, exactly as
+you described it. Verified: the bytes are identical whether you request as an iPhone or a Mac, so there
+is <strong>no server-side rendering</strong> &mdash; nothing is generated per visitor.</p>
+<p>It is also why <em>/admin</em>, <em>/pos</em> and <em>/checkout</em> return 404 on skateos.com. No file
+sits there, and nothing generates one on the fly.</p>
 
-<h2>The five things that actually decide this</h2>
+<h3>Layer 2 &mdash; page to products. This is not routing at all.</h3>
+<p>The page arrives in the browser with <strong>no products in it</strong>. Then its JavaScript calls the
+database directly over HTTPS:</p>
+<div class="code">https://zecurmlenxyxanqucrga.supabase.co/rest/v1/products
+  ?select=id,name,price,image_url,brand,category_id,quantity,status
+  &amp;status=eq.active
+  &amp;order=created_at.desc</div>
+<p>That is <strong>PostgREST</strong> &mdash; the API you could not find. Supabase generates a REST
+endpoint automatically for every table in the database. Nobody wrote it; it exists because the table
+exists. The browser talks straight to the database&rsquo;s HTTP layer, and no server of yours is involved.</p>
 
-<div class="card"><h3>1. You are on a Square plan that costs more than it saves <span class="pill p-warn">verify</span></h3>
-<p>Your measured rate is <strong>2.40% + 15&cent;</strong> in person and <strong>2.90% + 30&cent;</strong> card-on-file.
-That is not Square's free-plan pricing &mdash; it matches <strong>Square Premium ($149/mo)</strong> exactly.</p>
-<p>Premium's discount saves you <strong>$748/yr</strong> in fees at your volume. It costs <strong>$1,788/yr</strong>.
-You would need roughly <strong>$660,000/yr</strong> in card volume for it to break even. You did $276,185.</p>
-<p class="src">I confirmed the rate from per-transaction fee data. I could <em>not</em> confirm the plan
-through the API &mdash; Square exposes no merchant-plan endpoint. Check your Square dashboard before acting.</p></div>
+<div class="note good"><div class="t">The sentence that resolves all of it</div>
+<p><strong>The page is static. Only the data is live.</strong></p>
+<p>When new grip tape appears on the site, no file was rebuilt, no deploy ran, nothing regenerated. A row
+was inserted in a table, and the next visitor&rsquo;s browser asked the same question and got one more
+answer back. Nothing on the server is ever rewritten &mdash; <strong>it is rows, not files.</strong></p></div>
 
-<div class="card"><h3>2. Processing fees are a wash <span class="pill p-info">not the lever</span></h3>
-<p>Applied to your real mix, every scenario lands within about $750/yr of the others on fees alone.
-Shopify Basic would cost you <strong>$15/yr more</strong> than what you pay Square today. That is noise.
-Stop weighing the platforms on processing rate &mdash; it does not move.</p></div>
-
-<div class="card"><h3>3. Shopify's cheap tier cannot run your shop <span class="pill p-no">7 staff</span></h3>
-<p>Shopify caps staff by plan: Basic gives <strong>2 seats</strong> (0 for stores opened after 2024), Grow 5, Advanced 15.
-POS Lite inherits that cap. Unlimited register PINs only arrive with <strong>POS Pro at $89/mo</strong>.</p>
-<p>So the honest comparison is not "Shopify is $39." With seven people ringing sales it is
-<strong>$128/mo minimum</strong> &mdash; and at that price Square wins.</p></div>
-
-<div class="card"><h3>4. Square's commerce APIs are wide open <span class="pill p-ok">verified live</span></h3>
-<p>I tested this against your account today. Catalog, Inventory, Orders and
-<strong>Payment Links all respond</strong> &mdash; you already have 11 payment links created.
-Only Square's <em>website builder</em> is closed; there is no pages or content API.</p>
-<p>That distinction is the whole answer to your original question: <strong>Square will not let you
-rebuild its website, but it will happily sit behind yours.</strong></p></div>
-
-<div class="card"><h3>5. Your Square readers do not work on Shopify <span class="pill p-no">one-time cost</span></h3>
-<p>Shopify POS does not talk to Square hardware. Moving means buying Shopify's readers,
-re-training the counter, and re-keying a 1,102-item catalog &mdash; during a season you are
-already running at $33k/month.</p>
-<p class="src">Hardware cost not verified &mdash; depends on how many stations you run. Budget it as a real
-one-time number before deciding, not as zero.</p></div>
-
-<h2>Head to head</h2>
+<h2>Proof, not assertion</h2>
 <div class="tblwrap"><table>
-<tr><th>&nbsp;</th><th>Square</th><th>Shopify</th></tr>
-<tr><td>Cost, 1 employee</td><td class="n">$9,126</td><td class="n">$8,861</td></tr>
-<tr class="win"><td>Cost, 7 employees</td><td class="n">$9,126</td><td class="n">$9,929</td></tr>
-<tr><td>Staff cost model</td><td>No per-staff fee</td><td>Capped by plan tier</td></tr>
-<tr><td>Custom storefront</td><td>Via API, self-hosted</td><td>Native themes</td></tr>
-<tr><td>Custom checkout</td><td>No &mdash; Square-branded</td><td>Yes</td></tr>
-<tr><td>Keep current hardware</td><td>Yes</td><td>No</td></tr>
-<tr><td>Keep 4 yrs of history</td><td>Yes</td><td>Migrate</td></tr>
-<tr><td>Register risk</td><td>None</td><td>Untested at the counter</td></tr>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Product names present in the HTML file</td><td class="n">0</td></tr>
+<tr><td>Active products served from the database</td><td class="n">1,409</td></tr>
+<tr><td>Page bytes, iPhone vs Mac request</td><td>identical hash</td></tr>
+<tr><td>Script tags in the file</td><td class="n">1</td></tr>
+<tr><td>Build step</td><td>none</td></tr>
 </table></div>
-<p class="scroll-hint">Annual totals. Full breakdown on the <a href="shop-decision-6b2f19-pricing.html">Pricing</a> page.</p>
+<p>Five products pulled live from the database, then searched for in the HTML file: none of them are in
+there. They are drawn by JavaScript after the page loads.</p>
 
-<div class="note bad"><div class="t">The one thing Shopify genuinely does better</div>
-<p>Shopify lets you style the checkout page. On Square, the customer browses your site and then
-hands off to a Square-branded payment screen you cannot restyle. For 782 card-not-present
-transactions a year, that is a cosmetic cost &mdash; not $1,000/yr and a register migration.</p></div>
+<h2>The four layers</h2>
+<div class="lyr">
+<div class="row"><div class="lb">HTML</div><div class="lv"><b>What is on the page.</b> Structure and content.</div></div>
+<div class="row"><div class="lb">CSS</div><div class="lv"><b>What it looks like.</b> A separate language, applied to the HTML.</div></div>
+<div class="row"><div class="lb">JavaScript</div><div class="lv"><b>What it does.</b> On your shop page: fetches products, draws tiles, runs filters and the cart.</div></div>
+<div class="row off"><div class="lb">React</div><div class="lv"><b>Not used.</b> A library that would reorganise the JavaScript in the row above. It does not replace HTML or CSS.</div></div>
+</div>
+<p><strong>HTML is to CSS as JavaScript is to React.</strong> In each pair the first is the foundation and
+the second is a layer added on top to keep things manageable at scale. CSS with no HTML has nothing to
+style; React with no JavaScript does not exist.</p>
+<p>Where the analogy breaks: CSS is a genuinely separate language &mdash; you stop writing HTML and start
+writing CSS. React is not like that. <strong>When you write React you are still writing JavaScript the
+whole time.</strong> There is no second language, just a different way of organising the first.</p>
 
-<div class="note good"><div class="t">What I would do, in order</div>
-<p><strong>1.</strong> Confirm the Square plan on your dashboard and downgrade if it is Premium &mdash; $1,040/yr, no downside at your volume.<br>
-<strong>2.</strong> Wire the shop page we already built to Square's Catalog and Payment Links APIs.<br>
-<strong>3.</strong> Revisit Shopify only if you cross roughly $660k in card volume or genuinely need a branded checkout.</p></div>
+<h2>What React actually is</h2>
+<p>Two files. Measured, not estimated:</p>
+<div class="tblwrap"><table>
+<tr><th>File</th><th>Size</th><th>Job</th></tr>
+<tr><td>react.production.min.js</td><td class="n">10 KB</td><td>The component model</td></tr>
+<tr><td>react-dom.production.min.js</td><td class="n">129 KB</td><td>The part that touches the page</td></tr>
+<tr class="hi"><td><strong>Total</strong></td><td class="n"><strong>140 KB</strong></td><td>&nbsp;</td></tr>
+</table></div>
+<p>You can drop both in with two script tags and start using it. No install, no build, no tooling.
+It is a library, in the same sense jQuery was.</p>
+
+<h2>The catch &mdash; JSX, and what it drags in</h2>
+<p>Almost nobody uses React that way, because of <strong>JSX</strong>: syntax that lets you write what
+looks like HTML inside JavaScript.</p>
+<div class="code bad"><span class="c">// JSX — a browser cannot read this</span>
+return &lt;div className=<span class="s">"card"</span>&gt;{product.name}&lt;/div&gt;</div>
+<p>It has to be compiled first into real JavaScript:</p>
+<div class="code ok"><span class="c">// what it becomes — this a browser can run</span>
+return React.createElement(<span class="s">'div'</span>, {className:<span class="s">'card'</span>}, product.name)</div>
+<p>That compile step is what pulls in the whole toolchain: Node, npm, a bundler, a node_modules folder, a
+build command, and a deploy pipeline that runs it before anything ships.</p>
+<div class="tblwrap"><table>
+<tr><th>&nbsp;</th><th>What it is</th><th>What it costs</th></tr>
+<tr class="win"><td>React alone</td><td>2 JS files, 140 KB</td><td>Nothing &mdash; drop it in</td></tr>
+<tr class="hi"><td>React as normally written</td><td>React + JSX</td><td>A build step and a toolchain</td></tr>
+</table></div>
+<p class="src">You can write React with no build step at all by calling <em>React.createElement</em>
+directly. It works. Nobody does it, because JSX reads far better &mdash; and by the time a project wants
+React it usually wants the tooling too.</p>
+
+<h2>Why this does not change the shop page</h2>
+<div class="note"><div class="t">The behaviour you asked for already exists</div>
+<p>&ldquo;Add items to the database and have them appear without touching HTML&rdquo; is
+<strong>how that page already works</strong> &mdash; 1,409 products, none hardcoded. Plain JavaScript gets
+the identical result a customer would see. Rewriting it in React would change nothing visible.</p></div>
+<p>And it would cost something real. The page today has <strong>no build step</strong>: one file that runs
+as-is. Edit it, push it, done. That is why it is 63 KB with no dependencies to break.</p>
+<p>Adding React would not just add 140 KB &mdash; it would convert a file you can open and edit into a
+project that must be <em>compiled</em> before it can be deployed.</p>
+<div class="note good"><div class="t">Where React would genuinely earn its place</div>
+<p>Lots of interacting state across many screens &mdash; a POS holding an open ticket, split tender, a
+customer lookup and a cart that has to stay in sync in three places at once. That is the problem React
+was built for.</p>
+<p>Not a page that fetches a list and draws tiles.</p></div>
+
+<div class="note bad"><div class="t">The real missing piece was never a framework</div>
+<p>The shop page&rsquo;s actual gaps are that its checkout takes no money, and that its product database
+shares only <strong>30%</strong> of its names with your Square catalogue. Neither is fixed by React.
+Both are covered on the <a href="shop-decision-6b2f19-architecture.html">Architecture</a> page.</p></div>
 
 <footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
 <em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.

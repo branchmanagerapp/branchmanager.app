@@ -107,15 +107,65 @@ a{color:var(--blue)}
 .sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
 .sw.l{border-color:var(--green);background:#f2faf7} .sw.d{border-color:var(--red);background:#fef6f7}
 .sw.n{border-color:var(--blue);background:#f2f6fc}
+
+.code{background:#14161a;color:#e6e7ea;border-radius:10px;padding:11px 13px;margin:0 0 11px;
+ font-family:'SF Mono',Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;
+ -webkit-overflow-scrolling:touch;white-space:pre}
+.code .c{color:#7a7e85} .code .k{color:#7ee2b8} .code .s{color:#f5b971}
+.code.bad{border-left:3px solid var(--red)} .code.ok{border-left:3px solid var(--green)}
+.lyr{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px;background:var(--bg)}
+.lyr .row{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line);align-items:flex-start}
+.lyr .row:last-child{border-bottom:none}
+.lyr .row.off{background:var(--bg-soft)}
+.lyr .lb{flex:0 0 74px;font-weight:700;font-size:13px}
+.lyr .lv{flex:1;font-size:13px;color:var(--ink-soft);line-height:1.45}
+.lyr .lv b{color:var(--ink)}
+
+/* --- shop-page styling, tokens lifted from skateos.com/2ntr/shop/ --- */
+.announce{background:#0e0e10;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.09em;
+ text-transform:uppercase;text-align:center;padding:8px 14px;line-height:1.5}
+.announce b{color:#ff5a68;font-weight:800}
+.hero{position:relative;border-radius:20px;overflow:hidden;padding:26px 20px 24px;margin:0 0 16px;
+ background:linear-gradient(150deg,#1c1f26 0%,#0e0e10 55%,#2a1114 100%);color:#fff}
+.hero::after{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+ background:radial-gradient(120% 80% at 85% 10%,rgba(209,26,42,.32),transparent 60%)}
+.hero-text{position:relative;z-index:2;max-width:540px}
+.tag{display:inline-block;background:var(--red);color:#fff;padding:5px 12px;border-radius:12px;
+ font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.hero h1{font-size:clamp(1.55rem,5.2vw,2.4rem);font-weight:900;line-height:1.05;
+ letter-spacing:-.02em;margin:0 0 10px;color:#fff}
+.hero p{color:#c9ccd2;font-size:14.5px;margin:0 0 16px}
+.hero p .num{color:#7ee2b8;font-weight:700}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:12px 20px;border-radius:8px;font-weight:700;font-size:14.5px;border:2px solid transparent;
+ display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:transform .1s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-prim{background:var(--red);color:#fff}
+.btn-ghost-dark{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
+.statstrip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+ border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 18px}
+.statstrip div{background:var(--bg);padding:13px 12px}
+.statstrip .v{font-size:19px;font-weight:900;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.statstrip .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.findgrid{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 18px}
+.find{display:block;text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--line);
+ border-radius:14px;padding:14px 15px;transition:border-color .15s}
+.find:active{border-color:var(--line-strong)}
+.find .n{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--red)}
+.find h3{margin:4px 0 4px;font-size:15.5px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.find p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.45}
 @media(min-width:600px){
+ .hero{padding:44px 40px 40px} .statstrip{grid-template-columns:repeat(4,1fr)}
+ .findgrid{grid-template-columns:1fr 1fr}
  h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
  table{min-width:0}
 }
 </style></head><body>
+<div class="announce">Verified from live Square data &middot; 365 days &middot; <b>$328,025</b> &middot; 10,694 payments</div>
 <header class="top"><div class="wrap">
 <div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
 <h1>The processor question</h1><div class="sub">Helcim vs Square on your real volume, why the server round trip was my mistake, and the third path I did not give you.</div>
-<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html" class="on">Processor</a></nav></div></header>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html" class="on">Processor</a><a href="shop-decision-6b2f19-stack.html">How it works</a></nav></div></header>
 <main><div class="wrap">
 <div class="verdict"><div class="lbl">Revised position</div>
 <h2>You were right about the money, and right about the round trip.</h2>
