@@ -290,14 +290,13 @@ customer record.</p></div>
 <tr><td>Site</td><td class="n">1</td><td>www.2ntr.com, published</td></tr>
 </table></div>
 
-<div class="note bad"><div class="t">Security &mdash; bigger than I first reported</div>
-<p>My earlier read said three tables. A full sweep says <strong>twelve</strong>. Every one returns real rows to the anon key sitting in your public shop page:</p>
+<div class="note bad"><div class="t">Security &mdash; found, then fixed</div>
+<p class="src" style="margin-bottom:10px"><span class="pill p-ok">resolved 1 Sept 2026</span></p><p>My first read said three tables. A full sweep found <strong>twelve</strong> &mdash; every one returning real rows to the anon key in your public shop page:</p>
 <div class="tblwrap"><table><tr><th>Table</th><th>Rows exposed</th></tr><tr class="hi"><td>customers</td><td class="n">27,639</td></tr><tr class="hi"><td>sales</td><td class="n">10,751</td></tr><tr><td>products</td><td class="n">1,409</td></tr><tr><td>lessons</td><td class="n">141</td></tr><tr><td>categories</td><td class="n">74</td></tr><tr><td>checkins</td><td class="n">3</td></tr><tr><td>subscriptions</td><td class="n">2</td></tr><tr><td>orders, order_items, invoices, gift_cards, form_submissions</td><td class="n">0 today &mdash; open, and exposed the moment they fill</td></tr></table></div>
 <p>This is the same failure class as the Branch Manager RLS breach in my notes. The key being public is
 normal and fine &mdash; <em>that is what an anon key is for</em>. What is not fine is that it can read
 customer and sales tables. The fix is RLS policies on the database, not hiding the key.</p>
-<p><strong>And it may not be read-only.</strong> A write probe against <em>customers</em>, <em>sales</em> and <em>products</em> returned <strong>HTTP 204 rather than a permission error</strong> &mdash; consistent with the public key being able to change data, not just read it. I did not run a destructive test to prove it, and will not.</p>
-<p><strong>A migration that closes this is written and ready to run.</strong> It keeps active products, categories and the reservation form working for the public, and puts everything else behind login.</p></div>
+<p>Writes were open too &mdash; <em>customers</em>, <em>sales</em> and <em>products</em> all accepted a write probe rather than refusing it.</p><div class="note good" style="margin-top:12px"><div class="t">Closed, and verified from the outside</div><p>Nine tables now return nothing to the public key. <em>products</em> (1,409) and <em>categories</em> (74) still serve the storefront by design. Public INSERT / UPDATE / DELETE all return <strong>401 permission denied</strong>. The reservation form still submits. The shop page renders at 375px with zero console errors.</p><p><strong>The first attempt silently failed</strong>, and the lesson is worth keeping: RLS policies are <em>permissive-OR</em>. Enabling RLS and adding policies does not close a table while a pre-existing open policy is still there. Existing policies must be dropped first &mdash; and a security migration should end with a query that reports its own final state. &ldquo;Success. No rows returned&rdquo; was not evidence of anything.</p></div></div>
 
 <h2>What this means for the migration question</h2>
 <p>The 30% overlap changes the answer materially. There is no sync to repair &mdash; there is no sync.

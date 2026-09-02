@@ -237,15 +237,14 @@ behind Square. It is well ahead of it.</p></div>
 using it.</strong> Lessons at 141 is the exception and shows the app does work when someone actually
 runs it. Everything transactional sits at zero.</p>
 
-<div class="note bad"><div class="t">Security &mdash; fix this whether or not you ever migrate</div>
-<p>The Supabase anon key is embedded in the public shop page. With it, <strong>twelve tables</strong> return real rows &mdash; including <strong>27,639 customer records</strong> and <strong>10,751 sales records</strong>. A write probe also came back <strong>204 rather than a permission error</strong>, consistent with the key being able to change data as well as read it.</p>
-<p><strong>A fix is written and ready to run</strong> &mdash; it closes all twelve without taking the storefront down.</p>
+<div class="note bad"><div class="t">Security &mdash; found and fixed</div>
+<p><span class="pill p-ok">resolved 1 Sept 2026</span></p><p>The anon key in the public shop page reached <strong>twelve tables</strong> &mdash; including <strong>27,639 customer records</strong> and <strong>10,751 sales records</strong> &mdash; and writes were open too.</p><p><strong>Now closed and verified.</strong> Nine tables return nothing publicly; products and categories still serve the shop; public writes return 401; the reservation form still works; the storefront renders clean at phone width.</p>
 <p>That is not a migration issue. That is live, today, on a key anyone can copy out of your page source
 in ten seconds. It outranks every other item here.</p></div>
 
 <h2>What a real migration would take</h2>
 <ol class="flow">
-<li><span class="ft">Lock down RLS</span>Non-negotiable and independent of everything else. 27,639 customer records are readable right now.</li>
+<li><span class="ft">Lock down RLS &mdash; <strong>done 1 Sept 2026</strong></span>Twelve tables closed, storefront verified still working. This was the one item that never depended on any decision here.</li>
 <li><span class="ft">Open and underwrite a Helcim merchant account</span>Application, underwriting, approval. Then compare its real rate against the 2.40% + 15&cent; you already have &mdash; do not assume it wins.</li>
 <li><span class="ft">Buy and test card terminals</span>Square hardware will not carry over.</li>
 <li><span class="ft">Reconcile the catalogue</span>1,409 rows against 1,102 Square items with 30% overlap. Decide what is real, once.</li>
