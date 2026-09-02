@@ -198,7 +198,7 @@ sync at all.</strong> These are two unrelated product databases that happen to s
 <div class="nd">/rest/v1/products?select=&hellip;&amp;status=eq.active&amp;order=created_at.desc<br>Supabase generates this from the schema. Nobody wrote it.</div></div>
 <div class="arw">&darr;</div>
 <div class="node live"><div class="nt">&laquo;database&raquo;</div><div class="nn">Supabase &mdash; zecurmlenxyxanqucrga</div>
-<div class="nd">1,409 active products. 6 tables reachable with the public key.</div></div>
+<div class="nd">1,409 active products. <strong>12 tables</strong> reachable with the public key.</div></div>
 <div class="arw">&darr; customer taps Buy</div>
 <div class="node dead"><div class="nt">&laquo;form&raquo;</div><div class="nn">&ldquo;Reserve for pickup&rdquo;</div>
 <div class="nd">Writes one row to form_submissions. <strong>No payment code exists on this page</strong> &mdash; no Stripe, no PayPal, no Square. Money is collected by hand at pickup or over the phone.</div></div>
@@ -290,15 +290,14 @@ customer record.</p></div>
 <tr><td>Site</td><td class="n">1</td><td>www.2ntr.com, published</td></tr>
 </table></div>
 
-<div class="note bad"><div class="t">Security finding &mdash; needs a decision</div>
-<p>The Supabase key is embedded in the public shop page; I pulled it out with one grep. With it,
-<strong>customers</strong>, <strong>sales</strong> and <strong>orders</strong> all return HTTP 200.
-That means row-level security is not restricting those tables to the people who should see them.</p>
+<div class="note bad"><div class="t">Security &mdash; bigger than I first reported</div>
+<p>My earlier read said three tables. A full sweep says <strong>twelve</strong>. Every one returns real rows to the anon key sitting in your public shop page:</p>
+<div class="tblwrap"><table><tr><th>Table</th><th>Rows exposed</th></tr><tr class="hi"><td>customers</td><td class="n">27,639</td></tr><tr class="hi"><td>sales</td><td class="n">10,751</td></tr><tr><td>products</td><td class="n">1,409</td></tr><tr><td>lessons</td><td class="n">141</td></tr><tr><td>categories</td><td class="n">74</td></tr><tr><td>checkins</td><td class="n">3</td></tr><tr><td>subscriptions</td><td class="n">2</td></tr><tr><td>orders, order_items, invoices, gift_cards, form_submissions</td><td class="n">0 today &mdash; open, and exposed the moment they fill</td></tr></table></div>
 <p>This is the same failure class as the Branch Manager RLS breach in my notes. The key being public is
 normal and fine &mdash; <em>that is what an anon key is for</em>. What is not fine is that it can read
 customer and sales tables. The fix is RLS policies on the database, not hiding the key.</p>
-<p>I have not enumerated how much data is exposed, because doing so means reading the records themselves.
-Say the word and I will scope it properly.</p></div>
+<p><strong>And it may not be read-only.</strong> A write probe against <em>customers</em>, <em>sales</em> and <em>products</em> returned <strong>HTTP 204 rather than a permission error</strong> &mdash; consistent with the public key being able to change data, not just read it. I did not run a destructive test to prove it, and will not.</p>
+<p><strong>A migration that closes this is written and ready to run.</strong> It keeps active products, categories and the reservation form working for the public, and puts everything else behind login.</p></div>
 
 <h2>What this means for the migration question</h2>
 <p>The 30% overlap changes the answer materially. There is no sync to repair &mdash; there is no sync.

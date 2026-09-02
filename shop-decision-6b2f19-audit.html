@@ -238,9 +238,8 @@ using it.</strong> Lessons at 141 is the exception and shows the app does work w
 runs it. Everything transactional sits at zero.</p>
 
 <div class="note bad"><div class="t">Security &mdash; fix this whether or not you ever migrate</div>
-<p>The Supabase anon key is embedded in the public shop page. With it I confirmed
-<strong>27,639 customer records</strong> and <strong>10,751 sales records</strong> return HTTP 200.
-Row-level security is not restricting them.</p>
+<p>The Supabase anon key is embedded in the public shop page. With it, <strong>twelve tables</strong> return real rows &mdash; including <strong>27,639 customer records</strong> and <strong>10,751 sales records</strong>. A write probe also came back <strong>204 rather than a permission error</strong>, consistent with the key being able to change data as well as read it.</p>
+<p><strong>A fix is written and ready to run</strong> &mdash; it closes all twelve without taking the storefront down.</p>
 <p>That is not a migration issue. That is live, today, on a key anyone can copy out of your page source
 in ten seconds. It outranks every other item here.</p></div>
 
