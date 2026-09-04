@@ -29,6 +29,15 @@ li .t small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
 .tag.hot{color:var(--red);border-color:#6a2f2f}
 .foot{color:var(--mut);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:12px}
 .pick{position:fixed;left:0;right:0;bottom:0;background:#12151b;border-top:1px solid var(--line);padding:10px 14px;font-size:13px;color:var(--mut);text-align:center}
+.tk{grid-column:2;display:flex;gap:16px;margin-top:6px;font-size:13px;color:var(--mut)}
+.tk label{display:flex;align-items:center;gap:6px;min-height:32px;cursor:pointer}
+.tk input{width:22px;height:22px;margin:0;accent-color:var(--amber)}
+li.is-done .t{text-decoration:line-through;opacity:.45}
+li.is-skip .t{opacity:.3}
+li.is-done .no,li.is-skip .no{opacity:.4}
+#tk-flash{position:fixed;left:50%;bottom:56px;transform:translateX(-50%) translateY(20px);background:var(--amber);color:#111;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;transition:.2s;pointer-events:none;z-index:50}
+#tk-flash.show{opacity:1;transform:translateX(-50%)}
+#tk-flash.bad{background:var(--red);color:#fff}
 </style>
 </head>
 <body>
@@ -37,7 +46,7 @@ li .t small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
 <p class="sub">Second Nature Tree + home · 11 recordings, Aug 26 → Sep 3, 2026 · numbers match the master list</p>
 
 <div class="lead">
-<b>How to use:</b> reply with numbers ("1, 4, 27 this week, 42 never"). <span class="tag claude">Claude</span> = I can do it without you. <span class="tag money">$</span> = money in or out. <span class="tag hot">slipped</span> = said more than once, still not done. Skate items live on the skateOS crew page.
+<b>How to use:</b> tap <b>Done</b> or <b>Forget it</b> under any item. It saves on the spot and I can read it. <span class="tag claude">Claude</span> = I can do it without you. <span class="tag money">$</span> = money in or out. <span class="tag hot">slipped</span> = said more than once, still not done. Skate items live on the skateOS crew page.
 </div>
 
 <h2>Money that is sitting there <span class="n">1–12</span></h2>
@@ -120,6 +129,7 @@ li .t small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
 
 <p class="foot">Source: Fieldy recordings Aug 26, 28, 31, Sep 2, Sep 3. Names as transcribed. Dollar figures are what was said out loud, not verified against books. Unlisted, noindex. Skate items (45–79, 83, 88) are on the skateOS crew page.</p>
 </main>
-<div class="pick">Reply with numbers. "Important" / "not now" / "never" all work.</div>
+<div class="pick">Tap Done or Forget it. It saves on the spot, same on every phone.</div>
+<script src="https://skateos.com/2ntr/todo.js" data-list="tree-sep3" data-key="22678762fbab7f6be414ed21094e62d0"></script>
 </body>
 </html>
