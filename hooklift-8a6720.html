@@ -28,48 +28,71 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:22px 0 50px}
 <header><div class="wrap">
 <div class="kicker">Private · Fleet decision</div>
 <h1>Hook-lift truck: consolidate the fleet into one?</h1>
-<p class="tag">Sell the F550 chip truck <i>and</i> the Ram 2500, buy one hook-lift with swappable bodies. The Ram's $1,005/mo payment is what makes the math work.</p>
+<div style="font-size:12px;opacity:.85;margin-top:4px">Rebuilt Sept 10 2026 with real numbers: Chase payoff, KBB at 70k miles, live hook-lift listings, F-550 auction comps, financing terms. June 2026 defaults are gone.</div>
+<p class="tag">Sell the F550 chip truck <i>and</i> the Ram 2500, buy one hook-lift with swappable bodies. The Ram's $1,005/mo payment is what makes the math work, and the Ram being underwater is what makes it harder than it looked in June.</p>
 </div></header>
 
 <div class="wrap">
 
 <section><h2>What your books say</h2>
 <div class="card">
-<div class="row"><span>Ram 2500 — payoff / value / <b>monthly payment</b></span><b class="num">$39,186 / ~$42k / <span class="bad">$1,004.91</span></b></div>
-<div class="row"><span>F550 chip truck — loan payment in books</span><b class="num real">$0 (owned free &amp; clear)</b></div>
+<div class="row"><span>Ram 2500 — payoff (Chase, 9/10/26) / value (KBB private, 70k mi) / <b>monthly payment</b></span><b class="num">$37,609 / ~$33–36k / <span class="bad">$1,004.91</span></b></div>
+<div class="row"><span>Ram loan — 12.90% APR · 72 mo · matures Jun 2031 · $44,959 financed · Doug is co-borrower</span><b class="num bad">underwater ~$2–5k</b></div>
+<div class="row"><span>2004 F550 chip truck — owned free &amp; clear; what it actually sells for</span><b class="num">$10–18k retail · $8–13k auction</b></div>
 <div class="row"><span>Disposal/hauling you'd save</span><b class="num">~$115/mo</b></div>
-<p class="src">The big lever is the <b>Ram's $1,004.91/mo payment</b> — selling it (diesel, ~$42k value, ~$2.8k equity over the $39,186 payoff) ends that payment AND clears the loan. The F550 is owned outright, so it's pure sale cash. Together they nearly pay for the hook-lift.</p>
+<p class="src">The big lever is still the <b>Ram's $1,004.91/mo payment</b>, but selling it no longer throws off cash: at 70k miles it's worth ~$33–36k private against a $37,609 payoff, so you write Chase a $2–5k check to be rid of the 12.9% note. Refinancing is dead (LLC-titled, underwater; Doug has tried). The F550 is pure sale cash, but the market says $10–18k for a 2004, not $35k. Together they cover a fraction of a $90k truck, not most of it.</p>
 </div></section>
 
 <section><h2>Set your numbers</h2>
-<div class="flag"><b>⚠️ Reality check before the math:</b> a ~$50k hook-lift is a <b>Class 7 medium-duty</b> — it is NOT a daily-driver / errand / estimate truck, and it needs a <b>CDL-B</b> to drive. The Ram does light-duty + non-CDL crew runs the hook-lift can't. Make sure consolidating to one big truck genuinely covers those roles, or you'll end up buying a pickup back. <span class="muted">Set the real F550 value (its year/hours) + your honest extra-revenue number.</span></div>
+<div class="flag"><b>⚠️ Reality check before the math:</b> the trucks that were "good shape, lower miles, made sense for us" were about <b>$90k</b> (Doug, Sept 10). A Class 5 hook-lift (F-550 / Ram 5500, 19,500 GVWR) or an F-650 spec'd under 26,000 GVWR does <b>not</b> need a CDL to drive. What does trigger one is <b>towing</b>: a 5500 pulling the 16–20 ft trailer with both machines is over 26,001 lb combined with a trailer over 10,000 lb, and that is CDL-A under the federal rule (confirm NY). The Ram 2500 pulling that same trailer stays under the line. A hook-lift is also not an errand or estimate truck. Decide who drives what before the math says yes. <span class="muted">Defaults below are the real Sept 2026 numbers; change any of them.</span></div>
 <div class="grid3">
 <div class="ipanel"><div class="ihead">Hook-lift</div>
-<label>Price ($)<input id="price" type="number" value="50000"></label>
+<label>Price ($)<input id="price" type="number" value="90000"></label>
 <label>APR (%)<input id="apr" type="number" value="10" step="0.1"></label>
 <label>Term (yrs)<input id="term" type="number" value="5"></label>
 <label>Running cost ($/mo, est.)<input id="hookrun" type="number" value="600"></label>
 </div>
 <div class="ipanel"><div class="ihead">Sell the Ram 2500</div>
-<label>Payoff owed ($)<input id="rampay" type="number" value="39186"></label>
-<label>Resale value ($)<input id="ramval" type="number" value="42000"></label>
+<label>Payoff owed ($)<input id="rampay" type="number" value="37609"></label>
+<label>Resale value ($)<input id="ramval" type="number" value="34000"></label>
 <label>Monthly payment ended ($)<input id="rampmt" type="number" value="1004.91"></label>
 <label>Insurance saved ($/mo, est.)<input id="ramins" type="number" value="200"></label>
 </div>
 <div class="ipanel"><div class="ihead">Sell the F550 + upside</div>
-<label class="hot">F550 value if you sell it ($) — your floor (you put real work in)<input id="f550val" type="number" value="35000"></label>
+<label class="hot">F550 value if you sell it ($) — market says $10–18k for a 2004<input id="f550val" type="number" value="14000"></label>
 <label>F550 costs saved ($/mo, est.)<input id="f550cost" type="number" value="300"></label>
 <label class="hot">Extra revenue ($/mo) — your est.<input id="rev" type="number" value="0"></label>
-<label>Cash down if you KEEP all ($)<input id="down" type="number" value="5000"></label>
+<label>Cash down if you KEEP all ($)<input id="down" type="number" value="9000"></label>
 </div>
 </div>
 </section>
+
+
+<section><h2>The market, Sept 10 2026 (live listings, asks not sales)</h2>
+<div class="card">
+<p class="src" style="margin:0 0 8px">There are <b>zero</b> used F-550 / Ram 5500 hook-lifts for sale in NY, NJ, CT, MA or PA on TruckPaper today; regional used inventory is Class 6 (Isuzu NRR, Freightliner M2, International). Your $90k memory matches what clean, low-mile trucks actually cost.</p>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
+<tr style="text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase"><th style="padding:6px 4px">Truck</th><th>Miles</th><th>Hoist / body</th><th style="text-align:right">Ask</th><th>Where</th></tr>
+<tr><td style="padding:6px 4px">2012 Ford F-550 4x4, 6.7 diesel</td><td>49,702</td><td>hooklift, no body</td><td style="text-align:right">$49,999</td><td>South Amboy NJ (Phoenix Truxx)</td></tr>
+<tr><td style="padding:6px 4px">2016 Freightliner M2 106, Cummins</td><td>45,673</td><td>SwapLoader SL-212</td><td style="text-align:right">$69,500</td><td>Ronkonkoma NY (Cassone)</td></tr>
+<tr><td style="padding:6px 4px">2021 Isuzu NRR, 6.6 gas</td><td>54,248</td><td>hooklift</td><td style="text-align:right">$70,000</td><td>Upper Chichester PA</td></tr>
+<tr><td style="padding:6px 4px">2023 Isuzu NRR</td><td>36,921</td><td>hooklift</td><td style="text-align:right">$80,000</td><td>Avon MA</td></tr>
+<tr><td style="padding:6px 4px">2010 Freightliner M2 106, Cummins</td><td>30,868</td><td>hooklift</td><td style="text-align:right">$79,995</td><td>Lebanon PA</td></tr>
+<tr><td style="padding:6px 4px">2022 Ram 5500 HD, Cummins</td><td>77,868</td><td>hooklift</td><td style="text-align:right">$84,900</td><td>New Haven IN (out of region)</td></tr>
+<tr><td style="padding:6px 4px">2024 Ram 5500 Tradesman</td><td>4</td><td>hooklift</td><td style="text-align:right">$85,995</td><td>Monticello NY (Robert Green)</td></tr>
+<tr><td style="padding:6px 4px">2024 Chevy 6500HD</td><td>11</td><td>hooklift</td><td style="text-align:right">$63,851</td><td>Morrisville PA (Trucksmart Isuzu)</td></tr>
+<tr><td style="padding:6px 4px">2026 Ram 5500 diesel 4x4, new</td><td>0</td><td>Stellar Flex36, no body</td><td style="text-align:right">$115,895</td><td>Cortlandt Manor NY (Jim Reed)</td></tr>
+</table></div>
+<p class="src"><b>Bodies (Cassone, Ronkonkoma, new):</b> 15' chipper dump $12,500 · 12' container $5,450 · 18' container $6,750 · 17' 30-yd dumpster $7,650 · 14' mason dump $8,500. Used 15-yd box ~$5,000. A $90k truck plus a chip box and one container is a ~$110k package.</p>
+<p class="src"><b>Financing a used truck for the LLC (no SBA):</b> banks and credit unions want the truck under ~6 years and 75k miles. Equipment-finance lenders don't care about age: Crest Capital (no age or mileage limit, 24–72 mo, app-only under $250k) and Ameris/Balboa (1 yr in business, FICO 620, up to $500k) are the realistic doors. Expect <b>8–12% over 48–60 months with 10–20% down</b>. A 2012 F-550 is financeable there; a 2004 is a cash truck.</p>
+<p class="src"><b>The trailer angle:</b> Matt at Optimal said dump trailers need to be "somewhere around thirty cubic yards" to make money on storm debris. A hook-lift with a 30-yd container is exactly that asset, billable at the $350/hr "pickup + dump trailer" class on the Roscoe rate schedule. That is the revenue case, and it belongs in the extra-revenue box.</p>
+</div></section>
 
 <section><h2>The two roads</h2>
 <div class="cols">
 <div class="scn a"><h3>♻️ Consolidate — sell F550 + Ram, buy the hook-lift</h3>
 <div class="big" id="a_net"></div>
-<div class="row"><span>Cash from selling F550 + Ram equity</span><b class="num real" id="a_cash"></b></div>
+<div class="row"><span>Cash from selling F550 + Ram (Ram equity is negative: you pay the gap)</span><b class="num real" id="a_cash"></b></div>
 <div class="row"><span>Hook-lift financed after that</span><b class="num" id="a_fin"></b></div>
 <div class="row"><span>New hook-lift payment</span><b class="num" id="a_pmt"></b></div>
 <div class="row"><span>Monthly costs you SHED (Ram pmt+ins, F550, disposal)</span><b class="num real" id="a_shed"></b></div>
@@ -93,9 +116,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:22px 0 50px}
 
 <section><h2>The honest gut-check</h2>
 <div class="card">
-<p><b>The numbers say consolidate.</b> Killing the Ram's $1,004.91/mo payment is the whole story — it turns a $50k purchase into a cash-positive move before you haul a single extra log. The F550 + Ram sales cover most of the truck, so you finance almost nothing.</p>
-<p class="muted"><b>On the F550 price:</b> $35k is your <i>floor</i> — fair, given the work you've put in, and it's your call what you'll accept. Just know a buyer prices a 2004 off condition + <b>documented</b> upgrades (receipts, new drivetrain, recent rebuild), not effort. If it won't move at $35k, the real outcome is you <b>keep it</b> — which the "keep all 3" column already prices. Either way the consolidation still works; it just funds less of the truck.</p>
-<p class="muted"><b>The thing the math can't see:</b> one Class-7 hook-lift can't be everywhere. If you regularly need a chipper running while a truck hauls, or a non-CDL driver to run errands/estimates, one truck won't cover it and you'll re-buy a pickup — wiping out the savings. Consolidate only if the crew + remaining vehicles genuinely cover daily/light-duty. <b>The truck sales cover most of the cost — finance the small remainder.</b></p>
+<p><b>The numbers still say consolidate over keep-all, but it is no longer free money.</b> At $90k, after ~$14k from the F550 and a ~$3.6k check to clear the Ram, you finance roughly $80k. At 10% over 5 years that is about $1,700/mo against ~$1,620/mo you shed (Ram note, its insurance, F550 upkeep, disposal), plus ~$600/mo to run the hook-lift. Net is around <b>−$680/mo before new work</b>. It only pays if the hook-lift bills: container hauls, storm debris at Matt's "30-yard dump trailer" scale, and the days you currently rent or sub a truck. Set the extra-revenue box honestly and watch the verdict.</p>
+<p class="muted"><b>On the F550 price:</b> a 2004 F-550 dump with 82k miles sold at municipal auction for $13,300 (Sept 2024); 2003–06 F-550s list $8–25k depending on body and miles; a 2008 chip truck at 151k asks $20k. A buyer prices a 2004 off condition and <b>documented</b> work (receipts, drivetrain, rebuild), not effort. $14k is the honest default; $18k with paperwork and a clean bed.</p>
+<p class="muted"><b>The thing the math can't see:</b> one hook-lift can't be everywhere. If you regularly need a chipper running while a truck hauls, or someone running estimates, one truck won't cover it and you'll re-buy a pickup, wiping out the savings. And the sequence matters with $7.4k in the bank: <b>the F550 sale and the Ram sale come first, the hook-lift purchase second</b>, never the other way around. The $9,483 GL renewal on 9/18 comes before any of it.</p>
+<p class="muted"><b>The "cheaped out" lesson, said plainly:</b> the Ram was the $40k answer to a $90k question, and 12.9% financing turned it into a $60k truck by 2031. The fix is not another compromise truck. It is either the right truck financed properly by a lender that will touch it, or keeping the Ram until it is paid down enough to leave clean (late 2027 at the current pace).</p>
 </div></section>
 
 <footer>Private working sheet · figures update live · F550 value, insurance &amp; revenue are estimates until you set them · not financial advice</footer>
@@ -108,7 +132,7 @@ function pmtCalc(P,apr,yrs){if(P<=0)return 0;const i=apr/100/12,N=yrs*12; if(i==
 function calc(){
   const price=n('price'),apr=n('apr'),term=n('term'),hookrun=n('hookrun'),rampay=n('rampay'),ramval=n('ramval'),rampmt=n('rampmt'),ramins=n('ramins'),f550val=n('f550val'),f550cost=n('f550cost'),rev=n('rev'),down=n('down');
   // CONSOLIDATE: sell F550 (free+clear cash) + Ram (value − payoff = equity)
-  const saleCash=f550val+Math.max(0,ramval-rampay);
+  const saleCash=f550val+(ramval-rampay);   // negative Ram equity reduces cash (Sept 2026 fix)
   const finA=Math.max(0,price-saleCash), pmtA=pmtCalc(finA,apr,term);
   const shed=rampmt+ramins+f550cost+DISPOSAL;            // monthly costs eliminated
   const netA=shed+rev-pmtA-hookrun;
