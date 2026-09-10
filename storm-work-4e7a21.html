@@ -1,77 +1,316 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Emergency Work Pipeline — Second Nature Tree</title><style>
-:root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#5b6660;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--amber:#b9770f;--red:#c0392b}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>The Storm Playbook — Second Nature Tree</title>
+<style>
+:root{--bg:#f4f5f2;--card:#fff;--ink:#141614;--mute:#5b625b;--line:#dfe3dc;--green:#1a3c12;--gold:#8a6a12;--red:#9b2c1f;--soft:#eef2ea;--gsoft:#fff6d9;--rsoft:#fbe9e6}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:820px;margin:0 auto;padding:0 16px}
-header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:26px 0 22px;text-align:center}
-.kick{letter-spacing:2.5px;font-size:11px;font-weight:800;text-transform:uppercase;opacity:.8}
-header h1{margin:6px 0 0;font-size:23px;font-weight:800}
-header p{margin:8px auto 0;font-size:13.5px;opacity:.92;max-width:580px}
-h2{color:var(--green-d);font-size:18px;margin:28px 0 8px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:12px 0;box-shadow:0 1px 2px rgba(20,40,20,.04)}
-.muted{color:var(--muted);font-size:13px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:680px;margin:0 auto;padding:12px 12px 60px}
+header.top{background:var(--green);color:#fff;border-radius:14px;padding:18px 16px;margin-bottom:14px}
+header.top .k{font-size:12px;letter-spacing:.4px;text-transform:uppercase;opacity:.8}
+header.top h1{margin:4px 0 6px;font-size:24px;line-height:1.15}
+header.top p{margin:0;font-size:14px;opacity:.92}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+nav.toc a{font-size:12.5px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--green);text-decoration:none;font-weight:600}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+h2{margin:0 0 10px;font-size:19px;line-height:1.2}
+h3{margin:16px 0 6px;font-size:15.5px}
 p{margin:0 0 10px}
-.num{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--green-d);color:#fff;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin-right:8px;flex-shrink:0}
-.step{display:flex;align-items:flex-start;gap:4px;margin-bottom:6px}
-.tag{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:1px 6px;border-radius:20px}
-.do{background:var(--green-l);color:var(--green-d)}.wait{background:#eef0f4;color:#5a6472}
-.note{border-radius:10px;padding:11px 14px;font-size:12.5px;margin-top:10px}
-.note.warn{background:#fff8ec;border:1px solid #f0d9a8;color:#7a5512}
-.note.info{background:#eef4fb;border:1px solid #cfe0f5;color:#2b4a6f}
-ul{margin:6px 0 10px;padding-left:20px}li{margin:4px 0;font-size:13.5px}
-a{color:#1d6fd6;text-decoration:none}a:hover{text-decoration:underline}
-footer{text-align:center;color:#8a94a0;font-size:11.5px;padding:18px 0 40px}
-.big{font-weight:800;color:var(--green-d)}
-</style></head><body>
-<header><div class="wrap">
-<div class="kick">Second Nature Tree · Strategy</div>
-<h1>Emergency & Storm Work Pipeline</h1>
-<p>Decided Aug 15 2026: emergency work is the focus — it pays more, and the gear + paper are already in place. Here's the pipeline, cheapest lever first.</p>
-</div></header>
+ul,ol{margin:0 0 10px;padding-left:20px}
+li{margin:0 0 6px}
+.big{font-size:32px;font-weight:800;line-height:1.05;letter-spacing:-.5px}
+.sub{color:var(--mute);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 12px}
+.stat{background:var(--soft);border-radius:12px;padding:12px 10px}
+.stat .n{font-size:22px;font-weight:800;line-height:1.1}
+.stat .l{font-size:12px;color:var(--mute);margin-top:3px}
+.stat.g{background:var(--gsoft)}
+.stat.r{background:var(--rsoft)}
+.tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0 12px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
+th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--soft);font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:var(--mute)}
+td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.t td{font-weight:800;background:#fafbf8}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px;vertical-align:middle;margin-left:4px}
+.tag.real{background:#dcefd8;color:var(--green)}
+.tag.est{background:var(--gsoft);color:var(--gold)}
+.tag.guess{background:#eee;color:#555}
+.tag.risk{background:var(--rsoft);color:var(--red)}
+.callout{border-left:4px solid var(--green);background:var(--soft);padding:10px 12px;border-radius:0 10px 10px 0;margin:10px 0}
+.callout.warn{border-color:var(--red);background:var(--rsoft)}
+.callout.gold{border-color:var(--gold);background:var(--gsoft)}
+.step{display:flex;gap:10px;margin:0 0 12px}
+.step .num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+.step .body{flex:1}
+.step .body b{display:block;margin-bottom:2px}
+.status{font-size:12px;font-weight:700;color:var(--mute)}
+.status.done{color:var(--green)}
+.status.open{color:var(--red)}
+a{color:var(--green)}
+.links a{display:block;padding:8px 0;border-bottom:1px solid var(--line);text-decoration:none;font-weight:600}
+.links a:last-child{border-bottom:0}
+.links small{display:block;color:var(--mute);font-weight:400}
+footer{color:var(--mute);font-size:12px;text-align:center;margin-top:20px}
+.tier{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 8px}
+.tier b{display:block}
+.tier .who{font-size:13px;color:var(--mute)}
+@media (min-width:560px){header.top h1{font-size:28px}.big{font-size:38px}}
+</style>
+</head>
+<body>
 <div class="wrap">
 
-<h2>Why this works — the assets you already hold</h2>
-<div class="card">
-<ul>
-<li><b>Bucket truck fully papered:</b> annual OSHA/ANSI inspection + dielectric boom testing completed 8/12/26 (Northeast Utility Equipment, inv #4360). Dielectric is the storm-near-wires credential most small outfits skip.</li>
-<li><b>Insurance-restoration channel already open:</b> the BrinkStar COI (Jul 23) lists ServPro Global as additional insured — storm/insurance work is already flowing through Brink.</li>
-<li><b>Track record:</b> July 5 2026 storm — 4 properties, photo-documented in BM day recaps. Plus the ASG Verizon ROW line-clearance history (fact-checked pitch on the <a href="https://branchmanager.app/line-clearance-9f3a72.html">line-clearance research page</a>).</li>
-<li><b>36-hr mobilization</b> capability, 24/7 — the standard emergency-response bar public contracts set.</li>
-</ul>
-</div>
+<header class="top">
+  <div class="k">Second Nature Tree · Strategy · Sept 10 2026</div>
+  <h1>The Storm Playbook</h1>
+  <p>How Andrew billed a year of your revenue in four days, where you actually stand today, and the sequence that moves you up the chain. Replaces the Aug 15 "Emergency Work Pipeline" page. Real numbers are tagged <span class="tag real">real</span>, estimates <span class="tag est">est</span>.</p>
+</header>
 
-<h2>The moves, in order</h2>
-<div class="card">
-<div class="step"><span class="num">1</span><div><b>Register on BidNet / Empire State Purchasing Group</b> <span class="tag do">~30 min, one time</span><br>
-<span class="muted">One registration = bid alerts from dozens of NY local governments including <b>City of Peekskill</b> (they publish exclusively there). Set alerts for tree, storm, debris categories. Free basic tier; the paid tier adds broader regional alerts — start free.</span><br>
-<a href="https://www.bidnetdirect.com/new-york">bidnetdirect.com/new-york</a> → Vendor Registration. Use info@peekskilltree.com. W9 is ready (Docs for Brink folder).</div></div>
-<div class="step"><span class="num">2</span><div><b>Get on the town lists the old-fashioned way</b> <span class="tag do">4 phone calls</span><br>
-<span class="muted">Small towns keep informal on-call/emergency vendor lists at the DPW/Highway level — a call + COI + W9 usually does it. Maria at Tooher-Ferraris already issues per-town COIs (Peekskill, Putnam, Westchester ones exist in TREE FOLDER).</span>
-<ul>
-<li><b>Cortlandt</b> — DES Highway Division 914-977-8676 (their published storm/downed-tree line)</li>
-<li><b>Yorktown</b> — Town Clerk 914-962-5722 x209 (runs the bid list; they've bid "Tree Stumps and Log Removal" and Highway Dept tree removal before)</li>
-<li><b>Peekskill</b> — City Clerk 914-737-3400 + BidNet (step 1 covers their postings)</li>
-<li><b>Putnam Valley</b> — Town Hall / Highway Dept (call to ask how they hire storm tree work — not published online)</li>
-</ul>
-<span class="muted">Ask each: "How do I get on your emergency/storm tree removal vendor list?" — then send COI + W9 same day.</span></div></div>
-<div class="step"><span class="num">3</span><div><b>Push the Brink → ServPro channel</b> <span class="tag do">one conversation</span><br>
-<span class="muted">The insurance-restoration channel pays insurer money, not homeowner money. Ask Brink directly: what would it take to be first-call for ServPro tree/storm work in northern Westchester + Putnam? (The co-op research link is already in the drafted email to him.)</span></div></div>
-<div class="step"><span class="num">4</span><div><b>EHAP through TCIA</b> <span class="tag do">days, member pricing</span><br>
-<span class="muted">TCIA member ID 222530 = discounted. Electrical-hazard qualification is mandatory for utility subbing (Clearway/Lewis) and is what lets a crew work storm trees tangled in lines instead of walking away from the best-paying calls. Cheapest credential-per-dollar on the board.</span><br>
-<a href="https://www.tcia.org/TCIA/BUSINESS/EHAP/TCIA/EHAP.aspx">tcia.org EHAP program</a></div></div>
-<div class="step"><span class="num">5</span><div><b>Emergency page + ads on peekskilltree.com</b> <span class="tag wait">build — say go</span><br>
-<span class="muted">24/7 emergency landing page (no rates shown, per standing rule) + Google presence for "emergency tree removal" searches. Queued as a build whenever you want it.</span></div></div>
-<div class="step"><span class="num">6</span><div><b>Utility storm rosters via Clearway</b> <span class="tag wait">after EHAP</span><br>
-<span class="muted">The long game from the line-clearance research: sub under Clearway (regional, MWBE, TCIA-accredited) for utility storm surges. Needs EHAP + Z133 qualification first — step 4 feeds this.</span></div></div>
-</div>
+<nav class="toc">
+  <a href="#roscoe">Roscoe math</a>
+  <a href="#stand">Where you stand</a>
+  <a href="#chain">The chain</a>
+  <a href="#build">What to build</a>
+  <a href="#float">The float</a>
+  <a href="#seq">The sequence</a>
+  <a href="#andrew">Andrew</a>
+  <a href="#honesty">Honesty box</a>
+  <a href="#links">Links</a>
+</nav>
 
-<h2>Honesty box</h2>
-<div class="card">
-<div class="note warn"><b>Verified vs. assumed:</b> BidNet/Empire State being Peekskill's exclusive posting channel — verified on the city site. Cortlandt + Yorktown phone numbers — from their official pages. Putnam Valley's process — NOT published online; the call is the verification. Whether any town packet requires EHAP — unknown until we're registered and can open actual bid documents; utility work requiring it is certain (OSHA 1910.269).</div>
-<div class="note info"><b>Passed on purpose:</b> BPCA Tree Care RFP (due 8/25) — requires an ISA Certified Arborist on staff, which we don't have. Packet is built and parked in TREE FOLDER if that changes. The ISA cert (~$300, one winter of study) reopens every public RFP door — parked, not forgotten.</div>
-</div>
+<!-- 1. ROSCOE -->
+<section class="card" id="roscoe">
+  <h2>1. The Roscoe math</h2>
+  <p>Postcard Cabins, Roscoe NY, July 19–22 2026. Marriott owns the property → Servpro National Team was prime → BrinkStar (Andrew) packaged the crews → you were one of the crews. His billing package is on your Desktop; every table in it re-adds to the penny.</p>
 
+  <div class="grid2">
+    <div class="stat g"><div class="n">$232,706</div><div class="l">Andrew billed Servpro, pre-tax, 4 days <span class="tag real">real</span></div></div>
+    <div class="stat"><div class="n">$257,208</div><div class="l">Second Nature gross, all of 2025 <span class="tag real">real</span></div></div>
+    <div class="stat r"><div class="n">$12,541</div><div class="l">Second Nature net, all of 2025 (4.9%) <span class="tag real">real</span></div></div>
+    <div class="stat g"><div class="n">≈ $130k+</div><div class="l">Andrew's take, 4 days, after payroll + subs <span class="tag est">est</span></div></div>
+  </div>
+
+  <div class="tbl"><table>
+    <tr><th>His invoice</th><th class="n">Hours</th><th class="n">Rate</th><th class="n">Amount</th></tr>
+    <tr><td>Labor, 10 names, portal-to-portal</td><td class="n">395.31</td><td class="n">$350/person/hr</td><td class="n">$138,358.50</td></tr>
+    <tr><td>Equipment, 7 machines</td><td class="n">313.82</td><td class="n">$200–400/hr</td><td class="n">$94,347.00</td></tr>
+    <tr class="t"><td>Subtotal</td><td></td><td></td><td class="n">$232,705.50</td></tr>
+    <tr><td>NY sales tax 8%</td><td></td><td></td><td class="n">$18,616.44</td></tr>
+    <tr class="t"><td>Total to Servpro</td><td></td><td></td><td class="n">$251,321.94</td></tr>
+  </table></div>
+
+  <h3>Your lines on his invoice vs what you got</h3>
+  <div class="tbl"><table>
+    <tr><th>Item</th><th class="n">Hours</th><th class="n">Billed</th></tr>
+    <tr><td>"Douglas Brown" labor</td><td class="n">50.5</td><td class="n">$17,675</td></tr>
+    <tr><td>Your F-750 Altec bucket @ $400/hr</td><td class="n">50.55</td><td class="n">$20,220</td></tr>
+    <tr><td>Your winch-feed chipper @ $250/hr</td><td class="n">50.55</td><td class="n">$12,638</td></tr>
+    <tr class="t"><td>Billed for you + your iron</td><td></td><td class="n">$50,533</td></tr>
+    <tr class="t"><td>Paid to you for Roscoe</td><td></td><td class="n">$20,200</td></tr>
+  </table></div>
+  <p class="sub">The $26,200 check (Aug 4) = <b>$20,200 for Roscoe + $6,000 for the Lance Thompson job</b> you ran through Brink on Jul 6 <span class="tag real">Doug, Sept 10</span>. Brink charged the sales tax on both, so neither is taxable to you. Braxton (50 h, $17.5k billed) and Dave (57 h, $20k billed) went on his payroll. Your crew and your iron generated about $88k of his $233k; you saw 40% of your own lines.</p>
+
+  <div class="callout">
+    <b>He did not out-work you. He held the three things you didn't:</b>
+    <ol style="margin:6px 0 0">
+      <li><b>The call.</b> Servpro (Josh) called him because Matt's world knows he shows up with six trucks, not one.</li>
+      <li><b>The paper.</b> A rate schedule Servpro approved up front, a per-person portal-to-portal log, a per-machine hour log, photos, and an executive summary written in insurance language. That package is what turned four days into $251k.</li>
+      <li><b>The float.</b> He fronted about $53k of payroll before the second wire landed. You couldn't have.</li>
+    </ol>
+    <p style="margin:8px 0 0">All three are buildable. None of them is a chainsaw skill. That's the point of this page.</p>
+  </div>
+</section>
+
+<!-- 2. WHERE YOU STAND -->
+<section class="card" id="stand">
+  <h2>2. Where you stand, Sept 10 2026</h2>
+  <div class="grid2">
+    <div class="stat r"><div class="n">≈ $7.4k</div><div class="l">Checking 0606 today <span class="tag est">from feed</span></div></div>
+    <div class="stat r"><div class="n">$9,483</div><div class="l">GL renewal due 9/18, policy lapses <span class="tag real">real</span></div></div>
+    <div class="stat"><div class="n">$149k</div><div class="l">Jan–Aug 2026 deposits <span class="tag real">real</span></div></div>
+    <div class="stat r"><div class="n">−35%</div><div class="l">Core business vs 2025, excluding two one-off checks (Hait $28k, Brink $26k) <span class="tag real">real</span></div></div>
+  </div>
+  <p><b>Read that last tile honestly.</b> Without the Connecticut job and the Brink check, the residential business is running about $142k/yr pace against a ~$6k/mo personal nut and ~$20k/mo of 2025-level costs. Residential is not going to fix this. Andrew's line on the Sept 9 text was right: "2,500–3,500 a day is good but the overhead for residential is insane."</p>
+
+  <h3>Assets you already hold</h3>
+  <ul>
+    <li>F-750 Altec 75' bucket, annual ANSI + dielectric done 8/12/26. Two chippers. Intrepid KM100 + Giant D254. 7x12 dump trailer. Ram 2500. DOT #3187854.</li>
+    <li>GL, WC (NYSIF), commercial auto all in force. That is the entire list Matt at Optimal asked for.</li>
+    <li>A real storm track record: Roscoe (4 days, tier 3), July 5 storm (4 properties), ASG/Verizon ROW sub work 2025.</li>
+    <li>Matt Wynn at Optimal has your equipment list on file as of Sept 8. Andrew has offered Josh (Servpro) and Johnny (JKE) intros.</li>
+    <li>Branch Manager: time entries, photos, invoicing already there. The storm package export is a build, not a rewrite.</li>
+  </ul>
+
+  <h3>What you don't hold</h3>
+  <ul>
+    <li>Float. See section 5. This is the gate, not certifications.</li>
+    <li>A roster. You have one truck. Primes hire the guy who brings six.</li>
+    <li>A written sub agreement and your own rate schedule. Promised on four pages since June, never drafted.</li>
+    <li>ISA / EHAP / QLCA. Needed for utility line clearance and public RFPs, not for storm production cutting under a prime.</li>
+    <li>Reliable hands. Anthony at $300/day is solid. Braxton is a peer with his own jobs. Dave is a risk you already named. Ryan is at the VA for ~40 more days. Danny: Andrew said be careful.</li>
+  </ul>
+</section>
+
+<!-- 3. THE CHAIN -->
+<section class="card" id="chain">
+  <h2>3. The chain, and what each tier keeps</h2>
+  <p>Andrew's tiers, with Roscoe's real rates plugged in. A 3-man bucket crew working a 12-hour portal-to-portal day:</p>
+  <div class="tier"><b>Tier 1 · Prime</b><span class="who">Servpro, FEMA contractors, utilities, Optimal on big contracts</span>
+    Holds the customer, the accreditations, the bonding. Bills the owner or insurer. Five-year build minimum. Not your target.</div>
+  <div class="tier"><b>Tier 2 · Packager (Andrew at Roscoe)</b><span class="who">Lands the call, brings 3–6 trucks, does the paper, floats payroll</span>
+    Bills the prime at the approved schedule: 3 × 12 h × $350 + bucket 12 × $400 + chipper 12 × $250 = <b>≈ $20,400/day per crew billed</b> <span class="tag real">Roscoe rates</span>. Pays the crew ≈ $4–6.5k/day. Keeps the spread minus float, risk, and a 30–60 day wait.</div>
+  <div class="tier"><b>Tier 3 · Crew (you at Roscoe)</b><span class="who">Truck + chipper + 2–3 people, day rate, expenses reimbursed</span>
+    Matt's number: <b>$3,500–4,000/day, three men in a bucket, food, fuel, hotel reimbursed, ten days is a good gig</b> <span class="tag real">Matt, Sept 8</span>. Andrew's number: "25–30k a week for a truck and chipper, 2–3 guys." Roscoe paid you $5,050/day all-in. Consistent.</div>
+  <div class="callout gold">
+    <b>The whole business in one line:</b> the packager bills ~$20k/day per crew and pays ~$5k. You are currently on the $5k side. Every move below is about getting to the other side of that line with paper instead of pretending to be a prime.
+  </div>
+  <p class="sub">Etiquette Andrew repeated three times: everyone subs under whoever won it. Never go over a guy's head to his prime. "Know your role, eventually you'll move up, if it takes five years."</p>
+</section>
+
+<!-- 4. WHAT TO BUILD -->
+<section class="card" id="build">
+  <h2>4. The three things to build, in order</h2>
+
+  <div class="step"><div class="num">A</div><div class="body">
+    <b>The paper: your own storm billing package</b>
+    <span class="status open">NOT BUILT · template = Andrew's PDF on your Desktop</span>
+    <p>Branch Manager already has time entries, photos, and invoicing. Add a "Storm Package" export that produces exactly what Servpro approved: cover + executive summary in insurance language, per-person portal-to-portal log (left yard / arrived / left site / home), per-machine hour log, daily billing summary, rate schedule page, payment instructions. Bouncie GPS makes the portal-to-portal log automatic and unarguable (it was never activated, one tap on the Fleet page).</p>
+    <p><b>Your standing rate schedule</b>, mirrored from what Servpro already approved in July 2026 <span class="tag real">real</span>: labor $350/person/hr · F-750 bucket $400/hr · pickup + dump trailer $350/hr · chipper $250/hr · mini skid $200/hr. Keep it on file so the day the call comes you send a schedule, not a guess.</p>
+  </div></div>
+
+  <div class="step"><div class="num">B</div><div class="body">
+    <b>The roster: crews you can activate in a day</b>
+    <span class="status open">NOT DRAFTED · sub agreement one-pager is the unlock</span>
+    <p>The list Andrew keeps in his head, written down with rates, iron, and paper on file. Named so far: Johnny / JKE, Hopewell (3 trucks + crane, "not greedy, will come in at whatever") · Jamie, NJ (1 truck) · Christian (occasional truck) · Four Seasons, Mike and Carl (10+ buckets, "they'll keep you busy") · Walter DePaz (climber, own chippers and trucks) · Braxton · Anthony ($300/day) · Danny <span class="tag risk">caution</span>.</p>
+    <p><b>The one-page sub agreement</b> (draft next, not "later"): W-9 on file · own WC + GL + auto with COI naming Second Nature · rate schedule attached · daily hours + photos texted to the desk, no exceptions · pay-when-paid or net-30 stated plainly · no going over heads · no cash, ever. This is the same paper Andrew made you sign in July. It is also what makes the float survivable (section 5).</p>
+  </div></div>
+
+  <div class="step"><div class="num">C</div><div class="body">
+    <b>The calls: be on the list when it hits</b>
+    <span class="status done">STARTED · Matt has your list · free registrations still open</span>
+    <ul>
+      <li>Matt Wynn, Optimal (matt@optllc.com): equipment list sent 9/8. One follow-up question owed: which work type would he place you on, production cutting or energized line work. Then a short check-in monthly through storm season, nothing more.</li>
+      <li>Josh at Servpro: Andrew said "I can connect you." Ask for it in writing this week.</li>
+      <li>Johnny / JKE: Andrew said "I'll put you in touch." Same ask. Any contract you get, JKE rides along.</li>
+      <li>Four Seasons (Mike, Carl): get numbers from Andrew.</li>
+      <li>NYS Contract Reporter + NYPA e-procurement: free, minutes. Primes search the Business Registry for subs. From the Sept 9 roadmap, still not done.</li>
+      <li>BidNet / Empire State Purchasing + the four town DPW calls from the Aug 15 page: still open, still free.</li>
+    </ul>
+  </div></div>
+</section>
+
+<!-- 5. THE FLOAT -->
+<section class="card" id="float">
+  <h2>5. The float is the real gate</h2>
+  <p>Roscoe's payment timeline, from Andrew's own text <span class="tag real">real</span>:</p>
+  <div class="tbl"><table>
+    <tr><th>When</th><th>Event</th><th class="n">Amount</th><th class="n">Days after report</th></tr>
+    <tr><td>Jul 19</td><td>Wired up front</td><td class="n">$5,000</td><td class="n">—</td></tr>
+    <tr><td>Jul 20</td><td>Wired day 2</td><td class="n">$40,000</td><td class="n">—</td></tr>
+    <tr><td>~Jul 30</td><td>Andrew ran ≈ $53k payroll + fees</td><td class="n">−$60k</td><td class="n">8</td></tr>
+    <tr><td>Aug 4</td><td>Your check cleared</td><td class="n">−$26,200</td><td class="n">13</td></tr>
+    <tr><td>Sept 9</td><td>Wired</td><td class="n">$70,000</td><td class="n">49</td></tr>
+    <tr><td>~Late Sept</td><td>Pending sign-off</td><td class="n">$134,000</td><td class="n">60+</td></tr>
+  </table></div>
+  <p>Servpro advanced 18% inside two days. Everything else was 7–9 weeks. As a Tier 2 packager with two crews on a 4-day job you need <b>≈ $60–80k of float for 30–60 days</b> <span class="tag est">est</span>. Today you have $7.4k and a $9.5k insurance bill due in eight days. ASG paid you late and then went bankrupt; you'd have eaten ~$15k if you hadn't hounded them.</p>
+  <h3>Ways to cover it, cheapest first</h3>
+  <ol>
+    <li><b>Pay-when-paid sub agreements.</b> Andrew's whole method. Zero cost. Only works if the paper in 4B exists and the crews trust you. This is the one to build.</li>
+    <li><b>Prime advance.</b> Ask for it in the rate email: "20% mobilization on day one, progress wire at day 3." Servpro did 18% without being asked.</li>
+    <li><b>Line of credit / equipment finance.</b> Personal credit is clean and there are no personal guarantees on old debt, but the defaulted skate EIDL is a CAIVRS hit for new SBA money. Settle the EIDL cheap first, then a bank LOC is realistic.</li>
+    <li><b>Factoring.</b> 2–4% a month of the invoice. Last resort, and you said you don't want it. Agreed.</li>
+  </ol>
+  <div class="callout warn"><b>Rule:</b> no Tier 2 contract gets signed until 1 or 2 above is in place for that job. A $100k job with weekly payroll and a six-month wait is how tree companies die at this size. Andrew said it, the Sept 9 roadmap said it, and it is still true.</div>
+</section>
+
+<!-- 6. THE SEQUENCE -->
+<section class="card" id="seq">
+  <h2>6. The sequence</h2>
+
+  <h3>This week (by Sept 18)</h3>
+  <ol>
+    <li>Pay the GL renewal ($9,483.45, Maria at Tooher-Ferraris). No insurance, no storm work, full stop.</li>
+    <li>Register on NYS Contract Reporter (basic + expanded Business Registry) and email NYPARFQ@nypa.gov. Free. 30 minutes.</li>
+    <li>Reply to Matt with the one question: production cutting or line work, and does he want a second truck on file.</li>
+    <li>Text Andrew: "Can you make the Josh and Johnny intros this week?" He offered both.</li>
+  </ol>
+
+  <h3>Sept – Oct 2026</h3>
+  <ol>
+    <li>Sub agreement one-pager + your rate schedule. One page each. Send to Braxton, Anthony, Johnny, Walter first.</li>
+    <li>Storm Package export in Branch Manager, v1. Activate Bouncie.</li>
+    <li>Collect what's owed and finish what's booked: Continental Village $2,600, Oswald $700, Moden-Alliston $1,100, Barbara Jones $8,562, 4 Terrace Dr $7,500. That is the winter cushion.</li>
+    <li>Trailer 16–20 ft when cash allows, not before. Both machines on one trailer is what Matt's grapple-and-haul jobs want.</li>
+  </ol>
+
+  <h3>Storm season, Nov 2026 – Mar 2027</h3>
+  <ol>
+    <li>Take one or two deployments as <b>Tier 3</b> under Matt or Andrew's chain: your truck, your crew, their paper. Ten days at $3,500–4,000/day ≈ <b>$35–40k</b> per deployment <span class="tag est">Matt's rate × Doug's 10-day math</span>. Payroll is small (you + 2), so the float problem is yours to survive, not to solve.</li>
+    <li>Run your own Storm Package alongside theirs on every day. Compare. That is the proof you show the next prime.</li>
+    <li>Snow and firewood at home fill the gaps like 2025 (22% of winter work-days).</li>
+  </ol>
+
+  <h3>2027</h3>
+  <ol>
+    <li>First <b>Tier 2</b> package: your roster (3–4 trucks) under one prime, your paper, pay-when-paid subs, 20% mobilization asked for up front.</li>
+    <li>Catherine's MWBE entity and Ryan's SDVOB entity if Ryan's rating qualifies. Andrew's framing: "You keep your company. They sub to you." Two-year build, not this winter's income. Commercially-useful-function rules mean they must actually run work, not pass it through.</li>
+    <li>ISA / EHAP only when a prime asks for it by name, funded by storm revenue.</li>
+  </ol>
+
+  <div class="callout">
+    <b>Why this order.</b> Paper (A) costs nothing and is the thing Servpro paid $251k for. Roster (B) is what makes a prime call you instead of Andrew. Calls (C) are already moving. The float (5) is solved by B, not by borrowing. Certifications come last because Matt asked for none of them.
+  </div>
+</section>
+
+<!-- 7. ANDREW -->
+<section class="card" id="andrew">
+  <h2>7. What to take from Andrew, and what not to</h2>
+  <p>He's out (SSDI, half-paralyzed post-surgery, selling iron) and he's offering to hand you the desk. That is a real gift. Take these:</p>
+  <ul>
+    <li>Rate coaching and the "legal emails that lock you into getting paid." Ask him to send you the actual email he sends primes. It's a template.</li>
+    <li>The intros: Josh (Servpro), Johnny (JKE), Four Seasons, Matt (done).</li>
+    <li>His price-sheet method: forward the prime's sheet to your subs, "want to come in at this?", negotiate a couple of dollars a cut.</li>
+    <li>His rule: pay people really, really well. Crews come back for the guy who pays.</li>
+  </ul>
+  <p>Structure it on paper. The Storm Desk page already proposes ~10% of billings to the desk. If he coaches, he gets a referral or consulting percentage, invoiced by BrinkStar, 1099'd. Never cash, never off the books. <span class="tag risk">His SSDI is his problem until you pay him under the table, then it's yours.</span> He is never named on a public filing.</p>
+  <p class="sub">Danny: "Partners are for dancing. What is Danny going to produce that you can't?" Hire him by the day if at all.</p>
+</section>
+
+<!-- 8. HONESTY BOX -->
+<section class="card" id="honesty">
+  <h2>8. Honesty box</h2>
+  <ul>
+    <li><b>Real:</b> every Roscoe invoice figure (PDF, re-added); 2025 gross and net (CPA package); 2026 bank deposits Jan–Aug (M&amp;T statements); Matt's day rate (recorded call, Sept 8); Andrew's payment timeline (his text, Sept 9); rate schedule Servpro approved.</li>
+    <li><b>Estimated:</b> Andrew's net on Roscoe (his other subs, dump, fuel unknown); today's cash ($7.4k is from the bank feed, not a statement); float needed per job; $35–40k per deployment (Matt's rate × Doug's ten days).</li>
+    <li><b>Conflicts on file:</b> two 2025 P&amp;Ls disagree by ~$15.6k (CPA package +$12,541 vs "TreePL 2025.pdf" −$3,038). Kevin needs to reconcile. The 7/15 Jobber $8,393 deposit is still unidentified.</li>
+    <li><b>Not verified:</b> whether Ryan's disability rating qualifies for SDVOB; whether Matt's work is production cutting (no certs) or energized line (certs push down to every worker); Andrew's Roscoe net.</li>
+    <li><b>Passed on purpose:</b> BPCA RFP (needs ISA on staff); slate-roof soft-wash (parked); buying trucks (Andrew: don't, sub them).</li>
+  </ul>
+</section>
+
+<!-- 9. LINKS -->
+<section class="card" id="links">
+  <h2>9. Everything this page absorbs</h2>
+  <div class="links">
+    <a href="andrew-storm-desk-5b8e31.html">Storm Desk pitch to Andrew<small>~10% desk split, still a proposal</small></a>
+    <a href="snt-brinkstar-7e4a2c.html">Second Nature × BrinkStar options<small>stewardship / buyout / earn-in; blanks still open</small></a>
+    <a href="brink-jobs-9e4c17.html">Crew settle-up with Brinkstar<small>Coates, 8/5, Terrace</small></a>
+    <a href="line-clearance-9f3a72.html">Line clearance &amp; storm research<small>Clearway path, prevailing wage, §7 storm/FEMA, Doug's on-ramp</small></a>
+    <a href="rate-card-2b610d.html">Operator network rate card<small>equipment and crew hire rates, draft</small></a>
+    <a href="join">The network pitch (/join)<small>free network, sub each other</small></a>
+    <a href="fleet-budget-b1e454.html">Operating picture<small>2025 costs by line, break-even</small></a>
+    <a href="accountability-a1f7.html">The go-live queue<small>BM blockers, in order</small></a>
+  </div>
+  <p class="sub" style="margin-top:10px">Also on file, not on the web: Andrew's Roscoe billing package PDF (Desktop → Working With → Andrew Brink); the Sept 9 emails "Contract Access Roadmap" and "Certification Plan" and the Sept 8 email to Matt (Gmail, sent); the Sept 7–8 recorded conversations (Fieldy).</p>
+</section>
+
+<footer>Second Nature Tree · The Storm Playbook · Sept 10 2026 · unlisted, noindex · supersedes the Aug 15 emergency-pipeline version at this URL</footer>
 </div>
-<footer>Second Nature Tree · emergency work pipeline · Aug 15 2026 · unlisted</footer>
-<script src="nav-snt.js?v=5" defer></script>
-</body></html>
+</body>
+</html>
