@@ -1271,10 +1271,15 @@ var InvoicesPage = {
     due.setDate(due.getDate() + netDays);
     copy.dueDate = due.toISOString().split('T')[0];
     copy.notes = (src.notes ? src.notes + '\n\n' : '') + '— Duplicated from invoice #' + (src.invoiceNumber || src.id) + ' on ' + today.toLocaleDateString();
+    // v1220: number from the DB allocator (null → local cloud-aware fallback).
+    var alloc = (window.BMNum && window.BMNum.alloc) ? window.BMNum.alloc('invoice') : Promise.resolve(null);
+    alloc.then(function(allocNum) {
+    if (allocNum) copy.invoiceNumber = allocNum;
     var created = DB.invoices.create(copy);
     if (!created || !created.id) { UI.toast('Duplicate failed', 'error'); return; }
     UI.toast('Duplicated as #' + (created.invoiceNumber || '') + ' — opening editor');
     setTimeout(function() { InvoicesPage.showForm(created.id); }, 80);
+    });
   },
 
   setStatus: function(id, status) {

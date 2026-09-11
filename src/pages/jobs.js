@@ -22,7 +22,9 @@ var JobsPage = {
     }
     if (j.status === 'completed' && !j.invoiceId) {
       items.push({ label: '+  Create invoice', fn: function() {
-        if (typeof Workflow !== 'undefined' && Workflow.jobToInvoice) Workflow.jobToInvoice(jobId);
+        if (typeof Workflow !== 'undefined' && Workflow.jobToInvoiceAsync) {
+          Workflow.jobToInvoiceAsync(jobId).then(function(inv) { if (inv) loadPage('jobs'); });
+        }
       }});
     }
     if (j.clientId) {
@@ -349,16 +351,18 @@ var JobsPage = {
     if (!all.length) { UI.toast('Nothing to close', 'error'); return; }
     if (!confirm('Mark ' + all.length + ' orphaned jobs as completed?\n\nThis cannot be undone individually (but you can reopen each job.)')) return;
     var draftedCount = 0;
-    all.forEach(function(j) {
-      var r = (typeof Workflow !== 'undefined' && Workflow.completeAndDraft)
-        ? Workflow.completeAndDraft(j.id, { silent: true })
-        : { invoice: null };
-      if (r.invoice) draftedCount++;
+    // v1220: sequential so each invoice gets its own DB-allocated number.
+    all.reduce(function(chain, j) { return chain.then(function() {
+      var p = (typeof Workflow !== 'undefined' && Workflow.completeAndDraftAsync)
+        ? Workflow.completeAndDraftAsync(j.id, { silent: true })
+        : Promise.resolve({ invoice: null });
+      return p.then(function(r) { if (r && r.invoice) draftedCount++; });
+    }); }, Promise.resolve()).then(function() {
+      var msg = '✓ ' + all.length + ' jobs marked completed';
+      if (draftedCount > 0) msg += ' · ' + draftedCount + ' invoice draft' + (draftedCount > 1 ? 's' : '') + ' created';
+      UI.toast(msg);
+      loadPage('jobs');
     });
-    var msg = '✓ ' + all.length + ' jobs marked completed';
-    if (draftedCount > 0) msg += ' · ' + draftedCount + ' invoice draft' + (draftedCount > 1 ? 's' : '') + ' created';
-    UI.toast(msg);
-    loadPage('jobs');
   },
   _goPage: function(p) { var t = Math.ceil(JobsPage._getFiltered().length / JobsPage._perPage); JobsPage._page = Math.max(0, Math.min(p, t - 1)); loadPage('jobs'); },
   _toggleShowAll: function() { JobsPage._showAll = !JobsPage._showAll; JobsPage._page = 0; loadPage('jobs'); },
@@ -656,9 +660,12 @@ var JobsPage = {
     // Batch/crew/system flows auto-draft via Workflow.completeAndDraft.
     if (!j.invoiceId && j.total > 0) {
       UI.confirm('Job #' + j.jobNumber + ' complete! Create invoice for ' + UI.money(j.total) + '?', function() {
-        if (typeof Workflow !== 'undefined') {
-          var inv = Workflow.jobToInvoice(id);
-          if (inv) { UI.toast('✅ Invoice #' + inv.invoiceNumber + ' created'); loadPage('invoices'); return; }
+        if (typeof Workflow !== 'undefined' && Workflow.jobToInvoiceAsync) {
+          Workflow.jobToInvoiceAsync(id).then(function(inv) {
+            if (inv) { UI.toast('✅ Invoice #' + inv.invoiceNumber + ' created'); loadPage('invoices'); }
+            else loadPage('jobs');
+          });
+          return;
         }
         loadPage('jobs');
       }, function() { UI.toast('Job completed'); loadPage('jobs'); });
@@ -675,16 +682,18 @@ var JobsPage = {
       // and total > 0). Bulk completion previously left every job's invoice
       // unmade — biggest source of "completed but uninvoiced" jobs.
       var draftedCount = 0;
-      ids.forEach(function(id) {
-        var r = (typeof Workflow !== 'undefined' && Workflow.completeAndDraft)
-          ? Workflow.completeAndDraft(id, { silent: true })
-          : { invoice: null };
-        if (r.invoice) draftedCount++;
+      // v1220: sequential so each invoice gets its own DB-allocated number.
+      ids.reduce(function(chain, id) { return chain.then(function() {
+        var p = (typeof Workflow !== 'undefined' && Workflow.completeAndDraftAsync)
+          ? Workflow.completeAndDraftAsync(id, { silent: true })
+          : Promise.resolve({ invoice: null });
+        return p.then(function(r) { if (r && r.invoice) draftedCount++; });
+      }); }, Promise.resolve()).then(function() {
+        var msg = ids.length + ' job' + (ids.length > 1 ? 's' : '') + ' marked complete';
+        if (draftedCount > 0) msg += ' · ' + draftedCount + ' invoice draft' + (draftedCount > 1 ? 's' : '') + ' created';
+        UI.toast(msg);
+        loadPage('jobs');
       });
-      var msg = ids.length + ' job' + (ids.length > 1 ? 's' : '') + ' marked complete';
-      if (draftedCount > 0) msg += ' · ' + draftedCount + ' invoice draft' + (draftedCount > 1 ? 's' : '') + ' created';
-      UI.toast(msg);
-      loadPage('jobs');
     });
   },
 
@@ -718,15 +727,18 @@ var JobsPage = {
     var ids = Array.from(document.querySelectorAll('.job-check:checked')).map(function(cb) { return cb.value; });
     if (ids.length === 0) return;
     var created = 0;
-    ids.forEach(function(id) {
+    // v1220: sequential so each invoice gets its own DB-allocated number.
+    ids.reduce(function(chain, id) { return chain.then(function() {
       var job = DB.jobs.getById(id);
-      if (job && !job.invoiceId && (job.status === 'completed' || job.total > 0)) {
-        if (typeof Workflow !== 'undefined') { Workflow.jobToInvoice(id); } else { DB.jobs.update(id, { invoiceId: 'pending' }); }
-        created++;
+      if (!(job && !job.invoiceId && (job.status === 'completed' || job.total > 0))) return;
+      if (typeof Workflow !== 'undefined' && Workflow.jobToInvoiceAsync) {
+        return Workflow.jobToInvoiceAsync(id).then(function(inv) { if (inv) created++; });
       }
+      DB.jobs.update(id, { invoiceId: 'pending' }); created++;
+    }); }, Promise.resolve()).then(function() {
+      UI.toast(created + ' invoice' + (created !== 1 ? 's' : '') + ' created!');
+      loadPage('invoices');
     });
-    UI.toast(created + ' invoice' + (created !== 1 ? 's' : '') + ' created!');
-    loadPage('invoices');
   },
   _markAllLegacyInvoiced: function() {
     var needsInvoicing = DB.jobs.getAll().filter(function(j) { return j.status === 'completed' && !j.invoiceId; });
@@ -780,9 +792,12 @@ var JobsPage = {
     var created = 0;
     var totalAmount = 0;
 
-    for (var i = 0; i < needsInvoicing.length; i++) {
-      var job = needsInvoicing[i];
+    // v1220: sequential, each number from the DB allocator (null → local fallback).
+    needsInvoicing.reduce(function(chain, job) { return chain.then(function() {
+      var alloc = (window.BMNum && window.BMNum.alloc) ? window.BMNum.alloc('invoice') : Promise.resolve(null);
+      return alloc.then(function(allocNum) {
       var inv = DB.invoices.create({
+        invoiceNumber: allocNum || undefined,
         clientId: job.clientId,
         clientName: job.clientName,
         jobId: job.id,
@@ -797,11 +812,13 @@ var JobsPage = {
       DB.jobs.update(job.id, { invoiceId: inv.id });
       totalAmount += (job.total || 0);
       created++;
-    }
+      });
+    }); }, Promise.resolve()).then(function() {
 
     UI.closeModal();
     UI.toast('Created ' + created + ' invoice' + (created !== 1 ? 's' : '') + ' totaling ' + UI.money(totalAmount));
     loadPage('jobs');
+    });
   },
   _batchAssignCrew: function() {
     var ids = Array.from(document.querySelectorAll('.job-check:checked')).map(function(cb) { return cb.value; });
@@ -1058,7 +1075,7 @@ var JobsPage = {
       + (j.property ? '<button class="btn btn-outline" style="font-size:12px;" onclick="PermitsPage.startFromJob(\'' + id + '\', decodeURIComponent(\'' + encodeURIComponent(j.property) + '\'))" title="Look up permit + link to this job">🏛 Pull Permit</button>' : '')
       + (j.status === 'completed' ? '<button class="btn btn-outline" style="font-size:12px;color:#f9a825;border-color:#f9a825;" onclick="JobsPage._requestReview(\'' + id + '\')">⭐ Request Review</button>' : '')
       + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage._markComplete(\'' + id + '\')">✓ Mark Complete</button>' : '')
-      + (j.status === 'completed' && !j.invoiceId ? '<button class="btn btn-primary" style="font-size:12px;" onclick="(function(){var inv=Workflow.jobToInvoice(\'' + id + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})()">💰 Create Invoice</button>' : '')
+      + (j.status === 'completed' && !j.invoiceId ? '<button class="btn btn-primary" style="font-size:12px;" onclick="Workflow.jobToInvoiceAsync(\'' + id + '\').then(function(inv){loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})">💰 Create Invoice</button>' : '')
       + (j.status !== 'completed' || j.invoiceId ? '<button class="btn btn-outline" style="font-size:12px;" onclick="PDF.generateJobSheet(\'' + id + '\')">📄 Job Sheet</button>' : '')
       + '<button class="btn btn-outline" style="font-size:12px;" onclick="JobsPage.showForm(\'' + id + '\')">✏️ Edit</button>'
       + '<div style="position:relative;display:inline-block;">'
@@ -1069,7 +1086,7 @@ var JobsPage = {
       + (j.property ? '<a href="https://maps.apple.com/?daddr=' + encodeURIComponent(j.property) + '" target="_blank" rel="noopener noreferrer" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);text-decoration:none;">🗺 Navigate to Property</a>' : '')
       + (j.status === 'scheduled' || j.status === 'in_progress' ? '<button onclick="JobsPage._etaToClient(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">⏱ ETA to Client</button>' : '')
       + (j.status !== 'completed' ? '<button onclick="JobsPage._markComplete(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">✓ Mark Complete</button>' : '')
-      + (j.status === 'completed' && !j.invoiceId ? '<button onclick="(function(){var inv=Workflow.jobToInvoice(\'' + id + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})()" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">💰 Create Invoice</button>' : '')
+      + (j.status === 'completed' && !j.invoiceId ? '<button onclick="Workflow.jobToInvoiceAsync(\'' + id + '\').then(function(inv){loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">💰 Create Invoice</button>' : '')
       + '<button onclick="JobsPage._requestReview(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">⭐ Request Review</button>'
       + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
       + '<button onclick="JobsPage._archiveJob(\'' + id + '\')" style="display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:var(--text);">Archive</button>'
@@ -1713,7 +1730,11 @@ var JobsPage = {
   createInvoice: function(jobId) {
     var j = DB.jobs.getById(jobId);
     if (!j) return;
+    // v1220: number from the DB allocator (null → local cloud-aware fallback).
+    var alloc = (window.BMNum && window.BMNum.alloc) ? window.BMNum.alloc('invoice') : Promise.resolve(null);
+    alloc.then(function(allocNum) {
     var inv = DB.invoices.create({
+      invoiceNumber: allocNum || undefined,
       clientId: j.clientId,
       clientName: j.clientName,
       clientEmail: j.clientEmail || '',
@@ -1732,5 +1753,6 @@ var JobsPage = {
     UI.toast('Invoice #' + inv.invoiceNumber + ' created');
     UI.closeModal();
     loadPage('invoices');
+    });
   }
 };

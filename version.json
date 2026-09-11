@@ -1,5 +1,5 @@
 {
-  "version": 1219,
-  "released": "2026-09-01",
-  "notes": "v1219: fix the hours popover running off-screen"
+  "version": 1220,
+  "released": "2026-09-11",
+  "notes": "v1220: every invoice-creation path (mark complete \u2192 auto-draft, create from job, batch, duplicate, dashboard) now takes its number from the database allocator \u2014 no two-device collisions"
 }

@@ -72,7 +72,7 @@ var Workflow = {
           + '<div style="font-weight:600;font-size:14px;">' + UI.esc(j.clientName || '') + (j.jobNumber ? ' · Job #' + j.jobNumber : '') + '</div>'
           + '<div style="font-size:12px;color:var(--text-light);">' + (j.description || '').substr(0, 60) + ' · ' + UI.money(j.total) + '</div>'
           + '</div>'
-          + '<button onclick="var inv=Workflow.jobToInvoice(\'' + j.id + '\');if(inv){loadPage(\'invoices\');setTimeout(function(){if(typeof InvoicesPage!==\'undefined\')InvoicesPage.showDetail(inv.id);else loadPage(\'invoices\');},100);}" style="background:#e65100;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">→ Create Invoice</button>'
+          + '<button onclick="Workflow.jobToInvoiceAsync(\'' + j.id + '\').then(function(inv){if(inv){loadPage(\'invoices\');setTimeout(function(){if(typeof InvoicesPage!==\'undefined\')InvoicesPage.showDetail(inv.id);else loadPage(\'invoices\');},100);}})" style="background:#e65100;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">→ Create Invoice</button>'
           + '</div>';
       });
       html += '</div>';
@@ -182,7 +182,9 @@ var Workflow = {
   },
 
   // Convert a job to an invoice
-  jobToInvoice: function(jobId) {
+  // v1220: presetNumber = a number already allocated by the DB (BMNum.alloc).
+  // Sync callers without one still get the local cloud-aware fallback.
+  jobToInvoice: function(jobId, presetNumber) {
     var job = DB.jobs.getById(jobId);
     if (!job) { UI.toast('Job not found', 'error'); return; }
 
@@ -217,6 +219,7 @@ var Workflow = {
     var _invTotal = Math.round((_subtotal + _taxAmount) * 100) / 100;
 
     var invoice = DB.invoices.create({
+      invoiceNumber: (typeof presetNumber === 'number' && presetNumber > 0) ? presetNumber : undefined,
       clientName: job.clientName,
       clientId: job.clientId || '',
       clientEmail: job.clientEmail || '',
@@ -240,6 +243,14 @@ var Workflow = {
 
     UI.toast('Job → Invoice #' + invoice.invoiceNumber + ' created!');
     return invoice;
+  },
+
+  // v1220: async twin — gets the invoice number from the database first
+  // (atomic per tenant, no two-device collision), then creates. Resolves the
+  // invoice or undefined. Falls back to local numbering when offline.
+  jobToInvoiceAsync: function(jobId) {
+    var alloc = (window.BMNum && window.BMNum.alloc) ? window.BMNum.alloc('invoice') : Promise.resolve(null);
+    return alloc.then(function(num) { return Workflow.jobToInvoice(jobId, num || undefined); });
   },
 
   // Mark a job complete + auto-create a draft invoice (per Doug's rule:
@@ -270,12 +281,26 @@ var Workflow = {
       var origToast = UI.toast;
       if (opts.silent) UI.toast = function() {};
       try {
-        invoice = Workflow.jobToInvoice(jobId);
+        invoice = Workflow.jobToInvoice(jobId, opts.invoiceNumber);
       } finally {
         if (opts.silent) UI.toast = origToast;
       }
     }
     return { job: DB.jobs.getById(jobId), invoice: invoice, alreadyHadInvoice: alreadyHadInvoice, skippedNoTotal: skippedNoTotal };
+  },
+
+  // v1220: async twin of completeAndDraft. Allocates the invoice number from
+  // the database only when an invoice will actually be drafted, then runs the
+  // sync version with it. Resolves the same { job, invoice, ... } result.
+  completeAndDraftAsync: function(jobId, opts) {
+    opts = opts || {};
+    var job = DB.jobs.getById(jobId);
+    var willDraft = !!job && !job.invoiceId && ((job.total || 0) > 0) && !opts.skipInvoice;
+    var alloc = (willDraft && window.BMNum && window.BMNum.alloc) ? window.BMNum.alloc('invoice') : Promise.resolve(null);
+    return alloc.then(function(num) {
+      var o = Object.assign({}, opts); if (num) o.invoiceNumber = num;
+      return Workflow.completeAndDraft(jobId, o);
+    });
   },
 
   // Mark invoice as paid
@@ -346,10 +371,10 @@ var Workflow = {
       html += '<button onclick="DB.jobs.update(\'' + jobId + '\',{status:\'in_progress\',startedAt:new Date().toISOString()});UI.toast(\'Job started\');loadPage(\'jobs\');" style="background:#ff9800;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">▶ Start Job</button>';
     }
     if (job.status === 'in_progress') {
-      html += '<button onclick="(function(){var inv=Workflow.jobToInvoice(\'' + jobId + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){if(typeof InvoicesPage!==\'undefined\')InvoicesPage.showDetail(inv.id);else loadPage(\'invoices\');},100);})()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">✅ Complete & Invoice</button>';
+      html += '<button onclick="Workflow.jobToInvoiceAsync(\'' + jobId + '\').then(function(inv){loadPage(\'invoices\');if(inv)setTimeout(function(){if(typeof InvoicesPage!==\'undefined\')InvoicesPage.showDetail(inv.id);else loadPage(\'invoices\');},100);})" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">✅ Complete & Invoice</button>';
     }
     if (job.status === 'completed' && !job.invoiceId) {
-      html += '<button onclick="(function(){var inv=Workflow.jobToInvoice(\'' + jobId + '\');loadPage(\'invoices\');if(inv)setTimeout(function(){if(typeof InvoicesPage!==\'undefined\')InvoicesPage.showDetail(inv.id);else loadPage(\'invoices\');},100);})()" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">💰 Create Invoice</button>';
+      html += '<button onclick="Workflow.jobToInvoiceAsync(\'' + jobId + '\').then(function(inv){loadPage(\'invoices\');if(inv)setTimeout(function(){if(typeof InvoicesPage!==\'undefined\')InvoicesPage.showDetail(inv.id);else loadPage(\'invoices\');},100);})" style="background:var(--green-dark);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">💰 Create Invoice</button>';
     }
 
     html += '<button onclick="PDFGen.generateJobSheet(\'' + jobId + '\')" style="background:#6a1b9a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;">📄 Job Sheet PDF</button>';

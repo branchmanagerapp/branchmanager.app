@@ -992,7 +992,7 @@ var DashboardPage = {
         label: 'Bill the job — ' + (j.clientName || 'client'),
         sub: UI.money(j.total) + ' · ' + (j.scheduledDate || 'recent'),
         actionLabel: '+ Invoice',
-        onclick: 'var inv=Workflow.jobToInvoice(\'' + j.id + '\');if(inv){loadPage(\'dashboard\');}'
+        onclick: 'Workflow.jobToInvoiceAsync(\'' + j.id + '\').then(function(inv){if(inv){loadPage(\'dashboard\');}})'
       });
     });
 
