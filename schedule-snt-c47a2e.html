@@ -1,72 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>Run Schedule — Catherine's order</title>
-<style>
-  :root{--ink:#111;--mut:#666;--line:#ddd;--accent:#2f7a3a;--warn:#8a5512;--warnbg:#fdf3e3;--callbg:#eef4ef}
-  *{box-sizing:border-box}
-  body{margin:0;background:#f6f7f6;color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
-  .sheet{max-width:720px;margin:24px auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:34px 38px;box-shadow:0 2px 14px rgba(0,0,0,.06)}
-  @media(max-width:600px){.sheet{margin:12px auto;padding:22px 16px;border-radius:10px}}
-  .top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid var(--ink);padding-bottom:10px;margin-bottom:6px}
-  h1{font-size:23px;margin:0;font-weight:800;letter-spacing:-.01em}
-  .date{font-size:14px;color:var(--mut);font-weight:600}
-  .sub{color:var(--mut);font-size:12.5px;margin:8px 0 14px}
-  h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:22px 0 8px;font-weight:800}
-  .stop{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid #eee}
-  .bx{flex:0 0 19px;height:19px;border:2px solid var(--ink);border-radius:4px;margin-top:2px}
-  .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font:800 13px/26px ui-monospace,Menlo,monospace;text-align:center}
-  .n.call{background:#4a6b8a} .n.admin{background:#8a5512}
-  .body{flex:1;min-width:0}
-  .body b{font-size:15.5px} .tag{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-left:6px}
-  .body small{display:block;color:var(--mut);font-size:12.5px;line-height:1.5;margin-top:2px}
-  .body a{color:var(--accent);font-weight:600;text-decoration:none}
-  .flag{color:var(--warn)}
-  .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--mut);font-size:11.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
-  .foot a{color:var(--accent);font-weight:700}
-  .printbtn{position:fixed;top:14px;right:16px;background:var(--ink);color:#fff;border:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:980px;cursor:pointer}
-  @media print{body{background:#fff}.sheet{margin:0;border:none;box-shadow:none;border-radius:0;padding:12px 6px;max-width:100%}.printbtn{display:none}.stop{break-inside:avoid}@page{margin:14mm}}
-</style>
-</head>
-<body>
-<button class="printbtn" onclick="window.print()">⎙ Print</button>
-<div class="sheet">
-  <div class="top"><h1>🗒️ Run Schedule</h1><div class="date">In Catherine's order</div></div>
-  <div class="sub">Straight down Catherine's note, top to bottom — nothing re-shuffled. 🚚 = go to site · 📞 = call · 🗂️ = office. Addresses/phones filled in from Branch Manager + your Address Book; <span class="flag">flagged</span> where I still need one.</div>
-
-  <div class="sub" style="background:#eef4ef;border:1px solid #cfe3d5;border-radius:8px;padding:8px 12px;margin-bottom:12px;"><b>Start 8:30 with the estimate.</b> Hector said <b>not tomorrow</b> — rescheduling (kept below for the details).</div>
-
-  <div class="stop"><span class="bx"></span><span class="n">1</span><span class="body"><b>Hector — NOT tomorrow (rescheduling)</b><span class="tag">⏸️ hold</span><small><a href="https://maps.apple.com/?daddr=16%20Parkway%20Dr%2C%20Cortlandt%20Manor%2C%20NY">16 Parkway Dr, Cortlandt Manor →</a> · <a href="tel:6462357809">646-235-7809</a><br>$1,500 — two dead trees + log, all hauled (Vic Errico referral). Reschedule TBD.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">2</span><span class="body"><b>Birchie — quote (needs crane)</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-17d5bca1-7672-415c-b2aa-cc4a047b26fa#quotes">BM #537 ↗</a></span><small>Barbara Jones's neighbor, Cortlandt Manor (next to #13). <a href="tel:9145724121">914-572-4121</a><br>Dead birch · tulip · Norway maple — $7,900. <span class="flag">⚠️ crane job. Get her real name (note said "Green Mason").</span></small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">3</span><span class="body"><b>Abraham Kraus — quote (cleanup)</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-29f6c361-428a-47ba-9e1f-f808ee34e92c#quotes">BM #538 ↗</a></span><small>Peekskill Park Estates LLC. <span class="flag">Confirm site: note says "Lakewood"; on file = 1 Highland Indust Park, Peekskill.</span> Price the cleanup.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n admin">4</span><span class="body"><b>Flip quotes in Jobber</b><span class="tag">🗂️ office</span><small>Move/approve the quotes still sitting in Jobber over to Branch Manager.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">5</span><span class="body"><b>Julia Mack — River clean (+ hemlock)</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-5f255628-e88f-4091-95c7-ea41b44863f6#quotes">BM #544 ↗</a></span><small><a href="https://maps.apple.com/?daddr=66%20Winston%20Lane%2C%20Garrison%2C%20NY">66 Winston Ln, Garrison →</a> · <a href="tel:6467631898">646-763-1898</a><br>Real Jobber quote — $3,576, changes requested. The note's hemlock job is separate (<a href="https://branchmanager.app/?rec=quote-d57003ff-2490-4e1d-b323-e894ceeadbe8#quotes">BM #539</a>, still to price).</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">6</span><span class="body"><b>Dana Lanza — dead ash</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-cba8911b-68f8-4f93-b1e9-322c3ac2b9cd#quotes">BM #540 ↗</a></span><small><a href="https://maps.apple.com/?daddr=43%20Trail%20of%20the%20Hemlocks%2C%20Putnam%20Valley%2C%20NY">43 Trail of the Hemlocks, Putnam Valley →</a> · <a href="tel:7184994935">718-499-4935</a><br>✅ confirmed = Dana Lanza (existing client). Dead ash removal — still to price.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">7</span><span class="body"><b>Chaz — approved, schedule it</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-190d1ae5-307e-4272-9538-3a174154f17d#quotes">BM #542 ↗</a></span><small><a href="https://maps.apple.com/?daddr=220%20Catherine%20Street%2C%20Buchanan%2C%20NY">220 Catherine St, Buchanan →</a> · <a href="tel:9142531464">914-253-1464</a><br> $1,950.75, tree pruning ×2, APPROVED 6/29 — book the date.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">8</span><span class="body"><b>Alan Katz</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-2c903fcb-e119-4cf2-9a91-4ed3321fdb0b#quotes">BM #547 ↗</a></span><small><a href="https://maps.apple.com/?daddr=2760%20Windmill%20Drive%2C%20Yorktown%20Heights%2C%20NY">2760 Windmill Dr, Yorktown Hts →</a> · <a href="tel:9143919911">914-391-9911</a><br>= "Alan Vatz" on the note. Real quote $2,844 (7× pruning), sent — awaiting response. Follow up.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">9</span><span class="body"><b>Scott Manner</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-832048e9-206b-469a-a31d-d9e47c6ad01a#quotes">BM #548 ↗</a></span><small><a href="https://maps.apple.com/?daddr=3%20Marisa%20Court%2C%20Montrose%2C%20NY">3 Marisa Ct, Montrose →</a> · <a href="tel:9147378522">914-737-8522</a> (Jobber) · note said <a href="tel:9143372832">914-337-2832</a> home<br>Real quote $3,738 (pruning + removal), draft — finish + send.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n call">10</span><span class="body"><b>Mike Stabulas</b><span class="tag">📞 needs quote</span><small><a href="mailto:mstabulas@outlook.com">mstabulas@outlook.com</a><br>= "Mike Stabilus" on the note. Now a client in BM — no quote yet, build one.</small></span></div>
-
-  <h2>🆕 New to-do (bottom of the note)</h2>
-
-  <div class="stop"><span class="bx"></span><span class="n">11</span><span class="body"><b>Carlos</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-f6310c25-5a43-42db-b1e3-37c7a5f809ff#quotes">BM #541 ↗</a></span><small><a href="https://maps.apple.com/?daddr=15%20Tommy%20Thurber%20Ln%2C%20Montrose%2C%20NY">15 Tommy Thurber Ln, Montrose →</a><br><b>Thursday, before 12.</b> Scope + price TBD.</small></span></div>
-
-  <div class="stop"><span class="bx"></span><span class="n">12</span><span class="body"><b>Barbara Jones</b><span class="tag">🚚 <a href="https://branchmanager.app/?rec=quote-dfb64575-fbad-43ce-b978-0690f570d235#quotes">BM #536 ↗</a></span><small><a href="https://maps.apple.com/?daddr=132%20Highland%20Dr%2C%20Cortlandt%20Manor%2C%20NY">132 Highland Dr, Cortlandt Manor →</a> · <a href="tel:9145724121">914-572-4121</a> (mobile)<br>Dogwoods · backyard cleanup · dead oak · leaning maple — $7,900. <span class="flag">Note also said "$2,600" — reconcile.</span></small></span></div>
-
-  <div class="foot"><span>🌳 <a href="today-snt-9d4b1e.html">Today one-pager</a> · <a href="ground-control-7c3f9a.html">Ground Control</a> · <a href="estimates-map-3f9c21.html">Map</a></span><span>Order per Catherine's note</span></div>
-</div>
-<script src="nav-snt.js?v=5" defer></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme:light)"><meta name="theme-color" content="#0a0d0b" media="(prefers-color-scheme:dark)"><title>Run Sheet — week of Sept 14</title><style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#161a15;--mut:#5f6b60;--faint:#8b968c;--line:rgba(20,30,20,.10);--line2:rgba(20,30,20,.17);--acc:#2f7d52;--warn:#b0702a;--red:#b33a3a;--glow:rgba(47,125,82,.10);
+--serif:ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0d0b;--card:rgba(255,255,255,.03);--ink:#edf1ed;--mut:#8a968d;--faint:#5c6860;--line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.14);--acc:#6fbf8f;--warn:#d9a05b;--red:#e07070;--glow:rgba(111,191,143,.10)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45;-webkit-font-smoothing:antialiased;padding-bottom:60px;background-image:radial-gradient(900px 380px at 50% -170px,var(--glow),transparent 72%)}
+.wrap{max-width:660px;margin:0 auto;padding:0 18px}a{color:inherit;text-decoration:none}
+header{padding:26px 90px 0 0}.mark{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--acc);font-weight:600}
+h1{font-family:var(--serif);font-size:32px;line-height:1.05;font-weight:500;letter-spacing:-.02em;margin:8px 0 0}
+.lede{color:var(--mut);font-size:13.5px;margin-top:6px}.lede b{color:var(--ink)}
+.nav{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px}
+.nav a{font-size:12px;font-weight:600;color:var(--mut);border:1px solid var(--line2);border-radius:20px;padding:5px 10px;background:var(--card)}
+.nav a.on{background:var(--acc);border-color:var(--acc);color:#fff}
+h2{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--acc);margin:26px 0 4px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:baseline;gap:8px}
+h2 small{font-weight:500;letter-spacing:0;text-transform:none;color:var(--faint);font-size:12px}
+.row{display:block;padding:10px 0 11px;border-top:1px solid var(--line)}.row:first-of-type{border-top:none}
+.rt{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.rn{font-size:15px;font-weight:600;letter-spacing:-.005em}
+.amt{font-variant-numeric:tabular-nums;color:var(--acc);font-weight:600;font-size:14px}
+.rd{display:block;font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.4}.rd b{color:var(--ink);font-weight:600}
+.tag{font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border:1px solid;border-radius:20px;padding:1.5px 6px;flex:none}
+.t-go{color:var(--acc);border-color:var(--acc)}.t-call{color:var(--warn);border-color:var(--warn)}.t-red{color:var(--red);border-color:var(--red)}.t-off{color:var(--faint);border-color:var(--line2)}.t-src{color:var(--faint);border-color:var(--line2);letter-spacing:.06em;text-transform:none;font-weight:500}
+.lnk{color:var(--acc);font-weight:600;font-size:12.5px}
+.day{margin-top:18px}.dh{font-family:var(--serif);font-size:20px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}.dh small{font-family:var(--sans);font-size:12px;color:var(--faint)}
+.note{background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--mut);margin-top:16px;line-height:1.5}.note b{color:var(--ink)}
+.print{position:fixed;right:14px;top:12px;font-size:12px;border:1px solid var(--line2);background:var(--card);border-radius:20px;padding:6px 11px;color:var(--mut)}
+.foot{color:var(--faint);font-size:11px;text-align:center;margin-top:30px;line-height:1.7}
+@media print{.print,.nav{display:none}body{padding:0}}
+</style></head><body><a class="print" href="javascript:print()">⎙ Print</a><div class="wrap">
+<header><div class="mark">Second Nature Tree · Doug + Catherine</div><h1>Run sheet</h1><p class="lede">Week of Mon Sept 14, in order. Catherine's copy.</p><nav class="nav"><a href="today-snt-9d4b1e.html">This week</a><a href="schedule-snt-c47a2e.html" class=on>Run sheet</a><a href="ground-control-7c3f9a.html">Ground Control</a><a href="estimates-snt-4b8e2f.html">Estimate board</a><a href="hub-570301.html">Everything</a></nav></header>
+<div class="note"><b>Catherine —</b> this is the week in order, straight from your texts and the recordings. 🚚 = go to site · 📞 = call/text · 🗂️ = office. Anything marked <span class="tag t-src">Jobber</span> lives in Jobber and I could not verify it — check it there.</div><div class="day"><div class="dh">Sun 13<small>today</small></div><div class="row"><span class="rt"><span class="rn">🚚 Jimmy Cantrell — chip truck + Bandit 254 out</span><span class="tag t-off">equipment out</span><span class="tag t-src">text</span></span><span class="rd">Austin picked up early. Registration was drying in the open glovebox — make sure it made it back in the truck.</span></div><div class="row"><span class="rt"><span class="rn">📞 Mike Badia — callback due today</span><span class="tag t-call">if no call, send</span><span class="tag t-src">text</span><span class="tag t-src">Jobber</span></span><span class="rd">He was calling back about the 2 trees on the neighbor's property by Sunday. If no call, send the front-yard property-line quote from Jobber as-is.</span></div><div class="row"><span class="rt"><span class="rn">📞 Dawn (Brewster) — confirm $1,000 and give her a date</span><span class="tag t-src">text</span><span class="tag t-src">recorded</span></span><span class="rd">She doesn't email. Text or call.</span></div><div class="row"><span class="rt"><span class="rn">🚚 Dominic — split the wood</span><span class="tag t-src">text</span></span><span class="rd">Promised this weekend.</span></div></div><div class="day"><div class="dh">Mon 14<small>'right and early'</small></div><a class="row" href="https://branchmanager.app/#jobs"><span class="rt"><span class="rn">🚚 Continental Village Park District — beach sycamore + locust, hillside</span><span class="tag t-go">pick day</span><span class="tag t-src">recorded</span><span class="tag t-src">BM</span></span><span class="rd">Anthony can do Mon/Tue/Wed. Pick the day and text Fred Romer + Anthony. Quote #562 $2,600 + job #407 $4,600.</span></a><div class="row"><span class="rt"><span class="rn">📞 Mary Stark — (917) 373-5060</span><span class="tag t-red">call</span><span class="tag t-src">Dialpad</span><span class="tag t-src">Jobber</span></span><span class="rd">Two voicemails, never called back. She is waiting on an estimate — check Jobber for it, then call.</span></div><div class="row"><span class="rt"><span class="rn">📞 (516) 233-0861 — 16 Dean Drive</span><span class="tag t-red">call</span><span class="tag t-src">Dialpad</span></span><span class="rd">Never received the quote you did. Resend to the right email + confirm by phone.</span></div><a class="row" href="https://branchmanager.app/#invoices"><span class="rt"><span class="rn">🗂️ Send: Jenny Zawolski crane estimate ($4,800 + $5,800) · New Rochelle invoice #1011 ($1,899) · Zawolski 9/10 work invoice</span><span class="tag t-call">send</span><span class="tag t-src">recorded</span><span class="tag t-src">BM</span></span><span class="rd"></span></a><div class="row"><span class="rt"><span class="rn">🗂️ 4:00pm RealWork Labs call — only if you&#x27;re not on a job</span><span class="tag t-off">optional</span><span class="tag t-src">email</span></span><span class="rd"></span></div></div><div class="day"><div class="dh">Tue 15 · Wed 16<small></small></div><div class="row"><span class="rt"><span class="rn">🚚 Continental Village (whichever day Anthony picks)</span><span class="tag t-src">recorded</span></span><span class="rd"></span></div><a class="row" href="today-snt-9d4b1e.html"><span class="rt"><span class="rn">📞 Website leads — 9 uncalled</span><span class="tag t-call">2/day</span><span class="tag t-src">BM</span><span class="tag t-src">Dialpad</span></span><span class="rd">Kaplan (322 Sprout Brook) · Cassidy · Phillips · Grant · Visser · Bermudez · Duran · James · Monohan. Numbers on the This-week sheet. Two calls a day clears it by Friday.</span></a><a class="row" href="ryan-questions-4c8a2d.html"><span class="rt"><span class="rn">🗂️ Wed — Ryan&#x27;s lawyer meeting; Doug drops the packet before</span><span class="tag t-off">Doug</span><span class="tag t-src">text</span></span><span class="rd"></span></a><div class="row"><span class="rt"><span class="rn">📞 Brink&#x27;s second estimate — price the driveway side + 2 fence trees</span><span class="tag t-call">price</span><span class="tag t-src">recorded</span></span><span class="rd"></span></div></div><div class="day"><div class="dh">Thu 17 · Fri 18<small></small></div><div class="row"><span class="rt"><span class="rn">🗂️ Fri 9/18 — GL policy expires</span><span class="tag t-red">Doug</span><span class="tag t-src">email</span></span><span class="rd">Doug: signed apps + premium to Maria, re-rate pending, KM100 added.</span></div><a class="row" href="https://branchmanager.app/#invoices"><span class="rt"><span class="rn">📞 Chase: Oswald Roche $700 · Sarah Moden-Alliston $1,100</span><span class="tag t-call">collect</span><span class="tag t-src">BM</span></span><span class="rd"></span></a><a class="row" href="https://branchmanager.app/#jobs"><span class="rt"><span class="rn">🗂️ Invoice the done jobs</span><span class="tag t-red">invoice</span><span class="tag t-src">BM</span><span class="tag t-src">text</span></span><span class="rd">Chaz · Nicholas Anthony · David Coats · Meadow Lane · cat rescue (Leardi) · 8/26 tree at Emily's parents'.</span></a></div><div class="day"><div class="dh">Sat 19 · Sun 20<small></small></div><a class="row" href="https://branchmanager.app/#invoices"><span class="rt"><span class="rn">📞 Continental Village invoice #1019 due 9/19 — $2,600</span><span class="tag t-off">due</span><span class="tag t-src">BM</span></span><span class="rd"></span></a></div><div class="day"><div class="dh">Next week<small>booked</small></div><a class="row" href="https://branchmanager.app/#jobs"><span class="rt"><span class="rn">🚚 Mon 9/21 — Julie Melagrano (Michelle&#x27;s aunt), BM job #339</span><span class="tag t-go">confirmed</span><span class="tag t-src">text</span><span class="tag t-src">BM</span></span><span class="rd">Michelle will be there. Price is not on the job yet.</span></a><div class="row"><span class="rt"><span class="rn">🚚 Tue 9/22 – Thu 9/24 — Mohegan Lake beech tree</span><span class="tag t-go">3 days</span><span class="tag t-src">text</span><span class="tag t-src">Jobber</span></span><span class="rd">On the dash. Confirm the client name on the job.</span></div></div>
+<p class="foot">Updated Sunday, Sept 13, 2026 · built from texts, recordings, Dialpad, email and Branch Manager · Jobber pending re-auth<br>Short links: /runsheet · /today · /gc</p></div></body></html>
