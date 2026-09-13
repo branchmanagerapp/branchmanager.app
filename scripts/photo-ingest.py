@@ -67,6 +67,14 @@ def town_of(addr):
     m = re.search(r',\s*([A-Za-z .\-]+?),?\s*(NY|New York)\b', addr or '')
     t = (m.group(1).strip() if m else '')
     return {'Cortlandt':'Cortlandt Manor','Cortlandt manor':'Cortlandt Manor','Croton on Hudson':'Croton-on-Hudson','Coldspring':'Cold Spring'}.get(t,t)
+def rev_town(lat, lng):
+    """Nominatim reverse → village/hamlet/town/city (1 req/s, proper UA)."""
+    try:
+        import time; time.sleep(1.1)
+        q = urllib.parse.urlencode({'lat':lat,'lon':lng,'format':'jsonv2','zoom':14})
+        d = json.load(urllib.request.urlopen(urllib.request.Request('https://nominatim.openstreetmap.org/reverse?'+q, headers={'User-Agent':'SecondNatureTree/1.0 (info@peekskilltree.com)'}), timeout=20))
+        a = d.get('address',{}); t = a.get('village') or a.get('hamlet') or a.get('town') or a.get('city') or a.get('municipality') or ''; return re.sub(r'^(Town|Village|City) of ','',t)
+    except Exception: return ''
 def local_file(uuid, kind):
     """Best local copy: original if present, else the largest derivative. Returns (path,size,kind)."""
     o = glob.glob(f"{LIB}/originals/{uuid[0]}/{uuid}*")
@@ -96,6 +104,27 @@ def shrink_video(src, dst):
         return dst if os.path.getsize(dst) <= MAX_VIDEO_MB*1024*1024 else None
     except Exception:
         return None
+
+
+# ---------- SocialBranch: one queue ----------
+def sign(path, days=7):
+    r = rest(f'/storage/v1/object/sign/work-drafts/{path}', 'POST', {'expiresIn': days*86400})
+    return URL + '/storage/v1' + r['signedURL'] if isinstance(r, dict) and r.get('signedURL') else None
+def social_caption(town, day, service=None):
+    d = datetime.date.fromisoformat(day)
+    return f"{service or 'Tree work'} in {town or 'the Hudson Valley'} — {d:%B %Y}. Our crew on site. Need the same at your place? Free estimates: peekskilltree.com · (914) 391-5233"
+def upsert_social_draft(wid, town, day, photos, service=None):
+    """One SocialBranch draft per work day. Doug approves THERE; the DB trigger publishes the work day everywhere."""
+    urls = [u for u in (sign(p['path']) for p in photos if p['kind']=='photo') if u][:4]
+    if not urls: return
+    have = rest(f"/rest/v1/social_posts?select=id,status&work_day_id=eq.{wid}")
+    if have:
+        for sp in have:
+            if sp['status']=='draft': rest(f"/rest/v1/social_posts?id=eq.{sp['id']}", 'PATCH', {'media_urls': urls, 'updated_at': datetime.datetime.utcnow().isoformat()+'Z'}, {'Prefer':'return=minimal'})
+        return
+    pid = f"p_{int(datetime.datetime.now().timestamp()*1000)}_wd{wid[:6]}"
+    rest('/rest/v1/social_posts', 'POST', {'id': pid, 'tenant_id': TENANT, 'caption': social_caption(town, day, service), 'networks': ['facebook','instagram','gmb'], 'media_urls': urls, 'has_local_media': False, 'scheduled_at': None, 'status': 'draft', 'work_day_id': wid}, {'Prefer':'return=minimal'})
+    log(f"    social draft {pid} ({len(urls)} photos)")
 
 # ---------- state ----------
 state = {'last_ts':0,'seen':[]}
@@ -157,7 +186,7 @@ for (cid, day), items in sorted(clusters.items(), key=lambda kv: kv[0][1]):
         if p: usable.append((i,p,sz,'video'))
     usable.sort(key=lambda x: x[0]['ts']); usable = usable[:MAX_PER_DAY]
     j = job_for(c['name'], day)
-    tn = town_of(c.get('address'))
+    tn = town_of(c.get('address')) or rev_town(items[0]['lat'], items[0]['lng'])
     log(f"  {day} {c['name'][:28]:<28} {tn:<16} stills={len(stills)} videos={len(vids)} usable={len(usable)} job={j['job_number'] if j else '-'}")
     if not usable: stats['no-usable-file']+=1; continue
     if DRY: continue
@@ -178,10 +207,13 @@ for (cid, day), items in sorted(clusters.items(), key=lambda kv: kv[0][1]):
            'photos':photos,'photo_count':len(photos),'cover_path':next((p['path'] for p in photos if p['kind']=='photo'),photos[0]['path']),
            'status':'draft','title':f"{tn or 'Tree work'} — {datetime.date.fromisoformat(day):%b %-d, %Y}"}
     rest('/rest/v1/work_days','POST',row,{'Prefer':'return=minimal'})
+    upsert_social_draft(wid, tn, day, photos)
     created += 1; seen.update(i['uuid'] for i in items)
     import shutil; shutil.rmtree(tmp, ignore_errors=True)
 
 if not DRY:
+    for w in rest(f"/rest/v1/work_days?select=id,town,work_date,photos,service&status=eq.draft&tenant_id=eq.{TENANT}"):
+        upsert_social_draft(w['id'], w['town'], w['work_date'], w['photos'], w.get('service'))
     seen.update(u for u,_,_,_,_ in rows)   # everything triaged this run is done, personal included
     state = {'last_ts':max_ts,'seen':sorted(seen)[-20000:]}
     os.makedirs(os.path.dirname(STATE), exist_ok=True); json.dump(state, open(STATE,'w'))

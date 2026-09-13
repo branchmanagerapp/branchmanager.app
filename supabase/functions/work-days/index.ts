@@ -71,7 +71,11 @@ serve(async (req) => {
     const id = String(body.id ?? ""); const action = String(body.action ?? "");
     const { data: w, error } = await sb.from("work_days").select("*").eq("id", id).eq("tenant_id", TENANT).single();
     if (error || !w) return json(404, { ok: false, error: "not found" });
-    if (action === "skip") { await sb.from("work_days").update({ status: "skipped" }).eq("id", id); return json(200, { ok: true, status: "skipped" }); }
+    if (action === "skip") {
+      await sb.from("work_days").update({ status: "skipped" }).eq("id", id);
+      await sb.from("social_posts").delete().eq("work_day_id", id).eq("status", "draft");   // one queue: drop the SocialBranch draft too
+      return json(200, { ok: true, status: "skipped" });
+    }
     if (action === "unskip") { await sb.from("work_days").update({ status: "draft" }).eq("id", id); return json(200, { ok: true, status: "draft" }); }
     if (action === "cover") { await sb.from("work_days").update({ cover_path: body.cover }).eq("id", id); return json(200, { ok: true }); }
     if (action === "approve") {
@@ -88,7 +92,13 @@ serve(async (req) => {
       }
       const cover = body.cover && keep.includes(body.cover) ? body.cover : (kept.find((p: any) => p.kind === "photo")?.path ?? kept[0].path);
       await sb.from("work_days").update({ status: "approved", approved_at: new Date().toISOString(), photos: kept, photo_count: kept.length, cover_path: cover, service: body.service ?? w.service, blurb: body.blurb ?? w.blurb }).eq("id", id);
-      return json(200, { ok: true, status: "approved", kept: kept.length });
+      // One queue: the linked SocialBranch post now points at the public copies (signed draft URLs expire).
+      const publicUrls = kept.filter((p: any) => p.kind !== "video").map((p: any) => PUBLIC_BASE + "work/" + w.id + "/" + p.path.split("/").pop());
+      const { data: posts } = await sb.from("social_posts").select("id,status").eq("work_day_id", w.id);
+      for (const sp of posts ?? []) {
+        if (sp.status === "draft" || sp.status === "scheduled") await sb.from("social_posts").update({ media_urls: publicUrls, has_local_media: false }).eq("id", sp.id);
+      }
+      return json(200, { ok: true, status: "approved", kept: kept.length, social_posts: (posts ?? []).length });
     }
     return json(400, { ok: false, error: "unknown action" });
   }
