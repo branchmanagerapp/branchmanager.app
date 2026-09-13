@@ -174,6 +174,7 @@ PANELS = [
     ("We've moved to Branch Manager","updates/","Customer notice.",["PUB"]),
    ]),
    ("Marketing",[
+    ("RealWork Labs — use it or build it","realwork-diy-5a7c1e.html","Eli's Sept 11 pitch taken apart: don't buy; publish the jobs-near-you map + job pages ourselves. 3-step DIY plan.",["NEW"]),
     ("Marketing plan — Second Nature Tree","marketing-plan.html","Margin over volume; review flywheel; no customer-facing rates.",[]),
     ("Marketing hub — three brands","marketing-hub.html","Brand tokens, channel board, post-in-advance system, weekly batch calendar.",[]),
     ("Social HQ — for Catherine","social-hq-4b2c7e/","Nextdoor vote kit + 10 weeks of drafted posts, one link.",["NEW"]),
