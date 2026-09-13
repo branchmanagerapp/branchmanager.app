@@ -45,6 +45,7 @@ PANELS = [
     ("How we work — the workflow","workflow-snt-e82c4b.html","One system, three people: Doug, Catherine, Claude. Short link /work.",["S"]),
     ("Ground rules — how Claude works with you","ground-rules-c4e2.html","Enforced on every message and in long-term memory. Yours to change.",[]),
     ("Catherine — Branch Manager quick start","catherine-start-b7d3f2.html","One app on her phone for jobs, schedule, photos, invoices.",[]),
+    ("Social HQ — for Catherine","social-hq-4b2c7e/","Everything for social + the Nextdoor vote on one link. Claude drafts, Catherine approves.",["NEW"]),
     ("SocialBranch in 5 minutes","socialbranch-guide-4e7b21.html","Claude drafts posts, Catherine approves. Nothing sends itself.",[]),
     ("Shop & fridge — clean & stocked","cleaning-4c8f21.html","A simple system that sticks with a busy crew.",[]),
     ("Photo → Claude pipeline","ops.html","iPhone photo → Save to Files → iCloud Desktop → Screenshots. Then say 'look at the photos.'",[]),
@@ -175,6 +176,8 @@ PANELS = [
    ("Marketing",[
     ("Marketing plan — Second Nature Tree","marketing-plan.html","Margin over volume; review flywheel; no customer-facing rates.",[]),
     ("Marketing hub — three brands","marketing-hub.html","Brand tokens, channel board, post-in-advance system, weekly batch calendar.",[]),
+    ("Social HQ — for Catherine","social-hq-4b2c7e/","Nextdoor vote kit + 10 weeks of drafted posts, one link.",["NEW"]),
+    ("Post preview — Instagram / Facebook / Google","social-hq-4b2c7e/posts.html","Every Wednesday 4 PM, Sept 16 – Nov 18, exactly as they'll appear. Approve in SocialBranch.",["NEW"]),
     ("Yard sign — print-ready 24×18","sntree-signs-004491.html","Real site colors.",[]),
     ("Yard sign — source","sntree-sign-src.html","",["D"]),
     ("The CapCut playbook","capcut-playbook-9c2f4a.html","iPhone + GoPro → posted.",[]),
