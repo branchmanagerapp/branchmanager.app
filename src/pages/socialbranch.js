@@ -59,6 +59,15 @@ var SocialBranch = {
     if (!localStorage.getItem('bm-sb-sp-imported')) {
       setTimeout(function() { SocialBranch.importFromSocialPilot(true); }, 800);
     }
+    // v1221: OAuth return (?social=…) + refresh native connection status once per load.
+    if (!SocialBranch._nativeChecked) {
+      SocialBranch._nativeChecked = true;
+      if (!SocialBranch._handleConnectReturn()) {
+        SocialBranch._fetchNativeStatus(function(j) {
+          if (j && window._currentPage === 'socialbranch') loadPage('socialbranch');
+        });
+      }
+    }
     var tab = self._tab || 'dashboard';
     var html = '';
 
@@ -507,6 +516,43 @@ var SocialBranch = {
         youtubeTitle: (post.caption || '').substring(0, 100)
       };
 
+      // v1221: native connections first (Facebook / Instagram / Google Business).
+      var nativeNow = SocialBranch._nativeStatus();
+      var nativeNets = (post.networks || []).filter(function(n) { return !!nativeNow[n]; });
+      var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+      if (nativeNets.length && tid) {
+        fetch(SocialBranch._SOCIAL_FN + '/social-publish', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant: tid, post: { id: post.id, caption: post.caption, networks: post.networks, media_urls: publicMedia, scheduled_at: post.scheduledAt || null } })
+        }).then(function(r) { return r.json(); }).then(function(j) {
+          var res = (j && j.results) || {};
+          var okList = Object.keys(res).filter(function(k){ return res[k].ok; });
+          var badList = Object.keys(res).filter(function(k){ return !res[k].ok; });
+          post.status = okList.length ? 'posted' : 'failed';
+          post.postedAt = okList.length ? new Date().toISOString() : '';
+          post.results = { backend: 'native', results: res, unhandled: j.unhandled || [], publicMedia: publicMedia };
+          post.media = publicMedia;
+          SocialBranch._upsertPost(post);
+          var msg = okList.length ? ('Posted to ' + okList.join(', ')) : 'Post failed';
+          if (badList.length) msg += ' — ' + badList.map(function(k){ return k + ': ' + (res[k].error || 'failed'); }).join('; ');
+          UI.toast(msg, okList.length && !badList.length ? 'success' : (okList.length ? 'warn' : 'error'));
+          // Anything not natively connected still goes to the webhook if one exists.
+          var rest = (j.unhandled || []).filter(function(n){ return n !== 'test'; });
+          if (rest.length && webhook) {
+            var p2 = Object.assign({}, payload, { platforms: rest });
+            fetch(webhook, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(p2) }).catch(function(){});
+          }
+          SocialBranch._goTab('dashboard');
+        }).catch(function(e) {
+          post.status = 'failed';
+          post.results = { error: String(e.message || e), backend: 'native' };
+          SocialBranch._upsertPost(post);
+          UI.toast('Network error publishing.', 'error');
+          SocialBranch._goTab('dashboard');
+        });
+        return;
+      }
+
       if (webhook) {
         fetch(webhook, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
           .then(function(r) {
@@ -770,6 +816,30 @@ var SocialBranch = {
 
     html += '</div>';
 
+    // v1221 — Direct connections (server-side OAuth). One tap per provider;
+    // Doug logs in on the provider's own page; tokens are stored server-side.
+    var nat = SocialBranch._nativeStatus();
+    var cfgd = SocialBranch._nativeConfigured();
+    function natRow(title, sub, connectedInfo, net, connectNet, color) {
+      var isOn = !!connectedInfo;
+      var ready = net === 'gmb' ? cfgd.google !== false : cfgd.meta !== false;
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid ' + (isOn ? color : 'var(--border)') + ';border-radius:8px;margin-bottom:10px;background:' + (isOn ? color + '10' : 'var(--white)') + ';">'
+        + '<div style="min-width:0;"><div style="font-weight:700;font-size:14px;">' + title + '</div>'
+        + '<div style="font-size:12px;color:' + (isOn ? 'var(--green-dark)' : 'var(--text-light)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+        +   (isOn ? '✓ Connected · ' + UI.esc(connectedInfo.name || '') : (ready ? sub : 'Waiting on app credentials (Doug)')) + '</div></div>'
+        + (isOn
+            ? '<button onclick="SocialBranch._disconnectNative(\'' + net + '\')" style="background:var(--white);border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap;">Disconnect</button>'
+            : '<button onclick="SocialBranch._connectNative(\'' + connectNet + '\')" ' + (ready ? '' : 'disabled') + ' style="background:' + (ready ? color : '#ccc') + ';color:#fff;border:none;padding:9px 14px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Connect</button>')
+        + '</div>';
+    }
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;">'
+      + '<h3 style="margin:0 0 4px;font-size:16px;">Direct connections</h3>'
+      + '<p style="color:var(--text-light);font-size:13px;margin:0 0 14px;">Log in once on each network. After that, scheduled posts publish by themselves from the server. No SocialPilot, no Zapier.</p>'
+      + natRow('Facebook Page', 'Log in with the Facebook account that admins the Second Nature Tree page', nat.facebook, 'facebook', 'meta', '#1877F2')
+      + natRow('Instagram', 'Comes with the Facebook login when the Instagram professional account is linked to the Page', nat.instagram, 'instagram', 'meta', '#E4405F')
+      + natRow('Google Business Profile', 'Log in with the Google account that owns the Second Nature Tree listing', nat.gmb, 'gmb', 'google', '#4285F4')
+      + '</div>';
+
     // SocialPilot Import + Content Library panel
     var allPosts = SocialBranch._getPosts();
     var spImported = allPosts.filter(function(p){ return p.import_source === 'socialpilot-html-scrape'; }).length;
@@ -815,26 +885,34 @@ var SocialBranch = {
     };
 
     // Network map — honest about what's working
+    var native = SocialBranch._nativeStatus();
+    var nativeCount = ['facebook','instagram','gmb'].filter(function(k){ return !!native[k]; }).length;
     var hasWebhook = !!webhook;
-    var bannerColor = hasWebhook ? '#16a34a' : '#d97706';
-    var bannerBg    = hasWebhook ? '#dcfce7' : '#fef3c7';
-    var bannerMsg   = hasWebhook
-      ? 'Webhook backend is configured — posts to checked networks route through Zapier/Make on schedule.'
-      : 'No backend configured — scheduled posts will NOT publish anywhere. Either set a Zapier webhook above OR use the Copy & Post buttons below.';
+    var anyBackend = nativeCount > 0 || hasWebhook;
+    var bannerColor = anyBackend ? '#16a34a' : '#d97706';
+    var bannerBg    = anyBackend ? '#dcfce7' : '#fef3c7';
+    var bannerMsg   = nativeCount
+      ? nativeCount + ' network' + (nativeCount === 1 ? '' : 's') + ' connected directly — scheduled posts publish on their own, no third party.'
+      : hasWebhook
+        ? 'Webhook backend is configured — posts to checked networks route through Zapier/Make on schedule.'
+        : 'Nothing connected yet — tap Connect above. Until then scheduled posts will NOT publish anywhere.';
 
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">'
       +   '<h3 style="margin:0;font-size:16px;">Networks</h3>'
-      +   '<span style="font-size:11px;color:var(--text-light);">Direct OAuth per network is on the roadmap. Today: Webhook OR Manual.</span>'
+      +   '<span style="font-size:11px;color:var(--text-light);">Direct connections: Facebook, Instagram, Google Business. Others: webhook or manual.</span>'
       + '</div>'
       + '<div style="background:' + bannerBg + ';border:1px solid ' + bannerColor + ';border-radius:8px;padding:10px 14px;font-size:12px;color:#444;margin-bottom:14px;">'
-      +   '<strong style="color:' + bannerColor + ';">' + (hasWebhook ? 'Active' : 'Inactive') + '</strong> — ' + bannerMsg
+      +   '<strong style="color:' + bannerColor + ';">' + (anyBackend ? 'Active' : 'Inactive') + '</strong> — ' + bannerMsg
       + '</div>'
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;">';
     SocialBranch.NETWORKS.forEach(function(n) {
       var isC = connected.indexOf(n.id) >= 0;
       var stateLabel, stateColor;
-      if (isC) {
+      if (native[n.id]) {
+        stateLabel = '✓ Connected · ' + UI.esc(native[n.id].name || '');
+        stateColor = 'var(--green-dark)';
+      } else if (isC) {
         stateLabel = '✓ Direct OAuth';
         stateColor = 'var(--green-dark)';
       } else if (hasWebhook) {
@@ -1411,7 +1489,7 @@ var SocialBranch = {
             status: p.status || 'draft',
             posted_at: p.postedAt || null,
             results: p.results || null,
-            updated_at: new Date().toISOString()
+            updated_at: p.updatedAt || p.createdAt || new Date().toISOString()
           };
         });
         SupabaseDB.client.from('social_posts').upsert(rows).then(function(res) {
@@ -1451,6 +1529,18 @@ var SocialBranch = {
           // Server runner outcome wins over a stale local 'scheduled'.
           p.status = row.status; p.postedAt = row.posted_at; p.results = row.results;
           changed = true;
+        } else if ((p.status === 'draft' || p.status === 'scheduled') && row.updated_at
+                   && (!p.updatedAt || row.updated_at > p.updatedAt)
+                   && (row.status === 'draft' || row.status === 'scheduled')) {
+          // v1221: a newer cloud edit (Claude drafting/rescheduling, another device)
+          // wins over the stale local copy of an unpublished post.
+          p.caption = row.caption || p.caption;
+          p.networks = row.networks || p.networks;
+          if (row.media_urls && row.media_urls.length) p.media = row.media_urls;
+          p.scheduledAt = row.scheduled_at || '';
+          p.status = row.status;
+          p.updatedAt = row.updated_at;
+          changed = true;
         }
       });
       if (changed) {
@@ -1462,6 +1552,7 @@ var SocialBranch = {
   _upsertPost: function(post) {
     var posts = SocialBranch._getPosts();
     var idx = posts.findIndex(function(p){ return p.id === post.id; });
+    post.updatedAt = new Date().toISOString();
     if (idx >= 0) posts[idx] = post; else posts.unshift(post);
     SocialBranch._setPosts(posts);
   },
@@ -2106,10 +2197,71 @@ var SocialBranch = {
     var connected = [];
     var webhook = (localStorage.getItem('bm-socialpilot-webhook') || '').length > 10;
     var gmbToken = (localStorage.getItem('bm-gmb-access-token') || '').length > 20;
+    // v1221: native server-side connections (Facebook / Instagram / Google Business)
+    var native = SocialBranch._nativeStatus();
+    Object.keys(native).forEach(function(k) { if (native[k] && connected.indexOf(k) < 0) connected.push(k); });
     // Webhook implicitly reaches every network you've wired in the Zap
-    if (webhook) SocialBranch.NETWORKS.forEach(function(n) { connected.push(n.id); });
+    if (webhook) SocialBranch.NETWORKS.forEach(function(n) { if (connected.indexOf(n.id) < 0) connected.push(n.id); });
     if (gmbToken && connected.indexOf('gmb') < 0) connected.push('gmb');
     return connected;
+  },
+
+  // ── v1221 NATIVE CONNECTIONS (server-side OAuth; tokens never touch the browser) ──
+  // Status cache: { facebook:{name,since}|null, instagram:…, gmb:… } from the
+  // social-connect edge fn. Refreshed on every Marketing page load.
+  _SOCIAL_FN: 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1',
+  _nativeStatus: function() {
+    try { return JSON.parse(localStorage.getItem('bm-social-native') || '{}') || {}; } catch (e) { return {}; }
+  },
+  _nativeConfigured: function() {
+    try { return JSON.parse(localStorage.getItem('bm-social-native-cfg') || '{}') || {}; } catch (e) { return {}; }
+  },
+  _fetchNativeStatus: function(cb) {
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!tid) { if (cb) cb(); return; }
+    fetch(SocialBranch._SOCIAL_FN + '/social-connect?status=1&tenant=' + encodeURIComponent(tid))
+      .then(function(r) { return r.json(); })
+      .then(function(j) {
+        if (j && j.status) {
+          localStorage.setItem('bm-social-native', JSON.stringify(j.status));
+          localStorage.setItem('bm-social-native-cfg', JSON.stringify(j.configured || {}));
+        }
+        if (cb) cb(j);
+      })
+      .catch(function() { if (cb) cb(); });
+  },
+  _connectNative: function(net) {
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!tid) { UI.toast('Sign in first', 'error'); return; }
+    var ret = window.location.origin + window.location.pathname + '#socialbranch';
+    window.location.href = SocialBranch._SOCIAL_FN + '/social-connect?net=' + encodeURIComponent(net)
+      + '&tenant=' + encodeURIComponent(tid) + '&return=' + encodeURIComponent(ret);
+  },
+  _disconnectNative: function(network) {
+    var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!tid) return;
+    if (!confirm('Disconnect ' + network + '? Scheduled posts to it will stop.')) return;
+    fetch(SocialBranch._SOCIAL_FN + '/social-connect', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenant: tid, action: 'disconnect', network: network })
+    }).then(function(r) { return r.json(); }).then(function(j) {
+      if (j && j.status) localStorage.setItem('bm-social-native', JSON.stringify(j.status));
+      UI.toast('Disconnected.');
+      SocialBranch._tab = 'accounts'; loadPage('socialbranch');
+    }).catch(function() { UI.toast('Could not disconnect — try again.', 'error'); });
+  },
+  // Handle the ?social=meta|google&ok=1|0&msg=… the OAuth callback appends.
+  _handleConnectReturn: function() {
+    var q = window.location.search || '';
+    if (q.indexOf('social=') < 0) return false;
+    var p = new URLSearchParams(q);
+    var ok = p.get('ok') === '1';
+    var msg = p.get('msg') || '';
+    try { history.replaceState(null, '', window.location.pathname + '#socialbranch'); } catch (e) {}
+    UI.toast(ok ? ('Connected — ' + msg) : ('Connection failed: ' + msg), ok ? 'success' : 'error');
+    SocialBranch._tab = 'accounts';
+    SocialBranch._fetchNativeStatus(function() { loadPage('socialbranch'); });
+    return true;
   },
 
   // Fires scheduled posts that are due — call on app load

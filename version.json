@@ -1,5 +1,5 @@
 {
-  "version": 1220,
-  "released": "2026-09-11",
-  "notes": "v1220: every invoice-creation path (mark complete \u2192 auto-draft, create from job, batch, duplicate, dashboard) now takes its number from the database allocator \u2014 no two-device collisions"
+  "version": 1221,
+  "released": "2026-09-12",
+  "notes": "v1221: SocialBranch native connections (Facebook/Instagram/Google Business via social-connect + social-publish edge fns), runner native-first, cloud-newer reconcile"
 }

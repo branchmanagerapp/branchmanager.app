@@ -1,21 +1,25 @@
-// social-post-runner — fires Doug-scheduled social posts server-side (v1091).
+// social-post-runner — fires Doug-scheduled social posts server-side.
+//
+// v1091: Zapier/Make webhook backend.
+// v1221: NATIVE backend first (Facebook / Instagram / Google Business via
+//        tokens in tenants.config.social, see _shared/social.ts); the webhook
+//        is only used for networks that have no native connection.
 //
 // Runs on an hourly pg_cron. Reads social_posts rows with status='scheduled'
-// whose scheduled_at has passed, looks up the tenant's Zapier/Make webhook
-// (tenant_settings key 'bm-socialpilot-webhook', synced by CloudKeys), POSTs
-// the same payload shape the BM client sends, and marks posted/failed.
+// whose scheduled_at has passed and marks them posted/failed.
 //
 // GUARANTEES:
 //   - Never composes or schedules anything itself: only posts a human
 //     scheduled in the app ever fire. Scheduling in BM = the approval.
-//   - No webhook configured → posts stay 'scheduled' untouched (the daily
-//     digest flags them), nothing fires.
+//   - No native connection AND no webhook → posts stay 'scheduled' untouched
+//     (the daily digest flags them), nothing fires.
 //   - Media that exists only on the phone (data-URLs never uploaded) →
 //     marked 'failed' with a clear note instead of posting captionless.
 //
-// Deploy: supabase functions deploy social-post-runner --no-verify-jwt
+// Deploy: npx supabase functions deploy social-post-runner --no-verify-jwt --project-ref ltpivkqahvplapyagljt
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { publishNative } from "../_shared/social.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -51,23 +55,6 @@ Deno.serve(async (req) => {
 
   for (const post of due) {
     const tid = post.tenant_id as string;
-    if (!(tid in webhookCache)) {
-      const { data: rows } = await sb
-        .from("tenant_settings")
-        .select("value")
-        .eq("tenant_id", tid)
-        .eq("key", "bm-socialpilot-webhook")
-        .limit(1);
-      webhookCache[tid] = (rows && rows[0]?.value) || "";
-    }
-    const webhook = webhookCache[tid];
-
-    if (!webhook || webhook.length < 10) {
-      // No backend — leave scheduled; the daily digest surfaces it.
-      summary.push({ id: post.id, action: "skipped_no_webhook" });
-      continue;
-    }
-
     const media: string[] = Array.isArray(post.media_urls) ? post.media_urls : [];
     if (post.has_local_media && !media.length) {
       await sb.from("social_posts").update({
@@ -79,41 +66,62 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    const mediaType = media.length ? detectType(media[0]) : "none";
-    const payload = {
-      id: post.id,
-      caption: post.caption || "",
-      imageUrl: mediaType === "image" ? (media[0] || "") : "",
-      videoUrl: mediaType === "video" ? (media[0] || "") : "",
-      mediaUrl: media[0] || "",
-      mediaType,
-      media,
-      platforms: post.networks || [],
-      scheduledAt: post.scheduled_at || "",
-      youtubeTitle: (post.caption || "").substring(0, 100),
-    };
+    // 1) Native connections first.
+    const native = await publishNative(sb, tid, { caption: post.caption || "", networks: post.networks || [], media_urls: media });
+    const results: Record<string, unknown> = { ...native.results };
+    let remaining = native.unhandled;
 
-    let ok = false;
-    let resultInfo: Record<string, unknown>;
-    try {
-      const r = await fetch(webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      ok = r.ok;
-      resultInfo = { backend: "runner-webhook", httpStatus: r.status };
-    } catch (e) {
-      resultInfo = { backend: "runner-webhook", error: String((e as Error).message || e) };
+    // 2) Webhook for whatever isn't natively connected.
+    if (remaining.length) {
+      if (!(tid in webhookCache)) {
+        const { data: rows } = await sb
+          .from("tenant_settings")
+          .select("value")
+          .eq("tenant_id", tid)
+          .eq("key", "bm-socialpilot-webhook")
+          .limit(1);
+        webhookCache[tid] = (rows && rows[0]?.value) || "";
+      }
+      const webhook = webhookCache[tid];
+      if (webhook && webhook.length >= 10) {
+        const mediaType = media.length ? detectType(media[0]) : "none";
+        const payload = {
+          id: post.id,
+          caption: post.caption || "",
+          imageUrl: mediaType === "image" ? (media[0] || "") : "",
+          videoUrl: mediaType === "video" ? (media[0] || "") : "",
+          mediaUrl: media[0] || "",
+          mediaType,
+          media,
+          platforms: remaining,
+          scheduledAt: post.scheduled_at || "",
+          youtubeTitle: (post.caption || "").substring(0, 100),
+        };
+        try {
+          const r = await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          results.webhook = { ok: r.ok, httpStatus: r.status, platforms: remaining };
+        } catch (e) {
+          results.webhook = { ok: false, error: String((e as Error).message || e), platforms: remaining };
+        }
+        remaining = [];
+      }
     }
 
+    const outcomes = Object.values(results) as Array<{ ok?: boolean }>;
+    if (!outcomes.length) {
+      // Nothing connected at all — leave scheduled; the digest surfaces it.
+      summary.push({ id: post.id, action: "skipped_no_backend", networks: post.networks });
+      continue;
+    }
+    const okCount = outcomes.filter((o) => o.ok).length;
+    const status = okCount > 0 ? "posted" : "failed";
     await sb.from("social_posts").update({
-      status: ok ? "posted" : "failed",
-      posted_at: ok ? now : null,
-      results: resultInfo,
+      status,
+      posted_at: okCount > 0 ? now : null,
+      results: { backend: "runner", results, unhandled: remaining, at: now },
       updated_at: now,
     }).eq("id", post.id);
-    summary.push({ id: post.id, action: ok ? "posted" : "failed" });
+    summary.push({ id: post.id, action: status, ok: okCount, total: outcomes.length });
   }
 
   return new Response(JSON.stringify({ ok: true, fired: summary.length, summary }), {
