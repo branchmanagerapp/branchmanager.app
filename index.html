@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1222; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1223; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1029,6 +1029,16 @@ window.bmShowStaleBanner = function(version) {
     html.bm-bottom-nav .bm-dialog-footer { z-index:170 !important; }
     html.bm-bottom-nav body:has(.bm-dialog-page) #bottom-nav,
     html.bm-bottom-nav body:has(.bm-dialog-page) #bm-fab { display:none !important; }
+    /* v1223: the QUOTE editor (quotes.js) renders its own inline sticky Save bar
+       (position:fixed;bottom:0, no z-index) → also buried under #bottom-nav/#bm-fab.
+       Same rule: while any record editor is open, the action bar replaces the tab bar. */
+    html.bm-bottom-nav body:has(#quote-form) #bottom-nav,
+    html.bm-bottom-nav body:has(#quote-form) #bm-fab,
+    html.bm-bottom-nav body:has(#inv-form) #bottom-nav,
+    html.bm-bottom-nav body:has(#inv-form) #bm-fab,
+    html.bm-bottom-nav body:has(#job-form) #bottom-nav,
+    html.bm-bottom-nav body:has(#job-form) #bm-fab { display:none !important; }
+    html.bm-bottom-nav #pageContent div[style*="position:fixed"][style*="bottom:0"] { z-index:170 !important; }
 
     /* Filter chips wrap nicely */
     .filter-btn { font-size:11px !important; padding:6px 10px !important; }

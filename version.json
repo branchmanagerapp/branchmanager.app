@@ -1,5 +1,5 @@
 {
-  "version": 1222,
+  "version": 1223,
   "released": "2026-09-16",
-  "notes": "v1222: client/record edit Save bar no longer hidden under bottom nav + FAB in installed-app bottom-nav mode (tab bar hides while a dialog is open)"
+  "notes": "v1223: quote editor Save Draft / Save & Send bar was hidden under bottom nav + FAB in installed-app bottom-nav mode (follow-up to v1222 client-form fix); tab bar hides while a quote/invoice/job editor is open"
 }
