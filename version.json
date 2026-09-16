@@ -1,5 +1,5 @@
 {
-  "version": 1221,
-  "released": "2026-09-12",
-  "notes": "v1221: SocialBranch native connections (Facebook/Instagram/Google Business via social-connect + social-publish edge fns), runner native-first, cloud-newer reconcile"
+  "version": 1222,
+  "released": "2026-09-16",
+  "notes": "v1222: client/record edit Save bar no longer hidden under bottom nav + FAB in installed-app bottom-nav mode (tab bar hides while a dialog is open)"
 }

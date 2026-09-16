@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1221; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1222; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1023,6 +1023,12 @@ window.bmShowStaleBanner = function(version) {
     .bm-dialog-footer .btn { min-height:46px; }
     .bm-dialog-footer .btn-primary { flex:1 1 140px; font-size:16px; }
     .bm-dialog-page { padding-bottom:92px !important; }
+    /* v1222: in bottom-nav (installed app) mode the pinned Save bar was BURIED under
+       #bottom-nav (z150) + #bm-fab (z160) → "no Save button when I edit a client".
+       Jobber-app pattern: while a dialog is open the action bar REPLACES the tab bar. */
+    html.bm-bottom-nav .bm-dialog-footer { z-index:170 !important; }
+    html.bm-bottom-nav body:has(.bm-dialog-page) #bottom-nav,
+    html.bm-bottom-nav body:has(.bm-dialog-page) #bm-fab { display:none !important; }
 
     /* Filter chips wrap nicely */
     .filter-btn { font-size:11px !important; padding:6px 10px !important; }
