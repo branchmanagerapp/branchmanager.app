@@ -54,10 +54,16 @@ def rest(path, method='GET', body=None, headers=None, raw=False):
     if body is not None:
         data = body if raw else json.dumps(body).encode()
         if not raw: hh['Content-Type']='application/json'
-    req = urllib.request.Request(URL+path, data=data, method=method, headers=hh)
-    with urllib.request.urlopen(req, timeout=120) as r:
-        t = r.read()
-        return json.loads(t) if t and r.headers.get('Content-Type','').startswith('application/json') else t
+    last = None
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(URL+path, data=data, method=method, headers=hh)
+            with urllib.request.urlopen(req, timeout=300) as r:
+                t = r.read()
+                return json.loads(t) if t and r.headers.get('Content-Type','').startswith('application/json') else t
+        except (urllib.error.URLError, ConnectionError, OSError) as e:
+            last = e; import time; time.sleep(3*(attempt+1))
+    raise last
 
 # ---------- helpers ----------
 def hav(a,b,c,d):
@@ -89,6 +95,21 @@ def local_file(uuid, kind):
     sz,p = max(cands)
     if sz < 100_000: return (None,sz,'thumb')
     return (p,sz,'photo')
+
+
+def fetch_original(uuid, kind):
+    """iCloud-only asset: ask Photos.app to export the ORIGINAL for just this item (downloads on demand).
+    Only ever called for assets already matched to a client — personal photos are never fetched."""
+    out = f'/tmp/photo-ingest-fetch/{uuid}'
+    os.makedirs(out, exist_ok=True)
+    try:
+        subprocess.run(['osascript','-e','tell application "Photos"','-e',f'set theItems to (every media item whose id begins with "{uuid}")','-e',f'export theItems to POSIX file "{out}" with using originals','-e','end tell'],check=True,capture_output=True,timeout=600)
+    except Exception as e:
+        log(f"    fetch_original {uuid} failed: {e}"); return (None,0,'fetch-failed')
+    exts = ('.mov','.mp4','.m4v') if kind==1 else ('.jpeg','.jpg','.heic','.png')
+    cands=[(os.path.getsize(f'{out}/{f}'),f'{out}/{f}') for f in os.listdir(out) if f.lower().endswith(exts)]
+    if not cands: return (None,0,'fetch-empty')
+    sz,pth=max(cands); return (pth,sz,'video' if kind==1 else 'photo')
 
 def shrink_photo(src, dst):
     """HEIC/large JPEG → JPEG ≤ 2000px via sips (macOS). Falls back to copy."""
@@ -180,9 +201,11 @@ for (cid, day), items in sorted(clusters.items(), key=lambda kv: kv[0][1]):
     usable = []
     for i in stills:
         p,sz,k = local_file(i['uuid'],0)
+        if not p and not DRY: p,sz,k = fetch_original(i['uuid'],0)
         if p: usable.append((i,p,sz,'photo'))
     for i in vids:
         p,sz,k = local_file(i['uuid'],1)
+        if not p and not DRY: p,sz,k = fetch_original(i['uuid'],1)
         if p: usable.append((i,p,sz,'video'))
     usable.sort(key=lambda x: x[0]['ts']); usable = usable[:MAX_PER_DAY]
     j = job_for(c['name'], day)
@@ -209,7 +232,7 @@ for (cid, day), items in sorted(clusters.items(), key=lambda kv: kv[0][1]):
     rest('/rest/v1/work_days','POST',row,{'Prefer':'return=minimal'})
     upsert_social_draft(wid, tn, day, photos)
     created += 1; seen.update(i['uuid'] for i in items)
-    import shutil; shutil.rmtree(tmp, ignore_errors=True)
+    import shutil; shutil.rmtree(tmp, ignore_errors=True); shutil.rmtree('/tmp/photo-ingest-fetch', ignore_errors=True)
 
 if not DRY:
     for w in rest(f"/rest/v1/work_days?select=id,town,work_date,photos,service&status=eq.draft&tenant_id=eq.{TENANT}"):
