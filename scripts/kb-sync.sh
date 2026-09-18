@@ -24,7 +24,7 @@ if [ ! -d "$DIR/.git" ]; then
   git clone -q --depth 1 --filter=blob:none --sparse "https://github.com/$REPO.git" "$DIR"
   git -C "$DIR" sparse-checkout set --no-cone /knowledge/ /knowledge.html /scripts/kb-build.py /scripts/kb-sync.sh
 else
-  git -C "$DIR" pull -q --rebase origin main
+  git -C "$DIR" pull -q --rebase --autostash origin main
 fi
 python3 "$DIR/scripts/kb-build.py" --check | tail -1
 echo "Local copy: $DIR/knowledge   (facts/*.json are the files to edit)"
@@ -46,7 +46,7 @@ if [ "$cmd" = "push" ]; then
   git -C "$DIR" add knowledge knowledge.html
   if git -C "$DIR" diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
   git -C "$DIR" -c user.name="peekskilltree" -c user.email="info@peekskilltree.com" commit -q -m "$msg"
-  git -C "$DIR" pull -q --rebase origin main
+  git -C "$DIR" pull -q --rebase --autostash origin main
   git -C "$DIR" push -q "https://x-access-token:$(gh auth token)@github.com/$REPO.git" HEAD:main
   echo "Pushed. Live at https://branchmanager.app/knowledge in about 90 seconds."
   exit 0
