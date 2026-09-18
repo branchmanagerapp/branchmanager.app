@@ -47,6 +47,14 @@ header p{margin:0;max-width:60ch}
 .rate .n{font-size:40px;font-weight:800;line-height:1;letter-spacing:-0.02em}
 .rate .l{color:var(--ink-soft);margin-top:4px}
 .rates-note{color:var(--ink-soft);font-size:15px;margin:14px 0 0}
+@media (max-width:680px){
+  .rates{flex-wrap:nowrap}
+  .rate{flex:1 1 0;min-width:0;padding:18px 8px 18px 0}
+  .rate + .rate{padding-left:12px}
+  .rate:last-child{padding-right:0}
+  .rate .n{font-size:30px}
+  .rate .l{font-size:14px;line-height:1.3}
+}
 section.opt{padding:36px 0 30px;border-bottom:1px solid var(--ink-soft)}
 section.opt:last-of-type{border-bottom:3px solid var(--rule)}
 .opt h2{font-size:clamp(24px,4.5vw,32px);line-height:1.1;margin:0 0 6px;font-weight:700;letter-spacing:-0.01em}
