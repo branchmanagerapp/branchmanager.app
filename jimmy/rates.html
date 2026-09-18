@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>How equipment rates work — Second Nature Tree Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4EF; --ink:#1B2A22; --ink-soft:#4B5A51; --rule:#1B2A22;
+  --orange:#E9601C; --panel:#FFFFFF; --line:#C9D0C9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131A16; --ink:#EEF1EC; --ink-soft:#A9B3AC; --rule:#EEF1EC; --panel:#1C2620; --line:#34423A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131A16; --ink:#EEF1EC; --ink-soft:#A9B3AC; --rule:#EEF1EC; --panel:#1C2620; --line:#34423A;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.stripe{height:14px;background:var(--orange)}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px 80px}
+nav{display:flex;gap:6px 18px;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid var(--line);font-size:15px}
+nav a{color:var(--ink-soft);text-decoration:none;padding:6px 0;font-weight:600}
+nav a.on{color:var(--ink);border-bottom:3px solid var(--orange)}
+header{padding:32px 0 26px;border-bottom:3px solid var(--rule)}
+header .from{color:var(--ink-soft);margin:0 0 10px}
+h1{font-size:clamp(32px,7vw,52px);line-height:1;margin:0 0 16px;font-weight:800;letter-spacing:-0.02em;font-stretch:90%}
+header p{margin:0 0 10px;max-width:60ch}
+.flag{display:inline-block;background:var(--ink);color:var(--bg);padding:4px 10px;font-weight:700;font-size:13px;margin-top:8px}
+section{padding:32px 0 26px;border-bottom:1px solid var(--line)}
+h2{font-size:clamp(23px,4.5vw,30px);line-height:1.1;margin:0 0 8px;font-weight:700;letter-spacing:-0.01em}
+.sub{color:var(--ink-soft);margin:0 0 16px;font-size:16px}
+p{margin:0 0 14px;max-width:62ch}
+ul{margin:0 0 14px;padding-left:20px;max-width:62ch}
+li{margin-bottom:6px}
+.rates{display:flex;border-top:3px solid var(--rule);border-bottom:3px solid var(--rule);margin:6px 0 12px}
+.rate{flex:1 1 0;min-width:0;padding:16px 8px 16px 0}
+.rate + .rate{border-left:1px solid var(--ink-soft);padding-left:12px}
+.rate .n{font-size:clamp(26px,6vw,38px);font-weight:800;line-height:1;letter-spacing:-0.02em}
+.rate .l{color:var(--ink-soft);margin-top:4px;font-size:14px;line-height:1.3}
+.cards{display:grid;gap:12px;margin:6px 0 14px}
+.card{background:var(--panel);padding:16px 18px}
+.card h3{font-size:16px;margin:0 0 2px;font-weight:700}
+.card .who{color:var(--ink-soft);font-size:14px;margin:0 0 10px}
+.card .nums{display:flex;gap:18px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.card .nums div{font-size:14px;color:var(--ink-soft)}
+.card .nums b{display:block;font-size:22px;color:var(--ink);font-weight:800;letter-spacing:-0.01em}
+.card .src{font-size:13px;color:var(--ink-soft);margin:10px 0 0}
+table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums;background:var(--panel)}
+th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;line-height:1.2;vertical-align:bottom}
+.note{color:var(--ink-soft);font-size:15px}
+.gap{border-left:4px solid var(--orange);padding:2px 0 2px 14px;margin:14px 0}
+.calc{background:var(--panel);padding:18px;margin-top:8px}
+.calc fieldset{border:0;padding:0;margin:0 0 16px}
+.calc legend{font-weight:700;font-size:15px;padding:0;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid.two{grid-template-columns:1fr 1fr}
+label{display:block;font-size:13px;color:var(--ink-soft);line-height:1.25}
+input{
+  width:100%;margin-top:4px;padding:10px 8px;font:inherit;font-size:16px;font-weight:600;
+  color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:0
+}
+input:focus{outline:2px solid var(--orange);outline-offset:0}
+.calc table{background:transparent;margin-top:4px}
+.calc td,.calc th{padding:8px 4px}
+.sources{font-size:14px;color:var(--ink-soft)}
+.sources li{margin-bottom:8px}
+a{color:var(--orange)}
+footer{padding:28px 0 0;color:var(--ink-soft);font-size:15px}
+@media (max-width:420px){ .calc{padding:14px 12px} .calc td,.calc th{font-size:14px;padding:8px 2px} }
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="wrap">
+
+<nav>
+  <a href="/jimmy">The options</a>
+  <a class="on" href="/jimmy/rates">How rates work</a>
+  <a href="/jimmy/partnership">How arrangements work</a>
+</nav>
+
+<header>
+  <p class="from">Second Nature Tree Service · for Doug and Jimmy</p>
+  <h1>How equipment rates actually work.</h1>
+  <p>This page doesn't propose anything. It's the homework, laid out so we're both looking at the same facts: what we do today, what rental yards publish, how day, week and month pricing is built, and what a rate does and doesn't include.</p>
+  <p>Every outside number has its source and the date it was read. Where we couldn't find a number, it says so.</p>
+  <span class="flag">Nothing here is an offer or a decision</span>
+</header>
+
+<section>
+  <h2>Where we are today</h2>
+  <p class="sub">What Jimmy pays now, a few days a month.</p>
+  <div class="rates">
+    <div class="rate"><div class="n">$500</div><div class="l">Bucket truck, per day</div></div>
+    <div class="rate"><div class="n">$250</div><div class="l">Chipper, per day</div></div>
+    <div class="rate"><div class="n">$300</div><div class="l">Chip truck, per day</div></div>
+  </div>
+  <p>All three together is <b>$1,050 a day</b>. Two days in a month is $2,100. Three days is $3,150.</p>
+</section>
+
+<section>
+  <h2>What rental yards publish</h2>
+  <p class="sub">Read from each company's own website on September 18, 2026.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>12-inch diesel chipper, 85 HP</h3>
+      <p class="who">Sunbelt Rentals, Spring Valley NY branch — 12.5 miles from Peekskill</p>
+      <div class="nums">
+        <div><b>$430</b>1 day</div>
+        <div><b>$1,450</b>1 week</div>
+        <div><b>$3,525</b>4 weeks</div>
+      </div>
+      <p class="src">Live online rate card for pickup. The closest local comparison we found.</p>
+    </div>
+    <div class="card">
+      <h3>60-foot forestry bucket truck, 11-foot debris body</h3>
+      <p class="who">All Points Equipment, Palmetto FL — rents nationwide</p>
+      <div class="nums">
+        <div><b>$750</b>1 day</div>
+        <div><b>$3,500</b>1 week</div>
+        <div><b>Call</b>1 month</div>
+      </div>
+      <p class="src">Listing dated May 20, 2024, so it may be stale. Not a local price.</p>
+    </div>
+    <div class="card">
+      <h3>55-foot forestry bucket truck</h3>
+      <p class="who">Forestry Rentals, Brownstown IL</p>
+      <div class="nums">
+        <div><b>—</b>1 day</div>
+        <div><b>$2,500</b>1 week</div>
+        <div><b>$6,900</b>1 month</div>
+      </div>
+      <p class="src">No daily rate offered. Page carries no date.</p>
+    </div>
+  </div>
+
+  <div class="gap">
+    <p><b>What we could not find.</b> No rental company we checked publishes a rate for a chip truck. Custom Truck One Source, TRL Rents and Tree Trucks all rent forestry trucks but quote by phone only. Sunbelt's search near Peekskill returned boom lifts, not bucket trucks or chip trucks. So the chip truck has no outside comparison yet, and the bucket truck comparisons are not local.</p>
+  </div>
+  <p class="note">A rental yard's truck and ours aren't identical machines. Age, reach and condition all move the price. These are reference points, not a verdict.</p>
+</section>
+
+<section>
+  <h2>How day, week and month pricing is built</h2>
+  <p class="sub">A week is not seven days of rent. A month is not thirty.</p>
+  <p>Yards charge the most for a single day because a one-day rental carries the same paperwork, inspection and turnaround as a long one, and the machine may sit unrented the day before and after. The longer you keep it, the less each day costs. Here is what that looks like on four machines at the Sunbelt Spring Valley branch, read September 18, 2026:</p>
+  <table>
+    <thead><tr><th>Machine</th><th>Day</th><th>Week is</th><th>4 weeks is</th></tr></thead>
+    <tbody>
+      <tr><td>12" chipper</td><td>$430</td><td>3.4 days</td><td>8.2 days</td></tr>
+      <tr><td>34' towable boom</td><td>$435</td><td>2.8 days</td><td>7.1 days</td></tr>
+      <tr><td>50' towable boom</td><td>$590</td><td>2.6 days</td><td>6.1 days</td></tr>
+      <tr><td>65' boom lift</td><td>$715</td><td>2.2 days</td><td>5.0 days</td></tr>
+    </tbody>
+  </table>
+  <p class="note" style="margin-top:12px">Read it as: four weeks of the chipper costs the same as 8.2 single days. Across these four machines a month runs 5 to 8 times the day rate. We saw claims online of 10 to 12 times, but found no rental company's own numbers that support it.</p>
+  <p>Our own draft rate card for the operator network uses a simpler ladder: full rate for 1 to 2 days, 10% off for 3 to 4 days, 15% off a week, 25% off a month. That card is a draft and those breaks aren't set.</p>
+  <p><b>What counts as a day.</b> Sunbelt's contract defines one shift as no more than 8 hours a day, 40 hours a week and 160 hours per four weeks on the hour meter. Run a double shift and the charge is 150%.</p>
+</section>
+
+<section>
+  <h2>What a yard's rate does not include</h2>
+  <p class="sub">The sticker price is only part of what a renter pays.</p>
+  <ul>
+    <li><b>Insurance, or a fee in place of it.</b> Sunbelt requires business renters to carry at least $1,000,000 general liability, plus property insurance covering the machine's full value, with Sunbelt named as additional insured and loss payee. Their contract says a policy that excludes boom damage or overturns is a breach.</li>
+    <li><b>The damage plan.</b> Renters can instead pay Sunbelt's Rental Protection Plan at 15% of the rental charge. Sunbelt states plainly that it is not insurance and doesn't cover liability to other people. It caps what the renter owes for accidental damage.</li>
+    <li><b>Fuel and fees.</b> The renter replaces the fuel, either prepaid, paid on return, or returned full. Sunbelt also adds an environmental fee as a percentage of the rental. The rates above are for pickup at the branch, not delivery.</li>
+    <li><b>An operator.</b> A bare rental is the machine only. Our draft rate card treats an operated bucket truck, with Doug running it on his own insurance, as a different product at $750 a day.</li>
+  </ul>
+  <p>So $430 for the yard's chipper is closer to $495 with the damage plan, before fuel and fees. That's the fair way to compare it to a handshake rate that has none of those extras.</p>
+</section>
+
+<section>
+  <h2>The owner's side of the same day</h2>
+  <p class="sub">Why the owner of the iron cares how many days it moves.</p>
+  <p>A machine costs its owner money every day whether it works or not: the loan or the cash tied up in it, insurance, registration, the annual inspections on the truck and the boom, and the value it loses each year. Then there are costs that only happen when it runs: fuel, knives, hydraulic hoses, tires, and the repair that was going to happen eventually and happened on somebody's job.</p>
+  <p>A day rate has to cover a slice of both. Rented two or three days a month, each day carries a big slice of the fixed costs. That's the honest reason single days are priced high everywhere, and why both sides usually do better when the days are predictable.</p>
+</section>
+
+<section>
+  <h2>Try the numbers yourself</h2>
+  <p class="sub">Change anything. It compares three ways of paying for the same days. It doesn't pick one.</p>
+  <div class="calc">
+    <fieldset>
+      <legend>Day rates</legend>
+      <div class="grid">
+        <label>Bucket truck<input id="r1" type="number" inputmode="decimal" value="500"></label>
+        <label>Chipper<input id="r2" type="number" inputmode="decimal" value="250"></label>
+        <label>Chip truck<input id="r3" type="number" inputmode="decimal" value="300"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Percentage of the job</legend>
+      <div class="grid two">
+        <label>Typical job gross per day<input id="gross" type="number" inputmode="decimal" value="2500"></label>
+        <label>Percent to the iron<input id="pct" type="number" inputmode="decimal" value="25"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Flat monthly amount</legend>
+      <div class="grid">
+        <label>Per month<input id="ret" type="number" inputmode="decimal" placeholder="0"></label>
+        <label>Days included<input id="inc" type="number" inputmode="decimal" placeholder="0"></label>
+        <label>Each extra day<input id="xtra" type="number" inputmode="decimal" placeholder="0"></label>
+      </div>
+    </fieldset>
+    <table aria-live="polite">
+      <thead><tr><th>Days in month</th><th>Day rate</th><th>Percent</th><th>Flat monthly</th></tr></thead>
+      <tbody id="out"></tbody>
+    </table>
+    <p class="note" style="margin:12px 0 0">Each figure is what changes hands for the month. The $2,500 job gross is only an example to get the math started. A flat monthly amount is owed even in a month with zero days. A percentage is owed only when there's a job.</p>
+  </div>
+</section>
+
+<section style="border-bottom:3px solid var(--rule)">
+  <h2>Sources</h2>
+  <ul class="sources">
+    <li><a href="https://www.sunbeltrentals.com/equipment-rental/lawn-landscape-and-tree/12-inch-wood-chipper/0390060/">Sunbelt Rentals, 12-inch wood chipper</a> and boom lift listings. Rates shown for Spring Valley NY branch #785, pickup. Read September 18, 2026.</li>
+    <li><a href="https://www.sunbeltrentals.com/legal/terms-and-conditions/us/">Sunbelt Rentals, US terms and conditions</a>. One-shift definition and insurance requirements. Read September 18, 2026.</li>
+    <li><a href="https://www.sunbeltrentals.com/resources/rental-protection-plan/">Sunbelt Rentals, Rental Protection Plan</a>. 15% fee, not insurance. Read September 18, 2026.</li>
+    <li><a href="https://www.sunbeltrentals.com/legal/terms-and-conditions/fees-and-optional-charges/">Sunbelt Rentals, fees and optional charges</a>. Fuel options and environmental fee. Read September 18, 2026.</li>
+    <li><a href="https://www.allpointsequipmentsales.com/trucks/2025-60ft-forestry-bucket-truck-for-rent-under-cdl">All Points Equipment, 60-foot forestry bucket truck for rent</a>. Listing dated May 20, 2024.</li>
+    <li><a href="https://forestryrentals.com/bucket-truck/">Forestry Rentals, bucket truck</a>. Undated page, read September 18, 2026.</li>
+    <li>Checked and found quote-only: <a href="https://www.customtruck.com/rental/forestry">Custom Truck One Source</a>, <a href="https://trlrents.com/Forestry-Truck-Rental.html">TRL Rents</a>, <a href="https://www.treetrucks.com/chipper-trucks/">Tree Trucks</a>.</li>
+    <li>Second Nature Tree operator network rate card, internal draft, September 16, 2026.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Put together for a conversation between two tree guys. Not legal, tax or insurance advice. Next: <a href="/jimmy/partnership">how each arrangement actually works</a>.</p>
+</footer>
+
+</div>
+<script>
+(function(){
+  var ids=['r1','r2','r3','gross','pct','ret','inc','xtra'];
+  function v(id){var n=parseFloat(document.getElementById(id).value);return isNaN(n)?0:n;}
+  function money(n){return '$'+Math.round(n).toLocaleString('en-US');}
+  function draw(){
+    var day=v('r1')+v('r2')+v('r3'), gross=v('gross'), pct=v('pct')/100;
+    var ret=v('ret'), inc=v('inc'), xtra=v('xtra');
+    var hasRet=ret>0||xtra>0, rows='';
+    for(var d=0; d<=6; d++){
+      var flat = hasRet ? money(ret+Math.max(0,d-inc)*xtra) : '—';
+      rows+='<tr><td>'+d+'</td><td>'+money(d*day)+'</td><td>'+money(d*gross*pct)+'</td><td>'+flat+'</td></tr>';
+    }
+    document.getElementById('out').innerHTML=rows;
+  }
+  ids.forEach(function(id){document.getElementById(id).addEventListener('input',draw);});
+  draw();
+})();
+</script>
+</body>
+</html>
