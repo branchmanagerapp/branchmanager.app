@@ -1,7 +1,7 @@
 # Regenerates today-snt-9d4b1e.html (/today) and schedule-snt-c47a2e.html (/runsheet)
 # from what is actually current: texts (Messages), Fieldy transcripts, Dialpad, Gmail, Branch Manager.
 import html, sys
-UPDATED = "Sunday, Sept 13, 2026"
+UPDATED = "Friday, Sept 18, 2026"
 BM = "https://branchmanager.app/"
 def rec(kind, uid, page): return f"{BM}?rec={kind}-{uid}#{page}"
 
@@ -52,108 +52,105 @@ def page(title, h1, lede, active, body, foot):
 
 # ---------------- THIS WEEK (/today) ----------------
 B=[]
-B.append('<div class="note"><b>Where this comes from.</b> Your texts through Sat 9/12 9:23pm, the Fieldy recordings Sept 10–11, Dialpad calls + voicemails, the inbox, and Branch Manager (last change Aug 28). <b>Jobber is connected again (re-authorized 9/13)</b> — every quote and invoice below is live from it. <b>The schedule is in neither Jobber nor Branch Manager</b> ("it is on the dash"): the jobs list here comes from your texts. Tell me where the dash lives and I will read it too.</div>')
+B.append('<div class="note"><b>Where this comes from.</b> Jobber live (quotes, jobs, invoices — pulled Fri 9/18 morning), your texts through Fri 9/18, Branch Manager, Dialpad and the inbox. <b>Two jobs are now in Jobber</b> (Continental Village 9/28–29, Bohannon-Sacci 10/5). <b>The Mohegan Lake beech (9/22–24) is still only "on the dash"</b> — no record anywhere.</div>')
 
-B.append('<h2>🚚 Jobs on the calendar <small>from texts + recordings</small></h2>')
-B.append(row("Sun 9/13 — Jimmy Cottrell rents the chip truck + Bandit 254","Austin picked up ~7am for a Wappingers job. Chipper set; winch not fixed (wrap it). Catherine texted the chipper tray was left open and the registration is drying out.",href=None,tags=[("t-go","today")],src=["text","fieldy"]))
-B.append(row("Mon 9/14 → Wed 9/16 — Continental Village Park District","Sycamore at the beach + locust, plus the hillside clearing. Anthony said one of Mon/Tue/Wed works ($300–350/day). Quote #562 sent 8/20; job #407 in BM has no date yet — put the date on it.","$2,600 + $4,600",href=BM+"#jobs",tags=[("t-go","pick the day")],src=["fieldy","bm"]))
-B.append(row("Mon 9/14 4:00pm — RealWork Labs demo call (Eli)","Jobber geotag-reviews pitch. You said tentative. Calendar invite is in the inbox. Skip it if Monday is a work day — you told him that.",tags=[("t-off","optional")],src=["gmail","fieldy"]))
-B.append(row("Wed 9/16 — Ryan's lawyer meeting","Ryan meets his lawyer about SDVOB + TDIU. Your 9-page questions packet is built — drop it to him before Wednesday.",href="ryan-questions-4c8a2d.html",tags=[("t-call","drop off packet")],src=["text","gmail"]))
-B.append(row("Mon 9/21 — Michelle's aunt's job (Julie Melagrano, BM job #339)","Michelle asked for Sept 21 (her first day off, wants to be there). You said yes. No price on #339 yet — price it before you go.",href=BM+"#jobs",tags=[("t-go","confirmed by text")],src=["text","bm"]))
-B.append(row("Tue 9/22 – Thu 9/24 — Mohegan Lake beech tree","Catherine: 'It's on the dash.' Three days blocked. Not in Jobber or BM as a job — which client (Nick?), and where is the dash?","",tags=[("t-call","confirm who")],src=["text","jobber"]))
-B.append(row("This weekend — split wood at Dominic's","Dominic asked 9/9 when you can split the wood at his house; you said this weekend.",tags=[("t-go","promised")],src=["text"]))
-B.append(row("Sat 9/12 — Catherine: 'Sitting at 10k, so that week fully booked out'","She is booked through the Mohegan Lake week. Anything new goes after 9/24 unless it is a rain-day filler.",tags=[("t-off","capacity")],src=["text"]))
+B.append('<h2>🚚 Jobs on the calendar <small>texts + Jobber</small></h2>')
+B.append(row("Fri 9/18 8:00am — on the job with Austin","Firewood cut + split to clear room for the bucket truck. Austin: 'Meeting u on the job at 8?'",tags=[("t-go","today")],src=["text"]))
+B.append(row("Thu 9/17 → today — Dominic's, bucket truck","You went up with truck + chipper after dumping the cedar; Austin met you 3:30. If it isn't wrapped, finish it today and bring the bucket back to the yard.",tags=[("t-go","finish")],src=["text"]))
+B.append(row("Fri 9/19 — Andrew Brink powerwash jobs (you offered)","You texted 'I can work tomorrow' Thu morning. No reply yet.",tags=[("t-off","waiting on Andrew")],src=["text"]))
+B.append(row("Mon 9/21 — Julie Melagrano (Michelle's aunt), Scarsdale — BM job #339","Michelle asked for this date and wants to be there. NO PRICE on #339 — price it before Monday.",href=BM+"#jobs",tags=[("t-go","confirmed")],src=["text","bm"]))
+B.append(row("Tue 9/22 – Thu 9/24 — Mohegan Lake beech tree","Catherine: 'it's on the dash.' Three days blocked. Still no client name, no quote, no job in Jobber or BM. Nick?",tags=[("t-red","name it")],src=["text","jobber"]))
+B.append(row("Sat 9/26 – Sun 9/27 — Jimmy Cottrell wants the chipper + bucket truck","He asked Wed 9/16. Unanswered. Yes or no by text.",tags=[("t-call","answer")],src=["text"]))
+B.append(row("Mon 9/28 – Tue 9/29 — Continental Village Park District, hillside","Jobber job #329 · $2,700 · 50 Highland Dr. Scheduled Wed 9/16.","$2,700",tags=[("t-go","in Jobber")],src=["jobber"]))
+B.append(row("Mon 10/5 — Joann Bohannon-Sacci, 101 Leda Dr, Peekskill","Jobber job #328 · $2,276 · from quote #562.","$2,276",tags=[("t-go","in Jobber")],src=["jobber"]))
+B.append(row("Post office (Angela, postmaster) — bid the original scope now","Catherine walked it 9/17. The extra tree work over the lot can't be bid until Angela files a request. Quote the original scope first.",tags=[("t-call","write it")],src=["text"]))
 
-B.append('<h2>📨 Estimates — live from Jobber <small>Sun 9/13 11:40am · newest first</small></h2>')
-B.append(row("Mary Stark — 128 Pine St, Peekskill — #566","Sent THIS MORNING (9/13) after her two voicemails saying she never got it. Call her today to confirm it landed at 917-373-5060.","$2,384 sent",tags=[("t-call","confirm receipt")],src=["jobber","dialpad"]))
-B.append(row("Mike Badia — 287 Daisy Ln, Carmel — #565","DRAFT with photos, no price yet. Callback on the neighbor's 2 trees was due today. Price the front-yard line (white oak lead prune ~$800–1,000 + locust over the roof ~$450–600) and send.","$0 draft",tags=[("t-red","price + send")],src=["jobber","text","fieldy"]))
-B.append(row("Tom Ho — 105 Burke Ct, Buchanan — #564","Silver-maple limb estimate from Fri 9/11. Sent.","$3,360 sent",tags=[("t-off","waiting")],src=["jobber","fieldy"]))
-B.append(row("Jeff Schwartz — 50 Beckwith Ln, Philipstown — #563","Climbs, removals, Norway + sugar maple prune. Sent 9/11 (the '$6,900 all-work' talk landed at $8,562 with tax/extras).","$8,562 sent",tags=[("t-off","waiting")],src=["jobber","fieldy"]))
-B.append(row("Joann Bohannon-Sacci — 101 Leda Dr, Peekskill — #562","Sent 9/10.","$2,276 sent",tags=[("t-off","waiting")],src=["jobber"]))
-B.append(row("Michael Spector — 58 Twin Ridges Rd, Ossining — #561","Draft since 9/3, touched 9/11. Finish and send.","$1,626 draft",tags=[("t-call","send")],src=["jobber"]))
-B.append(row("Dawn — Brewster (Brink's client)","Agreed to $1,000 by phone 9/11. NOT in Jobber yet. Create the quote/job and give her a date; she doesn't email.","$1,000 verbal",tags=[("t-red","create + book")],src=["text","fieldy"]))
-B.append(row("(516) 233-0861 — 16 Dean Drive","Voicemail 9/10: Catherine came out, they never got the quote. There is no Dean Drive quote in Jobber. Catherine: which one is this? Find it or write it, then call.",tags=[("t-red","missing quote")],src=["dialpad","jobber"]))
-B.append(row("Jenny Zawolski — 608 Nelson Ave — crane oaks","9/10 work is invoiced AND paid (#397). The crane estimate ($4,800 front + $5,800 back, sawmill via Robbie +25%) is not in Jobber yet — write it high and honest.","$10,600 to write",tags=[("t-call","write estimate")],src=["jobber","fieldy"]))
-B.append(row("Jean Mortimer — 218 Gallagher St, Buchanan — #552","Biggest open quote. Sent 8/25–26, no reply. Call.","$14,522 sent",tags=[("t-call","follow up")],src=["jobber"]))
-B.append(row("John Surette — 303 Myers Corners Rd, Wappingers — #546","Sent 8/13. He texted 9/2: still waiting on his insurance company to review the estimate. You have 'that broken piece.' Check in this week.","$9,429 sent",tags=[("t-off","insurance")],src=["jobber","text"]))
-B.append(row("Tara Perry — 220 CT-37, New Fairfield — #547","Michelle's referral. Sent 8/17; Michelle asked 8/23 + 8/31 if it went through — client went quiet. One more nudge, then park.","$7,044 sent",tags=[("t-call","last nudge")],src=["jobber","text"]))
-B.append(row("Tricia Leardi — 59 Old Highland Tpke — #559","Replied 9/10: waiting on another estimate. Cat rescue 8/30 was invoiced + paid (#396). Leave it a week.","$5,961 sent",tags=[("t-off","waiting")],src=["jobber","gmail"]))
-B.append(row("Rob McCray — 418 Union Ave, Peekskill — #558","Sent 8/28.","$3,360 sent",tags=[("t-off","waiting")],src=["jobber"]))
-B.append(row("Continental Village Park District — #557 (+ job #407 in BM)","Second quote $2,700 sent 8/28 (hillside). The $15,823 town job (#521) is parked. First job invoiced #1019 $2,600 in BM, due 9/19.","$2,700 sent",tags=[("t-off","waiting")],src=["jobber","bm"]))
-B.append(row("Valarie Manca — 7 C St, Cortlandt Manor — #556","Sent 8/28.","$2,601 sent",tags=[("t-off","waiting")],src=["jobber"]))
-B.append(row("Mark Delorenzo — 241 Ringgold St — #560 (+ draft #555)","#560 $2,601 sent 9/2; #555 $2,168 is an older draft — archive it so he doesn't see two.","$2,601 sent",tags=[("t-off","tidy")],src=["jobber"]))
-B.append(row("Todd Cammisa — Brewster — #553 · Jennifer Colandrea — #550","$1,951 each, sent 8/22–26. Follow-up texts.","$1,951 ×2",tags=[("t-off","waiting")],src=["jobber"]))
-B.append(row("Website leads Catherine already turned into quotes","Peter Bermudez #551 $1,517 sent · Roshan James #548 $2,168 DRAFT · Shawn Grant #554 $0 (needs price) · Alex Duran #549 $0 (needs price). Two need numbers before they're real.",tags=[("t-call","price 2, send 1")],src=["jobber","bm"]))
-B.append(row("Still open from spring/summer","Abraham Kraus #545 changes requested $6,719 + #544 $4,768 · Liz #538 $6,015 · Alan Katz #534 $2,845 · Scott Manner #533 draft $3,739 · Sprout Brook trio (Zadra $7,424 / Rigby $5,852 / Higgins $3,034) since June · Tony Carlucci $4,552 · Tina Zerello $3,929 · Kelsey Beck $3,576 · Mike Stabulas #541 $4,552 · Nicholas 25 Cayuga #543 $650 · Dana Lanza #542 $867. Decide: one text each, or archive.",tags=[("t-off","clean-up list")],src=["jobber"]))
+B.append('<h2>📨 Estimates — live from Jobber <small>Fri 9/18 · newest first</small></h2>')
+B.append(row("Jen Zawolski — 608 Nelson Ave — #568 crane oaks","DRAFT $11,800 written 9/14 from your 9/10 notes (front oak $4,800 · rear oak $5,800 · milling estimate · transport). Review + send.","$11,800 draft",href="https://secure.getjobber.com/quotes/65649225",tags=[("t-red","send")],src=["jobber"]))
+B.append(row("Max — 16 Bell Air Ln, Wappingers — #572","Sent Thu 9/17. #571 is a duplicate draft — archive it.","$2,384 sent",tags=[("t-off","waiting")],src=["jobber"]))
+B.append(row("Nicolette Coan — 16 Jean Dr, Cortlandt Manor — #570","Sent Wed 9/16.","$4,768 sent",tags=[("t-off","waiting")],src=["jobber"]))
+B.append(row("Joe Sorrentino — 2921 Saddle Ridge, Yorktown — #569","Sent Wed 9/16.","$2,384 sent",tags=[("t-off","waiting")],src=["jobber"]))
+B.append(row("Joe Ariano — 14 Owens Farm Rd, Fort Montgomery — #567","Sent Sun 9/13. Second-biggest open quote. Nudge next week.","$11,271 sent",tags=[("t-off","waiting")],src=["jobber"]))
+B.append(row("Mary Stark — 128 Pine St, Peekskill — #566","Sent Sun 9/13 after two voicemails. Confirmed she got it? If not, one call: 917-373-5060.","$2,384 sent",tags=[("t-call","confirm")],src=["jobber","dialpad"]))
+B.append(row("Mike Badia — 287 Daisy Ln, Carmel — #565","Still a $0 DRAFT with photos, a week old. Price the front-yard line (white-oak lead prune + locust over the roof) and send.","$0 draft",tags=[("t-red","price + send")],src=["jobber","text"]))
+B.append(row("Tom Ho #564 $3,360 · Jeff Schwartz #563 $8,562","Both sent Fri 9/11. Nudge Schwartz next week.",tags=[("t-off","waiting")],src=["jobber"]))
+B.append(row("Michael Spector — 58 Twin Ridges Rd — #561","Draft since 9/3. Finish and send.","$1,626 draft",tags=[("t-call","send")],src=["jobber"]))
+B.append(row("Dawn (Brewster) — no quote exists","$1,000 agreed by phone 9/11. Text Doug her last name + address → Claude drafts the quote in Jobber.","$1,000 verbal",tags=[("t-red","create")],src=["text","fieldy"]))
+B.append(row("Catherine Scott's husband — wants a fresh copy of the estimate","(516) 232-5298 per Catherine 9/16. Resend from Jobber.",tags=[("t-call","resend")],src=["text"]))
+B.append(row("(516) 233-0861 — 16 Dean Drive","Voicemail 9/10: Catherine came out, they never got a quote. Nothing for Dean Drive in Jobber. Which visit was this?",tags=[("t-red","missing quote")],src=["dialpad","jobber"]))
+B.append(row("Jean Mortimer — 218 Gallagher St, Buchanan — #552","Biggest open quote. Sent 8/25, silent since. Call.","$14,522 sent",tags=[("t-call","follow up")],src=["jobber"]))
+B.append(row("John Surette — 303 Myers Corners — #546","Waiting on his insurance company (texted 9/2). He also wants to look at your truck door — get together.","$9,429 sent",tags=[("t-off","insurance")],src=["jobber","text"]))
+B.append(row("Tricia Leardi #559 $5,961 · Rob McCray #558 $3,360 · Valarie Manca #556 $2,601 · Mark Delorenzo #560 $2,601 · Todd Cammisa #553 $1,951 · Jennifer Colandrea #550 $1,951","All sent late Aug – early Sept, no reply. One follow-up text each. Delorenzo also has an old draft #555 to archive.",tags=[("t-off","follow-up texts")],src=["jobber"]))
+B.append(row("Needs a price: Shawn Grant #554 · Alex Duran #549 · Roshan James #548 (draft $2,168)","Website leads Catherine turned into quotes; two sit at $0.",tags=[("t-call","price")],src=["jobber","bm"]))
+B.append(row("Still open from spring/summer","Kraus #545/#544 · Liz #538 $6,015 · Katz #534 · Manner #533 draft · Sprout Brook trio (Zadra / Rigby / Higgins) · Carlucci · Zerello · Beck · Stabulas #541 · Nicholas 25 Cayuga #543 $650 · Dana Lanza #542 $867. One text each, or archive.",tags=[("t-off","clean-up list")],src=["jobber"]))
 
-B.append('<h2>📞 Website leads with no quote and no call <small>5 left after checking Jobber + Dialpad</small></h2>')
-for n,ph,svc,d,extra in [("Andrew Kaplan","516-606-9686","Pruning — 322 Sprout Brook Rd, cutting back","9/10","next door to the three Sprout Brook quotes from June"),("Mark Cassidy","516-518-8711","Other","9/8",""),("Roger Phillips","845-216-2665","Pruning — 161 Tanglewylde Rd, Lake Peekskill","9/2–9/3","in Jobber as a request, no quote; Catherine lives right there"),("Jordan Visser","385-213-6179","Other","8/24",""),("Jeff Monohan","805-801-5896","Tree removal","8/12","")]:
+B.append('<h2>📞 Website leads with no quote and no call <small>5</small></h2>')
+for n,ph,svc,d,extra in [("Andrew Kaplan","516-606-9686","Pruning — 322 Sprout Brook Rd, cutting back","9/10","next door to the three Sprout Brook quotes from June"),("Mark Cassidy","516-518-8711","Other — 25 Melville Park Rd, Melville","9/8","Long Island — probably out of area; one call to confirm"),("Roger Phillips","845-216-2665","Pruning — 161 Tanglewylde Rd, Lake Peekskill","9/2–9/3","in Jobber as a request, no quote; Catherine lives right there"),("Jordan Visser","385-213-6179","Other","8/24",""),("Jeff Monohan","805-801-5896","Tree removal","8/12","")]:
     B.append(row(f"{n} — {ph}",f"{svc} · requested {d}. {extra}",href=BM+"#requests",tags=[("t-call","call")],src=["bm","jobber","dialpad"]))
-B.append(row("Hale — 800-877-5113","'Other' 9/2 — toll-free number, probably a vendor. Skip unless you recognize it.",href=BM+"#requests",tags=[("t-off","likely spam")],src=["bm"]))
 
 B.append('<h2>🧾 Invoices — send and collect <small>Jobber + Branch Manager</small></h2>')
-B.append(row("Sarah Moden-Alliston — Jobber #382","Past due since 5/23 on $2,059.13. (BM shows the same debt as #395.) Payment link or a call.","$1,159.13 left",tags=[("t-red","past due")],src=["jobber","bm"]))
-B.append(row("Jessica Bernadello — Jobber #378 — Tree of Heaven removal","DRAFT since April 27, never issued. Job was done 4/22. Send it.","$5,093.63 draft",tags=[("t-red","send")],src=["jobber"]))
-B.append(row("New Rochelle — 66 Laron Drive — BM #1011","Still a DRAFT in Branch Manager. Due date was 8/25. Send it.","$1,899",href=BM+"#invoices",tags=[("t-red","send")],src=["bm"]))
-B.append(row("Oswald Roche — BM #1017","You texted the $700 reminder 8/31; called 9/4. Overdue 9/11.","$700 left",href=BM+"#invoices",tags=[("t-call","chase")],src=["bm","text","dialpad"]))
-B.append(row("Continental Village Park District — BM #1019","Sent 8/20, due Fri 9/19. Chase Fred Romer the week it is due.","$2,600",href=BM+"#invoices",tags=[("t-off","due 9/19")],src=["bm"]))
-B.append(row("Paid this month (Jobber)","Jen Zawolski #397 $1,083.75 (9/10) · Chaz #394 $2,492.63 · Tricia Leardi #396 $108.38 · 723 Hudson Ave LLC #395 $650.25 · Hope Bogart #387 $500.",tags=[("t-off","fyi")],src=["jobber"]))
-B.append(row("Done in BM, no invoice found in BM or Jobber","David Coats $2,200 · Meadow Lane (Michelle-sold) $1,100 · Nicholas Anthony $800 (the $650.25 from 723 Hudson Ave LLC may be this one — check) · the 8/26 tree + chipping at Emily's parents'. Done = invoice it.",href=BM+"#jobs",tags=[("t-call","check + invoice")],src=["bm","jobber","text"]))
+B.append(row("Jessica Bernadello — Jobber #378 — Tree of Heaven removal","DRAFT since April 27, never issued. Job done 4/22. Send it.","$5,093.63 draft",tags=[("t-red","send")],src=["jobber"]))
+B.append(row("New Rochelle — 66 Laron Drive — BM #1011","Still a DRAFT in Branch Manager. Due date was 8/25.","$1,899",href=BM+"#invoices",tags=[("t-red","send")],src=["bm"]))
+B.append(row("Oswald Roche — BM #1017","Overdue since 9/11. Reminder texted 8/31, called 9/4.","$700 left",href=BM+"#invoices",tags=[("t-call","chase")],src=["bm","text","dialpad"]))
+B.append(row("Sarah Moden-Alliston — Jobber #382","Past due since 5/23.","$1,159.13 left",tags=[("t-call","chase")],src=["jobber","bm"]))
+B.append(row("Continental Village Park District — BM #1019","Sent 8/20, due TOMORROW Sat 9/19. Chase Fred Romer Monday if it hasn't landed.","$2,600",href=BM+"#invoices",tags=[("t-off","due 9/19")],src=["bm"]))
+B.append(row("Paid this month (Jobber)","Jen Zawolski #397 $1,083.75 (9/11) · Chaz #394 $2,492.63 (9/2) · Tricia Leardi #396 $108.38 · 723 Hudson Ave LLC #395 $650.25 · Hope Bogart #387 $500.",tags=[("t-off","fyi")],src=["jobber"]))
+B.append(row("Done, no invoice anywhere","David Coats $2,200 · Meadow Lane (Michelle-sold) $1,100 · Nicholas Anthony $800 (the $650.25 from 723 Hudson Ave LLC may be this one) · 8/26 tree + chipping at Emily's parents' · Matt Hait, Wilton 9/14 (12 photos, no job or invoice). Done = invoice it.",href=BM+"#jobs",tags=[("t-red","invoice")],src=["bm","jobber","text"]))
 
-B.append('<h2>💸 Money & admin due this week</h2>')
-B.append(row("GL policy expires Fri 9/18 — Maria Trombetta (Tooher)","Renewal $9,483 is rated on $87,630 of old pruning payroll. You sent 2026 gross by class 9/11 and asked for a re-rate; she also needs the KM100 added (contractors equipment / inland marine, Geneva as loss payee) and payroll/gross for snow. Signed apps + premium needed before 9/18.",tags=[("t-red","by Friday")],src=["gmail"]))
-B.append(row("Geneva Capital — KM100","Delivery DocuSign completed 9/10. $1,100/mo × 60 confirmed by Paige (addendum). First invoice was 9/5. Done.",tags=[("t-off","closed")],src=["gmail","text"]))
-B.append(row("CADCO past due (SmartLawn)","Past-due statement again 9/8 (#108833, $16,303.55). Dennis's Lucente balance is the payoff plan.",href="tree-cash-0606-9f2c.html",tags=[("t-call","plan")],src=["gmail"]))
-B.append(row("Kevin Fay — 2025 return","Met 9/11. Ram added to depreciation (~$11k → ~$8k), Catherine to payroll ~$1,000/mo from Oct 1, NYS-45 seasonal notice, 941 notice to answer. Nothing signed yet.",href="cpa2025-1aefb4.html",tags=[("t-off","in motion")],src=["fieldy","gmail"]))
-B.append(row("Nextdoor Fave Awards — voting through 9/30","Catherine: 'lots of new Faves.' Kit + blast are drafted, nothing sends itself.",href="nextdoor-fave-9d4c2e.html",tags=[("t-off","running")],src=["text","gmail"]))
-B.append(row("Paid out this week","Paul (roof) $2,000 cash 9/11 · Ron (splitter carb, wiring) $600 · HBA Automotive invoice 203315 paid · trailer at HBA done, Impreza done.",tags=[("t-off","fyi")],src=["text","fieldy","gmail"]))
+B.append('<h2>💸 Money & admin</h2>')
+B.append(row("GL policy expires TODAY Fri 9/18 — Maria Trombetta (Tooher)","Renewal $9,483 rated on $87,630 of old pruning payroll; re-rate asked 9/11; KM100 to add (Geneva loss payee). Confirm it is bound today.",tags=[("t-red","today")],src=["gmail"]))
+B.append(row("Nextdoor Fave Awards — voting closes Wed 9/30","The blast was NEVER sent — the 9/12 email to Catherine overstated it. Copy is on the kit page: paste into a Jobber campaign and send.",href="nextdoor-fave-9d4c2e.html",tags=[("t-red","paste + send")],src=["gmail"]))
+B.append(row("Social: 15 photo drafts + the Wednesday series — nothing is posting","Facebook / Instagram / Google are not connected. Wed 9/16 post #1 did not go out. Approve drafts in SocialBranch; connect the accounts.",href=BM+"#socialbranch",tags=[("t-call","connect")],src=["bm"]))
+B.append(row("CADCO past due (SmartLawn)","#108833 $16,303.55. Dennis's Lucente balance is the payoff plan.",href="tree-cash-0606-9f2c.html",tags=[("t-call","plan")],src=["gmail"]))
+B.append(row("Kevin Fay — 2025 return","Met 9/11: Ram to depreciation, Catherine to payroll ~$1,000/mo from Oct 1, NYS-45 + 941 notices to answer. Nothing signed yet.",href="cpa2025-1aefb4.html",tags=[("t-off","in motion")],src=["fieldy","gmail"]))
+B.append(row("John Surette — truck door","He wants to take another look and show you something he needs (texted 9/14 11:53pm). Set a time.",tags=[("t-call","schedule")],src=["text"]))
 
 B.append('<h2>⚡ Storm / line work — moving <small>Brink, Optimal, Ryan</small></h2>')
-B.append(row("Matt at Optimal","You emailed crew + equipment 9/8. He has nothing now, you're on the list. Brink: 'that's the in, keep it low.'",href="storm-work-4e7a21.html",tags=[("t-off","waiting")],src=["gmail","text"]))
-B.append(row("Line up 3–4 bucket-truck crews to W-9","Brink's ask: crews you trust, under you on contracts. Johnny/JKE, Green Velvet, Optimal numbers are on the playbook.",href="storm-work-4e7a21.html",tags=[("t-call","this month")],src=["text"]))
-B.append(row("Ryan — SDVOB path","Lawyer Wed 9/16; Brink will help with the state registration. Packet is built.",href="storm-setasides-6b1f3e.html",tags=[("t-off","Wed")],src=["text"]))
+B.append(row("Matt at Optimal","You emailed crew + equipment 9/8. Nothing now, you're on the list.",href="storm-work-4e7a21.html",tags=[("t-off","waiting")],src=["gmail","text"]))
+B.append(row("Line up 3–4 bucket-truck crews to W-9","Johnny/JKE, Green Velvet, Optimal numbers are on the playbook.",href="storm-work-4e7a21.html",tags=[("t-call","this month")],src=["text"]))
+B.append(row("Ryan — SDVOB path","Lawyer meeting was Wed 9/16 — ask him how it went.",href="storm-setasides-6b1f3e.html",tags=[("t-call","follow up")],src=["text"]))
 
 BODY_TODAY=''.join(B)
-FOOT_TODAY=f'Updated {UPDATED} · sources: Messages · Fieldy · Dialpad · Gmail · Branch Manager · Jobber (re-authorized 9/13)<br>Short links: /today · /runsheet · /gc · /map · /work'
-open(sys.argv[1]+'/today-snt-9d4b1e.html','w').write(page("This Week — Second Nature Tree","This week","Sun Sept 13 – Sun Sept 20. What is booked, what to send, who is waiting, what to collect. Tap a row to open it in Branch Manager.","today-snt-9d4b1e.html",BODY_TODAY,FOOT_TODAY))
+FOOT_TODAY=f'Updated {UPDATED} · sources: Jobber (live) · Messages · Dialpad · Gmail · Branch Manager<br>Short links: /today · /runsheet · /gc · /map · /work'
+open(sys.argv[1]+'/today-snt-9d4b1e.html','w').write(page("This Week — Second Nature Tree","This week","Fri Sept 18 – Sun Sept 27. What is booked, what to send, who is waiting, what to collect. Tap a row to open it.","today-snt-9d4b1e.html",BODY_TODAY,FOOT_TODAY))
 
 # ---------------- RUN SHEET (/runsheet) ----------------
 R=[]
-R.append('<div class="note"><b>Catherine —</b> this is the week in order, straight from your texts and the recordings. 🚚 = go to site · 📞 = call/text · 🗂️ = office. Quotes and invoices are live from Jobber as of Sun 9/13 11:40am.</div>')
+R.append('<div class="note"><b>Catherine —</b> the next ten days in order. 🚚 = go to site · 📞 = call/text · 🗂️ = office. Quotes, jobs and invoices are live from Jobber as of Fri 9/18 morning.</div>')
 def day(title, sub, items):
     R.append(f'<div class="day"><div class="dh">{title}<small>{sub}</small></div>'+''.join(items)+'</div>')
-day("Sun 13","today",[
- row("🚚 Jimmy Cottrell — chip truck + Bandit 254 out","Austin picked up early. Registration was drying in the open glovebox — make sure it made it back in the truck.",tags=[("t-off","equipment out")],src=["text"]),
- row("📞 Mike Badia — #565 is still a $0 draft","His callback on the neighbor's 2 trees was due today. Either way: price the front-yard line and send #565.",tags=[("t-red","price + send")],src=["jobber","text"]),
- row("📞 Dawn (Brewster) — create the $1,000 quote/job and give her a date","Not in Jobber yet. She doesn't email — text or call.",tags=[("t-red","create")],src=["text","fieldy"]),
- row("🚚 Dominic — split the wood","Promised this weekend.",tags=[("t-go","")],src=["text"]),
-])
-day("Mon 14","'right and early'",[
- row("🚚 Continental Village Park District — beach sycamore + locust, hillside","Anthony can do Mon/Tue/Wed. Pick the day and text Fred Romer + Anthony. Quote #562 $2,600 + job #407 $4,600.",href=BM+"#jobs",tags=[("t-go","pick day")],src=["fieldy","bm"]),
- row("📞 Mary Stark — confirm she got #566 ($2,384, sent Sun 9/13)","Two voicemails last week said she never received it. One call: 917-373-5060.",tags=[("t-call","confirm")],src=["jobber","dialpad"]),
- row("📞 (516) 233-0861 — 16 Dean Drive","No Dean Drive quote exists in Jobber. Which visit was this? Write it, send it, call to confirm.",tags=[("t-red","missing quote")],src=["dialpad","jobber"]),
- row("🗂️ Send: Zawolski crane estimate ($4,800 + $5,800) · Bernadello invoice #378 ($5,094, draft since April) · New Rochelle #1011 ($1,899) · Spector #561 · Roshan James #548","",href=BM+"#invoices",tags=[("t-call","send")],src=["jobber","fieldy","bm"]),
- row("🗂️ 4:00pm RealWork Labs call — only if you're not on a job","",tags=[("t-off","optional")],src=["gmail"]),
-])
-day("Tue 15 · Wed 16","",[
- row("🚚 Continental Village (whichever day Anthony picks)","",tags=[("t-go","")],src=["fieldy"]),
- row("📞 Website leads — 5 uncalled + 2 unpriced","Call: Kaplan (322 Sprout Brook) · Cassidy · Roger Phillips (161 Tanglewylde) · Visser · Monohan. Price: Shawn Grant #554 · Alex Duran #549. Numbers on the This-week sheet.",href="today-snt-9d4b1e.html",tags=[("t-call","2/day")],src=["bm","jobber","dialpad"]),
- row("🗂️ Wed — Ryan's lawyer meeting; Doug drops the packet before","",href="ryan-questions-4c8a2d.html",tags=[("t-off","Doug")],src=["text"]),
- row("📞 Brink's second estimate — price the driveway side + 2 fence trees","",tags=[("t-call","price")],src=["fieldy"]),
-])
-day("Thu 17 · Fri 18","",[
- row("🗂️ Fri 9/18 — GL policy expires","Doug: signed apps + premium to Maria, re-rate pending, KM100 added.",tags=[("t-red","Doug")],src=["gmail"]),
- row("📞 Chase: Oswald Roche $700 · Sarah Moden-Alliston $1,159 · Jean Mortimer's $14,522 quote · John Surette (insurance)","",href=BM+"#invoices",tags=[("t-call","collect + follow up")],src=["bm","jobber"]),
- row("🗂️ Invoice the done jobs","David Coats · Meadow Lane · Nicholas Anthony (check the $650.25 paid 8/28) · 8/26 tree at Emily's parents'. Chaz, Zawolski and the cat rescue are already paid in Jobber.",href=BM+"#jobs",tags=[("t-red","invoice")],src=["bm","jobber","text"]),
+day("Fri 18","today",[
+ row("🚚 8:00 — Doug + Austin: firewood, clear the bucket truck","Dominic's if anything is left from yesterday.",tags=[("t-go","")],src=["text"]),
+ row("🗂️ GL policy expires today — Maria Trombetta","Doug confirms it is bound; re-rate + KM100 still pending.",tags=[("t-red","Doug")],src=["gmail"]),
+ row("📞 Mike Badia #565 — price + send","A week as a $0 draft.",tags=[("t-red","")],src=["jobber"]),
+ row("📞 Jimmy Cottrell — chipper + bucket 9/26–27, yes or no","Asked Wednesday.",tags=[("t-call","")],src=["text"]),
+ row("🗂️ Post office — quote the original scope","Angela can't take the tree work until she files a request.",tags=[("t-call","write it")],src=["text"]),
 ])
 day("Sat 19 · Sun 20","",[
- row("📞 Continental Village invoice #1019 due 9/19 — $2,600","",href=BM+"#invoices",tags=[("t-off","due")],src=["bm"]),
+ row("🚚 Andrew Brink powerwash — if he confirms","",tags=[("t-off","waiting")],src=["text"]),
+ row("📞 Continental Village invoice #1019 due Sat 9/19 — $2,600","",href=BM+"#invoices",tags=[("t-off","due")],src=["bm"]),
+ row("🗂️ Send: Zawolski #568 ($11,800) · Bernadello #378 ($5,094) · New Rochelle #1011 ($1,899) · Spector #561","",href="https://secure.getjobber.com/quotes/65649225",tags=[("t-call","send")],src=["jobber","bm"]),
+ row("📞 Resend the estimate to Catherine Scott's husband — (516) 232-5298","",tags=[("t-call","")],src=["text"]),
 ])
-day("Next week","booked",[
- row("🚚 Mon 9/21 — Julie Melagrano (Michelle's aunt), BM job #339","Michelle will be there. Price is not on the job yet.",href=BM+"#jobs",tags=[("t-go","confirmed")],src=["text","bm"]),
- row("🚚 Tue 9/22 – Thu 9/24 — Mohegan Lake beech tree","On the dash. Confirm the client name on the job.",tags=[("t-go","3 days")],src=["text","jobber"]),
+day("Mon 21","booked",[
+ row("🚚 Julie Melagrano (Michelle's aunt) — Scarsdale — BM job #339","Michelle on site. Price must be on the job before you go.",href=BM+"#jobs",tags=[("t-go","confirmed")],src=["text","bm"]),
+ row("📞 Chase: Oswald Roche $700 · Sarah Moden-Alliston $1,159 · CVPD #1019 if unpaid","",href=BM+"#invoices",tags=[("t-call","collect")],src=["bm","jobber"]),
+])
+day("Tue 22 · Wed 23 · Thu 24","booked — 3 days",[
+ row("🚚 Mohegan Lake beech tree","'On the dash.' Put the client name + price into Jobber so it exists.",tags=[("t-go","name it")],src=["text"]),
+ row("📞 Wed — nudge Jean Mortimer ($14,522) · Joe Ariano ($11,271) · Jeff Schwartz ($8,562)","",tags=[("t-call","follow up")],src=["jobber"]),
+ row("📞 Website leads — Kaplan · Cassidy · Roger Phillips · Visser · Monohan","Numbers on the This-week sheet. Two a day.",href="today-snt-9d4b1e.html",tags=[("t-call","2/day")],src=["bm","dialpad"]),
+])
+day("Fri 25 · Sat 26 · Sun 27","",[
+ row("🚚 Jimmy Cottrell — chipper + bucket truck (if yes)","Sat–Sun.",tags=[("t-off","pending")],src=["text"]),
+ row("🗂️ Invoice the done jobs","David Coats · Meadow Lane · Nicholas Anthony · Emily's parents' 8/26 · Matt Hait, Wilton 9/14.",href=BM+"#jobs",tags=[("t-red","invoice")],src=["bm","text"]),
+])
+day("Next week","in Jobber",[
+ row("🚚 Mon 9/28 – Tue 9/29 — Continental Village Park District, hillside — job #329 $2,700","",tags=[("t-go","scheduled")],src=["jobber"]),
+ row("🗂️ Wed 9/30 — Nextdoor Fave voting closes","Paste the kit copy into a Jobber campaign before then.",href="nextdoor-fave-9d4c2e.html",tags=[("t-red","send")],src=["gmail"]),
+ row("🚚 Mon 10/5 — Joann Bohannon-Sacci, 101 Leda Dr — job #328 $2,276","",tags=[("t-go","scheduled")],src=["jobber"]),
 ])
 BODY_RUN=''.join(R)
-FOOT_RUN=f'Updated {UPDATED} · built from texts, recordings, Dialpad, email and Branch Manager · Jobber live<br>Short links: /runsheet · /today · /gc'
-open(sys.argv[1]+'/schedule-snt-c47a2e.html','w').write(page("Run Sheet — week of Sept 14","Run sheet","Week of Mon Sept 14, in order. Catherine's copy.","schedule-snt-c47a2e.html",BODY_RUN,FOOT_RUN))
+FOOT_RUN=f'Updated {UPDATED} · built from Jobber (live), texts, Dialpad, email and Branch Manager<br>Short links: /runsheet · /today · /gc'
+open(sys.argv[1]+'/schedule-snt-c47a2e.html','w').write(page("Run Sheet — Sept 18–27","Run sheet","Fri Sept 18 through Sun Sept 27, in order. Catherine's copy.","schedule-snt-c47a2e.html",BODY_RUN,FOOT_RUN))
 print("wrote both")
