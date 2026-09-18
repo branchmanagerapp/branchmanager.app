@@ -55,7 +55,7 @@ B=[]
 B.append('<div class="note"><b>Where this comes from.</b> Your texts through Sat 9/12 9:23pm, the Fieldy recordings Sept 10–11, Dialpad calls + voicemails, the inbox, and Branch Manager (last change Aug 28). <b>Jobber is connected again (re-authorized 9/13)</b> — every quote and invoice below is live from it. <b>The schedule is in neither Jobber nor Branch Manager</b> ("it is on the dash"): the jobs list here comes from your texts. Tell me where the dash lives and I will read it too.</div>')
 
 B.append('<h2>🚚 Jobs on the calendar <small>from texts + recordings</small></h2>')
-B.append(row("Sun 9/13 — Jimmy Cantrell rents the chip truck + Bandit 254","Austin picked up ~7am for a Wappingers job. Chipper set; winch not fixed (wrap it). Catherine texted the chipper tray was left open and the registration is drying out.",href=None,tags=[("t-go","today")],src=["text","fieldy"]))
+B.append(row("Sun 9/13 — Jimmy Cottrell rents the chip truck + Bandit 254","Austin picked up ~7am for a Wappingers job. Chipper set; winch not fixed (wrap it). Catherine texted the chipper tray was left open and the registration is drying out.",href=None,tags=[("t-go","today")],src=["text","fieldy"]))
 B.append(row("Mon 9/14 → Wed 9/16 — Continental Village Park District","Sycamore at the beach + locust, plus the hillside clearing. Anthony said one of Mon/Tue/Wed works ($300–350/day). Quote #562 sent 8/20; job #407 in BM has no date yet — put the date on it.","$2,600 + $4,600",href=BM+"#jobs",tags=[("t-go","pick the day")],src=["fieldy","bm"]))
 B.append(row("Mon 9/14 4:00pm — RealWork Labs demo call (Eli)","Jobber geotag-reviews pitch. You said tentative. Calendar invite is in the inbox. Skip it if Monday is a work day — you told him that.",tags=[("t-off","optional")],src=["gmail","fieldy"]))
 B.append(row("Wed 9/16 — Ryan's lawyer meeting","Ryan meets his lawyer about SDVOB + TDIU. Your 9-page questions packet is built — drop it to him before Wednesday.",href="ryan-questions-4c8a2d.html",tags=[("t-call","drop off packet")],src=["text","gmail"]))
@@ -123,7 +123,7 @@ R.append('<div class="note"><b>Catherine —</b> this is the week in order, stra
 def day(title, sub, items):
     R.append(f'<div class="day"><div class="dh">{title}<small>{sub}</small></div>'+''.join(items)+'</div>')
 day("Sun 13","today",[
- row("🚚 Jimmy Cantrell — chip truck + Bandit 254 out","Austin picked up early. Registration was drying in the open glovebox — make sure it made it back in the truck.",tags=[("t-off","equipment out")],src=["text"]),
+ row("🚚 Jimmy Cottrell — chip truck + Bandit 254 out","Austin picked up early. Registration was drying in the open glovebox — make sure it made it back in the truck.",tags=[("t-off","equipment out")],src=["text"]),
  row("📞 Mike Badia — #565 is still a $0 draft","His callback on the neighbor's 2 trees was due today. Either way: price the front-yard line and send #565.",tags=[("t-red","price + send")],src=["jobber","text"]),
  row("📞 Dawn (Brewster) — create the $1,000 quote/job and give her a date","Not in Jobber yet. She doesn't email — text or call.",tags=[("t-red","create")],src=["text","fieldy"]),
  row("🚚 Dominic — split the wood","Promised this weekend.",tags=[("t-go","")],src=["text"]),
