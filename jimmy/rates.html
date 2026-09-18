@@ -75,11 +75,12 @@ input{
 input:focus{outline:2px solid var(--orange);outline-offset:0}
 .calc table{background:transparent;margin-top:4px}
 .calc td,.calc th{padding:8px 4px}
+.calc th + th{padding-left:12px}
 .sources{font-size:14px;color:var(--ink-soft)}
 .sources li{margin-bottom:8px}
 a{color:var(--orange)}
 footer{padding:28px 0 0;color:var(--ink-soft);font-size:15px}
-@media (max-width:420px){ .calc{padding:14px 12px} .calc td,.calc th{font-size:14px;padding:8px 2px} }
+@media (max-width:420px){ .calc{padding:14px 12px} .calc td,.calc th{font-size:14px;padding:8px 2px} .calc th{font-size:11px} .calc th + th{padding-left:10px} }
 </style>
 </head>
 <body>
@@ -87,9 +88,9 @@ footer{padding:28px 0 0;color:var(--ink-soft);font-size:15px}
 <div class="wrap">
 
 <nav>
-  <a href="/jimmy">The options</a>
-  <a class="on" href="/jimmy/rates">How rates work</a>
-  <a href="/jimmy/partnership">How arrangements work</a>
+  <a href="/jimmy">Options</a>
+  <a class="on" href="/jimmy/rates">Rates</a>
+  <a href="/jimmy/partnership">Arrangements</a>
 </nav>
 
 <header>
