@@ -1,0 +1,23 @@
+{
+  "topic": "our-web-presence",
+  "title": "Our web presence",
+  "summary": "Facts about domains and names, so nobody publishes to the wrong place.",
+  "facts": [
+    {
+      "id": "branchmanager-com-not-ours",
+      "kind": "fact",
+      "claim": "branchmanager.com is not ours. It is registered at GoDaddy (created 1999) and redirects to branchmanagerusa.com, a different company. Our site is branchmanager.app.",
+      "source": {
+        "name": "Live check: HTTP redirect and WHOIS for branchmanager.com",
+        "url": "https://branchmanager.com/",
+        "tier": 2,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": []
+    }
+  ]
+}

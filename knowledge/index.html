@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Knowledge base — Second Nature Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4EF; --ink:#1B2A22; --ink-soft:#4B5A51; --rule:#1B2A22;
+  --orange:#E9601C; --panel:#FFFFFF; --line:#C9D0C9;
+  --ok:#2E6B45; --warn:#9A5B00; --bad:#A3302A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131A16; --ink:#EEF1EC; --ink-soft:#A9B3AC; --rule:#EEF1EC; --panel:#1C2620; --line:#34423A;
+    --ok:#7CC79A; --warn:#E5B15C; --bad:#F0877F;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Archivo","Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.stripe{height:14px;background:var(--orange)}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px 80px}
+header{padding:32px 0 20px;border-bottom:3px solid var(--rule)}
+header .from{color:var(--ink-soft);margin:0 0 10px}
+h1{font-size:clamp(32px,7vw,48px);line-height:1;margin:0 0 14px;font-weight:800;letter-spacing:-0.02em;font-stretch:90%}
+header p{margin:0 0 8px;max-width:60ch}
+.stats{color:var(--ink-soft);font-size:14px;margin-top:10px}
+.search{position:sticky;top:0;background:var(--bg);padding:14px 0;z-index:2;border-bottom:1px solid var(--line)}
+.search input{width:100%;padding:13px 12px;font:inherit;font-size:16px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:0}
+.search input:focus{outline:2px solid var(--orange);outline-offset:0}
+.chips{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.chip{flex:none;font:inherit;font-size:14px;font-weight:600;padding:7px 12px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);cursor:pointer;min-height:36px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+section.topic{padding:26px 0 8px}
+h2{font-size:clamp(22px,4.5vw,28px);line-height:1.1;margin:0 0 6px;font-weight:700;letter-spacing:-0.01em}
+.sum{color:var(--ink-soft);margin:0 0 14px;max-width:62ch}
+.entry{background:var(--panel);padding:16px;margin-bottom:10px;border-left:4px solid var(--ok)}
+.entry.gap{border-left-color:var(--warn)}
+.entry.note{border-left-color:var(--ink-soft)}
+.entry.stale{border-left-color:var(--bad)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.tag{padding:2px 7px;border:1px solid currentColor}
+.tag.fact{color:var(--ok)} .tag.gap{color:var(--warn)} .tag.note{color:var(--ink-soft)} .tag.stale{color:var(--bad)}
+.tag.conf{color:var(--ink-soft)}
+.claim{margin:0 0 8px}
+.caveat{margin:0 0 8px;color:var(--ink-soft);font-size:15px}
+.searched{margin:0 0 8px;padding-left:18px;color:var(--ink-soft);font-size:14px}
+.src{font-size:14px;color:var(--ink-soft);margin:0;overflow-wrap:anywhere}
+.src a{color:var(--orange)}
+.empty{color:var(--ink-soft);padding:30px 0}
+footer{padding:28px 0 0;color:var(--ink-soft);font-size:14px;border-top:3px solid var(--rule);margin-top:24px}
+footer p{margin:0 0 8px;max-width:62ch}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="wrap">
+<header>
+  <p class="from">Second Nature Tree · Branch Manager</p>
+  <h1>Knowledge base</h1>
+  <p>Facts we've already checked, with where they came from and when we read them. Look here before researching anything again.</p>
+  <p class="stats" id="stats">Loading…</p>
+</header>
+
+<div class="search">
+  <input id="q" type="search" placeholder="Search: chipper, CE-200, additional insured…" autocomplete="off" aria-label="Search the knowledge base">
+  <div class="chips" id="chips" role="group" aria-label="Filter by type"></div>
+</div>
+
+<main id="out"></main>
+
+<footer>
+  <p><b>How to read an entry.</b> Green is a checked fact. Amber is a gap: something we searched for and couldn't find, with the searches listed. Grey is a note about a source we don't trust. Red means the review date has passed and the source should be read again.</p>
+  <p>Source tiers: 1 is the vendor's or agency's own site, 2 is a primary artifact, 3 is dated press, 4 is an aggregator and never counts as evidence. Outside-world facts only. Nothing here is legal, tax or insurance advice.</p>
+</footer>
+</div>
+<script>
+(function(){
+  var KB=null, kind='all';
+  var KINDS=[['all','All'],['fact','Facts'],['gap','Gaps'],['note','Notes'],['stale','Stale']];
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function fmt(d){ if(!d) return ''; var p=d.split('-'); var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+p[1]-1]; return m+' '+(+p[2])+', '+p[0]; }
+  function chips(){
+    document.getElementById('chips').innerHTML=KINDS.map(function(k){
+      return '<button class="chip" data-k="'+k[0]+'" aria-pressed="'+(k[0]===kind)+'">'+k[1]+'</button>';}).join('');
+  }
+  function entry(f){
+    var s=f.source||{}, cls='entry '+f.kind+(f.stale?' stale':'');
+    var h='<article class="'+cls+'"><div class="tags"><span class="tag '+f.kind+'">'+esc(f.kind)+'</span>'
+      +'<span class="tag conf">'+esc(f.confidence)+' confidence</span>'
+      +(f.stale?'<span class="tag stale">re-check due</span>':'')+'</div>'
+      +'<p class="claim">'+esc(f.claim)+'</p>';
+    if(f.caveat) h+='<p class="caveat">'+esc(f.caveat)+'</p>';
+    if(f.searched&&f.searched.length) h+='<ul class="searched">'+f.searched.map(function(x){return '<li>Searched: '+esc(x)+'</li>';}).join('')+'</ul>';
+    h+='<p class="src"><a href="'+esc(s.url)+'" rel="noopener">'+esc(s.name)+'</a> · Tier '+esc(s.tier)
+      +(s.published?' · published '+fmt(s.published):' · undated')
+      +' · read '+fmt(s.read)+' · review by '+fmt(f.review_by)+'</p></article>';
+    return h;
+  }
+  function draw(){
+    var q=document.getElementById('q').value.trim().toLowerCase(), words=q?q.split(/\s+/):[], html='', shown=0;
+    KB.topics.forEach(function(t){
+      var rows=t.facts.filter(function(f){
+        if(kind==='stale'? !f.stale : (kind!=='all' && f.kind!==kind)) return false;
+        if(!words.length) return true;
+        var hay=(t.title+' '+f.claim+' '+(f.caveat||'')+' '+(f.source&&f.source.name||'')+' '+f.id).toLowerCase();
+        return words.every(function(w){return hay.indexOf(w)>-1;});
+      });
+      if(!rows.length) return;
+      shown+=rows.length;
+      html+='<section class="topic"><h2>'+esc(t.title)+'</h2><p class="sum">'+esc(t.summary)+'</p>'+rows.map(entry).join('')+'</section>';
+    });
+    document.getElementById('out').innerHTML=html||'<p class="empty">Nothing matches. If you research it, add it here so it only gets done once.</p>';
+  }
+  fetch('/knowledge/kb.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(kb){
+    KB=kb; var n=0,st=0,gaps=0;
+    kb.topics.forEach(function(t){t.facts.forEach(function(f){n++; if(f.stale)st++; if(f.kind==='gap')gaps++;});});
+    document.getElementById('stats').textContent=kb.topics.length+' topics · '+n+' entries · '+gaps+' open gaps · '+st+' due for re-check · built '+fmt(kb.built);
+    chips(); draw();
+  }).catch(function(){ document.getElementById('stats').textContent='Could not load the knowledge base.'; });
+  document.getElementById('q').addEventListener('input',function(){ if(KB) draw(); });
+  document.getElementById('chips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(!b||!KB) return; kind=b.getAttribute('data-k'); chips(); draw();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+{
+  "topic": "rental-pricing-mechanics",
+  "title": "How rental pricing works",
+  "summary": "How yards build day, week and month rates, what a 'day' means, and what the sticker price leaves out.",
+  "facts": [
+    {
+      "id": "week-and-month-multiples",
+      "kind": "fact",
+      "claim": "On four machines at one Sunbelt branch, a week costs 2.2 to 3.4 times the day rate and four weeks costs 5.0 to 8.2 times the day rate.",
+      "values": {
+        "week_x_day": [
+          2.2,
+          3.4
+        ],
+        "four_week_x_day": [
+          5.0,
+          8.2
+        ]
+      },
+      "source": {
+        "name": "Sunbelt Rentals — site search results priced for Spring Valley NY branch #785",
+        "url": "https://www.sunbeltrentals.com/search/?q=bucket%20truck",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "medium",
+      "caveat": "One company, one branch, one day. Online claims of 10–12x daily had no vendor data behind them.",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "one-shift-definition",
+      "kind": "fact",
+      "claim": "Sunbelt defines One Shift as not more than 8 hours a day, 40 hours a week and 160 hours per four weeks on the hour meter. Double shift is billed at 150% and triple shift at 200%.",
+      "source": {
+        "name": "Sunbelt Rentals — US Terms & Conditions",
+        "url": "https://www.sunbeltrentals.com/legal/terms-and-conditions/us/",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "renter-insurance-requirement",
+      "kind": "fact",
+      "claim": "Sunbelt requires business renters to carry at least $1,000,000 per-occurrence general liability plus all-risk property insurance on the equipment for its fair market value, naming Sunbelt as additional insured and loss payee, primary and non-contributory, with waiver of subrogation. Insurance that excludes boom damage or overturns is a breach.",
+      "source": {
+        "name": "Sunbelt Rentals — US Terms & Conditions",
+        "url": "https://www.sunbeltrentals.com/legal/terms-and-conditions/us/",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/rates",
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "rental-protection-plan",
+      "kind": "fact",
+      "claim": "Sunbelt's Rental Protection Plan costs 15% of gross rental charges. It is not insurance and does not cover liability to others. It caps the renter's bill for accidental damage or loss at 10% of the cost, up to $500 per piece.",
+      "source": {
+        "name": "Sunbelt Rentals — Rental Protection Plan",
+        "url": "https://www.sunbeltrentals.com/resources/rental-protection-plan/",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "Exclusions include intentional misuse and unreported theft.",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "fuel-and-environmental-fee",
+      "kind": "fact",
+      "claim": "At Sunbelt the renter replaces the fuel (prepay, pay on return, or return full), and an environmental fee is added as a percentage of the rental.",
+      "source": {
+        "name": "Sunbelt Rentals — Fees & Optional Charges",
+        "url": "https://www.sunbeltrentals.com/legal/terms-and-conditions/fees-and-optional-charges/",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    }
+  ]
+}

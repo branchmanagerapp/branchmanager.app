@@ -1,0 +1,512 @@
+{
+ "built": "2026-09-18",
+ "topics": [
+  {
+   "topic": "equipment-rental-rates",
+   "title": "Equipment rental rates",
+   "summary": "What rental companies publish for chippers, bucket trucks and lifts. Thin on trucks: most forestry-truck renters quote by phone.",
+   "facts": [
+    {
+     "id": "sunbelt-chipper-12in-spring-valley",
+     "kind": "fact",
+     "claim": "Sunbelt Rentals' Spring Valley NY branch (12.5 miles from Peekskill) rents a 12-inch, 85 HP diesel chipper for $430 a day, $1,450 a week and $3,525 for four weeks, pickup.",
+     "values": {
+      "day": 430,
+      "week": 1450,
+      "four_week": 3525
+     },
+     "source": {
+      "name": "Sunbelt Rentals — 12 Inch Wood Chipper (live rate card, Spring Valley NY branch #785, pickup)",
+      "url": "https://www.sunbeltrentals.com/equipment-rental/lawn-landscape-and-tree/12-inch-wood-chipper/0390060/",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "Online rate for the dates 9/21–9/22/2026. Rates vary by branch and date.",
+     "review_by": "2026-12-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "sunbelt-booms-spring-valley",
+     "kind": "fact",
+     "claim": "Same branch, same day: 34-ft towable boom $435 / $1,230 / $3,090; 50-ft towable boom $590 / $1,520 / $3,600; 65-ft telescopic boom lift $715 / $1,575 / $3,570 (day / week / four weeks).",
+     "values": {
+      "towable_34": [
+       435,
+       1230,
+       3090
+      ],
+      "towable_50": [
+       590,
+       1520,
+       3600
+      ],
+      "boom_65": [
+       715,
+       1575,
+       3570
+      ]
+     },
+     "source": {
+      "name": "Sunbelt Rentals — site search results priced for Spring Valley NY branch #785",
+      "url": "https://www.sunbeltrentals.com/search/?q=bucket%20truck",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "Boom lifts, not bucket trucks. Useful for pricing structure, not as a truck comparison.",
+     "review_by": "2026-12-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "allpoints-60ft-forestry-bucket",
+     "kind": "fact",
+     "claim": "All Points Equipment (Palmetto FL, rents nationwide) lists a 60-ft forestry bucket truck with an 11-ft debris body, under-CDL, at $750 a day and $3,500 a week; monthly is 'call'.",
+     "values": {
+      "day": 750,
+      "week": 3500
+     },
+     "source": {
+      "name": "All Points Equipment — 2025 60FT Forestry Bucket Truck For Rent UNDER CDL",
+      "url": "https://www.allpointsequipmentsales.com/trucks/2025-60ft-forestry-bucket-truck-for-rent-under-cdl",
+      "tier": 1,
+      "published": "2024-05-20",
+      "read": "2026-09-18"
+     },
+     "confidence": "medium",
+     "caveat": "Listing dated May 2024 and not local to New York.",
+     "review_by": "2026-12-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "forestryrentals-55ft-bucket",
+     "kind": "fact",
+     "claim": "Forestry Rentals (Brownstown IL) lists a 55-ft forestry bucket truck at $2,500 a week and $6,900 a month, with no daily rate. Class B CDL required (33,000 lb truck).",
+     "values": {
+      "week": 2500,
+      "month": 6900
+     },
+     "source": {
+      "name": "Forestry Rentals — Forestry Bucket Truck Rental",
+      "url": "https://forestryrentals.com/bucket-truck/",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "medium",
+     "caveat": "Page carries no date. Not local.",
+     "review_by": "2026-12-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "gap-chip-truck-rate",
+     "kind": "gap",
+     "claim": "We found no rental company that publishes a chip truck rate. Custom Truck One Source, TRL Rents and Tree Trucks rent forestry trucks but are quote-only. Sunbelt's search near Peekskill returned boom lifts, not bucket or chip trucks.",
+     "searched": [
+      "bucket truck rental rates daily weekly monthly 2026",
+      "forestry chip truck rental rate per day week month",
+      "forestry bucket truck rental monthly rate Altec chip dump",
+      "chip truck rental per day per week per month",
+      "sunbeltrentals.com site search: bucket truck"
+     ],
+     "source": {
+      "name": "Custom Truck One Source — Forestry rentals (no prices shown)",
+      "url": "https://www.customtruck.com/rental/forestry",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "medium",
+     "caveat": "A phone quote from Custom Truck (833-305-7368) or a local dealer would close this gap.",
+     "review_by": "2026-12-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "listicle-ranges-untrusted",
+     "kind": "note",
+     "claim": "Aggregator sites quote bucket trucks at $300–$770 a day and 42–60 ft trucks around $3,250 a month. These are Tier 4 sources with no primary data behind them and are not relied on.",
+     "source": {
+      "name": "CostOwl — bucket truck rental cost (aggregator)",
+      "url": "https://www.costowl.com/b2b/aerial-lifts/aerial-lift-bucket-truck-rental-cost/",
+      "tier": 4,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "low",
+     "caveat": "Recorded so nobody re-discovers these and treats them as fact.",
+     "review_by": "2027-03-18",
+     "used_on": [],
+     "stale": false
+    }
+   ]
+  },
+  {
+   "topic": "ny-subcontractor-vs-employee",
+   "title": "New York: subcontractor or employee",
+   "summary": "How the state decides. The facts of the relationship control, not the label.",
+   "facts": [
+    {
+     "id": "dol-control-test",
+     "kind": "fact",
+     "claim": "The NY Department of Labor looks at the degree of supervision, direction and control. No single factor decides it. Being told when, where and how to work and being paid hourly points to employee; being in business for yourself and serving the public points to independent contractor.",
+     "source": {
+      "name": "NYS Department of Labor — Independent Contractors",
+      "url": "https://dol.ny.gov/independent-contractors",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "agreement-not-decisive",
+     "kind": "fact",
+     "claim": "Per NY DOL, designating a worker an independent contractor, even with the worker's agreement and a written contract, does not make it so. The facts of the relationship are still examined.",
+     "source": {
+      "name": "NYS Department of Labor — Independent Contractors",
+      "url": "https://dol.ny.gov/independent-contractors",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "wcb-factors",
+     "kind": "fact",
+     "claim": "For most industries the Workers' Compensation Board weighs about ten factors, including control, a separately established business, carrying liability insurance, providing your own equipment, and signs of an independent business such as advertising, an FEIN and permits.",
+     "source": {
+      "name": "NYS Workers' Compensation Board — Identifying an Independent Contractor",
+      "url": "https://www.wcb.ny.gov/content/main/Employers/identifying-independent-contractor.jsp",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "Page is undated. Working with the other company's equipment weighs toward employee.",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "fair-play-act-tests",
+     "kind": "fact",
+     "claim": "Under the Construction Industry Fair Play Act (effective October 26, 2010) an individual is an independent contractor only if all three conditions are met, and a separate business entity must meet all twelve criteria.",
+     "source": {
+      "name": "NYS Workers' Compensation Board — Identifying an Independent Contractor",
+      "url": "https://www.wcb.ny.gov/content/main/Employers/identifying-independent-contractor.jsp",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "gap-tree-work-construction",
+     "kind": "gap",
+     "claim": "We have not determined whether tree work counts as 'construction' under the Fair Play Act. The DOL web page does not define the term; fact sheet P738 may.",
+     "searched": [
+      "dol.ny.gov/construction-industry-fair-play-act"
+     ],
+     "source": {
+      "name": "NYS Department of Labor — Construction Industry Fair Play Act",
+      "url": "https://dol.ny.gov/construction-industry-fair-play-act",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "low",
+     "caveat": "Question for an accountant or attorney.",
+     "review_by": "2026-12-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    }
+   ]
+  },
+  {
+   "topic": "ny-workers-comp-subcontractors",
+   "title": "New York: workers comp and subcontractors",
+   "summary": "What happens at audit when a sub has no comp policy, and what paper counts.",
+   "facts": [
+    {
+     "id": "nysif-uninsured-subs",
+     "kind": "fact",
+     "claim": "NYSIF: if a subcontractor has no workers comp coverage, the sub is included in the hiring company's policy, and the hiring company is responsible for the premium and for claims.",
+     "source": {
+      "name": "New York State Insurance Fund — Subcontractor Coverage",
+      "url": "https://ww3.nysif.com/en/Employer/WCpolicyholder/AboutYourPolicy/SubcontractorCoverage",
+      "tier": 1,
+      "published": "2022-07-07",
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "nysif-audit-certificates",
+     "kind": "fact",
+     "claim": "NYSIF asks for every subcontractor's certificate of insurance at premium audit. If they can't be produced, premium is recalculated with those subs counted as payroll. NYSIF-covered subs can be checked with NYSIF's Certificate Validation tool; others with the WCB Employer Coverage Search.",
+     "source": {
+      "name": "New York State Insurance Fund — Subcontractor Coverage",
+      "url": "https://ww3.nysif.com/en/Employer/WCpolicyholder/AboutYourPolicy/SubcontractorCoverage",
+      "tier": 1,
+      "published": "2022-07-07",
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "ce200-limits",
+     "kind": "fact",
+     "claim": "Form CE-200 (Certificate of Attestation of Exemption) is only for government permits, licenses and contracts. The WCB states it cannot be used to show another business, or that business's insurance carrier, that coverage is not required.",
+     "source": {
+      "name": "NYS Workers' Compensation Board — Certificate of Attestation of Exemption (CE-200)",
+      "url": "https://www.wcb.ny.gov/content/ebiz/wc_db_exemptions/exemption-certificates.jsp",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "What a carrier will accept from a one-person sub with no comp policy is a question for the carrier, before the first job.",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    }
+   ]
+  },
+  {
+   "topic": "operators-and-licensing",
+   "title": "Who may run the iron",
+   "summary": "Operator and driver rules that apply under any arrangement.",
+   "facts": [
+    {
+     "id": "osha-aerial-authorized",
+     "kind": "fact",
+     "claim": "OSHA: only trained and authorized persons may operate an aerial lift. The employer is responsible for instructing employees in recognizing and avoiding unsafe conditions (29 CFR 1926.21(b)(2)).",
+     "source": {
+      "name": "OSHA — 29 CFR 1926.453 Aerial lifts, and Aerial Lifts fact sheet",
+      "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.453",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "1926 is the construction standard. Tree care may fall under general-industry rule 1910.67, not yet read.",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "ny-cdl-26001",
+     "kind": "fact",
+     "claim": "In New York a single vehicle with a GVWR of 26,001 pounds or more requires a commercial driver license; Class B covers a single-unit truck.",
+     "source": {
+      "name": "NY DMV — Driver license class descriptions",
+      "url": "https://dmv.ny.gov/driver-license/new-york-state-learner-permit-and-driver-license-class-descriptions",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "Check the GVWR on each truck's door sticker.",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    }
+   ]
+  },
+  {
+   "topic": "our-web-presence",
+   "title": "Our web presence",
+   "summary": "Facts about domains and names, so nobody publishes to the wrong place.",
+   "facts": [
+    {
+     "id": "branchmanager-com-not-ours",
+     "kind": "fact",
+     "claim": "branchmanager.com is not ours. It is registered at GoDaddy (created 1999) and redirects to branchmanagerusa.com, a different company. Our site is branchmanager.app.",
+     "source": {
+      "name": "Live check: HTTP redirect and WHOIS for branchmanager.com",
+      "url": "https://branchmanager.com/",
+      "tier": 2,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [],
+     "stale": false
+    }
+   ]
+  },
+  {
+   "topic": "rental-pricing-mechanics",
+   "title": "How rental pricing works",
+   "summary": "How yards build day, week and month rates, what a 'day' means, and what the sticker price leaves out.",
+   "facts": [
+    {
+     "id": "week-and-month-multiples",
+     "kind": "fact",
+     "claim": "On four machines at one Sunbelt branch, a week costs 2.2 to 3.4 times the day rate and four weeks costs 5.0 to 8.2 times the day rate.",
+     "values": {
+      "week_x_day": [
+       2.2,
+       3.4
+      ],
+      "four_week_x_day": [
+       5.0,
+       8.2
+      ]
+     },
+     "source": {
+      "name": "Sunbelt Rentals — site search results priced for Spring Valley NY branch #785",
+      "url": "https://www.sunbeltrentals.com/search/?q=bucket%20truck",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "medium",
+     "caveat": "One company, one branch, one day. Online claims of 10–12x daily had no vendor data behind them.",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "one-shift-definition",
+     "kind": "fact",
+     "claim": "Sunbelt defines One Shift as not more than 8 hours a day, 40 hours a week and 160 hours per four weeks on the hour meter. Double shift is billed at 150% and triple shift at 200%.",
+     "source": {
+      "name": "Sunbelt Rentals — US Terms & Conditions",
+      "url": "https://www.sunbeltrentals.com/legal/terms-and-conditions/us/",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "renter-insurance-requirement",
+     "kind": "fact",
+     "claim": "Sunbelt requires business renters to carry at least $1,000,000 per-occurrence general liability plus all-risk property insurance on the equipment for its fair market value, naming Sunbelt as additional insured and loss payee, primary and non-contributory, with waiver of subrogation. Insurance that excludes boom damage or overturns is a breach.",
+     "source": {
+      "name": "Sunbelt Rentals — US Terms & Conditions",
+      "url": "https://www.sunbeltrentals.com/legal/terms-and-conditions/us/",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/rates",
+      "/jimmy/partnership"
+     ],
+     "stale": false
+    },
+    {
+     "id": "rental-protection-plan",
+     "kind": "fact",
+     "claim": "Sunbelt's Rental Protection Plan costs 15% of gross rental charges. It is not insurance and does not cover liability to others. It caps the renter's bill for accidental damage or loss at 10% of the cost, up to $500 per piece.",
+     "source": {
+      "name": "Sunbelt Rentals — Rental Protection Plan",
+      "url": "https://www.sunbeltrentals.com/resources/rental-protection-plan/",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "Exclusions include intentional misuse and unreported theft.",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    },
+    {
+     "id": "fuel-and-environmental-fee",
+     "kind": "fact",
+     "claim": "At Sunbelt the renter replaces the fuel (prepay, pay on return, or return full), and an environmental fee is added as a percentage of the rental.",
+     "source": {
+      "name": "Sunbelt Rentals — Fees & Optional Charges",
+      "url": "https://www.sunbeltrentals.com/legal/terms-and-conditions/fees-and-optional-charges/",
+      "tier": 1,
+      "published": null,
+      "read": "2026-09-18"
+     },
+     "confidence": "high",
+     "caveat": "",
+     "review_by": "2027-03-18",
+     "used_on": [
+      "/jimmy/rates"
+     ],
+     "stale": false
+    }
+   ]
+  }
+ ]
+}
