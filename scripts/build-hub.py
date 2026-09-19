@@ -1,7 +1,7 @@
 # Builds hub-570301.html — the "everything" hub. Edit the CATALOG, re-run, deploy.
 import html, re, sys, datetime
 
-UPDATED = "Sept 12, 2026"
+UPDATED = "Sept 19, 2026"
 BM = "https://branchmanager.app/"
 
 # tags: L locked · X external site · T template · D older duplicate · P parked · S short link · PUB public · NEW
@@ -46,6 +46,7 @@ PANELS = [
     ("Ground rules — how Claude works with you","ground-rules-c4e2.html","Enforced on every message and in long-term memory. Yours to change.",[]),
     ("Catherine — Branch Manager quick start","catherine-start-b7d3f2.html","One app on her phone for jobs, schedule, photos, invoices.",[]),
     ("Social HQ — for Catherine","social-hq-4b2c7e/","Everything for social + the Nextdoor vote on one link. Claude drafts, Catherine approves.",["NEW"]),
+    ("Local presence — RealWork / Google status","local-presence-7e2c91.html","Why the public feed is empty and what unblocks Google + Facebook posting.",["NEW"]),
     ("SocialBranch in 5 minutes","socialbranch-guide-4e7b21.html","Claude drafts posts, Catherine approves. Nothing sends itself.",[]),
     ("Shop & fridge — clean & stocked","cleaning-4c8f21.html","A simple system that sticks with a busy crew.",[]),
     ("Photo → Claude pipeline","ops.html","iPhone photo → Save to Files → iCloud Desktop → Screenshots. Then say 'look at the photos.'",[]),
@@ -177,6 +178,7 @@ PANELS = [
     ("Approve work days (private — open from your saved link)","approve-work-9f3b6c.html","Nightly camera-roll drafts: tap Approve to publish town+date+photos to the public map, Skip to keep private. Needs the #key link.",["L","NEW"]),
     ("Photos → pages, automatically — build plan","photos-to-pages-8e2d4b.html","Measured gaps (iCloud thumbnails, 17 of 21 work days with no job record, the town-park trap) + the 5-piece build. One Doug step: Download Originals.",["NEW"]),
     ("RealWork Labs — use it or build it","realwork-diy-5a7c1e.html","Eli's Sept 11 pitch taken apart: don't buy; publish the jobs-near-you map + job pages ourselves. 3-step DIY plan.",["NEW"]),
+    ("Local presence — RealWork, Google, Recent Work feed","local-presence-7e2c91.html","The 3 blockers to getting found where we work, whose move each is, and the RealWork verdict.",["NEW"]),
     ("Marketing plan — Second Nature Tree","marketing-plan.html","Margin over volume; review flywheel; no customer-facing rates.",[]),
     ("Marketing hub — three brands","marketing-hub.html","Brand tokens, channel board, post-in-advance system, weekly batch calendar.",[]),
     ("Social HQ — for Catherine","social-hq-4b2c7e/","Nextdoor vote kit + 10 weeks of drafted posts, one link.",["NEW"]),

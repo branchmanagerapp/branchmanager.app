@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme:light)"><meta name="theme-color" content="#0a0d0b" media="(prefers-color-scheme:dark)"><title>Local Presence — RealWork, Google, Recent Work</title>
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#161a15;--mut:#5f6b60;--faint:#8b968c;--line:rgba(20,30,20,.10);--line2:rgba(20,30,20,.17);--acc:#2f7d52;--red:#b3261e;--amb:#b0702a;--serif:ui-serif,"Iowan Old Style",Palatino,Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0d0b;--card:rgba(255,255,255,.03);--ink:#edf1ed;--mut:#8a968d;--faint:#5c6860;--line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.14);--acc:#6fbf8f;--red:#ff7b72;--amb:#e0a458}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:60px}
+.wrap{max-width:660px;margin:0 auto;padding:0 18px}header{padding:30px 0 8px}.mark{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--acc);font-weight:600}
+h1{font-family:var(--serif);font-size:34px;line-height:1.05;font-weight:500;letter-spacing:-.02em;margin:10px 0 0}.lede{color:var(--mut);font-size:14px;margin-top:8px}
+h2{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;margin:28px 0 8px;color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin:9px 0}
+.card b{display:block;font-size:15px}.card small{color:var(--mut);font-size:13px;line-height:1.45;display:block;margin-top:3px}
+.st{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border-radius:20px;padding:2px 7px;margin-left:6px;vertical-align:middle;border:1px solid}
+.ok{color:var(--acc);border-color:var(--acc)}.no{color:var(--red);border-color:var(--red)}.wait{color:var(--amb);border-color:var(--amb)}
+.you{border-left:3px solid var(--red)}.me{border-left:3px solid var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-top:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.tbl{overflow-x:auto}a{color:var(--acc)}.foot{color:var(--faint);font-size:11px;text-align:center;margin-top:30px;line-height:1.7}
+.verdict{background:linear-gradient(135deg,rgba(47,125,82,.12),rgba(47,125,82,.03));border:1px solid var(--acc);border-radius:16px;padding:16px}
+.verdict b{font-family:var(--serif);font-size:19px;font-weight:500;display:block;margin-bottom:6px}
+</style></head><body><div class="wrap">
+<header><div class="mark">Second Nature Tree · Local presence</div><h1>RealWork Labs, Google, and the Recent Work feed</h1><p class="lede">Where it stands on Sat Sept 19, 2026: what is blocking "get found by the neighbors where we actually work," whose move each blocker is, and whether RealWork is worth paying for.</p></header>
+
+<div class="verdict"><b>The short version</b>RealWork Labs sells geotagged job posts that show up on your site and feed Google. You already built the same thing for free: every approved work day becomes a page on <a href="https://peekskilltree.com/recent-work.html">peekskilltree.com/recent-work</a> with the town, the photos and the schema Google reads. It is showing <b>zero</b> jobs today because nothing has been approved yet, not because it does not work. Do not pay RealWork until the free feed has 30 days of approved jobs on it and you can see whether the map calls move. Then decide with data.</div>
+
+<h2>The three blockers, in order</h2>
+<div class="card you"><b>1 · Nothing approved, so the public feed is empty <span class="st no">your tap</span></b><small>15 photo days sit as drafts in <a href="https://branchmanager.app/#socialbranch">SocialBranch</a> (Wilton 9/14 plus 14 August days). Approving one publishes it to the Recent Work map and its own page within a minute. Until the first approve, Google has nothing new to index and RealWork looks like the only option. It is not.</small></div>
+<div class="card you"><b>2 · Google Business posting is not connected <span class="st no">your login</span></b><small>Native Google posting from SocialBranch needs a Google OAuth client and Google's API-access approval. The approval case <code>1-1528000040893</code> was filed Apr 23 and never confirmed; the OAuth client secrets are still unset in the new functions. Result: the Wednesday post series cannot reach Google Business. Fastest check: the April Make.com scenario (id 4839929) posted to Facebook, Instagram and Google Business and was verified end to end. If that scenario is still active in your Make account, pasting its webhook back into SocialBranch → Accounts turns posting on today with no Meta or Google paperwork.</small></div>
+<div class="card you"><b>3 · Meta developer registration is stuck on an SMS that never arrives <span class="st no">your phone</span></b><small>Facebook and Instagram native posting need a Meta app. On Sept 13 Meta's verification text never reached any of your numbers over 90 minutes. Options: try the code by voice call or WhatsApp on the Meta wizard, or skip Meta entirely by using the Make webhook above.</small></div>
+
+<h2>Google settings vs where the jobs actually are</h2>
+<p class="lede" style="margin-top:0">Open quotes and booked jobs since May, by town, straight from Jobber. Compare with the town pages the site has.</p>
+<div class="card"><div class="tbl"><table><tr><th>Town</th><th>Quotes / jobs</th><th>Town page on peekskilltree.com</th></tr>
+<tr><td>Philipstown (Garrison / Cold Spring / Continental Village)</td><td>12</td><td><span class="st no">no Philipstown page</span> · Garrison and Cold Spring exist</td></tr>
+<tr><td>Cortlandt Manor</td><td>11</td><td><span class="st ok">yes</span></td></tr>
+<tr><td>Peekskill</td><td>11</td><td><span class="st ok">yes</span></td></tr>
+<tr><td>Yorktown Heights</td><td>5</td><td><span class="st ok">yes</span></td></tr>
+<tr><td>Buchanan</td><td>5</td><td><span class="st ok">yes</span></td></tr>
+<tr><td>Fort Montgomery</td><td>3</td><td><span class="st no">no page</span> (Orange County, across the river)</td></tr>
+<tr><td>Wappingers Falls</td><td>3</td><td><span class="st ok">yes</span></td></tr>
+<tr><td>Mohegan Lake</td><td>3</td><td><span class="st ok">yes</span></td></tr>
+<tr><td>Ossining · Putnam Valley · Garrison · Croton · Pleasantville</td><td>2 each</td><td><span class="st ok">yes</span></td></tr>
+</table></div><small style="margin-top:8px">Two gaps: <b>Philipstown</b> is the #1 town and has no page (the Garrison page carries it by accident), and <b>Fort Montgomery</b> has three quotes and nothing. Both are one-page adds. The Google Business Profile service-area list should match this table; that is a 5-minute edit in the profile once you are logged in, and I cannot see the current list from here.</small></div>
+
+<h2>What RealWork Labs actually offers</h2>
+<div class="card"><b>Geotagged review and job posts, a site widget, Google feed</b><small>From Eli Johnson's Sept 11 email and the demo site <a href="https://lynx.realworklabs.com/">lynx.realworklabs.com</a>: check-ins from the field get pinned to the address, reviews get tied to the neighborhood, a widget shows it on your site. Price was not in writing; you recalled roughly $200/month. Their pitch is real and the mechanism works, which is exactly why the free version was built into Branch Manager: the photo ingest already knows the address, the date and the client for every job day.</small></div>
+<div class="card"><b>Where the free version is ahead</b><small>Your per-day pages carry Service and Place schema, link to the matching town page, and use your own photos. RealWork posts live on their subdomain. Where RealWork is ahead: review capture on the truck, which Branch Manager's satisfaction page (<a href="https://branchmanager.app/sat.html">sat.html</a>) does after the job but not on site.</small></div>
+
+<h2>What I can do without you</h2>
+<div class="card me"><b>Add the Philipstown and Fort Montgomery town pages</b><small>Same generator as the other 36 pages. Say "add the town pages."</small></div>
+<div class="card me"><b>Keep the feed fed</b><small>The nightly ingest keeps drafting work days from your camera roll while the Claude app is open at 9pm. Approve = live.</small></div>
+<div class="card me"><b>Write the reply to Eli</b><small>"Not now, revisit in 30 days" draft, for you to send.</small></div>
+
+<h2>What needs you</h2>
+<div class="card you"><b>Approve one work day in SocialBranch today</b><small>That single tap proves the whole chain: draft → public map → own page → Google. Wilton 9/14 is the freshest.</small></div>
+<div class="card you"><b>One login to Make.com</b><small>Is scenario 4839929 still active? If yes, copy its webhook into SocialBranch → Accounts. That is the shortcut past both Meta and Google paperwork.</small></div>
+<div class="card you"><b>Google Business Profile service areas</b><small>Log in as info@peekskilltree.com and set the areas to the table above, Philipstown first.</small></div>
+
+<p class="foot">Unlisted · noindex · updated Sept 19, 2026 · sources: Jobber (live), Gmail (Eli Johnson 9/11), Branch Manager social status endpoint, peekskilltree.com sitemap, session memory (Make scenario Apr 23, Meta SMS Sept 13)<br><a href="hub-570301.html">Everything</a> · <a href="social-hq-4b2c7e/">Social HQ</a> · <a href="https://peekskilltree.com/recent-work.html">Recent Work (public)</a></p>
+</div></body></html>
