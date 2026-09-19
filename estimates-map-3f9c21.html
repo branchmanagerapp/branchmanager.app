@@ -39,6 +39,7 @@ PINS.forEach(function(p){
   bounds.push([p.lat,p.lon]);
 });
 map.fitBounds(bounds,{padding:[40,40]});
+window.addEventListener('resize',function(){map.invalidateSize();map.fitBounds(bounds,{padding:[40,40]});});
 </script>
 <script src="nav-snt.js?v=5" defer></script>
 </body>
