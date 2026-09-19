@@ -1,5 +1,5 @@
 {
-  "version": 1223,
-  "released": "2026-09-16",
-  "notes": "v1223: quote editor Save Draft / Save & Send bar was hidden under bottom nav + FAB in installed-app bottom-nav mode (follow-up to v1222 client-form fix); tab bar hides while a quote/invoice/job editor is open"
+  "version": 1224,
+  "released": "2026-09-19",
+  "notes": "v1224: Estimate board inside Branch Manager — read-only mirror of Jobber quotes/jobs/invoices/requests (jobber_* tables, hourly jobber-mirror fn); nav item + lazy page"
 }

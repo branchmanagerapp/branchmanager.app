@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1223; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1224; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1390,6 +1390,7 @@ window.bmShowStaleBanner = function(version) {
       <button class="nav-item" data-page="insights"><span class="icon"><i data-lucide="line-chart" class="li"></i></span> Insights</button>
       <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
       <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
+      <button class="nav-item" data-page="estimates"><span class="icon"><i data-lucide="clipboard-list" class="li"></i></span> Estimate board</button>
       <button class="nav-item" data-page="smartlawn"><span class="icon"><i data-lucide="bot" class="li"></i></span> Smart Lawn</button>
       <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
       <!-- BM-only (below divider — Jobber doesn't have these) -->
@@ -1643,7 +1644,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1221.min.js"></script>
+<script defer src="dist/bm.bundle.v1224.min.js"></script>
 
 
 
@@ -1954,6 +1955,7 @@ var pageConfigs = {
   recurring: { title: 'Recurring Jobs', action: null },
   notifications: { title: 'Activity', action: null },
   expenses: { title: 'Expenses', action: '+ Add Expense', actionFn: 'loadPage("expenses")' },
+  estimates: { title: 'Estimate board', action: null },
   smartlawn: { title: 'Smart Lawn', action: null },
   profitloss: { title: 'Profit & Loss', action: null },
   weeklysummary: { title: 'Weekly Summary', action: null },
@@ -2213,6 +2215,7 @@ var pageRenderers = {
   recurring: function() { return RecurringJobs.render(); },
   notifications: function() { return NotificationsPage.render(); },
   expenses: function() { return ExpensesPage.render(); },
+  estimates: function() { return (typeof EstimatesPage!=='undefined') ? EstimatesPage.render() : '<div style="padding:24px;color:var(--text-light);">Estimate board module not loaded.</div>'; },
   smartlawn: function() { return (typeof SmartLawnPage!=='undefined') ? SmartLawnPage.render() : '<div style="padding:24px;color:var(--text-light);">Smart Lawn module not loaded.</div>'; },
   profitloss: function() { return ProfitLossPage.render(); },
   weeklysummary: function() { return WeeklySummary.render(); },

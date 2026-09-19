@@ -40,6 +40,7 @@
     "src/pages/notifications.js",
     "src/pages/expenses.js",
     "src/pages/smartlawn.js",
+    "src/pages/estimates.js",
     "src/pages/books.js",
     "src/pages/fleet.js",
     "src/dialpad.js",
