@@ -19,15 +19,49 @@ var SchedulePage = {
   loadRecapManifest: function() {
     if (window._bmRecaps || window._bmRecapsLoading) return;
     window._bmRecapsLoading = true;
-    fetch(SchedulePage.RECAP_BASE + 'manifest.json', { cache: 'no-store' })
+    // v1225: two sources, merged per date, both lazy and tiny (no image bytes until a chip is tapped):
+    //  (a) legacy staged manifest (Jul 1 – Aug 7 2026, strings = filenames under RECAP_BASE/<date>/)
+    //  (b) work_days rows from the nightly camera-roll ingest (Aug 2 → today), objects {url, kind, label, status}
+    //      approved → public job-photos/work/<id>/…; draft → 1-hour signed URL from the private work-drafts bucket
+    //      (storage policy auth_read_own_tenant_work_drafts scopes it to the caller's tenant).
+    var merged = {};
+    function done() {
+      window._bmRecapsLoading = false;
+      window._bmRecaps = merged;
+      if (window._currentPage === 'schedule') { try { loadPage('schedule'); } catch (e) {} }
+    }
+    var pManifest = fetch(SchedulePage.RECAP_BASE + 'manifest.json', { cache: 'no-store' })
       .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(m) {
-        window._bmRecapsLoading = false;
-        if (!m) return;
-        window._bmRecaps = m;
-        if (window._currentPage === 'schedule') { try { loadPage('schedule'); } catch (e) {} }
-      })
-      .catch(function() { window._bmRecapsLoading = false; });
+      .then(function(m) { if (m) Object.keys(m).forEach(function(d) { merged[d] = (merged[d] || []).concat(m[d]); }); })
+      .catch(function() {});
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var pWork = !sb ? Promise.resolve() : sb.from('work_days').select('id,client_name,town,work_date,photos,status').neq('status', 'skipped').order('work_date', { ascending: false }).limit(400)
+      .then(function(r) {
+        var rows = (r && r.data) || [];
+        var PUB = 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/work/';
+        var toSign = [], pending = [];
+        rows.forEach(function(w) {
+          (w.photos || []).forEach(function(p) {
+            if (!p || !p.path) return;
+            var item = { kind: p.kind || 'photo', label: (w.client_name || w.town || ''), status: w.status, wid: w.id, url: null };
+            if (w.status === 'approved') item.url = PUB + w.id + '/' + p.path.split('/').pop();
+            else { toSign.push(p.path); pending.push(item); }
+            (merged[w.work_date] = merged[w.work_date] || []).push(item);
+          });
+        });
+        if (!toSign.length) return;
+        return sb.storage.from('work-drafts').createSignedUrls(toSign, 3600).then(function(res) {
+          var arr = (res && res.data) || [];
+          arr.forEach(function(x, i) { if (pending[i] && x && x.signedUrl) pending[i].url = x.signedUrl; });
+        }).catch(function() {});
+      }).catch(function() {});
+    Promise.all([pManifest, pWork]).then(done, done);
+  },
+  // v1225: label for the month chip — first work-day client/town for that date (falls back to the caller's job name)
+  _recapLabel: function(dateStr) {
+    var list = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
+    for (var i = 0; i < list.length; i++) if (list[i] && typeof list[i] === 'object' && list[i].label) return list[i].label;
+    return null;
   },
   showDayRecap: function(dateStr) {
     var files = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
@@ -46,9 +80,16 @@ var SchedulePage = {
     }
     // Media grid — images lazy-load on scroll, videos never preload.
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">';
+    var drafts = files.filter(function(f) { return f && typeof f === 'object' && f.status === 'draft'; }).length;
+    if (drafts) {
+      html += '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">' + drafts + ' photo' + (drafts === 1 ? '' : 's') + ' from the camera roll still a draft — '
+        + '<a href="#" onclick="UI.closeModal();loadPage(\'socialbranch\');return false;" style="color:var(--accent);">approve in SocialBranch</a> to publish to the public Recent Work map.</div>';
+    }
     files.forEach(function(f) {
-      var url = SchedulePage.RECAP_BASE + dateStr + '/' + f;
-      if (/\.(mp4|mov|webm)$/i.test(f)) {
+      var url, isVid;
+      if (f && typeof f === 'object') { if (!f.url) return; url = f.url; isVid = f.kind === 'video' || /\.(mp4|mov|webm)(\?|$)/i.test(url); }
+      else { url = SchedulePage.RECAP_BASE + dateStr + '/' + f; isVid = /\.(mp4|mov|webm)$/i.test(f); }
+      if (isVid) {
         html += '<video controls preload="none" style="width:100%;border-radius:8px;background:#000;aspect-ratio:1;object-fit:cover;" src="' + url + '"></video>';
       } else {
         html += '<img loading="lazy" src="' + url + '" onclick="window.open(\'' + url + '\', \'_blank\')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;background:var(--bg);">';
@@ -523,7 +564,7 @@ var SchedulePage = {
       +     _viewPill('list', 'List')
       +     _viewPill('map', 'Map')
       +   '</div>'
-      +   '<a href="https://branchmanager.app/ground-control-7c3f9a.html" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;padding:5px 12px;border-radius:6px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;" title="Past jobs, photos & the day-recap calendar">🛰 Ground Control</a>'
+      +   '<a href="https://branchmanager.app/ground-control-7c3f9a.html" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;padding:5px 12px;border-radius:6px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;" title="Links, estimates, what needs doing (past days + photos live here in the calendar now)">🛰 Ground Control</a>'
       + '</div>';
 
     // Load cloud calendar events (time off / personal) once; re-renders on arrival.
@@ -1318,7 +1359,7 @@ var SchedulePage = {
       // fetch; NO image loads until the chip is tapped (field-bandwidth rule).
       if (dateStr < today && window._bmRecaps && window._bmRecaps[dateStr]) {
         // v1132: chip carries the day's job name(s), not a generic "recap" (Doug, Aug 15)
-        var _rLabel = 'recap';
+        var _rLabel = SchedulePage._recapLabel(dateStr) ? String(SchedulePage._recapLabel(dateStr)).slice(0, 16) : 'recap';
         if (dayJobs.length) {
           _rLabel = String(dayJobs[0].clientName || ('#' + dayJobs[0].jobNumber)).slice(0, 16);
           if (dayJobs.length > 1) _rLabel += ' +' + (dayJobs.length - 1);

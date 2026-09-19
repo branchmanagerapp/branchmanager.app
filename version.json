@@ -1,5 +1,5 @@
 {
-  "version": 1224,
+  "version": 1225,
   "released": "2026-09-19",
-  "notes": "v1224: Estimate board inside Branch Manager — read-only mirror of Jobber quotes/jobs/invoices/requests (jobber_* tables, hourly jobber-mirror fn); nav item + lazy page"
+  "notes": "v1225: Schedule past days now fed from work_days (nightly camera-roll ingest) merged with the legacy recap manifest — lazy, signed draft URLs, approve link; Ground Control calendar retired into the Schedule"
 }
