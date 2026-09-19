@@ -9,12 +9,14 @@ PANELS = [
  ("today","🛰","Today","Run the day", [
   ("Start here","the daily front door",[
    ("",[
-    ("Ground Control","ground-control-7c3f9a.html","Calendar, agenda, estimates to send, what needs doing. Short link /gc.",["S"]),
+    ("Ground Control","ground-control-7c3f9a.html","Estimates to send, what needs doing, social, launcher links. Short link /gc. (Calendar + past days now live in the app.)",["S"]),
+    ("Calendar + past days — in the app","https://branchmanager.app/#schedule","One calendar. Past days show a 📸 chip; tap for the photos. Lazy.",["X"]),
+    ("Estimate board — in the app","https://branchmanager.app/#estimates","Read-only mirror of Jobber inside Branch Manager.",["X","NEW"]),
     ("Home — one question","home-snt-3f8b12.html","What do you want to do right now? Tap it.",[]),
     ("Today sheet","today-snt-9d4b1e.html","Done · waiting on you · new leads. Short link /today.",["S"]),
     ("The Plan","plan-snt-8c31d7.html","Right-now → this-week → this-month, one step at a time.",[]),
     ("Run schedule — Catherine's order","schedule-snt-c47a2e.html","Straight down Catherine's note. Short link /runsheet.",["S"]),
-    ("Estimate board","estimates-snt-4b8e2f.html","Every open estimate + lead, freshest first.",[]),
+    ("Estimate board — web page","estimates-snt-4b8e2f.html","Same board as a shareable page; regenerated from Jobber.",[]),
     ("Estimates & jobs map","estimates-map-3f9c21.html","Every quote & job plotted, color-coded by status. Short link /map.",["S"]),
     ("Day by Day — photo recaps","day-recap-7e31c9.html","What we were out doing — real days, real trees.",[]),
     ("Enough. — the breathe page","enough-snt-7b7e05.html","Read this instead of the feed, then come back and tap one thing.",[]),
@@ -315,6 +317,7 @@ PANELS = [
     ("SocialBranch (social posts)","https://branchmanager.app/#socialbranch","",["X"]),
     ("Marketing site","https://branchmanager.app/#marketingsite","",["X"]),
     ("Smart Lawn","https://branchmanager.app/#smartlawn","",["X"]),
+    ("Estimate board","https://branchmanager.app/#estimates","",["X"]),
     ("Permits","https://branchmanager.app/#permits","",["X"]),
     ("Insurance","https://branchmanager.app/#insurance","",["X"]),
     ("Task reminders","https://branchmanager.app/#taskreminders","",["X"]),
