@@ -1,5 +1,5 @@
 {
-  "version": 1232,
+  "version": 1233,
   "released": "2026-09-20",
-  "notes": "v1232: Marketing 'Days from the field' cards — date/town/client/job, every photo + video, caption in Doug's voice; Approve (public map) then Schedule/Post now; approved status; work-days fn keeps videos"
+  "notes": "v1233: Marketing page no longer re-imports SocialPilot in a loop (~6 renders/s); cloud mirror gets a 2.5 s max-wait so approve/schedule/edits always reach the runner"
 }

@@ -69,11 +69,15 @@ var SocialBranch = {
     // Auto-import SocialPilot history. Previous versions (v363) could set the
     // flag without actually importing, so we self-heal: if the flag is set but
     // we have zero SP-tagged posts, clear the flag and retry.
+    // v1233: this self-heal LOOPED — 57 SP posts already exist without the tag, so every import added 0,
+    // the flag was cleared again on the re-render, and the page imported+re-rendered ~6×/s forever
+    // (starving the cloud mirror, so Marketing edits never reached the runner). Try at most once per session.
     var hasSpPosts = SocialBranch._getPosts().some(function(p){ return p.import_source === 'socialpilot-html-scrape'; });
-    if (localStorage.getItem('bm-sb-sp-imported') && !hasSpPosts) {
+    if (localStorage.getItem('bm-sb-sp-imported') && !hasSpPosts && !SocialBranch._spAutoTried) {
       localStorage.removeItem('bm-sb-sp-imported');
     }
-    if (!localStorage.getItem('bm-sb-sp-imported')) {
+    if (!localStorage.getItem('bm-sb-sp-imported') && !SocialBranch._spAutoTried) {
+      SocialBranch._spAutoTried = true;
       setTimeout(function() { SocialBranch.importFromSocialPilot(true); }, 800);
     }
     // v1221: OAuth return (?social=…) + refresh native connection status once per load.
@@ -1642,10 +1646,18 @@ var SocialBranch = {
   // and the daily digest can recap them. Data-URL media on a scheduled post
   // is uploaded to storage here so the server has real URLs to publish.
   _mirrorTimer: null,
+  _mirrorFirstReq: 0,
   _mirrorToCloud: function(posts) {
     if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) return;
+    // v1233: debounce WITH a max wait. Something on the Marketing page saves posts ~6×/s while it's open
+    // (measured Sept 20 2026), so a plain 800 ms debounce never fired and NOTHING Doug did in Marketing
+    // (approve / schedule / edits) reached the cloud or the runner. Fire at most 2.5 s after the first request.
+    var now = Date.now();
+    if (!SocialBranch._mirrorFirstReq) SocialBranch._mirrorFirstReq = now;
+    var wait = Math.max(0, Math.min(800, SocialBranch._mirrorFirstReq + 2500 - now));
     clearTimeout(SocialBranch._mirrorTimer);
     SocialBranch._mirrorTimer = setTimeout(function() {
+      SocialBranch._mirrorFirstReq = 0;
       var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
       if (!tid) return;
       var pending = posts.filter(function(p) {
@@ -1688,7 +1700,7 @@ var SocialBranch = {
             .then(function(res2) { if (res2.error) console.warn('[SocialBranch] mirror prune failed:', res2.error.message); });
         });
       });
-    }, 800);
+    }, wait);
   },
 
   // Pull server outcomes (runner-fired posts) + posts from other devices.
@@ -1836,7 +1848,6 @@ var SocialBranch = {
               networks: p.networks || ['gmb'],
               scheduledAt: parseDate(p.dateText) || '',
               status: p.status || 'draft',
-            work_day_id: p.workDayId || undefined,
               postedAt: p.status === 'posted' ? parseDate(p.dateText) : '',
               createdAt: new Date().toISOString(),
               import_source: 'socialpilot-html-scrape'
@@ -1846,11 +1857,11 @@ var SocialBranch = {
             added++;
           });
         });
-        SocialBranch._setPosts(existing);
+        if (added) SocialBranch._setPosts(existing);
         // Only set imported flag on success so future visits retry if something went wrong.
         localStorage.setItem('bm-sb-sp-imported', '1');
-        UI.toast('Imported ' + added + ' posts from SocialPilot (' + skipped + ' duplicates skipped).');
-        loadPage('socialbranch');
+        if (added) { UI.toast('Imported ' + added + ' posts from SocialPilot (' + skipped + ' duplicates skipped).'); loadPage('socialbranch'); }
+        else if (btn) { btn.disabled = true; btn.textContent = 'Nothing new to import'; }
       })
       .catch(function(e) {
         UI.toast('Import failed: ' + String(e.message || e), 'error');
