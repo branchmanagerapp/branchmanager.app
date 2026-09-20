@@ -1,5 +1,5 @@
 {
-  "version": 1234,
+  "version": 1235,
   "released": "2026-09-20",
-  "notes": "v1234: after Approve, keep polling for the public media URLs (up to 30 s) so a later save can't put the expiring draft links back"
+  "notes": "v1235: day cards lead with the nightly REEL (all the day's clips auto-cut + stitched); counts show reel + photos + clips"
 }

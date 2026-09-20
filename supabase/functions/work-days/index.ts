@@ -86,7 +86,7 @@ serve(async (req) => {
         const { data: file, error: dErr } = await sb.storage.from("work-drafts").download(p.path);
         if (dErr || !file) return json(500, { ok: false, error: "download " + p.path + ": " + (dErr?.message ?? "") });
         const dest = "work/" + w.id + "/" + p.path.split("/").pop();
-        const { error: uErr } = await sb.storage.from("job-photos").upload(dest, file, { upsert: true, contentType: p.kind === "video" ? "video/mp4" : "image/jpeg" });
+        const { error: uErr } = await sb.storage.from("job-photos").upload(dest, file, { upsert: true, contentType: p.kind === "photo" ? "image/jpeg" : "video/mp4" });
         if (uErr) return json(500, { ok: false, error: "upload " + dest + ": " + uErr.message });
         await sb.from("photos").insert({ tenant_id: TENANT, record_type: "work_day", record_id: w.id, url: PUBLIC_BASE + dest, storage_path: dest, name: dest.split("/").pop(), label: w.title, taken_at: p.taken_at, gps_lat: p.lat, gps_lng: p.lng, taken_by: "Doug Brown", tags: ["work-day", w.town].filter(Boolean) });
       }
@@ -95,7 +95,8 @@ serve(async (req) => {
       // One queue: the linked SocialBranch post now points at the public copies (signed draft URLs expire).
       // v1232: photos first, then videos (Doug: "photos and videos") — the post keeps every kept file as a public URL.
       const pub = (p: any) => PUBLIC_BASE + "work/" + w.id + "/" + p.path.split("/").pop();
-      const publicUrls = kept.filter((p: any) => p.kind !== "video").map(pub).concat(kept.filter((p: any) => p.kind === "video").map(pub));
+      // v5: the day's reel leads, then photos, then the trimmed clips
+      const publicUrls = kept.filter((p: any) => p.kind === "reel").map(pub).concat(kept.filter((p: any) => p.kind === "photo").map(pub), kept.filter((p: any) => p.kind === "video").map(pub));
       const { data: posts } = await sb.from("social_posts").select("id,status").eq("work_day_id", w.id);
       for (const sp of posts ?? []) {
         if (sp.status === "draft" || sp.status === "approved" || sp.status === "scheduled") await sb.from("social_posts").update({ media_urls: publicUrls, has_local_media: false }).eq("id", sp.id);

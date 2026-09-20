@@ -308,14 +308,15 @@ var SocialBranch = {
     var cap = (p.caption || '').split('\n').filter(function(l){ return l.trim() && !/^#/.test(l.trim()); }).join(' ');
     var preview = cap.substring(0, 220) + (cap.length > 220 ? '\u2026' : '');
     var media = (p.media || []);
-    var nPhoto = media.filter(function(m){ return SocialBranch._detectMediaType(m) !== 'video'; }).length, nVid = media.length - nPhoto;
+    var nPhoto = media.filter(function(m){ return SocialBranch._detectMediaType(m) !== 'video'; }).length, nReel = media.filter(function(m){ return /reel\.mp4/i.test(m); }).length, nVid = media.length - nPhoto - nReel;
     var strip = '';
     if (media.length) {
       strip = '<div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:8px 0 4px;">';
       media.slice(0, 8).forEach(function(m) {
         var v = SocialBranch._detectMediaType(m) === 'video';
-        strip += '<div style="position:relative;flex:none;width:72px;height:72px;border-radius:8px;overflow:hidden;background:#000;">'
-          + (v ? '<video src="' + UI.esc(m) + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 4px rgba(0,0,0,.7);">\u25b6</span>'
+        var isReel = /reel\.mp4/i.test(m);   // v1235: the nightly reel (all the day's clips, cut + stitched) leads the strip
+        strip += '<div style="position:relative;flex:none;width:' + (isReel ? '96' : '72') + 'px;height:72px;border-radius:8px;overflow:hidden;background:#000;">'
+          + (v ? '<video src="' + UI.esc(m) + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 4px rgba(0,0,0,.7);">\u25b6</span>' + (isReel ? '<span style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;font-size:9px;font-weight:800;letter-spacing:.08em;text-align:center;padding:2px 0;">REEL</span>' : '')
                : '<img src="' + UI.esc(m) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;">')
           + '</div>';
       });
@@ -334,7 +335,7 @@ var SocialBranch = {
       head = '<div style="font-size:12px;color:var(--text-light);">Loading the day\u2026</div>';
     }
     var approved = p.status === 'approved';
-    var counts = (nPhoto ? nPhoto + ' photo' + (nPhoto === 1 ? '' : 's') : '') + (nVid ? (nPhoto ? ' + ' : '') + nVid + ' video' + (nVid === 1 ? '' : 's') : '');
+    var counts = (nReel ? 'reel + ' : '') + (nPhoto ? nPhoto + ' photo' + (nPhoto === 1 ? '' : 's') : '') + (nVid ? (nPhoto ? ' + ' : '') + nVid + ' clip' + (nVid === 1 ? '' : 's') : '');
     var stop = 'event.stopPropagation();';
     var actions = '';
     if (p.workDayId && !approved) {
