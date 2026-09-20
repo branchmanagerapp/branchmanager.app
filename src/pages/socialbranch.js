@@ -190,7 +190,7 @@ var SocialBranch = {
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:20px;">';
     html += SocialBranch._statCard('Scheduled',  scheduled.length,                'calendar', 'var(--accent)');
     html += SocialBranch._statCard('Posted (all-time)', posts.filter(function(p){return p.status==='posted';}).length, 'check-circle', 'var(--green-dark)');
-    html += SocialBranch._statCard('Drafts',     posts.filter(function(p){return p.status==='draft';}).length,   'file-text', 'var(--text-light)');
+    html += SocialBranch._statCard('Drafts',     posts.filter(function(p){return p.status==='draft' || p.status==='approved';}).length,   'file-text', 'var(--text-light)');
     html += SocialBranch._statCard('Connected',  connected.length + ' networks',  'link', '#8b5cf6');
     html += '</div>';
 
@@ -208,20 +208,8 @@ var SocialBranch = {
     html += '</div>';
 
     // v1229: Drafts ABOVE recent activity (Doug, Sept 20 2026) — what needs a decision comes first.
-    var drafts = posts.filter(function(p){ return p.status === 'draft'; }).sort(function(a,b){ return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0); });
-    html += '<div id="sb-drafts-panel" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-      + '<h3 style="margin:0;font-size:16px;">Drafts — waiting on you <span style="font-size:12px;font-weight:600;color:var(--text-light);">(' + drafts.length + ')</span></h3>'
-      + '<button onclick="SocialBranch._goTab(\'calendar\')" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">Calendar →</button>'
-      + '</div>'
-      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Tap a row to edit and preview. <b>Post now</b> sends it on the next tick; <b>Schedule</b> picks a time. Nothing goes out until you tap.</div>';
-    if (drafts.length === 0) {
-      html += '<div style="padding:16px;text-align:center;color:var(--text-light);font-size:14px;">No drafts. Tomorrow\'s job photos land here automatically.</div>';
-    } else {
-      drafts.slice(0, 12).forEach(function(p) { html += SocialBranch._draftRow(p); });
-      if (drafts.length > 12) html += '<div style="padding:10px 0 0;font-size:12px;color:var(--text-light);">+ ' + (drafts.length - 12) + ' more in the Calendar tab.</div>';
-    }
-    html += '</div>';
+    html += SocialBranch._draftsPanelHtml(posts);
+    SocialBranch._ensureWorkDays(posts);
 
     // Recent activity (capped; the full history is in the Calendar tab)
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;">'
@@ -251,27 +239,110 @@ var SocialBranch = {
   },
 
   // v1229: draft row with its own actions (dashboard). Thumb + caption + networks + Schedule / Post now.
+  // v1232: the day cards (Doug, Sept 20 2026: "have the day's jobs load with photos and videos, captions
+  // pre-populated; approve the thing, then you can schedule it"). One card per nightly work day: date · town ·
+  // client/job, every photo AND video, the AI caption in Doug's voice. Step 1 Approve → the day goes on the public
+  // Recent Work map (DB trigger → work-days fn). Step 2 Schedule / Post now → socials. Nothing leaves without a tap.
+  _workDays: {},
+  _ensureWorkDays: function(posts) {
+    var ids = posts.filter(function(p){ return p.workDayId && !SocialBranch._workDays[p.workDayId]; }).map(function(p){ return p.workDayId; });
+    if (!ids.length || typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+    SupabaseDB.client.from('work_days').select('id,client_name,town,work_date,job_number,status,photo_count').in('id', ids).then(function(r) {
+      (r && r.data || []).forEach(function(w) { SocialBranch._workDays[w.id] = w; });
+      ids.forEach(function(id) { if (!SocialBranch._workDays[id]) SocialBranch._workDays[id] = { id: id, missing: true }; });
+      var panel = document.getElementById('sb-drafts-panel');
+      if (panel) { var tmp = document.createElement('div'); tmp.innerHTML = SocialBranch._draftsPanelHtml(SocialBranch._getPosts()); panel.replaceWith(tmp.firstChild); }
+    });
+  },
+  _draftsPanelHtml: function(posts) {
+    var drafts = posts.filter(function(p){ return p.status === 'draft' || p.status === 'approved'; }).sort(function(a,b){ return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0); });
+    var html = '<div id="sb-drafts-panel" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      + '<h3 style="margin:0;font-size:16px;">Days from the field \u2014 waiting on you <span style="font-size:12px;font-weight:600;color:var(--text-light);">(' + drafts.length + ')</span></h3>'
+      + '<button onclick="SocialBranch._goTab(\'calendar\')" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">Calendar \u2192</button>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;"><b>1. Approve</b> puts the day on the public Recent Work map. <b>2. Schedule</b> or <b>Post now</b> sends it to the socials. Tap the caption to edit. Nothing goes out until you tap.</div>';
+    if (drafts.length === 0) {
+      html += '<div style="padding:16px;text-align:center;color:var(--text-light);font-size:14px;">Nothing waiting. Tonight\'s photos and videos land here with a caption, ready to approve.</div>';
+    } else {
+      drafts.slice(0, 12).forEach(function(p) { html += SocialBranch._draftRow(p); });
+      if (drafts.length > 12) html += '<div style="padding:10px 0 0;font-size:12px;color:var(--text-light);">+ ' + (drafts.length - 12) + ' more in the Calendar tab.</div>';
+    }
+    return html + '</div>';
+  },
+  _approvePost: function(id) {
+    var p = SocialBranch._getPosts().find(function(x){ return x.id === id; });
+    if (!p) return;
+    if (!confirm('Approve this day? Its photos and videos go on the public Recent Work map now. Posting to the socials is the next step (Schedule or Post now).')) return;
+    p.status = 'approved';
+    p.approvedAt = new Date().toISOString();
+    SocialBranch._upsertPost(p);
+    UI.toast('\u2705 Approved \u2014 publishing the day to the map\u2026', 'success');
+    loadPage('socialbranch');
+    // The trigger swaps the post's media to the public copies within a few seconds; adopt them so the
+    // next mirror doesn't overwrite them with the expiring signed URLs.
+    if (p.workDayId && typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
+      setTimeout(function() {
+        SupabaseDB.client.from('social_posts').select('media_urls').eq('id', id).maybeSingle().then(function(r) {
+          var m = r && r.data && r.data.media_urls;
+          if (!m || !m.length || !/job-photos\/work\//.test(m[0])) return;
+          var q = SocialBranch._getPosts().find(function(x){ return x.id === id; });
+          if (q) { q.media = m; SocialBranch._upsertPost(q); if (window._currentPage === 'socialbranch') loadPage('socialbranch'); }
+        });
+      }, 5000);
+    }
+  },
   _draftRow: function(p) {
     var nets = (p.networks || []).map(function(n) {
       var net = SocialBranch.NETWORKS.find(function(x){ return x.id === n; });
       return net ? '<span title="' + net.name + '" style="margin-right:4px;color:' + net.color + ';">' + SocialBranch._netIcon(net.icon, 12) + '</span>' : '';
     }).join('');
-    var preview = (p.caption || '').substring(0, 90) + ((p.caption || '').length > 90 ? '…' : '');
-    var m = (p.media && p.media[0]) || '';
-    var isVid = m && SocialBranch._detectMediaType(m) === 'video';
-    var thumb = m ? (isVid ? '<video src="' + UI.esc(m) + '" muted playsinline style="width:56px;height:56px;border-radius:8px;object-fit:cover;background:#000;"></video>' : '<img src="' + UI.esc(m) + '" style="width:56px;height:56px;border-radius:8px;object-fit:cover;">')
-                  : '<div style="width:56px;height:56px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:11px;">no photo</div>';
-    var n = (p.media || []).length;
+    var cap = (p.caption || '').split('\n').filter(function(l){ return l.trim() && !/^#/.test(l.trim()); }).join(' ');
+    var preview = cap.substring(0, 220) + (cap.length > 220 ? '\u2026' : '');
+    var media = (p.media || []);
+    var nPhoto = media.filter(function(m){ return SocialBranch._detectMediaType(m) !== 'video'; }).length, nVid = media.length - nPhoto;
+    var strip = '';
+    if (media.length) {
+      strip = '<div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:8px 0 4px;">';
+      media.slice(0, 8).forEach(function(m) {
+        var v = SocialBranch._detectMediaType(m) === 'video';
+        strip += '<div style="position:relative;flex:none;width:72px;height:72px;border-radius:8px;overflow:hidden;background:#000;">'
+          + (v ? '<video src="' + UI.esc(m) + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 4px rgba(0,0,0,.7);">\u25b6</span>'
+               : '<img src="' + UI.esc(m) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;">')
+          + '</div>';
+      });
+      if (media.length > 8) strip += '<div style="flex:none;width:72px;height:72px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-light);">+' + (media.length - 8) + '</div>';
+      strip += '</div>';
+    } else {
+      strip = '<div style="font-size:12px;color:var(--text-light);padding:6px 0;">No photo yet</div>';
+    }
+    var w = p.workDayId ? SocialBranch._workDays[p.workDayId] : null;
+    var head = '';
+    if (w && !w.missing) {
+      var d = w.work_date ? new Date(w.work_date + 'T12:00:00') : null;
+      head = '<div style="font-size:14px;font-weight:800;color:var(--text);">' + (d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '') + (w.town ? ' \u00b7 ' + UI.esc(w.town) : '') + '</div>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-top:1px;">' + UI.esc(w.client_name || 'Client TBD') + (w.job_number ? ' \u00b7 Job #' + UI.esc(String(w.job_number)) : ' \u00b7 no job record') + '</div>';
+    } else if (p.workDayId) {
+      head = '<div style="font-size:12px;color:var(--text-light);">Loading the day\u2026</div>';
+    }
+    var approved = p.status === 'approved';
+    var counts = (nPhoto ? nPhoto + ' photo' + (nPhoto === 1 ? '' : 's') : '') + (nVid ? (nPhoto ? ' + ' : '') + nVid + ' video' + (nVid === 1 ? '' : 's') : '');
     var stop = 'event.stopPropagation();';
-    return '<div onclick="SocialBranch._editPost(\'' + p.id + '\')" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);cursor:pointer;flex-wrap:wrap;">'
-      + thumb
-      + '<div style="flex:1;min-width:160px;">'
-      + '<div style="font-size:13.5px;color:var(--text);line-height:1.35;">' + UI.esc(preview || '(no caption yet)') + '</div>'
-      + '<div style="font-size:11px;color:var(--text-light);margin-top:3px;">' + (n ? n + ' file' + (n === 1 ? '' : 's') + ' · ' : '') + nets + (p.scheduledAt ? ' · was set for ' + SocialBranch._formatWhen(p.scheduledAt) : '') + '</div>'
-      + '</div>'
-      + '<div style="display:flex;gap:6px;flex:none;">'
-      + '<button onclick="' + stop + 'SocialBranch._rescheduleInline(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;">📅 Schedule</button>'
-      + '<button onclick="' + stop + 'SocialBranch._postNow(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:8px 12px;">Post now</button>'
+    var actions = '';
+    if (p.workDayId && !approved) {
+      actions = '<button onclick="' + stop + 'SocialBranch._approvePost(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">\u2705 Approve</button>'
+        + '<button onclick="' + stop + 'SocialBranch._editPost(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">Edit</button>';
+    } else {
+      actions = '<button onclick="' + stop + 'SocialBranch._rescheduleInline(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">\ud83d\udcc5 Schedule</button>'
+        + '<button onclick="' + stop + 'SocialBranch._postNow(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">Post now</button>';
+    }
+    return '<div onclick="SocialBranch._editPost(\'' + p.id + '\')" style="padding:12px 0;border-top:1px solid var(--border);cursor:pointer;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><div>' + head + '</div>' + (approved ? SocialBranch._statusBadge('approved') : '') + '</div>'
+      + strip
+      + '<div style="font-size:13.5px;color:var(--text);line-height:1.4;">' + UI.esc(preview || '(no caption yet \u2014 tap to write one)') + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">'
+      + '<div style="font-size:11px;color:var(--text-light);">' + counts + (counts ? ' \u00b7 ' : '') + nets + (p.scheduledAt ? ' \u00b7 was set for ' + SocialBranch._formatWhen(p.scheduledAt) : '') + '</div>'
+      + '<div style="display:flex;gap:6px;flex:none;">' + actions + '</div>'
       + '</div></div>';
   },
   _postNow: function(id) {
@@ -309,6 +380,7 @@ var SocialBranch = {
   _statusBadge: function(status) {
     var map = {
       draft:     { bg:'#f3f4f6', color:'#6b7280', label:'Draft' },
+      approved:  { bg:'#dcfce7', color:'#166534', label:'Approved \u00b7 ready to post' },
       scheduled: { bg:'#dbeafe', color:'#1e40af', label:'Queued' },
       posting:   { bg:'#fef3c7', color:'#92400e', label:'Posting…' },
       posted:    { bg:'#dcfce7', color:'#166534', label:'Posted' },
@@ -574,7 +646,7 @@ var SocialBranch = {
     post.createdAt = post.createdAt || new Date().toISOString();
 
     if (action === 'draft') {
-      post.status = 'draft';
+      post.status = (post.status === 'approved') ? 'approved' : 'draft';   // v1232: editing never un-approves a day
     } else if (schedule) {
       post.status = 'scheduled';
     } else {
@@ -750,7 +822,7 @@ var SocialBranch = {
     var posts = allPosts.filter(function(p) { return p.status === 'scheduled' || p.status === 'posted'; });
     // Unscheduled = drafts + scheduled-with-no-date + SP imports with no date
     var unscheduled = allPosts.filter(function(p) {
-      if (p.status === 'draft') return true;
+      if (p.status === 'draft' || p.status === 'approved') return true;
       if (p.status === 'scheduled' && !p.scheduledAt) return true;
       return false;
     });
@@ -1063,7 +1135,7 @@ var SocialBranch = {
   _manualPost: function(networkId, composeUrl) {
     var posts = SocialBranch._getPosts();
     var draft = posts.filter(function(p) {
-      return (p.status === 'draft' || p.status === 'scheduled') && p.caption;
+      return (p.status === 'draft' || p.status === 'approved' || p.status === 'scheduled') && p.caption;
     }).sort(function(a, b) {
       return new Date(b.scheduledAt || b.createdAt || 0) - new Date(a.scheduledAt || a.createdAt || 0);
     })[0];
@@ -1088,7 +1160,7 @@ var SocialBranch = {
     var posted = all.filter(function(p){ return p.status === 'posted'; });
     var scheduled = all.filter(function(p){ return p.status === 'scheduled'; });
     var failed = all.filter(function(p){ return p.status === 'failed'; });
-    var drafts = all.filter(function(p){ return p.status === 'draft'; });
+    var drafts = all.filter(function(p){ return p.status === 'draft' || p.status === 'approved'; });
     var byNetwork = {};
     posted.forEach(function(p){ (p.networks||[]).forEach(function(n){ byNetwork[n]=(byNetwork[n]||0)+1; }); });
 
@@ -1602,6 +1674,7 @@ var SocialBranch = {
             has_local_media: (p.media || []).length > pub.length,
             scheduled_at: p.scheduledAt || null,
             status: p.status || 'draft',
+            work_day_id: p.workDayId || undefined,
             posted_at: p.postedAt || null,
             results: p.results || null,
             updated_at: p.updatedAt || p.createdAt || new Date().toISOString()
@@ -1637,6 +1710,7 @@ var SocialBranch = {
             id: row.id, caption: row.caption || '', media: row.media_urls || [],
             networks: row.networks || [], scheduledAt: row.scheduled_at,
             status: row.status, postedAt: row.posted_at, results: row.results,
+            workDayId: row.work_day_id || null,
             createdAt: row.created_at
           });
           changed = true;
@@ -1644,9 +1718,9 @@ var SocialBranch = {
           // Server runner outcome wins over a stale local 'scheduled'.
           p.status = row.status; p.postedAt = row.posted_at; p.results = row.results;
           changed = true;
-        } else if ((p.status === 'draft' || p.status === 'scheduled') && row.updated_at
+        } else if ((p.status === 'draft' || p.status === 'approved' || p.status === 'scheduled') && row.updated_at
                    && (!p.updatedAt || row.updated_at > p.updatedAt)
-                   && (row.status === 'draft' || row.status === 'scheduled')) {
+                   && (row.status === 'draft' || row.status === 'approved' || row.status === 'scheduled')) {
           // v1221: a newer cloud edit (Claude drafting/rescheduling, another device)
           // wins over the stale local copy of an unpublished post.
           p.caption = row.caption || p.caption;
@@ -1654,6 +1728,7 @@ var SocialBranch = {
           if (row.media_urls && row.media_urls.length) p.media = row.media_urls;
           p.scheduledAt = row.scheduled_at || '';
           p.status = row.status;
+          if (row.work_day_id) p.workDayId = row.work_day_id;
           p.updatedAt = row.updated_at;
           changed = true;
         }
@@ -1761,6 +1836,7 @@ var SocialBranch = {
               networks: p.networks || ['gmb'],
               scheduledAt: parseDate(p.dateText) || '',
               status: p.status || 'draft',
+            work_day_id: p.workDayId || undefined,
               postedAt: p.status === 'posted' ? parseDate(p.dateText) : '',
               createdAt: new Date().toISOString(),
               import_source: 'socialpilot-html-scrape'

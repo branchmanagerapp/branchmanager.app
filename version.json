@@ -1,5 +1,5 @@
 {
-  "version": 1231,
+  "version": 1232,
   "released": "2026-09-20",
-  "notes": "v1231: cloud sign-in bar + typed 8-digit sign-in code (phone app / any device with no cloud session); Settings Cloud Health gets the same button; photo-day chip waits for the manifest instead of opening empty"
+  "notes": "v1232: Marketing 'Days from the field' cards — date/town/client/job, every photo + video, caption in Doug's voice; Approve (public map) then Schedule/Post now; approved status; work-days fn keeps videos"
 }

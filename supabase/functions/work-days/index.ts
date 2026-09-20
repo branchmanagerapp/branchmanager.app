@@ -93,10 +93,12 @@ serve(async (req) => {
       const cover = body.cover && keep.includes(body.cover) ? body.cover : (kept.find((p: any) => p.kind === "photo")?.path ?? kept[0].path);
       await sb.from("work_days").update({ status: "approved", approved_at: new Date().toISOString(), photos: kept, photo_count: kept.length, cover_path: cover, service: body.service ?? w.service, blurb: body.blurb ?? w.blurb }).eq("id", id);
       // One queue: the linked SocialBranch post now points at the public copies (signed draft URLs expire).
-      const publicUrls = kept.filter((p: any) => p.kind !== "video").map((p: any) => PUBLIC_BASE + "work/" + w.id + "/" + p.path.split("/").pop());
+      // v1232: photos first, then videos (Doug: "photos and videos") — the post keeps every kept file as a public URL.
+      const pub = (p: any) => PUBLIC_BASE + "work/" + w.id + "/" + p.path.split("/").pop();
+      const publicUrls = kept.filter((p: any) => p.kind !== "video").map(pub).concat(kept.filter((p: any) => p.kind === "video").map(pub));
       const { data: posts } = await sb.from("social_posts").select("id,status").eq("work_day_id", w.id);
       for (const sp of posts ?? []) {
-        if (sp.status === "draft" || sp.status === "scheduled") await sb.from("social_posts").update({ media_urls: publicUrls, has_local_media: false }).eq("id", sp.id);
+        if (sp.status === "draft" || sp.status === "approved" || sp.status === "scheduled") await sb.from("social_posts").update({ media_urls: publicUrls, has_local_media: false }).eq("id", sp.id);
       }
       return json(200, { ok: true, status: "approved", kept: kept.length, social_posts: (posts ?? []).length });
     }
