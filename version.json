@@ -1,5 +1,5 @@
 {
-  "version": 1229,
+  "version": 1230,
   "released": "2026-09-20",
-  "notes": "v1229: Marketing dashboard — Drafts panel (with Schedule / Post now) above Recent Activity; activity capped"
+  "notes": "v1230: Ask for a review from an approved photo day — prefilled text/email with the Google review link, Doug sends; records review_requested_at"
 }

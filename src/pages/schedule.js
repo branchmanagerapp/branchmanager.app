@@ -35,7 +35,7 @@ var SchedulePage = {
       .then(function(m) { if (m) Object.keys(m).forEach(function(d) { merged[d] = (merged[d] || []).concat(m[d]); }); })
       .catch(function() {});
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
-    var pWork = !sb ? Promise.resolve() : sb.from('work_days').select('id,client_name,town,work_date,photos,status').neq('status', 'skipped').order('work_date', { ascending: false }).limit(400)
+    var pWork = !sb ? Promise.resolve() : sb.from('work_days').select('id,client_id,client_name,town,work_date,photos,status,review_requested_at').neq('status', 'skipped').order('work_date', { ascending: false }).limit(400)
       .then(function(r) {
         var rows = (r && r.data) || [];
         var PUB = 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/work/';
@@ -43,7 +43,7 @@ var SchedulePage = {
         rows.forEach(function(w) {
           (w.photos || []).forEach(function(p) {
             if (!p || !p.path) return;
-            var item = { kind: p.kind || 'photo', label: (w.client_name || w.town || ''), status: w.status, wid: w.id, url: null };
+            var item = { kind: p.kind || 'photo', label: (w.client_name || w.town || ''), status: w.status, wid: w.id, cid: w.client_id || null, reviewAt: w.review_requested_at || null, url: null };
             if (w.status === 'approved') item.url = PUB + w.id + '/' + p.path.split('/').pop();
             else { toSign.push(p.path); pending.push(item); }
             (merged[w.work_date] = merged[w.work_date] || []).push(item);
@@ -97,9 +97,36 @@ var SchedulePage = {
     });
     html += '</div></div>';
     var d = new Date(dateStr + 'T12:00:00');
+    // v1230: review request tied to the day (RealWork-style). Only for work days with a client on file.
+    var wd = files.find(function(f) { return f && typeof f === 'object' && f.wid; });
+    var rv = '';
+    if (wd) {
+      var cl = wd.cid ? DB.clients.getAll().find(function(c) { return c.id === wd.cid; }) : null;
+      if (wd.reviewAt) rv = '<span style="font-size:12px;color:var(--text-light);margin-right:auto;">Review asked ' + SchedulePage._formatDate(new Date(wd.reviewAt), 'short') + '</span>';
+      else if (cl && (cl.phone || cl.email)) rv = '<button class="btn btn-primary" style="margin-right:auto;" onclick="SchedulePage._askReview(\'' + wd.wid + '\',\'' + dateStr + '\')">\u2b50 Ask for a review</button>';
+      else rv = '<span style="font-size:12px;color:var(--text-light);margin-right:auto;" title="Name the client on this day first">No client on file for a review ask</span>';
+    }
     UI.showModal('\ud83d\udcf8 ' + SchedulePage._formatDate(d, 'full'), html, {
-      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+      footer: rv + '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
     });
+  },
+  // v1230: open a prefilled text (or email) to the client with the Google review link. Doug taps Send himself — nothing auto-sends.
+  _askReview: function(wid, dateStr) {
+    var files = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
+    var wd = files.find(function(f) { return f && f.wid === wid; }); if (!wd) return;
+    var cl = DB.clients.getAll().find(function(c) { return c.id === wd.cid; }); if (!cl) return;
+    var link = '';
+    try { link = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('googleReviewUrl')) || ''; } catch (e) {}
+    if (!link) { UI.toast('Add your Google review link in Settings first', 'error'); return; }
+    var first = String(cl.name || '').split(' ')[0];
+    var when = SchedulePage._formatDate(new Date(dateStr + 'T12:00:00'), 'short');
+    var body = 'Hi ' + first + ', thanks for having Second Nature Tree out on ' + when + '. If you have a minute, a quick Google review helps us a lot: ' + link + ' \u2014 Doug';
+    var phone = String(cl.phone || '').replace(/[^\d+]/g, '');
+    var href = phone ? ('sms:' + phone + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(body))
+                     : ('mailto:' + encodeURIComponent(cl.email || '') + '?subject=' + encodeURIComponent('A quick review?') + '&body=' + encodeURIComponent(body));
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (sb) sb.from('work_days').update({ review_requested_at: new Date().toISOString() }).eq('id', wid).then(function() { files.forEach(function(f) { if (f && f.wid === wid) f.reviewAt = new Date().toISOString(); }); });
+    UI.closeModal(); window.location.href = href;
   },
 
   // v677: Reminders inline on the calendar (matches Jobber pattern)
