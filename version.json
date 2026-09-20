@@ -1,5 +1,5 @@
 {
-  "version": 1233,
+  "version": 1234,
   "released": "2026-09-20",
-  "notes": "v1233: Marketing page no longer re-imports SocialPilot in a loop (~6 renders/s); cloud mirror gets a 2.5 s max-wait so approve/schedule/edits always reach the runner"
+  "notes": "v1234: after Approve, keep polling for the public media URLs (up to 30 s) so a later save can't put the expiring draft links back"
 }

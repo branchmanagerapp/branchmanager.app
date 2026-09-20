@@ -286,14 +286,18 @@ var SocialBranch = {
     // The trigger swaps the post's media to the public copies within a few seconds; adopt them so the
     // next mirror doesn't overwrite them with the expiring signed URLs.
     if (p.workDayId && typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
-      setTimeout(function() {
+      // v1234: poll a few times — mirror (≤2.5 s) + trigger + copy can take longer than one fixed wait.
+      var tries = 0;
+      var adopt = function() {
+        tries++;
         SupabaseDB.client.from('social_posts').select('media_urls').eq('id', id).maybeSingle().then(function(r) {
           var m = r && r.data && r.data.media_urls;
-          if (!m || !m.length || !/job-photos\/work\//.test(m[0])) return;
+          if (!m || !m.length || !/job-photos\/work\//.test(m[0])) { if (tries < 6) setTimeout(adopt, 5000); return; }
           var q = SocialBranch._getPosts().find(function(x){ return x.id === id; });
           if (q) { q.media = m; SocialBranch._upsertPost(q); if (window._currentPage === 'socialbranch') loadPage('socialbranch'); }
-        });
-      }, 5000);
+        }).catch(function() { if (tries < 6) setTimeout(adopt, 5000); });
+      };
+      setTimeout(adopt, 4000);
     }
   },
   _draftRow: function(p) {
