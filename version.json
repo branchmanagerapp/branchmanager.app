@@ -1,5 +1,5 @@
 {
-  "version": 1228,
+  "version": 1229,
   "released": "2026-09-20",
-  "notes": "v1228: Compose rebuilt — phone-first, real Instagram/Facebook/Google post previews (same mocks as Social HQ), big network chips read the server-stored posting bridge"
+  "notes": "v1229: Marketing dashboard — Drafts panel (with Schedule / Post now) above Recent Activity; activity capped"
 }

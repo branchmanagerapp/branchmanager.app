@@ -207,13 +207,30 @@ var SocialBranch = {
     }
     html += '</div>';
 
-    // Recent activity
+    // v1229: Drafts ABOVE recent activity (Doug, Sept 20 2026) — what needs a decision comes first.
+    var drafts = posts.filter(function(p){ return p.status === 'draft'; }).sort(function(a,b){ return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0); });
+    html += '<div id="sb-drafts-panel" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      + '<h3 style="margin:0;font-size:16px;">Drafts — waiting on you <span style="font-size:12px;font-weight:600;color:var(--text-light);">(' + drafts.length + ')</span></h3>'
+      + '<button onclick="SocialBranch._goTab(\'calendar\')" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">Calendar →</button>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Tap a row to edit and preview. <b>Post now</b> sends it on the next tick; <b>Schedule</b> picks a time. Nothing goes out until you tap.</div>';
+    if (drafts.length === 0) {
+      html += '<div style="padding:16px;text-align:center;color:var(--text-light);font-size:14px;">No drafts. Tomorrow\'s job photos land here automatically.</div>';
+    } else {
+      drafts.slice(0, 12).forEach(function(p) { html += SocialBranch._draftRow(p); });
+      if (drafts.length > 12) html += '<div style="padding:10px 0 0;font-size:12px;color:var(--text-light);">+ ' + (drafts.length - 12) + ' more in the Calendar tab.</div>';
+    }
+    html += '</div>';
+
+    // Recent activity (capped; the full history is in the Calendar tab)
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;">'
       + '<h3 style="margin:0 0 12px;font-size:16px;">Recent Activity</h3>';
     if (recent.length === 0) {
       html += '<div style="padding:20px;text-align:center;color:var(--text-light);font-size:14px;">Nothing posted yet.</div>';
     } else {
-      recent.forEach(function(p) { html += SocialBranch._postRow(p); });
+      recent.slice(0, 8).forEach(function(p) { html += SocialBranch._postRow(p); });
+      if (recent.length > 8) html += '<div style="padding:10px 0 0;font-size:12px;color:var(--text-light);">+ ' + (recent.length - 8) + ' older — Calendar tab.</div>';
     }
     html += '</div>';
 
@@ -231,6 +248,40 @@ var SocialBranch = {
       + '</div>'
       + '<div style="font-size:24px;font-weight:800;color:var(--text);">' + value + '</div>'
       + '</div>';
+  },
+
+  // v1229: draft row with its own actions (dashboard). Thumb + caption + networks + Schedule / Post now.
+  _draftRow: function(p) {
+    var nets = (p.networks || []).map(function(n) {
+      var net = SocialBranch.NETWORKS.find(function(x){ return x.id === n; });
+      return net ? '<span title="' + net.name + '" style="margin-right:4px;color:' + net.color + ';">' + SocialBranch._netIcon(net.icon, 12) + '</span>' : '';
+    }).join('');
+    var preview = (p.caption || '').substring(0, 90) + ((p.caption || '').length > 90 ? '…' : '');
+    var m = (p.media && p.media[0]) || '';
+    var isVid = m && SocialBranch._detectMediaType(m) === 'video';
+    var thumb = m ? (isVid ? '<video src="' + UI.esc(m) + '" muted playsinline style="width:56px;height:56px;border-radius:8px;object-fit:cover;background:#000;"></video>' : '<img src="' + UI.esc(m) + '" style="width:56px;height:56px;border-radius:8px;object-fit:cover;">')
+                  : '<div style="width:56px;height:56px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:11px;">no photo</div>';
+    var n = (p.media || []).length;
+    var stop = 'event.stopPropagation();';
+    return '<div onclick="SocialBranch._editPost(\'' + p.id + '\')" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);cursor:pointer;flex-wrap:wrap;">'
+      + thumb
+      + '<div style="flex:1;min-width:160px;">'
+      + '<div style="font-size:13.5px;color:var(--text);line-height:1.35;">' + UI.esc(preview || '(no caption yet)') + '</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:3px;">' + (n ? n + ' file' + (n === 1 ? '' : 's') + ' · ' : '') + nets + (p.scheduledAt ? ' · was set for ' + SocialBranch._formatWhen(p.scheduledAt) : '') + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex:none;">'
+      + '<button onclick="' + stop + 'SocialBranch._rescheduleInline(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;">📅 Schedule</button>'
+      + '<button onclick="' + stop + 'SocialBranch._postNow(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:8px 12px;">Post now</button>'
+      + '</div></div>';
+  },
+  _postNow: function(id) {
+    var p = SocialBranch._getPosts().find(function(x){ return x.id === id; });
+    if (!p) return;
+    var nets = (p.networks && p.networks.length) ? p.networks.join(', ') : 'the connected networks';
+    if (!confirm('Post this now to ' + nets + '?')) return;
+    SocialBranch._editingPost = p; SocialBranch._draftMedia = (p.media || []).slice();
+    SocialBranch._goTab('compose');
+    setTimeout(function() { SocialBranch._savePost('post'); }, 350);   // same real path as the Publish button (native → webhook)
   },
 
   _postRow: function(p) {
