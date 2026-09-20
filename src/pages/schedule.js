@@ -473,6 +473,7 @@ var SchedulePage = {
   },
 
   render: function() {
+    SchedulePage.loadRecapManifest();  // v1226: month/week/day all show past-day 📸 chips (was Day-only → month never loaded them)
     var self = SchedulePage;
     var html = '';
     // v378: AdminTasks.seedDefaults() removed — was auto-injecting a recurring

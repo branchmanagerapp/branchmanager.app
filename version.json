@@ -1,5 +1,5 @@
 {
-  "version": 1225,
-  "released": "2026-09-19",
-  "notes": "v1225: Schedule past days now fed from work_days (nightly camera-roll ingest) merged with the legacy recap manifest — lazy, signed draft URLs, approve link; Ground Control calendar retired into the Schedule"
+  "version": 1226,
+  "released": "2026-09-20",
+  "notes": "v1226: past-day 📸 chips load in Month/Week (were Day-only); Estimate board nav moved under Quotes; browser-extension 'message channel' errors no longer toast"
 }

@@ -66,6 +66,8 @@ window.addEventListener('unhandledrejection', function(e) {
     console.warn('[unhandledrejection]', reason);
     // Don't spam users for routine network hiccups or aborts
     if (/AbortError|cancel|aborted|NetworkError when attempting/i.test(msg)) return;
+    // v1226: Chrome-extension noise, not ours (Claude/Gemini side panels, etc.) — never surface it
+    if (/message channel|message port closed|Extension context invalidated|chrome-extension:|Receiving end does not exist/i.test(msg)) return;
     if (typeof UI !== 'undefined' && UI.toast && msg.length < 200) {
       UI.toast('⚠️ Background error: ' + msg, 'error');
     }
