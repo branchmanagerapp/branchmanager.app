@@ -64,6 +64,12 @@ var SchedulePage = {
     return null;
   },
   showDayRecap: function(dateStr) {
+    // v1231: chip tapped while the manifest is still loading → wait for it instead of opening an empty modal
+    if (!window._bmRecaps && window._bmRecapsLoading) {
+      UI.toast('Loading photos…');
+      setTimeout(function() { if (window._bmRecaps) SchedulePage.showDayRecap(dateStr); }, 1500);
+      return;
+    }
     var files = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
     var jobs = DB.jobs.getAll().filter(function(j) {
       return j.scheduledDate && j.scheduledDate.substring(0, 10) === dateStr && j.status !== 'archived';

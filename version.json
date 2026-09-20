@@ -1,5 +1,5 @@
 {
-  "version": 1230,
+  "version": 1231,
   "released": "2026-09-20",
-  "notes": "v1230: Ask for a review from an approved photo day — prefilled text/email with the Google review link, Doug sends; records review_requested_at"
+  "notes": "v1231: cloud sign-in bar + typed 8-digit sign-in code (phone app / any device with no cloud session); Settings Cloud Health gets the same button; photo-day chip waits for the manifest instead of opening empty"
 }

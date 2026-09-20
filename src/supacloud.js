@@ -388,6 +388,86 @@ var CloudSync = {
     if (el) el.remove();
   },
 
+  // v1231 CLOUD SIGN-IN BAR + CODE ENTRY. Since RLS went authenticated-only
+  // (Sept 2026) a device that is signed in locally but has NO Supabase session
+  // sees 0 rows and every write is rejected — the "can't trust BM" root cause.
+  // Email magic links don't work for the owner: Gmail's link scanner consumes
+  // them, and on the phone they open in Safari, not the installed app. So the
+  // bar offers a typed 8-digit sign-in code (admin generate_link → email_otp,
+  // verified with auth.verifyOtp type=magiclink). Doug asks Claude for a code.
+  _showCloudBar: function() {
+    if (!(typeof Auth !== 'undefined' && Auth.user)) return;           // login screen — nothing to bar
+    if (document.getElementById('bm-cloud-bar')) return;
+    if (document.getElementById('bm-offline-banner')) return;          // offline banner owns the top
+    var b = document.createElement('div');
+    b.id = 'bm-cloud-bar';
+    b.setAttribute('role', 'alert');
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#b45309;color:#fff;padding:8px 12px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;line-height:1.35;';
+    b.innerHTML = '<span>☁️ Not signed in to the cloud on this device — jobs, quotes and photos won’t load.</span>'
+      + '<button type="button" onclick="CloudSync._promptCloudCode()" style="background:#fff;color:#92400e;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">Enter sign-in code</button>';
+    document.body.appendChild(b);
+    var app = document.querySelector('.app');
+    var _syncShift = function() {
+      if (!document.getElementById('bm-cloud-bar')) return;
+      var h = b.offsetHeight || 44;
+      if (app) { app.style.marginTop = h + 'px'; app.style.height = 'calc(100vh - ' + h + 'px)'; }
+    };
+    requestAnimationFrame(_syncShift);
+    setTimeout(_syncShift, 150);
+    if (window.ResizeObserver) { try { new ResizeObserver(_syncShift).observe(b); } catch (e) {} }
+  },
+
+  _hideCloudBar: function() {
+    var b = document.getElementById('bm-cloud-bar');
+    if (!b) return;
+    b.remove();
+    if (!document.getElementById('bm-offline-banner')) {
+      var app = document.querySelector('.app');
+      if (app) { app.style.marginTop = ''; app.style.height = ''; }
+    }
+  },
+
+  _promptCloudCode: function() {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.client.auth) { UI.toast('Cloud not loaded yet — try again in a moment', 'error'); return; }
+    var email = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) || '';
+    var html = '<div style="font-size:13px;color:var(--text-light);line-height:1.5;margin-bottom:12px;">Ask Claude for a sign-in code (it’s good for about an hour), then type it here. This signs this device in to the cloud — no email link needed.</div>'
+      + '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Email</label>'
+      + '<input id="bm-code-email" type="email" autocomplete="email" value="' + UI.esc(email) + '" style="width:100%;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;box-sizing:border-box;">'
+      + '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Sign-in code</label>'
+      + '<input id="bm-code-otp" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="10" placeholder="8 digits" style="width:100%;padding:12px;font-size:22px;letter-spacing:.2em;border:1px solid var(--border);border-radius:8px;box-sizing:border-box;">'
+      + '<div id="bm-code-msg" style="font-size:12px;color:#c62828;min-height:16px;margin-top:8px;"></div>';
+    UI.showModal('☁️ Cloud sign-in', html, {
+      keepModal: true,
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + '<button class="btn btn-primary" id="bm-code-go" onclick="CloudSync._verifyCloudCode()">Sign in</button>'
+    });
+    setTimeout(function() { var i = document.getElementById('bm-code-otp'); if (i) i.focus(); }, 250);
+  },
+
+  _verifyCloudCode: function() {
+    var email = ((document.getElementById('bm-code-email') || {}).value || '').trim();
+    var code = ((document.getElementById('bm-code-otp') || {}).value || '').replace(/\D/g, '');
+    var msg = document.getElementById('bm-code-msg'), go = document.getElementById('bm-code-go');
+    if (!email || code.length < 6) { if (msg) msg.textContent = 'Enter your email and the full code.'; return; }
+    if (go) { go.disabled = true; go.textContent = 'Checking…'; }
+    SupabaseDB.client.auth.verifyOtp({ email: email, token: code, type: 'magiclink' }).then(function(r) {
+      if (r.error || !(r.data && r.data.session)) {
+        if (msg) msg.textContent = 'Code rejected: ' + ((r.error && r.error.message) || 'no session returned') + '. Ask for a fresh one.';
+        if (go) { go.disabled = false; go.textContent = 'Sign in'; }
+        return;
+      }
+      UI.closeModal();
+      CloudSync._clearCloudSignedOut();
+      CloudSync._hideCloudBar();
+      UI.toast('✅ Cloud signed in as ' + email, 'success');
+      // Pull everything now that RLS lets this device see its tenant.
+      try { CloudSync.init().then(function() { if (typeof loadPage === 'function' && window._currentPage) loadPage(window._currentPage); }); } catch (e) {}
+    }).catch(function(e) {
+      if (msg) msg.textContent = 'Error: ' + (e && e.message || 'unknown');
+      if (go) { go.disabled = false; go.textContent = 'Sign in'; }
+    });
+  },
+
   // OFFLINE BANNER — a loud, full-width top bar shown when BM can't reach the
   // cloud. BM is cloud-live (the cloud is the source of truth), so rather than
   // silently show stale device data in a dead zone, we tell the user plainly:
@@ -457,7 +537,7 @@ var CloudSync = {
     if (!SupabaseDB || !SupabaseDB.client || !SupabaseDB.client.auth) return;
     SupabaseDB.client.auth.getSession().then(function(res) {
       var hasSession = !!(res && res.data && res.data.session);
-      if (hasSession) { CloudSync._clearCloudSignedOut(); return; }
+      if (hasSession) { CloudSync._clearCloudSignedOut(); CloudSync._hideCloudBar(); return; }
       // No active session. If we previously had one (refresh token in
       // localStorage), try to silently refresh. If we never had one (clean
       // local-auth path), do nothing — the badge is a false alarm in that
@@ -469,15 +549,17 @@ var CloudSync = {
           if (k && /^sb-.*-auth-token$/.test(k)) { hasRefreshable = true; break; }
         }
       } catch(e) {}
-      if (!hasRefreshable) { CloudSync._clearCloudSignedOut(); return; }
+      if (!hasRefreshable) { CloudSync._clearCloudSignedOut(); CloudSync._showCloudBar(); return; }
       return SupabaseDB.client.auth.refreshSession().then(function(r2) {
         var refreshed = !!(r2 && r2.data && r2.data.session);
         if (refreshed) {
           CloudSync._clearCloudSignedOut();
+          CloudSync._hideCloudBar();
           if (typeof UI !== 'undefined' && UI.toast) UI.toast('🔄 Cloud session refreshed', 'success');
+        } else {
+          CloudSync._showCloudBar();
         }
-        // Refresh failed — DON'T badge. Local-auth + anon RLS is fine.
-      }).catch(function() { /* refresh attempt failed silently */ });
+      }).catch(function() { CloudSync._showCloudBar(); });
     }).catch(function() { /* offline — don't badge */ });
   },
 

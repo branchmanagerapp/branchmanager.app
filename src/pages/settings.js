@@ -1970,7 +1970,8 @@ var SettingsPage = {
       } else {
         html += row('Supabase session',
           '❌ none — writes will be RLS-rejected '
-          + '<button onclick="SettingsPage._supabaseSignInMagic()" style="margin-left:8px;background:var(--green-dark);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📧 Send sign-in link</button>',
+          + '<button onclick="CloudSync._promptCloudCode()" style="margin-left:8px;background:var(--green-dark);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">🔢 Enter sign-in code</button>'
+          + '<button onclick="SettingsPage._supabaseSignInMagic()" style="margin-left:8px;background:transparent;color:var(--green-dark);border:1px solid var(--green-dark);padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📧 Send link</button>',
           '#c62828');
       }
       html += row('BM session (local)', s.bmUser ? (s.bmUser.email + ' · ' + (s.bmUser.role || 'owner')) : '(none)', s.bmUser ? 'var(--text)' : '#a37200');
