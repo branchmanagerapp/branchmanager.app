@@ -11,6 +11,23 @@
  *   Post: { id, caption, media, networks, scheduledAt, status, postedAt, results, createdAt }
  */
 var SocialBranch = {
+  // v1227: the posting webhook is a TENANT setting (tenant_settings 'bm-socialpilot-webhook', what the hourly runner uses),
+  // not a per-device localStorage value. Read it from the server once and cache it so every device shows the same state.
+  _webhook: function() {
+    var w = localStorage.getItem('bm-socialpilot-webhook') || '';
+    if (w) return w;
+    if (SocialBranch._webhookFetched) return '';
+    SocialBranch._webhookFetched = true;
+    try {
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
+        SupabaseDB.client.from('tenant_settings').select('value').eq('key', 'bm-socialpilot-webhook').limit(1).then(function(r) {
+          var v = r && r.data && r.data[0] && r.data[0].value;
+          if (v) { try { localStorage.setItem('bm-socialpilot-webhook', v); } catch (e) {} if (window._currentPage === 'socialbranch') { try { loadPage('socialbranch'); } catch (e) {} } }
+        });
+      }
+    } catch (e) {}
+    return '';
+  },
   _tab: 'dashboard',
   STATUS: { DRAFT: 'draft', SCHEDULED: 'scheduled', POSTING: 'posting', POSTED: 'posted', FAILED: 'failed' },
   // accepts: 'image' | 'video' | 'both'. icon = Lucide icon name rendered via <i data-lucide="...">.
@@ -496,7 +513,7 @@ var SocialBranch = {
   // PUBLISH — routes per network to the right backend
   // ─────────────────────────────────────────────────────────
   _publishNow: function(post) {
-    var webhook = localStorage.getItem('bm-socialpilot-webhook') || '';
+    var webhook = SocialBranch._webhook();
 
     // Instagram/GMB/Meta APIs require PUBLIC image URLs, not base64. Upload any
     // data-URL media to Supabase Storage → public URL → send that to webhook.
@@ -793,7 +810,7 @@ var SocialBranch = {
   // ─────────────────────────────────────────────────────────
   _renderAccounts: function() {
     var connected = SocialBranch._getConnectedNetworks();
-    var webhook = localStorage.getItem('bm-socialpilot-webhook') || '';
+    var webhook = SocialBranch._webhook();
     var gmbToken = localStorage.getItem('bm-gmb-access-token') || '';
 
     var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;">'

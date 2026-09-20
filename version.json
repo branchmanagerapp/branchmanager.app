@@ -1,5 +1,5 @@
 {
-  "version": 1226,
+  "version": 1227,
   "released": "2026-09-20",
-  "notes": "v1226: past-day 📸 chips load in Month/Week (were Day-only); Estimate board nav moved under Quotes; browser-extension 'message channel' errors no longer toast"
+  "notes": "v1227: SocialBranch reads the posting webhook from tenant_settings (server), not just this device — Make.com backend wired for Facebook/Instagram/Google Business"
 }
