@@ -280,100 +280,146 @@ var SocialBranch = {
   // ─────────────────────────────────────────────────────────
   // COMPOSE
   // ─────────────────────────────────────────────────────────
-  _renderCompose: function() {
-    var draft = SocialBranch._editingPost || { id:'', caption:'', media:[], networks:[], scheduledAt:'', status:'draft' };
-    var html = '<div style="display:grid;grid-template-columns:1fr 320px;gap:16px;" class="sb-compose-grid">';
-
-    // Left — editor
-    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;">';
-
-    html += '<label style="display:block;font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Caption</label>'
-      + '<textarea id="sb-caption" rows="6" placeholder="What\'s happening at your tree service?" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;">' + UI.esc(draft.caption || '') + '</textarea>'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11px;color:var(--text-light);">'
-      +   '<span>Tip: #treeservice #peekskill go a long way on GMB + IG</span>'
-      +   '<span id="sb-charcount">0 / 2200</span>'
+  // v1228: Compose rebuilt (Doug, Sept 20 2026: "make the page look just like it would for the social sites").
+  // Phone-first single column: networks → caption → media → REAL previews (Instagram / Facebook / Google cards,
+  // same mock styling as Social HQ) → schedule → actions. Desktop: editor left, sticky previews right.
+  _previewNet: 'instagram',
+  _MOCK_CSS: '.sb-mock{max-width:470px;margin:0 auto}'
+    + '.sb-mock .ptabs{display:flex;gap:6px;margin:0 0 12px}.sb-mock .ptabs button{flex:1;border:1px solid var(--border);background:var(--white);border-radius:999px;padding:8px 0;font-weight:600;font-size:13px;color:var(--text-light);cursor:pointer}.sb-mock .ptabs button.on{background:var(--text);color:var(--white);border-color:var(--text)}'
+    + '.sb-mock .ig{background:#fff;border:1px solid #dbdbdb;border-radius:8px;overflow:hidden;color:#262626}.sb-mock .ig .hd{display:flex;align-items:center;gap:10px;padding:10px 12px}.sb-mock .av{width:32px;height:32px;border-radius:50%;background:#fff;border:1px solid #ddd;object-fit:contain;padding:2px}.sb-mock .ig .un{font-weight:600;font-size:14px}.sb-mock .ig .dots{margin-left:auto;font-weight:700}'
+    + '.sb-mock .ph{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#eee}.sb-mock .ph.empty{display:flex;align-items:center;justify-content:center;color:#9a9a9a;font-size:13px}'
+    + '.sb-mock .ig .acts{padding:8px 12px 0;font-size:20px;letter-spacing:8px}.sb-mock .ig .likes{padding:6px 12px 0;font-size:14px;font-weight:600}.sb-mock .ig .cap{padding:4px 12px 12px;font-size:14px;white-space:pre-wrap;word-break:break-word}.sb-mock .ig .cap b{font-weight:600}.sb-mock .ig .when{padding:0 12px 12px;font-size:11px;color:#8e8e8e;text-transform:uppercase}'
+    + '.sb-mock .fb{background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.15);overflow:hidden;color:#050505}.sb-mock .fb .hd{display:flex;align-items:center;gap:10px;padding:12px}.sb-mock .fb .av{width:40px;height:40px;padding:3px}.sb-mock .fb .pg{font-weight:600;font-size:15px}.sb-mock .fb .meta{font-size:12px;color:#65676b}.sb-mock .fb .txt{padding:0 12px 10px;font-size:15px;white-space:pre-wrap;word-break:break-word}.sb-mock .fb .ph{aspect-ratio:auto;max-height:520px}.sb-mock .fb .bar{display:flex;justify-content:space-around;border-top:1px solid #e4e6eb;padding:8px 0;font-size:14px;color:#65676b;font-weight:600}'
+    + '.sb-mock .gb{background:#fff;border:1px solid #dadce0;border-radius:12px;overflow:hidden}.sb-mock .gb .ph{aspect-ratio:4/3}.sb-mock .gb .in{padding:12px}.sb-mock .gb .nm{font-weight:600;font-size:15px;color:#202124}.sb-mock .gb .dt{font-size:12px;color:#5f6368;margin-bottom:6px}.sb-mock .gb .txt{font-size:14px;color:#3c4043;white-space:pre-wrap;word-break:break-word}.sb-mock .gb .cta{display:inline-block;margin-top:10px;color:#1a73e8;font-weight:600;font-size:14px}'
+    + '.sb-mock video.ph{background:#000}.sb-mock .note{font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.5}'
+    + '.sb-netchip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:2px solid var(--border);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;user-select:none}.sb-netchip input{margin:0;width:16px;height:16px}.sb-netchip.on{border-color:var(--net)}.sb-netchip.off{opacity:.55;cursor:not-allowed}.sb-netchip small{font-weight:400;font-size:11px;color:var(--text-light)}'
+    + '.sb-compose-grid{display:grid;grid-template-columns:1fr 470px;gap:16px;align-items:start}.sb-compose-grid .sb-side{position:sticky;top:12px}'
+    + '@media(max-width:900px){.sb-compose-grid{grid-template-columns:1fr !important}.sb-compose-grid .sb-side{position:static}}',
+  _ensureMockCss: function() {
+    if (document.getElementById('sb-mock-css')) return;
+    var st = document.createElement('style'); st.id = 'sb-mock-css'; st.textContent = SocialBranch._MOCK_CSS; document.head.appendChild(st);
+  },
+  _mockWhen: function(iso) {
+    var d = iso ? new Date(iso) : new Date();
+    try { return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
+  },
+  _mockMedia: function(cls) {
+    var m = (SocialBranch._draftMedia || [])[0];
+    if (!m) return '<div class="ph empty ' + cls + '">Add a photo to see it here</div>';
+    var isVid = SocialBranch._detectMediaType(m) === 'video';
+    return isVid ? '<video class="ph ' + cls + '" src="' + UI.esc(m) + '" muted playsinline controls></video>' : '<img class="ph ' + cls + '" src="' + UI.esc(m) + '" alt="">';
+  },
+  _renderMockPreview: function() {
+    var ta = document.getElementById('sb-caption');
+    var cap = ta ? ta.value : ((SocialBranch._editingPost || {}).caption || '');
+    var sch = document.getElementById('sb-schedule'); var when = SocialBranch._mockWhen(sch && sch.value ? sch.value : '');
+    var logo = 'apple-touch-icon.png';
+    var net = SocialBranch._previewNet || 'instagram';
+    var capHtml = UI.esc(cap || 'Your caption will appear here…');
+    var tabs = '<div class="ptabs">'
+      + ['instagram|Instagram', 'facebook|Facebook', 'gmb|Google'].map(function(x) { var id = x.split('|')[0], lab = x.split('|')[1]; return '<button type="button" class="' + (net === id ? 'on' : '') + '" onclick="SocialBranch._previewNet=\'' + id + '\';SocialBranch._updateMockPreview()">' + lab + '</button>'; }).join('')
       + '</div>';
+    var card;
+    if (net === 'facebook') {
+      card = '<article class="fb"><div class="hd"><img class="av" src="' + logo + '" alt=""><div><div class="pg">Second Nature Tree, Peekskill NY</div><div class="meta">' + UI.esc(when) + ' · 🌐</div></div></div>'
+        + '<div class="txt">' + capHtml + '</div>' + SocialBranch._mockMedia('') + '<div class="bar"><span>👍 Like</span><span>💬 Comment</span><span>↗ Share</span></div></article>'
+        + '<div class="note">Facebook shows the full caption. Photos keep their shape; the first one is the cover.</div>';
+    } else if (net === 'gmb') {
+      var gcap = cap.replace(/#\w+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+      card = '<article class="gb">' + SocialBranch._mockMedia('') + '<div class="in"><div class="nm">Second Nature Tree LLC</div><div class="dt">' + UI.esc(when) + '</div><div class="txt">' + UI.esc(gcap || 'Your caption will appear here…') + '</div><span class="cta">Learn more</span></div></article>'
+        + '<div class="note">Google Business: photo only (no video), hashtags are dropped, ~1,500 characters max, "Learn more" points to peekskilltree.com.</div>';
+    } else {
+      var first = cap.length > 125 ? UI.esc(cap.slice(0, 125)) + '… <span style="color:#8e8e8e">more</span>' : capHtml;
+      card = '<article class="ig"><div class="hd"><img class="av" src="' + logo + '" alt=""><div class="un">secondnaturetree</div><div class="dots">···</div></div>'
+        + SocialBranch._mockMedia('') + '<div class="acts">♡ ○ ▷</div><div class="likes">Liked by neighbors</div>'
+        + '<div class="cap"><b>secondnaturetree</b> ' + first + '</div><div class="when">' + UI.esc(when) + '</div></article>'
+        + '<div class="note">Instagram crops to a square and shows the first 125 characters before "more". Needs a photo or video.</div>';
+    }
+    return '<div class="sb-mock">' + tabs + card + '</div>';
+  },
+  _updateMockPreview: function() {
+    var host = document.getElementById('sb-preview'); if (host) host.innerHTML = SocialBranch._renderMockPreview();
+  },
+  _renderCompose: function() {
+    SocialBranch._ensureMockCss();
+    var draft = SocialBranch._editingPost || { id:'', caption:'', media:[], networks:[], scheduledAt:'', status:'draft' };
+    var lbl = function(t) { return '<label style="display:block;font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">' + t + '</label>'; };
+    var html = '<div class="sb-compose-grid">';
 
-    html += '<div style="margin-top:16px;"><label style="display:block;font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Media</label>'
-      + '<div id="sb-media-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:60px;"></div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      +   '<button type="button" onclick="SocialBranch._pickFromMediaCenter()" style="background:var(--bg);border:1px dashed var(--border);padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;">Pick from Media Center</button>'
-      +   '<label style="background:var(--bg);border:1px dashed var(--border);padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;display:inline-block;">Upload<input type="file" accept="image/*,video/*" multiple onchange="SocialBranch._uploadMedia(event)" style="display:none;"></label>'
-      + '</div></div>';
+    // ── Left: editor ──
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;">';
 
-    html += '<div style="margin-top:16px;"><label style="display:block;font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Post to networks</label>'
-      + '<div style="display:flex;flex-wrap:wrap;gap:8px;" id="sb-networks">';
+    // 1. Networks — big tappable chips; the three that post today first, the rest behind "More"
     var connected = SocialBranch._getConnectedNetworks();
     var draftMediaType = SocialBranch._detectBatchMediaType(draft.media || []);
-    SocialBranch.NETWORKS.forEach(function(n) {
+    var chip = function(n) {
       var isConnected = connected.indexOf(n.id) >= 0;
       var checked = (draft.networks || []).indexOf(n.id) >= 0;
-      // Media compatibility gate: hide network if it can't accept the attached media type
       var compat = n.accepts === 'both' || draftMediaType === 'none' || n.accepts === draftMediaType;
       var disabled = !isConnected || !compat;
-      var reason = !isConnected ? '(not connected)' : (!compat ? (n.accepts === 'video' ? '(needs video)' : '(photo only)') : '');
-      html += '<label data-net="' + n.id + '" data-accepts="' + n.accepts + '" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:20px;border:2px solid ' + (checked ? n.color : 'var(--border)') + ';background:' + (checked ? n.color + '14' : (disabled ? '#f9fafb' : 'var(--white)')) + ';cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';opacity:' + (disabled ? 0.45 : 1) + ';font-size:13px;font-weight:600;">'
-        + '<input type="checkbox" value="' + n.id + '" ' + (checked && !disabled ? 'checked' : '') + ' ' + (disabled ? 'disabled' : '') + ' style="margin:0;">'
-        + n.icon + ' ' + n.name
-        + (reason ? ' <span style="font-size:10px;color:var(--text-light);">' + reason + '</span>' : '')
-        + '</label>';
-    });
-    html += '</div>'
-      + '<div id="sb-media-type-hint" style="font-size:11px;color:var(--text-light);margin-top:6px;">' + (draftMediaType === 'video' ? 'Video detected — GMB excluded (no video support).' : draftMediaType === 'image' ? 'Photo detected — YouTube/TikTok hidden.' : 'Attach media to enable more networks.') + '</div>'
-      + '</div>';
-
-    html += '<div style="margin-top:16px;"><label style="display:block;font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Schedule (optional)</label>'
-      + '<input type="datetime-local" id="sb-schedule" value="' + (draft.scheduledAt ? new Date(draft.scheduledAt).toISOString().slice(0,16) : '') + '" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;">'
-      + '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Leave empty to publish immediately.</div>'
-      + '</div>';
-
-    // Hashtag groups + AI + library row
-    var hgroups = SocialBranch._getHashtagGroups();
-    html += '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
-      + '<button id="sb-ai-btn" type="button" onclick="SocialBranch._aiCaption()" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">AI Caption</button>'
-      + '<button type="button" onclick="SocialBranch._saveToContentLib()" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">Save to Library</button>'
-      + '<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">'
-      +   '<span style="font-size:11px;color:var(--text-light);">Hashtags:</span>'
-      +   (hgroups.length
-            ? hgroups.map(function(g){ return '<button type="button" onclick="SocialBranch._insertHashtagGroup(\'' + g.id + '\')" title="Insert ' + UI.esc(g.tags) + '" style="background:var(--bg);border:1px solid var(--border);padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;">' + UI.esc(g.name) + '</button>'; }).join('')
-            : '<span style="font-size:11px;color:var(--text-light);">none yet</span>')
-      +   '<button type="button" onclick="SocialBranch._createHashtagGroup()" style="background:none;border:1px dashed var(--border);padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;color:var(--text-light);">+ New</button>'
+      var reason = !isConnected ? 'not connected' : (!compat ? (n.accepts === 'video' ? 'needs video' : 'photo only') : '');
+      return '<label class="sb-netchip ' + (disabled ? 'off' : (checked ? 'on' : '')) + '" data-net="' + n.id + '" data-accepts="' + n.accepts + '" style="--net:' + n.color + '">'
+        + '<input type="checkbox" value="' + n.id + '" ' + (checked && !disabled ? 'checked' : '') + ' ' + (disabled ? 'disabled' : '') + ' onchange="this.parentNode.classList.toggle(\'on\',this.checked)">'
+        + SocialBranch._netIcon(n.icon, n.color) + ' ' + n.name + (reason ? ' <small>' + reason + '</small>' : '') + '</label>';
+    };
+    var primary = ['facebook', 'instagram', 'gmb'], more = [];
+    html += lbl('Post to') + '<div id="sb-networks" style="display:flex;flex-wrap:wrap;gap:8px;">';
+    SocialBranch.NETWORKS.forEach(function(n) { if (primary.indexOf(n.id) >= 0) html += chip(n); else more.push(chip(n)); });
+    html += '<details style="width:100%;margin-top:2px;"><summary style="font-size:12px;color:var(--text-light);cursor:pointer;">More networks</summary><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' + more.join('') + '</div></details>'
       + '</div>'
-      + '</div>';
+      + '<div id="sb-media-type-hint" style="font-size:11px;color:var(--text-light);margin-top:6px;">' + (draftMediaType === 'video' ? 'Video attached — Google Business is excluded (photo only).' : (connected.length ? '' : 'Nothing connected yet — Accounts tab.')) + '</div>';
 
-    html += '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<button onclick="SocialBranch._savePost(\'post\')" class="btn btn-primary" style="font-size:14px;">Publish / Schedule</button>'
-      + '<button onclick="SocialBranch._savePost(\'draft\')" style="background:var(--white);border:1px solid var(--border);padding:10px 16px;border-radius:8px;font-size:14px;cursor:pointer;">Save draft</button>'
-      + '<button onclick="SocialBranch._clearDraft()" style="background:none;border:none;color:var(--text-light);padding:10px;cursor:pointer;font-size:13px;">Cancel</button>'
-      + '</div>';
+    // 2. Caption
+    html += '<div style="margin-top:16px;">' + lbl('Caption')
+      + '<textarea id="sb-caption" rows="6" placeholder="What happened on the job today?" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:16px;line-height:1.45;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--white);color:var(--text);">' + UI.esc(draft.caption || '') + '</textarea>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11px;color:var(--text-light);"><span>#PeekskillNY #TreeService go a long way on Instagram</span><span id="sb-charcount">0 / 2200</span></div></div>';
 
-    html += '</div>';
-
-    // Right — preview
-    html += '<div>'
-      + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;position:sticky;top:12px;">'
-      +   '<div style="font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">Live Preview</div>'
-      +   '<div id="sb-preview" style="background:var(--bg);border-radius:8px;padding:14px;font-size:13px;color:var(--text);min-height:120px;white-space:pre-wrap;word-break:break-word;">' + UI.esc(draft.caption || '(your caption will appear here)') + '</div>'
-      +   '<div style="margin-top:12px;font-size:11px;color:var(--text-light);line-height:1.5;">Each network shortens differently. X caps at 280, GMB recommends 150, IG auto-shows 125 before "more".</div>'
+    // 3. Media
+    html += '<div style="margin-top:16px;">' + lbl('Photos & video')
+      + '<div id="sb-media-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;min-height:60px;"></div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +   '<button type="button" onclick="SocialBranch._pickFromMediaCenter()" style="background:var(--bg);border:1px dashed var(--border);padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;">📷 Pick from Media Center</button>'
+      +   '<label style="background:var(--bg);border:1px dashed var(--border);padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;display:inline-block;">⬆️ Upload<input type="file" accept="image/*,video/*" multiple onchange="SocialBranch._handleUpload(this)" style="display:none;"></label>'
       + '</div></div>';
 
+    // 4. Preview on the phone goes right here (full width); on desktop the same block is the sticky right column
+    html += '<div class="sb-preview-inline" style="margin-top:18px;">' + lbl('How it will look') + '<div id="sb-preview"></div></div>';
+
+    // 5. Schedule + tools + actions
+    html += '<div style="margin-top:16px;">' + lbl('When')
+      + '<input type="datetime-local" id="sb-schedule" value="' + (draft.scheduledAt ? new Date(draft.scheduledAt).toISOString().slice(0,16) : '') + '" onchange="SocialBranch._updateMockPreview()" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;background:var(--white);color:var(--text);max-width:100%;">'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Leave empty to post as soon as the hourly runner ticks.</div></div>';
+    var hgroups = SocialBranch._getHashtagGroups();
+    html += '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
+      + '<button id="sb-ai-btn" type="button" onclick="SocialBranch._aiCaption()" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">✨ AI caption</button>'
+      + '<button type="button" onclick="SocialBranch._saveToContentLib()" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">Save to library</button>'
+      + (hgroups.length ? hgroups.map(function(g){ return '<button type="button" onclick="SocialBranch._insertHashtagGroup(\'' + g.id + '\')" title="Insert ' + UI.esc(g.tags) + '" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:14px;font-size:12px;cursor:pointer;">#' + UI.esc(g.name) + '</button>'; }).join('') : '')
+      + '<button type="button" onclick="SocialBranch._createHashtagGroup()" style="background:none;border:1px dashed var(--border);padding:6px 10px;border-radius:14px;font-size:12px;cursor:pointer;color:var(--text-light);">+ hashtag set</button>'
+      + '</div>';
+    html += '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">'
+      + '<button onclick="SocialBranch._savePost(\'post\')" class="btn btn-primary" style="font-size:15px;padding:12px 18px;">Publish / Schedule</button>'
+      + '<button onclick="SocialBranch._savePost(\'draft\')" style="background:var(--white);border:1px solid var(--border);padding:12px 16px;border-radius:8px;font-size:15px;cursor:pointer;">Save draft</button>'
+      + '<button onclick="SocialBranch._clearDraft()" style="background:none;border:none;color:var(--text-light);padding:12px;cursor:pointer;font-size:13px;">Cancel</button>'
+      + '</div>';
     html += '</div>';
 
-    // Restore media previews after render
-    setTimeout(function() {
-      var ta = document.getElementById('sb-caption');
-      var cc = document.getElementById('sb-charcount');
-      var pv = document.getElementById('sb-preview');
-      if (ta) {
-        var upd = function() {
-          if (cc) cc.textContent = (ta.value.length) + ' / 2200';
-          if (pv) pv.textContent = ta.value || '(your caption will appear here)';
-        };
-        ta.addEventListener('input', upd); upd();
-      }
-      SocialBranch._renderMediaPreview(draft.media || []);
-    }, 50);
+    // ── Right: sticky preview holder (desktop). The inline preview moves here at wide widths via JS below. ──
+    html += '<div class="sb-side"><div id="sb-preview-side" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;display:none;">' + lbl('How it will look') + '<div id="sb-preview-side-host"></div></div></div>';
+    html += '</div>';
 
+    setTimeout(function() {
+      var ta = document.getElementById('sb-caption'), cc = document.getElementById('sb-charcount');
+      if (ta) { var upd = function() { if (cc) cc.textContent = ta.value.length + ' / 2200'; SocialBranch._updateMockPreview(); }; ta.addEventListener('input', upd); upd(); }
+      SocialBranch._renderMediaPreview(draft.media || []);
+      // Wide screens: move the preview into the sticky right column
+      var place = function() {
+        var pv = document.getElementById('sb-preview'), side = document.getElementById('sb-preview-side'), host = document.getElementById('sb-preview-side-host'), inl = document.querySelector('.sb-preview-inline');
+        if (!pv || !side || !host || !inl) return;
+        if (window.innerWidth > 900) { if (pv.parentNode !== host) host.appendChild(pv); side.style.display = ''; inl.style.display = 'none'; }
+        else { if (pv.parentNode !== inl) inl.appendChild(pv); side.style.display = 'none'; inl.style.display = ''; }
+      };
+      place(); window.addEventListener('resize', place);
+    }, 50);
     return html;
   },
 
@@ -381,13 +427,14 @@ var SocialBranch = {
     var host = document.getElementById('sb-media-preview');
     if (!host) return;
     SocialBranch._draftMedia = media.slice();
+    setTimeout(SocialBranch._updateMockPreview, 0);
     if (media.length === 0) { host.innerHTML = '<div style="color:var(--text-light);font-size:12px;padding:12px;">No media attached yet.</div>'; return; }
     host.innerHTML = media.map(function(src, i) {
       var type = SocialBranch._detectMediaType(src);
       var preview = type === 'video'
         ? '<video src="' + UI.esc(src) + '" style="width:100%;height:100%;object-fit:cover;" muted playsinline></video><div style="position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;letter-spacing:.5px;font-weight:700;">VIDEO</div>'
         : '<img src="' + UI.esc(src) + '" style="width:100%;height:100%;object-fit:cover;">';
-      return '<div style="position:relative;width:84px;height:84px;border-radius:6px;overflow:hidden;background:var(--bg);">'
+      return '<div style="position:relative;width:96px;height:96px;border-radius:8px;overflow:hidden;background:var(--bg);">'
         + preview
         + '<button onclick="SocialBranch._removeMedia(' + i + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;">×</button>'
         + '</div>';
@@ -2212,7 +2259,7 @@ var SocialBranch = {
 
   _getConnectedNetworks: function() {
     var connected = [];
-    var webhook = (localStorage.getItem('bm-socialpilot-webhook') || '').length > 10;
+    var webhook = (SocialBranch._webhook() || '').length > 10;
     var gmbToken = (localStorage.getItem('bm-gmb-access-token') || '').length > 20;
     // v1221: native server-side connections (Facebook / Instagram / Google Business)
     var native = SocialBranch._nativeStatus();

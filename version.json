@@ -1,5 +1,5 @@
 {
-  "version": 1227,
+  "version": 1228,
   "released": "2026-09-20",
-  "notes": "v1227: SocialBranch reads the posting webhook from tenant_settings (server), not just this device — Make.com backend wired for Facebook/Instagram/Google Business"
+  "notes": "v1228: Compose rebuilt — phone-first, real Instagram/Facebook/Google post previews (same mocks as Social HQ), big network chips read the server-stored posting bridge"
 }
