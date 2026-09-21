@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Branch Manager — condensing audit (Sept 20 2026)</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#f6f7f5;color:#1a2b22;line-height:1.45}
+main{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:26px 0 8px;border-bottom:2px solid #dfe5df;padding-bottom:4px}
+.sub{color:#5a7a5e;font-size:13px;margin-bottom:14px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.kpi div{background:#fff;border:1px solid #dfe5df;border-radius:10px;padding:10px 12px}.kpi b{display:block;font-size:22px}
+.kpi span{font-size:12px;color:#5a7a5e}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #dfe5df;border-radius:10px;overflow:hidden}
+th,td{padding:7px 9px;border-bottom:1px solid #eef1ee;text-align:left;vertical-align:top}th{background:#f0f3ef;font-size:12px}
+.d{background:#fff;border:1px solid #dfe5df;border-radius:10px;padding:12px 14px;margin:10px 0}
+.d b.n{display:inline-block;background:#1b5e20;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:4px}
+.keep{background:#dcfce7;color:#166534}.more{background:#fef3c7;color:#92400e}.cut{background:#fee2e2;color:#991b1b}.fix{background:#dbeafe;color:#1e40af}
+ul{padding-left:18px}li{margin:3px 0}small{color:#5a7a5e}
+</style></head><body><main>
+<h1>Branch Manager — condensing audit</h1>
+<div class="sub">Sept 20 2026 · read-only inventory of the live app (v1241) · proposals are decisions for Doug, nothing here is changed yet</div>
+
+<div class="kpi">
+<div><b>26</b><span>sidebar items</span></div>
+<div><b>88</b><span>routes (62 reachable only by hash / ⌘K)</span></div>
+<div><b>3.05 MB</b><span>JS bundle (762 KB gzipped) + 221 KB index</span></div>
+<div><b>115</b><span>source files, 80,000 lines</span></div>
+<div><b>11,106</b><span>inline style="…" attributes</span></div>
+<div><b>15 → 4</b><span>Marketing tabs (already thinned v1238)</span></div>
+</div>
+
+<h2>What's actually wrong (facts)</h2>
+<ul>
+<li><b>Two of everything.</b> Receptionist (callcenter.js, in the sidebar) and a second Receptionist screen (receptionist.js, hidden) overlap. Four message inboxes: Messages, the call-center Messages tab, Team Chat, Communication Log. Books, Expenses and Payments each appear twice (sidebar and Reports tabs).</li>
+<li><b>Dead weight loaded on every open.</b> supa-health.js is never called. Trainual (35 lines), Direct Mail/SendJim (~325), Competitors (209) sit behind Marketing "More". The map library (MapLibre) loads on every page but is used by 6 hidden map screens.</li>
+<li><b>Broken tab.</b> Team → "My Pay" always says "module not loaded" (wrong object name). Website → "Other Pages" is a permanent "(soon)".</li>
+<li><b>Same table built four times.</b> Jobs, Invoices, Requests and Quotes each hand-roll the identical sort/page/select table. 18 files define the same <code>_co()</code> helper. 307 cards repeat the same inline card style.</li>
+<li><b>The sidebar is a list of everything ever built</b>, not what a tree company opens on a phone. Quotes and Invoices are still written in Jobber, so those two rails are reference views today.</li>
+</ul>
+
+<h2>Proposed sidebar (phone first)</h2>
+<div class="sub">8 items you use daily, everything else one tap away under More. Nothing is deleted; hidden pages stay reachable by search (⌘K) and links.</div>
+<table><tr><th>Item</th><th>What it holds</th><th></th></tr>
+<tr><td><b>Home</b></td><td>today board, follow-ups, money waiting</td><td><span class="tag keep">keep</span></td></tr>
+<tr><td><b>Schedule</b></td><td>calendar · day pages (photos, clips, reel, the post) · Ground Control past view</td><td><span class="tag keep">keep</span></td></tr>
+<tr><td><b>Clients</b></td><td>clients + property map</td><td><span class="tag keep">keep</span></td></tr>
+<tr><td><b>Work</b></td><td>Requests · Estimate board · Quotes · Jobs as tabs of one page, one shared table</td><td><span class="tag fix">merge 4 → 1</span></td></tr>
+<tr><td><b>Money</b></td><td>Invoices · Payments · Expenses · Books · Reports as tabs of one page</td><td><span class="tag fix">merge 5 → 1</span></td></tr>
+<tr><td><b>Team</b></td><td>payroll · timesheets · ledger · my pay (fixed) · crew performance</td><td><span class="tag keep">keep, fix My Pay</span></td></tr>
+<tr><td><b>Inbox</b></td><td>calls, texts, emails, team chat — ONE inbox (Receptionist + Messages + Team Chat + Comm Log merged)</td><td><span class="tag fix">merge 4 → 1</span></td></tr>
+<tr><td><b>Marketing</b></td><td>days waiting · posted · connections · reviews · leads</td><td><span class="tag keep">keep (thinned)</span></td></tr>
+<tr><td>More ▾</td><td>Pipeline · Insights · Operations (dispatch, fleet, pre-trip, hiring) · Permits · Insurance · Tasks · Website · Tools · Smart Lawn · Settings</td><td><span class="tag more">under More</span></td></tr>
+</table>
+
+<h2>Decisions (yours)</h2>
+<div class="d"><b class="n">1</b><b>Adopt the 8-item sidebar above?</b> Mobile bottom bar becomes Home · Schedule · Work · Inbox · More.</div>
+<div class="d"><b class="n">2</b><b>Delete outright</b> (not just hide): Trainual tab, Direct Mail/SendJim, Competitors, the hidden second Receptionist screen, supa-health.js, the SocialPilot import + its settings card (you're on Make now), Website → "Other Pages". <small>Saves ~1,900 lines. All recoverable from git.</small></div>
+<div class="d"><b class="n">3</b><b>Smart Lawn:</b> keep it in this app under More, or move it to its own login later? <small>It's a separate business; today it shares the tree sidebar.</small></div>
+<div class="d"><b class="n">4</b><b>Quotes and Invoices rails:</b> since both are written in Jobber, show them read-only with a "Open in Jobber" button and drop the in-app editors from the daily path? <small>Editors stay reachable under More until BM takes over from Jobber.</small></div>
+<div class="d"><b class="n">5</b><b>Settings:</b> 29 cards in 3 tabs → 3 short screens: You · Company · Advanced, with the 12 rarely-touched cards (white-label, demo tenant, vendor logins, API keys, database, import/export) under Advanced only.</div>
+
+<h2>Doing regardless (bugs and dead code, no decision needed)</h2>
+<ul>
+<li><span class="tag fix">fix</span> Team → My Pay tab (wrong object name).</li>
+<li><span class="tag cut">cut</span> supa-health.js from the bundle; lazy-load MapLibre only on map screens (about 1 MB less on every open).</li>
+<li><span class="tag fix">fix</span> One shared table + one shared card style for Jobs/Invoices/Requests/Quotes; one <code>_co()</code>. <small>Same screens, less code, fewer bugs.</small></li>
+<li><span class="tag fix">fix</span> Classic-nav order list missing Estimate board, Messages, Smart Lawn.</li>
+</ul>
+
+<h2>Expected result</h2>
+<ul>
+<li>Sidebar 26 → 8 (+ More). Phone bottom bar shows the four things you do all day.</li>
+<li>Bundle 3.05 MB → roughly 2.3 MB after deletions and lazy maps <small>(estimate, not measured yet)</small>.</li>
+<li>Every daily task within two taps: Schedule → day → post; Work → job; Money → invoice; Inbox → reply.</li>
+</ul>
+<div class="sub">Source inventory: sidebar and route registry in index.html; sizes from wc on src/; duplication from grep across src/. Nothing above is a guess about usage — the "keep" picks come from what you've asked for this month; correct them.</div>
+</main></body></html>
