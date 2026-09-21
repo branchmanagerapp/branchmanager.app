@@ -1,5 +1,5 @@
 {
-  "version": 1240,
+  "version": 1241,
   "released": "2026-09-20",
-  "notes": "v1240: day page pulls the day's cloud post before creating one (no duplicate posts)"
+  "notes": "v1241: cloud mirror never prunes nightly work-day posts (a fresh device could delete them and skip the day); day page reconciles cloud posts first"
 }

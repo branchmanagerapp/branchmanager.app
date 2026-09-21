@@ -84,6 +84,7 @@ var SchedulePage = {
     (function wait() { if (window._bmRecaps) SchedulePage.showDayRecap(dateStr); else if (tries++ < 40) setTimeout(wait, 250); })();
   },
   showDayRecap: function(dateStr) {
+    if (typeof SocialBranch !== 'undefined' && SocialBranch._reconcileFromCloud) { try { SocialBranch._reconcileFromCloud(); } catch (e) {} }   // v1241: pull cloud posts before any save
     if (!window._bmRecaps && window._bmRecapsLoading) {
       UI.toast('Loading photos…');
       setTimeout(function() { if (window._bmRecaps) SchedulePage.showDayRecap(dateStr); }, 1500);

@@ -1803,7 +1803,9 @@ var SocialBranch = {
         SupabaseDB.client.from('social_posts').upsert(rows).then(function(res) {
           if (res.error) { console.warn('[SocialBranch] cloud mirror failed:', res.error.message); return; }
           var ids = rows.map(function(r) { return '"' + r.id + '"'; }).join(',');
-          SupabaseDB.client.from('social_posts').delete().eq('tenant_id', tid)
+          // v1241: NEVER prune the nightly work-day posts (work_day_id set) — a device that hasn't pulled them yet
+          // would delete them, and the DELETE trigger then marks the whole day skipped. Only device-made posts prune.
+          SupabaseDB.client.from('social_posts').delete().eq('tenant_id', tid).is('work_day_id', null)
             .not('id', 'in', '(' + ids + ')')
             .then(function(res2) { if (res2.error) console.warn('[SocialBranch] mirror prune failed:', res2.error.message); });
         });
