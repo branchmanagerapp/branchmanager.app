@@ -16,8 +16,16 @@ var SchedulePage = {
 
   // ── v1130: Day recaps (photos/video per past day, lazy-loaded) ──
   RECAP_BASE: 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/day-recaps/',
+  _recapRetries: 0,
   loadRecapManifest: function() {
     if (window._bmRecaps || window._bmRecapsLoading) return;
+    // v1239: on a cold load the Schedule renders before the Supabase client exists → the work_days half was silently
+    // skipped and never retried (only the legacy manifest showed). Wait for the client (up to ~20 s) before loading.
+    if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.client && SupabaseDB.ready) && SchedulePage._recapRetries < 40) {
+      SchedulePage._recapRetries++;
+      setTimeout(function() { SchedulePage.loadRecapManifest(); }, 500);
+      return;
+    }
     window._bmRecapsLoading = true;
     // v1225: two sources, merged per date, both lazy and tiny (no image bytes until a chip is tapped):
     //  (a) legacy staged manifest (Jul 1 – Aug 7 2026, strings = filenames under RECAP_BASE/<date>/)

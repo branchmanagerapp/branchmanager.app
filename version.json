@@ -1,5 +1,5 @@
 {
-  "version": 1238,
+  "version": 1239,
   "released": "2026-09-20",
-  "notes": "v1238: full-screen DAY PAGE in Schedule — reel, clips, photos with Drop, add from camera roll, caption + networks inline, Put on the map / Post; Marketing thinned to 4 tabs + More; day cards open the day"
+  "notes": "v1239: Schedule photo-day loader waits for the cloud client (cold load showed only legacy days)"
 }
