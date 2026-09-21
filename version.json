@@ -1,5 +1,5 @@
 {
-  "version": 1242,
+  "version": 1243,
   "released": "2026-09-20",
-  "notes": "v1242: condensed sidebar — Home · Schedule · Clients · Work · Money · Team · Inbox · Marketing + More (groups remember open state; the active page's group opens itself); phone bar Home · Schedule · Work · Inbox · More"
+  "notes": "v1243: owner page list includes every sidebar page (Estimate board was hidden by the access filter); CSS nav override removed"
 }

@@ -604,7 +604,9 @@ var Auth = {
       // Hub pages + recent additions — were missing, hid them in nav
       'operations','marketing','tools','branchcam','teamchat','taskreminders',
       'modeselector','permissions','payroll','dailyinspection','cardone','videoquote',
-      'aitreeid','estimator','photomap','recurring','pretrip'];
+      'aitreeid','estimator','photomap','recurring','pretrip',
+      // v1243: every sidebar page, properly (these were only visible via a CSS !important override in index.html)
+      'estimates','socialbranch','callcenter','permits','insurance','marketingsite','smartlawn','fleet','hiringpool','insights'];
 
     if (Auth.role === 'crew_member') {
       return ['crewview','dispatch','schedule','timesheet','employeecenter','budget','notifications'];

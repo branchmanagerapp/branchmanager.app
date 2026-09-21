@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1242; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1243; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -611,14 +611,7 @@ window.bmShowStaleBanner = function(version) {
   }
   .nav-item:hover { background:var(--sidebar-hover); color:#111827; }
   .nav-item.active { background:transparent; color:var(--accent); font-weight:600; }
-  /* v362 defensive — force SocialBranch + other essentials visible regardless of any legacy filter */
-  .nav-item[data-page="socialbranch"],
-  .nav-item[data-page="reports"],
-  .nav-item[data-page="callcenter"],
-  .nav-item[data-page="messaging"],
-  .nav-item[data-page="permits"],
-  .nav-item[data-page="books"],
-  .nav-item[data-page="insurance"] { display:flex !important; }
+  /* v1243: the v362 !important nav override is gone — Auth.getVisiblePages() now lists every sidebar page. */
   /* v365 SocialBranch calendar two-column → single column on narrow screens */
   @media (max-width: 800px) {
     .sb-cal-grid { grid-template-columns:1fr !important; }
@@ -1665,7 +1658,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1242.min.js"></script>
+<script defer src="dist/bm.bundle.v1243.min.js"></script>
 
 
 
