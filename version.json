@@ -1,5 +1,5 @@
 {
-  "version": 1236,
+  "version": 1237,
   "released": "2026-09-20",
-  "notes": "v1236: morning clip pass — Go through clips (Keep/Drop one at a time) on each day card; dropped clips leave the day + post; reel flagged for rebuild; Approve waits for the rebuilt reel"
+  "notes": "v1237: hashtag groups live in the cloud (tenant_settings) — no longer wiped per device; first group = Suggested set in Compose + nightly captions end with it"
 }

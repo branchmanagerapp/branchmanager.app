@@ -621,7 +621,7 @@ var SocialBranch = {
     html += '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
       + '<button id="sb-ai-btn" type="button" onclick="SocialBranch._aiCaption()" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">✨ AI caption</button>'
       + '<button type="button" onclick="SocialBranch._saveToContentLib()" style="background:var(--white);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">Save to library</button>'
-      + (hgroups.length ? hgroups.map(function(g){ return '<button type="button" onclick="SocialBranch._insertHashtagGroup(\'' + g.id + '\')" title="Insert ' + UI.esc(g.tags) + '" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:14px;font-size:12px;cursor:pointer;">#' + UI.esc(g.name) + '</button>'; }).join('') : '')
+      + (hgroups.length ? hgroups.map(function(g, gi){ return '<button type="button" onclick="SocialBranch._insertHashtagGroup(\'' + g.id + '\')" title="Insert ' + UI.esc(g.tags) + '" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:14px;font-size:12px;cursor:pointer;' + (gi === 0 ? 'border-color:var(--green-dark);color:var(--green-dark);font-weight:700;' : '') + '">' + (gi === 0 ? '\u2728 Suggested \u00b7 ' : '#') + UI.esc(g.name) + '</button>'; }).join('') : '')
       + '<button type="button" onclick="SocialBranch._createHashtagGroup()" style="background:none;border:1px dashed var(--border);padding:6px 10px;border-radius:14px;font-size:12px;cursor:pointer;color:var(--text-light);">+ hashtag set</button>'
       + '</div>';
     html += '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">'
@@ -1973,10 +1973,35 @@ var SocialBranch = {
   // ─────────────────────────────────────────────────────────
   // HASHTAG GROUPS — saved bundles you can insert into captions
   // ─────────────────────────────────────────────────────────
+  // v1237: hashtag groups live in the CLOUD (tenant_settings 'bm-sb-hashtags') — the old localStorage-only copy was
+  // per device and got wiped by every version refresh (Doug's five vanished). localStorage is just a cache now.
+  // The first group is the SUGGESTED set: Compose offers it in one tap and the nightly AI captions end with it.
+  _hashtagsFetched: false,
   _getHashtagGroups: function() {
-    try { return JSON.parse(localStorage.getItem('bm-sb-hashtags') || '[]'); } catch(e){ return []; }
+    var cached = [];
+    try { cached = JSON.parse(localStorage.getItem('bm-sb-hashtags') || '[]'); } catch(e) {}
+    if (!SocialBranch._hashtagsFetched && typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
+      SocialBranch._hashtagsFetched = true;
+      SupabaseDB.client.from('tenant_settings').select('value').eq('key', 'bm-sb-hashtags').limit(1).then(function(r) {
+        var v = r && r.data && r.data[0] && r.data[0].value;
+        if (!v) return;
+        var groups = null; try { groups = typeof v === 'string' ? JSON.parse(v) : v; } catch (e) {}
+        if (!Array.isArray(groups)) return;
+        var before = localStorage.getItem('bm-sb-hashtags') || '[]';
+        try { localStorage.setItem('bm-sb-hashtags', JSON.stringify(groups)); } catch (e) {}
+        if (JSON.stringify(groups) !== before && window._currentPage === 'socialbranch') { try { loadPage('socialbranch'); } catch (e) {} }
+      });
+    }
+    return cached;
   },
-  _setHashtagGroups: function(groups) { localStorage.setItem('bm-sb-hashtags', JSON.stringify(groups)); },
+  _setHashtagGroups: function(groups) {
+    localStorage.setItem('bm-sb-hashtags', JSON.stringify(groups));
+    try {
+      var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+      if (tid && SupabaseDB.client) SupabaseDB.client.from('tenant_settings').upsert({ tenant_id: tid, key: 'bm-sb-hashtags', value: JSON.stringify(groups), updated_at: new Date().toISOString() }, { onConflict: 'tenant_id,key' }).then(function(r) { if (r.error) UI.toast('Hashtags saved on this device only: ' + r.error.message, 'error'); });
+    } catch (e) {}
+  },
+  _suggestedTags: function() { var g = SocialBranch._getHashtagGroups(); return g.length ? (g[0].tags || '') : ''; },
   _createHashtagGroup: function() {
     var name = prompt('Hashtag group name (e.g. "Peekskill default"):'); if (!name) return;
     var tags = prompt('Paste hashtags (space or comma separated):\n\nExample: #treeservice #peekskill #arborist'); if (!tags) return;
