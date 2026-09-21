@@ -1,5 +1,5 @@
 {
-  "version": 1237,
+  "version": 1238,
   "released": "2026-09-20",
-  "notes": "v1237: hashtag groups live in the cloud (tenant_settings) — no longer wiped per device; first group = Suggested set in Compose + nightly captions end with it"
+  "notes": "v1238: full-screen DAY PAGE in Schedule — reel, clips, photos with Drop, add from camera roll, caption + networks inline, Put on the map / Post; Marketing thinned to 4 tabs + More; day cards open the day"
 }

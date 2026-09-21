@@ -119,11 +119,17 @@ var SocialBranch = {
       { id:'sendjim',   label:'Direct Mail',  icon:'send' },
       { id:'trainual',  label:'Trainual',     icon:'graduation-cap' }
     ];
-    html += '<div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:18px;overflow-x:auto;white-space:nowrap;">';
-    tabs.forEach(function(t) {
+    // v1238: thinned (Doug: "I don't even like the whole marketing tab") — 4 tabs you use, the rest under More.
+    var MAIN = ['dashboard', 'accounts', 'reviews', 'leads'];
+    var more = tabs.filter(function(t) { return MAIN.indexOf(t.id) < 0; });
+    html += '<div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:18px;overflow-x:auto;white-space:nowrap;align-items:center;">';
+    tabs.filter(function(t) { return MAIN.indexOf(t.id) >= 0; }).forEach(function(t) {
       var active = tab === t.id;
       html += '<button onclick="SocialBranch._goTab(\'' + t.id + '\')" style="background:none;border:none;padding:10px 16px;font-size:13px;font-weight:' + (active ? '700' : '500') + ';color:' + (active ? 'var(--green-dark)' : 'var(--text-light)') + ';cursor:pointer;border-bottom:3px solid ' + (active ? 'var(--green-dark)' : 'transparent') + ';margin-bottom:-2px;transition:color .15s;display:inline-flex;align-items:center;gap:6px;">' + SocialBranch._netIcon(t.icon) + t.label + '</button>';
     });
+    html += '<select onchange="if(this.value){SocialBranch._goTab(this.value);}" style="margin-left:auto;border:none;background:none;font-size:13px;color:' + (MAIN.indexOf(tab) < 0 ? 'var(--green-dark)' : 'var(--text-light)') + ';font-weight:' + (MAIN.indexOf(tab) < 0 ? '700' : '500') + ';padding:8px;">'
+      + '<option value="">' + (MAIN.indexOf(tab) < 0 ? (tabs.find(function(t){ return t.id === tab; }) || {}).label : 'More \u2026') + '</option>'
+      + more.map(function(t) { return '<option value="' + t.id + '">' + t.label + '</option>'; }).join('') + '</select>';
     html += '</div>';
 
     // Tab body
@@ -265,7 +271,7 @@ var SocialBranch = {
       + '<h3 style="margin:0;font-size:16px;">Days from the field \u2014 waiting on you <span style="font-size:12px;font-weight:600;color:var(--text-light);">(' + drafts.length + ')</span></h3>'
       + '<button onclick="SocialBranch._goTab(\'calendar\')" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">Calendar \u2192</button>'
       + '</div>'
-      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;"><b>1. Approve</b> puts the day on the public Recent Work map. <b>2. Schedule</b> or <b>Post now</b> sends it to the socials. Tap the caption to edit. Nothing goes out until you tap.</div>';
+      + '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Tap a day to open it in the Schedule: go through the clips and photos, fix the caption, put it on the map, post. Nothing goes out until you tap.</div>';
     if (drafts.length === 0) {
       html += '<div style="padding:16px;text-align:center;color:var(--text-light);font-size:14px;">Nothing waiting. Tonight\'s photos and videos land here with a caption, ready to approve.</div>';
     } else {
@@ -357,15 +363,15 @@ var SocialBranch = {
     });
   },
 
-  _approvePost: function(id) {
+  _approvePost: function(id, quiet) {
     var p = SocialBranch._getPosts().find(function(x){ return x.id === id; });
     if (!p) return;
-    if (!confirm('Approve this day? Its photos and videos go on the public Recent Work map now. Posting to the socials is the next step (Schedule or Post now).')) return;
+    if (!confirm('Put this day on the public Recent Work map? Its photos, clips and reel go public now. Posting to the socials is the next step.')) return;
     p.status = 'approved';
     p.approvedAt = new Date().toISOString();
     SocialBranch._upsertPost(p);
-    UI.toast('\u2705 Approved \u2014 publishing the day to the map\u2026', 'success');
-    loadPage('socialbranch');
+    UI.toast('\u2705 Publishing the day to the map\u2026', 'success');
+    if (!quiet) loadPage('socialbranch');
     // The trigger swaps the post's media to the public copies within a few seconds; adopt them so the
     // next mirror doesn't overwrite them with the expiring signed URLs.
     if (p.workDayId && typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
@@ -377,7 +383,7 @@ var SocialBranch = {
           var m = r && r.data && r.data.media_urls;
           if (!m || !m.length || !/job-photos\/work\//.test(m[0])) { if (tries < 6) setTimeout(adopt, 5000); return; }
           var q = SocialBranch._getPosts().find(function(x){ return x.id === id; });
-          if (q) { q.media = m; SocialBranch._upsertPost(q); if (window._currentPage === 'socialbranch') loadPage('socialbranch'); }
+          if (q) { q.media = m; SocialBranch._upsertPost(q); if (!quiet && window._currentPage === 'socialbranch') loadPage('socialbranch'); }
         }).catch(function() { if (tries < 6) setTimeout(adopt, 5000); });
       };
       setTimeout(adopt, 4000);
@@ -441,7 +447,8 @@ var SocialBranch = {
       actions = '<button onclick="' + stop + 'SocialBranch._rescheduleInline(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">\ud83d\udcc5 Schedule</button>'
         + '<button onclick="' + stop + 'SocialBranch._postNow(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">Post now</button>';
     }
-    return '<div onclick="SocialBranch._editPost(\'' + p.id + '\')" style="padding:12px 0;border-top:1px solid var(--border);cursor:pointer;">'
+    var open = (w && w.work_date) ? 'SchedulePage.openDay(\'' + w.work_date + '\')' : 'SocialBranch._editPost(\'' + p.id + '\')';
+    return '<div onclick="' + open + '" style="padding:12px 0;border-top:1px solid var(--border);cursor:pointer;">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><div>' + head + '</div>' + (approved ? SocialBranch._statusBadge('approved') : '') + '</div>'
       + strip
       + '<div style="font-size:13.5px;color:var(--text);line-height:1.4;">' + UI.esc(preview || '(no caption yet \u2014 tap to write one)') + '</div>'
