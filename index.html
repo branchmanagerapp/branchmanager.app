@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1241; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1242; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1348,7 +1348,17 @@ window.bmShowStaleBanner = function(version) {
 
   /* ── Filter buttons ── */
   .client-filter.active { background:var(--green-dark) !important; color:var(--white) !important; border-color:var(--green-dark) !important; }
+  /* v1242 condensed nav groups */
+  .nav-group { display:none; }
+  .nav-group.open { display:block; }
+  .nav-item.nav-sub { padding-left:34px; font-size:13px; }
+  .sidebar.collapsed .nav-item.nav-sub { padding-left:0; }
+  .nav-caret { margin-left:auto; font-size:11px; opacity:.6; transition:transform .15s; }
+  .nav-group-toggle.open .nav-caret { transform:rotate(180deg); }
+  .nav-group-toggle.has-active { color:var(--accent); }
+  .sidebar.collapsed .nav-caret { display:none; }
 </style>
+
 <!-- Stripe.js for embedded Collect Payment (Elements card form) -->
 <!-- Stripe.js intentionally not pinned per Stripe docs -->
 <script src="https://js.stripe.com/v3/" async></script>
@@ -1372,37 +1382,47 @@ window.bmShowStaleBanner = function(version) {
       <h1>Branch Manager<span data-bind="companyName"></span></h1>
     </div>
     <div class="sidebar-nav">
-      <!-- v946: nav reordered to match Jobber — core money-pipeline first, then back-office tools, then Settings. -->
-      <!-- Core workflow (Jobber order — matches secure.getjobber.com nav) -->
+      <!-- v1242 CONDENSED NAV (Doug, Sept 20 2026): 8 things you use all day, everything else under More.
+           Work / Money / Inbox are groups until their merged pages land (steps 3–4 of the condense). -->
       <button class="nav-item" data-page="dashboard"><span class="icon"><i data-lucide="home" class="li"></i></span> Home</button>
       <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
       <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>
-      <button class="nav-item" data-page="requests"><span class="icon"><i data-lucide="inbox" class="li"></i></span> Requests <span class="badge" id="badge-requests"></span></button>
-      <button class="nav-item" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
-      <button class="nav-item" data-page="estimates"><span class="icon"><i data-lucide="clipboard-list" class="li"></i></span> Estimate board</button>
-      <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
-      <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
+      <button class="nav-item nav-group-toggle" data-group="work" onclick="BMNav.toggle('work')"><span class="icon"><i data-lucide="briefcase" class="li"></i></span> Work <span class="nav-caret">▾</span></button>
+      <div class="nav-group" data-group="work">
+        <button class="nav-item nav-sub" data-page="requests"><span class="icon"><i data-lucide="inbox" class="li"></i></span> Requests <span class="badge" id="badge-requests"></span></button>
+        <button class="nav-item nav-sub" data-page="estimates"><span class="icon"><i data-lucide="clipboard-list" class="li"></i></span> Estimate board</button>
+        <button class="nav-item nav-sub" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
+        <button class="nav-item nav-sub" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
+      </div>
+      <button class="nav-item nav-group-toggle" data-group="money" onclick="BMNav.toggle('money')"><span class="icon"><i data-lucide="dollar-sign" class="li"></i></span> Money <span class="nav-caret">▾</span></button>
+      <div class="nav-group" data-group="money">
+        <button class="nav-item nav-sub" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
+        <button class="nav-item nav-sub" data-page="payments"><span class="icon"><i data-lucide="credit-card" class="li"></i></span> Payments</button>
+        <button class="nav-item nav-sub" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
+        <button class="nav-item nav-sub" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
+        <button class="nav-item nav-sub" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
+      </div>
       <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="users" class="li"></i></span> Team</button>
-      <button class="nav-item" data-page="payments"><span class="icon"><i data-lucide="credit-card" class="li"></i></span> Payments</button>
+      <button class="nav-item nav-group-toggle" data-group="inbox" onclick="BMNav.toggle('inbox')"><span class="icon"><i data-lucide="message-circle" class="li"></i></span> Inbox <span class="cc-dot" id="cc-indicator-dot"></span> <span class="nav-caret">▾</span></button>
+      <div class="nav-group" data-group="inbox">
+        <button class="nav-item nav-sub" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Calls &amp; texts</button>
+        <button class="nav-item nav-sub" data-page="messaging"><span class="icon"><i data-lucide="message-square" class="li"></i></span> Messages</button>
+      </div>
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
-      <button class="nav-item" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Receptionist<span class="cc-dot" id="cc-indicator-dot"></span></button>
-      <button class="nav-item" data-page="messaging"><span class="icon"><i data-lucide="message-square" class="li"></i></span> Messages</button>
-      <button class="nav-item" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
-      <button class="nav-item" data-page="insights"><span class="icon"><i data-lucide="line-chart" class="li"></i></span> Insights</button>
-      <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
-      <button class="nav-item" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
-      <button class="nav-item" data-page="smartlawn"><span class="icon"><i data-lucide="bot" class="li"></i></span> Smart Lawn</button>
       <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
-      <!-- BM-only (below divider — Jobber doesn't have these) -->
-      <button class="nav-item" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
-      <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
-      <button class="nav-item" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
-      <button class="nav-item" data-page="insurance"><span class="icon"><i data-lucide="shield" class="li"></i></span> Insurance</button>
-      <button class="nav-item" data-page="taskreminders"><span class="icon"><i data-lucide="check-square" class="li"></i></span> Tasks</button>
-      <button class="nav-item" data-page="marketingsite"><span class="icon"><i data-lucide="globe" class="li"></i></span> Website</button>
-      <button class="nav-item" data-page="tools"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Tools</button>
-      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
-      <button class="nav-item" data-page="settings"><span class="icon"><i data-lucide="settings" class="li"></i></span> Settings</button>
+      <button class="nav-item nav-group-toggle" data-group="more" onclick="BMNav.toggle('more')"><span class="icon"><i data-lucide="more-horizontal" class="li"></i></span> More <span class="nav-caret">▾</span></button>
+      <div class="nav-group" data-group="more">
+        <button class="nav-item nav-sub" data-page="pipeline"><span class="icon"><i data-lucide="kanban-square" class="li"></i></span> Pipeline</button>
+        <button class="nav-item nav-sub" data-page="insights"><span class="icon"><i data-lucide="line-chart" class="li"></i></span> Insights</button>
+        <button class="nav-item nav-sub" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
+        <button class="nav-item nav-sub" data-page="permits"><span class="icon"><i data-lucide="landmark" class="li"></i></span> Permits</button>
+        <button class="nav-item nav-sub" data-page="insurance"><span class="icon"><i data-lucide="shield" class="li"></i></span> Insurance</button>
+        <button class="nav-item nav-sub" data-page="taskreminders"><span class="icon"><i data-lucide="check-square" class="li"></i></span> Tasks</button>
+        <button class="nav-item nav-sub" data-page="marketingsite"><span class="icon"><i data-lucide="globe" class="li"></i></span> Website</button>
+        <button class="nav-item nav-sub" data-page="tools"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Tools</button>
+        <button class="nav-item nav-sub" data-page="smartlawn"><span class="icon"><i data-lucide="bot" class="li"></i></span> Smart Lawn</button>
+        <button class="nav-item nav-sub" data-page="settings"><span class="icon"><i data-lucide="settings" class="li"></i></span> Settings</button>
+      </div>
     </div>
 
     <div class="sidebar-footer" style="padding:10px 14px;">
@@ -1638,13 +1658,14 @@ window.BMUI = {
     var order = ['dashboard','schedule','clients','callcenter','pipeline','requests','quotes','jobs','invoices','payments','taskreminders','operations','permits','insurance','expenses','books','reports','insights','socialbranch','marketingsite','payroll','tools','settings'];
     // strip the v946 group dividers, then re-append items in classic order
     Array.prototype.slice.call(navEl.children).forEach(function(c){ if (!c.classList || !c.classList.contains('nav-item')) navEl.removeChild(c); });
+    return; // v1242: classic reorder retired — it flattened the grouped nav (Work / Money / Inbox / More).
     order.forEach(function(pg){ var b = navEl.querySelector('.nav-item[data-page="'+pg+'"]'); if (b) navEl.appendChild(b); });
     var setBtn = navEl.querySelector('.nav-item[data-page="settings"]');
     if (setBtn) { var dv = document.createElement('div'); dv.style.cssText='border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;'; navEl.insertBefore(dv, setBtn); }
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1241.min.js"></script>
+<script defer src="dist/bm.bundle.v1242.min.js"></script>
 
 
 
@@ -4059,11 +4080,41 @@ window.addEventListener('popstate', function(e) {
 })();
 </script>
 <button id="bm-fab" onclick="BM_contextCreate()" title="New…" aria-label="Create new">+</button>
+<script>
+/* v1242: sidebar groups (Work / Money / Inbox / More). Open state remembered per group; the group holding the active
+   page opens itself. Buttons keep data-page so every existing loadPage/active-state path works unchanged. */
+window.BMNav = {
+  toggle: function(g) {
+    var open = !document.querySelector('.nav-group[data-group="' + g + '"]').classList.contains('open');
+    BMNav.set(g, open); try { localStorage.setItem('bm-nav-' + g, open ? '1' : '0'); } catch (e) {}
+  },
+  set: function(g, open) {
+    var grp = document.querySelector('.nav-group[data-group="' + g + '"]'), tg = document.querySelector('.nav-group-toggle[data-group="' + g + '"]');
+    if (grp) grp.classList.toggle('open', !!open); if (tg) tg.classList.toggle('open', !!open);
+  },
+  sync: function(page) {
+    document.querySelectorAll('.nav-group').forEach(function(grp) {
+      var g = grp.getAttribute('data-group'), has = !!grp.querySelector('.nav-item[data-page="' + page + '"]');
+      var tg = document.querySelector('.nav-group-toggle[data-group="' + g + '"]'); if (tg) tg.classList.toggle('has-active', has);
+      var remembered = null; try { remembered = localStorage.getItem('bm-nav-' + g); } catch (e) {}
+      BMNav.set(g, has || remembered === '1');
+    });
+  }
+};
+document.addEventListener('DOMContentLoaded', function() {
+  BMNav.sync(window._currentPage || 'dashboard');
+  var _lp = window.loadPage;
+  if (typeof _lp === 'function' && !_lp._bmNavWrapped) {
+    window.loadPage = function(page) { var r = _lp.apply(this, arguments); try { BMNav.sync(page); } catch (e) {} return r; };
+    window.loadPage._bmNavWrapped = true;
+  }
+});
+</script>
 <nav id="bottom-nav">
   <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>
-  <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Today</span></button>
-  <button data-bottom-page="pipeline" onclick="loadPage('pipeline')"><i data-lucide="kanban-square"></i><span>Pipeline</span></button>
-  <button data-bottom-page="clients" onclick="loadPage('clients')"><i data-lucide="users"></i><span>Clients</span></button>
+  <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Schedule</span></button>
+  <button data-bottom-page="jobs" onclick="loadPage('jobs')"><i data-lucide="briefcase"></i><span>Work</span></button>
+  <button data-bottom-page="callcenter" onclick="loadPage('callcenter')"><i data-lucide="message-circle"></i><span>Inbox</span></button>
   <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
 </nav>
 
