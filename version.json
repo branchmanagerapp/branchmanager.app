@@ -1,5 +1,5 @@
 {
-  "version": 1244,
+  "version": 1245,
   "released": "2026-09-20",
-  "notes": "v1244: attic — Direct Mail/SendJim, Trainual, Competitors, SocialPilot import, AI Receptionist page, cloud-health dot, Website 'Other Pages' removed from the live build; kept intact in attic/ with reinstall notes"
+  "notes": "v1245: Work (Requests · Estimate board · Quotes · Jobs) and Money (Invoices · Payments · Expenses · Books · Reports) are single pages with tabs; every old link lands on the right tab; Reports loses its duplicate Books/Payments/Expenses tabs"
 }

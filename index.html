@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1244; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1245; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1380,21 +1380,8 @@ window.bmShowStaleBanner = function(version) {
       <button class="nav-item" data-page="dashboard"><span class="icon"><i data-lucide="home" class="li"></i></span> Home</button>
       <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
       <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>
-      <button class="nav-item nav-group-toggle" data-group="work" onclick="BMNav.toggle('work')"><span class="icon"><i data-lucide="briefcase" class="li"></i></span> Work <span class="nav-caret">▾</span></button>
-      <div class="nav-group" data-group="work">
-        <button class="nav-item nav-sub" data-page="requests"><span class="icon"><i data-lucide="inbox" class="li"></i></span> Requests <span class="badge" id="badge-requests"></span></button>
-        <button class="nav-item nav-sub" data-page="estimates"><span class="icon"><i data-lucide="clipboard-list" class="li"></i></span> Estimate board</button>
-        <button class="nav-item nav-sub" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
-        <button class="nav-item nav-sub" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
-      </div>
-      <button class="nav-item nav-group-toggle" data-group="money" onclick="BMNav.toggle('money')"><span class="icon"><i data-lucide="dollar-sign" class="li"></i></span> Money <span class="nav-caret">▾</span></button>
-      <div class="nav-group" data-group="money">
-        <button class="nav-item nav-sub" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
-        <button class="nav-item nav-sub" data-page="payments"><span class="icon"><i data-lucide="credit-card" class="li"></i></span> Payments</button>
-        <button class="nav-item nav-sub" data-page="expenses"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Expenses</button>
-        <button class="nav-item nav-sub" data-page="books"><span class="icon"><i data-lucide="book-open" class="li"></i></span> Books</button>
-        <button class="nav-item nav-sub" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
-      </div>
+      <button class="nav-item" data-page="work"><span class="icon"><i data-lucide="briefcase" class="li"></i></span> Work</button>
+      <button class="nav-item" data-page="money"><span class="icon"><i data-lucide="dollar-sign" class="li"></i></span> Money</button>
       <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="users" class="li"></i></span> Team</button>
       <button class="nav-item nav-group-toggle" data-group="inbox" onclick="BMNav.toggle('inbox')"><span class="icon"><i data-lucide="message-circle" class="li"></i></span> Inbox <span class="cc-dot" id="cc-indicator-dot"></span> <span class="nav-caret">▾</span></button>
       <div class="nav-group" data-group="inbox">
@@ -1658,7 +1645,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1244.min.js"></script>
+<script defer src="dist/bm.bundle.v1245.min.js"></script>
 
 
 
@@ -1934,6 +1921,8 @@ var pageConfigs = {
   requests: { title: 'Requests', action: '+ New Request', actionFn: 'RequestsPage.showForm()' },
   quotes: { title: 'Quotes', action: '+ New Quote', actionFn: 'QuotesPage.showNewQuotePicker()' },
   jobs: { title: 'Jobs', action: null },
+  work: { title: 'Work', action: null },
+  money: { title: 'Money', action: null },
   pretrip: { title: 'Pre-Trip Inspection', action: null },
   invoices: { title: 'Invoices', action: '+ New Invoice', actionFn: 'InvoicesPage.showForm()' },
   insights: { title: 'Insights', action: null },
@@ -2039,6 +2028,47 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
   return { tab: tab, html: html };
 }
 
+// ── v1245 WORK + MONEY hubs (condense step 3): one page each, tabs load the real sub-pages by id so every existing
+//    loadPage('jobs') / loadPage('invoices') call lands inside the hub on the right tab. The sidebar highlights the hub.
+var HUB_OF = { requests:'work', estimates:'work', quotes:'work', jobs:'work', invoices:'money', payments:'money', expenses:'money', books:'money', reports:'money' };
+function _renderHubStrip(tabs, active) {
+  var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -24px 16px;padding:4px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">';
+  tabs.forEach(function(t) {
+    var on = active === t[0];
+    html += '<button onclick="loadPage(\'' + t[0] + '\')" style="background:' + (on ? 'var(--white)' : 'transparent') + ';color:' + (on ? 'var(--green-dark)' : 'var(--text-light)') + ';border:none;border-bottom:3px solid ' + (on ? 'var(--green-dark)' : 'transparent') + ';padding:10px 14px;font-size:13px;font-weight:' + (on ? '700' : '500') + ';cursor:pointer;border-radius:8px 8px 0 0;">' + t[1] + '</button>';
+  });
+  return html + '</div>';
+}
+var WorkHub = {
+  TABS: [['requests', 'Requests'], ['estimates', 'Estimate board'], ['quotes', 'Quotes'], ['jobs', 'Jobs']],
+  render: function(active) {
+    active = active || 'jobs';
+    var body = '';
+    try {
+      if (active === 'requests') body = RequestsPage.render();
+      else if (active === 'estimates') body = (typeof EstimatesPage !== 'undefined') ? EstimatesPage.render() : '<div style="padding:24px;color:var(--text-light);">Estimate board module not loaded.</div>';
+      else if (active === 'quotes') body = QuotesPage.render();
+      else body = JobsPage.render();
+    } catch (e) { body = '<div style="padding:24px;color:var(--red);">' + (e && e.message || e) + '</div>'; }
+    return _renderHubStrip(WorkHub.TABS, active) + body;
+  }
+};
+var MoneyHub = {
+  TABS: [['invoices', 'Invoices'], ['payments', 'Payments'], ['expenses', 'Expenses'], ['books', 'Books'], ['reports', 'Reports']],
+  render: function(active) {
+    active = active || 'invoices';
+    var body = '';
+    try {
+      if (active === 'invoices') { InvoicesPage._activeTab = 'invoices'; body = InvoicesPage.render(); }
+      else if (active === 'payments') { InvoicesPage._activeTab = 'payments'; body = InvoicesPage.render(); }
+      else if (active === 'expenses') body = ExpensesPage.render();
+      else if (active === 'books') body = BooksPage.render();
+      else body = ReportsHub.render();
+    } catch (e) { body = '<div style="padding:24px;color:var(--red);">' + (e && e.message || e) + '</div>'; }
+    return _renderHubStrip(MoneyHub.TABS, active) + body;
+  }
+};
+
 // ── Reports Hub ──
 var ReportsHub = {
   render: function() {
@@ -2047,10 +2077,7 @@ var ReportsHub = {
     var tabs = [
       ['catalog', 'Catalog'],
       ['insights', 'Overview'],
-      ['books', 'Books'],
-      ['payments', 'Payments'],
       ['profitloss', 'Profit & Loss'],
-      ['expenses', 'Expenses'],
       ['jobcosting', 'Job Costing'],
       ['breakeven', 'Break-Even'],
       ['budget', 'Budget'],
@@ -2190,9 +2217,11 @@ var pageRenderers = {
   pipeline: function() { return PipelinePage.render(); },
   schedule: function() { return SchedulePage.render(); },
   clients: function() { return ClientsPage.render(); },
-  requests: function() { return RequestsPage.render(); },
-  quotes: function() { return QuotesPage.render(); },
-  jobs: function() { return JobsPage.render(); },
+  requests: function() { return WorkHub.render('requests'); },
+  quotes: function() { return WorkHub.render('quotes'); },
+  jobs: function() { return WorkHub.render('jobs'); },
+  work: function() { return WorkHub.render('jobs'); },
+  money: function() { return MoneyHub.render('invoices'); },
   pretrip: function() {
     var html = '<div style="max-width:720px;margin:0 auto;">'
       + '<h2 style="margin:0 0 6px;font-size:22px;">🛻 Daily Pre-Trip Vehicle Inspection</h2>'
@@ -2201,7 +2230,7 @@ var pageRenderers = {
       + '</div>';
     return html;
   },
-  invoices: function() { return InvoicesPage.render(); },
+  invoices: function() { return MoneyHub.render('invoices'); },
   collectpayment: function() { CollectPaymentPage.render(); return ''; },
   insights: function() { return InsightsPage.render(); },
   reviews: function() { return ReviewsPage.render(); },
@@ -2217,7 +2246,7 @@ var pageRenderers = {
   employeecenter: function() { return EmployeeCenter.render(); },
   budget: function() { return BudgetPage.render(); },
   breakeven: function() { return BreakEvenPage.render(); },
-  books: function() { return BooksPage.render(); },
+  books: function() { return MoneyHub.render('books'); },
   dispatch: function() { return DispatchPage.render(); },
   clientmap: function() { return ClientMapPage.render(); },
   photomap: function() { return PhotoMap.render(); },
@@ -2227,13 +2256,13 @@ var pageRenderers = {
   jobcosting: function() { return JobCosting.render(); },
   recurring: function() { return RecurringJobs.render(); },
   notifications: function() { return NotificationsPage.render(); },
-  expenses: function() { return ExpensesPage.render(); },
-  estimates: function() { return (typeof EstimatesPage!=='undefined') ? EstimatesPage.render() : '<div style="padding:24px;color:var(--text-light);">Estimate board module not loaded.</div>'; },
+  expenses: function() { return MoneyHub.render('expenses'); },
+  estimates: function() { return WorkHub.render('estimates'); },
   smartlawn: function() { return (typeof SmartLawnPage!=='undefined') ? SmartLawnPage.render() : '<div style="padding:24px;color:var(--text-light);">Smart Lawn module not loaded.</div>'; },
   profitloss: function() { return ProfitLossPage.render(); },
   weeklysummary: function() { return WeeklySummary.render(); },
   reviewtools: function() { return ReviewTools.render(); },
-  reports: function() { return ReportsHub.render(); },
+  reports: function() { return MoneyHub.render('reports'); },
   tools: function() { return ToolsHub.render(); },
   onlinebooking: function() { return OnlineBooking.render(); },
   formbuilder: function() { return FormBuilderPage.render(); },
@@ -2266,7 +2295,7 @@ var pageRenderers = {
   emailtemplates: function() { return EmailTemplates.render(); },
   customfields: function() { return CustomFields.render(); },
   checklists: function() { return Checklists.render(); },
-  payments: function() { InvoicesPage._activeTab = 'payments'; return InvoicesPage.render(); },
+  payments: function() { return MoneyHub.render('payments'); },
   ai: function() { return AI.render(); },
   clienthub: function() { return ClientHub.render(); },
   visits: function() { JobsPage._activeTab = 'visits'; return JobsPage.render(); },
@@ -3265,11 +3294,12 @@ var origLoadPage = window.loadPage;
 var _loadPageWrapped = function(page) {
   currentPage = page;
   origLoadPage(page);
+  var hubPage = (typeof HUB_OF !== 'undefined' && HUB_OF[page]) || page;   // v1245: jobs/quotes/… highlight Work; invoices/… highlight Money
   document.querySelectorAll('.nav-item').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.page === page);
+    btn.classList.toggle('active', btn.dataset.page === page || btn.dataset.page === hubPage);
   });
   document.querySelectorAll('#bottom-nav button[data-bottom-page]').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.bottomPage === page);
+    btn.classList.toggle('active', btn.dataset.bottomPage === page || btn.dataset.bottomPage === hubPage);
   });
 };
 // Override only if loadPage exists
@@ -4096,7 +4126,7 @@ document.addEventListener('DOMContentLoaded', function() {
   BMNav.sync(window._currentPage || 'dashboard');
   var _lp = window.loadPage;
   if (typeof _lp === 'function' && !_lp._bmNavWrapped) {
-    window.loadPage = function(page) { var r = _lp.apply(this, arguments); try { BMNav.sync(page); } catch (e) {} return r; };
+    window.loadPage = function(page) { var r = _lp.apply(this, arguments); try { BMNav.sync((typeof HUB_OF !== 'undefined' && HUB_OF[page]) || page); } catch (e) {} return r; };
     window.loadPage._bmNavWrapped = true;
   }
 });
@@ -4104,7 +4134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <nav id="bottom-nav">
   <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>
   <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Schedule</span></button>
-  <button data-bottom-page="jobs" onclick="loadPage('jobs')"><i data-lucide="briefcase"></i><span>Work</span></button>
+  <button data-bottom-page="work" onclick="loadPage('work')"><i data-lucide="briefcase"></i><span>Work</span></button>
   <button data-bottom-page="callcenter" onclick="loadPage('callcenter')"><i data-lucide="message-circle"></i><span>Inbox</span></button>
   <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
 </nav>
