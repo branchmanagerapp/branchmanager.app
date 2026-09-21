@@ -1,0 +1,14 @@
+    // Auto-import SocialPilot history. Previous versions (v363) could set the
+    // flag without actually importing, so we self-heal: if the flag is set but
+    // we have zero SP-tagged posts, clear the flag and retry.
+    // v1233: this self-heal LOOPED — 57 SP posts already exist without the tag, so every import added 0,
+    // the flag was cleared again on the re-render, and the page imported+re-rendered ~6×/s forever
+    // (starving the cloud mirror, so Marketing edits never reached the runner). Try at most once per session.
+    var hasSpPosts = SocialBranch._getPosts().some(function(p){ return p.import_source === 'socialpilot-html-scrape'; });
+    if (localStorage.getItem('bm-sb-sp-imported') && !hasSpPosts && !SocialBranch._spAutoTried) {
+      localStorage.removeItem('bm-sb-sp-imported');
+    }
+    if (!localStorage.getItem('bm-sb-sp-imported') && !SocialBranch._spAutoTried) {
+      SocialBranch._spAutoTried = true;
+      setTimeout(function() { SocialBranch.importFromSocialPilot(true); }, 800);
+    }

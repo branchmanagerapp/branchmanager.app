@@ -1,0 +1,4 @@
+    // ── SendJim — Direct Mail ──
+    html += '<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">'
+      + (typeof SendJim !== 'undefined' ? SendJim.renderSettings() : '<p style="font-size:13px;color:var(--text-light);">SendJim module not loaded.</p>')
+      + '</div>';

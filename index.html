@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1243; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1244; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1658,7 +1658,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1243.min.js"></script>
+<script defer src="dist/bm.bundle.v1244.min.js"></script>
 
 
 
@@ -1978,7 +1978,6 @@ var pageConfigs = {
   tools: { title: 'Tools', action: null },
   onlinebooking: { title: 'Online Booking', action: null },
   formbuilder: { title: 'Form Builder', action: null },
-  receptionist: { title: 'Receptionist', action: null },
   campaigns: { title: 'Campaigns', action: '+ New Campaign', actionFn: 'loadPage("campaigns")' },
   referrals: { title: 'Referrals', action: null },
   import: { title: 'Import Data', action: null },
@@ -2238,7 +2237,6 @@ var pageRenderers = {
   tools: function() { return ToolsHub.render(); },
   onlinebooking: function() { return OnlineBooking.render(); },
   formbuilder: function() { return FormBuilderPage.render(); },
-  receptionist: function() { return Receptionist.render(); },
   campaigns: function() { return Campaigns.render(); },
   referrals: function() { return Referrals.render(); },
   import: function() { return ImportPage.render(); },

@@ -1,0 +1,13 @@
+  function connectSocial() {
+    var key = prompt('Paste your SocialPilot API key:');
+    if (!key) return;
+    try { localStorage.setItem('bm-socialpilot-key', key.trim()); } catch (e) {}
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('SocialPilot connected');
+    loadPage('marketing');
+  }
+
+  function disconnectSocial() {
+    if (!confirm('Disconnect SocialPilot?')) return;
+    try { localStorage.removeItem('bm-socialpilot-key'); } catch (e) {}
+    loadPage('marketing');
+  }

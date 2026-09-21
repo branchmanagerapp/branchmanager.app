@@ -654,7 +654,6 @@ var JobsPage = {
     var j = DB.jobs.getById(id);
     if (!j) return;
     DB.jobs.update(id, { status: 'completed', completedAt: new Date().toISOString() });
-    if (typeof SendJim !== 'undefined') SendJim.afterJobComplete(j);
 
     // Solo path: prompt to create invoice (Option C — preserves the decision).
     // Batch/crew/system flows auto-draft via Workflow.completeAndDraft.

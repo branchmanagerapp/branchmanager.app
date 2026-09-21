@@ -66,20 +66,6 @@ var SocialBranch = {
   render: function() {
     var self = SocialBranch;
     SocialBranch._reconcileFromCloud();
-    // Auto-import SocialPilot history. Previous versions (v363) could set the
-    // flag without actually importing, so we self-heal: if the flag is set but
-    // we have zero SP-tagged posts, clear the flag and retry.
-    // v1233: this self-heal LOOPED — 57 SP posts already exist without the tag, so every import added 0,
-    // the flag was cleared again on the re-render, and the page imported+re-rendered ~6×/s forever
-    // (starving the cloud mirror, so Marketing edits never reached the runner). Try at most once per session.
-    var hasSpPosts = SocialBranch._getPosts().some(function(p){ return p.import_source === 'socialpilot-html-scrape'; });
-    if (localStorage.getItem('bm-sb-sp-imported') && !hasSpPosts && !SocialBranch._spAutoTried) {
-      localStorage.removeItem('bm-sb-sp-imported');
-    }
-    if (!localStorage.getItem('bm-sb-sp-imported') && !SocialBranch._spAutoTried) {
-      SocialBranch._spAutoTried = true;
-      setTimeout(function() { SocialBranch.importFromSocialPilot(true); }, 800);
-    }
     // v1221: OAuth return (?social=…) + refresh native connection status once per load.
     if (!SocialBranch._nativeChecked) {
       SocialBranch._nativeChecked = true;
@@ -108,16 +94,12 @@ var SocialBranch = {
       { id:'library',   label:'Media',      icon:'camera' },
       { id:'accounts',  label:'Accounts',   icon:'link' },
       { id:'analytics', label:'Analytics',  icon:'bar-chart-3' },
-      { id:'competitors', label:'Competitors', icon:'binoculars' }, // v428: SocialPilot-style competitor tracking
       { id:'inbox',     label:'Inbox',      icon:'inbox' },
       // v384: Marketing-area pages folded in as tabs
       { id:'campaigns', label:'Campaigns',    icon:'megaphone' },
       { id:'reviews',   label:'Reviews',      icon:'star' },
       { id:'referrals', label:'Referrals',    icon:'users-round' },
-      { id:'leads',     label:'Lead Sources', icon:'pie-chart' },
-      // v690: Direct mail (SendJim) + employee training (Trainual) surfaced as Marketing tabs.
-      { id:'sendjim',   label:'Direct Mail',  icon:'send' },
-      { id:'trainual',  label:'Trainual',     icon:'graduation-cap' }
+      { id:'leads',     label:'Lead Sources', icon:'pie-chart' }
     ];
     // v1238: thinned (Doug: "I don't even like the whole marketing tab") — 4 tabs you use, the rest under More.
     var MAIN = ['dashboard', 'accounts', 'reviews', 'leads'];
@@ -140,7 +122,6 @@ var SocialBranch = {
       case 'library':   html += (typeof MediaCenter !== 'undefined' ? MediaCenter.render() : '<div style="padding:40px;text-align:center;color:var(--text-light);">Media library unavailable.</div>'); break;
       case 'accounts':  html += self._renderAccounts();  break;
       case 'analytics': html += self._renderAnalytics(); break;
-      case 'competitors': html += self._renderCompetitors(); break;
       case 'inbox':     html += self._renderInbox();     break;
       // v384: Marketing-area tabs delegate to their existing page modules.
       case 'campaigns': html += (typeof Campaigns       !== 'undefined' ? Campaigns.render()       : '<div style="padding:40px;text-align:center;color:var(--text-light);">Campaigns module unavailable.</div>'); break;
@@ -148,8 +129,6 @@ var SocialBranch = {
                               + (typeof ReviewTools     !== 'undefined' ? ReviewTools.render()     : ''); break;
       case 'referrals': html += (typeof Referrals       !== 'undefined' ? Referrals.render()       : '<div style="padding:40px;text-align:center;color:var(--text-light);">Referrals module unavailable.</div>'); break;
       case 'leads':     html += (typeof MarketingPage   !== 'undefined' ? MarketingPage.render()   : '<div style="padding:40px;text-align:center;color:var(--text-light);">Lead-source analytics unavailable.</div>'); break;
-      case 'sendjim':   html += SocialBranch._renderSendJim(); break;
-      case 'trainual':  html += SocialBranch._renderTrainual(); break;
       default:          html += self._renderDashboard();
     }
 
@@ -1141,18 +1120,11 @@ var SocialBranch = {
 
     // SocialPilot Import + Content Library panel
     var allPosts = SocialBranch._getPosts();
-    var spImported = allPosts.filter(function(p){ return p.import_source === 'socialpilot-html-scrape'; }).length;
     var libItems = SocialBranch._getContentLib();
     var hGroups = SocialBranch._getHashtagGroups();
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;">'
       + '<h3 style="margin:0 0 12px;font-size:16px;">Tools</h3>'
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">'
-      // SP Import
-      +   '<div style="padding:12px;border:1px solid var(--border);border-radius:8px;">'
-      +     '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">Import SocialPilot History</div>'
-      +     '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">57 posts scraped Apr 23. ' + (spImported > 0 ? spImported + ' already imported.' : 'Not imported yet.') + '</div>'
-      +     '<button id="sb-sp-import-btn" onclick="SocialBranch.importFromSocialPilot()" ' + (spImported > 0 ? 'disabled' : '') + ' class="btn btn-outline" style="font-size:12px;">' + (spImported > 0 ? 'Already imported' : 'Import now') + '</button>'
-      +   '</div>'
       // Content Library summary
       +   '<div style="padding:12px;border:1px solid var(--border);border-radius:8px;">'
       +     '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">Content Library</div>'
@@ -1352,309 +1324,6 @@ var SocialBranch = {
     html += '</div></div>';
 
     html += '<div style="padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text-light);">Engagement metrics (likes, reach, clicks) require direct API access. They turn on once Meta + GMB API approvals complete (we already submitted GMB; Meta pending your sign-off on docs/meta-app-submission.md).</div>';
-    return html;
-  },
-
-  // ─────────────────────────────────────────────────────────
-  // COMPETITORS — v428: SocialPilot-style competitor tracking
-  // Enter a company name + city; AI auto-suggests their socials; track posts/engagement.
-  // ─────────────────────────────────────────────────────────
-  _competitorsCache: null,
-  _competitorsFetched: false,
-
-  _renderCompetitors: function() {
-    var self = SocialBranch;
-    self._fetchCompetitors();
-    var list = self._competitorsCache || [];
-
-    var html = '';
-    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-      +   '<h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px;">' + self._netIcon('binoculars', 16) + 'Competitors (' + list.length + ')</h3>'
-      +   '<button onclick="SocialBranch._addCompetitor()" class="btn btn-primary" style="font-size:13px;">+ Add Competitor</button>'
-      + '</div>'
-      + '<div style="font-size:12px;color:var(--text-light);">Just type the company name + city. AI auto-discovers their website, Facebook page, Instagram, Google Business, YouTube. Then you can see their post cadence + engagement, get content ideas from what works for them.</div>'
-      + '</div>';
-
-    if (!list.length) {
-      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:30px;text-align:center;">'
-        + '<div style="font-size:36px;margin-bottom:8px;">🔭</div>'
-        + '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">No competitors tracked yet</div>'
-        + '<div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Add a tree service in your area to start tracking their content strategy.</div>'
-        + '<button onclick="SocialBranch._addCompetitor()" class="btn btn-primary" style="font-size:13px;">+ Add First Competitor</button>'
-        + '</div>';
-      return html;
-    }
-
-    list.forEach(function(c) {
-      var lastCheck = c.last_checked_at ? UI.timeAgo(c.last_checked_at) : 'never checked';
-      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">'
-        +   '<div><div style="font-weight:700;font-size:15px;">' + UI.esc(c.name) + (c.city ? ' <span style="font-size:12px;color:var(--text-light);font-weight:500;">· ' + UI.esc(c.city) + '</span>' : '') + '</div>'
-        +   '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">Last check: ' + lastCheck + '</div></div>'
-        +   '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
-        +     '<button onclick="SocialBranch._refreshCompetitor(\'' + c.id + '\')" class="btn btn-outline" style="font-size:11px;padding:5px 10px;">↻ AI check</button>'
-        +     '<button onclick="SocialBranch._editCompetitor(\'' + c.id + '\')" style="background:none;border:1px solid var(--border);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;">Edit</button>'
-        +     '<button onclick="SocialBranch._removeCompetitor(\'' + c.id + '\')" style="background:none;border:none;color:var(--text-light);font-size:11px;cursor:pointer;">Remove</button>'
-        +   '</div>'
-        + '</div>'
-        + '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-      var links = [
-        ['website', c.website, '🌐 Website'],
-        ['facebook', c.facebook_url, '📘 Facebook'],
-        ['instagram', c.instagram_handle ? 'https://instagram.com/' + c.instagram_handle.replace(/^@/, '') : '', '📷 Instagram'],
-        ['gmb', c.gmb_url, '📍 Google Business'],
-        ['youtube', c.youtube_url, '🎥 YouTube'],
-        ['tiktok', c.tiktok_handle ? 'https://tiktok.com/@' + c.tiktok_handle.replace(/^@/, '') : '', '🎵 TikTok']
-      ];
-      links.forEach(function(L) {
-        if (!L[1]) return;
-        html += '<a href="' + UI.esc(L[1]) + '" target="_blank" rel="noopener noreferrer" style="background:var(--bg);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-size:11px;text-decoration:none;color:var(--text);">' + L[2] + ' →</a>';
-      });
-      html += '</div>';
-      if (c.last_check_summary) {
-        html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text);"><strong>AI summary:</strong> ' + UI.esc(c.last_check_summary) + '</div>';
-      }
-      if (c.notes) {
-        html += '<div style="margin-top:8px;font-size:12px;color:var(--text-light);">' + UI.esc(c.notes) + '</div>';
-      }
-      html += '</div>';
-    });
-
-    return html;
-  },
-
-  _fetchCompetitors: function() {
-    if (SocialBranch._competitorsFetched) return;
-    SocialBranch._competitorsFetched = true;
-    if (!window.SB || !SB.from) return;
-    SB.from('competitors').select('*').eq('active', true).order('name', { ascending: true }).then(function(r) {
-      if (r.error) { console.warn('competitors fetch:', r.error.message); return; }
-      SocialBranch._competitorsCache = r.data || [];
-      if (SocialBranch._tab === 'competitors') loadPage('socialbranch');
-    });
-  },
-
-  _addCompetitor: function() {
-    UI.modal({
-      title: 'Add Competitor',
-      html: '<div style="display:grid;gap:10px;">'
-        + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Company Name<input id="c-name" placeholder="e.g. Hudson Valley Tree Care" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
-        + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">City / Region<input id="c-city" placeholder="e.g. Peekskill, NY" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
-        + '<div style="font-size:12px;color:var(--text-light);margin-top:4px;">After save, AI will auto-discover their website, FB, IG, GMB, YouTube. You can refine manually after.</div>'
-        + '</div>',
-      buttons: [
-        { label: 'Cancel', action: 'close' },
-        { label: 'Save & Auto-Discover', primary: true, action: 'SocialBranch._saveCompetitor()' }
-      ]
-    });
-  },
-
-  _saveCompetitor: function() {
-    var name = document.getElementById('c-name').value.trim();
-    var city = document.getElementById('c-city').value.trim();
-    if (!name) { UI.toast('Name required', 'error'); return; }
-    var row = {
-      tenant_id: window.resolveTenantId(),
-      name: name,
-      city: city || null,
-      active: true
-    };
-    SB.from('competitors').insert(row).select().single().then(function(r) {
-      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
-      UI.toast('Saved — AI is searching for their socials…');
-      UI.closeModal();
-      SocialBranch._refreshCompetitor(r.data.id, true);
-    });
-  },
-
-  _refreshCompetitor: function(id, isFresh) {
-    var c = (SocialBranch._competitorsCache || []).find(function(x){ return x.id === id; });
-    var name = (c && c.name) || '';
-    var city = (c && c.city) || '';
-    if (!name && !isFresh) {
-      // Fetch row first
-      SB.from('competitors').select('*').eq('id', id).single().then(function(r) {
-        if (!r.error && r.data) SocialBranch._refreshCompetitor(id, true);
-      });
-      return;
-    }
-    var prompt = 'Find the social media + web presence for this small business. Return ONLY a JSON object with these keys (use empty string if unknown): {"website":"","facebook_url":"","instagram_handle":"","gmb_url":"","youtube_url":"","tiktok_handle":"","summary":""}. The summary should be 1-2 sentences about their content strategy if you can tell. Business: ' + name + (city ? ' in ' + city : '') + '. Industry: tree service.';
-    if (typeof callAI !== 'function' && (!window.AI || !AI.chat)) {
-      UI.toast('AI not available — add socials manually via Edit', 'error');
-      return;
-    }
-    UI.toast('AI is searching…');
-    var ai = (typeof callAI === 'function') ? callAI(prompt) : AI.chat(prompt);
-    Promise.resolve(ai).then(function(resp) {
-      var text = typeof resp === 'string' ? resp : (resp && resp.text) || '';
-      var m = text.match(/\{[\s\S]*\}/);
-      if (!m) { UI.toast('AI returned unexpected format — try Edit manually', 'error'); return; }
-      try {
-        var data = JSON.parse(m[0]);
-        var update = {
-          website: data.website || null,
-          facebook_url: data.facebook_url || null,
-          instagram_handle: data.instagram_handle || null,
-          gmb_url: data.gmb_url || null,
-          youtube_url: data.youtube_url || null,
-          tiktok_handle: data.tiktok_handle || null,
-          last_check_summary: data.summary || null,
-          last_checked_at: new Date().toISOString()
-        };
-        SB.from('competitors').update(update).eq('id', id).then(function(r) {
-          if (r.error) { UI.toast('Update failed: ' + r.error.message, 'error'); return; }
-          UI.toast('AI discovery complete');
-          SocialBranch._competitorsFetched = false;
-          SocialBranch._fetchCompetitors();
-        });
-      } catch (e) { UI.toast('AI parse error', 'error'); }
-    }).catch(function(e) { UI.toast('AI error: ' + (e && e.message || ''), 'error'); });
-  },
-
-  _editCompetitor: function(id) {
-    var c = (SocialBranch._competitorsCache || []).find(function(x){ return x.id === id; });
-    if (!c) return;
-    var fields = [
-      ['name', 'Name', c.name],
-      ['city', 'City', c.city || ''],
-      ['website', 'Website URL', c.website || ''],
-      ['facebook_url', 'Facebook URL', c.facebook_url || ''],
-      ['instagram_handle', 'Instagram (handle, no @)', c.instagram_handle || ''],
-      ['gmb_url', 'Google Business URL', c.gmb_url || ''],
-      ['youtube_url', 'YouTube URL', c.youtube_url || ''],
-      ['tiktok_handle', 'TikTok (handle, no @)', c.tiktok_handle || ''],
-      ['notes', 'Notes', c.notes || '']
-    ];
-    var rows = fields.map(function(f) {
-      return '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">' + f[1] + '<input id="c-edit-' + f[0] + '" value="' + UI.esc(f[2]) + '" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-top:4px;"></label>';
-    }).join('');
-    UI.modal({
-      title: 'Edit ' + c.name,
-      html: '<div style="display:grid;gap:8px;max-height:60vh;overflow:auto;">' + rows + '</div>',
-      buttons: [
-        { label: 'Cancel', action: 'close' },
-        { label: 'Save', primary: true, action: 'SocialBranch._saveEditCompetitor(\'' + id + '\')' }
-      ]
-    });
-  },
-
-  _saveEditCompetitor: function(id) {
-    var keys = ['name','city','website','facebook_url','instagram_handle','gmb_url','youtube_url','tiktok_handle','notes'];
-    var update = {};
-    keys.forEach(function(k) {
-      var el = document.getElementById('c-edit-' + k);
-      if (el) update[k] = el.value.trim() || null;
-    });
-    SB.from('competitors').update(update).eq('id', id).then(function(r) {
-      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
-      UI.toast('Saved');
-      UI.closeModal();
-      SocialBranch._competitorsFetched = false;
-      SocialBranch._fetchCompetitors();
-    });
-  },
-
-  _removeCompetitor: function(id) {
-    if (!confirm('Stop tracking this competitor?')) return;
-    SB.from('competitors').update({ active: false }).eq('id', id).then(function(r) {
-      if (r.error) { UI.toast('Failed: ' + r.error.message, 'error'); return; }
-      UI.toast('Removed');
-      SocialBranch._competitorsFetched = false;
-      SocialBranch._fetchCompetitors();
-    });
-  },
-
-  // ─────────────────────────────────────────────────────────
-  // INBOX (placeholder)
-  // ─────────────────────────────────────────────────────────
-  // v690: Direct-mail / SendJim section. Surfaces existing SendJim module
-  // (stub until Doug pastes API keys). Lets him see what's been sent + queue
-  // a manual send to a specific client.
-  _renderSendJim: function() {
-    var cfg = (typeof SendJim !== 'undefined' && SendJim.config) ? SendJim.config() : {};
-    var hasKeys = !!(cfg.clientKey || localStorage.getItem('bm-sendjim-client-key'));
-    var sentLog = JSON.parse(localStorage.getItem('bm-sendjim-log') || '[]');
-    var html = '<div style="max-width:900px;">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
-      +   '<div>'
-      +     '<h2 style="margin:0;font-size:22px;font-weight:800;">Direct Mail (SendJim)</h2>'
-      +     '<div style="font-size:13px;color:var(--text-light);margin-top:2px;">Trigger printed postcards / handwritten cards after job completion.</div>'
-      +   '</div>'
-      +   '<a href="https://sendjim.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;">Open SendJim →</a>'
-      + '</div>';
-
-    if (!hasKeys) {
-      html += '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:20px;margin-bottom:14px;">'
-        + '<div style="font-weight:700;font-size:14px;color:#9a3412;margin-bottom:6px;">Connect SendJim to enable sends</div>'
-        + '<div style="font-size:13px;color:#7c2d12;line-height:1.55;margin-bottom:12px;">Sign up at sendjim.com, grab your API client key + secret from Account → API Keys, then set them as Supabase secrets so the BM-side trigger fires after each completed job.</div>'
-        + '<div style="font-family:monospace;font-size:12px;background:#fff;padding:10px 12px;border-radius:6px;border:1px solid #fed7aa;color:#1f2937;line-height:1.7;">SUPABASE_ACCESS_TOKEN=… supabase secrets set SENDJIM_CLIENT_KEY=xxx SENDJIM_CLIENT_SECRET=yyy --project-ref ltpivkqahvplapyagljt</div>'
-        + '</div>';
-    }
-
-    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;">'
-      +   '<h3 style="font-size:15px;font-weight:700;margin-bottom:10px;">How it works</h3>'
-      +   '<ol style="font-size:13px;color:var(--text);line-height:1.7;padding-left:20px;">'
-      +     '<li>Build templates inside SendJim (QuickSend cards, postcards). Note the QuickSend IDs.</li>'
-      +     '<li>In Settings → Integrations → SendJim, paste each QuickSend ID with its trigger (e.g. "After job complete: Thank-you card").</li>'
-      +     '<li>BM auto-fires the matching template when the trigger event happens. Sends are logged below.</li>'
-      +   '</ol>'
-      + '</div>';
-
-    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
-      +   '<div style="padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px;">Send Log</div>';
-    if (!sentLog.length) {
-      html += '<div style="padding:32px;text-align:center;color:var(--text-light);font-size:13px;">No SendJim sends yet. Once API keys are set + a QuickSend template is mapped, completed jobs will trigger automatic sends and appear here.</div>';
-    } else {
-      sentLog.slice(0, 50).forEach(function(s) {
-        html += '<div style="padding:12px 18px;border-top:1px solid var(--border);font-size:13px;display:grid;grid-template-columns:120px 1fr 1fr 90px;gap:12px;">'
-          + '<div style="color:var(--text-light);">' + UI.dateShort(s.sentAt) + '</div>'
-          + '<div><strong>' + UI.esc(s.clientName || '—') + '</strong></div>'
-          + '<div style="color:var(--text-light);">' + UI.esc(s.template || '—') + '</div>'
-          + '<div style="text-align:right;font-weight:600;color:' + (s.status === 'success' ? 'var(--green-dark)' : '#c62828') + ';">' + UI.esc(s.status || 'pending') + '</div>'
-          + '</div>';
-      });
-    }
-    html += '</div>';
-
-    html += '</div>';
-    return html;
-  },
-
-  // v690: Trainual section. Embedded knowledge base / SOP manual.
-  // Trainual supports SSO + iframe embedding once a workspace is set up.
-  _renderTrainual: function() {
-    var url = localStorage.getItem('bm-trainual-url') || '';
-    var html = '<div style="max-width:900px;">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
-      +   '<div>'
-      +     '<h2 style="margin:0;font-size:22px;font-weight:800;">Trainual — Team Training</h2>'
-      +     '<div style="font-size:13px;color:var(--text-light);margin-top:2px;">SOPs, onboarding checklists, and role-based training for crew.</div>'
-      +   '</div>'
-      +   '<a href="https://www.trainual.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;">Open Trainual →</a>'
-      + '</div>';
-
-    if (!url) {
-      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:14px;">'
-        + '<div style="font-weight:700;font-size:15px;margin-bottom:8px;">Connect your Trainual workspace</div>'
-        + '<div style="font-size:13px;color:var(--text-light);line-height:1.55;margin-bottom:14px;">Trainual handles team SOPs, onboarding flows, and role-based training. Plug your workspace URL in below to embed it directly inside BM. Existing Trainual logins still work — SSO carries over.</div>'
-        + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
-        +   '<input type="url" id="trainual-url-input" placeholder="https://yourcompany.trainual.com" style="flex:1;min-width:280px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">'
-        +   '<button onclick="var v=document.getElementById(\'trainual-url-input\').value.trim();if(v){localStorage.setItem(\'bm-trainual-url\',v);loadPage(\'socialbranch\');}else{UI.toast(\'Paste a URL first\',\'error\');}" class="btn btn-primary" style="font-size:13px;">Save</button>'
-        + '</div>'
-        + '<div style="font-size:12px;color:var(--text-light);margin-top:14px;line-height:1.55;">Don\'t have Trainual yet? <a href="https://trainual.com/pricing" target="_blank" rel="noopener" style="color:var(--green-dark);">See plans →</a> Tree-service-relevant subjects to build first: ANSI Z133 climbing safety, chainsaw maintenance, daily Pre-Trip checklist, customer service scripts, quote-presentation walkthrough.</div>'
-        + '</div>';
-    } else {
-      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">'
-        +   '<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">'
-        +     '<span style="font-size:12px;color:var(--text-light);">Embedded: <strong>' + UI.esc(url) + '</strong></span>'
-        +     '<button onclick="if(confirm(\'Disconnect Trainual?\')){localStorage.removeItem(\'bm-trainual-url\');loadPage(\'socialbranch\');}" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">Disconnect</button>'
-        +   '</div>'
-        +   '<iframe src="' + UI.esc(url) + '" style="width:100%;height:720px;border:none;" allow="fullscreen"></iframe>'
-        + '</div>';
-    }
-
-    html += '</div>';
     return html;
   },
 
@@ -1913,70 +1582,6 @@ var SocialBranch = {
         loadPage('socialbranch');
       });
     });
-  },
-
-  // ─────────────────────────────────────────────────────────
-  // SOCIALPILOT IMPORT — reads public/sp_scrape_initial.json
-  // and merges into bm-social-posts with import_source tag.
-  // ─────────────────────────────────────────────────────────
-  importFromSocialPilot: function(silent) {
-    if (!silent && !confirm('Import SocialPilot history into BM?\n\nThis will add any posts not already present (dedup by caption). Your existing posts are untouched.')) return;
-    var btn = document.getElementById('sb-sp-import-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Importing…'; }
-    // Try app-root path first, fall back to /public path (legacy).
-    var tryFetch = function(path) {
-      return fetch(path, { cache: 'no-cache' }).then(function(r) {
-        if (!r.ok) throw new Error('status ' + r.status);
-        return r.json();
-      });
-    };
-    // tryFetch already returns the parsed JSON; the previous .then double-parsed
-    // and threw on every call. Removed v376.
-    tryFetch('./sp_scrape_initial.json')
-      .catch(function() { return tryFetch('./public/sp_scrape_initial.json'); })
-      .then(function(data) {
-        var existing = SocialBranch._getPosts();
-        var existingCaptions = existing.map(function(p){ return (p.caption || '').trim().toLowerCase().slice(0,120); });
-        var added = 0, skipped = 0;
-        function parseDate(s) {
-          if (!s) return '';
-          var m = String(s).match(/([A-Z][a-z]{2})\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)/);
-          if (!m) return '';
-          var months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-          var h = parseInt(m[4],10); if (m[6]==='PM' && h<12) h+=12; if (m[6]==='AM' && h===12) h=0;
-          return new Date(parseInt(m[3],10), months[m[1]], parseInt(m[2],10), h, parseInt(m[5],10)).toISOString();
-        }
-        ['queued','delivered','drafts','failed'].forEach(function(bucket) {
-          (data[bucket] || []).forEach(function(p) {
-            var capKey = (p.caption || '').trim().toLowerCase().slice(0,120);
-            if (!capKey) { skipped++; return; }
-            if (existingCaptions.indexOf(capKey) >= 0) { skipped++; return; }
-            var post = {
-              id: 'sp_' + (p.id || Math.random().toString(36).slice(2,10)),
-              caption: p.caption || '',
-              media: p.media || [],
-              networks: p.networks || ['gmb'],
-              scheduledAt: parseDate(p.dateText) || '',
-              status: p.status || 'draft',
-              postedAt: p.status === 'posted' ? parseDate(p.dateText) : '',
-              createdAt: new Date().toISOString(),
-              import_source: 'socialpilot-html-scrape'
-            };
-            existing.unshift(post);
-            existingCaptions.push(capKey);
-            added++;
-          });
-        });
-        if (added) SocialBranch._setPosts(existing);
-        // Only set imported flag on success so future visits retry if something went wrong.
-        localStorage.setItem('bm-sb-sp-imported', '1');
-        if (added) { UI.toast('Imported ' + added + ' posts from SocialPilot (' + skipped + ' duplicates skipped).'); loadPage('socialbranch'); }
-        else if (btn) { btn.disabled = true; btn.textContent = 'Nothing new to import'; }
-      })
-      .catch(function(e) {
-        UI.toast('Import failed: ' + String(e.message || e), 'error');
-        if (btn) { btn.disabled = false; btn.textContent = 'Import from SocialPilot'; }
-      });
   },
 
   // ─────────────────────────────────────────────────────────

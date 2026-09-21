@@ -953,7 +953,6 @@ var ClientsPage = {
       ClientsPage._propagate(id, data);
     } else {
       var newClient = DB.clients.create(data);
-      if (typeof SendJim !== 'undefined') SendJim.afterNewClient(newClient || data);
       // v962: "Save and Create Another" — reopen a blank form instead of leaving
       if (ClientsPage._createAnother) {
         ClientsPage._createAnother = false;

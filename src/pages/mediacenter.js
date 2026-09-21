@@ -65,11 +65,6 @@ var MediaCenter = {
     html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">'
       + '<h2 style="font-size:24px;font-weight:700;margin:0;">&#128247; Media Center</h2>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<button class="btn btn-outline" id="mc-export-btn" onclick="MediaCenter.exportToSocialPilot()" '
-      + (MediaCenter._selectedIds.length === 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '')
-      + '>&#128228; Export to SocialPilot'
-      + (MediaCenter._selectedIds.length > 0 ? ' (' + MediaCenter._selectedIds.length + ')' : '')
-      + '</button>'
       + (MediaCenter._selectedIds.length > 0 ? '<button onclick="MediaCenter.bulkMarkReviewed()" style="background:#e8f5e9;color:var(--green-dark);border:1px solid #c8e6c9;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">&#10003; Mark Reviewed (' + MediaCenter._selectedIds.length + ')</button>' : '')
       + (MediaCenter._selectedIds.length > 0 ? '<button onclick="MediaCenter.bulkDelete()" style="background:#fff5f5;color:#dc3545;border:1px solid #fca5a5;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">&#128465; Delete (' + MediaCenter._selectedIds.length + ')</button>' : '')
       + '<button onclick="loadPage(\'photomap\')" style="background:none;border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--accent);">📍 Photo Map</button>'
@@ -257,7 +252,6 @@ var MediaCenter = {
       exportBtn.disabled = count === 0;
       exportBtn.style.opacity = count === 0 ? '0.5' : '1';
       exportBtn.style.cursor = count === 0 ? 'not-allowed' : 'pointer';
-      exportBtn.innerHTML = '&#128228; Export to SocialPilot' + (count > 0 ? ' (' + count + ')' : '');
     }
   },
 
@@ -271,7 +265,6 @@ var MediaCenter = {
       exportBtn.disabled = false;
       exportBtn.style.opacity = '1';
       exportBtn.style.cursor = 'pointer';
-      exportBtn.innerHTML = '&#128228; Export to SocialPilot (' + MediaCenter._selectedIds.length + ')';
     }
   },
 
@@ -673,79 +666,6 @@ var MediaCenter = {
     UI.toast(ids.length + ' item' + (ids.length !== 1 ? 's' : '') + ' deleted');
     var container = document.getElementById('page-content');
     if (container) container.innerHTML = MediaCenter.render();
-  },
-
-  // ── Export to SocialPilot ──
-
-  exportToSocialPilot: function() {
-    var ids = MediaCenter._selectedIds.length > 0
-      ? MediaCenter._selectedIds
-      : MediaCenter.getAll().filter(function(m) { return !m.reviewed; }).map(function(m) { return m.id; });
-
-    if (ids.length === 0) {
-      UI.toast('No photos selected. Check the boxes on photos to export them.');
-      return;
-    }
-
-    var all = MediaCenter.getAll();
-    var selected = all.filter(function(m) { return ids.indexOf(m.id) >= 0; });
-
-    // Build caption
-    var clientNames = [];
-    var tagSet = {};
-    selected.forEach(function(m) {
-      if (m.clientName && clientNames.indexOf(m.clientName) < 0) clientNames.push(m.clientName);
-      (m.tags || []).forEach(function(t) { tagSet[t] = true; });
-    });
-    var tagLine = Object.keys(tagSet).map(function(t) {
-      return t.charAt(0).toUpperCase() + t.slice(1);
-    }).join(' · ');
-    var defaultCaption = '&#127795; ' + BM_CONFIG.companyName
-      + (clientNames.length > 0 ? '\n' + clientNames.slice(0, 3).join(', ') + (clientNames.length > 3 ? ' +' + (clientNames.length - 3) + ' more' : '') : '')
-      + (tagLine ? '\n' + tagLine : '')
-      + '\n\n#treework #treeservice #peekskill #arborist #treecrew #secondnaturetreeservice';
-
-    var content = '<div style="display:flex;flex-direction:column;gap:14px;">'
-      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">'
-      + selected.slice(0, 9).map(function(m) {
-          return '<div style="aspect-ratio:1;border-radius:8px;overflow:hidden;background:#f0f0f0;">'
-            + (m.thumbnail ? '<img src="' + m.thumbnail + '" style="width:100%;height:100%;object-fit:cover;">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;">&#127757;</div>')
-            + '</div>';
-        }).join('')
-      + (selected.length > 9 ? '<div style="aspect-ratio:1;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-light);">+' + (selected.length - 9) + '</div>' : '')
-      + '</div>'
-      + '<div>'
-      + '<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Caption <span style="font-weight:400;color:var(--text-light);">(edit before posting)</span></label>'
-      + '<textarea id="mc-export-caption" rows="5" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;">' + defaultCaption + '</textarea>'
-      + '</div>'
-      + '<div style="background:#e8f5e9;border-radius:10px;padding:14px 16px;">'
-      + '<div style="font-size:13px;font-weight:600;color:var(--green-dark);margin-bottom:8px;">&#128203; Steps to Post</div>'
-      + '<ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:#333;">'
-      + '<li>Copy the caption above</li>'
-      + '<li>Click "Open SocialPilot" below</li>'
-      + '<li>Create new post → upload photos from your device</li>'
-      + '<li>Paste caption and schedule your post</li>'
-      + '</ol>'
-      + '</div>'
-      + (function() {
-          var videos = selected.filter(function(m) { return m.type === 'video'; });
-          if (videos.length === 0) return '';
-          var videoNames = videos.map(function(m) {
-            return UI.esc(m.caption || m.clientName || m.jobNumber || m.id);
-          }).join(', ');
-          return '<div style="background:#fff8e1;border-radius:10px;padding:14px 16px;">'
-            + '<div style="font-size:13px;font-weight:600;color:#e65100;margin-bottom:6px;">&#128249; Videos suitable for YouTube Shorts</div>'
-            + '<div style="font-size:13px;color:#555;margin-bottom:10px;">' + videoNames + '</div>'
-            + '<a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" style="display:inline-block;font-size:13px;font-weight:600;color:#c00;text-decoration:none;background:#fff;border:1px solid #fca5a5;padding:6px 14px;border-radius:8px;">Open YouTube Studio &#8594;</a>'
-            + '</div>';
-        })()
-      + '</div>';
-
-    var footer = '<button class="btn btn-outline" onclick="MediaCenter._copyCaptionFromModal()">&#128203; Copy Caption</button>'
-      + '<button class="btn btn-outline" onclick="window.open(\'https://app.socialpilot.co\',\'_blank\')">&#127760; Open SocialPilot</button>'
-      + '<button class="btn btn-primary" onclick="MediaCenter._markExported(' + JSON.stringify(ids) + ');UI.closeModal();">&#10003; Mark as Exported</button>';
-
-    UI.showModal('Export to SocialPilot (' + selected.length + ' photos)', content, { footer: footer, wide: true });
   },
 
   _copyCaptionFromModal: function() {

@@ -597,7 +597,7 @@ var Auth = {
       'payments','insights','reviews','reviewtools','satisfaction','team','timesheet','automations',
       'calculators','messaging','clientmap','photomap','propertymap','recurring','notifications',
       'expenses','books','profitloss','jobcosting','budget','reports','weeklysummary','onlinebooking',
-      'clienthub','formbuilder','mediacenter','beforeafter','campaigns','referrals','receptionist',
+      'clienthub','formbuilder','mediacenter','beforeafter','campaigns','referrals',
       'import','backup','settings','crewview','crewperformance','employeecenter','equipment',
       'materials','comms','emailtemplates','customfields','visits','checklists','workflow',
       'ai','treemeasure','reminders','search',

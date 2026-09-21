@@ -143,7 +143,6 @@ var MarketingSite = (function() {
     var tabs = [
       { id:'overview', label:'Overview' },
       { id:'llminfo',  label:'LLM Info Page' },
-      { id:'pages',    label:'Other Pages', disabled:true },
       { id:'publish',  label:'Publish & Hosting' }
     ];
     return '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;">'

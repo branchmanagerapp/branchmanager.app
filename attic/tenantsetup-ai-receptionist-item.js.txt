@@ -1,0 +1,13 @@
+    {
+      key: 'ai_receptionist',
+      label: 'AI Receptionist — Twilio number',
+      hint: 'Auto-answers inbound calls + qualifies leads. Optional.',
+      criticality: 4,
+      probe: function() {
+        // tenants.config.receptionist.twilio_to + enabled — read via
+        // window._receptionistCfg cache populated by the Receptionist page
+        var cfg = window._receptionistCfg;
+        return !!(cfg && cfg.enabled && cfg.twilio_to);
+      },
+      action: function() { Receptionist._tab = 'ai'; loadPage('receptionist'); }
+    },

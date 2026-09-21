@@ -159,7 +159,7 @@ var TenantSetup = {
       probe: function() {
         try { return !!(localStorage.getItem('bm-dialpad-key') || '').trim(); } catch(e) { return false; }
       },
-      action: function() { loadPage('receptionist'); }
+      action: function() { loadPage('callcenter'); }
     },
     {
       key: 'resend',
@@ -171,19 +171,6 @@ var TenantSetup = {
         try { return !!(localStorage.getItem('bm-resend-verified') === '1'); } catch(e) { return false; }
       },
       action: function() { TenantSetup._jumpToSettings('advanced', 'bm-resend-card'); }
-    },
-    {
-      key: 'ai_receptionist',
-      label: 'AI Receptionist — Twilio number',
-      hint: 'Auto-answers inbound calls + qualifies leads. Optional.',
-      criticality: 4,
-      probe: function() {
-        // tenants.config.receptionist.twilio_to + enabled — read via
-        // window._receptionistCfg cache populated by the Receptionist page
-        var cfg = window._receptionistCfg;
-        return !!(cfg && cfg.enabled && cfg.twilio_to);
-      },
-      action: function() { Receptionist._tab = 'ai'; loadPage('receptionist'); }
     },
     {
       key: 'bouncie',
@@ -270,7 +257,7 @@ var TenantSetup = {
       // checklist auto-collapses once Stripe + logo + resend land.
       try {
         var skips = JSON.parse(localStorage.getItem('bm-setup-skipped') || '[]');
-        ['ai_receptionist', 'bouncie', 'vehicle', 'team_member'].forEach(function(k) {
+        ['bouncie', 'vehicle', 'team_member'].forEach(function(k) {
           if (skips.indexOf(k) < 0) { skips.push(k); wrote++; }
         });
         localStorage.setItem('bm-setup-skipped', JSON.stringify(skips));

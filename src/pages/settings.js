@@ -1086,8 +1086,7 @@ var SettingsPage = {
       { page: 'automations',     icon: '⚡', title: 'Automations',       desc: 'Rules for quote/invoice follow-ups and reminders' },
       { page: 'checklists',      icon: '✅', title: 'Job Checklists',    desc: 'Reusable checklist templates for crews' },
       { page: 'formbuilder',     icon: '🧩', title: 'Forms Builder',     desc: 'Build custom intake and inspection forms' },
-      { page: 'emailtemplates',  icon: '📧', title: 'Email Templates',   desc: 'Edit templates for quote / invoice / follow-up emails' },
-      { page: 'receptionist',    icon: '📞', title: 'AI Receptionist',   desc: 'Configure after-hours call answering and routing' }
+      { page: 'emailtemplates',  icon: '📧', title: 'Email Templates',   desc: 'Edit templates for quote / invoice / follow-up emails' }
     ];
     _taRows.forEach(function(r) {
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fafafa;">'
@@ -1371,29 +1370,23 @@ var SettingsPage = {
       + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Free tier: 500 IDs/day. Sign up at <a href="https://my.plantnet.org/account/doApiKey" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">my.plantnet.org</a>.</p>'
       + '</div>';
 
-    // ── SocialPilot (Webhook OR direct API key) ──
+    // ── Social posting webhook (Make) — v1244: the SocialPilot API option moved to attic/ ──
     var spWebhook = localStorage.getItem('bm-socialpilot-webhook') || '';
-    var spApiKey = localStorage.getItem('bm-socialpilot-key') || '';
-    var spOk = spWebhook.length > 10 || spApiKey.length > 10;
+    var spOk = spWebhook.length > 10;
     html += apiKeyHeader({
         ok: spOk,
-        title: 'SocialPilot (Social Posting)',
-        emoji: '📢',
+        title: 'Social posting webhook (Make)',
+        emoji: '\ud83d\udce2',
         iconBg: '#FF6B35',
-        okText: '✅ Connected — Media Center can push to social',
-        warnText: '⚠️ Not connected — add webhook or API key below'
+        okText: '\u2705 Connected \u2014 approved days post through Make',
+        warnText: '\u26a0\ufe0f Not connected \u2014 paste the Make webhook URL'
       })
-      + '<div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:4px;">Option A — Zapier / Make Webhook URL <span style="color:var(--green-dark);">(works on any paid SocialPilot plan)</span></div>'
-      + '<input type="text" id="sp-webhook" value="' + UI.esc(spWebhook) + '" placeholder="https://hooks.zapier.com/hooks/catch/..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:10px;">'
-      + '<div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:4px;">Option B — SocialPilot API Key <span style="color:var(--text-light);font-weight:400;">(Agency plan only)</span></div>'
-      + '<input type="password" id="sp-key" value="' + spApiKey + '" placeholder="sp_xxxxxxxxxxxx" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:10px;">'
+      + '<input type="text" id="sp-webhook" value="' + UI.esc(spWebhook) + '" placeholder="https://hook.us2.make.com/..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;box-sizing:border-box;">'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      + '<button onclick="var w=document.getElementById(\'sp-webhook\').value.trim();var k=document.getElementById(\'sp-key\').value.trim();localStorage.setItem(\'bm-socialpilot-webhook\',w);localStorage.setItem(\'bm-socialpilot-key\',k);UI.toast(\'SocialPilot saved ✅\');loadPage(\'settings\');" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Save</button>'
-      + '<button onclick="SettingsPage._testSocialPilot()" style="background:#fff;color:var(--text);border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-weight:600;font-size:14px;cursor:pointer;">🔌 Test</button>'
-      + (spOk ? '<button onclick="if(confirm(\'Remove SocialPilot?\')){localStorage.removeItem(\'bm-socialpilot-webhook\');localStorage.removeItem(\'bm-socialpilot-key\');loadPage(\'settings\');}" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Remove</button>' : '')
+      + '<button onclick="var w=document.getElementById(\'sp-webhook\').value.trim();localStorage.setItem(\'bm-socialpilot-webhook\',w);UI.toast(\'Webhook saved\');loadPage(\'settings\');" class="btn btn-primary" style="padding:10px 20px;">Save</button>'
+      + '<button onclick="SettingsPage._testSocialWebhook()" style="background:#fff;color:var(--text);border:1px solid var(--border);padding:10px 20px;border-radius:8px;cursor:pointer;">Test</button>'
       + '</div>'
       + '<div id="sp-test-result" style="margin-top:10px;font-size:13px;"></div>'
-      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">No API tab in SocialPilot? Use Option A: create a free <a href="https://zapier.com/apps/webhook/integrations" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Zapier Webhook → SocialPilot</a> Zap. Paste the "Catch Hook" URL above. POST payload: <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">{caption, imageUrl, platforms}</code>.</p>'
       + '</div>';
 
     // ── Google Business Profile (GMB) ──
@@ -1425,10 +1418,6 @@ var SettingsPage = {
       + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">Once connected, BM will auto-request review responses, sync business hours, and post job photos to your GMB feed.</p>'
       + '</div>';
 
-    // ── SendJim — Direct Mail ──
-    html += '<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">'
-      + (typeof SendJim !== 'undefined' ? SendJim.renderSettings() : '<p style="font-size:13px;color:var(--text-light);">SendJim module not loaded.</p>')
-      + '</div>';
 
     // ═══ close API Keys collapsible ═══
     html += '</div></details>';
@@ -2054,18 +2043,13 @@ var SettingsPage = {
     });
   },
 
-  _testSocialPilot: function() {
+  _testSocialWebhook: function() {
     var webhook = localStorage.getItem('bm-socialpilot-webhook') || '';
-    var apiKey = localStorage.getItem('bm-socialpilot-key') || '';
     var result = document.getElementById('sp-test-result');
-    if (!webhook && !apiKey) { result.innerHTML = '<span style="color:var(--red);">Save a webhook or key first.</span>'; return; }
-    result.innerHTML = '<span style="color:var(--text-light);">Testing…</span>';
-    var payload = { caption: 'Branch Manager connection test — ignore', imageUrl: '', platforms: ['test'], test: true };
-    var url = webhook || 'https://panel.socialpilot.co/api/v1/ping';
-    var headers = { 'Content-Type': 'application/json' };
-    if (!webhook && apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
-    fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) })
-      .then(function(r) { result.innerHTML = r.ok ? '<span style="color:var(--green-dark);">✅ Reached endpoint (status ' + r.status + ')</span>' : '<span style="color:#e07c24;">⚠️ Status ' + r.status + ' — check your webhook/key.</span>'; })
+    if (!webhook) { result.innerHTML = '<span style="color:var(--red);">Save the webhook first.</span>'; return; }
+    result.innerHTML = '<span style="color:var(--text-light);">Testing\u2026</span>';
+    fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ caption: 'Branch Manager connection test \u2014 ignore', imageUrl: '', platforms: ['test'], test: true }) })
+      .then(function(r) { result.innerHTML = r.ok ? '<span style="color:var(--green-dark);">\u2705 Make answered (status ' + r.status + ')</span>' : '<span style="color:var(--red);">Status ' + r.status + '</span>'; })
       .catch(function(e) { result.innerHTML = '<span style="color:var(--red);">Network error: ' + UI.esc(String(e.message || e)) + '</span>'; });
   },
 
