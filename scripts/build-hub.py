@@ -47,6 +47,7 @@ PANELS = [
     ("How we work — the workflow","workflow-snt-e82c4b.html","One system, three people: Doug, Catherine, Claude. Short link /work.",["S"]),
     ("Ground rules — how Claude works with you","ground-rules-c4e2.html","Enforced on every message and in long-term memory. Yours to change.",[]),
     ("Catherine — Branch Manager quick start","catherine-start-b7d3f2.html","One app on her phone for jobs, schedule, photos, invoices.",[]),
+    ("Jimmy Cottrell — working together (gear rental terms)","jimmy.html","Day rates for the gear, insurance + additional-insured terms, works under his own name.",[]),
     ("Social HQ — for Catherine","social-hq-4b2c7e/","Everything for social + the Nextdoor vote on one link. Claude drafts, Catherine approves.",["NEW"]),
     ("Local presence — RealWork / Google status","local-presence-7e2c91.html","Why the public feed is empty and what unblocks Google + Facebook posting.",["NEW"]),
     ("SocialBranch in 5 minutes","socialbranch-guide-4e7b21.html","Claude drafts posts, Catherine approves. Nothing sends itself.",[]),
