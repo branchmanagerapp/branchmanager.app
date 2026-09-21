@@ -1,5 +1,5 @@
 {
-  "version": 1235,
+  "version": 1236,
   "released": "2026-09-20",
-  "notes": "v1235: day cards lead with the nightly REEL (all the day's clips auto-cut + stitched); counts show reel + photos + clips"
+  "notes": "v1236: morning clip pass — Go through clips (Keep/Drop one at a time) on each day card; dropped clips leave the day + post; reel flagged for rebuild; Approve waits for the rebuilt reel"
 }

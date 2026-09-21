@@ -251,7 +251,7 @@ var SocialBranch = {
   _ensureWorkDays: function(posts) {
     var ids = posts.filter(function(p){ return p.workDayId && !SocialBranch._workDays[p.workDayId]; }).map(function(p){ return p.workDayId; });
     if (!ids.length || typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
-    SupabaseDB.client.from('work_days').select('id,client_name,town,work_date,job_number,status,photo_count').in('id', ids).then(function(r) {
+    SupabaseDB.client.from('work_days').select('id,client_name,town,work_date,job_number,status,photo_count,photos,reel_stale,clips_reviewed_at').in('id', ids).then(function(r) {
       (r && r.data || []).forEach(function(w) { SocialBranch._workDays[w.id] = w; });
       ids.forEach(function(id) { if (!SocialBranch._workDays[id]) SocialBranch._workDays[id] = { id: id, missing: true }; });
       var panel = document.getElementById('sb-drafts-panel');
@@ -274,6 +274,89 @@ var SocialBranch = {
     }
     return html + '</div>';
   },
+  // ── v1236 MORNING CLIP PASS ──────────────────────────────────────────────
+  // One clip at a time (autoplay, muted, loop) → Keep / Drop. Dropped clips leave the day (work_days.photos) and the
+  // draft; if clips remain the reel is flagged stale and the laptop/mini rebuilds it (photo-ingest.py --reels, every
+  // 30 min in the morning). Approve waits for that rebuild so the public day never carries a dropped clip.
+  _cp: null,
+  _clipPass: function(postId) {
+    var p = SocialBranch._getPosts().find(function(x){ return x.id === postId; });
+    var w = p && p.workDayId ? SocialBranch._workDays[p.workDayId] : null;
+    if (!w || !w.photos) { UI.toast('Loading the day \u2014 try again in a second', 'error'); return; }
+    var clips = w.photos.filter(function(x){ return x.kind === 'video'; }).sort(function(a, b){ return (a.taken_at || '') < (b.taken_at || '') ? -1 : 1; });
+    if (!clips.length) { UI.toast('No clips on this day'); return; }
+    if (!SupabaseDB.client) { UI.toast('Cloud not ready', 'error'); return; }
+    UI.toast('Loading ' + clips.length + ' clip' + (clips.length === 1 ? '' : 's') + '\u2026');
+    SupabaseDB.client.storage.from('work-drafts').createSignedUrls(clips.map(function(c){ return c.path; }), 3600).then(function(r) {
+      var urls = (r && r.data) || [];
+      clips.forEach(function(c, i) { c._url = (urls[i] && urls[i].signedUrl) || null; });
+      SocialBranch._cp = { postId: postId, wid: w.id, clips: clips, i: 0, keep: [] };
+      SocialBranch._cpShow();
+    }).catch(function(e) { UI.toast('Could not load clips: ' + (e && e.message || e), 'error'); });
+  },
+  _cpShow: function() {
+    var st = SocialBranch._cp; if (!st) return;
+    var c = st.clips[st.i], n = st.clips.length;
+    var when = c.taken_at ? new Date(c.taken_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+    var dots = st.clips.map(function(x, k) {
+      var col = k < st.i ? (st.keep.indexOf(k) >= 0 ? '#16a34a' : '#dc2626') : (k === st.i ? 'var(--accent)' : 'var(--border)');
+      return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + col + ';margin:0 3px;"></span>';
+    }).join('');
+    var html = '<div style="text-align:center;">'
+      + '<div style="font-size:13px;color:var(--text-light);margin-bottom:8px;">Clip ' + (st.i + 1) + ' of ' + n + (when ? ' \u00b7 ' + when : '') + '</div>'
+      + (c._url ? '<video id="cp-video" src="' + UI.esc(c._url) + '" autoplay muted loop playsinline controls style="width:100%;max-height:52vh;background:#000;border-radius:12px;object-fit:contain;"></video>'
+                : '<div style="padding:40px 0;color:var(--text-light);">Could not load this clip</div>')
+      + '<div style="margin:12px 0 4px;">' + dots + '</div>'
+      + '<div style="display:flex;gap:12px;margin-top:10px;">'
+      + '<button onclick="SocialBranch._cpNext(false)" style="flex:1;padding:16px 0;border-radius:12px;border:2px solid #dc2626;background:var(--white);color:#dc2626;font-size:17px;font-weight:800;">\u2715 Drop</button>'
+      + '<button onclick="SocialBranch._cpNext(true)" style="flex:1;padding:16px 0;border-radius:12px;border:none;background:#16a34a;color:#fff;font-size:17px;font-weight:800;">\u2713 Keep</button>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:10px;">Dropped clips leave the day and the post. The reel rebuilds from what you keep.</div>'
+      + '</div>';
+    var footer = '<button class="btn btn-outline" onclick="SocialBranch._cp=null;UI.closeModal()">Stop \u2014 keep as is</button>';
+    var existing = document.getElementById('cp-body');
+    if (existing) { existing.innerHTML = html; return; }
+    UI.showModal('\ud83c\udfac Go through the clips', '<div id="cp-body">' + html + '</div>', { keepModal: true, footer: footer });
+  },
+  _cpNext: function(keep) {
+    var st = SocialBranch._cp; if (!st) return;
+    if (keep) st.keep.push(st.i);
+    st.i++;
+    if (st.i < st.clips.length) { SocialBranch._cpShow(); return; }
+    SocialBranch._cpFinish();
+  },
+  _cpFinish: function() {
+    var st = SocialBranch._cp; SocialBranch._cp = null;
+    UI.closeModal();
+    var w = SocialBranch._workDays[st.wid]; if (!w) return;
+    var dropPaths = st.clips.filter(function(c, k){ return st.keep.indexOf(k) < 0; }).map(function(c){ return c.path; });
+    var keptClips = st.clips.length - dropPaths.length;
+    var photos = (w.photos || []).filter(function(x){ return dropPaths.indexOf(x.path) < 0; });
+    var stale = false;
+    if (dropPaths.length) {
+      photos = photos.filter(function(x){ return x.kind !== 'reel'; });   // old reel contains dropped clips
+      stale = keptClips >= 2;                                                // fewer than 2 clips = no reel at all
+    }
+    var patch = { photos: photos, photo_count: photos.length, reel_stale: stale, clips_reviewed_at: new Date().toISOString() };
+    SupabaseDB.client.from('work_days').update(patch).eq('id', st.wid).then(function(r) {
+      if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
+      w.photos = photos; w.photo_count = photos.length; w.reel_stale = stale; w.clips_reviewed_at = patch.clips_reviewed_at;
+      // Mirror onto the draft post's media: drop the dropped clips (+ the stale reel).
+      var p = SocialBranch._getPosts().find(function(x){ return x.id === st.postId; });
+      if (p) {
+        p.media = (p.media || []).filter(function(u) {
+          var m = /work-drafts\/([^?]+)/.exec(u); var path = m ? decodeURIComponent(m[1]) : '';
+          if (dropPaths.indexOf(path) >= 0) return false;
+          if (dropPaths.length && /reel\.mp4/.test(u)) return false;
+          return true;
+        });
+        SocialBranch._upsertPost(p);
+      }
+      UI.toast(dropPaths.length ? ('Kept ' + keptClips + ' of ' + st.clips.length + (stale ? ' \u2014 reel rebuilds in the background' : '')) : 'All ' + st.clips.length + ' clips kept', 'success');
+      if (window._currentPage === 'socialbranch') loadPage('socialbranch');
+    });
+  },
+
   _approvePost: function(id) {
     var p = SocialBranch._getPosts().find(function(x){ return x.id === id; });
     if (!p) return;
@@ -338,9 +421,22 @@ var SocialBranch = {
     var counts = (nReel ? 'reel + ' : '') + (nPhoto ? nPhoto + ' photo' + (nPhoto === 1 ? '' : 's') : '') + (nVid ? (nPhoto ? ' + ' : '') + nVid + ' clip' + (nVid === 1 ? '' : 's') : '');
     var stop = 'event.stopPropagation();';
     var actions = '';
+    var nClips = (w && w.photos) ? w.photos.filter(function(x){ return x.kind === 'video'; }).length : 0;
+    var reviewed = !!(w && w.clips_reviewed_at), stale = !!(w && w.reel_stale);
+    if (stale) head += '<div style="font-size:11px;color:#92400e;margin-top:3px;">\u23f3 Reel rebuilding from the clips you kept \u2014 usually under 30 min</div>';
+    else if (reviewed && nClips) head += '<div style="font-size:11px;color:#166534;margin-top:3px;">\u2714 Clips reviewed ' + SocialBranch._formatWhen(w.clips_reviewed_at) + '</div>';
     if (p.workDayId && !approved) {
-      actions = '<button onclick="' + stop + 'SocialBranch._approvePost(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">\u2705 Approve</button>'
-        + '<button onclick="' + stop + 'SocialBranch._editPost(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">Edit</button>';
+      // v1236: morning clip pass (Doug: "go through the clips better to start each day") — keep/drop each clip, then approve.
+      if (nClips && !reviewed) {
+        actions = '<button onclick="' + stop + 'SocialBranch._clipPass(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">\ud83c\udfac Go through clips (' + nClips + ')</button>'
+          + '<button onclick="' + stop + 'SocialBranch._approvePost(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">\u2705 Approve</button>';
+      } else if (stale) {
+        actions = '<button disabled style="background:var(--bg);border:1px solid var(--border);padding:9px 14px;border-radius:8px;font-size:13px;color:var(--text-light);">\u2705 Approve \u2014 after the reel rebuilds</button>';
+      } else {
+        actions = '<button onclick="' + stop + 'SocialBranch._approvePost(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">\u2705 Approve</button>'
+          + (nClips ? '<button onclick="' + stop + 'SocialBranch._clipPass(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">\ud83c\udfac Clips</button>' : '')
+          + '<button onclick="' + stop + 'SocialBranch._editPost(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">Edit</button>';
+      }
     } else {
       actions = '<button onclick="' + stop + 'SocialBranch._rescheduleInline(\'' + p.id + '\')" style="background:var(--white);border:1px solid var(--border);padding:9px 12px;border-radius:8px;font-size:13px;cursor:pointer;">\ud83d\udcc5 Schedule</button>'
         + '<button onclick="' + stop + 'SocialBranch._postNow(\'' + p.id + '\')" class="btn btn-primary" style="font-size:13px;padding:9px 14px;">Post now</button>';
