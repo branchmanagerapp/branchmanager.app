@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1245; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1246; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1383,11 +1383,7 @@ window.bmShowStaleBanner = function(version) {
       <button class="nav-item" data-page="work"><span class="icon"><i data-lucide="briefcase" class="li"></i></span> Work</button>
       <button class="nav-item" data-page="money"><span class="icon"><i data-lucide="dollar-sign" class="li"></i></span> Money</button>
       <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="users" class="li"></i></span> Team</button>
-      <button class="nav-item nav-group-toggle" data-group="inbox" onclick="BMNav.toggle('inbox')"><span class="icon"><i data-lucide="message-circle" class="li"></i></span> Inbox <span class="cc-dot" id="cc-indicator-dot"></span> <span class="nav-caret">▾</span></button>
-      <div class="nav-group" data-group="inbox">
-        <button class="nav-item nav-sub" data-page="callcenter"><span class="icon"><i data-lucide="phone" class="li"></i></span> Calls &amp; texts</button>
-        <button class="nav-item nav-sub" data-page="messaging"><span class="icon"><i data-lucide="message-square" class="li"></i></span> Messages</button>
-      </div>
+      <button class="nav-item" data-page="inbox"><span class="icon"><i data-lucide="message-circle" class="li"></i></span> Inbox <span class="cc-dot" id="cc-indicator-dot"></span></button>
       <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="megaphone" class="li"></i></span> Marketing</button>
       <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
       <button class="nav-item nav-group-toggle" data-group="more" onclick="BMNav.toggle('more')"><span class="icon"><i data-lucide="more-horizontal" class="li"></i></span> More <span class="nav-caret">▾</span></button>
@@ -1645,7 +1641,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1245.min.js"></script>
+<script defer src="dist/bm.bundle.v1246.min.js"></script>
 
 
 
@@ -1953,6 +1949,8 @@ var pageConfigs = {
   photomap: { title: 'Photo Map', action: null },
   branchcam: { title: 'Branch Cam Library', action: null },
   messaging: { title: 'Messages', action: null },
+  inbox: { title: 'Inbox', action: null },
+  callcenter: { title: 'Calls & texts', action: null },
   equipment: { title: 'Equipment', action: '+ Add', actionFn: 'EquipmentPage.showForm()' },
   jobcosting: { title: 'Job Costing', action: null },
   recurring: { title: 'Recurring Jobs', action: null },
@@ -2030,7 +2028,7 @@ function _renderHubTabs(stateKey, tabs, activeFallback) {
 
 // ── v1245 WORK + MONEY hubs (condense step 3): one page each, tabs load the real sub-pages by id so every existing
 //    loadPage('jobs') / loadPage('invoices') call lands inside the hub on the right tab. The sidebar highlights the hub.
-var HUB_OF = { requests:'work', estimates:'work', quotes:'work', jobs:'work', invoices:'money', payments:'money', expenses:'money', books:'money', reports:'money' };
+var HUB_OF = { requests:'work', estimates:'work', quotes:'work', jobs:'work', invoices:'money', payments:'money', expenses:'money', books:'money', reports:'money', callcenter:'inbox', messaging:'inbox', teamchat:'inbox', comms:'inbox' };
 function _renderHubStrip(tabs, active) {
   var html = '<div style="position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -24px 16px;padding:4px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">';
   tabs.forEach(function(t) {
@@ -2066,6 +2064,22 @@ var MoneyHub = {
       else body = ReportsHub.render();
     } catch (e) { body = '<div style="padding:24px;color:var(--red);">' + (e && e.message || e) + '</div>'; }
     return _renderHubStrip(MoneyHub.TABS, active) + body;
+  }
+};
+
+// v1246 INBOX hub (condense step 4): calls & texts, client messages, team chat and the communication log in one place.
+var InboxHub = {
+  TABS: [['callcenter', 'Calls & texts'], ['messaging', 'Messages'], ['teamchat', 'Team chat'], ['comms', 'Log']],
+  render: function(active) {
+    active = active || 'callcenter';
+    var body = '';
+    try {
+      if (active === 'messaging') body = MessagingPage.render();
+      else if (active === 'teamchat') body = TeamChat.render();
+      else if (active === 'comms') body = CommsLog.render();
+      else body = CallCenter.render();
+    } catch (e) { body = '<div style="padding:24px;color:var(--red);">' + (e && e.message || e) + '</div>'; }
+    return _renderHubStrip(InboxHub.TABS, active) + body;
   }
 };
 
@@ -2251,7 +2265,8 @@ var pageRenderers = {
   clientmap: function() { return ClientMapPage.render(); },
   photomap: function() { return PhotoMap.render(); },
   branchcam: function() { setTimeout(function() { Photos.openLibrary(); }, 0); return '<div id="page-content"></div>'; },
-  messaging: function() { return MessagingPage.render(); },
+  messaging: function() { return InboxHub.render('messaging'); },
+  inbox: function() { return InboxHub.render('callcenter'); },
   equipment: function() { return EquipmentPage.render(); },
   jobcosting: function() { return JobCosting.render(); },
   recurring: function() { return RecurringJobs.render(); },
@@ -2285,12 +2300,12 @@ var pageRenderers = {
   beforeafter: function() { return BeforeAfter.render(); },
   modeselector: function() { return ModeSelector.render(); },
   taskreminders: function() { return TaskReminders.render(); },
-  teamchat: function() { return TeamChat.render(); },
+  teamchat: function() { return InboxHub.render('teamchat'); },
   permits: function() { return PermitsPage.render(); },
   insurance: function() { return InsurancePage.render(); },
   mediacenter: function() { return MediaCenter.render(); },
   reminders: function() { return Reminders.render(); },
-  comms: function() { return CommsLog.render(); },
+  comms: function() { return InboxHub.render('comms'); },
   satisfaction: function() { return Satisfaction.render(); },
   emailtemplates: function() { return EmailTemplates.render(); },
   customfields: function() { return CustomFields.render(); },
@@ -2305,7 +2320,7 @@ var pageRenderers = {
   payroll: function() { return PayrollHub.render(); },
   permissions: function() { return RBAC.render(); },
   help: function() { return HelpPage.render(); },
-  callcenter: function() { return CallCenter.render(); },
+  callcenter: function() { return InboxHub.render('callcenter'); },
   estimator: function() { return Estimator.render(); },
   cardone: function() { return CardoneTools.render(); },
   calculators: function() {
@@ -4135,7 +4150,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>
   <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Schedule</span></button>
   <button data-bottom-page="work" onclick="loadPage('work')"><i data-lucide="briefcase"></i><span>Work</span></button>
-  <button data-bottom-page="callcenter" onclick="loadPage('callcenter')"><i data-lucide="message-circle"></i><span>Inbox</span></button>
+  <button data-bottom-page="inbox" onclick="loadPage('inbox')"><i data-lucide="message-circle"></i><span>Inbox</span></button>
   <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
 </nav>
 

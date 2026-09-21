@@ -1,5 +1,5 @@
 {
-  "version": 1245,
+  "version": 1246,
   "released": "2026-09-20",
-  "notes": "v1245: Work (Requests · Estimate board · Quotes · Jobs) and Money (Invoices · Payments · Expenses · Books · Reports) are single pages with tabs; every old link lands on the right tab; Reports loses its duplicate Books/Payments/Expenses tabs"
+  "notes": "v1246: Inbox is one page — Calls & texts · Messages · Team chat · Log as tabs"
 }
