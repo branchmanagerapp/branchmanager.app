@@ -73,6 +73,7 @@ var SchedulePage = {
     return null;
   },
   _wdRows: {},
+  _dayPostChecked: {},
   // v1238 DAY PAGE (Doug, Sept 20 2026: "I'm in the schedule, I go to the past jobs, they open up, I go through them and make
   // a post easily; you make it easy, I make the decisions"). Full screen: reel → clips → photos, each with Drop; add from the
   // phone's camera roll; caption + networks inline; Put on the map / Post. Nothing leaves without a tap.
@@ -156,10 +157,24 @@ var SchedulePage = {
     var post = null;
     if (w && typeof SocialBranch !== 'undefined') {
       post = SocialBranch._getPosts().find(function(p) { return p.workDayId === wid; }) || null;
-      if (!post) {
-        post = { id: 'sbp_wd_' + wid.slice(0, 8), caption: '', networks: ['facebook', 'instagram', 'gmb'], media: wdItems.filter(function(f){ return f.url; }).map(function(f){ return f.url; }), status: 'draft', workDayId: wid, createdAt: new Date().toISOString() };
-        SocialBranch._upsertPost(post);
+      if (!post && !SchedulePage._dayPostChecked[wid]) {
+        // v1240: the device cache may not have the day's post yet (it's created by the nightly run in the cloud) —
+        // pull it once before ever creating a new one, so a day never ends up with two posts.
+        SchedulePage._dayPostChecked[wid] = true;
+        SupabaseDB.client.from('social_posts').select('*').eq('work_day_id', wid).limit(1).then(function(r) {
+          var row = r && r.data && r.data[0];
+          var posts = SocialBranch._getPosts();
+          if (row && !posts.some(function(p) { return String(p.id) === String(row.id); })) {
+            posts.push({ id: row.id, caption: row.caption || '', media: row.media_urls || [], networks: row.networks || [], scheduledAt: row.scheduled_at, status: row.status, postedAt: row.posted_at, results: row.results, workDayId: row.work_day_id, createdAt: row.created_at, updatedAt: row.updated_at });
+            localStorage.setItem('bm-social-posts', JSON.stringify(posts));
+          } else if (!row) {
+            SocialBranch._upsertPost({ id: 'sbp_wd_' + wid.slice(0, 8), caption: '', networks: ['facebook', 'instagram', 'gmb'], media: wdItems.filter(function(f){ return f.url; }).map(function(f){ return f.url; }), status: 'draft', workDayId: wid, createdAt: new Date().toISOString() });
+          }
+          SchedulePage._dayRerender(dateStr);
+        });
+        html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--text-light);">Loading the post\u2026</div>';
       }
+      if (post) {
       var nets = [{ id: 'facebook', name: 'Facebook' }, { id: 'instagram', name: 'Instagram' }, { id: 'gmb', name: 'Google' }];
       html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">'
         + '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">The post' + (post.status === 'posted' ? ' · posted ' + (post.postedAt ? SchedulePage._formatDate(new Date(post.postedAt), 'short') : '') : (post.status === 'scheduled' ? ' · queued' : '')) + '</div>'
@@ -170,6 +185,7 @@ var SchedulePage = {
         html += '<button onclick="SchedulePage._dayToggleNet(\'' + wid + '\',\'' + n.id + '\',\'' + dateStr + '\')" style="padding:7px 12px;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (on ? 'var(--green-dark)' : 'var(--border)') + ';background:' + (on ? 'var(--green-dark)' : 'var(--white)') + ';color:' + (on ? '#fff' : 'var(--text-light)') + ';">' + (on ? '✓ ' : '') + n.name + '</button>';
       });
       html += '</div></div>';
+      }
     }
     // ── footer ──
     var footer = '';

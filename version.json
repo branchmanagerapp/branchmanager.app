@@ -1,5 +1,5 @@
 {
-  "version": 1239,
+  "version": 1240,
   "released": "2026-09-20",
-  "notes": "v1239: Schedule photo-day loader waits for the cloud client (cold load showed only legacy days)"
+  "notes": "v1240: day page pulls the day's cloud post before creating one (no duplicate posts)"
 }
