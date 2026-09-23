@@ -600,6 +600,12 @@ var SupabaseDB = {
           var camel = _snakeRowToCamel(newRow);
           var idx = all.findIndex(function(r) { return r.id === newRow.id; });
           if (idx >= 0) {
+            // Newer-wins, same rule as the poll path (supacloud.js v849): if the
+            // local row was edited after this cloud version, it's a pending
+            // upload — a late realtime echo of the older cloud row must not
+            // clobber it (the "status flips back" bug).
+            var _ms = function(v) { return typeof v === 'number' ? v : (Date.parse(v || 0) || 0); };
+            if (_ms(all[idx].updatedAt || all[idx].updated_at) > _ms(camel.updatedAt || newRow.updated_at)) return;
             // Cloud is authoritative for fields we receive. Merge: preserve any
             // local-only fields not in cloud row (rare; mostly photo blobs).
             all[idx] = Object.assign({}, all[idx], camel);
