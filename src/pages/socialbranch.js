@@ -56,6 +56,25 @@ var SocialBranch = {
     if (/\.(jpe?g|png|webp|gif|heic)($|\?)/i.test(src)) return 'image';
     return 'image'; // default
   },
+  // v1248: iPhones paint NOTHING for a <video> with no poster until it plays,
+  // so clip tiles showed as black boxes. A #t=0.1 media fragment makes Safari
+  // load and paint the first frame. Render-only — stored URLs are unchanged.
+  _vidSrc: function(src) {
+    return (!src || /^data:/i.test(src) || src.indexOf('#') >= 0) ? src : src + '#t=0.1';
+  },
+  // v1248: tiles have no controls (tapping did nothing on a phone) — tap opens
+  // a full-screen player with real controls instead.
+  _playClip: function(src) {
+    var old = document.getElementById('sb-clip-player');
+    if (old) old.remove();
+    var ov = document.createElement('div');
+    ov.id = 'sb-clip-player';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:#000;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = '<video src="' + UI.esc(src) + '" controls autoplay playsinline style="width:100%;height:100%;object-fit:contain;"></video>'
+      + '<button type="button" aria-label="Close" style="position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:22px;border:0;background:rgba(255,255,255,.9);color:#000;font-size:22px;font-weight:700;">✕</button>';
+    ov.querySelector('button').onclick = function() { ov.remove(); };
+    document.body.appendChild(ov);
+  },
   _detectBatchMediaType: function(list) {
     if (!list || !list.length) return 'none';
     var types = list.map(SocialBranch._detectMediaType);
@@ -383,8 +402,8 @@ var SocialBranch = {
       media.slice(0, 8).forEach(function(m) {
         var v = SocialBranch._detectMediaType(m) === 'video';
         var isReel = /reel\.mp4/i.test(m);   // v1235: the nightly reel (all the day's clips, cut + stitched) leads the strip
-        strip += '<div style="position:relative;flex:none;width:' + (isReel ? '96' : '72') + 'px;height:72px;border-radius:8px;overflow:hidden;background:#000;">'
-          + (v ? '<video src="' + UI.esc(m) + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 4px rgba(0,0,0,.7);">\u25b6</span>' + (isReel ? '<span style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;font-size:9px;font-weight:800;letter-spacing:.08em;text-align:center;padding:2px 0;">REEL</span>' : '')
+        strip += '<div' + (v ? ' data-src="' + UI.esc(m) + '" onclick="event.stopPropagation();SocialBranch._playClip(this.dataset.src)"' : '') + ' style="position:relative;flex:none;width:' + (isReel ? '96' : '72') + 'px;height:72px;border-radius:8px;overflow:hidden;background:#000;' + (v ? 'cursor:pointer;' : '') + '">'
+          + (v ? '<video src="' + UI.esc(SocialBranch._vidSrc(m)) + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;pointer-events:none;"></video><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 4px rgba(0,0,0,.7);">\u25b6</span>' + (isReel ? '<span style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);color:#fff;font-size:9px;font-weight:800;letter-spacing:.08em;text-align:center;padding:2px 0;">REEL</span>' : '')
                : '<img src="' + UI.esc(m) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;">')
           + '</div>';
       });
@@ -521,7 +540,7 @@ var SocialBranch = {
     var m = (SocialBranch._draftMedia || [])[0];
     if (!m) return '<div class="ph empty ' + cls + '">Add a photo to see it here</div>';
     var isVid = SocialBranch._detectMediaType(m) === 'video';
-    return isVid ? '<video class="ph ' + cls + '" src="' + UI.esc(m) + '" muted playsinline controls></video>' : '<img class="ph ' + cls + '" src="' + UI.esc(m) + '" alt="">';
+    return isVid ? '<video class="ph ' + cls + '" src="' + UI.esc(SocialBranch._vidSrc(m)) + '" muted playsinline controls preload="metadata"></video>' : '<img class="ph ' + cls + '" src="' + UI.esc(m) + '" alt="">';
   },
   _renderMockPreview: function() {
     var ta = document.getElementById('sb-caption');
@@ -646,7 +665,7 @@ var SocialBranch = {
     host.innerHTML = media.map(function(src, i) {
       var type = SocialBranch._detectMediaType(src);
       var preview = type === 'video'
-        ? '<video src="' + UI.esc(src) + '" style="width:100%;height:100%;object-fit:cover;" muted playsinline></video><div style="position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;letter-spacing:.5px;font-weight:700;">VIDEO</div>'
+        ? '<video src="' + UI.esc(SocialBranch._vidSrc(src)) + '" data-src="' + UI.esc(src) + '" onclick="SocialBranch._playClip(this.dataset.src)" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" muted playsinline preload="metadata"></video><div style="position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;letter-spacing:.5px;font-weight:700;">VIDEO</div>'
         : '<img src="' + UI.esc(src) + '" style="width:100%;height:100%;object-fit:cover;">';
       return '<div style="position:relative;width:96px;height:96px;border-radius:8px;overflow:hidden;background:var(--bg);">'
         + preview

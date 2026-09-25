@@ -124,14 +124,14 @@ var SchedulePage = {
     };
     if (reel.length) {
       html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">Reel · all the day’s clips</div>'
-        + '<video controls playsinline preload="metadata" src="' + reel[0].url + '" style="width:100%;max-height:60vh;background:#000;border-radius:12px;"></video>';
+        + '<video controls playsinline preload="metadata" src="' + reel[0].url + '#t=0.1" style="width:100%;max-height:60vh;background:#000;border-radius:12px;"></video>';
     }
     if (clips.length) {
       html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;">Clips (' + clips.length + ')' + (isDraft ? ' · tap ✕ to drop one' : '') + '</div>'
         + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
       clips.forEach(function(f) {
         html += '<div style="position:relative;flex:none;width:112px;height:150px;border-radius:10px;overflow:hidden;background:#000;">'
-          + '<video src="' + f.url + '" controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>' + dropBtn(f) + '</div>';
+          + '<video src="' + f.url + '#t=0.1" controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>' + dropBtn(f) + '</div>';
       });
       html += '</div>';
     }
@@ -143,7 +143,7 @@ var SchedulePage = {
       });
       legacy.forEach(function(name) {
         var url = SchedulePage.RECAP_BASE + dateStr + '/' + name, isVid = /\.(mp4|mov|webm)$/i.test(name);
-        html += isVid ? '<video controls preload="none" src="' + url + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#000;"></video>'
+        html += isVid ? '<video controls playsinline preload="metadata" src="' + url + '#t=0.1" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#000;"></video>'
                       : '<img loading="lazy" src="' + url + '" onclick="window.open(\'' + url + '\',\'_blank\')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;">';
       });
       html += '</div>';

@@ -1,5 +1,5 @@
 {
-  "version": 1247,
+  "version": 1248,
   "released": "2026-09-25",
-  "notes": "v1247: a late sync from another phone can no longer flip your newer edit back"
+  "notes": "v1248: job clips show a picture instead of a black box, and tapping one plays it full screen"
 }
