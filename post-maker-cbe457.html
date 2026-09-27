@@ -1,0 +1,173 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#0a0d0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Make a post"><title>Make a post</title>
+<style>
+:root{--bg:#0a0d0b;--card:rgba(255,255,255,.04);--ink:#edf1ed;--mut:#8a968d;--faint:#5c6860;--line2:rgba(255,255,255,.16);--acc:#6fbf8f;--warn:#d9a05b;--red:#e07070;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;--serif:ui-serif,"Iowan Old Style",Palatino,Georgia,serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45;padding-bottom:80px}
+.wrap{max-width:660px;margin:0 auto;padding:0 14px}
+header{padding:22px 0 4px}h1{font-family:var(--serif);font-size:26px;font-weight:500;margin:0}
+.hint{font-size:13px;color:var(--mut);margin:6px 0 0}
+.card{border:1px solid var(--line2);background:var(--card);border-radius:14px;padding:12px;margin-top:14px}
+.hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.tt{font-size:17px;font-weight:700}.sub{font-size:12.5px;color:var(--mut)}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ph{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:#111;border:3px solid transparent;cursor:pointer}
+.ph img,.ph video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.ph.on{border-color:var(--acc)}.ph:not(.on){opacity:.45}
+.ph .k{position:absolute;left:5px;bottom:5px;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:6px}
+.ph .n{position:absolute;right:5px;top:5px;min-width:22px;height:22px;border-radius:11px;background:var(--acc);color:#06110a;font:700 12px/22px var(--sans);text-align:center;padding:0 6px}
+.ph:not(.on) .n{display:none}
+.ph .pl{position:absolute;right:5px;bottom:5px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:13px;line-height:30px;text-align:center;border:0;cursor:pointer}
+.opt{display:block;border:1px solid var(--line2);border-radius:11px;padding:10px 12px;margin-top:6px;font-size:14px;cursor:pointer}
+.opt.on{border-color:var(--acc);background:rgba(111,191,143,.08)}
+.opt b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:2px}
+textarea{width:100%;min-height:92px;font:14px/1.45 var(--sans);background:#111;color:var(--ink);border:1px solid var(--line2);border-radius:10px;padding:10px;margin-top:8px}
+.plats{display:flex;gap:6px;flex-wrap:wrap}.plats button{border:1px solid var(--line2);background:var(--card);color:var(--mut);border-radius:20px;padding:7px 12px;font:600 13px var(--sans);cursor:pointer}.plats button.on{background:var(--acc);border-color:var(--acc);color:#06110a}
+.prev{white-space:pre-wrap;font-size:14px;background:#111;border:1px solid var(--line2);border-radius:10px;padding:10px;margin-top:8px}
+.chk{font-size:13px;margin-top:8px}.chk div{margin-top:3px}.chk .ok{color:var(--acc)}.chk .w{color:var(--warn)}.chk .bad{color:var(--red)}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:11px;padding:12px 14px;font:700 14px var(--sans);flex:1;min-width:130px;cursor:pointer}
+.go{background:var(--acc);color:#06110a}.sec{background:transparent;color:var(--ink);border:1px solid var(--line2)}.done{background:transparent;color:var(--mut);border:1px dashed var(--line2)}
+.btn:disabled{opacity:.5}
+.note{font-size:12.5px;color:var(--mut);margin-top:8px;min-height:1em}
+.empty{color:var(--mut);padding:30px 0;text-align:center}.err{color:var(--red);padding:20px 0}
+#viewer{position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;align-items:center;justify-content:center;z-index:9;flex-direction:column}
+#viewer video,#viewer img{max-width:100%;max-height:82vh}#viewer button{margin-top:12px}
+</style></head><body><div class="wrap">
+<header><h1>Make a post</h1><p class="hint">One card per work day. Tap photos to pick them (the numbers set the order). Pick a caption, pick where it's going, then Share. Nothing is posted until you post it.</p></header>
+<div id="list"><div class="empty">Loading…</div></div>
+</div>
+<div id="viewer"><div id="vbox"></div><button class="btn sec" style="max-width:200px" onclick="closeV()">Close</button></div>
+<script>
+var CAPS={"d67501cd-be34-4495-bb5a-4e47810da583":{"svc":"Storm cleanup","tags":["lakemohegan","stormcleanup"],"b":"Limbs down, chipper running, property clean by the end of the day. Lake Mohegan storm cleanup.","c":"Storm left branches all over the yard? Don't drag them to the curb in pieces. We cut, chip and haul it all in one visit, like we did here in Lake Mohegan.","a":"Down limbs and brush cleared and fed straight into the chipper in Lake Mohegan. Crew cut, hauled, and left the property clean."},"1cfa0ccf-107a-4089-b004-a63d08a514e3":{"svc":"Land clearing","tags":["lakemohegan","landclearing"],"b":"Wooded slope in Lake Mohegan, opened up and cleared. Marked trees down, timber cleaned up.","c":"Overgrown woods creeping toward the yard? Clearing the marked trees now is a lot easier than dealing with a leaner after the next storm. Here's a hillside we opened up in Lake Mohegan.","a":"Marked trees came down on this wooded slope in Lake Mohegan to open things up and cut back the risk near the yard. We cut, dropped, and cleared the timber, leaving the hillside safer around the play area. Clearing overgrown woods now beats dealing with a leaner later."},"c65c9b9f-be52-461b-91d6-27692f0f25c6":{"svc":"Tree removal","tags":["lakemohegan","treeclimbing"],"b":"Climbing day in Lake Mohegan. Up the trunk, working the tree down piece by piece, chipper running below.","c":"When a tree is too tight for the bucket, we climb it. Rope, saddle and a lot of care, one piece at a time. From a wooded lot in Lake Mohegan this week.","a":"Up the tree and working it down section by section on a wooded lot in Lake Mohegan. Brush went straight into the chipper and the lot came out clean."},"86bc9ea3-7f57-408b-8200-54634bc230d4":{"svc":"Storm cleanup","tags":["scarsdale","stormcleanup"],"b":"Down tree in a Scarsdale yard. Cut up, loaded out, lawn back to normal.","c":"A down tree on the lawn doesn't have to wreck the yard. We use a loader to pick up and haul off the wood without rutting the grass. Scarsdale job from this week.","a":"Down tree cleared from the yard in Scarsdale, limbs cut down and hauled off with the loader. Grounds cleaned up so the lawn is back to normal."},"e4767442-41f9-4034-a509-b481f3c2c877":{"svc":"Firewood","tags":["garrison","firewood"],"b":"A full cord pile, processed and stacked in Garrison. Firewood season is here.","c":"Want firewood that actually burns this winter? It needs time to season. Split now, stacked loose, off the ground. We processed this pile in Garrison the same day we cleared the lot.","a":"Firewood does not split and stack itself. We processed logs into a full cord pile and cleared trees on a wooded lot in Garrison the same day. Stock up now before the cold sets in."},"e7f979f8-94a9-4297-b6ad-71615cf36ed4":{"svc":"Firewood","tags":["garrison","firewood"],"b":"Logs in one end, split firewood out the other. A full day at the processor in Garrison.","c":"Most of the wood we take down gets a second life. These logs went through the processor and into a pile that will be ready to burn by the time it's cold. Garrison.","a":"Logs cut and split into a solid pile of firewood ready to season. This is what a full day at the processor looks like when the wood keeps coming. Stack it now and it will be ready to burn when the cold hits."},"01b0b481-e5f0-43af-aa62-be5d02ec48e5":{"svc":"Tree removal","tags":["garrison","treeremoval"],"b":"Standing tree to split firewood in one day. Bucket truck work in Garrison.","c":"Big tree, no room to drop it? We take it down from the bucket piece by piece, so nothing hits the house or the lawn. This one in Garrison went straight to the splitter.","a":"Up in the bucket, working through the canopy piece by piece. Logs came down clean and went straight to the splitter for firewood. That's the whole process, from standing tree to stacked wood."},"c962cbf2-8c9e-4c10-8102-adfa620f611b":{"svc":"Tree pruning","tags":["wilton","treepruning"],"b":"Deadwood out, structure checked, tree set up for the years ahead. Pruning in Wilton.","c":"Heavy growths and gnarled bark are signs a tree has been under stress. A good prune takes out the deadwood and checks the structure before anything bigger goes wrong. Wilton job from this week.","a":"Gnarled bark and heavy growths on this trunk mean the tree has been carrying stress for years. Our crew went through it branch by branch, clearing deadwood and checking structure before deciding what stays. Regular pruning catches problems like this before they turn into bigger risks."},"ec813eea-9796-44c3-990d-c5b48a24be20":{"svc":"Tree removal","tags":["northsalem","treeremoval"],"b":"Too close to the deck to stay. Taken down in sections and bucked into rounds on site. North Salem.","c":"A tree right next to your deck is a tree right next to your house. We took this one down in sections so nothing landed where it shouldn't. North Salem.","a":"That trunk was too close to the deck to leave standing. We took it down section by section and bucked it into rounds right on site."},"b321e652-6b22-4a68-8613-9b169ea4cac9":{"svc":"Tree removal","tags":["northsalem","treeremoval"],"b":"View from the top in North Salem. Ground crew running the chipper and loader below.","c":"Removals go smoothly when the whole crew is in sync. Wood comes down from the top, and the ground crew chips and loads it as it lands. North Salem.","a":"View from the top on this North Salem removal. Crew on the ground running the chipper and loader while we drop wood from up top."},"055a6bbb-8db8-43fc-9cfd-262e43204898":{"svc":"Tree removal","tags":["northsalem","treeremoval"],"b":"Piece by piece near the house. Rigged, lowered, chipped and hauled. North Salem.","c":"Why not just drop the whole tree? Near a house you can't. We rig each piece and lower it on a rope so it lands exactly where we want. North Salem removal.","a":"Piece by piece is how you take a tree down safely near a house. We rig each section and lower it clean, chip on site, and haul it away. Watch for hidden hazards like nests before you get up there."},"dd8416a5-d298-4ff0-9a42-96553bc1e57c":{"svc":"Tree removal","tags":["cortlandtmanor","treeremoval"],"b":"Loaded up and heading out. Street left clean in Cortlandt Manor.","c":"The job isn't done when the tree is down. It's done when the wood is gone and the street is clean. Cortlandt Manor.","a":"Truck loaded and heading out in Cortlandt Manor. We cut it, hauled it, and left the street clean. No standing timber left behind on this one."},"fabc426b-076e-4a77-81b1-f1bbb1ef130d":{"svc":"Tree work","tags":["cortlandtmanor","treecare"],"b":"Old break, still growing over it, right next to the lines. Cortlandt Manor.","c":"See an old break in a tree near the power lines? Don't wait on it. Damage like this can hide weak wood inside. We look closely before we ever start a saw. Cortlandt Manor.","a":"That break point is old damage and the tree is still growing over it, right next to the utility lines. We take a close look before we ever put a saw in a tree like this."},"91147a64-8305-40d8-9504-085d31f93b7d":{"svc":"Tree removal","tags":["cortlandtmanor","treeremoval"],"b":"That cavity at the base is why this one had to go. Removal and cleanup, Cortlandt Manor.","c":"A hollow at the base of a tree is a warning sign. Decay works from the inside out, and you often can't see how bad it is until you look close. This Cortlandt Manor tree came down before it came down on its own.","a":"That cavity at the base tells you everything about why this tree had to come down. Decay like that only gets worse from the inside out, and it does not show up until you look close. Crew finished the removal and cleanup on this Cortlandt Manor property."},"1846b925-4350-4673-b15d-6994f87688dc":{"svc":"Tree work","tags":["philipstown","treecare"],"b":"Tall trees crowding the house. Assessed and planned in Philipstown.","c":"Storm season is coming. If tall trees are crowding your roofline, now is the time to have them looked at. We walked this Philipstown property and mapped out what should come down or be cut back.","a":"Tall trees crowding right up against the house like this need a second look before storm season. We assessed the stand in Philipstown and mapped out what needs to come down or come back. Get ahead of it before wind does the work for you."},"c3e43041-35e4-4585-819c-ceabe886e922":{"svc":"Tree removal","tags":["continentalvillage","treeremoval"],"b":"Tight access over the water and the fence in Continental Village. Brush down clean, trail untouched.","c":"Some jobs are all about the planning. These trees hung over the water and a fence line along a walking path. We worked them down without touching either. Continental Village.","a":"Trees along this Continental Village walking path needed work up over the water and the fence line. Crew worked the crane in tight along the path, dropping brush clean without touching the fence or trail. Tight access jobs like this take planning before the first cut."},"5b76f9bf-1a27-42bb-b0c1-77ab82bf817d":{"svc":"Tree pruning","tags":["philipstown","treepruning"],"b":"Low, wide and crowding the fence. A pruning plan in Philipstown.","c":"Pruning a little now saves a big cut later. This Philipstown tree has grown low and wide over the fence line, so the plan is to open it back up.","a":"This tree in Philipstown has grown low and wide, crowding the fence line. We took a look at pruning it back to open up the yard and keep growth in check. Regular pruning now saves bigger cuts later."},"4de819b6-b6ed-4dc3-83c6-947bab457395":{"svc":"Tree work","tags":["northsalem","treecare"],"b":"Big trees over the roof and deck. Trunk and canopy checked in North Salem.","c":"When trees lean over your roof, an inspection matters as much as the pruning. We check the trunk and canopy for decay and weak spots first. North Salem.","a":"Big trees growing right over the roof and deck. We took a close look at the trunk and canopy to check for decay and weak spots before deciding what needed to come out. When trees lean this close to a house, regular inspection matters as much as the pruning itself."},"8e8848d1-80c0-4342-b1ce-a3676f06a2c8":{"svc":"Tree work","tags":["northsalem","treecare"],"b":"Multiple leaders right over the roofline. Worth a close look. North Salem.","c":"A tree that splits into several trunks over your roof is carrying a lot of weight on a few joints. Have it checked before a storm tests it. North Salem.","a":"This tree splits into multiple leaders right over the roofline, and that's a lot of weight to trust to old growth patterns. We took a close look before it becomes a problem."},"e4a995f8-8f85-48bd-930c-3fbff813a422":{"svc":"Tree work","tags":["philipstown","treecare"],"b":"Leaning toward the roof. Checked and planned in Philipstown.","c":"If a tree is leaning toward your roof, get it looked at before a storm makes the decision for you. We walked this Philipstown property along the house and fence line.","a":"That lean over the roofline is the kind of thing that keeps homeowners up at night. We took a hard look at the trees crowding this Philipstown property near the house and fence line. If a tree is leaning toward your roof, get it checked before a storm makes the decision for you."}};
+var FN='https://ltpivkqahvplapyagljt.supabase.co/functions/v1/work-days';
+var SITE='peekskilltree.com', PHONE='(914) 391-5233';
+var BASE_TAGS=['secondnaturetree','hudsonvalley','westchesterny'];
+var PLATS={
+ fb:{name:'Facebook',max:null},
+ ig:{name:'Instagram',max:20},
+ gbp:{name:'Google',max:null},
+ nd:{name:'Nextdoor',max:10}
+};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmt(plat,body,tags){
+ body=body.trim(); var t=BASE_TAGS.concat(tags||[]).slice(0,5).map(function(x){return '#'+x}).join(' ');
+ if(plat==='fb') return body+'\n\nFree estimates: '+SITE+' or '+PHONE+'\n'+t;
+ if(plat==='ig') return body+'\n\nFree estimates: link in bio or call '+PHONE+'\n'+t;
+ if(plat==='gbp') return (body+'\n\nFree estimates at '+SITE+'.').slice(0,1500);
+ return body+'\n\nFree estimates: '+SITE+' or '+PHONE;
+}
+var key=(location.hash||'').replace(/^#/,'').replace(/^key=/,'');
+try{ if(key) localStorage.setItem('work-key',key); else key=localStorage.getItem('work-key')||''; }catch(e){}
+var list=document.getElementById('list');
+if(!key){ list.innerHTML='<div class="err">No key. Open this page from the link Claude gave you (it ends with #key=…).</div>'; }
+else fetch(FN+'?key='+encodeURIComponent(key)+'&status=draft').then(function(r){return r.json()}).then(function(d){
+ if(!d.ok){ list.innerHTML='<div class="err">'+esc(d.error||'error')+'</div>'; return; }
+ if(!d.rows.length){ list.innerHTML='<div class="empty">No work days waiting.</div>'; return; }
+ list.innerHTML=''; d.rows.forEach(render);
+}).catch(function(e){ list.innerHTML='<div class="err">'+esc(e.message)+'</div>'; });
+
+function isVid(p){return p.kind==='video'||p.kind==='reel'}
+function openV(p){var b=document.getElementById('vbox'); b.innerHTML=isVid(p)?'<video src="'+esc(p.url)+'" controls playsinline autoplay></video>':'<img src="'+esc(p.url)+'">'; document.getElementById('viewer').style.display='flex'}
+function closeV(){document.getElementById('vbox').innerHTML='';document.getElementById('viewer').style.display='none'}
+
+function render(w){
+ var cap=CAPS[w.id]||{a:w.blurb||'',b:'',c:'',tags:[]};
+ var items=(w.photos||[]).filter(function(p){return p.url});
+ // reel first, then photos, then clips
+ var rank={reel:0,photo:1,video:2}; items.sort(function(a,b){return rank[a.kind]-rank[b.kind]});
+ var meta={}; // path -> {w,h,dur}
+ var order=items.filter(function(p){return p.kind!=='video'}).map(function(p){return p.path});
+ var plat='fb', choice=cap.a?'a':'b';
+ var d=new Date(w.work_date+'T12:00:00'), dstr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+ var card=document.createElement('div'); card.className='card';
+ var opts=['a','b','c'].filter(function(k){return cap[k]});
+ var names={a:'From the photos',b:'Short',c:'Tip for homeowners'};
+ card.innerHTML='<div class="hd"><div class="tt">'+esc(w.town||'')+' · '+dstr+'</div><div class="sub">'+esc(w.client_name||'')+' · '+items.length+' files</div></div>'
+  +'<div class="lbl">1 · Photos &amp; video</div><div class="grid"></div>'
+  +'<div class="lbl">2 · Caption</div><div class="opts">'+opts.map(function(k){return '<label class="opt" data-k="'+k+'"><b>'+names[k]+'</b>'+esc(cap[k])+'</label>'}).join('')+'</div><textarea class="cap"></textarea>'
+  +'<div class="lbl">3 · Where</div><div class="plats">'+Object.keys(PLATS).map(function(k){return '<button data-p="'+k+'">'+PLATS[k].name+'</button>'}).join('')+'</div>'
+  +'<div class="prev"></div><div class="chk"></div>'
+  +'<div class="row"><button class="btn go share">Share photos + copy caption</button><button class="btn sec copy">Copy caption only</button></div>'
+  +'<div class="row"><button class="btn done mark">Posted it · add to website map</button></div><div class="note"></div>';
+ var grid=card.querySelector('.grid'), ta=card.querySelector('.cap'), note=card.querySelector('.note');
+ items.forEach(function(p){
+  var el=document.createElement('div'); el.className='ph'; el.dataset.path=p.path;
+  el.innerHTML=(isVid(p)?'<video src="'+esc(p.url)+'#t=0.5" muted playsinline preload="metadata"></video><button class="pl" title="Play">▶</button>':'<img src="'+esc(p.url)+'" loading="lazy" alt="">')+'<span class="k">'+(p.kind==='reel'?'reel':p.kind==='video'?'clip':'photo')+'</span><span class="n"></span>';
+  var m=el.querySelector('img,video');
+  if(isVid(p)) m.addEventListener('loadedmetadata',function(){meta[p.path]={w:m.videoWidth,h:m.videoHeight,dur:m.duration};checks()});
+  else m.addEventListener('load',function(){meta[p.path]={w:m.naturalWidth,h:m.naturalHeight};checks()});
+  m.addEventListener('error',function(){meta[p.path]={err:1};el.querySelector('.k').textContent='won’t load';checks()});
+  el.onclick=function(ev){ if(ev.target.classList.contains('pl')){openV(p);return} var i=order.indexOf(p.path); if(i>=0) order.splice(i,1); else order.push(p.path); paint(); };
+  grid.appendChild(el);
+ });
+ card.querySelectorAll('.opt').forEach(function(o){o.onclick=function(){choice=o.dataset.k; ta.value=cap[choice]; paint()}});
+ card.querySelectorAll('.plats button').forEach(function(b){b.onclick=function(){plat=b.dataset.p; paint()}});
+ ta.value=cap[choice]; ta.oninput=function(){paint(true)};
+ function sel(){return order.map(function(pa){return items.find(function(p){return p.path===pa})})}
+ function paint(fromTyping){
+  grid.querySelectorAll('.ph').forEach(function(el){var i=order.indexOf(el.dataset.path); el.classList.toggle('on',i>=0); el.querySelector('.n').textContent=i+1});
+  card.querySelectorAll('.opt').forEach(function(o){o.classList.toggle('on',!fromTyping&&o.dataset.k===choice&&ta.value===cap[choice])});
+  card.querySelectorAll('.plats button').forEach(function(b){b.classList.toggle('on',b.dataset.p===plat)});
+  card.querySelector('.prev').textContent=fmt(plat,ta.value,cap.tags);
+  checks();
+ }
+ function checks(){
+  var s=sel(), out=[], P=PLATS[plat], vids=s.filter(isVid), phs=s.filter(function(p){return !isVid(p)});
+  if(!s.length) out.push(['bad','Pick at least one photo or video.']);
+  else out.push(['ok',phs.length+' photo'+(phs.length==1?'':'s')+', '+vids.length+' video'+(vids.length==1?'':'s')+' picked']);
+  if(s.some(function(p){return (meta[p.path]||{}).err})) out.push(['bad','A picked file won’t load — drop it.']);
+  if(P.max&&s.length>P.max) out.push(['bad',P.name+' allows up to '+P.max+' items — you picked '+s.length+'.']);
+  if(plat==='ig'){
+   var tall=phs.filter(function(p){var m=meta[p.path];return m&&m.h/m.w>4/3+0.01});
+   if(tall.length) out.push(['ok',tall.length+' tall photo'+(tall.length>1?'s':'')+' will be trimmed to 3:4 on Share (Instagram crops anything taller).']);
+   if(vids.length&&phs.length) out.push(['w','Photos + video together = a carousel. For the reel on its own, pick only the reel.']);
+  }
+  if(plat==='gbp'){
+   vids.forEach(function(p){var m=meta[p.path]; if(m&&m.dur>30.5) out.push(['bad','Google takes video up to 30 s — this '+(p.kind==='reel'?'reel':'clip')+' is '+Math.round(m.dur)+' s. Use a clip instead.'])});
+   out.push(['ok','No phone number or hashtags in the text (Google can reject those). Use the Call button when you post.']);
+  }
+  if(plat==='fb'&&vids.length) out.push(['ok','Facebook posts every video as a reel.']);
+  if(plat==='nd') out.push(['ok','Nextdoor shows photos square or wide — tall ones get cropped in the feed.']);
+  if(plat==='ig') out.push(['ok','5 hashtags max (Instagram’s limit).']);
+  card.querySelector('.chk').innerHTML=out.map(function(o){return '<div class="'+o[0]+'">'+(o[0]==='ok'?'✓ ':o[0]==='w'?'• ':'✗ ')+esc(o[1])+'</div>'}).join('');
+  card.querySelector('.share').disabled=!s.length||out.some(function(o){return o[0]==='bad'});
+ }
+ function copyText(t){ if(navigator.clipboard&&window.isSecureContext) return navigator.clipboard.writeText(t); var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');x.remove();return Promise.resolve(); }
+ function toFile(p,i){
+  return fetch(p.url).then(function(r){if(!r.ok)throw new Error('download failed');return r.blob()}).then(function(b){
+   var name=w.work_date+'-'+(w.town||'work').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'-'+(i+1)+(isVid(p)?'.mp4':'.jpg');
+   var m=meta[p.path];
+   if(plat==='ig'&&!isVid(p)&&m&&m.h/m.w>4/3+0.01) return crop34(b).then(function(c){return new File([c],name,{type:'image/jpeg'})});
+   return new File([b],name,{type:isVid(p)?'video/mp4':'image/jpeg'});
+  });
+ }
+ function crop34(blob){ return createImageBitmap(blob,{imageOrientation:'from-image'}).then(function(bm){
+   var W=bm.width,H=Math.round(W*4/3), c=document.createElement('canvas'), s=Math.min(1,1080/W);
+   c.width=Math.round(W*s); c.height=Math.round(H*s);
+   c.getContext('2d').drawImage(bm,0,Math.round((bm.height-H)/2),W,H,0,0,c.width,c.height);
+   return new Promise(function(res){c.toBlob(res,'image/jpeg',0.9)});
+ }); }
+ card.querySelector('.copy').onclick=function(){ copyText(fmt(plat,ta.value,cap.tags)).then(function(){note.textContent='Caption copied for '+PLATS[plat].name+'.'}) };
+ card.querySelector('.share').onclick=function(){
+  var s=sel(), btn=this, text=fmt(plat,ta.value,cap.tags); btn.disabled=true; note.textContent='Getting '+s.length+' file'+(s.length>1?'s':'')+' ready…';
+  copyText(text).catch(function(){}).then(function(){ return Promise.all(s.map(toFile)) }).then(function(files){
+   if(navigator.canShare&&navigator.canShare({files:files})){
+    note.textContent='Caption copied. Pick '+PLATS[plat].name+' in the share sheet, then paste the caption.';
+    return navigator.share({files:files}).catch(function(e){ if(e.name!=='AbortError') throw e; note.textContent='Share cancelled.'; });
+   }
+   files.forEach(function(f){var a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove()});
+   note.textContent='Caption copied and '+files.length+' file'+(files.length>1?'s':'')+' saved to Downloads.';
+  }).catch(function(e){note.textContent='Something failed: '+e.message}).then(function(){btn.disabled=false; checks()});
+ };
+ card.querySelector('.mark').onclick=function(){
+  var s=sel(); if(!s.length){note.textContent='Pick the photos you posted first.';return}
+  if(!confirm('Put these '+s.length+' files on the public website map (town + date only)?')) return;
+  var btn=this; btn.disabled=true; note.textContent='Adding to the website map…';
+  fetch(FN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key,id:w.id,action:'approve',keep:order,cover:(s.find(function(p){return p.kind==='photo'})||s[0]).path,service:cap.svc||w.service||null,blurb:ta.value.trim().slice(0,280)})}).then(function(r){return r.json()}).then(function(d){
+   if(!d.ok){note.textContent='Failed: '+(d.error||'');btn.disabled=false;return}
+   note.textContent='Done — on the website map.'; card.style.opacity='.5';
+  }).catch(function(e){note.textContent='Failed: '+e.message;btn.disabled=false});
+ };
+ list.appendChild(card); paint();
+}
+</script></body></html>
