@@ -77,6 +77,7 @@ function render(w){
  var rank={reel:0,photo:1,video:2}; items.sort(function(a,b){return rank[a.kind]-rank[b.kind]});
  var meta={}; // path -> {w,h,dur}
  var order=items.filter(function(p){return p.kind!=='video'}).map(function(p){return p.path});
+ if(!order.length) order=items.map(function(p){return p.path}); // clip-only day: start with every clip picked
  var plat='fb', choice=cap.a?'a':'b';
  var d=new Date(w.work_date+'T12:00:00'), dstr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
  var card=document.createElement('div'); card.className='card';
