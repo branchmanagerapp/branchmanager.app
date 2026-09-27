@@ -85,6 +85,7 @@ var SocialBranch = {
   render: function() {
     var self = SocialBranch;
     SocialBranch._reconcileFromCloud();
+    SocialBranch._refreshSignedMedia();
     // v1221: OAuth return (?social=…) + refresh native connection status once per load.
     if (!SocialBranch._nativeChecked) {
       SocialBranch._nativeChecked = true;
@@ -252,6 +253,41 @@ var SocialBranch = {
   // client/job, every photo AND video, the AI caption in Doug's voice. Step 1 Approve → the day goes on the public
   // Recent Work map (DB trigger → work-days fn). Step 2 Schedule / Post now → socials. Nothing leaves without a tap.
   _workDays: {},
+  // v1249: nightly work-day media are SIGNED links into the private work-drafts bucket and expire after 7 days.
+  // A device's saved copy of a post kept the old links, so every photo went blank ("no photos in any post").
+  // On each SocialBranch load, re-sign any link that is expired or within 12 h of expiring and save it back.
+  _refreshingMedia: false,
+  _refreshSignedMedia: function() {
+    if (SocialBranch._refreshingMedia || typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.client.storage) return;
+    var re = /\/storage\/v1\/object\/sign\/work-drafts\/([^?]+)\?token=[^.]+\.([^.]+)\./;
+    var soon = Date.now() / 1000 + 12 * 3600, stale = {};
+    var posts = SocialBranch._getPosts();
+    posts.forEach(function(p) {
+      (p.media || []).forEach(function(m) {
+        var mm = typeof m === 'string' && m.match(re); if (!mm) return;
+        var exp = 0; try { var b = mm[2].replace(/-/g, '+').replace(/_/g, '/'); exp = JSON.parse(atob(b + '==='.slice((b.length + 3) % 4))).exp || 0; } catch (e) {}
+        if (exp < soon) stale[decodeURIComponent(mm[1])] = true;
+      });
+    });
+    var paths = Object.keys(stale); if (!paths.length) return;
+    SocialBranch._refreshingMedia = true;
+    SupabaseDB.client.storage.from('work-drafts').createSignedUrls(paths, 7 * 86400).then(function(r) {
+      SocialBranch._refreshingMedia = false;
+      if (r.error || !r.data) { console.warn('[SocialBranch] re-sign failed:', r.error && r.error.message); return; }
+      var fresh = {};
+      r.data.forEach(function(x) { if (x.signedUrl && x.path) fresh[x.path] = x.signedUrl; });
+      var all = SocialBranch._getPosts(), n = 0;
+      all.forEach(function(p) {
+        p.media = (p.media || []).map(function(m) {
+          var mm = typeof m === 'string' && m.match(re); var f = mm && fresh[decodeURIComponent(mm[1])];
+          if (f) { n++; return f; } return m;
+        });
+      });
+      if (!n) return;
+      localStorage.setItem('bm-social-posts', JSON.stringify(all));
+      if (window._currentPage === 'socialbranch') loadPage('socialbranch');
+    }).catch(function() { SocialBranch._refreshingMedia = false; });
+  },
   _ensureWorkDays: function(posts) {
     var ids = posts.filter(function(p){ return p.workDayId && !SocialBranch._workDays[p.workDayId]; }).map(function(p){ return p.workDayId; });
     if (!ids.length || typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
@@ -1509,7 +1545,8 @@ var SocialBranch = {
     if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client || !SupabaseDB.ready) return;
     SocialBranch._reconciledOnce = true;
     SupabaseDB.client.from('social_posts').select('*').then(function(res) {
-      if (res.error || !res.data) return;
+      // v1249: a device with no cloud session gets 0 rows (RLS) — don't lock out the retry after sign-in.
+      if (res.error || !res.data || !res.data.length) { SocialBranch._reconciledOnce = false; return; }
       var posts = SocialBranch._getPosts();
       var changed = false;
       res.data.forEach(function(row) {

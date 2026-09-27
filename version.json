@@ -1,5 +1,5 @@
 {
-  "version": 1248,
-  "released": "2026-09-25",
-  "notes": "v1248: job clips show a picture instead of a black box, and tapping one plays it full screen"
+  "version": 1249,
+  "released": "2026-09-27",
+  "notes": "v1249: SocialBranch photos no longer go blank after 7 days — expired work-day photo links are re-signed on load; posts re-pull after cloud sign-in"
 }
