@@ -327,7 +327,7 @@ var SocialBranch = {
     if (!clips.length) { UI.toast('No clips on this day'); return; }
     if (!SupabaseDB.client) { UI.toast('Cloud not ready', 'error'); return; }
     UI.toast('Loading ' + clips.length + ' clip' + (clips.length === 1 ? '' : 's') + '\u2026');
-    SupabaseDB.client.storage.from('work-drafts').createSignedUrls(clips.map(function(c){ return c.path; }), 3600).then(function(r) {
+    SupabaseDB.client.storage.from('work-drafts').createSignedUrls(clips.map(function(c){ return c.path; }), 7 * 86400).then(function(r) {
       var urls = (r && r.data) || [];
       clips.forEach(function(c, i) { c._url = (urls[i] && urls[i].signedUrl) || null; });
       SocialBranch._cp = { postId: postId, wid: w.id, clips: clips, i: 0, keep: [] };

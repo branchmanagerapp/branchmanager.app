@@ -59,7 +59,7 @@ var SchedulePage = {
           });
         });
         if (!toSign.length) return;
-        return sb.storage.from('work-drafts').createSignedUrls(toSign, 3600).then(function(res) {
+        return sb.storage.from('work-drafts').createSignedUrls(toSign, 7 * 86400).then(function(res) {
           var arr = (res && res.data) || [];
           arr.forEach(function(x, i) { if (pending[i] && x && x.signedUrl) pending[i].url = x.signedUrl; });
         }).catch(function() {});
@@ -259,7 +259,7 @@ var SchedulePage = {
       return SupabaseDB.client.from('work_days').update({ photos: photos, photo_count: photos.length, reel_stale: stale || anyVid }).eq('id', wid).then(function(r) {
         if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
         w.photos = photos; w.reel_stale = stale || anyVid;
-        return SupabaseDB.client.storage.from('work-drafts').createSignedUrls(added.map(function(p) { return p.path; }), 3600).then(function(res) {
+        return SupabaseDB.client.storage.from('work-drafts').createSignedUrls(added.map(function(p) { return p.path; }), 7 * 86400).then(function(res) {
           var arr = (res && res.data) || [];
           added.forEach(function(p, i) {
             var url = arr[i] && arr[i].signedUrl;

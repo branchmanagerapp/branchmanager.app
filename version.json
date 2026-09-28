@@ -1,5 +1,5 @@
 {
-  "version": 1249,
-  "released": "2026-09-27",
-  "notes": "v1249: SocialBranch photos no longer go blank after 7 days — expired work-day photo links are re-signed on load; posts re-pull after cloud sign-in"
+  "version": 1250,
+  "released": "2026-09-28",
+  "notes": "media links in Schedule and SocialBranch last 7 days instead of 1 hour (black clips fix)"
 }
