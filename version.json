@@ -1,5 +1,5 @@
 {
-  "version": 1250,
+  "version": 1251,
   "released": "2026-09-28",
-  "notes": "media links in Schedule and SocialBranch last 7 days instead of 1 hour (black clips fix)"
+  "notes": "videos play again: the app's security rule had no line for video, so every clip was blocked"
 }

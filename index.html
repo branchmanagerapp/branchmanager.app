@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1250; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1251; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -267,6 +267,7 @@ window.bmShowStaleBanner = function(version) {
   style-src   'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com;
   font-src    'self' https://fonts.gstatic.com data:;
   img-src     'self' data: blob: https: https://*.supabase.co;
+  media-src   'self' data: blob: https://*.supabase.co;
   connect-src 'self' https://*.supabase.co wss://*.supabase.co
               https://api.anthropic.com https://api.stripe.com
               https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.qrserver.com
@@ -1641,7 +1642,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1250.min.js"></script>
+<script defer src="dist/bm.bundle.v1251.min.js"></script>
 
 
 
