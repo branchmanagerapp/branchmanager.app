@@ -1,5 +1,5 @@
 {
-  "version": 1251,
+  "version": 1252,
   "released": "2026-09-28",
-  "notes": "videos play again: the app's security rule had no line for video, so every clip was blocked"
+  "notes": "tap ✕ on a day's photo or clip now grays it out with ↩ Bring back — nothing is lost by a wrong tap"
 }

@@ -43,7 +43,7 @@ var SchedulePage = {
       .then(function(m) { if (m) Object.keys(m).forEach(function(d) { merged[d] = (merged[d] || []).concat(m[d]); }); })
       .catch(function() {});
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
-    var pWork = !sb ? Promise.resolve() : sb.from('work_days').select('id,client_id,client_name,town,work_date,photos,status,review_requested_at,job_number,service,reel_stale,clips_reviewed_at').neq('status', 'skipped').order('work_date', { ascending: false }).limit(400)
+    var pWork = !sb ? Promise.resolve() : sb.from('work_days').select('id,client_id,client_name,town,work_date,photos,hidden,status,review_requested_at,job_number,service,reel_stale,clips_reviewed_at').neq('status', 'skipped').order('work_date', { ascending: false }).limit(400)
       .then(function(r) {
         var rows = (r && r.data) || [];
         var PUB = 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/work/';
@@ -55,6 +55,14 @@ var SchedulePage = {
             var item = { kind: p.kind || 'photo', path: p.path, taken: p.taken_at || null, label: (w.client_name || w.town || ''), status: w.status, wid: w.id, cid: w.client_id || null, reviewAt: w.review_requested_at || null, url: null };
             if (w.status === 'approved') item.url = PUB + w.id + '/' + p.path.split('/').pop();
             else { toSign.push(p.path); pending.push(item); }
+            (merged[w.work_date] = merged[w.work_date] || []).push(item);
+          });
+          // v1252: dropped items stay in work_days.hidden (grayed out, "Bring back"). Their files only
+          // live in the private drafts bucket, so they're always signed from there.
+          (w.hidden || []).forEach(function(p) {
+            if (!p || !p.path) return;
+            var item = { kind: p.kind || 'photo', path: p.path, taken: p.taken_at || null, label: (w.client_name || w.town || ''), status: w.status, wid: w.id, cid: w.client_id || null, reviewAt: w.review_requested_at || null, url: null, hidden: true };
+            toSign.push(p.path); pending.push(item);
             (merged[w.work_date] = merged[w.work_date] || []).push(item);
           });
         });
@@ -115,9 +123,9 @@ var SchedulePage = {
     });
     // ── media ──
     var isDraft = !!(w && w.status !== 'approved');
-    var reel = wdItems.filter(function(f) { return f.kind === 'reel' && f.url; });
-    var clips = wdItems.filter(function(f) { return f.kind === 'video' && f.url; });
-    var photos = wdItems.filter(function(f) { return f.kind === 'photo' && f.url; });
+    var reel = wdItems.filter(function(f) { return f.kind === 'reel' && f.url && !f.hidden; });
+    var clips = wdItems.filter(function(f) { return f.kind === 'video' && f.url && !f.hidden; });
+    var photos = wdItems.filter(function(f) { return f.kind === 'photo' && f.url && !f.hidden; });
     var legacy = files.filter(function(f) { return typeof f === 'string'; });
     var dropBtn = function(f) {
       return isDraft ? '<button onclick="event.stopPropagation();SchedulePage._dayDrop(\'' + wid + '\',\'' + UI.esc(f.path) + '\',\'' + f.kind + '\',\'' + dateStr + '\')" title="Drop" style="position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">✕</button>' : '';
@@ -148,6 +156,21 @@ var SchedulePage = {
       });
       html += '</div>';
     }
+    // v1252: hidden (dropped) items stay visible, grayed out, one tap to bring back
+    var hiddenItems = wdItems.filter(function(f) { return f.hidden && f.url; });
+    if (hiddenItems.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px;">Hidden (' + hiddenItems.length + ') · tap ↩ to bring one back</div>'
+        + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
+      hiddenItems.forEach(function(f) {
+        var isV = f.kind !== 'photo';
+        html += '<div style="position:relative;flex:none;width:96px;height:96px;border-radius:10px;overflow:hidden;background:#e5e7eb;border:1px dashed #9ca3af;">'
+          + (isV ? '<video src="' + f.url + '#t=0.1" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:.6;pointer-events:none;"></video>'
+                 : '<img loading="lazy" src="' + f.url + '" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:.6;">')
+          + (f.kind === 'reel' ? '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;">REEL</span>' : '')
+          + '<button onclick="event.stopPropagation();SchedulePage._dayRestore(\'' + wid + '\',\'' + UI.esc(f.path) + '\',\'' + dateStr + '\')" style="position:absolute;left:6px;right:6px;bottom:6px;padding:6px 0;border:none;border-radius:8px;background:rgba(255,255,255,.95);color:var(--green-dark);font-size:12px;font-weight:800;cursor:pointer;">↩ Bring back</button></div>';
+      });
+      html += '</div>';
+    }
     if (w && isDraft) {
       html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:10px 14px;border:1px dashed var(--border);border-radius:10px;font-size:13px;cursor:pointer;">'
         + '<input type="file" accept="image/*,video/*" multiple style="display:none" onchange="SchedulePage._dayAddFiles(\'' + wid + '\',\'' + dateStr + '\',this)">📷 Add from camera roll</label>'
@@ -169,7 +192,7 @@ var SchedulePage = {
             posts.push({ id: row.id, caption: row.caption || '', media: row.media_urls || [], networks: row.networks || [], scheduledAt: row.scheduled_at, status: row.status, postedAt: row.posted_at, results: row.results, workDayId: row.work_day_id, createdAt: row.created_at, updatedAt: row.updated_at });
             localStorage.setItem('bm-social-posts', JSON.stringify(posts));
           } else if (!row) {
-            SocialBranch._upsertPost({ id: 'sbp_wd_' + wid.slice(0, 8), caption: '', networks: ['facebook', 'instagram', 'gmb'], media: wdItems.filter(function(f){ return f.url; }).map(function(f){ return f.url; }), status: 'draft', workDayId: wid, createdAt: new Date().toISOString() });
+            SocialBranch._upsertPost({ id: 'sbp_wd_' + wid.slice(0, 8), caption: '', networks: ['facebook', 'instagram', 'gmb'], media: wdItems.filter(function(f){ return f.url && !f.hidden; }).map(function(f){ return f.url; }), status: 'draft', workDayId: wid, createdAt: new Date().toISOString() });
           }
           SchedulePage._dayRerender(dateStr);
         });
@@ -220,17 +243,42 @@ var SchedulePage = {
   },
   _dayDrop: function(wid, path, kind, dateStr) {
     var w = SchedulePage._wdRows[wid]; if (!w) return;
-    if (!confirm('Drop this ' + (kind === 'video' ? 'clip' : 'photo') + ' from the day?')) return;
-    var photos = (w.photos || []).filter(function(p) { return p.path !== path; });
-    var stale = false;
-    if (kind === 'video') { photos = photos.filter(function(p) { return p.kind !== 'reel'; }); stale = photos.filter(function(p) { return p.kind === 'video'; }).length >= 2; }
-    SupabaseDB.client.from('work_days').update({ photos: photos, photo_count: photos.length, reel_stale: stale }).eq('id', wid).then(function(r) {
+    // v1252: nothing is thrown away any more — the item moves to work_days.hidden (grayed out on the
+    // day page with "Bring back"). Dropping a clip also sets the old reel aside, as before.
+    var now = new Date().toISOString();
+    var out = (w.photos || []).filter(function(p) { return p.path === path || (kind === 'video' && p.kind === 'reel'); });
+    var photos = (w.photos || []).filter(function(p) { return out.indexOf(p) < 0; });
+    var hidden = (w.hidden || []).concat(out.map(function(p) { return Object.assign({}, p, { hidden_at: now }); }));
+    var stale = kind === 'video' ? photos.filter(function(p) { return p.kind === 'video'; }).length >= 2 : !!w.reel_stale;
+    SupabaseDB.client.from('work_days').update({ photos: photos, hidden: hidden, photo_count: photos.length, reel_stale: stale }).eq('id', wid).then(function(r) {
       if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
-      w.photos = photos; w.reel_stale = stale;
-      var list = window._bmRecaps[dateStr] || [];
-      window._bmRecaps[dateStr] = list.filter(function(f) { return !(f && f.wid === wid && (f.path === path || (kind === 'video' && f.kind === 'reel'))); });
+      w.photos = photos; w.hidden = hidden; w.reel_stale = stale;
+      (window._bmRecaps[dateStr] || []).forEach(function(f) { if (f && f.wid === wid && (f.path === path || (kind === 'video' && f.kind === 'reel'))) f.hidden = true; });
+      UI.toast((kind === 'video' ? 'Clip' : 'Photo') + ' hidden — tap ↩ Bring back below to undo');
       var post = SchedulePage._dayPost_(wid);
       if (post) { post.media = (post.media || []).filter(function(u) { var m = /work-drafts\/([^?]+)|job-photos\/work\/[^/]+\/([^?]+)/.exec(u); var pth = m ? decodeURIComponent(m[1] || m[2]) : ''; if (kind === 'video' && /reel\.mp4/.test(u)) return false; return pth !== path && pth !== path.split('/').pop(); }); SocialBranch._upsertPost(post); }
+      SchedulePage._dayRerender(dateStr);
+    });
+  },
+  // v1252: undo a drop — move the item from work_days.hidden back into the day (and its draft post).
+  _dayRestore: function(wid, path, dateStr) {
+    var w = SchedulePage._wdRows[wid]; if (!w) return;
+    var back = (w.hidden || []).filter(function(p) { return p.path === path; });
+    if (!back.length) return;
+    var hidden = (w.hidden || []).filter(function(p) { return p.path !== path; });
+    var photos = (w.photos || []).concat(back.map(function(p) { var c = Object.assign({}, p); delete c.hidden_at; return c; }))
+      .sort(function(a, b) { var o = { reel: 0, photo: 1, video: 2 }; return (o[a.kind] - o[b.kind]) || String(a.taken_at || '~').localeCompare(String(b.taken_at || '~')) || String(a.path).localeCompare(String(b.path)); });
+    var kind = back[0].kind;
+    var hasReel = photos.some(function(p) { return p.kind === 'reel'; });
+    var stale = kind === 'video' ? (!hasReel && photos.filter(function(p) { return p.kind === 'video'; }).length >= 2) : !!w.reel_stale;
+    SupabaseDB.client.from('work_days').update({ photos: photos, hidden: hidden, photo_count: photos.length, reel_stale: stale }).eq('id', wid).then(function(r) {
+      if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
+      w.photos = photos; w.hidden = hidden; w.reel_stale = stale;
+      var item = (window._bmRecaps[dateStr] || []).find(function(f) { return f && f.wid === wid && f.path === path; });
+      if (item) item.hidden = false;
+      var post = SchedulePage._dayPost_(wid);
+      if (post && post.status !== 'posted' && item && item.url && (post.media || []).indexOf(item.url) < 0) { post.media = (post.media || []).concat([item.url]); SocialBranch._upsertPost(post); }
+      UI.toast('Brought back ✓');
       SchedulePage._dayRerender(dateStr);
     });
   },
@@ -283,7 +331,7 @@ var SchedulePage = {
       SupabaseDB.client.from('work_days').select('status,photos').eq('id', wid).maybeSingle().then(function(r) {
         if (r.data && r.data.status === 'approved') {
           var PUB = 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/work/';
-          (window._bmRecaps[dateStr] || []).forEach(function(f) { if (f && f.wid === wid && f.path) { f.status = 'approved'; f.url = PUB + wid + '/' + f.path.split('/').pop(); } });
+          (window._bmRecaps[dateStr] || []).forEach(function(f) { if (f && f.wid === wid && f.path && !f.hidden) { f.status = 'approved'; f.url = PUB + wid + '/' + f.path.split('/').pop(); } });
           SchedulePage._wdRows[wid].status = 'approved';
           if (window._currentPage === 'schedule') SchedulePage._dayRerender(dateStr);
         } else if (tries < 8) setTimeout(poll, 3000);
@@ -1588,7 +1636,7 @@ var SchedulePage = {
         }
         html += '<div onclick="event.stopPropagation();SchedulePage.showDayRecap(\'' + dateStr + '\')" '
           + 'style="font-size:9.5px;font-weight:700;color:#6a4b16;background:#fdf3dc;border-radius:8px;padding:1px 5px;margin-top:2px;display:inline-block;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
-          + '\ud83d\udcf8 ' + UI.esc(_rLabel) + ' \u00b7 ' + window._bmRecaps[dateStr].length + '</div>';
+          + '\ud83d\udcf8 ' + UI.esc(_rLabel) + ' \u00b7 ' + window._bmRecaps[dateStr].filter(function(f) { return !(f && f.hidden); }).length + '</div>';
       }
       html += '</div>';
       _tick(dateStr);

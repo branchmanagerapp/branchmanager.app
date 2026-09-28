@@ -378,7 +378,14 @@ var SocialBranch = {
       stale = keptClips >= 2;                                                // fewer than 2 clips = no reel at all
     }
     var patch = { photos: photos, photo_count: photos.length, reel_stale: stale, clips_reviewed_at: new Date().toISOString() };
-    SupabaseDB.client.from('work_days').update(patch).eq('id', st.wid).then(function(r) {
+    // v1252: dropped clips (and the old reel) go to work_days.hidden so the day page can bring them back.
+    // Read the row's current hidden list first — this screen's cache doesn't carry it.
+    var outItems = (w.photos || []).filter(function(x){ return dropPaths.indexOf(x.path) >= 0 || (dropPaths.length && x.kind === 'reel'); });
+    SupabaseDB.client.from('work_days').select('hidden').eq('id', st.wid).maybeSingle().then(function(h) {
+      var now = new Date().toISOString();
+      patch.hidden = ((h && h.data && h.data.hidden) || []).concat(outItems.map(function(x){ return Object.assign({}, x, { hidden_at: now }); }));
+      return SupabaseDB.client.from('work_days').update(patch).eq('id', st.wid);
+    }).then(function(r) {
       if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
       w.photos = photos; w.photo_count = photos.length; w.reel_stale = stale; w.clips_reviewed_at = patch.clips_reviewed_at;
       // Mirror onto the draft post's media: drop the dropped clips (+ the stale reel).
