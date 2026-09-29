@@ -170,6 +170,7 @@ var RequestsPage = {
 
   // ── List render ───────────────────────────────────────────────────────────
   render: function() {
+    RequestsPage._loadReview(function() { if (window._currentPage === 'requests') loadPage('requests'); });
     if (RequestsPage._pendingDetail) {
       var _pid = RequestsPage._pendingDetail;
       RequestsPage._pendingDetail = null;
@@ -268,7 +269,7 @@ var RequestsPage = {
       +   '<h3 style="font-size:16px;font-weight:700;margin:0;">Requests</h3>'
       +   '<span style="font-size:13px;color:var(--text-light);">(' + filtered.length + ' results)</span>';
 
-    var filters = [['all','All'],['new','New'],['quoted','Quoted'],['converted','Converted'],['archived','Archived']];
+    var filters = [['review','🕵️ Needs review'],['all','All'],['new','New'],['quoted','Quoted'],['converted','Converted'],['archived','Archived']];
     if (_jb) {
       // v983: Jobber-style single "Status | All ▾" dropdown instead of pill row.
       html += '<div style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #DADFE2;border-radius:8px;padding:7px 12px;font-size:13px;">'
@@ -404,7 +405,7 @@ var RequestsPage = {
           + '<div style="flex:1;min-width:0;">'
           + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
           +   '<div style="flex:1;min-width:0;">'
-          +     '<div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(r.clientName || 'Unknown') + returning + '</div>'
+          +     '<div style="font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(r.clientName || 'Unknown') + returning + RequestsPage._reviewBadge(r.id) + '</div>'
           +     (desc ? '<div style="font-size:13px;color:var(--text);margin-top:4px;">' + UI.esc(desc) + '</div>' : '')
           +     mPhHtml
           +     mPropHtml
@@ -464,6 +465,7 @@ var RequestsPage = {
   _getFiltered: function() {
     var self = RequestsPage;
     var all = DB.requests.getAll();
+    if (self._filter === 'review') { var rv = self._review || {}; return all.filter(function(r) { return rv[r.id] && rv[r.id].review_status === 'needs_review'; }); }
     // Default: hide converted and archived (they're done — show in Clients page)
     if (self._filter === 'all') {
       all = all.filter(function(r) { return r.status !== 'converted' && r.status !== 'quoted' && r.status !== 'archived'; });
@@ -648,10 +650,86 @@ var RequestsPage = {
   },
 
   // ── Detail view ───────────────────────────────────────────────────────────
+  // ── v1253: website-lead review → Jobber ─────────────────────────────────────────────
+  // review_status lives in the cloud row (needs_review | already_in_jobber | sent_to_jobber | spam);
+  // it's read fresh (not from this device's cached copy) so every phone sees the same state.
+  _review: null,
+  _loadReview: function(rerender) {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+    SupabaseDB.client.from('requests').select('id,review_status,spam_reasons,jobber_url').not('review_status', 'is', null).then(function(res) {
+      if (res.error) return;
+      var m = {}; (res.data || []).forEach(function(x) { m[x.id] = x; });
+      var changed = JSON.stringify(m) !== JSON.stringify(RequestsPage._review || {});
+      RequestsPage._review = m;
+      if (changed && rerender) rerender();
+    });
+  },
+  _reviewBadge: function(id) {
+    var x = (RequestsPage._review || {})[id]; if (!x) return '';
+    var map = { needs_review: ['🕵️ Review', '#fef3c7', '#92400e'], sent_to_jobber: ['In Jobber ✓', '#dcfce7', '#166534'], already_in_jobber: ['Already in Jobber', '#e5e7eb', '#374151'], spam: ['Spam', '#fee2e2', '#991b1b'] };
+    var b = map[x.review_status]; if (!b) return '';
+    return ' <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:' + b[1] + ';color:' + b[2] + ';vertical-align:middle;">' + b[0] + '</span>';
+  },
+  _reviewCard: function(r) {
+    var x = (RequestsPage._review || {})[r.id]; if (!x) return '';
+    var box = function(bg, border, inner) { return '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:12px;padding:14px 16px;margin-bottom:16px;">' + inner + '</div>'; };
+    if (x.review_status === 'sent_to_jobber') return box('#f0fdf4', '#bbf7d0', '<b>✅ Sent to Jobber</b>' + (x.jobber_url ? ' · <a href="' + UI.esc(x.jobber_url) + '" target="_blank" rel="noopener" style="font-weight:700;">Open in Jobber ↗</a>' : ''));
+    if (x.review_status === 'already_in_jobber') return box('#f9fafb', '#e5e7eb', '<b>Already a client in Jobber</b> <span style="color:var(--text-light);font-size:13px;">(matched by phone or email) — nothing to send.</span>');
+    if (x.review_status === 'spam') return box('#fef2f2', '#fecaca', '<b>🗑 Marked as spam</b> — not sent anywhere. <button class="btn btn-outline" style="font-size:12px;padding:4px 10px;margin-left:8px;" onclick="RequestsPage._markSpam(\'' + r.id + '\', false)">↩ Not spam</button>');
+    var reasons = (x.spam_reasons || []);
+    return box('#fffbeb', '#fde68a',
+      '<div style="font-weight:800;font-size:15px;margin-bottom:4px;">🕵️ Review this website lead</div>'
+      + '<div style="font-size:13px;color:#92400e;margin-bottom:10px;">Real customer? Send it to Jobber. Junk or a bot? Mark it spam. Nothing goes anywhere until you tap.</div>'
+      + (reasons.length ? '<div style="margin-bottom:10px;">' + reasons.map(function(t) { return '<span style="display:inline-block;font-size:12px;font-weight:700;background:#fee2e2;color:#991b1b;border-radius:10px;padding:2px 8px;margin:0 4px 4px 0;">⚠ ' + UI.esc(t) + '</span>'; }).join('') + '</div>' : '')
+      + '<div id="req-jb-check" style="font-size:13px;margin-bottom:10px;color:var(--text-light);">Checking Jobber for this person…</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      + '<button class="btn btn-primary" style="background:#16a34a;border:none;font-weight:800;" onclick="RequestsPage._sendToJobber(\'' + r.id + '\')">✅ Send to Jobber</button>'
+      + '<button class="btn btn-outline" style="color:#991b1b;border-color:#fecaca;font-weight:700;" onclick="RequestsPage._markSpam(\'' + r.id + '\', true)">🗑 Spam</button>'
+      + '</div>');
+  },
+  _jobberCall: function(id, dry) {
+    return SupabaseDB.client.auth.getSession().then(function(res) {
+      var tok = res && res.data && res.data.session && res.data.session.access_token;
+      if (!tok) throw new Error('Sign in again first');
+      return fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/jobber-push', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok, 'apikey': SupabaseDB.ANON_KEY || '' }, body: JSON.stringify({ request_id: id, dry_run: !!dry }) }).then(function(r) { return r.json(); });
+    });
+  },
+  _jobberCheck: function(id) {
+    var el = document.getElementById('req-jb-check'); if (!el) return;
+    RequestsPage._jobberCall(id, true).then(function(d) {
+      el = document.getElementById('req-jb-check'); if (!el) return;
+      if (!d || !d.ok) { el.textContent = 'Couldn’t check Jobber: ' + ((d && d.error) || 'unknown error'); return; }
+      el.innerHTML = d.match ? '👤 Already in Jobber as <b>' + UI.esc(d.match.name) + '</b> — sending adds this request to that client (no duplicate).' : '🆕 Not in Jobber yet — sending creates the client + request.';
+    }).catch(function(e) { if (el) el.textContent = 'Couldn’t check Jobber: ' + e.message; });
+  },
+  _sendToJobber: function(id) {
+    var r = DB.requests.getById(id) || {};
+    if (!confirm('Send ' + (r.clientName || 'this lead') + ' to Jobber as a new request?')) return;
+    UI.toast('Sending to Jobber…');
+    RequestsPage._jobberCall(id, false).then(function(d) {
+      if (!d || !d.ok) { UI.toast('Jobber said no: ' + ((d && (d.error || JSON.stringify(d.errors || ''))) || 'unknown'), 'error'); return; }
+      (RequestsPage._review = RequestsPage._review || {})[id] = { id: id, review_status: 'sent_to_jobber', jobber_url: d.jobber_url, spam_reasons: [] };
+      UI.toast(d.already ? 'Already sent earlier ✓' : '✅ In Jobber' + (d.reused_client ? ' (added to their existing client)' : ''));
+      RequestsPage.showDetail(id);
+    }).catch(function(e) { UI.toast('Could not reach Jobber: ' + e.message, 'error'); });
+  },
+  _markSpam: function(id, on) {
+    SupabaseDB.client.from('requests').update({ review_status: on ? 'spam' : 'needs_review' }).eq('id', id).then(function(res) {
+      if (res.error) { UI.toast('Could not save: ' + res.error.message, 'error'); return; }
+      var x = (RequestsPage._review = RequestsPage._review || {})[id] || { id: id, spam_reasons: [] };
+      x.review_status = on ? 'spam' : 'needs_review'; RequestsPage._review[id] = x;
+      UI.toast(on ? '🗑 Marked spam — tap “Not spam” to undo' : '↩ Back to review');
+      RequestsPage.showDetail(id);
+    });
+  },
+
   showDetail: function(id) {
     var r = DB.requests.getById(id);
     if (!r) return;
     if (window.bmRememberDetail) window.bmRememberDetail('requests', id);
+    // v1253: pull fresh review state; re-open once if it changed, then check Jobber for a match
+    if (!RequestsPage._review) { RequestsPage._loadReview(function() { RequestsPage.showDetail(id); }); }
+    setTimeout(function() { var x = (RequestsPage._review || {})[id]; if (x && x.review_status === 'needs_review') RequestsPage._jobberCheck(id); }, 300);
     var self = RequestsPage;
 
     var statusColor = { new:'#1565c0', assessment_scheduled:'#e07c24', assessment_complete:'#2e7d32',
@@ -672,6 +750,9 @@ var RequestsPage = {
       + '<button class="btn btn-outline" onclick="RequestsPage._createQuote(\'' + r.id + '\',\'' + (r.clientId||'') + '\',\'' + UI.esc(r.clientName||'') + '\')" style="font-size:12px;">📝 Build Quote</button>'
       + '<button class="btn btn-outline" onclick="RequestsPage._archiveRequest(\'' + r.id + '\')" style="font-size:12px;padding:6px 12px;">Archive</button>'
       + '</div></div>'
+
+    // v1253: website-lead review card
+      + RequestsPage._reviewCard(r)
 
     // Header card
       + '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">'
