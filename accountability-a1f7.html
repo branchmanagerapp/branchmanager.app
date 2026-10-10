@@ -43,11 +43,58 @@
   footer b{color:var(--ink)}
 </style></head><body>
 <div class="wrap">
+<style>
+  .dec{background:#fff;border:2px solid #22303a;border-radius:14px;padding:16px 18px;margin:0 0 16px}
+  .dec h2{margin:0 0 8px;font-size:18px;font-weight:800}
+  .dec p{margin:6px 0;font-size:14.5px}
+  .rec{background:var(--green-bg);border:1px solid #bfe3cd;border-radius:10px;padding:12px 14px;margin:10px 0;font-size:14.5px;color:#1b5133}
+  ol.acts{margin:0;padding-left:22px} ol.acts li{margin-bottom:10px;font-size:14.5px}
+  .who{display:inline-block;font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;margin-right:6px;vertical-align:1px}
+  .who.d{background:#22303a;color:#fff} .who.c{background:var(--blue-bg);color:var(--blue)} .who.x{background:var(--amber-bg);color:var(--amber)}
+  ul.probs{margin:0;padding-left:20px} ul.probs li{margin-bottom:6px;font-size:14px}
+  details.hist{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 14px}
+  details.hist>summary{cursor:pointer;font-weight:800;font-size:15px;padding:12px 0;list-style:none}
+  details.hist>summary::-webkit-details-marker{display:none}
+  details.hist>summary::before{content:"▸ ";} details.hist[open]>summary::before{content:"▾ ";}
+</style>
   <header class="hd">
-    <h1>Branch Manager — my failures, our rules, and the plan to make it trustworthy</h1>
-    <p>One page. What I got wrong, how we work now, and the exact, prioritized list of what it takes before you can bet your livelihood on this app.</p>
-    <div style="background:#12271a;border:1px solid #2e5e40;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:13.5px;line-height:1.6;">
-<b style="color:#7fd99a;">Oct 10 — THE HONEST STATUS.</b> Jobber is the source of truth. Branch Manager is <b>not</b> in live use; it only mirrors Jobber. Doug decides in February whether it ever replaces Jobber.<br><br>
+    <h1>Branch Manager: decide today</h1>
+    <p>What has to happen for Branch Manager to replace Jobber, who does each step, and the date we decide for good.</p>
+    <div class="updated">Updated Oct 10, 2026. Jobber is the source of truth; Branch Manager only mirrors it.</div>
+  </header>
+
+  <section class="dec">
+    <h2>Today's decision</h2>
+    <p>Stop Branch Manager now, or give it one last test with a hard deadline.</p>
+    <div class="rec"><b>My recommendation: a 30-day test with a hard stop on Nov 15.</b> If it fails any check below, we stop for good: no more time spent trying to replace Jobber. If it passes, switch Dec 1 in the slow season, with Jobber's cheapest plan kept 2 months as a backup.</div>
+    <p><b>Why not switch now:</b> there's no proof it stays accurate, customer texting isn't approved, and only Claude can fix it.</p>
+    <p><b>Why not quit outright:</b> the hard parts work. Customer data is locked (tested Oct 10), online payments are safe, every invoice now matches Jobber, and the Jobber look has been in place since June.</p>
+  </section>
+
+  <h2 class="part">Action steps</h2>
+  <p class="part-sub">In order. <span class="who d">Doug</span> = you, <span class="who c">Claude</span> = me.</p>
+  <ol class="acts">
+    <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price. We pay more than Grow's listed price. 15 min, saves money either way.</li>
+    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning BM copies Jobber (clients, quotes, jobs, invoices) and emails you "matches" or "here's what's off." You stop auditing me; the email does. <i>Week 1.</i></li>
+    <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. Each one shown next to the real Jobber screen at phone width before it counts as done. <i>Weeks 1–2.</i></li>
+    <li><span class="who c">Claude</span><b>Fix the known list:</b> invoice-number backup picker, payroll week header, Settings price rows, stat tiles on 13 screens.</li>
+    <li><span class="who d">Doug</span><b>3 phone checks, 10 min:</b> stays signed in, auto-updates, a test quote saves.</li>
+    <li><span class="who d">Doug</span><b>Texting:</b> resubmit the Twilio carrier approval (only possible in the Twilio console), or decide customer texts stay in Jobber.</li>
+    <li><span class="who x">Nov 15</span><b>Go / no-go.</b> To pass it needs: 14 clean match emails in a row, all 5 screens done, texting sorted, and Catherine doing one real quote and invoice on her phone without help. Pass → switch Dec 1. Fail → stop. We keep only truck GPS, fleet records and job photos.</li>
+  </ol>
+
+  <h2 class="part">The real problems</h2>
+  <ul class="probs">
+    <li><b>Trust.</b> My changes to live data have broken things, as recently as today: the site was down about 11 minutes after a bad push. Fix: automatic daily checks, not my word.</li>
+    <li><b>No customer texting</b> until the carrier approval goes through.</li>
+    <li><b>No support desk.</b> When Jobber breaks, Jobber fixes it. When BM breaks, it's you and me.</li>
+    <li><b>One point of failure.</b> Only Claude can maintain it.</li>
+    <li><b>Catherine</b> would have to switch mid-season. That's why the switch date is Dec 1.</li>
+  </ul>
+
+  <details class="hist"><summary>Finished items, rules and history (tap to open)</summary>
+<div style="background:#22303a;color:#eaf0f3;border-radius:10px;padding:14px 16px;margin:10px 0;font-size:13.5px;line-height:1.6;">
+<b style="color:#f2c46d;">Earlier Oct 10 (replaced by the Nov 15 decision above).</b> Jobber is the source of truth. Branch Manager is <b>not</b> in live use; it only mirrors Jobber. Doug decides in February whether it ever replaces Jobber.<br><br>
 <b>Done Oct 10:</b> every BM invoice synced to Jobber, invoice numbers included (backup taken first). BM-only invoices kept as #2001–2022. The next BM invoice number continues from Jobber's. Truck names fixed, and real truck mileage stored from the shop's repair invoices.<br><br>
 <b>The honest truth:</b> switching won't save money soon. Once you count running costs and upkeep, BM would save far less than the Jobber bill, and only after months of proof. The quick, safe savings are checking whether we're on the right Jobber plan and price.<br><br>
 <b>The plan:</b><br>
@@ -56,8 +103,6 @@
 3. <b>Dec–Jan (slow season):</b> only after 14 clean days in a row, run BM next to Jobber on real jobs.<br>
 4. <b>Feb — go / no-go:</b> it must lose nothing, get every amount right, have texting approved, and Catherine must be able to use it on her phone. If it passes, switch and keep Jobber's cheapest plan as a backup. If it fails, BM stops trying to replace Jobber and keeps the parts Jobber doesn't do: truck GPS, fleet records, job photos to posts.<br><br>
 <b>Likely failure points if we switched today:</b> a save that never reaches the cloud · no customer texting (carrier approval still pending) · no support desk (only Claude) · retraining Catherine mid-season · one point of failure: only Claude can fix it.</div>
-  </header>
-  <nav class="jump"><a class="a1" href="#failures">① Where I failed</a><a class="a2" href="#rules">② The rules</a><a class="a3" href="#golive">③ Go-live plan</a></nav>
 
   <!-- ===== SECTION 1 ===== -->
   <h2 class="part" id="failures">① Where I failed you</h2>
@@ -133,6 +178,7 @@
   </div>
 
   <footer><b>Where we stand, plainly:</b> blockers #1–#4 are closed in the code (Sept 23 re-check). Online payments are safe to use. What remains is #6 going live and the phone-layout fixes (#8–#10). Every item above has a concrete fix and a code location, not a shrug. We work it top-down, one at a time, each confirmed on your phone. I'll update the status pills here as they close, and add the security scan's findings next.</footer>
+  </details>
 </div>
 <script src="nav-snt.js?v=5" defer></script>
 </body></html>
