@@ -75,11 +75,11 @@
   <p class="part-sub">In order. <span class="who d">Doug</span> = you, <span class="who c">Claude</span> = me.</p>
   <ol class="acts">
     <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price. We pay more than Grow's listed price. 15 min, saves money either way.</li>
-    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning BM copies Jobber (clients, quotes, jobs, invoices) and emails you "matches" or "here's what's off." You stop auditing me; the email does. <i>Week 1.</i> <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> Live: invoices mirror daily at 6:30am, first run matched 370/370.</li>
-    <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. Each one shown next to the real Jobber screen at phone width before it counts as done. <i>Weeks 1–2.</i> <span class="tag amber" style="margin-left:6px;">STARTED</span> Jobber look in place since June; Oct 10 added "Mark as Approved". Side-by-side needs a Jobber login in the laptop Chrome.</li>
+    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning at 6:30 BM copies Jobber and emails you "matches" or "here's what's off." <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> Now covers <b>invoices, quotes and jobs</b> (370 / 531 / 272, all matching). Clients next.</li>
+    <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. <span class="tag amber" style="margin-left:6px;">IN PROGRESS</span> Done Oct 10: Home leads with Workflow; quote buttons match (Resend, Mark Approved, Convert to Job); optional items work like Jobber (unchecked, not in subtotal, customer can only add optional items); line-item photos show to customers; approved quotes no longer auto-create jobs.</li>
     <li><span class="who c">Claude</span><b>Fix the known list:</b> invoice-number backup picker, payroll week header, Settings price rows, stat tiles on 13 screens. <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> v1254–v1258: number picker, payroll header, Settings rows, 16 stat rows, plus 9 more bugs found by testing (below).</li>
     <li><span class="who d">Doug</span><b>3 phone checks, 10 min:</b> stays signed in, auto-updates, a test quote saves. <span class="tag amber" style="margin-left:6px;">HALF</span> iPhone now signed in to the cloud (first ever). Laptop auto-updated to v1259. Test quote save verified by Claude.</li>
-    <li><span class="who d">Doug</span><b>Texting:</b> resubmit the Twilio carrier approval (only possible in the Twilio console), or decide customer texts stay in Jobber. <b>Likely why it failed:</b> the booking form REQUIRED the text-consent box (Twilio error 30923). Fixed Oct 10, the box is optional now. Resubmit.</li>
+    <li><span class="who d">Doug</span><b>Texting:</b> <span class="tag green" style="margin-left:6px;">DONE</span> Twilio approved Aug 28 (the "resubmit" note was wrong). Oct 10: new-lead alert texts were never actually sending — fixed and tested, delivered to Doug and Catherine.</li>
     <li><span class="who x">Nov 15</span><b>Go / no-go.</b> To pass it needs: 14 clean match emails in a row, all 5 screens done, texting sorted, and Catherine doing one real quote and invoice on her phone without help. Pass → switch Dec 1. Fail → stop. We keep only truck GPS, fleet records and job photos.</li>
   </ol>
 
@@ -97,6 +97,17 @@
     <li>Test records (quotes #569/#570, job #408, request #670) archived or marked spam.</li>
   </ul>
 
+
+  <h2 class="part">Also done Oct 10 (afternoon)</h2>
+  <ul class="probs">
+    <li><b>Quotes and jobs now match Jobber</b> — same numbers, statuses, totals, line items (optional items marked). Next new quote #591, next job #332. BM-only old records moved to #2000s; stale "open" BM-only jobs archived (reversible).</li>
+    <li><b>Jobs</b>: BM now shows the same 7 open jobs and 2 needing invoices as Jobber (was dozens of phantom ones).</li>
+    <li><b>Lead alerts</b>: every website lead now texts Doug + Catherine (was silently never sending).</li>
+    <li><b>Found</b>: 11 website leads in 60 days never went to Jobber. Doug: older ones were handled from the emails. Website leads are NOT yet auto-sent to Jobber — built, waiting on go-ahead.</li>
+    <li><b>Jobber entries by Claude</b>: no "Claude" in anything customer-facing; noted in internal notes only (Catherine's request).</li>
+    <li><b>Money math</b>: a blank tax rate no longer saves quotes with $0 tax when edited.</li>
+  </ul>
+
   <h2 class="part">Your phone test list (things Claude can't do)</h2>
   <ol class="acts">
     <li>Home-screen app: does it still open <b>without asking for a code</b> tomorrow and next week?</li>
@@ -111,7 +122,7 @@
   <h2 class="part">The real problems</h2>
   <ul class="probs">
     <li><b>Trust.</b> My changes to live data have broken things, as recently as today: the site was down about 11 minutes after a bad push. Fix: automatic daily checks, not my word.</li>
-    <li><b>No customer texting</b> until the carrier approval goes through.</li>
+    <li><b>Customer texting</b> works (Twilio approved Aug 28). Your main number is still on Dialpad until it moves over.</li>
     <li><b>No support desk.</b> When Jobber breaks, Jobber fixes it. When BM breaks, it's you and me.</li>
     <li><b>One point of failure.</b> Only Claude can maintain it.</li>
     <li><b>Catherine</b> would have to switch mid-season. That's why the switch date is Dec 1.</li>
