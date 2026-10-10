@@ -75,12 +75,37 @@
   <p class="part-sub">In order. <span class="who d">Doug</span> = you, <span class="who c">Claude</span> = me.</p>
   <ol class="acts">
     <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price. We pay more than Grow's listed price. 15 min, saves money either way.</li>
-    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning BM copies Jobber (clients, quotes, jobs, invoices) and emails you "matches" or "here's what's off." You stop auditing me; the email does. <i>Week 1.</i></li>
-    <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. Each one shown next to the real Jobber screen at phone width before it counts as done. <i>Weeks 1–2.</i></li>
-    <li><span class="who c">Claude</span><b>Fix the known list:</b> invoice-number backup picker, payroll week header, Settings price rows, stat tiles on 13 screens.</li>
-    <li><span class="who d">Doug</span><b>3 phone checks, 10 min:</b> stays signed in, auto-updates, a test quote saves.</li>
-    <li><span class="who d">Doug</span><b>Texting:</b> resubmit the Twilio carrier approval (only possible in the Twilio console), or decide customer texts stay in Jobber.</li>
+    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning BM copies Jobber (clients, quotes, jobs, invoices) and emails you "matches" or "here's what's off." You stop auditing me; the email does. <i>Week 1.</i> <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> Live: invoices mirror daily at 6:30am, first run matched 370/370.</li>
+    <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. Each one shown next to the real Jobber screen at phone width before it counts as done. <i>Weeks 1–2.</i> <span class="tag amber" style="margin-left:6px;">STARTED</span> Jobber look in place since June; Oct 10 added "Mark as Approved". Side-by-side needs a Jobber login in the laptop Chrome.</li>
+    <li><span class="who c">Claude</span><b>Fix the known list:</b> invoice-number backup picker, payroll week header, Settings price rows, stat tiles on 13 screens. <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> v1254–v1258: number picker, payroll header, Settings rows, 16 stat rows, plus 9 more bugs found by testing (below).</li>
+    <li><span class="who d">Doug</span><b>3 phone checks, 10 min:</b> stays signed in, auto-updates, a test quote saves. <span class="tag amber" style="margin-left:6px;">HALF</span> iPhone now signed in to the cloud (first ever). Laptop auto-updated to v1259. Test quote save verified by Claude.</li>
+    <li><span class="who d">Doug</span><b>Texting:</b> resubmit the Twilio carrier approval (only possible in the Twilio console), or decide customer texts stay in Jobber. <b>Likely why it failed:</b> the booking form REQUIRED the text-consent box (Twilio error 30923). Fixed Oct 10, the box is optional now. Resubmit.</li>
     <li><span class="who x">Nov 15</span><b>Go / no-go.</b> To pass it needs: 14 clean match emails in a row, all 5 screens done, texting sorted, and Catherine doing one real quote and invoice on her phone without help. Pass → switch Dec 1. Fail → stop. We keep only truck GPS, fleet records and job photos.</li>
+  </ol>
+
+
+  <h2 class="part">Tested Oct 10 by Claude</h2>
+  <ul class="probs">
+    <li><b>All 962 buttons</b> point to real code (2 dead ones fixed: quote ✨ AI-assist, SocialBranch Upload).</li>
+    <li><b>All 90 screens</b> open on desktop with no errors (fixed: Collect Payment was blank, BranchCam crashed).</li>
+    <li><b>Quote save → cloud</b> ✓ (fixed: salesperson + lead source were silently not saving).</li>
+    <li><b>Customer approves + signs on a phone → app turns it into a job</b> ✓. Quote page now shows exact cents, and drafts can't be "approved."</li>
+    <li><b>Customer pay page</b> ✓ at phone width (fixed: line items ran off-screen).</li>
+    <li><b>Website booking form → BM request</b> ✓ (fixed: it forced customers to accept texts; now optional and recorded).</li>
+    <li><b>Money math</b> fixed: drafts and voided invoices were counted as past due / owed; void invoices could flip to "overdue."</li>
+    <li><b>Customer flows smoke test</b> ✓ (load quote, approve, card-payment update). Customer data still locked (0 rows without login).</li>
+    <li>Test records (quotes #569/#570, job #408, request #670) archived or marked spam.</li>
+  </ul>
+
+  <h2 class="part">Your phone test list (things Claude can't do)</h2>
+  <ol class="acts">
+    <li>Home-screen app: does it still open <b>without asking for a code</b> tomorrow and next week?</li>
+    <li>Settings shows <b>v1259</b> (proves auto-update on the phone).</li>
+    <li>Open <b>Payroll</b>: week selector, then crew cards, no tall stacked rows.</li>
+    <li>Open <b>Invoices</b>: 4 stat boxes show 2×2, not squeezed.</li>
+    <li>Settings → <b>Services &amp; Prices</b>: Edit button fully visible.</li>
+    <li>Make one <b>real quote</b> on the phone and tell Claude the number. Claude confirms it reached the cloud.</li>
+    <li><b>Hours:</b> no crew time in BM since Aug 29 (GPS timesheet job is off). Are hours tracked in Jobber now? BM payroll must work before a switch.</li>
   </ol>
 
   <h2 class="part">The real problems</h2>
