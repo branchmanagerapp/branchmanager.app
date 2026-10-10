@@ -1,5 +1,5 @@
 {
-  "version": 1266,
+  "version": 1267,
   "released": "2026-10-10",
-  "notes": "Home: requires-invoicing counts all uninvoiced completed jobs (Jobber parity)"
+  "notes": "Texting switched to Twilio (signed-in only)"
 }

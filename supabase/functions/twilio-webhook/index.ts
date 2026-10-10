@@ -47,8 +47,11 @@ Deno.serve(async (req) => {
   new URLSearchParams(raw).forEach((v, k) => { params[k] = v; });
 
   const sig = req.headers.get("x-twilio-signature") ?? "";
-  const url = Deno.env.get("TWILIO_WEBHOOK_URL") ||
+  const BASE = Deno.env.get("TWILIO_WEBHOOK_URL") ||
               "https://ltpivkqahvplapyagljt.supabase.co/functions/v1/twilio-webhook";
+  const qs = new URL(req.url).search;          // Twilio signs the FULL url incl. ?step=
+  const url = BASE + qs;
+  const step = new URL(req.url).searchParams.get("step") || "";
   const ok = await validSignature(url, params, sig);
   if (!ok && Deno.env.get("TWILIO_SKIP_SIG") !== "1") {
     console.warn("twilio-webhook: bad signature", { from: params.From });
@@ -56,6 +59,16 @@ Deno.serve(async (req) => {
   }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+
+  // Voice: anything with a CallSid and no message id.
+  if (params.CallSid && !params.MessageSid && !params.SmsSid) {
+    params.__qs = qs.replace(/^\?/, "");
+    // On a screened leg, From is OUR number calling out; the real caller is
+    // looked up from the parent call row inside handleVoice.
+    params.__caller = params.From || "";
+    return await handleVoice(sb, step, params, BASE);
+  }
+
   const from = params.From || "";
   const body = params.Body || "";
   const sid  = params.MessageSid || params.SmsSid || `tw-${Date.now()}`;
@@ -88,8 +101,159 @@ Deno.serve(async (req) => {
     .upsert(row, { onConflict: "dialpad_id" });
   if (error) console.error("twilio-webhook upsert failed:", error.message);
 
+  // Tell the office a text came in (internal alert only — never auto-replies
+  // to the customer).
+  const who = await clientName(sb, clientId);
+  await alertOwners(sb, `💬 Text to BM line from ${who || from}: ${body.slice(0, 280)}`);
+
   // Empty TwiML — no auto-reply. STOP/HELP are handled by the Messaging
   // Service, and Doug's rule is that customer messages are never auto-sent.
   return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
     { status: 200, headers: { "content-type": "text/xml" } });
 });
+
+// ── Shared helpers ────────────────────────────────────────────────────────
+const TW_SID  = Deno.env.get("TWILIO_SID") ?? "";
+const TW_FROM = Deno.env.get("TWILIO_FROM_NUMBER") ?? "";
+const xml = (s: string) => new Response('<?xml version="1.0" encoding="UTF-8"?><Response>' + s + '</Response>',
+  { status: 200, headers: { "content-type": "text/xml" } });
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+async function tenantCfg(sb: any) {
+  const { data } = await sb.from("tenants").select("config").eq("id", SNT_TENANT).limit(1);
+  return (data && data[0] && data[0].config) || {};
+}
+
+async function clientName(sb: any, clientId: string | null) {
+  if (!clientId) return "";
+  const { data } = await sb.from("clients").select("name").eq("id", clientId).limit(1);
+  return (data && data[0] && data[0].name) || "";
+}
+
+async function findClient(sb: any, phone: string) {
+  const p = last10(phone);
+  if (!p) return null;
+  const { data } = await sb.from("clients").select("id").ilike("phone", `%${p}%`).limit(1);
+  return data && data.length ? data[0].id : null;
+}
+
+// Text Doug + Catherine (tenants.config.owner_alert_phones). Internal only.
+async function alertOwners(sb: any, text: string) {
+  try {
+    const cfg = await tenantCfg(sb);
+    const phones: string[] = cfg.owner_alert_phones || [];
+    for (const to of phones) {
+      const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
+        method: "POST",
+        headers: { "Authorization": "Basic " + btoa(`${TW_SID}:${TWILIO_TOKEN}`), "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ To: to, From: TW_FROM, Body: text }).toString(),
+      });
+      if (!r.ok) console.error("alertOwners failed", to, r.status, (await r.text()).slice(0, 300));
+    }
+  } catch (e) { console.error("alertOwners error", e); }
+}
+
+// ── Voice: ring Catherine, then Doug, then voicemail ─────────────────────
+// Doug, Oct 10 2026: "rings Catherine first for four to six rings and then it
+// rings me and goes to voicemail." Order + seconds live in
+// tenants.config.call_routing = { ring: [E.164...], ring_seconds: 20 } so they
+// can change without a deploy. 20s ≈ 4 rings; kept under the ~25-30s at which
+// most cell carriers hand off to their OWN voicemail (which would swallow the call).
+async function handleVoice(sb: any, step: string, p: Record<string, string>, BASE: string) {
+  const cfg = await tenantCfg(sb);
+  const route = cfg.call_routing || {};
+  const ring: string[] = route.ring || cfg.owner_alert_phones || [];
+  const secs = route.ring_seconds || 20;
+  const caller = p.From || "";
+  const at = (s: string) => esc(BASE + "?step=" + s);
+
+  // "Press 1 to answer" screening on every leg: a cell's own voicemail can't
+  // press 1, so it can no longer swallow the call (tested Oct 10: Doug's carrier
+  // voicemail answered and kept the caller). Acceptance is recorded on the
+  // parent call row, so we don't depend on how Twilio reports a declined leg.
+  const parent = p.CallSid || "";
+  const dial = (i: number) =>
+    `<Dial timeout="${secs}" answerOnBridge="true" callerId="${esc(caller)}" action="${at("next" + (i + 1))}">` +
+    `<Number url="${at("screen&p=" + encodeURIComponent(parent))}">${esc(ring[i])}</Number></Dial>`;
+
+  const voicemail = () =>
+    `<Say voice="Polly.Matthew-Neural">Thanks for calling Second Nature Tree Service. We can't get to the phone right now. Please leave your name, address, and what you need, and we'll call you back.</Say>` +
+    `<Record maxLength="180" playBeep="true" action="${at("vmdone")}" recordingStatusCallback="${at("vmsaved")}" />`;
+
+  if (step === "" ) {
+    const clientId = await findClient(sb, caller);
+    await sb.from("communications").upsert({
+      tenant_id: SNT_TENANT, client_id: clientId, channel: "call", direction: "inbound",
+      from_number: caller, to_number: p.To || "", body: "Incoming call", status: "ringing",
+      dialpad_id: p.CallSid, source: "twilio", date: new Date().toISOString(),
+      metadata: { provider: "twilio" },
+    }, { onConflict: "dialpad_id" });
+    return xml(ring.length ? dial(0) : voicemail());
+  }
+
+  // Per-call answer digit (2-9). A fixed "1" got falsely triggered by a cell
+  // voicemail beep in testing (Oct 10), bridging the caller into Doug's voicemail.
+  const answerDigit = (sid: string) => String(2 + ([...sid].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 8));
+
+  if (step === "screen") {
+    const par = new URL("http://x/?" + (p.__qs || "")).searchParams.get("p") || "";
+    const { data: c } = await sb.from("communications").select("client_id").eq("dialpad_id", par).limit(1);
+    const who = (await clientName(sb, c && c[0] && c[0].client_id)) || "";
+    const num = (p.__caller || "").replace(/\D/g, "").slice(-10).split("").join(" ");
+    return xml(`<Gather numDigits="1" timeout="8" action="${at("accept&p=" + encodeURIComponent(par))}">` +
+      `<Say voice="Polly.Matthew-Neural">Branch Manager call${who ? " from " + esc(who) : num ? " from " + num : ""}. Press ${answerDigit(par)} to answer.</Say><Pause length="1"/><Say voice="Polly.Matthew-Neural">Press ${answerDigit(par)} to answer.</Say></Gather><Hangup/>`);
+  }
+
+  if (step === "accept") {
+    const par = new URL("http://x/?" + (p.__qs || "")).searchParams.get("p") || "";
+    if (p.Digits === answerDigit(par)) {
+      await sb.from("communications").update({ status: "answered", body: "Call answered" }).eq("dialpad_id", par);
+      return xml("");               // empty = connect the caller
+    }
+    return xml("<Hangup/>");
+  }
+
+  const m = step.match(/^next(\d+)$/);
+  if (m) {
+    const i = +m[1];
+    const { data: row } = await sb.from("communications").select("status").eq("dialpad_id", p.CallSid).limit(1);
+    if (row && row[0] && row[0].status === "answered") return xml("<Hangup/>");
+    return xml(i < ring.length ? dial(i) : voicemail());
+  }
+
+  if (step === "vmdone") return xml(`<Say voice="Polly.Matthew-Neural">Thank you. Goodbye.</Say><Hangup/>`);
+
+  if (step === "vmsaved") {
+    // The recording-status callback doesn't carry From — get it from the call row.
+    let from = caller;
+    if (!from) {
+      const { data: c } = await sb.from("communications").select("from_number").eq("dialpad_id", p.CallSid).limit(1);
+      from = (c && c[0] && c[0].from_number) || "";
+    }
+    // Twilio recording URLs need our login, so copy the mp3 into a private
+    // bucket and text a signed link that plays straight from the phone.
+    let rec = "";
+    try {
+      const r = await fetch(p.RecordingUrl + ".mp3", { headers: { "Authorization": "Basic " + btoa(`${TW_SID}:${TWILIO_TOKEN}`) } });
+      if (r.ok) {
+        const path = `${p.RecordingSid || p.CallSid}.mp3`;
+        await sb.storage.from("voicemails").upload(path, new Uint8Array(await r.arrayBuffer()), { contentType: "audio/mpeg", upsert: true });
+        const { data: s } = await sb.storage.from("voicemails").createSignedUrl(path, 60 * 60 * 24 * 30);
+        rec = (s && s.signedUrl) || "";
+      }
+    } catch (e) { console.error("voicemail copy failed", e); }
+    const clientId = await findClient(sb, from);
+    const who = (await clientName(sb, clientId)) || from || "unknown caller";
+    await sb.from("communications").upsert({
+      tenant_id: SNT_TENANT, client_id: clientId, channel: "voicemail", direction: "inbound",
+      from_number: from, to_number: p.To || "", body: `Voicemail (${p.RecordingDuration || "?"}s)`,
+      status: "received", dialpad_id: "vm-" + (p.RecordingSid || p.CallSid), source: "twilio",
+      date: new Date().toISOString(), metadata: { provider: "twilio", recording_url: rec, twilio_recording_sid: p.RecordingSid, call_sid: p.CallSid },
+    }, { onConflict: "dialpad_id" });
+    await sb.from("communications").update({ status: "voicemail", body: "Missed call — left voicemail" }).eq("dialpad_id", p.CallSid);
+    await alertOwners(sb, `📞 Voicemail on BM line from ${who} (${p.RecordingDuration || "?"}s): ${rec}`);
+    return new Response("ok");
+  }
+
+  return xml("<Hangup/>");
+}

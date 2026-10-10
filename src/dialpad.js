@@ -46,20 +46,27 @@ var Dialpad = {
     // landing in the catch below and silently opening the phone's Messages
     // app instead of texting through Dialpad. Send the anon key so the edge
     // function is actually reached.
+    // Oct 10 2026: texting moved from Dialpad to Twilio (Doug: "switch to Twilio
+    // now"). twilio-sms-send requires a SIGNED-IN user token — it used to accept
+    // anyone, which made it an open relay for our number. Anon key is only a
+    // fallback so the error comes back readable instead of a gateway 401.
     var _anon = (window.BM_CONFIG && window.BM_CONFIG.supabaseAnonKey)
       || (function(){ try { return localStorage.getItem('bm-supabase-key'); } catch(e){ return null; } })();
+    var _tok = (function(){ try {
+      var raw = localStorage.getItem('sb-ltpivkqahvplapyagljt-auth-token');
+      var s = raw ? JSON.parse(raw) : null;
+      return s && (s.access_token || (s.currentSession && s.currentSession.access_token)) || null;
+    } catch(e){ return null; } })();
     try {
-      var res = await fetch(FN_URL + '/dialpad-sms-send', {
+      var res = await fetch(FN_URL + '/twilio-sms-send', {
         method: 'POST',
-        headers: _anon
-          ? { 'Content-Type': 'application/json', 'apikey': _anon, 'Authorization': 'Bearer ' + _anon }
-          : { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'apikey': _anon || '', 'Authorization': 'Bearer ' + (_tok || _anon || '') },
         body: JSON.stringify({ to: cleanPhone, message: message, clientId: clientId || null })
       });
       var data = await res.json();
       if (data.ok) {
         UI.toast('Text sent to ' + Dialpad._formatPhone(cleanPhone));
-        return { success: true, method: 'dialpad' };
+        return { success: true, method: 'twilio' };
       }
       // Edge fn returned an error (e.g. DIALPAD_API_KEY not set) — fall back
       console.warn('[Dialpad] sendSMS edge fn error:', data.error);
@@ -77,7 +84,7 @@ var Dialpad = {
       throw new Error(data.error || 'Send failed');
     } catch (e) {
       console.warn('[Dialpad] sendSMS failed:', e);
-      UI.toast('⚠️ Dialpad could not send: ' + (e && e.message ? e.message : 'unknown error') + ' — did NOT open Messages.', 'error');
+      UI.toast('⚠️ Text NOT sent: ' + (e && e.message ? e.message : 'unknown error') + ' — did NOT open Messages.', 'error');
       return { success: false, method: 'error', error: e && e.message };
     }
   },

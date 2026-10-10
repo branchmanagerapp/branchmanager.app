@@ -45,6 +45,23 @@ Deno.serve(async (req) => {
       return cors(JSON.stringify({ error: "Twilio not configured" }), 503);
     }
 
+    // Oct 10 2026: was an open relay (verify_jwt off, no check) — anyone could
+    // text from our number. Now requires a signed-in BM user or service role.
+    const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    let authed = false;
+    try {
+      const claims = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      if (claims.role === "service_role") {
+        // role claim alone is forgeable — confirm the signature by using it
+        const { error } = await createClient(SUPABASE_URL, jwt).from("tenants").select("id").limit(1);
+        authed = !error;
+      } else if (claims.role === "authenticated") {
+        const { data } = await sb.auth.getUser(jwt);
+        authed = !!(data && data.user);
+      }
+    } catch { authed = false; }
+    if (!authed) return cors(JSON.stringify({ ok: false, error: "Sign in to Branch Manager to send texts" }), 401);
+
     const tenantId = resolveTenantId(req);
 
     let body: { to: string; message: string; clientId?: string; system?: boolean };

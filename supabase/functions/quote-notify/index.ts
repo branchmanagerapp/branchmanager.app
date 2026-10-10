@@ -24,6 +24,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { resolveTenantId, loadTenantBranding, TenantBranding } from '../_shared/tenant.ts';
+import { textOwners } from '../_shared/owner-sms.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -143,6 +144,21 @@ serve(async (req: Request) => {
 
     const phoneTel = telHref(b.phone);
 
+    // Owner text alert. This endpoint is public (approve.html calls it), so the
+    // text uses the quote's REAL number/name from the DB and only fires when
+    // the quote exists — the request body can't put arbitrary text on Doug's phone.
+    const ownerText = async (label: string) => {
+      try {
+        if (!quoteId) return;
+        const { data: q } = await sb.from('quotes').select('quote_number, client_name, total')
+          .eq('id', quoteId).eq('tenant_id', tenantId).limit(1);
+        if (!q || !q.length) return;
+        const { data: tr } = await sb.from('tenants').select('config').eq('id', tenantId).limit(1);
+        const cfg = (tr && tr[0] && tr[0].config) || {};
+        await textOwners(cfg, `${label} Quote #${q[0].quote_number} — ${q[0].client_name || 'Customer'} (${money(q[0].total)}).` + (event === 'changes_requested' && changeNotes ? ` Notes: ${changeNotes.slice(0, 300)}` : ''));
+      } catch (e) { console.error('owner text failed', e); }
+    };
+
     if (event === 'approved') {
       const teamSubject = `✅ Quote #${qNum} approved — ${cName}`;
       const teamText = `Quote #${qNum} approved by ${cName}.
@@ -172,6 +188,7 @@ ${APP_URL}`;
       );
 
       await sendEmail(b, b.email, 'Team', teamSubject, teamText, teamHtml);
+      await ownerText('✅ APPROVED:');
 
       if (clientEmail) {
         const custSubject = `Your quote is confirmed — ${b.business_name}`;
@@ -234,6 +251,7 @@ ${APP_URL}`;
       );
 
       await sendEmail(b, b.email, 'Team', teamSubject, teamText, teamHtml);
+      await ownerText('💬 CHANGES REQUESTED:');
 
       if (clientEmail) {
         const custSubject = `We got your feedback — ${b.business_name}`;

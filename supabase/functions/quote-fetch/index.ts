@@ -19,6 +19,7 @@
  *   supabase functions deploy quote-fetch --no-verify-jwt --project-ref ltpivkqahvplapyagljt
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { textOwners } from "../_shared/owner-sms.ts";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -64,6 +65,7 @@ async function notifyQuoteViewed(row: any, headers: Record<string, string>) {
       headers: { 'Authorization': 'Bearer ' + RESEND_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: `${cfg.from_name || 'Branch Manager'} <${from}>`, to: [to], subject, text })
     });
+    await textOwners(cfg, `👀 ${cName} just opened Quote #${qNum} (${total}). Good time to follow up.`);
   } catch (e) {
     console.warn('quote-view notify failed (non-fatal):', e);
   }
