@@ -1,5 +1,5 @@
 {
-  "version": 1261,
+  "version": 1262,
   "released": "2026-10-10",
-  "notes": "Jobber workflow: no auto job from approved quotes; Convert to Job button; awaiting quotes lead with Resend"
+  "notes": "Quote/job reconcile ignores archived jobs"
 }

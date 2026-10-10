@@ -140,7 +140,7 @@ var Workflow = {
       }
       if (q.convertedJobId) return;
       // Already has a job linked to this quote? Just reconcile the flag, no new job.
-      var existing = jobs.filter(function(j) { return j && j.quoteId === q.id; })[0];
+      var existing = jobs.filter(function(j) { return j && j.quoteId === q.id && j.status !== 'archived' && j.status !== 'cancelled'; })[0];  // ignore archived jobs (Oct 10 2026)
       if (existing) {
         DB.quotes.update(q.id, { status: 'converted', convertedJobId: existing.id });
         return;
