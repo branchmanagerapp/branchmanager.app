@@ -1,5 +1,5 @@
 {
-  "version": 1259,
+  "version": 1260,
   "released": "2026-10-10",
-  "notes": "Quote menu: Mark as Approved (Jobber parity)"
+  "notes": "Jobber parity: Home order, optional items excluded from totals + marked, blank tax rate = default, legacy line-item photos shown, quote # skips 2000s"
 }

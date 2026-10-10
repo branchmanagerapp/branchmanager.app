@@ -1007,7 +1007,8 @@ var DB = (function() {
   // cloud pull (window._bmCloudMax.quotes, set by CloudSync).
   var nextQuoteNum = function() {
     var all = getAll(KEYS.quotes);
-    var max = all.reduce(function(m, q) { return Math.max(m, q.quoteNumber || 0); }, 0);
+    // Skip the legacy BM-only 2000-series (Oct 10 2026) so numbering continues from Jobber's.
+    var max = all.reduce(function(m, q) { var n = q.quoteNumber || 0; return (n >= 2000 && n <= 2999) ? m : Math.max(m, n); }, 0);
     try {
       var cloudHint = (typeof window !== 'undefined' && window._bmCloudMax && window._bmCloudMax.quotes) || 0;
       if (cloudHint > max) max = cloudHint;

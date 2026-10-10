@@ -1350,7 +1350,7 @@ var QuotesPage = {
       +   '<div class="q-photo-slot">' + QuotesPage._bodyPhotoAreaHtml(photos, index) + '</div>'
       +   QuotesPage._photoToolsHtml(photos.length > 0)
       +   '<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;font-weight:600;color:var(--text);">'
-      +     '<input type="checkbox" class="q-item-optional"' + (item.optional ? ' checked' : '') + ' style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on'
+      +     '<input type="checkbox" class="q-item-optional" onchange="QuotesPage.calcTotal()"' + (item.optional ? ' checked' : '') + ' style="width:17px;height:17px;accent-color:var(--green-dark);"> Optional add-on'
       +     '<span style="font-weight:400;font-size:11px;color:var(--text-light);">— customer picks</span>'
       +   '</label>'
       + '</div>'
@@ -2029,7 +2029,8 @@ var QuotesPage = {
       var qty = parseFloat(qtyEl.value) || 0;
       var rate = parseFloat(rateEl.value) || 0;
       var lineTotal = qty * rate;
-      subtotal += lineTotal;
+      var _opt = wrap.querySelector('.q-item-optional');
+      if (!(_opt && _opt.checked)) subtotal += lineTotal;  // optional add-ons not in subtotal (Jobber parity)
       var amountEl = wrap.querySelector('.q-item-amount');
       if (amountEl) amountEl.textContent = UI.money(lineTotal);
     });
@@ -2130,7 +2131,7 @@ var QuotesPage = {
           if (wrap.dataset.materialId) liOut.materialId = wrap.dataset.materialId;
         }
         items.push(liOut);
-        subtotal += qty * rate;
+        if (!liOut.optional) subtotal += qty * rate;  // optional add-ons not in subtotal (Jobber parity)
       }
     });
     var taxRateVal = document.getElementById('q-tax-rate');
@@ -3817,11 +3818,26 @@ var QuotesPage = {
 
   // --- Inline Line Item Editor for Detail View ---
 
+  // Oct 10 2026 (Jobber parity): optional add-ons and text-only lines are NOT in the subtotal until chosen;
+  // a blank tax rate means "use the default", never 0%.
+  _billable: function(it) { return !!it && !it.optional && !it.textOnly; },
+  _taxRateOf: function(q) {
+    var r = q && q.taxRate;
+    if (r === null || r === undefined || r === '' || isNaN(parseFloat(r))) return parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375;
+    return parseFloat(r);
+  },
+  _itemPhotos: function(item) {
+    if (Array.isArray(item.photos) && item.photos.length) return item.photos;
+    if (item.photo) return [item.photo];
+    if (item.photoUrl) return [item.photoUrl];  // imported/legacy items store the photo here
+    return [];
+  },
+
   renderLineItems: function(q, id) {
     var services = DB.services.getAll();
     var items = q.lineItems || [];
     var subtotal = 0;
-    items.forEach(function(item) { subtotal += (item.qty || 0) * (item.rate || 0); });
+    items.forEach(function(item) { if (QuotesPage._billable(item)) subtotal += (item.qty || 0) * (item.rate || 0); });
     var discount = q.discount || 0;
     var grandTotal = subtotal - discount;
 
@@ -3844,9 +3860,10 @@ var QuotesPage = {
         var lineTotal = (item.qty || 0) * (item.rate || 0);
         html += '<tr id="li-row-' + idx + '">'
           + '<td>'
+          + (item.optional ? '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;"><input type="checkbox" disabled style="width:15px;height:15px;margin:0;"> Optional — customer can add</div>' : '')
           + '<strong class="li-name" onclick="QuotesPage.editLineItem(\'' + id + '\',' + idx + ')" style="cursor:pointer;" title="Click to edit">' + UI.esc(item.service || item.name || 'Custom') + '</strong>'
           + (item.description ? '<br><span style="color:var(--text-light);font-size:12px;">' + UI.esc(item.description) + '</span>' : '')
-          + (function(){ var _lip = Array.isArray(item.photos) ? item.photos : (item.photo ? [item.photo] : []); return _lip.length ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">' + _lip.map(function(p){ return '<img src="' + p + '" style="width:76px;height:76px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">'; }).join('') + '</div>' : ''; })()
+          + (function(){ var _lip = QuotesPage._itemPhotos(item); return _lip.length ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">' + _lip.map(function(p){ return '<img src="' + p + '" style="width:76px;height:76px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">'; }).join('') + '</div>' : ''; })()
           + '</td>'
           + '<td><input type="number" class="li-qty-input" value="' + (item.qty || 1) + '" min="0" step="1" style="width:60px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:13px;" onblur="QuotesPage.updateLineItemField(\'' + id + '\',' + idx + ',\'qty\',this.value)" onkeydown="if(event.key===\'Enter\'){this.blur();}"></td>'
           + '<td style="text-align:right;"><input type="number" class="li-rate-input" value="' + (item.rate || 0) + '" min="0" step="0.01" style="width:90px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:13px;" onblur="QuotesPage.updateLineItemField(\'' + id + '\',' + idx + ',\'rate\',this.value)" onkeydown="if(event.key===\'Enter\'){this.blur();}"></td>'
@@ -3857,7 +3874,7 @@ var QuotesPage = {
       html += '</tbody></table>';
 
       // Subtotal / Discount / Grand Total
-      var taxRateDisplay = q.taxRate !== undefined ? q.taxRate : (parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375);
+      var taxRateDisplay = QuotesPage._taxRateOf(q);
       var taxAmtDisplay = Math.round(grandTotal * taxRateDisplay / 100 * 100) / 100;
       var totalWithTax = grandTotal + taxAmtDisplay;
       html += '<div style="padding:12px 16px;border-top:1px solid var(--border);">'
@@ -4122,10 +4139,10 @@ var QuotesPage = {
     items[itemIdx].amount = (items[itemIdx].qty || 0) * (items[itemIdx].rate || 0);
 
     var subtotal = 0;
-    items.forEach(function(it) { subtotal += (it.qty || 0) * (it.rate || 0); });
+    items.forEach(function(it) { if (QuotesPage._billable(it)) subtotal += (it.qty || 0) * (it.rate || 0); });
     var discount = q.discount || 0;
     var afterDiscount = subtotal - discount;
-    var taxRate = q.taxRate !== undefined ? q.taxRate : (parseFloat(localStorage.getItem('bm-tax-rate')) || 8.375);
+    var taxRate = QuotesPage._taxRateOf(q);
     var tax = Math.round(afterDiscount * taxRate / 100 * 100) / 100;
     var total = afterDiscount + tax;
 
@@ -4155,10 +4172,10 @@ var QuotesPage = {
     if (!q) return;
     var discount = parseFloat(val) || 0;
     var subtotal = 0;
-    (q.lineItems || []).forEach(function(it) { subtotal += (it.qty || 0) * (it.rate || 0); });
+    (q.lineItems || []).forEach(function(it) { if (QuotesPage._billable(it)) subtotal += (it.qty || 0) * (it.rate || 0); });
     var afterDiscount = subtotal - discount;
     if (afterDiscount < 0) afterDiscount = 0;
-    var taxRate = q.taxRate !== undefined ? q.taxRate : 8.375;
+    var taxRate = QuotesPage._taxRateOf(q);
     var taxAmount = Math.round(afterDiscount * taxRate / 100 * 100) / 100;
     var total = afterDiscount + taxAmount;
     DB.quotes.update(quoteId, { discount: discount, subtotal: subtotal, taxAmount: taxAmount, total: total });

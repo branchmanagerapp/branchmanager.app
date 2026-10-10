@@ -464,8 +464,11 @@ var DashboardPage = {
     html += DashboardPage._renderMobileFocusBlock(now, __dashTodayStr);
 
     // v986: Today board — named rows by status, the daily front door.
-    html += DashboardPage._renderTodayBoard();
-    html += DashboardPage._renderTodo(); // v1059: Jobber-style To-do action list (top of home)
+    // Oct 10 2026: Jobber parity — in Jobber mode, Home leads with Workflow + Business Performance
+    // (Jobber's order); Today board + To-do move below them. Classic keeps them on top.
+    var _dashJobberOrder = !(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
+    var _dashTodayTodo = DashboardPage._renderTodayBoard() + DashboardPage._renderTodo();
+    if (!_dashJobberOrder) html += _dashTodayTodo;
 
     // Branch Cam widget removed from dashboard per user request — still accessible via Tools → Branch Cam.
 
@@ -1169,6 +1172,7 @@ var DashboardPage = {
 
     html += '</div></div>'; // close .dash-rail + .dash-grid
     html += '</div>'; // v645: close .dash-desktop-only wrapping all heavy widgets
+    if (_dashJobberOrder) html += '<div style="margin-top:20px;">' + _dashTodayTodo + '</div>';
 
     // v669: Lead Sources widget removed from dashboard — duplicated by the
     // Marketing › Lead Sources tab, which has the full analytics suite
