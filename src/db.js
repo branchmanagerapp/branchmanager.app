@@ -1104,7 +1104,9 @@ var nextJobNum = function() {
       });
     },
     fixStatuses: function() {
-      var valid = ['scheduled', 'in_progress', 'completed', 'late', 'cancelled'];
+      // Oct 10 2026: 'archived', 'action_required', 'on_hold' are real statuses (the app's own Archive button + Jobber's).
+      // Missing them here reset 111 archived/action-required jobs to 'scheduled' on every app start.
+      var valid = ['scheduled', 'in_progress', 'completed', 'late', 'cancelled', 'archived', 'action_required', 'on_hold'];
       var all = _get(KEYS.jobs);
       var changed = 0;
       all.forEach(function(j) {
