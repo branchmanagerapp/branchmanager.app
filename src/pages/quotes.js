@@ -960,7 +960,7 @@ var QuotesPage = {
       + '<div style="display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:8px;margin-bottom:6px;padding-top:4px;">'
       +   '<button type="button" title="Close" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;color:var(--text-light);display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>'
       +   '<div style="text-align:center;font-size:18px;font-weight:800;color:var(--text);">' + quoteTitle + '</div>'
-      +   '<button type="button" title="AI assist" onclick="QuotesPage._showAIDraftPicker && QuotesPage._showAIDraftPicker()" style="background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0;">✨</button>'
+      +   '<div></div>'  // keeps the title centered (the ✨ AI-assist button was removed Oct 10: it had no function behind it)
       + '</div>'
       + '<div id="q-save-status" style="font-size:11px;color:var(--text-light);margin-bottom:14px;font-style:italic;text-align:center;">Not saved yet — start typing to auto-save.</div>'
       + html

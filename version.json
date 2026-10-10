@@ -1,5 +1,5 @@
 {
-  "version": 1253,
-  "released": "2026-09-29",
-  "notes": "website leads: Needs review filter + Send to Jobber / Spam on each lead"
+  "version": 1254,
+  "released": "2026-10-10",
+  "notes": "Fix dead buttons (quote AI-assist removed, SocialBranch Upload wired); invoice numbering skips legacy #2000s"
 }

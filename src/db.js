@@ -1121,7 +1121,8 @@ var DB = (function() {
   // ── Invoices ──
   var nextInvNum = function() {
     var all = getAll(KEYS.invoices);
-    var max = all.reduce(function(m, i) { return Math.max(m, i.invoiceNumber || 0); }, 399);
+    // Skip the legacy BM-only 2000-series (Oct 10 2026) so numbering continues from Jobber's.
+    var max = all.reduce(function(m, i) { var n = i.invoiceNumber || 0; return (n >= 2000 && n <= 2999) ? m : Math.max(m, n); }, 399);
     // Same cloud-aware fix as quotes/jobs: don't hand out an invoice_number a
     // synced device already used (409 duplicate → "Cloud Save failed").
     try {

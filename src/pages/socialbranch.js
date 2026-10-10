@@ -655,7 +655,7 @@ var SocialBranch = {
       + '<div id="sb-media-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;min-height:60px;"></div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
       +   '<button type="button" onclick="SocialBranch._pickFromMediaCenter()" style="background:var(--bg);border:1px dashed var(--border);padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;">📷 Pick from Media Center</button>'
-      +   '<label style="background:var(--bg);border:1px dashed var(--border);padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;display:inline-block;">⬆️ Upload<input type="file" accept="image/*,video/*" multiple onchange="SocialBranch._handleUpload(this)" style="display:none;"></label>'
+      +   '<label style="background:var(--bg);border:1px dashed var(--border);padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;display:inline-block;">⬆️ Upload<input type="file" accept="image/*,video/*" multiple onchange="SocialBranch._uploadMedia(event)" style="display:none;"></label>'
       + '</div></div>';
 
     // 4. Preview on the phone goes right here (full width); on desktop the same block is the sticky right column
