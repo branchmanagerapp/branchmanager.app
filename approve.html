@@ -213,7 +213,7 @@
 
     function el(id) { return document.getElementById(id); }
     function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    function money(n) { return '$' + (+(n||0)).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+    function money(n) { return '$' + (+(n||0)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); } // Oct 10 2026: exact cents, like Jobber (was rounding $133.79 to $134)
     function dateShort(d) { if (!d) return '—'; var dt = new Date(d); return (dt.getMonth()+1) + '/' + dt.getDate() + '/' + dt.getFullYear(); }
 
     // RLS gateway — was: direct anon SELECT exposed every quote in the DB to any
@@ -367,6 +367,11 @@
           + '</div>'
           + '<div id="portal-msg" style="font-size:13px;margin-top:8px;display:none;"></div>'
           + '</div>';
+      } else if (q.status === 'draft') {
+        // Oct 10 2026: a draft was never sent, and the server refuses to approve it ("Quote is draft"),
+        // so showing Approve only led to "Could not save approval". Say so plainly instead.
+        actionHtml = '<div class="already-approved"><div style="font-weight:700;font-size:16px;">This ' + docTerm.toLowerCase() + ' is still being prepared</div>'
+          + '<div style="font-size:13px;color:#666;margin-top:4px;">You\'ll get a link to approve it once it\'s ready. Questions? Call ' + esc(BM_CONFIG.phone) + '.</div></div>';
       } else if (!isDeclined && !q.deposit_required) {
         var tcConsentText = 'I have reviewed and agree to the scope of work, pricing, and terms described in this ' + docTerm.toLowerCase() + '.'
           + (tcUrl ? ' <a href="' + esc(tcUrl) + '" target="_blank" style="color:#1a3c12;">View Terms &amp; Conditions</a>' : '');
