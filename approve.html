@@ -271,7 +271,8 @@
           // v1098: photo goes in a fixed-width column on the RIGHT (big),
           // details clean on the LEFT — fits both desktop and phone.
           var photoRight = '';
-          var _ph = Array.isArray(item.photos) ? item.photos.filter(Boolean) : [];
+          // Oct 10 2026: older items store the photo as `photo` or `photoUrl` — read all three or the customer sees no photo.
+          var _ph = (Array.isArray(item.photos) && item.photos.filter(Boolean).length) ? item.photos.filter(Boolean) : [item.photo || item.photoUrl].filter(Boolean);
           if (_ph.length) {
             var first = esc(_ph[0]);
             photoRight = '<div class="li-photo-col"><a href="' + first + '" target="_blank" rel="noopener"><img src="' + first + '" alt="line item photo" loading="lazy"></a>'
@@ -306,7 +307,7 @@
       }
       // ── Full photo gallery: flatten ALL line-item photos, dedupe, show every one at the bottom ──
       var _seen = {}, _allPhotos = [];
-      items.forEach(function(it){ (it.photos||[]).forEach(function(u){ if(u && !_seen[u]){ _seen[u]=1; _allPhotos.push(u); } }); if(it.photo && !_seen[it.photo]){ _seen[it.photo]=1; _allPhotos.push(it.photo); } });
+      items.forEach(function(it){ (it.photos||[]).forEach(function(u){ if(u && !_seen[u]){ _seen[u]=1; _allPhotos.push(u); } }); [it.photo, it.photoUrl].forEach(function(u){ if(u && !_seen[u]){ _seen[u]=1; _allPhotos.push(u); } }); });
       var galleryHtml = '';
       if (_allPhotos.length) {
         galleryHtml = '<div class="q-gallery" style="margin-top:26px;padding-top:18px;border-top:1px solid #e2e8f0;">'
