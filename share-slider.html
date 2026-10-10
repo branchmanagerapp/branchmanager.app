@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Before / After · Branch Cam</title>
+<meta property="og:title" content="Before & After">
+<meta property="og:description" content="See the transformation. Drag the slider.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0e1410; color: #fff; min-height: 100vh; overflow-x: hidden; }
+  .head { background: linear-gradient(180deg, #1a3c12, #0e1410); padding: 22px 16px 26px; text-align: center; }
+  .brand { font-size: 11px; opacity: .7; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 4px; }
+  .title { font-size: 22px; font-weight: 700; }
+  .subtitle { font-size: 13px; opacity: .75; margin-top: 4px; }
+
+  .slider-wrap { max-width: 800px; margin: 20px auto; padding: 0 12px; }
+  .slider {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    background: #000;
+    cursor: ew-resize;
+    touch-action: none;
+  }
+  .slider img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .after { clip-path: inset(0 0 0 50%); transition: clip-path .05s linear; }
+  .handle {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 4px;
+    background: #fff; transform: translateX(-50%); pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.2), 0 0 20px rgba(0,0,0,0.4);
+  }
+  .handle::before, .handle::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px;
+    transform: translate(-50%, -50%); border-radius: 50%; background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .handle::after {
+    width: 30px; height: 30px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231a3c12'%3E%3Cpath d='M8 5l-7 7 7 7V5zm8 0v14l7-7-7-7z'/%3E%3C/svg%3E") center/20px no-repeat #fff;
+  }
+  .label {
+    position: absolute; top: 14px; padding: 6px 14px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    backdrop-filter: blur(10px); background: rgba(0,0,0,0.55); color: #fff;
+  }
+  .label-before { left: 14px; }
+  .label-after { right: 14px; background: rgba(46,125,50,0.85); }
+
+  .meta-row { display: flex; justify-content: space-between; padding: 16px 4px 4px; font-size: 12px; opacity: 0.75; }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 30px 16px; }
+  .btn { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .btn:hover { background: rgba(255,255,255,0.2); }
+  .btn-primary { background: #2e7d32; border-color: #2e7d32; }
+  .btn-primary:hover { background: #1f5d23; }
+
+  .empty { text-align: center; padding: 80px 20px; opacity: .6; }
+  footer { padding: 30px 20px 50px; text-align: center; font-size: 11px; opacity: .5; }
+  footer a { color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="brand">📸 Branch Cam</div>
+  <div class="title" id="title">Before & After</div>
+  <div class="subtitle" id="subtitle">Drag the slider to reveal</div>
+</div>
+
+<div id="content"></div>
+
+<footer>
+  <div>Powered by Branch Manager · <a href="/branchmanager/branchcam.html">branchmanager.app</a></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var p = new URLSearchParams(location.search);
+  var rt = p.get('type') || 'job';
+  var rid = p.get('id') || '';
+  var beforeUrl = p.get('before');
+  var afterUrl = p.get('after');
+
+  function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, function(c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+
+  function makeSlider(beforeUrl, afterUrl, beforeMeta, afterMeta) {
+    var html = '<div class="slider-wrap">'
+      + '<div class="slider" id="slider">'
+      + '<img src="' + escapeHtml(beforeUrl) + '" alt="Before">'
+      + '<img class="after" id="after-img" src="' + escapeHtml(afterUrl) + '" alt="After">'
+      + '<div class="label label-before">Before</div>'
+      + '<div class="label label-after">After</div>'
+      + '<div class="handle" id="handle"></div>'
+      + '</div>'
+      + '<div class="meta-row"><span>' + (beforeMeta || '') + '</span><span>' + (afterMeta || '') + '</span></div>'
+      + '</div>'
+      + '<div class="actions">'
+      + '<a href="share-photos.html?type=' + escapeHtml(rt) + '&id=' + escapeHtml(rid) + '" class="btn">View all project photos →</a>'
+      + '<button class="btn btn-primary" onclick="navigator.share ? navigator.share({title:\'Before & After\',url:location.href}) : navigator.clipboard.writeText(location.href).then(function(){alert(\'Link copied!\');})">🔗 Share this transformation</button>'
+      + '</div>';
+    document.getElementById('content').innerHTML = html;
+
+    // Wire interactivity
+    var slider = document.getElementById('slider');
+    var afterImg = document.getElementById('after-img');
+    var handle = document.getElementById('handle');
+    function setPos(pct) {
+      pct = Math.max(0, Math.min(100, pct));
+      afterImg.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
+      handle.style.left = pct + '%';
+    }
+    function move(e) {
+      var rect = slider.getBoundingClientRect();
+      var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      setPos((x / rect.width) * 100);
+    }
+    var dragging = false;
+    slider.addEventListener('mousedown', function(e) { dragging = true; move(e); });
+    slider.addEventListener('mousemove', function(e) { if (dragging) move(e); });
+    window.addEventListener('mouseup', function() { dragging = false; });
+    slider.addEventListener('touchstart', function(e) { dragging = true; move(e); }, { passive: true });
+    slider.addEventListener('touchmove', function(e) { if (dragging) move(e); }, { passive: true });
+    slider.addEventListener('touchend', function() { dragging = false; });
+
+    // Subtle auto-demo on load (sweep right then back)
+    var demo = 50; var dir = 1; var demoActive = true;
+    setTimeout(function() {
+      var iv = setInterval(function() {
+        if (!demoActive) { clearInterval(iv); return; }
+        demo += dir * 1.5;
+        if (demo >= 75) dir = -1;
+        if (demo <= 25) { clearInterval(iv); setPos(50); return; }
+        setPos(demo);
+      }, 30);
+    }, 600);
+    slider.addEventListener('mousedown', function() { demoActive = false; });
+    slider.addEventListener('touchstart', function() { demoActive = false; });
+  }
+
+  function fmtMeta(p) {
+    if (!p) return '';
+    var d = p.taken_at ? new Date(p.taken_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    var bits = [d];
+    if (p.gps_lat) bits.push('📍 ' + Number(p.gps_lat).toFixed(4) + '°');
+    return bits.join(' · ');
+  }
+
+  async function loadFromDb() {
+    if (!rid) { document.getElementById('content').innerHTML = '<div class="empty">Invalid link.</div>'; return; }
+    var { data, error } = await sb.from('photos').select('*').eq('record_type', rt).eq('record_id', rid).order('taken_at', { ascending: true });
+    if (error || !data || !data.length) { document.getElementById('content').innerHTML = '<div class="empty">No photos found for this project.</div>'; return; }
+
+    function hasTag(p, t) {
+      if (Array.isArray(p.tags)) return p.tags.some(function(x){ return (x || '').toLowerCase() === t.toLowerCase(); });
+      if (p.label) return p.label.toLowerCase().split(',').map(function(s){return s.trim();}).indexOf(t.toLowerCase()) !== -1;
+      return false;
+    }
+
+    var before = data.find(function(p) { return hasTag(p, 'Before'); });
+    var after = [].concat(data).reverse().find(function(p) { return hasTag(p, 'After'); });
+
+    if (!before || !after) {
+      // Fall back to first + last photo
+      if (data.length >= 2) {
+        before = data[0];
+        after = data[data.length - 1];
+        document.getElementById('subtitle').textContent = 'First and latest photos · drag to reveal';
+      } else {
+        document.getElementById('content').innerHTML = '<div class="empty">Need at least 2 photos to make a slider.<br><br>Tag photos as "Before" and "After" in Branch Cam for best results.</div>';
+        return;
+      }
+    } else {
+      document.getElementById('subtitle').textContent = 'Tagged Before & After · drag to reveal';
+    }
+
+    makeSlider(before.url, after.url, fmtMeta(before), fmtMeta(after));
+  }
+
+  // Direct URL mode (skip DB lookup)
+  if (beforeUrl && afterUrl) {
+    document.getElementById('subtitle').textContent = 'Drag to reveal';
+    makeSlider(beforeUrl, afterUrl, '', '');
+  } else {
+    loadFromDb();
+  }
+</script>
+</body>
+</html>

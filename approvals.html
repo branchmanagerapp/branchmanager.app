@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Approve drafts — Branch Manager</title>
+<style>
+  :root { --green:#1a3c12; --green-bg:#e8f4ea; --green-border:#a3d9ad; --red:#b91c1c; --bg:#f6f7f8; --border:#e5e7eb; --text:#111827; --muted:#6b7280; }
+  *,*::before,*::after { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 24px 16px 120px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 18px; gap:12px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size: 22px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .empty { background:#fff; border:1px solid var(--border); border-radius:14px; padding:48px 24px; text-align:center; }
+  .empty h2 { margin: 12px 0 6px; font-size: 18px; }
+  .empty p { margin: 0; color: var(--muted); font-size: 14px; }
+  .err { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:14px 16px; }
+
+  .toolbar { background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom: 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; position:sticky; top:8px; z-index:10; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  .toolbar .left { display:flex; align-items:center; gap:10px; font-size:13px; }
+  .toolbar input[type=checkbox] { width:18px; height:18px; }
+  .btn { padding: 9px 16px; border-radius: 8px; border:1px solid transparent; font-weight:700; font-size:13px; cursor:pointer; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .btn-approve { background:var(--green); color:#fff; }
+  .btn-reject { background:#fff; color:var(--red); border-color:#fecaca; }
+  .btn-ghost { background:#fff; color:var(--muted); border:1px solid var(--border); }
+
+  .card { background:#fff; border:1px solid var(--border); border-radius:14px; padding: 16px 18px; margin-bottom: 12px; }
+  .card.done { opacity: 0.6; pointer-events: none; }
+  .card-head { display:flex; align-items:flex-start; gap:12px; }
+  .card-head input[type=checkbox] { width:18px; height:18px; margin-top:4px; flex-shrink:0; }
+  .card-meta { flex:1; min-width:0; }
+  .card-meta .row1 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom: 4px; }
+  .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; background: var(--green-bg); color:var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.04em; }
+  .card-meta h3 { margin: 4px 0 6px; font-size: 15px; word-break: break-word; }
+  .card-meta .to { font-size: 13px; color: var(--text); }
+  .preview { background:#f9fafb; border:1px solid var(--border); border-radius:10px; padding: 10px 12px; margin: 10px 0 0; font-size: 12.5px; color:#1f2937; max-height: 120px; overflow:hidden; white-space: pre-wrap; line-height:1.5; }
+  .preview.expanded { max-height: none; }
+  .actions { display:flex; gap:8px; margin-top: 10px; }
+  .pill-link { background:none; border:none; color: var(--green); font-size: 12px; cursor:pointer; padding:0; text-decoration: underline; }
+
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:12px 18px; border-radius:8px; font-size:13px; z-index:100; opacity:0; transition: opacity .2s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="page-title">Pending drafts</h1>
+      <div class="sub" id="page-sub">Review and approve customer emails before they go out.</div>
+    </div>
+  </header>
+
+  <div id="status"></div>
+
+  <div id="toolbar" class="toolbar" style="display:none;">
+    <label class="left">
+      <input type="checkbox" id="select-all">
+      <span><span id="count-selected">0</span> of <span id="count-total">0</span> selected</span>
+    </label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-reject" id="btn-bulk-reject" disabled>Reject selected</button>
+      <button class="btn btn-approve" id="btn-bulk-approve" disabled>Approve &amp; send selected</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+(function() {
+  var SUPA = 'https://ltpivkqahvplapyagljt.supabase.co';
+  var qs = new URLSearchParams(window.location.search);
+  var TOKEN = qs.get('t') || '';
+  var statusEl = document.getElementById('status');
+  var listEl = document.getElementById('list');
+  var toolbarEl = document.getElementById('toolbar');
+  var selectAllEl = document.getElementById('select-all');
+  var countSelEl = document.getElementById('count-selected');
+  var countTotalEl = document.getElementById('count-total');
+  var btnApproveEl = document.getElementById('btn-bulk-approve');
+  var btnRejectEl = document.getElementById('btn-bulk-reject');
+  var titleEl = document.getElementById('page-title');
+  var subEl = document.getElementById('page-sub');
+  var toastEl = document.getElementById('toast');
+
+  var DRAFTS = [];
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ toastEl.classList.remove('show'); }, 3500);
+  }
+
+  function showError(msg) {
+    statusEl.innerHTML = '<div class="err">' + msg + '</div>';
+  }
+
+  if (!TOKEN) { showError('No token in URL. Open the latest daily summary email and click the link there.'); return; }
+
+  function selectedIds() {
+    return Array.from(document.querySelectorAll('.draft-check:checked')).map(function(el){ return el.dataset.id; });
+  }
+
+  function updateToolbar() {
+    var n = selectedIds().length;
+    countSelEl.textContent = n;
+    countTotalEl.textContent = DRAFTS.length;
+    btnApproveEl.disabled = n === 0;
+    btnRejectEl.disabled = n === 0;
+    selectAllEl.checked = n > 0 && n === DRAFTS.length;
+    selectAllEl.indeterminate = n > 0 && n < DRAFTS.length;
+  }
+
+  function renderDrafts(drafts, tenantName) {
+    DRAFTS = drafts;
+    if (tenantName) {
+      titleEl.textContent = tenantName + ' — pending drafts';
+    }
+    if (!drafts.length) {
+      toolbarEl.style.display = 'none';
+      listEl.innerHTML = '<div class="empty"><h2>✓ Nothing waiting</h2><p>No drafts pending approval right now.</p></div>';
+      subEl.textContent = 'No drafts pending — the queue is empty.';
+      return;
+    }
+    subEl.textContent = drafts.length + ' draft' + (drafts.length === 1 ? '' : 's') + ' waiting on you.';
+    toolbarEl.style.display = 'flex';
+
+    listEl.innerHTML = drafts.map(function(d) {
+      var preview = (d.body_text || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var name = (d.client_name || '(no client name)').replace(/</g,'&lt;');
+      var subj = (d.subject || '(no subject)').replace(/</g,'&lt;');
+      var to = (d.to_email || '').replace(/</g,'&lt;');
+      var trigger = (d.trigger || '').replace(/</g,'&lt;');
+      var when = d.created_at ? new Date(d.created_at).toLocaleDateString() : '';
+      return '<div class="card" id="card-' + d.id + '">' +
+        '<div class="card-head">' +
+          '<input type="checkbox" class="draft-check" data-id="' + d.id + '">' +
+          '<div class="card-meta">' +
+            '<div class="row1"><span class="badge">' + trigger + '</span><span>' + when + '</span></div>' +
+            '<h3>' + subj + '</h3>' +
+            '<div class="to"><strong>To:</strong> ' + name + ' &lt;' + to + '&gt;</div>' +
+            '<div class="preview" id="preview-' + d.id + '">' + preview + '</div>' +
+            '<button class="pill-link" type="button" onclick="document.getElementById(\'preview-' + d.id + '\').classList.toggle(\'expanded\');">Toggle full text</button>' +
+            '<div class="actions">' +
+              '<button class="btn btn-reject" type="button" data-action="reject" data-id="' + d.id + '">Reject</button>' +
+              '<button class="btn btn-approve" type="button" data-action="approve" data-id="' + d.id + '">Approve &amp; send</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+
+    // Wire per-row buttons
+    listEl.querySelectorAll('button[data-action]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        actOn([btn.dataset.id], btn.dataset.action);
+      });
+    });
+    listEl.querySelectorAll('.draft-check').forEach(function(cb) {
+      cb.addEventListener('change', updateToolbar);
+    });
+    updateToolbar();
+  }
+
+  function actOn(ids, action) {
+    if (!ids.length) return;
+    var verb = action === 'approve' ? 'Send' : 'Reject';
+    if (!confirm(verb + ' ' + ids.length + ' email' + (ids.length === 1 ? '' : 's') + '?')) return;
+    fetch(SUPA + '/functions/v1/marketing-approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, ids: ids, action: action })
+    })
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
+      .then(function(res) {
+        if (!res.ok || !res.body || !res.body.ok) {
+          toast('Failed: ' + ((res.body && res.body.error) || 'unknown'));
+          return;
+        }
+        var b = res.body;
+        toast(action === 'approve' ?
+          ('Sent ' + b.succeeded + ' / ' + b.attempted + (b.failed ? ' · ' + b.failed + ' failed' : '')) :
+          ('Rejected ' + b.succeeded + ' / ' + b.attempted));
+        // Mark cards as done + refresh list
+        ids.forEach(function(id) {
+          var card = document.getElementById('card-' + id);
+          if (card) card.classList.add('done');
+        });
+        setTimeout(loadDrafts, 800);
+      })
+      .catch(function(e) { toast('Network error: ' + (e.message || e)); });
+  }
+
+  function loadDrafts() {
+    fetch(SUPA + '/functions/v1/marketing-list-drafts?t=' + encodeURIComponent(TOKEN) + '&status=pending')
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
+      .then(function(res) {
+        if (!res.ok || !res.body || !res.body.ok) {
+          showError((res.body && res.body.error) || 'Failed to load drafts. Open the latest daily email and try again.');
+          return;
+        }
+        statusEl.innerHTML = '';
+        renderDrafts(res.body.drafts || [], res.body.tenant && (res.body.tenant.company || res.body.tenant.name));
+      })
+      .catch(function(e) { showError('Network error: ' + (e.message || e)); });
+  }
+
+  // Bulk actions
+  selectAllEl.addEventListener('change', function() {
+    document.querySelectorAll('.draft-check').forEach(function(cb){ cb.checked = selectAllEl.checked; });
+    updateToolbar();
+  });
+  btnApproveEl.addEventListener('click', function() { actOn(selectedIds(), 'approve'); });
+  btnRejectEl.addEventListener('click', function() { actOn(selectedIds(), 'reject'); });
+
+  loadDrafts();
+})();
+</script>
+</body>
+</html>

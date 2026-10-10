@@ -1,0 +1,338 @@
+/**
+ * Branch Manager — White-Label Configuration
+ *
+ * All public-facing HTML files (approve, pay, book, client, paid) read from
+ * this object instead of hardcoding company info.  To rebrand, change the
+ * values below — every customer-facing page picks them up automatically.
+ */
+// White-label base defaults — NEUTRAL, not tenant-specific. Every real tenant
+// (incl. Second Nature Tree) supplies its own identity via tenants.config, which
+// CompanyInfo loads over these. SNT's config was backfilled Jun 6 2026 so it no
+// longer relies on any value here. Keep these generic so an unconfigured tenant
+// never leaks another business's identity.
+var BM_CONFIG = {
+  companyName:     'Your Company',
+  ownerName:       '',
+  phone:           '',
+  phoneTel:        '',                  // tel: link format
+  phoneDigits:     '',                  // no punctuation, for tel: hrefs
+  email:           '',
+  website:         '',
+  websiteUrl:      '',
+  address:         '',
+  city:            '',
+  licenses:        '',
+  licensesLong:    '',
+  googleReviewUrl: '',
+  state:           'New York',
+  stateAbbr:       'NY',
+  timezone:        'America/New_York',
+  tagline:         'Licensed & Insured',
+  reviewStars:     '5.0',
+  reviewCount:     '100+',
+
+  // ── Fleet specs (for truck-route sharing with crew) ──
+  // Users can override per-vehicle in Equipment page once that supports it.
+  truckSpecs: {
+    heightFt:   11,
+    heightIn:   6,
+    lengthFt:   24,
+    weightLbs:  26000,   // GVWR
+    hasCDL:     false,   // whether the driver needs a CDL
+    notes:      'Watch low bridges on Rt 9 (Taconic clearance 11\'3"). Avoid narrow roads in Garrison.'
+  }
+};
+
+/**
+ * CompanyInfo — single source of truth for company data.
+ * Reads user-edited values from localStorage first, falls back to BM_CONFIG defaults.
+ * Replaces ~99 scattered `localStorage.getItem('bm-co-x') || BM_CONFIG.x` reads.
+ *
+ * Usage:
+ *   CompanyInfo.get('name')          → 'Second Nature Tree Service'
+ *   CompanyInfo.get('phone')         → '(914) 391-5233'
+ *   CompanyInfo.get('phoneDigits')   → '9143915233'
+ *   CompanyInfo.all()                → entire object
+ */
+/**
+ * AIConfig — single source of truth for "is AI server-managed?".
+ *
+ * v406: Six callsites used to ask this question with three different defaults
+ * (`!== 'false'` default-on, `=== 'true'` default-off). Server-managed has
+ * been the intended default since v388 (works on mobile / fresh installs
+ * without prompting). This helper enforces the default-on semantics
+ * everywhere — flag is server-managed UNLESS explicitly set to 'false'.
+ */
+var AIConfig = {
+  serverManaged: function() {
+    try { return localStorage.getItem('bm-claude-server-managed') !== 'false'; }
+    catch(e) { return true; }
+  },
+  // Returns true if the AI is reachable — either via server proxy or a device key.
+  available: function() {
+    if (AIConfig.serverManaged()) return true;
+    try { return (localStorage.getItem('bm-claude-key') || '').trim().length > 0; }
+    catch(e) { return false; }
+  },
+  // Returns the device key, or '' if server-managed (server proxy doesn't need one).
+  deviceKey: function() {
+    if (AIConfig.serverManaged()) return '';
+    try { return localStorage.getItem('bm-claude-key') || ''; }
+    catch(e) { return ''; }
+  }
+};
+
+var CompanyInfo = (function() {
+  // Maps CompanyInfo key → (localStorage key, BM_CONFIG key)
+  var MAP = {
+    name:         { ls: 'bm-co-name',     bm: 'companyName' },
+    phone:        { ls: 'bm-co-phone',    bm: 'phone' },
+    phoneTel:     { ls: null,             bm: 'phoneTel' },
+    phoneDigits:  { ls: null,             bm: 'phoneDigits' },
+    email:        { ls: 'bm-co-email',    bm: 'email' },
+    website:      { ls: 'bm-co-website',  bm: 'website' },
+    websiteUrl:   { ls: null,             bm: 'websiteUrl' },
+    address:      { ls: 'bm-co-address',  bm: 'address' },
+    city:         { ls: null,             bm: 'city' },
+    licenses:     { ls: 'bm-co-licenses', bm: 'licenses' },
+    licensesLong: { ls: null,             bm: 'licensesLong' },
+    state:        { ls: null,             bm: 'state' },
+    stateAbbr:    { ls: null,             bm: 'stateAbbr' },
+    timezone:     { ls: null,             bm: 'timezone' },
+    tagline:      { ls: null,             bm: 'tagline' },
+    googleReviewUrl: { ls: 'bm-co-review',     bm: 'googleReviewUrl' },
+    facebookUrl:     { ls: 'bm-co-facebook',   bm: null },
+    instagramUrl:    { ls: 'bm-co-instagram',  bm: null },
+    yelpUrl:         { ls: 'bm-co-yelp',       bm: null },
+    nextdoorUrl:     { ls: 'bm-co-nextdoor',   bm: null },
+    xUrl:            { ls: 'bm-co-x',          bm: null },
+    youtubeUrl:      { ls: 'bm-co-youtube',    bm: null },
+    linkedinUrl:     { ls: 'bm-co-linkedin',   bm: null },
+    tiktokUrl:       { ls: 'bm-co-tiktok',     bm: null },
+    gbpUrl:          { ls: 'bm-co-gbp',        bm: null },
+    taxRate:         { ls: 'bm-tax-rate',       bm: null, def: '8.375' },
+    ownerName:       { ls: 'bm-co-owner-name',  bm: 'ownerName' },
+    legalName:       { ls: 'bm-co-legal-name',  bm: null, def: '' },
+    businessShortName:{ ls: 'bm-co-short-name', bm: null, def: '' },
+    licenseText:     { ls: 'bm-co-license-text',bm: null, def: 'Licensed & Fully Insured' },
+    brandColor:      { ls: 'bm-co-brand-color', bm: null, def: '#1a3c12' },
+    logo:            { ls: 'bm-co-logo',        bm: 'logoUrl' }
+  };
+
+  return {
+    get: function(key) {
+      var m = MAP[key];
+      if (!m) {
+        // Fall back to direct BM_CONFIG lookup for unmapped keys
+        return (typeof BM_CONFIG !== 'undefined' && BM_CONFIG[key]) || '';
+      }
+      if (m.ls) {
+        var v = null;
+        try { v = localStorage.getItem(m.ls); } catch(e) {}
+        if (v) return v;
+      }
+      if (m.bm && typeof BM_CONFIG !== 'undefined' && BM_CONFIG[m.bm]) return BM_CONFIG[m.bm];
+      return m.def || '';
+    },
+    // own(key) — TENANT-OWNED value only. Reads this tenant's localStorage
+    // and returns '' if unset. Deliberately NEVER falls back to BM_CONFIG
+    // (which ships Second Nature Tree's data baked into the shared bundle —
+    // identical for every tenant, so it is NOT a per-tenant value). Use
+    // this for anything customer-facing or white-label-sensitive (review
+    // links, address-derived locale, AI persona) so a friend's output
+    // never silently inherits SNT's identity. get() keeps the BM_CONFIG
+    // fallback for operator-internal convenience displays.
+    own: function(key) {
+      var m = MAP[key];
+      if (!m || !m.ls) return '';
+      try { return (localStorage.getItem(m.ls) || '').trim(); } catch(e) { return ''; }
+    },
+    set: function(key, value) {
+      var m = MAP[key];
+      if (!m || !m.ls) return false;
+      try { localStorage.setItem(m.ls, value); return true; } catch(e) { return false; }
+    },
+    all: function() {
+      var out = {};
+      Object.keys(MAP).forEach(function(k){ out[k] = CompanyInfo.get(k); });
+      return out;
+    }
+  };
+})();
+
+/**
+ * CompanyGeo — resolve the TENANT's own business address to coordinates.
+ *
+ * White-label: weather + dispatch HQ + geofence base must follow the
+ * tenant's location, never SNT's. This geocodes CompanyInfo.own('address')
+ * (tenant-owned only — never BM_CONFIG) to a city-level lat/lon via
+ * Open-Meteo's free no-key geocoding API, and caches the result in
+ * localStorage keyed to the exact address string so it is not re-fetched
+ * every render and is invalidated automatically when the address changes.
+ *
+ *   CompanyGeo.cached()  → { lat, lon, label } | null  (sync, render-safe)
+ *   CompanyGeo.resolve() → Promise<same|null>          (fetches if needed)
+ *
+ * null whenever the tenant has not set an address (or geocoding failed) —
+ * callers MUST degrade (prompt to set address), never fall back to SNT.
+ */
+var CompanyGeo = {
+  _LS: 'bm-co-geo',
+  // "123 Main St, Austin, TX 78701" → { name:'Austin', label:'Austin, TX' }
+  _cityOf: function(addr) {
+    addr = String(addr || '').replace(/\s*\d{5}(-\d{4})?\s*$/, '');
+    var m = addr.match(/([A-Za-z.\s]+),\s*([A-Za-z]{2,})\s*$/);
+    if (!m) return null;
+    var city = m[1].trim().replace(/\s+/g, ' ');
+    var st = m[2].trim();
+    return { name: city, label: city + ', ' + st };
+  },
+  cached: function() {
+    var addr = '';
+    try { addr = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('address')) || ''; } catch (e) {}
+    if (!addr) return null;
+    try {
+      var raw = localStorage.getItem(CompanyGeo._LS);
+      if (!raw) return null;
+      var g = JSON.parse(raw);
+      if (g && g.addr === addr && typeof g.lat === 'number' && typeof g.lon === 'number') {
+        return { lat: g.lat, lon: g.lon, label: g.label || '' };
+      }
+    } catch (e) {}
+    return null;
+  },
+  resolve: function() {
+    var addr = '';
+    try { addr = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('address')) || ''; } catch (e) {}
+    if (!addr) return Promise.resolve(null);
+    var hit = CompanyGeo.cached();
+    if (hit) return Promise.resolve(hit);
+    var c = CompanyGeo._cityOf(addr);
+    var q = c ? c.name : addr;
+    var url = 'https://geocoding-api.open-meteo.com/v1/search?name='
+      + encodeURIComponent(q) + '&count=1&language=en&format=json';
+    return fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+      var hitRes = d && d.results && d.results[0];
+      if (!hitRes || typeof hitRes.latitude !== 'number') return null;
+      var label = c ? c.label
+        : (hitRes.name + (hitRes.admin1 ? ', ' + hitRes.admin1 : ''));
+      var rec = { addr: addr, lat: hitRes.latitude, lon: hitRes.longitude, label: label, ts: Date.now() };
+      try { localStorage.setItem(CompanyGeo._LS, JSON.stringify(rec)); } catch (e) {}
+      return { lat: rec.lat, lon: rec.lon, label: rec.label };
+    }).catch(function() { return null; });
+  }
+};
+
+/**
+ * White-label: load the LOGGED-IN tenant's branding into CompanyInfo.
+ *
+ * The operator app authenticates with a Supabase session whose JWT carries
+ * tenant_id (custom_access_token_hook). tenants.config holds the full brand
+ * record. This mirrors the proven tenant-slug-bootstrap.js pattern (used for
+ * public pay/approve/portal pages) but keyed off the session instead of a URL
+ * slug: it writes bm-co-* localStorage + patches BM_CONFIG, so CompanyInfo
+ * (localStorage-first) re-skins the entire app for that tenant.
+ *
+ * Safe + additive: any error / no session / no tenant / no config => no-op,
+ * app keeps its existing BM_CONFIG defaults (zero regression). Only writes
+ * keys that are present and non-empty (never blanks a fallback). Idempotent.
+ */
+// v1073: per-line-of-business brand override (smartlawn → "Smart Lawn NY").
+// Returns {companyName, website, websiteUrl} or null for the given record.
+CompanyInfo.lineBrandFor = function(rec) {
+  try {
+    var lbs = window._bmLineBrands || JSON.parse(localStorage.getItem('bm-line-brands') || 'null');
+    var lob = rec && (rec.lineOfBusiness || rec.line_of_business);
+    return (lbs && lob && lbs[lob]) || null;
+  } catch (e) { return null; }
+};
+
+CompanyInfo.loadTenantFromSession = (function() {
+  var done = false;
+  function ready() {
+    return (typeof SupabaseDB !== 'undefined') && SupabaseDB.client && SupabaseDB.ready;
+  }
+  function delay(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+  // FIX (v901): the prior version set done=true BEFORE checking SupabaseDB
+  // readiness, so a call that fired before SupabaseDB.client/auth was ready
+  // permanently no-op'd — leaving tenant-EXCLUSIVE fields (legal_name,
+  // business_short_name, licenses, socials, owner, tax-rate) unloaded forever.
+  // Only the cloud-synced keys (bm-co-name/phone/email/address) ever appeared,
+  // so SNT silently leaned on bundle defaults. Now: poll for readiness, retry
+  // while auth settles, and mark done ONLY after a successful tenant apply.
+  function run(triesLeft) {
+    if (done) return Promise.resolve(false);
+    if (!ready()) {
+      if (triesLeft <= 0) return Promise.resolve(false);
+      return delay(400).then(function(){ return run(triesLeft - 1); });
+    }
+    try {
+      // Scope via user_tenants (RLS returns ONLY the caller's mapping rows) so
+      // we get THE caller's tenant deterministically. A bare tenants.limit(1)
+      // is wrong: public_read_tenants_for_branding exposes every tenant row,
+      // so limit(1) could brand the app as some other tenant (e.g. "Demo").
+      return SupabaseDB.client
+        .from('user_tenants').select('tenant_id,tenants(id,name,config)').limit(1)
+        .then(function(res) {
+          var row = res && res.data && res.data[0];
+          var t = row && row.tenants;
+          if (!t) {
+            // Client ready but no tenant row yet (auth session still settling) —
+            // retry rather than permanently give up.
+            if (triesLeft <= 0) return false;
+            return delay(400).then(function(){ return run(triesLeft - 1); });
+          }
+          var c = t.config || {};
+          try { window._bmLineBrands = c.line_brands || null; localStorage.setItem('bm-line-brands', JSON.stringify(c.line_brands || null)); } catch(e) {}
+          function L(lsKey, val) { if (val) { try { localStorage.setItem(lsKey, String(val)); } catch(e) {} } }
+          function B(bmKey, val) { if (val && typeof BM_CONFIG !== 'undefined') BM_CONFIG[bmKey] = val; }
+          var nm = c.company_name || t.name;
+          L('bm-co-name', nm);            B('companyName', nm);
+          L('bm-co-email', c.company_email || c.from_email);  B('email', c.company_email || c.from_email);
+          L('bm-co-website', c.company_website);
+          if (c.company_website) { B('website', c.company_website); B('websiteUrl', c.company_website.indexOf('http')===0 ? c.company_website : ('https://'+c.company_website)); }
+          if (c.company_phone) {
+            L('bm-co-phone', c.company_phone);
+            B('phone', c.company_phone);
+            var dg = String(c.company_phone).replace(/\D/g,'');
+            B('phoneDigits', dg); B('phoneTel', '+' + dg.replace(/^1?/, '1'));
+          }
+          L('bm-co-logo', c.logo_url);    B('logoUrl', c.logo_url);
+          var addr = [c.address_line1, c.address_line2, [c.city, c.state, c.zip].filter(Boolean).join(', ')].filter(Boolean).join(', ');
+          L('bm-co-address', addr || null); B('address', addr || undefined);
+          if (c.city || c.state) B('city', [c.city, c.state].filter(Boolean).join(', '));
+          L('bm-co-brand-color', c.brand_color);
+          L('bm-co-licenses', c.wc_number);
+          L('bm-co-license-text', c.license_text);
+          L('bm-co-review', c.google_review_url); B('googleReviewUrl', c.google_review_url);
+          // v846: socials cloud-persist. Each platform reads from
+          // config.{platform}_url FIRST (canonical) then falls back to
+          // config.social_links[platform] (legacy nested shape). Settings
+          // page writes back to the canonical {platform}_url keys.
+          var sl = c.social_links || {};
+          L('bm-co-facebook', c.facebook_url || sl.facebook || null);
+          L('bm-co-instagram', c.instagram_url || sl.instagram || null);
+          L('bm-co-yelp', c.yelp_url || sl.yelp || null);
+          L('bm-co-nextdoor', c.nextdoor_url || sl.nextdoor || null);
+          L('bm-co-x', c.x_url || c.twitter_url || sl.x || sl.twitter || null);
+          L('bm-co-youtube', c.youtube_url || sl.youtube || null);
+          L('bm-co-linkedin', c.linkedin_url || sl.linkedin || null);
+          L('bm-co-tiktok', c.tiktok_url || sl.tiktok || null);
+          L('bm-co-gbp', c.gbp_url || c.google_business_profile_url || sl.gbp || null);
+          L('bm-tax-rate', c.tax_rate != null ? c.tax_rate : null);
+          L('bm-co-owner-name', c.owner_name); B('ownerName', c.owner_name);
+          L('bm-co-legal-name', c.legal_name);
+          L('bm-co-short-name', c.business_short_name);
+          try { if (t.id) localStorage.setItem('bm-tenant-id', t.id); } catch(e) {}
+          window.bmResolvedTenant = t;
+          done = true;
+          return true;
+        })
+        .catch(function() {
+          if (triesLeft <= 0) return false;
+          return delay(400).then(function(){ return run(triesLeft - 1); });
+        });
+    } catch (e) { return Promise.resolve(false); }
+  }
+  return function() { return run(25); };
+})();

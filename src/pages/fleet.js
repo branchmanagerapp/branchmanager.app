@@ -1,0 +1,709 @@
+// Fleet page — vehicle list + live positions on MapLibre.
+// Powered by Bouncie OBD-II trackers (trucks) and Trak-4 Portable (chipper/trailer, future).
+// v421 (Apr 26, 2026)
+
+var FleetPage = {
+  _vehicles: [],
+  _selectedId: null,
+  _loading: true,
+  _err: null,
+  _refreshTimer: null,
+
+  render: function() {
+    var self = FleetPage;
+    // v637: do NOT reset _fetched / _renderedOnce here. The previous code
+    // reset both on every render, but _refresh() calls loadPage('operations')
+    // on success — which re-renders this page — which re-reset the flags —
+    // which fired _refresh again — infinite loop. Now the first render
+    // fetches once; user refresh + 30s interval still update.
+    self._kickFetch();
+    // Auto-refresh every 30s while page is visible
+    if (self._refreshTimer) clearInterval(self._refreshTimer);
+    self._refreshTimer = setInterval(function() {
+      if (!document.getElementById('fleet-list')) { clearInterval(self._refreshTimer); return; }
+      self._refresh(false);
+    }, 30000);
+
+    var html = '';
+
+    // ── Header
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
+      + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+      +   '<h3 style="font-size:16px;font-weight:700;margin:0;">Fleet</h3>'
+      +   '<span style="font-size:13px;color:var(--text-light);">(' + self._vehicles.length + ')</span>'
+      +   '<span id="fleet-bouncie-pill" style="font-size:11px;color:var(--text-light);">Bouncie: <span style="opacity:.6;">checking…</span></span>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +   '<button onclick="FleetPage.connectBouncie()" class="btn btn-outline" style="font-size:12px;" title="Connect this tenant to Bouncie for REST backfill">🔗 Connect Bouncie</button>'
+      +   '<button onclick="FleetPage.showAdd()" class="btn btn-primary" style="font-size:12px;">+ Add Vehicle</button>'
+      +   '<button onclick="FleetPage._refresh(true)" class="btn btn-outline" style="font-size:12px;">↻ Refresh</button>'
+      + '</div></div>';
+
+    // Update the Bouncie pill async — reads tenants.config.bouncie.access_token
+    setTimeout(function() { FleetPage._refreshBouncieStatus(); }, 30);
+    // v749: also refresh when the tab regains focus — likely the user
+    // just returned from the OAuth tab, so the pill needs to flip from
+    // "Not connected" to "✓ Connected" without a full reload.
+    if (!FleetPage._focusHooked) {
+      FleetPage._focusHooked = true;
+      window.addEventListener('focus', function() {
+        if (document.getElementById('fleet-bouncie-pill')) FleetPage._refreshBouncieStatus();
+      });
+    }
+
+    if (self._err) {
+      html += '<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;">' + UI.esc(self._err) + '</div>';
+    }
+
+    if (self._loading && self._vehicles.length === 0) {
+      html += '<div style="text-align:center;padding:30px;color:var(--text-light);font-size:13px;">Loading fleet…</div>';
+      return html;
+    }
+
+    if (self._vehicles.length === 0) {
+      html += '<div style="background:var(--white);border-radius:12px;padding:30px;text-align:center;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+        + '<div style="font-size:36px;margin-bottom:8px;">🚛</div>'
+        + '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">No vehicles yet</div>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Add your fleet vehicles. Bouncie OBD-II trackers will auto-register on first webhook event, or you can add manually below.</div>'
+        + '<button onclick="FleetPage.showAdd()" class="btn btn-primary" style="font-size:12px;">+ Add Vehicle</button>'
+        + '<details style="margin-top:18px;text-align:left;font-size:12px;color:var(--text-light);"><summary style="cursor:pointer;">Hardware setup notes</summary>'
+        + '<ul style="margin-top:8px;padding-left:18px;line-height:1.6;">'
+        + '<li><b>Trucks:</b> Bouncie OBD-II ($77/device + $96/yr). Plug into OBD port under dashboard. Auto-registers on first trip.</li>'
+        + '<li><b>Chipper / trailer:</b> Trak-4 Portable (later). Battery-powered, magnetic mount. Manual add here.</li>'
+        + '<li>Webhook URL for Bouncie: <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">' + (window.SB_FUNC_URL || 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1') + '/bouncie-webhook</code></li>'
+        + '</ul></details>'
+        + '</div>';
+      return html;
+    }
+
+    // v425: dropped duplicate map — Dispatch has the canonical MapLibre.
+    // "Show Fleet" toggle on Dispatch surfaces vehicle markers there.
+    var locatable = self._vehicles.filter(function(v) { return v.last_lat && v.last_lon; });
+    if (locatable.length) {
+      html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--text-light);">'
+        + locatable.length + ' vehicle' + (locatable.length===1?'':'s') + ' with live position. <a href="#" onclick="window._opsTab=\'dispatch\';loadPage(\'operations\');return false;" style="color:var(--accent);">Open on Dispatch map →</a>'
+        + '</div>';
+    }
+
+    // ── List view
+    html += '<div id="fleet-list" style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    html += '<div class="data-table">';
+    html += '<div class="data-table-header" style="display:grid;grid-template-columns:1.5fr 1fr 110px 110px 1fr 80px;gap:12px;padding:10px 16px;background:var(--bg);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">'
+      + '<div>Vehicle</div><div>Tracker</div><div>Status</div><div>Speed</div><div>Last Seen</div><div></div></div>';
+
+    self._vehicles.forEach(function(v) {
+      var status = self._statusOf(v);
+      html += '<div onclick="FleetPage.showDetail(\'' + v.id + '\')" style="display:grid;grid-template-columns:1.5fr 1fr 110px 110px 1fr 80px;gap:12px;padding:12px 16px;border-top:1px solid var(--border);cursor:pointer;font-size:13px;align-items:center;">'
+        + '<div><div style="font-weight:600;">' + UI.esc(v.name || '—') + '</div>'
+        +   (v.nickname ? '<div style="font-size:11px;color:var(--text-light);">' + UI.esc(v.nickname) + '</div>' : '')
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--text-light);">' + UI.esc(v.tracker_provider || 'none') + (v.tracker_device_id ? ' <span style="opacity:.6;">' + UI.esc(String(v.tracker_device_id).slice(-6)) + '</span>' : '') + '</div>'
+        + '<div><span id="fleet-status-' + v.id + '" style="background:' + status.bg + ';color:' + status.fg + ';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">' + status.label + '</span></div>'
+        + '<div id="fleet-speed-' + v.id + '">' + (v.last_speed_mph != null ? Math.round(v.last_speed_mph) + ' mph' : '—') + '</div>'
+        + '<div id="fleet-seen-' + v.id + '" style="font-size:12px;color:var(--text-light);">' + (v.last_seen_at ? UI.timeAgo(v.last_seen_at) : 'never') + '</div>'
+        + '<div style="text-align:right;">' + (v.last_lat ? '<a href="https://maps.apple.com/?ll=' + v.last_lat + ',' + v.last_lon + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;font-size:12px;" onclick="event.stopPropagation();">📍 Map</a>' : '') + '</div>'
+        + '</div>';
+    });
+    html += '</div></div>';
+
+    // ── v1085: Work History (Bouncie GPS visits) — Doug: "everything built
+    // into Branch Manager." Truck sat >=1h somewhere = a visit; one tap
+    // turns a visit into real time_entries for the crew (payroll + job
+    // costing consume those). Data: vehicle_visits, filled by the Bouncie
+    // trips pipeline. RLS: tenant SELECT only.
+    html += '<h3 style="margin:22px 0 10px;font-size:15px;">🕐 Work History <span style="font-size:11px;color:var(--text-light);font-weight:400;">from truck GPS — tap a visit to log crew hours</span></h3>';
+    html += '<div id="fleet-visits" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:8px 0;"><div style="padding:16px;font-size:12px;color:var(--text-light);">Loading work history…</div></div>';
+    setTimeout(FleetPage._loadVisits, 0);
+
+    return html;
+  },
+
+  _statusOf: function(v) {
+    if (!v.last_seen_at) return { label: 'No data', bg: 'var(--bg)', fg: 'var(--text-light)' };
+    var ageMin = (Date.now() - new Date(v.last_seen_at).getTime()) / 60000;
+    if (ageMin < 5) {
+      if (v.last_ignition === false) return { label: 'Parked', bg: '#e8f5e9', fg: '#2e7d32' };
+      if ((v.last_speed_mph || 0) > 1) return { label: 'Driving', bg: '#fff3e0', fg: '#e07c24' };
+      return { label: 'Idle', bg: '#fffde7', fg: '#a37200' };
+    }
+    if (ageMin < 60) return { label: 'Recent', bg: '#e3f2fd', fg: '#1565c0' };
+    if (ageMin < 1440) return { label: 'Stale', bg: '#fff3e0', fg: '#a04400' };
+    return { label: 'Offline', bg: '#fde8e8', fg: '#c62828' };
+  },
+
+  _kickFetch: function() {
+    if (FleetPage._fetched) return;
+    FleetPage._fetched = true;
+    FleetPage._refresh(false);
+  },
+
+  _refresh: function(forceRender) {
+    var self = FleetPage;
+    self._loading = true;
+    self._err = null;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) {
+      self._err = 'Supabase client not ready';
+      self._loading = false;
+      // Fleet only renders inside the Operations hub — there's no top-level
+      // 'fleet' route. Re-render via Operations with the fleet tab active.
+      if (forceRender) { window._opsTab = 'fleet'; loadPage('operations'); }
+      return;
+    }
+    sb.from('vehicles').select('*').eq('active', true).order('name', { ascending: true }).then(function(r) {
+      self._vehicles = r.data || [];
+      if (r.error) self._err = r.error.message;
+      self._loading = false;
+      if (forceRender || !self._renderedOnce) {
+        self._renderedOnce = true;
+        window._opsTab = 'fleet';
+        loadPage('operations');
+      } else {
+        // Silently update the status badges in-place without full re-render
+        self._vehicles.forEach(function(v) {
+          var badge = document.getElementById('fleet-status-' + v.id);
+          var speed = document.getElementById('fleet-speed-' + v.id);
+          var seen = document.getElementById('fleet-seen-' + v.id);
+          var s = self._statusOf(v);
+          if (badge) { badge.textContent = s.label; badge.style.background = s.bg; badge.style.color = s.fg; }
+          if (speed) speed.textContent = v.last_speed_mph != null ? Math.round(v.last_speed_mph) + ' mph' : '—';
+          if (seen) seen.textContent = v.last_seen_at ? UI.timeAgo(v.last_seen_at) : 'never';
+        });
+      }
+    });
+  },
+
+  showAdd: function() {
+    var body = '<div style="display:grid;gap:10px;">'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Name<input id="fleet-name" placeholder="e.g. Bucket Truck #1" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Nickname<input id="fleet-nick" placeholder="e.g. The Beast" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">License Plate<input id="fleet-plate" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Type<select id="fleet-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;">'
+      +   '<option value="bucket">Bucket Truck</option><option value="dump">Dump Truck</option><option value="pickup">Pickup</option><option value="chipper">Chipper</option><option value="trailer">Trailer</option><option value="other">Other</option>'
+      + '</select></label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Tracker Provider<select id="fleet-tracker" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;">'
+      +   '<option value="">— None yet —</option><option value="bouncie">Bouncie OBD-II</option><option value="trak4">Trak-4 Portable</option><option value="manual">Manual entry</option>'
+      + '</select></label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Tracker Device ID (IMEI)<input id="fleet-device" placeholder="Leave blank — auto-registers on first Bouncie event" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
+      + '</div>';
+    var footer = '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+      + '<button class="btn btn-primary" onclick="FleetPage.saveAdd()">Save</button>';
+    UI.showModal('Add Vehicle', body, { footer: footer });
+  },
+
+  saveAdd: function() {
+    var name = document.getElementById('fleet-name').value.trim();
+    if (!name) { UI.toast('Name is required', 'error'); return; }
+    var row = {
+      tenant_id: window.resolveTenantId(),
+      name: name,
+      nickname: document.getElementById('fleet-nick').value.trim() || null,
+      license_plate: document.getElementById('fleet-plate').value.trim() || null,
+      type: document.getElementById('fleet-type').value || 'truck',
+      tracker_provider: document.getElementById('fleet-tracker').value || null,
+      tracker_device_id: document.getElementById('fleet-device').value.trim() || null,
+      active: true
+    };
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    sb.from('vehicles').insert(row).then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Vehicle added');
+      UI.closeModal();
+      FleetPage._fetched = false;
+      FleetPage._refresh(true);
+    });
+  },
+
+  showDetail: async function(id) {
+    FleetPage._selectedId = id;
+    var v = FleetPage._vehicles.filter(function(x) { return x.id === id; })[0];
+    if (!v) return;
+    var status = FleetPage._statusOf(v);
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+
+    var baseHtml = '<div style="font-size:13px;line-height:1.7;">'
+      + '<div><b>Status:</b> <span style="background:' + status.bg + ';color:' + status.fg + ';padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">' + status.label + '</span></div>'
+      + (v.last_seen_at ? '<div><b>Last seen:</b> ' + UI.timeAgo(v.last_seen_at) + '</div>' : '')
+      + (v.last_lat ? '<div><b>Last position:</b> <a href="https://maps.apple.com/?ll=' + v.last_lat + ',' + v.last_lon + '&q=' + encodeURIComponent(v.name) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">' + v.last_lat.toFixed(5) + ', ' + v.last_lon.toFixed(5) + ' ↗</a></div>' : '')
+      + (v.last_speed_mph != null ? '<div><b>Speed:</b> ' + Math.round(v.last_speed_mph) + ' mph</div>' : '')
+      + (v.license_plate ? '<div><b>Plate:</b> ' + UI.esc(v.license_plate) + '</div>' : '')
+      + (v.type ? '<div><b>Type:</b> ' + UI.esc(v.type) + '</div>' : '')
+      + (v.tracker_provider ? '<div><b>Tracker:</b> ' + UI.esc(v.tracker_provider) + (v.tracker_device_id ? ' <code style="background:var(--bg);padding:1px 4px;border-radius:3px;font-size:11px;">' + UI.esc(v.tracker_device_id) + '</code>' : '') + '</div>' : '<div style="color:var(--text-light);"><b>Tracker:</b> not configured</div>')
+      + '<div><b>Default driver:</b> ' + (v.default_driver_name ? UI.esc(v.default_driver_name) : '<span style="color:var(--text-light);">unassigned</span>') + ' <a href="#" onclick="event.preventDefault();FleetPage.editDefaultDriver(\'' + id + '\')" style="font-size:11px;color:var(--accent);margin-left:6px;">edit</a></div>'
+      + '</div>'
+      + '<div id="fleet-docs" style="margin-top:14px;"><div style="color:var(--text-light);font-size:12px;">Loading docs…</div></div>'
+      + '<div id="fleet-detail-extra" style="margin-top:12px;"><div style="color:var(--text-light);font-size:12px;">Loading history…</div></div>';
+
+    var assignBtn = !v.tracker_device_id
+      ? '<button class="btn btn-outline" style="font-size:12px;" onclick="FleetPage.showAssignTracker(\'' + id + '\')">🔗 Assign Tracker</button>'
+      : '';
+    var footer = assignBtn
+      + '<button class="btn btn-outline" style="color:#c62828;" onclick="FleetPage.archive(\'' + id + '\')">Archive</button>'
+      + '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>';
+    UI.showModal(v.name + (v.nickname ? ' — ' + v.nickname : ''), baseHtml, { footer: footer });
+
+    // Async: load position history + open maintenance alerts + docs
+    if (!sb) return;
+    // v764: vehicle_documents — best-effort fetch (table may not exist
+    // yet if the migration hasn't been applied).
+    FleetPage._loadVehicleDocs(id);
+    try {
+      var [posRes, maintRes] = await Promise.all([
+        sb.from('vehicle_positions').select('ts,lat,lon,speed_mph,ignition').eq('vehicle_id', id).order('ts', { ascending: false }).limit(12),
+        sb.from('vehicle_maintenance').select('title,severity,kind,created_at').eq('vehicle_id', id).eq('status', 'open').order('created_at', { ascending: false }).limit(5)
+      ]);
+
+      var extra = document.getElementById('fleet-detail-extra');
+      if (!extra) return;
+      var out = '';
+
+      if (maintRes.data && maintRes.data.length > 0) {
+        out += '<div style="margin-bottom:10px;">';
+        out += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">⚠ Open Alerts</div>';
+        maintRes.data.forEach(function(m) {
+          var sev = m.severity === 'warning' ? '#e65100' : m.severity === 'critical' ? '#c62828' : '#1565c0';
+          out += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;">'
+            + '<span style="color:' + sev + ';font-weight:700;">' + (m.severity === 'warning' ? '⚠' : m.severity === 'critical' ? '🔴' : 'ℹ') + '</span>'
+            + '<span>' + UI.esc(m.title) + '</span>'
+            + '</div>';
+        });
+        out += '</div>';
+      }
+
+      if (posRes.data && posRes.data.length > 0) {
+        out += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Recent Positions</div>';
+        out += '<div style="max-height:180px;overflow-y:auto;">';
+        posRes.data.forEach(function(p) {
+          var ago = (function(d) {
+            var s = Math.floor((Date.now() - new Date(d)) / 1000);
+            if (s < 60) return s + 's ago';
+            if (s < 3600) return Math.floor(s/60) + 'm ago';
+            if (s < 86400) return Math.floor(s/3600) + 'h ago';
+            return Math.floor(s/86400) + 'd ago';
+          })(p.ts);
+          out += '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px;">'
+            + '<a href="https://maps.apple.com/?ll=' + p.lat + ',' + p.lon + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">'
+            + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) + ' ↗'
+            + '</a>'
+            + '<span style="color:var(--text-light);">' + (p.speed_mph != null ? Math.round(p.speed_mph) + ' mph · ' : '') + ago + '</span>'
+            + '</div>';
+        });
+        out += '</div>';
+      } else {
+        out += '<div style="color:var(--text-light);font-size:12px;">No position history yet — waiting for first Bouncie event.</div>';
+      }
+
+      extra.innerHTML = out;
+    } catch(e) {
+      var extra2 = document.getElementById('fleet-detail-extra');
+      if (extra2) extra2.innerHTML = '<div style="color:var(--text-light);font-size:12px;">Could not load history.</div>';
+    }
+  },
+
+  _map: null,
+  _markers: [],
+  _initMap: function() {
+    var el = document.getElementById('fleet-map');
+    if (!el || typeof maplibregl === 'undefined' || el._initialized) return;
+    el._initialized = true;
+    var locatable = FleetPage._vehicles.filter(function(v) { return v.last_lat && v.last_lon; });
+    var center = [-73.9212, 41.2901]; // Peekskill HQ default
+    if (locatable.length) center = [locatable[0].last_lon, locatable[0].last_lat];
+    FleetPage._map = new maplibregl.Map({
+      container: 'fleet-map',
+      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+      center: center,
+      zoom: 11
+    });
+    FleetPage._map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    FleetPage._map.on('load', function() {
+      // HQ marker
+      new maplibregl.Marker({ color: '#1a3c12' })
+        .setLngLat([-73.9210, 41.2847])
+        .setPopup(new maplibregl.Popup().setHTML('<strong>🏠 HQ</strong>'))
+        .addTo(FleetPage._map);
+      // Vehicle markers
+      locatable.forEach(function(v) {
+        var status = FleetPage._statusOf(v);
+        var color = status.label === 'Driving' ? '#e07c24' : status.label === 'Parked' || status.label === 'Idle' ? '#2e7d32' : status.label === 'Offline' ? '#c62828' : '#1565c0';
+        var m = new maplibregl.Marker({ color: color })
+          .setLngLat([v.last_lon, v.last_lat])
+          .setPopup(new maplibregl.Popup().setHTML('<strong>' + UI.esc(v.name) + '</strong><br>' + status.label + (v.last_speed_mph != null ? ' · ' + Math.round(v.last_speed_mph) + ' mph' : '') + '<br>' + UI.timeAgo(v.last_seen_at)))
+          .addTo(FleetPage._map);
+        FleetPage._markers.push(m);
+      });
+      // Auto-fit if multiple
+      if (locatable.length > 1) {
+        var b = new maplibregl.LngLatBounds();
+        locatable.forEach(function(v) { b.extend([v.last_lon, v.last_lat]); });
+        b.extend([-73.9210, 41.2847]);
+        FleetPage._map.fitBounds(b, { padding: 40, maxZoom: 14 });
+      }
+    });
+  },
+
+  showAssignTracker: function(id) {
+    var body = '<div style="display:grid;gap:12px;">'
+      + '<div style="font-size:13px;color:var(--text-light);">Enter the IMEI printed on the Bouncie device label. On first Bouncie event, this vehicle row will be claimed automatically. You can also paste it here now to pre-link it.</div>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Tracker Provider<select id="fat-provider" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;">'
+      +   '<option value="bouncie">Bouncie OBD-II</option><option value="trak4">Trak-4 Portable</option><option value="manual">Manual</option>'
+      + '</select></label>'
+      + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Device ID / IMEI<input id="fat-imei" placeholder="e.g. 123456789012345" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;" onkeydown="if(event.key===\'Enter\')FleetPage.saveAssignTracker(\'' + id + '\')"></label>'
+      + '</div>';
+    var footer = '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+      + '<button class="btn btn-primary" onclick="FleetPage.saveAssignTracker(\'' + id + '\')">Save</button>';
+    UI.showModal('Assign Tracker', body, { footer: footer });
+    setTimeout(function(){ var el = document.getElementById('fat-imei'); if(el) el.focus(); }, 100);
+  },
+
+  saveAssignTracker: function(id) {
+    var imei = (document.getElementById('fat-imei') || {}).value || '';
+    var provider = (document.getElementById('fat-provider') || {}).value || 'bouncie';
+    imei = imei.trim();
+    if (!imei) { UI.toast('IMEI is required', 'error'); return; }
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    sb.from('vehicles').update({ tracker_device_id: imei, tracker_provider: provider }).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Tracker assigned');
+      UI.closeModal();
+      FleetPage._fetched = false;
+      FleetPage._refresh(true);
+    });
+  },
+
+  // v745: One-click Bouncie OAuth bootstrap. Constructs the authorize
+  // URL with the SNT BM OAuth client_id, the bouncie-oauth-callback
+  // endpoint as redirect_uri, and the current tenant_id as `state` so
+  // the callback knows which tenants.config.bouncie row to update.
+  //
+  // The client_id is the same one stored in Supabase secrets as
+  // BOUNCIE_CLIENT_ID. It's safe to embed client-side — OAuth client_ids
+  // are PUBLIC by design; the secret is enforced server-side in the
+  // token exchange.
+  // ── v1085 Work History ──────────────────────────────────────
+  _visits: null,
+  _loadVisits: function() {
+    if (typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+    SupabaseDB.client.from('vehicle_visits')
+      .select('id, vehicle_name, arrived_at, departed_at, minutes, address, matched_client_name, matched_job_id')
+      .order('arrived_at', { ascending: false })
+      .limit(150)
+      .then(function(res) {
+        var el = document.getElementById('fleet-visits');
+        if (!el) return;
+        if (res.error) { el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--red);">Work history unavailable: ' + UI.esc(res.error.message) + '</div>'; return; }
+        FleetPage._visits = res.data || [];
+        FleetPage._renderVisits();
+      });
+  },
+  _renderVisits: function() {
+    var el = document.getElementById('fleet-visits');
+    if (!el) return;
+    var visits = FleetPage._visits || [];
+    if (!visits.length) { el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text-light);">No GPS visits yet — they appear once trucks sit at a site for an hour+.</div>'; return; }
+    var short = function(n) {
+      if (/F-750|Bucket/i.test(n)) return 'F-750';
+      if (/F-550|Chip/i.test(n)) return 'F-550';
+      if (/Ram/i.test(n)) return 'Ram';
+      return (n || '').slice(0, 8);
+    };
+    var byDay = {};
+    visits.forEach(function(v) { var d = (v.arrived_at || '').slice(0, 10); (byDay[d] = byDay[d] || []).push(v); });
+    var days = Object.keys(byDay).sort().reverse();
+    var html = '';
+    days.forEach(function(d) {
+      var vs = byDay[d];
+      var tot = vs.reduce(function(s2, v) { return s2 + (v.minutes || 0); }, 0) / 60;
+      var dt = new Date(d + 'T12:00:00');
+      html += '<div style="padding:10px 16px 4px;display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--green-dark);border-top:1px solid var(--border);">'
+        + '<span>' + dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + '</span>'
+        + '<span>' + tot.toFixed(1) + 'h on sites</span></div>';
+      vs.sort(function(a, b) { return a.arrived_at < b.arrived_at ? -1 : 1; });
+      vs.forEach(function(v) {
+        var addr = (v.address || '?').split(',').slice(0, 3).join(',');
+        html += '<div onclick="FleetPage.logVisitHours(\'' + v.id + '\')" style="padding:8px 16px;cursor:pointer;font-size:13px;display:grid;grid-template-columns:52px 44px 1fr;gap:8px;align-items:baseline;">'
+          + '<span style="color:var(--text-light);font-size:11px;">' + short(v.vehicle_name) + '</span>'
+          + '<span style="font-weight:700;">' + ((v.minutes || 0) / 60).toFixed(1) + 'h</span>'
+          + '<span>' + UI.esc(addr)
+          + (v.matched_client_name ? ' <span style="color:var(--accent);font-size:12px;font-weight:600;">' + UI.esc(v.matched_client_name) + '</span>' : '')
+          + '</span></div>';
+      });
+    });
+    el.innerHTML = html;
+  },
+  logVisitHours: function(visitId) {
+    var v = (FleetPage._visits || []).find(function(x) { return x.id === visitId; });
+    if (!v) return;
+    var team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
+    if (!team.length) team = [{ name: 'Doug Brown' }, { name: 'David Beers' }];
+    var hrs = Math.round((v.minutes / 60) * 4) / 4;
+    var checks = team.map(function(m, i) {
+      var nm = m.name || m;
+      var pre = /doug|david|dave/i.test(nm) ? ' checked' : '';
+      return '<label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:14px;">'
+        + '<input type="checkbox" class="vh-member" value="' + UI.esc(nm) + '"' + pre + '> ' + UI.esc(nm) + '</label>';
+    }).join('');
+    var html = '<div style="font-size:13px;color:var(--text-light);margin-bottom:10px;">'
+      + UI.esc((v.address || '').split(',').slice(0, 3).join(',')) + '<br>'
+      + new Date(v.arrived_at).toLocaleString() + ' — ' + ((v.minutes || 0) / 60).toFixed(1) + 'h truck time'
+      + (v.matched_client_name ? ' · ' + UI.esc(v.matched_client_name) : '') + '</div>'
+      + checks
+      + UI.field('Hours each', '<input type="number" id="vh-hours" step="0.25" min="0" value="' + hrs + '">');
+    UI.showModal('Log crew hours', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="FleetPage._saveVisitHours(\'' + visitId + '\')">Log Hours</button>'
+    });
+  },
+  _saveVisitHours: function(visitId) {
+    var v = (FleetPage._visits || []).find(function(x) { return x.id === visitId; });
+    if (!v) return;
+    var hours = parseFloat(document.getElementById('vh-hours').value) || 0;
+    var members = Array.prototype.slice.call(document.querySelectorAll('.vh-member:checked')).map(function(c) { return c.value; });
+    if (!hours || !members.length) { UI.toast('Pick at least one person and hours', 'error'); return; }
+    members.forEach(function(name) {
+      DB.timeEntries.create({
+        userId: name, user: name,
+        date: (v.arrived_at || '').slice(0, 10),
+        hours: hours,
+        jobId: v.matched_job_id || null,
+        clockIn: v.arrived_at, clockOut: v.departed_at,
+        notes: 'GPS visit: ' + (v.address || '').split(',').slice(0, 2).join(',')
+      });
+    });
+    UI.closeModal();
+    UI.toast('Logged ' + hours + 'h for ' + members.length + ' crew');
+  },
+
+  connectBouncie: function() {
+    var BOUNCIE_CLIENT_ID = '616a27da73c303dd7203b5a705288ea41a55e735fcf01727c0ffd4963e536b85';
+    var REDIRECT = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/bouncie-oauth-callback';
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!tenantId) { UI.toast('Tenant ID unknown — can\'t bootstrap OAuth', 'error'); return; }
+    var url = 'https://auth.bouncie.com/dialog/authorize'
+      + '?client_id=' + encodeURIComponent(BOUNCIE_CLIENT_ID)
+      + '&redirect_uri=' + encodeURIComponent(REDIRECT)
+      + '&response_type=code'
+      + '&state=' + encodeURIComponent(tenantId);
+    var msg = 'About to open Bouncie\'s authorize page. Log in with the Bouncie account that owns your trucks, approve, and you\'ll bounce back here.\n\nProceed?';
+    if (!confirm(msg)) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  },
+
+  // v745: refresh the small Bouncie status pill in the Fleet header.
+  // Shows ✓ Connected (when tenants.config.bouncie.access_token is set)
+  // or "Not connected" with a link to start OAuth.
+  _refreshBouncieStatus: function() {
+    var pill = document.getElementById('fleet-bouncie-pill');
+    if (!pill) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) { pill.innerHTML = 'Bouncie: <span style="opacity:.6;">unknown</span>'; return; }
+    sb.from('tenants').select('config').eq('id', tenantId).maybeSingle().then(function(r) {
+      var cfg = r && r.data && r.data.config && r.data.config.bouncie;
+      if (cfg && cfg.access_token) {
+        var exp = cfg.expires_at ? new Date(cfg.expires_at) : null;
+        var expSoon = exp && exp.getTime() < Date.now() + 24 * 3600 * 1000;
+        var label = expSoon ? '<span style="color:#a16207;">⚠ Token near expiry</span>' : '<span style="color:var(--green-dark);">✓ Connected</span>';
+        pill.innerHTML = 'Bouncie: ' + label;
+      } else {
+        pill.innerHTML = 'Bouncie: <span style="color:#a16207;">Not connected — click 🔗 above</span>';
+      }
+    });
+  },
+
+  // v764: vehicle documents (reg / inspection / insurance card / lease).
+  // Each row points at a file in Supabase Storage (job-photos bucket,
+  // vehicle-docs/<vehicle_id>/ prefix). Expiry rolls into the dashboard
+  // ExpiringDocsAlert banner.
+  _vehicleDocKindLabel: function(k) {
+    var map = { registration: 'Registration', inspection: 'NY inspection', insurance_card: 'Insurance ID card', lease: 'Lease', other: 'Other' };
+    return map[k] || k;
+  },
+  _loadVehicleDocs: function(vehicleId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var el = document.getElementById('fleet-docs');
+    if (!sb || !el) return;
+    sb.from('vehicle_documents').select('*').eq('vehicle_id', vehicleId).order('expires_date', { ascending: true, nullsFirst: false }).then(function(r) {
+      if (r.error) {
+        // Table doesn't exist yet (migration not applied) — silent fail
+        if (el) el.innerHTML = '';
+        console.warn('[Fleet] vehicle_documents load:', r.error.message);
+        return;
+      }
+      FleetPage._renderVehicleDocs(vehicleId, r.data || []);
+    });
+  },
+  _renderVehicleDocs: function(vehicleId, docs) {
+    var el = document.getElementById('fleet-docs');
+    if (!el) return;
+    var now = Date.now();
+    var html = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);">📄 Documents · ' + docs.length + '</div>'
+      +   '<button onclick="FleetPage._addVehicleDoc(\'' + vehicleId + '\')" style="font-size:11px;padding:4px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600;">+ Add</button>'
+      + '</div>';
+    if (!docs.length) {
+      html += '<div style="font-size:12px;color:var(--text-light);">No documents on file. Add Registration, NY Inspection, Insurance ID card, etc.</div>';
+    } else {
+      docs.forEach(function(d) {
+        var daysLeft = d.expires_date ? Math.ceil((new Date(d.expires_date).getTime() - now) / 86400000) : null;
+        var color = daysLeft === null ? 'var(--text-light)' : daysLeft < 0 ? '#c62828' : daysLeft < 30 ? '#e65100' : '#2e7d32';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">'
+          + '<div style="min-width:0;">'
+          +   '<b>' + UI.esc(FleetPage._vehicleDocKindLabel(d.kind)) + '</b>'
+          +   (d.issuer ? ' · ' + UI.esc(d.issuer) : '')
+          +   (d.document_number ? ' · <code style="font-size:11px;">' + UI.esc(d.document_number) + '</code>' : '')
+          +   (d.expires_date ? ' · <span style="color:' + color + ';">expires ' + d.expires_date + (daysLeft !== null ? ' (' + (daysLeft < 0 ? Math.abs(daysLeft) + 'd overdue' : daysLeft + 'd') + ')' : '') + '</span>' : '')
+          + '</div>'
+          + '<div style="display:flex;gap:4px;">'
+          +   (d.file_url ? '<a href="' + UI.esc(d.file_url) + '" target="_blank" rel="noopener noreferrer" style="font-size:11px;padding:3px 8px;background:var(--white);border:1px solid var(--border);border-radius:4px;text-decoration:none;color:var(--text);">View</a>' : '')
+          +   '<button onclick="FleetPage._editVehicleDoc(\'' + d.id + '\',\'' + vehicleId + '\')" style="font-size:11px;padding:3px 8px;background:var(--white);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Edit</button>'
+          +   '<button onclick="FleetPage._deleteVehicleDoc(\'' + d.id + '\',\'' + vehicleId + '\')" style="font-size:11px;padding:3px 7px;background:var(--white);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:#c62828;">✕</button>'
+          + '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  },
+
+  _addVehicleDoc: function(vehicleId) {
+    FleetPage._openVehicleDocForm(null, vehicleId, {});
+  },
+  _editVehicleDoc: function(docId, vehicleId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('vehicle_documents').select('*').eq('id', docId).maybeSingle().then(function(r) {
+      if (r.error || !r.data) return;
+      FleetPage._openVehicleDocForm(docId, vehicleId, r.data);
+    });
+  },
+  _openVehicleDocForm: function(docId, vehicleId, d) {
+    var kinds = [['registration','Registration'],['inspection','NY Inspection'],['insurance_card','Insurance ID card'],['lease','Lease'],['other','Other']];
+    var kindOpts = kinds.map(function(k) {
+      var sel = (d.kind === k[0]) ? ' selected' : '';
+      return '<option value="' + k[0] + '"' + sel + '>' + k[1] + '</option>';
+    }).join('');
+    var body = '<div style="display:flex;flex-direction:column;gap:10px;">'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">DOC TYPE</div>'
+      +   '<select id="vd-kind" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">' + kindOpts + '</select></label>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">ISSUER</div>'
+      +     '<input id="vd-issuer" value="' + UI.esc(d.issuer || '') + '" placeholder="e.g. NY DMV / Travelers" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">DOC #</div>'
+      +     '<input id="vd-docnum" value="' + UI.esc(d.document_number || '') + '" placeholder="Reg / Policy #" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;font-family:monospace;"></label>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">ISSUED</div>'
+      +     '<input id="vd-issued" type="date" value="' + UI.esc(d.issued_date || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
+      +   '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">EXPIRES</div>'
+      +     '<input id="vd-expires" type="date" value="' + UI.esc(d.expires_date || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;"></label>'
+      + '</div>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">UPLOAD FILE <span style="font-weight:400;">(PDF / image)</span></div>'
+      +   '<input type="file" id="vd-file" accept=".pdf,image/*" '
+      +     'onchange="FleetPage._uploadVehicleDocFile(\'' + vehicleId + '\', this.files[0])" '
+      +     'style="width:100%;font-size:12px;padding:4px;"></label>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">…or paste file URL</div>'
+      +   '<input id="vd-fileurl" type="url" value="' + UI.esc(d.file_url || '') + '" placeholder="https://…/registration.pdf" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;box-sizing:border-box;font-family:monospace;"></label>'
+      + '<div id="vd-upload-status" style="font-size:11px;color:var(--text-light);min-height:14px;"></div>'
+      + '<label><div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:3px;">NOTES</div>'
+      +   '<textarea id="vd-notes" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;font-family:inherit;">' + UI.esc(d.notes || '') + '</textarea></label>'
+      + '</div>';
+    var footer = (docId ? '<button class="btn btn-outline" style="color:#c62828;margin-right:auto;" onclick="FleetPage._deleteVehicleDoc(\'' + docId + '\',\'' + vehicleId + '\')">Delete</button>' : '')
+      + '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+      + '<button class="btn btn-primary" onclick="FleetPage._saveVehicleDoc(\'' + (docId || '') + '\',\'' + vehicleId + '\')">Save</button>';
+    UI.showModal(docId ? 'Edit document' : 'Add document', body, { footer: footer });
+  },
+  _uploadVehicleDocFile: async function(vehicleId, file) {
+    if (!file) return;
+    var statusEl = document.getElementById('vd-upload-status');
+    if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '…';
+    try {
+      var res = await BMUpload.uploadFile(file, 'vehicle-docs/' + vehicleId);
+      var urlEl = document.getElementById('vd-fileurl');
+      if (urlEl) urlEl.value = res.url;
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--green-dark);">✓ Uploaded · ' + UI.esc(file.name) + '</span>';
+    } catch (e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#c62828;">Upload failed: ' + UI.esc(e.message || 'unknown') + '</span>';
+    }
+  },
+
+  _saveVehicleDoc: function(docId, vehicleId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) { UI.toast('Supabase not connected', 'error'); return; }
+    var row = {
+      kind: (document.getElementById('vd-kind') || {}).value || 'other',
+      issuer: ((document.getElementById('vd-issuer') || {}).value || '').trim() || null,
+      document_number: ((document.getElementById('vd-docnum') || {}).value || '').trim() || null,
+      issued_date: ((document.getElementById('vd-issued') || {}).value || '').trim() || null,
+      expires_date: ((document.getElementById('vd-expires') || {}).value || '').trim() || null,
+      file_url: ((document.getElementById('vd-fileurl') || {}).value || '').trim() || null,
+      notes: ((document.getElementById('vd-notes') || {}).value || '').trim() || null,
+      updated_at: new Date().toISOString()
+    };
+    var p;
+    if (docId) {
+      p = sb.from('vehicle_documents').update(row).eq('id', docId);
+    } else {
+      row.tenant_id = tenantId;
+      row.vehicle_id = vehicleId;
+      p = sb.from('vehicle_documents').insert(row);
+    }
+    p.then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      UI.closeModal();
+      UI.toast('Saved');
+      FleetPage._loadVehicleDocs(vehicleId);
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+    });
+  },
+  _deleteVehicleDoc: function(docId, vehicleId) {
+    if (!confirm('Delete this document?')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('vehicle_documents').delete().eq('id', docId).then(function(r) {
+      UI.closeModal();
+      if (r.error) { UI.toast('Delete failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Deleted');
+      FleetPage._loadVehicleDocs(vehicleId);
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.refresh) ExpiringDocsAlert.refresh();
+    });
+  },
+
+  // v741: set the sticky default driver for a vehicle. Used by the
+  // Truck Hours tab to attribute GPS-derived hours when there's no
+  // day-specific override.
+  editDefaultDriver: function(id) {
+    var v = FleetPage._vehicles.filter(function(x) { return x.id === id; })[0];
+    if (!v) return;
+    var current = v.default_driver_name || '';
+    var entered = prompt('Default driver name (employee name as it appears in TimeTrack)\n\nLeave blank to clear.', current);
+    if (entered === null) return;
+    entered = entered.trim();
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    sb.from('vehicles').update({ default_driver_name: entered || null }).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      v.default_driver_name = entered || null;
+      UI.toast(entered ? 'Default driver: ' + entered : 'Default driver cleared');
+      UI.closeModal();
+      FleetPage.showDetail(id);
+    });
+  },
+
+  archive: function(id) {
+    if (!confirm('Archive this vehicle? It will no longer receive position updates from its tracker.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not ready', 'error'); return; }
+    sb.from('vehicles').update({ active: false }).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Archive failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Vehicle archived');
+      UI.closeModal();
+      FleetPage._fetched = false;
+      FleetPage._refresh(true);
+    });
+  }
+};

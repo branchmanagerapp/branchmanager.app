@@ -1,0 +1,283 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>How the site actually works — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+
+.dg{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:15px;margin:0 0 8px;overflow-x:auto}
+.dg .lane{min-width:290px}
+.node{border:1.5px solid var(--line-strong);border-radius:11px;padding:9px 11px;background:var(--bg-soft);margin:0 0 6px}
+.node .nt{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+.node .nn{font-weight:700;font-size:14px;margin-top:1px}
+.node .nd{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+.node.live{border-color:var(--green);background:#f2faf7}
+.node.dead{border-color:var(--red);background:#fef6f7;border-style:dashed}
+.node.new{border-color:var(--blue);background:#f2f6fc;border-style:dashed}
+.node.sq{border-color:var(--ink);background:#fff}
+.arw{text-align:center;color:var(--ink-mute);font-size:11px;font-weight:600;margin:0 0 6px;line-height:1.35}
+.arw b{color:var(--ink);font-family:'SF Mono',Menlo,monospace;font-size:11px;font-weight:600}
+.brk{border:1.5px dashed var(--red);border-radius:11px;padding:10px 11px;background:#fef6f7;margin:0 0 6px;
+ text-align:center;color:var(--red-dark);font-weight:700;font-size:13px}
+.cls{border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;margin:0 0 9px;background:var(--bg)}
+.cls .ch{background:var(--ink);color:#fff;padding:7px 11px;font-weight:700;font-size:13.5px;
+ display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cls .ch span{font-size:10px;font-weight:600;color:#9a9da4;font-family:'SF Mono',Menlo,monospace}
+.cls .cb{padding:8px 11px;font-family:'SF Mono',Menlo,monospace;font-size:11.5px;line-height:1.85;color:var(--ink-soft)}
+.cls .cb i{color:var(--ink-mute);font-style:normal}
+.cls .cb b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:11.5px;color:var(--ink-soft)}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
+.sw.l{border-color:var(--green);background:#f2faf7} .sw.d{border-color:var(--red);background:#fef6f7}
+.sw.n{border-color:var(--blue);background:#f2f6fc}
+
+.code{background:#14161a;color:#e6e7ea;border-radius:10px;padding:11px 13px;margin:0 0 11px;
+ font-family:'SF Mono',Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;
+ -webkit-overflow-scrolling:touch;white-space:pre}
+.code .c{color:#7a7e85} .code .k{color:#7ee2b8} .code .s{color:#f5b971}
+.code.bad{border-left:3px solid var(--red)} .code.ok{border-left:3px solid var(--green)}
+.lyr{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px;background:var(--bg)}
+.lyr .row{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line);align-items:flex-start}
+.lyr .row:last-child{border-bottom:none}
+.lyr .row.off{background:var(--bg-soft)}
+.lyr .lb{flex:0 0 74px;font-weight:700;font-size:13px}
+.lyr .lv{flex:1;font-size:13px;color:var(--ink-soft);line-height:1.45}
+.lyr .lv b{color:var(--ink)}
+
+/* --- shop-page styling, tokens lifted from skateos.com/2ntr/shop/ --- */
+.announce{background:#0e0e10;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.09em;
+ text-transform:uppercase;text-align:center;padding:8px 14px;line-height:1.5}
+.announce b{color:#ff5a68;font-weight:800}
+.hero{position:relative;border-radius:20px;overflow:hidden;padding:26px 20px 24px;margin:0 0 16px;
+ background:linear-gradient(150deg,#1c1f26 0%,#0e0e10 55%,#2a1114 100%);color:#fff}
+.hero::after{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+ background:radial-gradient(120% 80% at 85% 10%,rgba(209,26,42,.32),transparent 60%)}
+.hero-text{position:relative;z-index:2;max-width:540px}
+.tag{display:inline-block;background:var(--red);color:#fff;padding:5px 12px;border-radius:12px;
+ font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.hero h1{font-size:clamp(1.55rem,5.2vw,2.4rem);font-weight:900;line-height:1.05;
+ letter-spacing:-.02em;margin:0 0 10px;color:#fff}
+.hero p{color:#c9ccd2;font-size:14.5px;margin:0 0 16px}
+.hero p .num{color:#7ee2b8;font-weight:700}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:12px 20px;border-radius:8px;font-weight:700;font-size:14.5px;border:2px solid transparent;
+ display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:transform .1s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-prim{background:var(--red);color:#fff}
+.btn-ghost-dark{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
+.statstrip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+ border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 18px}
+.statstrip div{background:var(--bg);padding:13px 12px}
+.statstrip .v{font-size:19px;font-weight:900;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.statstrip .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.findgrid{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 18px}
+.find{display:block;text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--line);
+ border-radius:14px;padding:14px 15px;transition:border-color .15s}
+.find:active{border-color:var(--line-strong)}
+.find .n{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--red)}
+.find h3{margin:4px 0 4px;font-size:15.5px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.find p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+@media(min-width:600px){
+ .hero{padding:44px 40px 40px} .statstrip{grid-template-columns:repeat(4,1fr)}
+ .findgrid{grid-template-columns:1fr 1fr}
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<div class="announce">Verified from live Square data &middot; 365 days &middot; <b>$328,025</b> &middot; 10,694 payments</div>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>How the site actually works</h1><div class="sub">Routing, data, and what React actually is — the technical model behind the shop page, verified rather than assumed.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html">Processor</a><a href="shop-decision-6b2f19-stack.html" class="on">How it works</a></nav></div></header>
+<main><div class="wrap">
+<p>This page exists because the answer to &ldquo;what framework is it using?&rdquo; turned out to be
+<strong>none</strong>, and that is worth writing down properly rather than re-deriving next time.</p>
+
+<h2>How a page actually reaches a customer</h2>
+<p>There are two separate layers doing completely different jobs, and conflating them is what makes this
+confusing.</p>
+
+<h3>Layer 1 &mdash; URL to page. This is the routing.</h3>
+<p>A <strong>Cloudflare Worker</strong>. It matches the path and hands back the matching file.
+<em>/2ntr/shop/</em> returns one 63 KB HTML file. That is the entire routing layer.</p>
+<p>No React Router, no Next.js, no Express, no framework. HTML pages with links between them, exactly as
+you described it. Verified: the bytes are identical whether you request as an iPhone or a Mac, so there
+is <strong>no server-side rendering</strong> &mdash; nothing is generated per visitor.</p>
+<p>It is also why <em>/admin</em>, <em>/pos</em> and <em>/checkout</em> return 404 on skateos.com. No file
+sits there, and nothing generates one on the fly.</p>
+
+<h3>Layer 2 &mdash; page to products. This is not routing at all.</h3>
+<p>The page arrives in the browser with <strong>no products in it</strong>. Then its JavaScript calls the
+database directly over HTTPS:</p>
+<div class="code">https://zecurmlenxyxanqucrga.supabase.co/rest/v1/products
+  ?select=id,name,price,image_url,brand,category_id,quantity,status
+  &amp;status=eq.active
+  &amp;order=created_at.desc</div>
+<p>That is <strong>PostgREST</strong> &mdash; the API you could not find. Supabase generates a REST
+endpoint automatically for every table in the database. Nobody wrote it; it exists because the table
+exists. The browser talks straight to the database&rsquo;s HTTP layer, and no server of yours is involved.</p>
+
+<div class="note good"><div class="t">The sentence that resolves all of it</div>
+<p><strong>The page is static. Only the data is live.</strong></p>
+<p>When new grip tape appears on the site, no file was rebuilt, no deploy ran, nothing regenerated. A row
+was inserted in a table, and the next visitor&rsquo;s browser asked the same question and got one more
+answer back. Nothing on the server is ever rewritten &mdash; <strong>it is rows, not files.</strong></p></div>
+
+<h2>Proof, not assertion</h2>
+<div class="tblwrap"><table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Product names present in the HTML file</td><td class="n">0</td></tr>
+<tr><td>Active products served from the database</td><td class="n">1,409</td></tr>
+<tr><td>Page bytes, iPhone vs Mac request</td><td>identical hash</td></tr>
+<tr><td>Script tags in the file</td><td class="n">1</td></tr>
+<tr><td>Build step</td><td>none</td></tr>
+</table></div>
+<p>Five products pulled live from the database, then searched for in the HTML file: none of them are in
+there. They are drawn by JavaScript after the page loads.</p>
+
+<h2>The four layers</h2>
+<div class="lyr">
+<div class="row"><div class="lb">HTML</div><div class="lv"><b>What is on the page.</b> Structure and content.</div></div>
+<div class="row"><div class="lb">CSS</div><div class="lv"><b>What it looks like.</b> A separate language, applied to the HTML.</div></div>
+<div class="row"><div class="lb">JavaScript</div><div class="lv"><b>What it does.</b> On your shop page: fetches products, draws tiles, runs filters and the cart.</div></div>
+<div class="row off"><div class="lb">React</div><div class="lv"><b>Not used.</b> A library that would reorganise the JavaScript in the row above. It does not replace HTML or CSS.</div></div>
+</div>
+<p><strong>HTML is to CSS as JavaScript is to React.</strong> In each pair the first is the foundation and
+the second is a layer added on top to keep things manageable at scale. CSS with no HTML has nothing to
+style; React with no JavaScript does not exist.</p>
+<p>Where the analogy breaks: CSS is a genuinely separate language &mdash; you stop writing HTML and start
+writing CSS. React is not like that. <strong>When you write React you are still writing JavaScript the
+whole time.</strong> There is no second language, just a different way of organising the first.</p>
+
+<h2>What React actually is</h2>
+<p>Two files. Measured, not estimated:</p>
+<div class="tblwrap"><table>
+<tr><th>File</th><th>Size</th><th>Job</th></tr>
+<tr><td>react.production.min.js</td><td class="n">10 KB</td><td>The component model</td></tr>
+<tr><td>react-dom.production.min.js</td><td class="n">129 KB</td><td>The part that touches the page</td></tr>
+<tr class="hi"><td><strong>Total</strong></td><td class="n"><strong>140 KB</strong></td><td>&nbsp;</td></tr>
+</table></div>
+<p>You can drop both in with two script tags and start using it. No install, no build, no tooling.
+It is a library, in the same sense jQuery was.</p>
+
+<h2>The catch &mdash; JSX, and what it drags in</h2>
+<p>Almost nobody uses React that way, because of <strong>JSX</strong>: syntax that lets you write what
+looks like HTML inside JavaScript.</p>
+<div class="code bad"><span class="c">// JSX — a browser cannot read this</span>
+return &lt;div className=<span class="s">"card"</span>&gt;{product.name}&lt;/div&gt;</div>
+<p>It has to be compiled first into real JavaScript:</p>
+<div class="code ok"><span class="c">// what it becomes — this a browser can run</span>
+return React.createElement(<span class="s">'div'</span>, {className:<span class="s">'card'</span>}, product.name)</div>
+<p>That compile step is what pulls in the whole toolchain: Node, npm, a bundler, a node_modules folder, a
+build command, and a deploy pipeline that runs it before anything ships.</p>
+<div class="tblwrap"><table>
+<tr><th>&nbsp;</th><th>What it is</th><th>What it costs</th></tr>
+<tr class="win"><td>React alone</td><td>2 JS files, 140 KB</td><td>Nothing &mdash; drop it in</td></tr>
+<tr class="hi"><td>React as normally written</td><td>React + JSX</td><td>A build step and a toolchain</td></tr>
+</table></div>
+<p class="src">You can write React with no build step at all by calling <em>React.createElement</em>
+directly. It works. Nobody does it, because JSX reads far better &mdash; and by the time a project wants
+React it usually wants the tooling too.</p>
+
+<h2>Why this does not change the shop page</h2>
+<div class="note"><div class="t">The behaviour you asked for already exists</div>
+<p>&ldquo;Add items to the database and have them appear without touching HTML&rdquo; is
+<strong>how that page already works</strong> &mdash; 1,409 products, none hardcoded. Plain JavaScript gets
+the identical result a customer would see. Rewriting it in React would change nothing visible.</p></div>
+<p>And it would cost something real. The page today has <strong>no build step</strong>: one file that runs
+as-is. Edit it, push it, done. That is why it is 63 KB with no dependencies to break.</p>
+<p>Adding React would not just add 140 KB &mdash; it would convert a file you can open and edit into a
+project that must be <em>compiled</em> before it can be deployed.</p>
+<div class="note good"><div class="t">Where React would genuinely earn its place</div>
+<p>Lots of interacting state across many screens &mdash; a POS holding an open ticket, split tender, a
+customer lookup and a cart that has to stay in sync in three places at once. That is the problem React
+was built for.</p>
+<p>Not a page that fetches a list and draws tiles.</p></div>
+
+<div class="note bad"><div class="t">The real missing piece was never a framework</div>
+<p>The shop page&rsquo;s actual gaps are that its checkout takes no money, and that its product database
+shares only <strong>30%</strong> of its names with your Square catalogue. Neither is fixed by React.
+Both are covered on the <a href="shop-decision-6b2f19-architecture.html">Architecture</a> page.</p></div>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>

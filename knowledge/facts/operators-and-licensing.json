@@ -1,0 +1,43 @@
+{
+  "topic": "operators-and-licensing",
+  "title": "Who may run the iron",
+  "summary": "Operator and driver rules that apply under any arrangement.",
+  "facts": [
+    {
+      "id": "osha-aerial-authorized",
+      "kind": "fact",
+      "claim": "OSHA: only trained and authorized persons may operate an aerial lift. The employer is responsible for instructing employees in recognizing and avoiding unsafe conditions (29 CFR 1926.21(b)(2)).",
+      "source": {
+        "name": "OSHA — 29 CFR 1926.453 Aerial lifts, and Aerial Lifts fact sheet",
+        "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.453",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "1926 is the construction standard. Tree care may fall under general-industry rule 1910.67, not yet read.",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "ny-cdl-26001",
+      "kind": "fact",
+      "claim": "In New York a single vehicle with a GVWR of 26,001 pounds or more requires a commercial driver license; Class B covers a single-unit truck.",
+      "source": {
+        "name": "NY DMV — Driver license class descriptions",
+        "url": "https://dmv.ny.gov/driver-license/new-york-state-learner-permit-and-driver-license-class-descriptions",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "Check the GVWR on each truck's door sticker.",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+// Supabase Edge Function — Resend Email Proxy
+// Solves CORS: browser → this function → Resend API
+//
+// v372: migrated SendGrid → Resend (SendGrid trial ends May 22, 2026; Resend
+// is free at our volume and request-notify already uses it successfully).
+// Old `apiKey` parameter is still accepted for backwards-compat but ignored —
+// Resend key lives only as a server-side secret.
+//
+// v671: per-tenant FROM address support (Phase 2 of white-label SaaS).
+// The BM client (src/email.js) now computes the correct FROM + replyTo
+// using the Subscription module before calling, and passes them via the
+// `from` and `replyTo` request fields. The server simply honors what the
+// caller sends. Resolution order:
+//
+//   1. Caller-supplied `from` / `replyTo` (BM client + Stripe-webhook etc.)
+//   2. RESEND_PLATFORM_FROM env var (BM-neutral fallback —
+//      e.g. "Branch Manager <noreply@branchmanager.app>"). Doug should
+//      verify branchmanager.app in Resend so this domain is acceptable.
+//   3. RESEND_FROM_EMAIL env var (legacy, still honored).
+//   4. Resend sandbox sender (`onboarding@resend.dev`) as last-resort.
+//
+// Trust model: BM is the only caller of /functions/v1/send-email; the
+// browser anon key bounds calls per-tenant via RLS, and the BM bundle
+// stamps the correct FROM for that tenant. Server-to-server callers
+// (stripe-webhook etc.) pass `from` explicitly.
+//
+// Deploy: supabase functions deploy send-email --no-verify-jwt
+// Required secrets: RESEND_API_KEY (always), RESEND_PLATFORM_FROM (recommended)
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolveTenantId } from '../_shared/tenant.ts'
+
+// v1090: every send attempt (success OR failure) is logged to the
+// communications table — same pattern dialpad-sms-send uses for SMS. A
+// failed send is no longer invisible: it shows on the client's record as
+// status 'send_failed' and is queryable (status=eq.send_failed).
+const sb = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+)
+
+async function logEmailAttempt(opts: {
+  tenantId: string
+  recipients: string[]
+  subject: string
+  from: string
+  ok: boolean
+  resendId?: string
+  resendStatus?: number
+  error?: string
+}) {
+  try {
+    const recipient = (opts.recipients[0] || '').toLowerCase().trim()
+    let clientId: string | null = null
+    if (recipient) {
+      const { data: rows } = await sb
+        .from('clients')
+        .select('id')
+        .eq('tenant_id', opts.tenantId)
+        .ilike('email', recipient)
+        .limit(1)
+      if (rows && rows.length) clientId = rows[0].id
+    }
+    const { error: logErr } = await sb.from('communications').insert({
+      tenant_id: opts.tenantId,
+      client_id: clientId,
+      type: 'email',
+      channel: 'email',
+      direction: 'outbound',
+      body: `${opts.subject} → ${opts.recipients.join(', ')}`,
+      status: opts.ok ? 'sent' : 'send_failed',
+      metadata: {
+        kind: 'email_send',
+        sent_via: 'send-email',
+        from: opts.from,
+        resend_id: opts.resendId || null,
+        resend_status: opts.resendStatus ?? null,
+        error: (opts.error || '').slice(0, 500) || null,
+      },
+    })
+    if (logErr) console.warn('email send log failed:', logErr.message)
+  } catch (e) {
+    console.warn('email send log failed:', e)
+  }
+}
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-tenant-id',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+function resolveFrom(callerFrom: string | undefined): { from: string; mode: string } {
+  if (callerFrom && callerFrom.includes('@')) return { from: callerFrom, mode: 'caller' }
+  const platformFrom = Deno.env.get('RESEND_PLATFORM_FROM') ?? Deno.env.get('RESEND_FROM_EMAIL') ?? ''
+  if (platformFrom) return { from: platformFrom, mode: 'platform' }
+  return { from: 'Branch Manager <onboarding@resend.dev>', mode: 'sandbox' }
+}
+
+// Pick the Resend account key by the FROM domain. branchmanager.app addresses
+// (incl. send.branchmanager.app) are verified in the SEPARATE "branchmanager"
+// Resend workspace → use RESEND_BM_API_KEY. Everything else (Second Nature /
+// peekskilltree transactional mail) uses the default RESEND_API_KEY. This keeps
+// the two businesses' email 100% separate. If RESEND_BM_API_KEY isn't set, BM
+// sends fall back to the default key (which will fail "domain not verified" —
+// same as before, never worse, and SNT mail is untouched).
+function resolveKey(from: string): { key: string; account: string } {
+  const isBm = /@([a-z0-9-]+\.)*branchmanager\.app\b/i.test(from)
+  const bmKey = Deno.env.get('RESEND_BM_API_KEY') ?? ''
+  const defKey = Deno.env.get('RESEND_API_KEY') ?? ''
+  if (isBm && bmKey) return { key: bmKey, account: 'branchmanager' }
+  return { key: defKey, account: 'default' }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS_HEADERS })
+  }
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return new Response('send-email ok', { status: 200, headers: CORS_HEADERS })
+  }
+
+  try {
+    const { to, subject, html, text, from, replyTo, attachments } = await req.json()
+
+    // v1069: optional attachments, forwarded to Resend. Each entry is either
+    // {filename, path} (Resend fetches the URL — used for the hosted W-9) or
+    // {filename, content} (base64). Capped at 5 to bound payload size.
+    let safeAttachments: { filename: string; path?: string; content?: string }[] | undefined
+    if (Array.isArray(attachments) && attachments.length) {
+      safeAttachments = attachments.slice(0, 5)
+        .filter((a: any) => a && typeof a.filename === 'string' && (typeof a.path === 'string' || typeof a.content === 'string'))
+        .map((a: any) => ({ filename: a.filename, path: a.path, content: a.content }))
+      if (!safeAttachments.length) safeAttachments = undefined
+    }
+
+    if (!to || !subject || (!html && !text)) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, html or text' }), {
+        status: 400,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const sender = resolveFrom(from)
+    const { key: ACTIVE_KEY, account: keyAccount } = resolveKey(sender.from)
+    if (!ACTIVE_KEY) {
+      return new Response(JSON.stringify({ error: 'No Resend API key configured (set RESEND_API_KEY, or RESEND_BM_API_KEY for branchmanager.app senders)' }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
+    }
+    const replyToAddr = replyTo || Deno.env.get('RESEND_REPLY_TO') || 'info@peekskilltree.com'
+    const recipients = Array.isArray(to) ? to : [to]
+
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${ACTIVE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: sender.from,
+        to: recipients,
+        subject,
+        text: text || undefined,
+        html: html || undefined,
+        reply_to: replyToAddr,
+        attachments: safeAttachments,
+      }),
+    })
+
+    const tenantId = resolveTenantId(req)
+
+    if (r.ok) {
+      const d = await r.json().catch(() => ({}))
+      await logEmailAttempt({ tenantId, recipients, subject, from: sender.from, ok: true, resendId: d?.id, resendStatus: r.status })
+      return new Response(JSON.stringify({ success: true, status: r.status, id: d?.id, from_mode: sender.mode, from_account: keyAccount }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const errText = await r.text()
+    await logEmailAttempt({ tenantId, recipients, subject, from: sender.from, ok: false, resendStatus: r.status, error: errText })
+    return new Response(JSON.stringify({ error: 'Resend error', status: r.status, details: errText.slice(0, 500), from_mode: sender.mode, from_account: keyAccount, from_attempted: sender.from }), {
+      status: r.status,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
+  }
+})

@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Branch Manager</title>
+<script>
+  // SPA fallback: branchmanager.app uses hash routing (/#invoices). A bookmarked or
+  // deep URL like /invoices or /quotes/537 hits GitHub Pages with no matching file and
+  // 404s. Redirect those into the hash-routed app so bookmarks always open the app
+  // instead of a dead 404. First path segment -> hash page; anything else -> app root
+  // (which restores your last page). Query string preserved.
+  (function () {
+    try {
+      var seg = location.pathname.replace(/^\/+|\/+$/g, '').split('/')[0];
+      var target = '/' + (seg ? '#' + seg : '') + (location.search || '');
+      location.replace(target);
+    } catch (e) {
+      location.replace('/');
+    }
+  })();
+</script>
+</head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center;padding:48px 24px;color:#5f6b73;background:#fff;">
+  Opening Branch Manager…
+</body></html>

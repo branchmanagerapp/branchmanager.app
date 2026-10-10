@@ -1,0 +1,27 @@
+  // ---------- SocialPilot ----------
+  function renderSocial() {
+    var key = '';
+    try { key = localStorage.getItem('bm-socialpilot-key') || ''; } catch (e) {}
+    var inner = '<h3 style="margin:0 0 4px;font-size:16px;">📱 Social Media</h3>';
+
+    if (key) {
+      inner += '<div style="font-size:12px;color:#64748b;margin-bottom:12px;">SocialPilot connected</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+        + '<div style="padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;text-align:center;">'
+        + '<div style="font-size:11px;color:#166534;text-transform:uppercase;">Status</div>'
+        + '<div style="font-size:18px;font-weight:700;color:#166534;">✓ Connected</div></div>'
+        + '<div style="padding:12px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;text-align:center;">'
+        + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;">Posts</div>'
+        + '<div style="font-size:18px;font-weight:700;">—</div>'
+        + '<div style="font-size:11px;color:#64748b;">stub — live API not wired</div></div>'
+        + '</div>'
+        + '<button class="btn" style="margin-top:10px;" onclick="MarketingPage.disconnectSocial()">Disconnect</button>';
+    } else {
+      inner += emptyState('📊',
+        'Connect SocialPilot to see posts scheduled, published, and engagement.',
+        '<a href="https://www.socialpilot.co/api" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="margin-right:6px;">Get API key</a>'
+        + '<button class="btn" onclick="MarketingPage.connectSocial()">Paste key</button>');
+    }
+    return card(inner);
+  }
+

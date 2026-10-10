@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>One Inbox — the system</title>
+<style>
+  :root{--bg:#0c0e12;--panel:#14171e;--line:#282e3a;--ink:#eef1f6;--mut:#98a2b3;--sky:#5cc2ff;--ok:#4ddb9a;--warn:#e79a5c;--bad:#ff5c72}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto;padding:0 18px 90px}
+  header{padding:46px 0 20px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--sky);font-weight:700}
+  h1{font-size:clamp(28px,6vw,42px);margin:6px 0 8px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:15px}
+  h2{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;margin:32px 0 10px;color:var(--sky)}
+  p{margin:0 0 13px} .mut{color:var(--mut)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+  .card b{display:block;margin-bottom:4px} .card small{color:var(--mut);font-size:13.5px;line-height:1.55;display:block}
+  .dead{opacity:.55} .dead b{text-decoration:line-through}
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:10px 0}
+  .flow .s{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}
+  .flow .s:first-child{border-top:none}
+  .n{flex:0 0 26px;height:26px;border-radius:8px;background:var(--sky);color:var(--bg);display:grid;place-items:center;font-weight:800;font-size:13px}
+  .flow b{display:block} .flow small{color:var(--mut);font-size:13.5px}
+  .rulebox{background:#12261c;border:1px solid var(--ok);border-radius:14px;padding:15px 17px;color:#dff7e8;font-size:14.5px;margin:14px 0}
+  footer{margin-top:36px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  a{color:var(--sky);text-decoration:none} a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="kicker">Internal · System design · Jul 5 2026</span>
+  <h1>One Inbox</h1>
+  <p class="sub">Why the to-dos felt scattered, and the system that fixes it. Designed from GTD + ADHD-productivity research, tuned to how Doug actually works.</p>
+</header>
+
+<h2>The diagnosis — 7 places, 0 canon</h2>
+<p class="mut">Every overwhelm moment spawned a new surface. As of Jul 5 to-dos lived in: Ground Control's local list · The Plan page · the estimate board · the encrypted to-do dashboard · the To-Do .md on the Desktop · the BM build list in memory · chat itself. Each valid alone, together a maze. The research is blunt: <b style="color:var(--ink)">many lists + self-filing = avoidance.</b> The fix is one store, a tiny Today view, and someone else doing the filing.</p>
+
+<h2>The design — Claude is the executive function</h2>
+<div class="flow">
+  <div class="s"><span class="n">1</span><span><b>Capture — Doug, zero friction (already true)</b><small>Talk to any Claude session · text people (chat.db) · voicemails (Dialpad→Gmail) · photos → Screenshots folder. Doug never files, tags, or organizes anything. Ever.</small></span></div>
+  <div class="s"><span class="n">2</span><span><b>Process — Claude, the secretary</b><small>Every session files into ONE canonical store, updates statuses, mines texts/voicemails weekly, and marks stale items for confirmation instead of letting them rot.</small></span></div>
+  <div class="s"><span class="n">3</span><span><b>Store — one, in the cloud</b><small>A tiny task table on Branch Manager's existing Supabase. Cross-device, Claude-writable, Ground-Control-readable. Replaces GC's per-device localStorage (the root cause of drift).</small></span></div>
+  <div class="s"><span class="n">4</span><span><b>Display — Ground Control, and only it</b><small>Today (≤5 items, Claude-picked, Doug can veto) · Inbox · This week · Parked. The ADHD research is emphatic: more than ~5 visible choices triggers shutdown, so Today is capped.</small></span></div>
+  <div class="s"><span class="n">5</span><span><b>Review — weekly, mostly automatic</b><small>Claude re-mines texts + voicemails + email, refreshes the board and the briefing, retires the done. Doug's part: read the briefing, veto anything.</small></span></div>
+</div>
+
+<h2>What lives, what dies</h2>
+<div class="card"><b>🎛️ Ground Control — THE app</b><small>The only thing Doug opens daily. Gets rebuilt on the cloud store (Phase 2).</small></div>
+<div class="card"><b>📋 The Plan — becomes the weekly briefing</b><small>Prose view Claude regenerates from the store. Small on purpose.</small></div>
+<div class="card"><b>🧾 Estimate board — the customer view</b><small>Names, numbers, addresses, ages. Claude-maintained from texts + voicemails.</small></div>
+<div class="card dead"><b>Encrypted to-do dashboard + To-Do .md</b><small>RETIRED after their open items are merged into the store. The .md's live info (Dialpad leads, CADCO true balance, Brivo/Gmail fixes) was absorbed Jul 5. Bookmark gets a pointer.</small></div>
+<div class="card dead"><b>GC's localStorage task list</b><small>RETIRED in Phase 2 — becomes an offline cache of the cloud store, not a source of truth.</small></div>
+<div class="card dead"><b>To-dos in chat</b><small>Never canonical. If it matters, it goes in the store the moment it's said.</small></div>
+
+<h2>Build phases</h2>
+<div class="card"><b>Phase 1 — merge (done Jul 5)</b><small>All 7 sources read and reconciled: Dialpad leads → estimate board · CADCO corrected to $22,878 total · Composio marked abandoned (Gmail-native import is the fix) · GL confirmed paid-awaiting-reinstatement · stale statuses flagged for confirm, not guessed.</small></div>
+<div class="card"><b>Phase 2 — the cloud store (Claude's next build)</b><small>`gc_tasks` table on BM Supabase + lightweight device secret + Ground Control rewired to read/write it. Then any session and any device see the same list, and Claude can file into it directly.</small></div>
+<div class="card"><b>Phase 3 — the rhythm</b><small>Daily: open GC, see ≤5 things. Weekly: Claude's review + fresh briefing. Monthly: social batch. That's the whole system.</small></div>
+
+<div class="rulebox"><b>The one rule that keeps it simple forever:</b> no new pages, apps, or lists for tasks — ever. New needs become a section of an existing surface or they replace one. Additions require a deletion.</div>
+
+<h2>Research this leans on</h2>
+<p class="mut" style="font-size:13.5px">GTD's single-inbox + weekly review (David Allen) · Things 3's capped "Today" view · ADHD-productivity findings: visual overwhelm triggers avoidance, choice overload kills prioritization, external structure beats self-organization — which is exactly why Claude plays secretary rather than Doug playing librarian.</p>
+
+<footer>Internal · branchmanager.app/one-inbox · linked from <a href="ops">/ops</a> · The bookmarks remain: Ground Control (app) · <a href="plan-snt-8c31d7.html">Plan</a> · <a href="estimates-snt-4b8e2f.html">Estimates</a>.</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Giant D254 — Repair Decision</title>
+<style>
+  :root{ --ink:#1f3b2c; --green:#2e7d32; --amber:#a04400; --red:#c62828; --line:#e3e8e3; --muted:#5b6b60; --bg:#f6f8f6; }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c2620; background:var(--bg); line-height:1.5; }
+  .wrap{ max-width:760px; margin:0 auto; padding:0 16px 60px; }
+  header{ background:linear-gradient(135deg,#2e7d32,#1f3b2c); color:#fff; padding:26px 16px 22px; }
+  header .wrap{ padding-bottom:0; }
+  h1{ font-size:21px; margin:0 0 4px; font-weight:800; letter-spacing:-.01em; }
+  .sub{ font-size:13px; opacity:.9; }
+  h2{ font-size:15px; color:var(--green); margin:26px 0 8px; text-transform:uppercase; letter-spacing:.05em; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:10px 0; }
+  p{ margin:6px 0; } ul{ margin:6px 0; padding-left:20px; } li{ margin:4px 0; }
+  .psi{ display:flex; gap:8px; margin:12px 0; }
+  .cyl{ flex:1; text-align:center; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 6px; }
+  .cyl .n{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .cyl .v{ font-size:24px; font-weight:800; }
+  .cyl.low{ border-color:var(--amber); background:#fff8f1; }
+  .cyl.low .v{ color:var(--amber); }
+  .tag{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; background:#fff8f1; color:var(--amber); border:1px solid #f0d9c4; }
+  table{ width:100%; border-collapse:collapse; margin:8px 0; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#eef4ee; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  tr:last-child td{ border-bottom:none; }
+  .rec{ background:#eef7ef; border:1px solid #cfe6d2; border-radius:12px; padding:14px 16px; }
+  .rec b{ color:var(--green); }
+  .txtbox{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:10px 0; }
+  .txtbox .label{ font-size:12px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+  .msg{ font-size:14px; white-space:pre-wrap; color:#23302a; }
+  button.copy{ background:var(--green); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  button.copy:active{ transform:translateY(1px); }
+  .spent{ font-size:13px; color:var(--muted); }
+  .foot{ font-size:11px; color:var(--muted); text-align:center; margin-top:30px; }
+  a{ color:var(--green); }
+  details{ background:#fff; border:1px solid var(--line); border-radius:12px; margin:10px 0; overflow:hidden; }
+  details>summary{ cursor:pointer; padding:13px 16px; font-weight:700; font-size:14px; color:var(--ink); list-style:none; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  details>summary::-webkit-details-marker{ display:none; }
+  details>summary::after{ content:'＋'; color:var(--green); font-weight:800; font-size:17px; }
+  details[open]>summary::after{ content:'－'; }
+  details .body{ padding:0 16px 14px; font-size:13.5px; color:#23302a; border-top:1px solid var(--line); padding-top:12px; }
+  details .body ul{ margin:6px 0; padding-left:18px; } details .body li{ margin:5px 0; }
+  details .body .k{ font-weight:700; color:var(--ink); }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Giant D254 Loader — Repair Decision</h1>
+  <div class="sub">Overheating · Jun 23, 2026 · Unit 72424 · 1,309 hrs · Kubota 3-cyl diesel</div>
+</div></header>
+
+<div class="wrap">
+
+  <h2>The compression numbers</h2>
+  <div class="psi">
+    <div class="cyl"><div class="n">Cyl 1</div><div class="v">490</div></div>
+    <div class="cyl low"><div class="n">Cyl 2 · center</div><div class="v">450</div></div>
+    <div class="cyl"><div class="n">Cyl 3</div><div class="v">495</div></div>
+  </div>
+  <p>Center cylinder is <b>~9% low</b> <span class="tag">down, but mild</span> — the engine is <b>not</b> destroyed. No oil in the coolant (oil jackets still sealed); it "runs cracked."</p>
+
+  <h2>Diagnosis — both shops agree</h2>
+  <div class="card">
+    <ul>
+      <li>Overheats, spikes after ~20 min, then drops. New radiator already installed (didn't fix it). Thermostat OK.</li>
+      <li><b>Combustion gas in the coolant</b> (bubbles) → <b>cracked head / compression leak</b> at the glow-plug pre-chamber pucks.</li>
+      <li>Overheat also left the <b>radiator hoses brittle → hydraulic fluid leaks when the machine pivots</b> — hoses need replacing either way.</li>
+    </ul>
+  </div>
+
+  <h2>Repair pricing — MTE vs. independent mechanic</h2>
+  <table>
+    <tr><th>Fix</th><th>MTE (your CT shop)</th><th>Independent / backyard*</th></tr>
+    <tr><td><b>Head + gasket</b> — band-aid: stops the overheat, leaves the ~9%-low cylinder</td><td>≈ $1,500</td><td>≈ $1,500</td></tr>
+    <tr><td><b>Engine — full fix</b></td><td><b>≈ $15k</b> (new engine)</td><td>Rebuild ≈ $3–5k · <b>reman drop-in ≈ $7.5–8.5k</b></td></tr>
+    <tr><td><b>Hydraulics repair</b></td><td><b>≈ $10k</b></td><td>Likely less — get a quote</td></tr>
+    <tr class="total"><td><b>All-in (engine + hydraulics)</b></td><td><b>≈ $25k</b></td><td><b>≈ $10–15k</b></td></tr>
+  </table>
+  <p class="spent">*Independent = current Kubota D902 market: bare cylinder head ~$990–1,260 · full overhaul kit (liners/pistons/rings/gaskets) ~$375–700 · reman complete drop-in engine ~$5,300–5,500 + ~$1,200 refundable core. Labor is the swing — get hours.</p>
+
+  <h2>vs. buying new — Intrepid KM100 ($49,995)</h2>
+  <table>
+    <tr><th>Finance</th><th>Monthly</th><th>Upfront</th></tr>
+    <tr><td>36 months</td><td>$1,576</td><td>$3,747</td></tr>
+    <tr><td>60 months</td><td>$1,028</td><td>$2,651</td></tr>
+    <tr><td>60 mo · $5k down (trade the Giant)</td><td>$932</td><td>$6,527</td></tr>
+    <tr><td>60 mo · $10k down</td><td>$829</td><td>$11,424</td></tr>
+  </table>
+  <p class="spent">Section 179: ~$50k may be writable this year (~$17.5k tax savings @ 35% — confirm real benefit with the CPA).</p>
+
+  <h2>Hydraulics</h2>
+  <div class="card">
+    <p>MTE quotes <b>≈ $10k</b> to repair the hydraulics. Symptom on record: overheating made the radiator hoses brittle → fluid leaks when the machine pivots. <b>Before paying MTE's $10k, get an independent hydraulic quote</b> — and a quick function check (lift a load: does it hold without drifting? normal power? leaks?). The damage may be far less than $10k.</p>
+  </div>
+
+  <h2>The call</h2>
+  <div class="rec">
+    <p><b>Two key facts:</b> (1) the cheap <b>$1,500 head + gasket</b> gets it earning now (cylinder only ~9% down — engine isn't shot). (2) MTE's <b>$25k</b> "full fix" is the <b>most expensive</b> way — an independent reman engine + independent hydraulics does the same for <b>~$10–15k</b>. Don't pay $25k to MTE for what an independent shop does for half.</p>
+    <p><b>Your plan (buy Intrepid + keep the Giant):</b> pair the new Intrepid with just the <b>$1,500 band-aid</b> on the Giant — keep it as a running backup. Don't sink $25k (or even $10k) into a backup machine. Trade the Giant only if you'd rather use its value as the Intrepid down payment.</p>
+    <p class="spent">Already spent: $417.24 diagnostic (2.2 hrs @ $175 + tax), 6/23/26.</p>
+  </div>
+
+  <h2>The details</h2>
+
+  <details>
+    <summary>Diagnosis (MTE)</summary>
+    <div class="body">
+      <ul>
+        <li>Overheated again after a thermostat workaround → limped it back in.</li>
+        <li><span class="k">Compression test:</span> center cylinder down. Pulled the radiator cap — lots of compression in the cooling system. Funnel-on-cap test (let it boil and circulate): <span class="k">bubbles = combustion getting into the coolant</span> → cracked head or head gasket. He's going with a <span class="k">hairline cracked head</span> ("it runs cracked").</li>
+        <li><span class="k">Mechanism:</span> the glow-plug pre-chamber "pucks" (pressed into the head) warp/crack under heat and let compression leak past the compression ring into the coolant jackets. The <span class="k">oil jackets are separate and sealed</span> — so no oil-in-coolant; engine isn't destroyed.</li>
+        <li><span class="k">Cause:</span> likely a plugged radiator originally → ran hot → cracked. Flipping the machine adds cylinder wear (oil pools at the top, hydrolocks; he pops the glow plugs and bumps it over to clear).</li>
+        <li><span class="k">Why head-only is a band-aid:</span> the center cylinder being down on compression means the bore is probably scored — a new head stops the overheating but won't fully restore power. Full power = a long block (Kubota's made these hard to rebuild).</li>
+        <li><span class="k">The cheap fix:</span> pull the head, new head + gasket set, valve job at his machine shop (Arnold's Garage, Canaan — ~$120 to set up the head), reinstall. He's mobile, ~1 hr out, hourly. ≈ $1,500 all in.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Invoice (Giant dealer)</summary>
+    <div class="body">
+      <ul>
+        <li><span class="k">Reported:</span> overheats, spikes after ~20 min then drops. New radiator system already installed.</li>
+        <li><span class="k">Verified:</span> hot upper hose / cold lower hose; thermostat tested OK; compression + engine exhaust in the cooling system; <span class="k">compression test FAILED</span>.</li>
+        <li><span class="k">Compression:</span> Cyl 1 = 490 · Cyl 2 (center) = 450 · Cyl 3 = 495 psi.</li>
+        <li><span class="k">Also:</span> overheating left the radiator hoses soft/brittle → a hydraulic fluid leak when the machine pivots → hoses need replacing.</li>
+        <li><span class="k">Recommendation:</span> full engine replacement — engine, water pump, valve cover, oil pan, cylinder head, injection pump, fan belt, radiator hoses, clamps, filters, fluids. <span class="k">Price not quoted</span> (diag only).</li>
+        <li><span class="k">Billed:</span> $417.24 diagnostic (2.2 hrs @ $175 + tax). Invoice 04-449773 / WO 04-478407.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="foot">Private — Second Nature Tree. Not indexed.</div>
+</div>
+
+<script>
+function cp(btn,id){
+  var t=document.getElementById(id).innerText;
+  navigator.clipboard.writeText(t).then(function(){
+    var o=btn.textContent; btn.textContent='Copied ✓';
+    setTimeout(function(){btn.textContent=o;},1600);
+  });
+}
+</script>
+<script src="nav-snt.js?v=5" defer></script>
+</body>
+</html>

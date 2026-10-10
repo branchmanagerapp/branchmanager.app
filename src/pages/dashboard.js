@@ -1,0 +1,1817 @@
+/**
+ * Branch Manager — Dashboard Page
+ */
+var DashboardPage = {
+
+  // Surfaces unanswered leads + quotes drafted-but-never-sent. Taps through to
+  // the full breakdown on the Reports page.
+  _droppedBallBanner: function() {
+    if (typeof DB === 'undefined' || !DB.requests || !DB.quotes) return '';
+    var now = Date.now();
+    var age = function(d) { return d ? Math.floor((now - new Date(d).getTime()) / 86400000) : 0; };
+
+    var leads = DB.requests.getAll().filter(function(r) { return (r.status || '') === 'new'; });
+    var drafts = DB.quotes.getAll().filter(function(q) { return (q.status || '') === 'draft'; });
+    if (!leads.length && !drafts.length) return '';
+
+    var val = drafts.reduce(function(s2, q) { return s2 + (+q.total || 0); }, 0);
+    var oldest = 0;
+    leads.concat(drafts).forEach(function(x) { var a = age(x.createdAt); if (a > oldest) oldest = a; });
+
+    var bits = [];
+    if (leads.length)  bits.push(leads.length + ' lead' + (leads.length > 1 ? 's' : '') + ' unanswered');
+    if (drafts.length) bits.push(drafts.length + ' quote' + (drafts.length > 1 ? 's' : '') + ' never sent (' + UI.moneyInt(val) + ')');
+
+    return '<div onclick="loadPage(\'reports\')" style="cursor:pointer;background:linear-gradient(135deg,#991b1b,#b91c1c);'
+      + 'color:#fff;border-radius:12px;padding:13px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;'
+      + 'box-shadow:0 4px 14px rgba(0,0,0,.12);">'
+      + '<div style="font-size:22px;line-height:1;">🚨</div>'
+      + '<div style="min-width:0;flex:1;">'
+      +   '<div style="font-weight:800;font-size:15px;">Follow-ups waiting</div>'
+      +   '<div style="font-size:12.5px;opacity:.92;margin-top:2px;">' + bits.join(' · ')
+      +   (oldest ? ' · oldest ' + oldest + ' days' : '') + '</div>'
+      + '</div>'
+      + '<div style="font-size:12px;opacity:.9;white-space:nowrap;">View →</div>'
+      + '</div>';
+  },
+  // v720: kill switch for the "Needs your attention" inbox card. Persists
+  // in localStorage; when hidden the dashboard collapses to just the
+  // quick-add bar plus a small "Show" toggle.
+  _toggleAttention: function() {
+    var hidden = localStorage.getItem('bm-dash-attention-hidden') === 'true';
+    localStorage.setItem('bm-dash-attention-hidden', hidden ? 'false' : 'true');
+    loadPage('dashboard');
+  },
+
+  // v806: "Next best action" — picks the ONE highest-dollar-at-stake item
+  // across overdue invoices, going-cold quotes, and approved-not-scheduled
+  // quotes. Renders as a bold colored callout above the rest of the
+  // dashboard. Doug sees ONE thing to do right now instead of scanning
+  // the full inbox.
+  _computeNextBestAction: function() {
+    var now = Date.now();
+    var candidates = [];
+
+    // Source 1: invoices 90+ days overdue (urgent + highest weight)
+    DB.invoices.getAll().forEach(function(i) {
+      if (i.status === 'paid' || i.status === 'draft' || (i.balance || i.total || 0) <= 0) return;
+      var anchor = i.dueDate || i.sentAt || i.createdAt;
+      if (!anchor) return;
+      var days = Math.floor((now - new Date(anchor).getTime()) / 86400000);
+      if (days < 60) return;
+      var bal = Number(i.balance) || Number(i.total) || 0;
+      candidates.push({
+        score: bal * (days >= 90 ? 3 : 1.5),
+        kind: 'ar-overdue',
+        amount: bal,
+        days: days,
+        clientName: i.clientName || '',
+        action: 'Call about ' + (i.clientName || 'invoice') + ' — ' + UI.moneyInt(bal) + ' overdue ' + days + ' days',
+        onclick: 'InvoicesPage.showDetail(\'' + i.id + '\')',
+        color: days >= 90 ? '#991b1b' : '#c2410c',
+        icon: '⚠'
+      });
+    });
+
+    // Source 2: quotes past the going-cold p80 (compute from data if available)
+    var allQuotes = DB.quotes.getAll();
+    var closedDays = [];
+    allQuotes.forEach(function(q) {
+      if (q.status !== 'approved' && q.status !== 'converted') return;
+      var s = q.sentAt || q.createdAt;
+      var a = q.approvedAt || q.acceptedAt;
+      if (!s || !a) return;
+      var d = Math.floor((new Date(a).getTime() - new Date(s).getTime()) / 86400000);
+      if (d >= 0) closedDays.push(d);
+    });
+    var p80 = closedDays.length >= 3
+      ? closedDays.sort(function(a,b){return a-b;})[Math.floor(closedDays.length * 0.8)]
+      : 7; // default cutoff for sparse data
+    allQuotes.forEach(function(q) {
+      if (q.status !== 'sent' && q.status !== 'awaiting') return;
+      var s = q.sentAt || q.createdAt;
+      if (!s) return;
+      var daysSinceSent = Math.floor((now - new Date(s).getTime()) / 86400000);
+      if (daysSinceSent < p80) return;
+      var total = Number(q.total) || 0;
+      if (total <= 0) return;
+      candidates.push({
+        score: total * 1.2,
+        kind: 'quote-cold',
+        amount: total,
+        days: daysSinceSent,
+        clientName: q.clientName || '',
+        action: 'Follow up on ' + (q.clientName || 'quote #' + q.quoteNumber) + ' — ' + UI.moneyInt(total) + ' sent ' + daysSinceSent + ' days ago (past p80 of ' + p80 + 'd)',
+        onclick: 'QuotesPage.showDetail(\'' + q.id + '\')',
+        color: '#c2410c',
+        icon: '🕒'
+      });
+    });
+
+    // Source 3: approved quotes not yet converted/scheduled
+    allQuotes.forEach(function(q) {
+      if (q.status !== 'approved' || q.convertedJobId || q.jobId) return;
+      var total = Number(q.total) || 0;
+      if (total <= 0) return;
+      candidates.push({
+        score: total * 1.0,
+        kind: 'approved-unsched',
+        amount: total,
+        clientName: q.clientName || '',
+        action: 'Schedule ' + (q.clientName || 'quote #' + q.quoteNumber) + ' — ' + UI.moneyInt(total) + ' approved, not on the calendar yet',
+        onclick: 'QuotesPage._convertAndBook(\'' + q.id + '\')',
+        color: '#15803d',
+        icon: '✓'
+      });
+    });
+
+    if (!candidates.length) return null;
+
+    // Pick the highest score
+    candidates.sort(function(a, b) { return b.score - a.score; });
+    var top = candidates[0];
+
+    var html = '<div onclick="' + top.onclick + '" style="background:linear-gradient(135deg,' + top.color + ',' + top.color + 'dd);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(0,0,0,0.12);">'
+      + '<div style="font-size:28px;flex-shrink:0;">' + top.icon + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.85;">Next best action</div>'
+      +   '<div style="font-size:15px;font-weight:700;margin-top:2px;">' + UI.esc(top.action) + '</div>'
+      + '</div>'
+      + '<div style="font-size:20px;flex-shrink:0;opacity:.7;">→</div>'
+      + '</div>';
+
+    return { html: html, top: top };
+  },
+
+  // v719: Quick-add a task/note from the dashboard input. No due date,
+  // no overlay — straight to the TaskReminders store. Doug can promote
+  // to a real reminder later by opening the task.
+  _quickAddTask: function() {
+    var input = document.getElementById('dash-quickadd');
+    if (!input) return;
+    var raw = (input.value || '').trim();
+    if (!raw) { input.focus(); return; }
+    if (typeof TaskReminders === 'undefined' || !TaskReminders._getAll) {
+      UI.toast('Tasks module not loaded', 'error'); return;
+    }
+    var tasks = TaskReminders._getAll(true);
+    tasks.push({
+      id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      title: raw,
+      description: '',
+      assignedTo: '',
+      dueDate: '',
+      priority: 'normal',
+      category: '',
+      recurrence: '',
+      actionLink: '',
+      completed: false,
+      completedAt: null,
+      notified: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    TaskReminders._saveAll(tasks);
+    input.value = '';
+    UI.toast('Saved · "' + (raw.length > 32 ? raw.substring(0, 32) + '…' : raw) + '"');
+    loadPage('dashboard');
+  },
+
+  // v1059: Jobber-style "To do" list — grouped action categories with dollar
+  // totals + one tap to the relevant page. Self-contained (reads DB directly) so
+  // it can sit at the top of the home as the primary "nothing lives in my head"
+  // surface. Matches Jobber's home To-do (new requests / approved quotes / changes
+  // requested / action required / require invoicing / awaiting payment) + adds
+  // "jobs to schedule" (Doug's queue).
+  _renderTodo: function() {
+    var quotes = DB.quotes.getAll(), jobs = DB.jobs.getAll(),
+        invoices = DB.invoices.getAll(), requests = DB.requests.getAll();
+    var moneyInt = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt : function(n){ return '$' + Math.round(n||0).toLocaleString(); };
+    function sumT(arr, field){ return arr.reduce(function(s,x){ return s + (Number(x[field]) || 0); }, 0); }
+    var invBal = function(i){ return (Number(i.balance) || Number(i.total)) || 0; };
+    var newReq   = requests.filter(function(r){ return r.status === 'new'; });
+    var approved = quotes.filter(function(q){ return q.status === 'approved' && !q.convertedJobId && !q.jobId; });
+    var changes  = quotes.filter(function(q){ return q.status === 'changes_requested'; });
+    var toSched  = jobs.filter(function(j){ return !j.scheduledDate && (j.status === 'scheduled' || j.status === 'in_progress'); });
+    var actionJ  = jobs.filter(function(j){ return j.status === 'action_required' || j.status === 'late'; });
+    // Scope "to invoice" to RECENT completions (last 60d, or last 7d if undated)
+    // — matches the app's needsInvoicing rule + Jobber; avoids surfacing the
+    // entire historical backlog of long-done jobs whose invoice link is unset.
+    var _c60 = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+    var _c7  = new Date(Date.now() - 7 * 86400000).toISOString();
+    var toInv    = jobs.filter(function(j){
+      if (j.status !== 'completed' || j.invoiceId) return false;
+      return (j.scheduledDate && j.scheduledDate.slice(0, 10) >= _c60) || (!j.scheduledDate && (j.createdAt || '') > _c7);
+    });
+    var awaitPay = invoices.filter(function(i){ return i.status !== 'paid' && i.status !== 'draft' && invBal(i) > 0; });
+    var rows = [
+      { n: newReq.length,   one: 'new request',             many: 'new requests',             val: 0,                      icon: '📥', page: 'requests' },
+      { n: approved.length, one: 'approved quote',           many: 'approved quotes',           val: sumT(approved,'total'), icon: '✅', page: 'quotes' },
+      { n: changes.length,  one: 'changes-requested quote',  many: 'changes-requested quotes',  val: sumT(changes,'total'),  icon: '✏️', page: 'quotes' },
+      { n: toSched.length,  one: 'job to schedule',          many: 'jobs to schedule',          val: sumT(toSched,'total'),  icon: '📅', page: 'schedule' },
+      { n: actionJ.length,  one: 'action-required job',      many: 'action-required jobs',      val: sumT(actionJ,'total'),  icon: '🔨', page: 'jobs' },
+      { n: toInv.length,    one: 'job to invoice',           many: 'jobs to invoice',           val: sumT(toInv,'total'),    icon: '💵', page: 'jobs' },
+      { n: awaitPay.length, one: 'invoice awaiting payment', many: 'invoices awaiting payment', val: awaitPay.reduce(function(s,i){ return s + invBal(i); }, 0), icon: '📄', page: 'invoices' }
+    ].filter(function(r){ return r.n > 0; });
+
+    var head = '<div style="font-family:var(--jb-font-display,inherit);font-weight:800;font-size:17px;color:var(--text);padding:15px 16px 6px;">To do</div>';
+    if (!rows.length) {
+      return '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:16px;">' + head
+        + '<div style="padding:2px 16px 18px;color:var(--text-light);font-size:14px;">🎉 All caught up — nothing needs your attention.</div></div>';
+    }
+    var html = '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;">' + head;
+    rows.forEach(function(r){
+      var noun = r.n === 1 ? r.one : r.many;
+      html += '<div onclick="loadPage(\'' + r.page + '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+        + '<span style="font-size:20px;width:26px;text-align:center;flex-shrink:0;">' + r.icon + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-weight:700;font-size:15px;color:var(--text);line-height:1.25;">' + r.n + ' ' + noun + '</div>'
+        +   (r.val > 0 ? '<div style="font-size:13px;color:var(--text-light);margin-top:1px;">Worth ' + moneyInt(r.val) + '</div>' : '')
+        + '</div>'
+        + '<span style="color:#2e7d32;font-size:20px;font-weight:700;flex-shrink:0;">&rsaquo;</span>'
+        + '</div>';
+    });
+    html += '</div>';
+    return html;
+  },
+
+  render: function() {
+    // v1114: turn any customer-signed (approved) quotes into jobs on app open,
+    // so a signature that synced overnight is already booked when Doug lands here.
+    if (typeof Workflow !== 'undefined' && Workflow.autoConvertApprovedQuotes) {
+      try {
+        var _made = Workflow.autoConvertApprovedQuotes();
+        if (_made && _made.length) {
+          UI.toast('✅ ' + _made.length + ' signed quote' + (_made.length > 1 ? 's' : '') + ' → job' + (_made.length > 1 ? 's' : '') + ' created');
+        }
+      } catch (e) {}
+    }
+    // One-time fix: mark legacy system-migrated completed jobs as already invoiced
+    if (!localStorage.getItem('bm-legacy-jobs-fixed')) {
+      DB.jobs.getAll().forEach(function(j) {
+        if (j.status === 'completed' && !j.invoiceId) DB.jobs.update(j.id, { invoiceId: 'legacy' });
+      });
+      localStorage.setItem('bm-legacy-jobs-fixed', '1');
+    }
+    // Auto-expire quotes past their expiry date
+    var today = new Date().toISOString().split('T')[0];
+    DB.quotes.getAll().forEach(function(q) {
+      if (q.expiresAt && q.expiresAt < today && (q.status === 'sent' || q.status === 'awaiting')) {
+        DB.quotes.update(q.id, { status: 'expired' });
+      }
+    });
+
+    var unpaidInvoices = DB.invoices.getAll().filter(function(i) { return i.status !== 'paid' && i.balance > 0; });
+
+    // Show sync banner if no local data but Supabase is connected
+    var localClients = JSON.parse(localStorage.getItem('bm-clients') || '[]');
+    var html = '';
+
+    // v1137: DROPPED-BALL BANNER. Three send paths used to report messages as
+    // SENT that never went out (memory: bm-silent-send-failures), which left
+    // leads unanswered and quotes never delivered. This banner surfaces the
+    // backlog on the FIRST screen Doug sees, and only appears when there is
+    // something to act on — it disappears at zero rather than nagging.
+    try { html += DashboardPage._droppedBallBanner(); } catch (e) {}
+
+    // v943: "Next best action" chip and the sales-tax counter banner removed
+    // from the dashboard per Doug (Jun 2026). _computeNextBestAction +
+    // SalesTaxCounter remain defined but are no longer surfaced here.
+
+    // v764: Expiring docs alert — insurance / vehicle / permit docs
+    // within 30 days of expiry land here. Same color-escalation pattern
+    // as the sales tax counter.
+    try {
+      if (typeof ExpiringDocsAlert !== 'undefined' && ExpiringDocsAlert.renderBanner) {
+        html += ExpiringDocsAlert.renderBanner();
+      }
+    } catch(e) {}
+
+    // v838+: surface unworked website-form requests right on Home so new
+    // leads aren't waiting in the Requests page unseen. Calm green (good
+    // news, not alarming). Whole card is clickable → Requests page.
+    try {
+      var _nrs = (typeof DB !== 'undefined' && DB.requests && DB.requests.getAll)
+        ? DB.requests.getAll().filter(function(r) { return r.status === 'new'; })
+            .sort(function(a, b) { return String(b.createdAt || b.created_at || '').localeCompare(String(a.createdAt || a.created_at || '')); })
+        : [];
+      if (false && _nrs.length) { // v977: green "New requests" box removed from Home per Doug
+        var _rel = function(ts) {
+          if (!ts) return '';
+          var s = Math.round((Date.now() - new Date(ts)) / 1000);
+          if (s < 60) return 'just now';
+          if (s < 3600) return Math.round(s / 60) + 'm ago';
+          if (s < 86400) return Math.round(s / 3600) + 'h ago';
+          return Math.round(s / 86400) + 'd ago';
+        };
+        var _esc = function(s) { return String(s || '').replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+        html += '<div onclick="loadPage(\'requests\')" style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:12px;padding:14px 16px;margin-bottom:16px;cursor:pointer;">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">'
+          +   '<div style="font-size:13px;font-weight:800;color:#1b5e20;letter-spacing:.3px;text-transform:uppercase;">🌳 New requests · ' + _nrs.length + ' waiting</div>'
+          +   '<div style="font-size:12px;color:#1b5e20;font-weight:700;">View all →</div>'
+          + '</div>';
+        _nrs.slice(0, 5).forEach(function(r) {
+          var nm = r.clientName || r.client_name || r.name || 'New lead';
+          var svc = r.title || r.service || 'Tree service';
+          var addr = r.property || r.address || '';
+          var ph = r.clientPhone || r.client_phone || r.phone || '';
+          var when = _rel(r.createdAt || r.created_at);
+          html += '<div style="background:#fff;border:1px solid #c8e6c9;border-radius:8px;padding:10px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;">'
+            +   '<div style="min-width:0;flex:1;">'
+            +     '<div style="font-weight:700;color:#1a3c12;">' + _esc(nm) + ' <span style="font-weight:500;color:#5a6b50;">· ' + _esc(svc) + '</span></div>'
+            +     (addr ? '<div style="font-size:11px;color:#5a6b50;margin-top:2px;">📍 ' + _esc(addr) + '</div>' : '')
+            +   '</div>'
+            +   '<div style="font-size:11px;color:#5a6b50;text-align:right;white-space:nowrap;">'
+            +     (ph ? '<div>📞 ' + _esc(ph) + '</div>' : '')
+            +     (when ? '<div style="opacity:.8;margin-top:2px;">' + when + '</div>' : '')
+            +   '</div>'
+            + '</div>';
+        });
+        if (_nrs.length > 5) html += '<div style="font-size:11px;color:#1b5e20;margin-top:6px;text-align:center;font-weight:600;">+ ' + (_nrs.length - 5) + ' more · tap to view all</div>';
+        html += '</div>';
+      }
+    } catch(e) { /* never block dashboard render */ }
+
+    // v841: Approve Comms reminder card — async-fed from marketing_drafts
+    // table. Placeholder div renders synchronously; fetch fires on next tick
+    // and swaps in real content if pending drafts exist. NEVER auto-renders
+    // anything if there are zero pending (silent when empty). Tapping the
+    // card opens MarketingPage (which embeds the existing Drafts to Review
+    // UI at the top of its Lead Sources panel). Per hard rule: nothing
+    // leaves BM without Doug clicking Send on each draft.
+    // v945: "Approve comms" banner removed from dashboard per Doug. Placeholder
+    // div no longer rendered; the async fetch below self-no-ops (card === null).
+    setTimeout(function() {
+      try {
+        var card = document.getElementById('bm-approve-comms-card');
+        if (!card) return;
+        var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+        var tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+        if (!sb || !tid) return;
+        sb.from('marketing_drafts')
+          .select('id,trigger,client_name,to_email,to_phone,channel,subject,created_at')
+          .eq('tenant_id', tid)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .then(function(r) {
+            var drafts = (r && r.data) || [];
+            if (!drafts.length) { card.style.display = 'none'; return; }
+            var TLBL = {
+              review_request:    { icon: '⭐', label: 'Review request' },
+              quote_followup_7d: { icon: '💬', label: 'Quote follow-up' },
+              upsell_30d:        { icon: '🌳', label: 'Upsell' },
+              appt_reminder:     { icon: '⏰', label: 'Appt reminder' }
+            };
+            var _esc = function(s) { return String(s || '').replace(/[&<>"']/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); };
+            var _rel = function(ts) {
+              if (!ts) return '';
+              var s = Math.round((Date.now() - new Date(ts)) / 1000);
+              if (s < 60) return 'just now';
+              if (s < 3600) return Math.round(s / 60) + 'm ago';
+              if (s < 86400) return Math.round(s / 3600) + 'h ago';
+              return Math.round(s / 86400) + 'd ago';
+            };
+            var inner = '<div onclick="loadPage(\'marketing\')" style="background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:14px 16px;margin-bottom:16px;cursor:pointer;">'
+              + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">'
+              +   '<div style="font-size:13px;font-weight:800;color:#7e2d10;letter-spacing:.3px;text-transform:uppercase;">📋 Approve comms · ' + drafts.length + ' waiting</div>'
+              +   '<div style="font-size:12px;color:#7e2d10;font-weight:700;">Review →</div>'
+              + '</div>'
+              + '<div style="font-size:11px;color:#7e2d10;opacity:.85;margin-bottom:8px;">AI staged these for customers. Nothing sends until you approve.</div>';
+            drafts.slice(0, 5).forEach(function(d) {
+              var meta = TLBL[d.trigger] || { icon: '✉', label: d.trigger || 'Draft' };
+              var who = d.client_name || d.to_email || d.to_phone || 'unknown';
+              var subj = d.subject || (d.channel === 'sms' ? '(SMS)' : '(no subject)');
+              var when = _rel(d.created_at);
+              inner += '<div style="background:#fff;border:1px solid #ffe0b2;border-radius:8px;padding:10px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;">'
+                +   '<div style="min-width:0;flex:1;">'
+                +     '<div style="font-weight:700;color:#3e1a0a;">' + meta.icon + ' ' + _esc(meta.label) + ' <span style="font-weight:500;color:#7e6055;">· ' + _esc(who) + '</span></div>'
+                +     '<div style="font-size:11px;color:#7e6055;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(subj) + '</div>'
+                +   '</div>'
+                +   '<div style="font-size:11px;color:#7e6055;text-align:right;white-space:nowrap;">' + when + '</div>'
+                + '</div>';
+            });
+            if (drafts.length > 5) inner += '<div style="font-size:11px;color:#7e2d10;margin-top:6px;text-align:center;font-weight:600;">+ ' + (drafts.length - 5) + ' more · tap to review all</div>';
+            inner += '</div>';
+            card.innerHTML = inner;
+            card.style.display = 'block';
+          });
+      } catch(e) { /* never block dashboard render */ }
+    }, 50);
+
+    // === GREETING (show first on mobile) ===
+    var now = new Date();
+    var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var monthFull = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var hour = now.getHours();
+    var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    // Prefer Auth.user.name; fall back to email local-part; then saved company ownerName; final 'there'
+    var userName = 'there';
+    var _cfgOwner = (typeof BM_CONFIG !== 'undefined' && BM_CONFIG.ownerName) ? BM_CONFIG.ownerName : '';
+    if (typeof Auth !== 'undefined' && Auth.user && Auth.user.name && !/^\s*owner\s*$/i.test(Auth.user.name)) {
+      userName = Auth.user.name;            // a real account name
+    } else if (_cfgOwner) {
+      userName = _cfgOwner;                 // generic "Owner" → use configured owner name (e.g. Doug Brown), like Jobber
+    } else if (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) {
+      var lp = Auth.user.email.split('@')[0].replace(/[._-]+/g, ' ').trim();
+      userName = lp.charAt(0).toUpperCase() + lp.slice(1);
+    }
+    // Also backfill Auth.user.name so future loads show it without refreshing the session
+    if (typeof Auth !== 'undefined' && Auth.user && !Auth.user.name && userName !== 'there') {
+      Auth.user.name = userName;
+      try { localStorage.setItem('bm-session', JSON.stringify(Auth.user)); } catch(e){}
+    }
+    // Greeting + monthly goal progress inline
+    var allInvoicesEarly = DB.invoices.getAll();
+    var _goalData = JSON.parse(localStorage.getItem('bm-revenue-goals') || '{"annual":300000,"monthly":25000}');
+    var _monthRevenue = allInvoicesEarly.filter(function(i) {
+      var d = new Date(i.createdAt || i.issuedDate);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && (i.status === 'paid' || i.status === 'collected');
+    }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
+    var _monthPct = _goalData.monthly > 0 ? Math.min(Math.round((_monthRevenue / _goalData.monthly) * 100), 100) : 0;
+
+    // v689: weather moved to topbar chip (above the line). Doug ask.
+    html += '<div style="margin-bottom:16px;">'
+      + '<div style="font-size:13px;color:var(--text-light);">'
+      + dayNames[now.getDay()] + ', ' + monthFull[now.getMonth()] + ' ' + now.getDate()
+      + '</div>'
+      + '<h2 style="' + ((window.BMUI && BMUI.isClassic && BMUI.isClassic()) ? 'font-size:28px;font-weight:700;' : 'font-size:34px;font-weight:900;font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;letter-spacing:-.01em;') + 'margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
+      + '</div>';
+
+    // v645: Mobile-focused Home — Jobber-style "Let's get started / Clock In"
+    // + First-visit hero card. Mobile only via .dash-mobile-focus class.
+    // The heavy desktop widgets below (Leads Center / Workflow grid / Rail)
+    // are wrapped in .dash-desktop-only and hidden on mobile so the morning
+    // home screen has ONE clear next action.
+    // v646: don't hide the heavy widgets on mobile (Doug wants them too).
+    // Mobile shows BOTH the new focus block (Clock In + first-visit hero)
+    // AND the existing widgets stacked below.
+    html += '<style>'
+      + '@media (max-width: 768px) {'
+      + '  .dash-grid { grid-template-columns: 1fr !important; }'
+      + '}'
+      + '@media (min-width: 769px) {'
+      + '  .dash-mobile-focus { display: none !important; }'
+      + '}'
+      + '.dash-clock-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); display:flex; align-items:center; justify-content:space-between; gap:12px; }'
+      + '.dash-clock-card.live { background:var(--green-bg); border-color:var(--green-light); }'
+      + '.dash-clock-btn { background:var(--green-dark); color:#fff; border:none; padding:12px 22px; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }'
+      + '.dash-clock-btn.out { background:#c62828; }'
+      + '.dash-visit-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04); cursor:pointer; }'
+      + '.dash-visit-card .accent { width:4px; background:var(--accent); border-radius:2px; align-self:stretch; flex-shrink:0; }'
+      + '</style>';
+
+    var __dashTodayStr = now.getFullYear() + '-' + (now.getMonth()+1<10?'0':'') + (now.getMonth()+1) + '-' + (now.getDate()<10?'0':'') + now.getDate();
+    html += DashboardPage._renderMobileFocusBlock(now, __dashTodayStr);
+
+    // v986: Today board — named rows by status, the daily front door.
+    html += DashboardPage._renderTodayBoard();
+    html += DashboardPage._renderTodo(); // v1059: Jobber-style To-do action list (top of home)
+
+    // Branch Cam widget removed from dashboard per user request — still accessible via Tools → Branch Cam.
+
+    // Money-on-the-Table widget was permanently removed Apr 19, 2026 — same signals
+    // are surfaced in the Smart Daily Briefing + Ready-to-Invoice cards below.
+
+    if (localClients.length === 0 && typeof SupabaseDB !== 'undefined' && SupabaseDB && SupabaseDB.DEFAULT_URL) {
+      html += '<div style="padding:16px;background:#e3f2fd;border-radius:10px;border-left:4px solid #1976d2;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">'
+        + '<div><strong style="color:#1565c0;">Your data is in the cloud</strong>'
+        + '<div style="font-size:13px;color:#555;margin-top:4px;">535 clients, 433 quotes, 259 jobs, 348 invoices ready to sync.</div></div>'
+        + '<button class="btn btn-primary" onclick="DashboardPage.syncNow()" id="sync-btn" style="white-space:nowrap;">Sync Now</button>'
+        + '</div>';
+    }
+    // Pre-compute data needed for both action alerts and revenue chart
+    var allInvoices = DB.invoices.getAll();
+    var allQuotes = DB.quotes.getAll();
+    var allJobs = DB.jobs.getAll();
+    var now = new Date();
+    var sixMonthsAgo = new Date(now.getTime() - 180 * 86400000);
+
+    // Greeting moved to top of page (above MOTT)
+
+    // Smart Daily Briefing — built early but rendered LATER, after Today's Jobs.
+    // Per Doug's request: only show when no jobs today OR all today's jobs done,
+    // and each insight individually dismissible via per-item X. Dismissed IDs
+    // live in localStorage keyed by date so they reset at midnight rollover.
+    var briefingDateStr = now.getFullYear() + '-' + (now.getMonth() + 1 < 10 ? '0' : '') + (now.getMonth() + 1) + '-' + (now.getDate() < 10 ? '0' : '') + now.getDate();
+    var briefingInsights = [];
+    {
+      var bOverdue = allInvoices.filter(function(i) { return i.status !== 'paid' && i.balance > 0 && i.dueDate && new Date(i.dueDate) < now; });
+      var bOverdueTotal = bOverdue.reduce(function(s, i) { return s + Number(i.balance || 0);}, 0);
+      if (bOverdue.length > 0) {
+        briefingInsights.push({
+          icon: '🔴',
+          text: 'You have ' + bOverdue.length + ' overdue invoice' + (bOverdue.length > 1 ? 's' : '') + ' worth ' + UI.money(bOverdueTotal) + ' — follow up today',
+          action: 'InvoicesPage._setFilter(\'overdue\');loadPage(\'invoices\');'
+        });
+      }
+      var bSevenAgo = new Date(now.getTime() - 7 * 86400000);
+      var b180Ago = new Date(now.getTime() - 180 * 86400000);
+      var bStaleQuotes = allQuotes.filter(function(q) {
+        return q.status === 'sent' && q.createdAt
+          && new Date(q.createdAt) < bSevenAgo
+          && new Date(q.createdAt) > b180Ago; // only last 6 months
+      });
+      if (bStaleQuotes.length > 0) {
+        briefingInsights.push({
+          icon: '⏳',
+          text: bStaleQuotes.length + ' quote' + (bStaleQuotes.length > 1 ? 's' : '') + ' sent 7+ days ago need follow-up',
+          action: 'loadPage(\'quotes\');'
+        });
+      }
+      var cutoff60str = new Date(now.getTime() - 60 * 86400000).toISOString().split('T')[0];
+      var cutoff7str = new Date(now.getTime() - 7 * 86400000).toISOString();
+      var bNeedsInvoicing = allJobs.filter(function(j) {
+        if (j.status !== 'completed' || j.invoiceId) return false;
+        return (j.scheduledDate && j.scheduledDate >= cutoff60str)
+            || (!j.scheduledDate && (j.createdAt || '') > cutoff7str);
+      });
+      var bNeedsInvTotal = bNeedsInvoicing.reduce(function(s, j) { return s + (j.total || 0); }, 0);
+      if (bNeedsInvoicing.length > 0) {
+        briefingInsights.push({
+          icon: '💵',
+          text: bNeedsInvoicing.length + ' recent completed job' + (bNeedsInvoicing.length > 1 ? 's' : '') + ' haven\'t been invoiced — ' + UI.money(bNeedsInvTotal) + ' waiting',
+          action: 'loadPage(\'jobs\');'
+        });
+      }
+      var bTodayStr = briefingDateStr;
+      var bTodayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0, 10) === bTodayStr && j.status !== 'completed'; });
+      if (bTodayJobs.length === 0) {
+        briefingInsights.push({
+          icon: '🌤',
+          text: 'No jobs scheduled today — good day for estimates',
+          action: 'loadPage(\'schedule\');'
+        });
+      } else {
+        briefingInsights.push({
+          icon: '📋',
+          text: bTodayJobs.length + ' job' + (bTodayJobs.length > 1 ? 's' : '') + ' on the schedule today — let\'s get after it',
+          action: 'loadPage(\'schedule\');'
+        });
+      }
+      var bNewRequests = DB.requests.getAll().filter(function(r) { return r.status === 'new'; });
+      if (bNewRequests.length > 0) {
+        briefingInsights.push({
+          icon: '📥',
+          text: bNewRequests.length + ' new request' + (bNewRequests.length > 1 ? 's' : '') + ' came in — respond within 2 hours for best conversion',
+          action: 'loadPage(\'requests\');'
+        });
+      }
+      var bThisMonth = allInvoices.filter(function(i) {
+        var d = new Date(i.createdAt);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && (i.status === 'paid' || i.status === 'collected');
+      }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
+      var bLastMonth = allInvoices.filter(function(i) {
+        var lm = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+        var ly = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        var d = new Date(i.createdAt);
+        return d.getMonth() === lm && d.getFullYear() === ly && (i.status === 'paid' || i.status === 'collected');
+      }).reduce(function(s, i) { return s + Number(i.total || 0);}, 0);
+      if (bThisMonth > 0 || bLastMonth > 0) {
+        var bAhead = bThisMonth >= bLastMonth;
+        briefingInsights.push({
+          icon: bAhead ? '📈' : '📉',
+          text: 'This month\'s revenue (' + UI.money(bThisMonth) + ') is ' + (bAhead ? 'ahead of' : 'behind') + ' last month (' + UI.money(bLastMonth) + ')',
+          action: 'loadPage(\'profitloss\');'
+        });
+      }
+
+      // Stable per-insight IDs (hash of icon + text). Used to track which
+      // individual insights are dismissed for today.
+      briefingInsights.forEach(function(b) {
+        var key = (b.icon || '') + '|' + (b.text || '');
+        var h = 0; for (var i = 0; i < key.length; i++) h = ((h << 5) - h + key.charCodeAt(i)) | 0;
+        b.id = 'bf' + Math.abs(h).toString(36);
+      });
+      // Filter against per-item dismissals stored as { "YYYY-MM-DD": ["bfABC", ...] }
+      var dismissedMap = {};
+      try { dismissedMap = JSON.parse(localStorage.getItem('bm-briefing-dismissed-items') || '{}'); } catch(e) {}
+      var dismissedToday = dismissedMap[briefingDateStr] || [];
+      briefingInsights = briefingInsights.filter(function(b) { return dismissedToday.indexOf(b.id) === -1; });
+      // Cap at 5
+      briefingInsights = briefingInsights.slice(0, 5);
+    }
+
+    // Expose insights to TaskReminders.getDashboardWidget (reads window.__bmBriefingInsights)
+    window.__bmBriefingInsights = briefingInsights;
+
+    // legacy system-style Workflow cards (2x2 grid)
+    var overdueInvoices = unpaidInvoices.filter(function(i) { return i.dueDate && new Date(i.dueDate) < now; });
+    var unapprovedQuotes = allQuotes.filter(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
+    var draftQuotes = allQuotes.filter(function(q) { return q.status === 'draft'; });
+    var changesQuotes = allQuotes.filter(function(q) { return q.status === 'changes_requested'; });
+    var approvedQuotes = allQuotes.filter(function(q) { return q.status === 'approved'; });
+    var lateJobs = allJobs.filter(function(j) { return j.status === 'late'; });
+    var activeJobs = allJobs.filter(function(j) { return j.status === 'in_progress' || j.status === 'scheduled'; });
+    var ago90dash = new Date(now.getTime() - 90 * 86400000);
+    var needsInvoicing = allJobs.filter(function(j) {
+      if (j.status !== 'completed' || j.invoiceId) return false;
+      return j.createdAt && new Date(j.createdAt) > ago90dash;
+    });
+    var actionJobs = allJobs.filter(function(j) { return j.status === 'action_required'; });
+    var sentInvoices = allInvoices.filter(function(i) { return i.status === 'sent' && (!i.dueDate || new Date(i.dueDate) >= now); });
+    var draftInvoices = allInvoices.filter(function(i) { return i.status === 'draft'; });
+
+    var reqTotal = approvedQuotes.reduce(function(s,q){return s+(q.total||0);},0); // v950: approved-only (was approved+converted → inflated to ~$627k)
+    var activeJobTotal = activeJobs.reduce(function(s,j){return s+(j.total||0);},0);
+    var draftInvTotal = draftInvoices.reduce(function(s,i){return s+Number(i.total||0);},0);
+    var overdueTotal = overdueInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0);
+
+    // ── DESKTOP ONLY: 2x2 summary grid (matches the Workflow grid below) ──
+    // v670 — was 4 separate stacked widgets (Leads Center / Website Visitors /
+    // Today's Jobs / Tasks). Per Doug, condensed into a uniform 2x2 grid that
+    // mirrors the Workflow grid: bordered container, internal dividers, full-
+    // cell click → page nav. Detail still reachable by clicking through.
+    var _wfHtml = '';
+    var _bmClassic = !!(window.BMUI && window.BMUI.isClassic && window.BMUI.isClassic());
+    // v973: jobber-mode → flat Workflow grid + Jobber's big 36px/900 Poppins numbers (#032B3A). Classic unchanged.
+    var _wfNumCss = _bmClassic
+      ? 'font-size:32px;font-weight:700;'
+      : 'font-size:36px;font-weight:900;font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;letter-spacing:-.01em;line-height:1.05;';
+    var _wfGridShadow = _bmClassic ? 'box-shadow:0 1px 3px rgba(0,0,0,0.04);' : '';
+    _wfHtml += '<h3 style="font-size:18px;font-weight:' + (_bmClassic ? '700' : '800') + ';margin-bottom:12px;' + (_bmClassic ? '' : 'font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;') + '">Workflow</h3>';
+    _wfHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);' + _wfGridShadow + '">'; /* v666: back to 2x2 (was single-col v651) — cards already have 2x2 border pattern */
+
+    // Requests card
+    var allRequests = DB.requests.getAll();
+    var newRequests = allRequests.filter(function(r) { return r.status === 'new'; });
+    var assessedRequests = allRequests.filter(function(r) { return r.status === 'assessment_complete'; });
+    var overdueRequests = allRequests.filter(function(r) {
+      if (r.status === 'converted' || r.status === 'quoted' || r.status === 'archived') return false;
+      return (Date.now() - new Date(r.createdAt || 0)) / 86400000 > 3;
+    });
+    _wfHtml += '<div onclick="loadPage(\'requests\')" style="padding:16px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#e07c24;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="inbox" style="width:14px;height:14px;vertical-align:middle;"></i> Requests</div>'
+      + '<div style="' + _wfNumCss + '">' + newRequests.length + '</div>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">New</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-top:6px;">Assessments complete (' + assessedRequests.length + ')</div>'
+      + '<div style="font-size:12px;color:' + (overdueRequests.length > 0 ? 'var(--red)' : 'var(--text-light)') + ';">Overdue (' + overdueRequests.length + ')</div>'
+      + '</div>';
+
+    // Quotes card
+    var awaitingQuotes = allQuotes.filter(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
+    _wfHtml += '<div onclick="loadPage(\'quotes\')" style="padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#8b2252;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="file-text" style="width:14px;height:14px;vertical-align:middle;"></i> Quotes</div>'
+      + '<div style="' + _wfNumCss + 'display:inline;">' + approvedQuotes.length + '</div>'
+      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(reqTotal) + '</span>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">Approved</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftQuotes.length + ')</span><span>' + UI.moneyInt(draftQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Changes requested (' + changesQuotes.length + ')</span><span>' + UI.moneyInt(changesQuotes.reduce(function(s,q){return s+(q.total||0);},0)) + '</span></div>'
+      + '</div>';
+
+    // Jobs card
+    _wfHtml += '<div onclick="loadPage(\'jobs\')" style="padding:16px 20px;border-right:1px solid var(--border);cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#2e7d32;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="wrench" style="width:14px;height:14px;vertical-align:middle;"></i> Jobs</div>'
+      + '<div style="' + _wfNumCss + '">' + needsInvoicing.length + '</div>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">Requires invoicing</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Active (' + activeJobs.length + ')</span><span>' + UI.moneyInt(activeJobTotal) + '</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);"><span>Action required (' + (actionJobs.length + lateJobs.length) + ')</span><span>' + UI.moneyInt(lateJobs.reduce(function(s,j){return s+(j.total||0);},0)) + '</span></div>'
+      + '</div>';
+
+    // Invoices card
+    _wfHtml += '<div onclick="loadPage(\'invoices\')" style="padding:16px 20px;cursor:pointer;position:relative;">'
+      + '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--text-light);font-size:12px;font-weight:600;"><i data-lucide="receipt" style="width:14px;height:14px;vertical-align:middle;"></i> Invoices</div>'
+      + '<div style="' + _wfNumCss + 'display:inline;">' + unpaidInvoices.length + '</div>'
+      + '<span style="font-size:14px;color:var(--text-light);margin-left:6px;">' + UI.moneyInt(unpaidInvoices.reduce(function(s,i){return s+Number(i.balance||0);},0)) + '</span>'
+      + '<div style="font-size:' + (_bmClassic ? '14' : '16') + 'px;font-weight:700;">Awaiting payment</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-top:6px;"><span>Draft (' + draftInvoices.length + ')</span><span>' + UI.moneyInt(draftInvTotal) + '</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px;color:' + (overdueInvoices.length ? 'var(--red)' : 'var(--text-light)') + ';"><span>Past due (' + overdueInvoices.length + ')</span><span>' + UI.moneyInt(overdueTotal) + '</span></div>'
+      + '</div>';
+
+    _wfHtml += '</div>';
+
+
+    if (!_bmClassic) html += _wfHtml;
+
+    html += '<div class="dash-desktop-only">';
+
+    // Today's jobs counts (sync, used in the Jobs cell)
+    var __td = now.getFullYear() + '-' + (now.getMonth()+1<10?'0':'') + (now.getMonth()+1) + '-' + (now.getDate()<10?'0':'') + now.getDate();
+    var __todayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === __td; });
+    var __todayDone = __todayJobs.filter(function(j) { return j.status === 'completed'; }).length;
+
+    // Active task count (sync, used in the Tasks cell)
+    var __activeTasks = 0;
+    try {
+      if (typeof TaskReminders !== 'undefined' && TaskReminders._getAll) {
+        __activeTasks = TaskReminders._getAll().filter(function(t) { return !t.completed && !t.archived; }).length;
+      }
+    } catch(e) {}
+
+    var jobsLabel = __todayJobs.length === 0
+      ? 'No jobs scheduled today'
+      : __todayDone + ' of ' + __todayJobs.length + ' complete';
+
+    // v977: Jobber's Home has no Leads/Website/Today's-Jobs/Tasks tile grid — classic only.
+    if (_bmClassic) {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;background:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+
+    // Top-left: Leads Center (count async-filled by _fillCallCenterWidget into #dash-cc-badge)
+    html += '<div onclick="loadPage(\'callcenter\')" style="padding:16px 20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">📞 Leads Center</h4>'
+      +   '<div id="dash-cc-count" style="font-size:24px;font-weight:800;line-height:1.1;">—</div>'
+      +   '<div id="dash-cc-badge" style="font-size:11px;color:#666;margin-top:2px;">Loading…</div>'
+      + '</div>';
+
+    // Top-right: Website Visitors (count async-filled by AnalyticsWidget into #dash-aw-mini)
+    html += '<div onclick="loadPage(\'socialbranch\')" style="padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">🌐 Website Visitors</h4>'
+      +   '<div id="dash-aw-mini" style="font-size:24px;font-weight:800;line-height:1.1;">—</div>'
+      +   '<div id="dash-aw-sub" style="font-size:11px;color:#666;margin-top:2px;">Loading…</div>'
+      + '</div>';
+
+    // Bottom-left: Today's Jobs
+    html += '<div onclick="loadPage(\'schedule\')" style="padding:16px 20px;border-right:1px solid var(--border);cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">📅 Today\'s Jobs</h4>'
+      +   '<div style="font-size:24px;font-weight:800;line-height:1.1;">' + __todayJobs.length + '</div>'
+      +   '<div style="font-size:11px;color:#666;margin-top:2px;">' + jobsLabel + '</div>'
+      + '</div>';
+
+    // Bottom-right: Tasks
+    html += '<div onclick="loadPage(\'taskreminders\')" style="padding:16px 20px;cursor:pointer;position:relative;">'
+      +   '<h4 style="font-size:14px;font-weight:700;margin:0 0 4px;color:var(--text-light);">✅ Tasks</h4>'
+      +   '<div style="font-size:24px;font-weight:800;line-height:1.1;">' + __activeTasks + '</div>'
+      +   '<div style="font-size:11px;color:#666;margin-top:2px;">' + (__activeTasks === 0 ? 'All clear' : 'Open' + (__activeTasks === 1 ? '' : ' tasks')) + '</div>'
+      + '</div>';
+
+    html += '</div>';
+
+    // Async fills: leads count + analytics widget hookup (kept from legacy widgets)
+    setTimeout(function() { if (typeof DashboardPage !== 'undefined') DashboardPage._fillCallCenterWidget(); }, 80);
+    // v689: weather inline next to the date is gone; chip in topbar covers it.
+    if (typeof AnalyticsWidget !== 'undefined' && AnalyticsWidget.fillSummary) {
+      setTimeout(function() { try { AnalyticsWidget.fillSummary('dash-aw-mini', 'dash-aw-sub', 30); } catch(e) {} }, 100);
+    }
+    } // v977: end classic-only BM tile grid
+
+    // v619: 2-column dashboard layout — main (workflow + lead sources) /
+    // rail (receivables, inbox, action alerts). Single column on mobile.
+    html += '<style>'
+      + '.dash-grid{display:grid;grid-template-columns:1fr;gap:18px;align-items:start;}' /* v651: single column always per Doug — no side-by-side */
+      + '.dash-main,.dash-rail{min-width:0;}'
+      + '@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}'
+      + '</style>';
+    html += '<div class="dash-grid"><div class="dash-main">';
+    if (_bmClassic) html += _wfHtml; // classic UI: workflow in original (below stat row) spot
+
+    // v619: workflow grid lives in main column; everything below moves to
+    // the right rail (Receivables first, then Inbox, then action alerts).
+    html += '</div><div class="dash-rail">';
+    // v977: Jobber "Business Performance" section heading above the receivables rail.
+    if (!_bmClassic) html += '<h2 style="font-family:\'Poppins\',\'Inter\',sans-serif;font-size:22px;font-weight:800;color:#032B3A;letter-spacing:-.01em;margin:6px 0 14px;">Business Performance</h2>';
+
+    // v620: rail cards — collapsible <details> with colored top bar matching
+    // the workflow card colors (Requests=orange, Quotes=purple, Jobs=green,
+    // Invoices=blue). Receivables open by default; rest collapsed since their
+    // counts already appear in the Workflow grid above.
+    var railCard = function(opts) {
+      // opts: { color, title, count, total, totalColor, body, open }
+      return '<details ' + (opts.open ? 'open' : '') + ' style="background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+        +   '<div style="height:3px;background:' + opts.color + ';"></div>'
+        +   '<summary style="padding:12px 18px;list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">'
+        +     '<span style="font-size:14px;font-weight:700;">' + opts.title + '</span>'
+        +     '<span style="display:flex;align-items:center;gap:10px;">'
+        +       (opts.count != null ? '<span style="font-size:11px;color:var(--text-light);">' + opts.count + '</span>' : '')
+        +       '<span style="font-size:15px;font-weight:800;color:' + (opts.totalColor || opts.color) + ';">' + opts.total + '</span>'
+        +       '<span style="font-size:11px;color:var(--text-light);">▾</span>'
+        +     '</span>'
+        +   '</summary>'
+        +   '<div style="padding:4px 18px 14px;">' + opts.body + '</div>'
+        + '</details>';
+    };
+
+    // Receivables panel — top of rail, OPEN by default
+    var rcvUnpaid = DB.invoices.getAll().filter(function(i) { return (i.status === 'sent' || i.status === 'overdue' || i.status === 'partial') && (i.balance || i.total || 0) > 0; });
+    var rcvTotalOwed = rcvUnpaid.reduce(function(s, i) { return s + (Number(i.balance) || Number(i.total) || 0);}, 0);
+    if (rcvUnpaid.length > 0) {
+      rcvUnpaid.sort(function(a, b) { return (b.balance || b.total || 0) - (a.balance || a.total || 0); });
+      // v636: roll the Overdue Invoices count into the Receivables card so
+      // the dropped collapsed card's info isn't lost.
+      var rcvOverdueTotal = overdueInvoices.reduce(function(s, i) { return s + (Number(i.balance) || Number(i.total) || 0);}, 0);
+
+      // v782: AR aging buckets (0–30 / 31–60 / 61–90 / 90+) as a stacked bar
+      // above the invoice list. Uses dueDate if present; falls back to
+      // createdAt or sentAt so even draft-to-sent invoices land in a bucket.
+      var nowMsAR = Date.now();
+      var agingBuckets = [
+        { key:'cur',  label:'0–30d',  total:0, count:0, color:'#15803d' },
+        { key:'b30',  label:'31–60d', total:0, count:0, color:'#ca8a04' },
+        { key:'b60',  label:'61–90d', total:0, count:0, color:'#c2410c' },
+        { key:'b90',  label:'90+d',   total:0, count:0, color:'#991b1b' }
+      ];
+      rcvUnpaid.forEach(function(inv) {
+        var anchor = inv.dueDate || inv.sentAt || inv.createdAt;
+        if (!anchor) return;
+        var days = Math.floor((nowMsAR - new Date(anchor).getTime()) / 86400000);
+        if (isNaN(days) || days < 0) days = 0;
+        var bal = Number(inv.balance) || Number(inv.total) || 0;
+        var b;
+        if (days > 90) b = agingBuckets[3];
+        else if (days > 60) b = agingBuckets[2];
+        else if (days > 30) b = agingBuckets[1];
+        else b = agingBuckets[0];
+        b.total += bal;
+        b.count += 1;
+      });
+      var agingTotalAR = agingBuckets.reduce(function(s,b){ return s + b.total; }, 0);
+      var agingBarHtml = '';
+      if (agingTotalAR > 0) {
+        var bar = '<div style="display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--bg);">';
+        agingBuckets.forEach(function(b) {
+          var pct = b.total / agingTotalAR * 100;
+          if (pct > 0) bar += '<div title="' + b.label + ': ' + UI.moneyInt(b.total) + ' (' + b.count + ')" style="background:' + b.color + ';width:' + pct.toFixed(2) + '%;"></div>';
+        });
+        bar += '</div>';
+        var legend = '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-top:5px;">';
+        agingBuckets.forEach(function(b) {
+          legend += '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:7px;height:7px;background:' + b.color + ';border-radius:50%;"></span>' + b.label + ' <b style="color:' + b.color + ';">' + UI.moneyInt(b.total) + '</b></span>';
+        });
+        legend += '</div>';
+        agingBarHtml = '<div style="margin-bottom:10px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--text-light);margin-bottom:4px;"><span style="font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Aging</span><span>' + rcvUnpaid.length + ' open</span></div>'
+          + bar + legend
+          + '</div>';
+      }
+
+      var rcvBody = agingBarHtml;
+      rcvUnpaid.slice(0, 6).forEach(function(inv) {
+        var daysLate = inv.dueDate ? Math.floor((Date.now() - new Date(inv.dueDate).getTime()) / 86400000) : 0;
+        var lateColor = daysLate > 30 ? '#dc3545' : daysLate > 0 ? '#e65100' : 'var(--text-light)';
+        rcvBody += '<div onclick="InvoicesPage.showDetail(\'' + inv.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">'
+          + '<span style="font-size:14px;font-weight:600;">' + UI.esc(inv.clientName || '') + '</span>'
+          + '<div style="text-align:right;">'
+          + '<span style="font-weight:700;">' + UI.money(inv.balance || inv.total) + '</span>'
+          + (daysLate > 0 ? '<span style="font-size:11px;color:' + lateColor + ';margin-left:8px;">' + daysLate + 'd late</span>' : '')
+          + '</div></div>';
+      });
+      // Prepend an overdue-summary line to the body when applicable
+      if (overdueInvoices.length > 0) {
+        rcvBody = '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-bottom:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;">'
+          + '<span style="font-size:12px;font-weight:600;color:#991b1b;">⚠ ' + overdueInvoices.length + ' invoice' + (overdueInvoices.length !== 1 ? 's' : '') + ' overdue</span>'
+          + '<span style="font-size:13px;font-weight:800;color:#991b1b;">' + UI.moneyInt(rcvOverdueTotal) + '</span>'
+          + '</div>'
+          + rcvBody;
+      }
+      html += railCard({
+        color: '#1565c0',
+        title: 'Receivables',
+        count: rcvUnpaid.length + ' client' + (rcvUnpaid.length !== 1 ? 's' : ''),
+        total: UI.moneyInt(rcvTotalOwed),
+        totalColor: 'var(--green-dark)',
+        body: rcvBody,
+        open: true
+      });
+    }
+
+    // ── Inbox — unified "what needs your attention" surface ────────────────
+    // v720: kill switch — if user hides the inbox we render only the quick-
+    // add bar (or skip entirely with a "show" toggle). Setting persists in
+    // localStorage as bm-dash-attention-hidden.
+    var attentionHidden = localStorage.getItem('bm-dash-attention-hidden') === 'true';
+
+    // v720: accuracy guard — pre-build a clientId set of "already has work"
+    // (any job exists in DB.jobs) so we can skip inbox items where a job
+    // is already linked to that client. Prevents stale "ready to convert"
+    // / "bill the job" items for clients whose work has been done.
+    var clientHasJob = {};
+    var clientHasInvoice = {};
+    var clientHasPaid = {};
+    allJobs.forEach(function(j) {
+      if (j.clientId) clientHasJob[j.clientId] = j;
+    });
+    allInvoices.forEach(function(i) {
+      if (i.clientId) {
+        clientHasInvoice[i.clientId] = i;
+        var paid = (i.status === 'paid') || i.paidAt || i.paidDate || (typeof i.balance === 'number' && i.balance <= 0);
+        if (paid) clientHasPaid[i.clientId] = i;
+      }
+    });
+
+    var inboxItems = [];
+    var cutoff60dash = new Date(now.getTime() - 60 * 86400000).toISOString().split('T')[0];
+    var cutoff7dash  = new Date(now.getTime() - 7  * 86400000).toISOString();
+    var cutoff5dash  = new Date(now.getTime() - 5  * 86400000).toISOString();
+    var todayStrIb   = now.toISOString().substring(0, 10);
+
+    // 0. Overdue + due-today tasks (top of inbox — most actionable)
+    if (typeof TaskReminders !== 'undefined' && TaskReminders._getAll) {
+      var taskList = TaskReminders._getAll();
+      var todayBoundary = new Date(); todayBoundary.setHours(23, 59, 59, 999);
+      var todayBStart = new Date(); todayBStart.setHours(0, 0, 0, 0);
+      taskList.forEach(function(t) {
+        if (t.completed || t.archived) return;
+        if (!t.dueDate) return; // open tasks without dueDate render via the Tasks page itself
+        var due = new Date(t.dueDate);
+        if (isNaN(due)) return;
+        if (due < todayBStart) {
+          // Overdue
+          var daysOver = Math.floor((Date.now() - due.getTime()) / 86400000);
+          inboxItems.push({
+            icon: 'clock-alert', tone: 'red',
+            label: 'Task overdue — ' + UI.esc(t.title || ''),
+            sub: daysOver + 'd overdue · was due ' + UI.dateShort(t.dueDate),
+            actionLabel: 'Done',
+            onclick: 'TaskReminders._toggleComplete(\'' + t.id + '\');loadPage(\'dashboard\');'
+          });
+        } else if (due <= todayBoundary) {
+          // Due today
+          inboxItems.push({
+            icon: 'check-square', tone: 'amber',
+            label: 'Due today — ' + UI.esc(t.title || ''),
+            sub: 'Tap to mark done',
+            actionLabel: 'Done',
+            onclick: 'TaskReminders._toggleComplete(\'' + t.id + '\');loadPage(\'dashboard\');'
+          });
+        }
+      });
+    }
+
+    // 0b. v746: Unread inbound SMS — surfaces every phone thread (client
+    // or unmatched number) with unread inbound messages. Click jumps to
+    // the thread, which clears the unread count.
+    try {
+      var unreadMap = {};
+      try { unreadMap = JSON.parse(localStorage.getItem('bm-msg-unread') || '{}'); } catch(e) {}
+      Object.keys(unreadMap).forEach(function(key) {
+        var n = unreadMap[key] | 0;
+        if (n <= 0) return;
+        var label, sub, onClick;
+        if (key.indexOf('phone:') === 0) {
+          var l10 = key.replace('phone:', '');
+          var fmt = '(' + l10.substring(0, 3) + ') ' + l10.substring(3, 6) + '-' + l10.substring(6);
+          label = 'Unread SMS — ' + fmt;
+          sub = n + ' new from unknown number';
+          onClick = 'MessagingPage.selectPhone(\'' + l10 + '\')';
+        } else {
+          var c = DB.clients.getById(key);
+          label = 'Unread SMS — ' + (c ? UI.esc(c.name || '') : 'client');
+          sub = n + ' new message' + (n === 1 ? '' : 's');
+          onClick = 'MessagingPage.selectClient(\'' + key + '\')';
+        }
+        inboxItems.push({
+          icon: 'message-square', tone: 'blue',
+          label: label,
+          sub: sub,
+          actionLabel: 'Open',
+          onclick: onClick
+        });
+      });
+    } catch(e) { /* swallow — unread surfacing is best-effort */ }
+
+    // 1. Approved quotes ready to convert to jobs — but skip if the client
+    //    already has a job (likely already converted via different path).
+    allQuotes.filter(function(q) {
+      if (q.status !== 'approved' || q.convertedJobId || q.jobId) return false;
+      // v720: if any job for this client exists, this approved quote is
+      // probably already actioned. Drop from inbox.
+      if (q.clientId && clientHasJob[q.clientId]) return false;
+      return true;
+    }).forEach(function(q) {
+      inboxItems.push({
+        icon: 'check-circle', tone: 'green',
+        label: 'Approved quote — ' + (q.clientName || 'client'),
+        sub: UI.money(q.total) + ' · ready to schedule',
+        actionLabel: 'Book Job',
+        onclick: 'QuotesPage._convertAndBook(\'' + q.id + '\')'
+      });
+    });
+
+    // 2. Completed jobs without an invoice — skip if any invoice exists
+    //    for this client (probably already billed via a different job link).
+    allJobs.filter(function(j) {
+      if (j.status !== 'completed' || j.invoiceId) return false;
+      if (j.clientId && clientHasInvoice[j.clientId]) return false; // v720
+      return (j.scheduledDate && j.scheduledDate >= cutoff60dash)
+          || (!j.scheduledDate && (j.createdAt || '') > cutoff7dash);
+    }).forEach(function(j) {
+      inboxItems.push({
+        icon: 'receipt', tone: 'amber',
+        label: 'Bill the job — ' + (j.clientName || 'client'),
+        sub: UI.money(j.total) + ' · ' + (j.scheduledDate || 'recent'),
+        actionLabel: '+ Invoice',
+        onclick: 'Workflow.jobToInvoiceAsync(\'' + j.id + '\').then(function(inv){if(inv){loadPage(\'dashboard\');}})'
+      });
+    });
+
+    // 3. Clients flagged needs_review (manual merges, etc.)
+    (typeof DB !== 'undefined' && DB.clients ? DB.clients.getAll() : []).filter(function(c) {
+      return c.needsReview === true;
+    }).forEach(function(c) {
+      inboxItems.push({
+        icon: 'user-search', tone: 'amber',
+        label: 'Review client — ' + (c.name || c.firstName || 'unnamed'),
+        sub: 'Open the client to confirm the merge notes',
+        actionLabel: 'Review',
+        onclick: 'ClientsPage.showDetail(\'' + c.id + '\')'
+      });
+    });
+
+    // 4. New requests (last 7 days, status='new')
+    var allReqs = (typeof DB !== 'undefined' && DB.requests ? DB.requests.getAll() : []);
+    allReqs.filter(function(r) {
+      return r.status === 'new' && r.createdAt && r.createdAt > cutoff7dash;
+    }).slice(0, 5).forEach(function(r) {
+      inboxItems.push({
+        icon: 'inbox', tone: 'blue',
+        label: 'New request — ' + (r.clientName || r.client_name || r.email || r.phone || 'website'),
+        sub: (r.title || r.service || 'Service request') + ' · ' + (r.property || ''),
+        actionLabel: 'Open',
+        onclick: 'loadPage(\'requests\')'
+      });
+    });
+
+    // 5. Overdue invoices
+    allInvoices.filter(function(i) {
+      return i.status !== 'paid' && i.status !== 'draft' && i.dueDate && i.dueDate < todayStrIb && (i.balance || i.total) > 0;
+    }).slice(0, 5).forEach(function(i) {
+      inboxItems.push({
+        icon: 'alert-circle', tone: 'red',
+        label: 'Overdue — ' + (i.clientName || 'client'),
+        sub: UI.money(i.balance || i.total) + ' · due ' + (i.dueDate || ''),
+        actionLabel: 'Open',
+        onclick: 'InvoicesPage.showDetail(\'' + i.id + '\')'
+      });
+    });
+
+    // 6. Quotes sent 5+ days ago with no response — skip if client got a
+    //    job or invoice since (the customer responded through another path).
+    allQuotes.filter(function(q) {
+      if (q.status !== 'sent' || !q.sentAt || q.sentAt >= cutoff5dash) return false;
+      if (q.clientId && (clientHasJob[q.clientId] || clientHasInvoice[q.clientId])) return false; // v720
+      return true;
+    }).slice(0, 5).forEach(function(q) {
+      inboxItems.push({
+        icon: 'mail-question', tone: 'amber',
+        label: 'Stale quote — ' + (q.clientName || 'client'),
+        sub: UI.money(q.total) + ' · sent ' + (q.sentAt || '').substring(0, 10),
+        actionLabel: 'Follow up',
+        onclick: 'QuotesPage.showDetail(\'' + q.id + '\')'
+      });
+    });
+
+    // 7. Jobs stuck `scheduled` with no date (fell off the calendar)
+    // v416: surfaces clients like Greg Ellson #279 / Denise Weber #175 — work
+    // marked scheduled but never assigned a date. Either work happened off-the-
+    // books OR customer ghosted; either way Doug needs to reconcile.
+    // v720: skip if the job has a paid invoice — already done.
+    allJobs.filter(function(j) {
+      if (j.status !== 'scheduled' || j.scheduledDate) return false;
+      if (j.clientId && clientHasPaid[j.clientId]) return false;
+      return true;
+    }).slice(0, 5).forEach(function(j) {
+      inboxItems.push({
+        icon: 'calendar-x', tone: 'amber',
+        label: 'Unscheduled job — ' + (j.clientName || 'client'),
+        sub: UI.money(j.total) + ' · #' + (j.jobNumber || j.id.substring(0,8)) + ' · status:scheduled, no date',
+        actionLabel: 'Open',
+        onclick: 'JobsPage.showDetail(\'' + j.id + '\')'
+      });
+    });
+
+    // 8. Jobs marked `late` with scheduled_date 30+ days past
+    var cutoff30dash = new Date(now.getTime() - 30 * 86400000).toISOString().split('T')[0];
+    allJobs.filter(function(j) {
+      return j.status === 'late' && j.scheduledDate && j.scheduledDate < cutoff30dash;
+    }).slice(0, 5).forEach(function(j) {
+      var monthsAgo = Math.round((now.getTime() - new Date(j.scheduledDate).getTime()) / (30 * 86400000));
+      inboxItems.push({
+        icon: 'clock-alert', tone: 'red',
+        label: 'Stale-late job — ' + (j.clientName || 'client'),
+        sub: UI.money(j.total) + ' · #' + (j.jobNumber || j.id.substring(0,8)) + ' · ' + monthsAgo + ' month' + (monthsAgo === 1 ? '' : 's') + ' overdue',
+        actionLabel: 'Open',
+        onclick: 'JobsPage.showDetail(\'' + j.id + '\')'
+      });
+    });
+
+    // v719: quick-add task/note input always shown, even if Inbox is empty.
+    var quickAddBlock = '<div style="background:var(--white);border-radius:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:12px;display:flex;gap:8px;align-items:center;">'
+      + '<i data-lucide="check-square" style="width:16px;height:16px;color:var(--text-light);flex-shrink:0;"></i>'
+      + '<input id="dash-quickadd" type="text" placeholder="Quick task or note — press Enter" '
+      +   'onkeydown="if(event.key===\'Enter\'){event.preventDefault();DashboardPage._quickAddTask();}" '
+      +   'style="flex:1;border:none;background:transparent;font-size:14px;outline:none;color:var(--text);">'
+      + '<button onclick="DashboardPage._quickAddTask()" style="background:var(--green-dark);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;">+ Add</button>'
+      + '<button onclick="loadPage(\'taskreminders\')" title="Open Tasks" style="background:none;border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-light);flex-shrink:0;">All →</button>'
+      + '</div>';
+
+    if (attentionHidden) {
+      // Kill switch ON — only show quick-add bar plus a Show toggle.
+      html += quickAddBlock;
+      html += '<div style="text-align:right;margin-bottom:16px;">'
+        + '<button onclick="DashboardPage._toggleAttention()" style="background:none;border:none;color:var(--text-light);font-size:11px;cursor:pointer;padding:4px 8px;">▾ Show "Needs your attention"' + (inboxItems.length > 0 ? ' (' + inboxItems.length + ')' : '') + '</button>'
+        + '</div>';
+    } else if (inboxItems.length > 0) {
+      html += quickAddBlock;
+      html += '<div style="background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid #c8e6c9;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px;">'
+        +   '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+        +     '<div style="display:flex;align-items:center;gap:8px;"><i data-lucide="inbox" style="width:18px;height:18px;color:var(--green-dark);"></i><strong style="font-size:15px;color:var(--green-dark);">Needs your attention</strong>'
+        +     '<span style="font-size:12px;font-weight:600;background:var(--green-bg);color:var(--green-dark);padding:2px 8px;border-radius:999px;">' + inboxItems.length + '</span></div>'
+        +     '<button onclick="DashboardPage._toggleAttention()" title="Hide this section" style="background:none;border:none;color:var(--text-light);font-size:11px;cursor:pointer;padding:4px 8px;">▴ Hide</button>'
+        +   '</div>';
+      var TONE = { green:'var(--green-dark)', amber:'#e65100', blue:'#1565c0', red:'#c62828' };
+      // v417: sort by urgency before slicing — red first, then amber, blue, green.
+      // Stops urgent items (overdue invoices, stale-late jobs) from being hidden
+      // behind the 8-item cap when an inbox is full.
+      var TONE_PRIORITY = { red: 0, amber: 1, blue: 2, green: 3 };
+      inboxItems.sort(function(a, b) {
+        return (TONE_PRIORITY[a.tone] || 99) - (TONE_PRIORITY[b.tone] || 99);
+      });
+      inboxItems.slice(0, 8).forEach(function(it) {
+        var color = TONE[it.tone] || 'var(--text)';
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bg);">'
+          +     '<i data-lucide="' + it.icon + '" style="width:18px;height:18px;color:' + color + ';flex-shrink:0;"></i>'
+          +     '<div style="min-width:0;flex:1;">'
+          +       '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(it.label) + '</div>'
+          +       '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(it.sub) + '</div>'
+          +     '</div>'
+          +     '<button onclick="' + it.onclick + '" style="background:' + color + ';color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">' + it.actionLabel + '</button>'
+          +   '</div>';
+      });
+      if (inboxItems.length > 8) {
+        html += '<div style="font-size:12px;color:var(--text-light);margin-top:8px;text-align:center;">+ ' + (inboxItems.length - 8) + ' more</div>';
+      }
+      html += '</div>';
+    } else {
+      // Empty inbox — still show the quick-add bar so Doug can drop a note
+      html += quickAddBlock;
+    }
+
+    // Daily Vehicle Inspection widget moved to Jobs + Crew View (Apr 19 2026).
+    // If you miss it here, call DailyInspection.render() and paste.
+
+    // (v419: Today's Jobs hoisted to top of dashboard. See block ~line 215.)
+
+    // Action Items section
+    var overdueInvCount = overdueInvoices.length;
+    var overdueInvTotal = overdueTotal;
+    var sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    var expiringQuotes = allQuotes.filter(function(q) {
+      return q.status === 'sent' && q.createdAt
+        && new Date(q.createdAt) < sevenDaysAgo
+        && new Date(q.createdAt) > sixMonthsAgo;
+    });
+    var unscheduledJobs = allJobs.filter(function(j) {
+      return (j.status === 'in_progress' || j.status === 'scheduled') && !j.scheduledDate;
+    });
+    var unsignedQuotes = allQuotes.filter(function(q) {
+      if (q.status !== 'sent' && q.status !== 'awaiting') return false;
+      return !q.createdAt || new Date(q.createdAt) > sixMonthsAgo;
+    });
+
+    // v636: Removed the 3 collapsed rail cards (Overdue Invoices, Quotes
+    // Need Follow-up, Needs Scheduling) — every item they listed already
+    // surfaces in the "Needs your attention" feed above. Doug confirmed
+    // they were redundant noise. The data prep blocks above
+    // (overdueInvCount, expiringQuotes, unscheduledJobs) stay in case
+    // future logic needs them.
+
+    html += '</div></div>'; // close .dash-rail + .dash-grid
+    html += '</div>'; // v645: close .dash-desktop-only wrapping all heavy widgets
+
+    // v669: Lead Sources widget removed from dashboard — duplicated by the
+    // Marketing › Lead Sources tab, which has the full analytics suite
+    // (sources + funnel + tag-untagged + revenue attribution + response time).
+
+    return html;
+  },
+
+  // v645: Mobile-focused Home block — Jobber-style "Clock In + first visit" view.
+  // Hidden on desktop via .dash-mobile-focus { display:none } media query.
+  // Two states:
+  //   1. Currently clocked in → live timer + Clock Out button (red)
+  //   2. Not clocked in → big green Clock In button + first job hero card
+  // v986: Today board — the named to-do list Doug + Catherine actually work from.
+  // The Workflow grid below shows COUNTS; this shows WHO, bucketed by the exact
+  // statuses Doug thinks in: send-these / write-the-estimate / waiting-to-hear /
+  // approved-schedule-it / changes-requested / invoices. Every row taps straight
+  // into the record (same _pendingDetail mechanism the rest of the app uses).
+  // Replaces the external today-sheet HTML page as the daily front door.
+  _renderTodayBoard: function() {
+    try {
+      var quotes = DB.quotes.getAll();
+      var invoices = DB.invoices.getAll();
+      var jobs = DB.jobs.getAll();
+      var _cl = !!(window.BMUI && BMUI.isClassic && BMUI.isClassic());
+      var money = function(n) { return (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(n || 0) : '$' + Math.round(n || 0); };
+      var esc = function(s) { return (typeof UI !== 'undefined' && UI.esc) ? UI.esc(s || '') : String(s || ''); };
+      // v988: date + age chip on EVERY row (Doug rule Jul 5: every list item
+      // carries an explicit date + age so old never masquerades as urgent).
+      var chip = function(iso) {
+        if (!iso) return '';
+        var d = new Date(iso); if (isNaN(d.getTime())) return '';
+        var days = Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
+        var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+        var age = days === 0 ? 'today' : days + 'd';
+        var col = days > 30 ? '#c62828' : 'var(--text-light)';
+        return ' · <span style="color:' + col + ';">' + mon + ' ' + d.getDate() + ' · ' + age + '</span>';
+      };
+
+      var sendReady = [], writeThese = [], waiting = [], waitingOld = 0, schedule = [], changes = [], parked = [];
+      // v987: 'waiting' only shows quotes sent in the last 90 days — years-old
+      // Jobber-era sent quotes were burying live follow-ups (Doug 7/9: the
+      // $35k Fred Romer follow-up was invisible under 2023 dead leads).
+      var cutoff90 = Date.now() - 90 * 86400000;
+      var cutoff60 = Date.now() - 60 * 86400000; // Doug: hide drafts/quotes older than 60d
+      var staleDraftOld = 0;
+      // v991: "Parked" — a back-burner quote (real but deferred, e.g. Fred Romer's
+      // $35k waiting on town approval ~next year). Marked by archiving WITH a note
+      // containing "BACK BURNER" or "PARKED", so it stays visible-but-quiet instead
+      // of vanishing like a dead archived quote. Matches the today-sheet feature.
+      var parkedRe = /BACK BURNER|PARKED/i;
+      quotes.forEach(function(q) {
+        if (q.status === 'archived') {
+          if (parkedRe.test(q.notes || '')) parked.push(q);
+          return;
+        }
+        if (q.status === 'draft') { if (new Date(q.createdAt || 0).getTime() < cutoff60) { staleDraftOld++; return; } ((q.total || 0) > 0 ? sendReady : writeThese).push(q); }
+        else if (q.status === 'sent' || q.status === 'awaiting') {
+          var when = new Date(q.sentAt || q.createdAt || 0).getTime();
+          if (when >= cutoff60) waiting.push(q); else waitingOld++;
+        }
+        else if (q.status === 'approved') { schedule.push(q); }
+        else if (q.status === 'changes_requested') { changes.push(q); }
+      });
+      parked.sort(function(a, b) { return (b.total || 0) - (a.total || 0); });
+      var byTotal = function(a, b) { return (b.total || 0) - (a.total || 0); };
+      sendReady.sort(byTotal); waiting.sort(byTotal); schedule.sort(byTotal);
+      var invSend = invoices.filter(function(i) { return i.status === 'draft' && (i.total || 0) > 0; }).sort(byTotal);
+      var invCollect = invoices.filter(function(i) { return (Number(i.balance) || 0) > 0 && i.status !== 'paid' && i.status !== 'draft'; })
+        .sort(function(a, b) { return (Number(b.balance) || 0) - (Number(a.balance) || 0); });
+      var soon = Date.now() + 8 * 86400000;
+      var upcoming = jobs.filter(function(j) {
+        return j.status === 'scheduled' && j.scheduledDate && new Date(j.scheduledDate + 'T12:00').getTime() <= soon
+          && new Date(j.scheduledDate + 'T23:59').getTime() >= Date.now() - 86400000;
+      }).sort(function(a, b) { return String(a.scheduledDate).localeCompare(String(b.scheduledDate)); });
+
+      var open = function(page, obj, id) { return '"' + obj + '._pendingDetail=\'' + id + '\';loadPage(\'' + page + '\');"'; };
+      var CAP = 8;
+      var section = function(title, color, rows, renderRow, moreTarget) {
+        if (!rows.length) return '';
+        var _hkey = 'tbsec' + title.replace(/[^a-z0-9]/gi, '').slice(0, 18);
+        var _hcol = true; try { var _hv = localStorage.getItem('bm-' + _hkey); if (_hv !== null) _hcol = _hv === '1'; } catch (e) {}
+        var h = '<div onclick="DashboardPage._toggleTodaySection(\'' + _hkey + '\')" style="padding:10px 16px 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + color + ';cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;"><span>' + title + ' (' + rows.length + ')</span><span id="' + _hkey + '-chev" style="font-size:10px;transition:transform .15s;transform:rotate(' + (_hcol ? '-90deg' : '0deg') + ');">&#9662;</span></div><div id="' + _hkey + '-body" style="' + (_hcol ? 'display:none;' : '') + '">';
+        rows.slice(0, CAP).forEach(function(r) { h += renderRow(r); });
+        if (rows.length > CAP) h += '<div onclick="loadPage(\'' + moreTarget + '\')" style="padding:6px 16px 10px;font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;">+ ' + (rows.length - CAP) + ' more →</div>';
+        h += '</div>';
+        return h;
+      };
+      var qRow = function(tag) {
+        return function(q) {
+          return '<div onclick=' + open('quotes', 'QuotesPage', q.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+            + '<div style="min-width:0;"><div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(q.clientName || ('Quote #' + q.quoteNumber)) + '</div>'
+            + (q.property ? '<div style="font-size:11.5px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(q.property) + '</div>' : '')
+            + '</div><div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;">' + ((q.total || 0) > 0 ? money(q.total) : '—') + '</div>'
+            + '<div style="font-size:10.5px;color:var(--text-light);">' + tag + chip(q.sentAt || q.approvedAt || q.createdAt) + '</div></div></div>';
+        };
+      };
+      var iRow = function(tag) {
+        return function(i) {
+          var amt = tag === 'collect' ? (Number(i.balance) || 0) : (i.total || 0);
+          return '<div onclick=' + open('invoices', 'InvoicesPage', i.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+            + '<div style="font-weight:700;font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(i.clientName || ('Invoice #' + i.invoiceNumber)) + '</div>'
+            + '<div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;' + (tag === 'collect' ? 'color:var(--red);' : '') + '">' + money(amt) + '</div>'
+            + '<div style="font-size:10.5px;color:var(--text-light);">' + (tag === 'collect' ? esc(i.status) : 'draft — send') + chip(i.dueDate || i.issuedDate || i.createdAt) + '</div></div></div>';
+        };
+      };
+      var jRow = function(j) {
+        return '<div onclick=' + open('jobs', 'JobsPage', j.id) + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--border);cursor:pointer;">'
+          + '<div style="font-weight:700;font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(j.clientName || ('Job #' + j.jobNumber)) + '</div>'
+          + '<div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;font-size:14px;">' + String(j.scheduledDate).slice(5) + '</div>'
+          + '<div style="font-size:10.5px;color:var(--text-light);">' + money(j.total) + '</div></div></div>';
+      };
+
+      var body = ''
+        + section('🚀 Send these — estimate done', '#2e7d32', sendReady, qRow('send it'), 'quotes')
+        + section('🧾 Invoices to send', '#1565c0', invSend, iRow('send'), 'invoices')
+        + section('💰 Collect', '#c62828', invCollect, iRow('collect'), 'invoices')
+        + section('✍️ Write the estimate', '#b26a00', writeThese, qRow('needs scope + price'), 'quotes')
+        + section('📨 Sent — waiting to hear back (last 60 days)', '#8b2252', waiting, qRow('follow up'), 'quotes')
+        + (waitingOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + waitingOld + ' sent quotes older than 60 days (review in Quotes)</div>' : '')
+        + section('✅ Approved — schedule it', '#2e7d32', schedule, qRow('book it'), 'quotes')
+        + section('🔄 Changes requested', '#e07c24', changes, qRow('respond'), 'quotes')
+        + section('📅 Scheduled (next 7 days)', '#546e7a', upcoming, jRow, 'schedule')
+        + section('💤 Parked — back burner', '#9e9e9e', parked, qRow('parked — un-archive when live'), 'quotes')
+        + (staleDraftOld ? '<div onclick="loadPage(\'quotes\')" style="padding:8px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-light);cursor:pointer;">…plus ' + staleDraftOld + ' draft quote' + (staleDraftOld>1?'s':'') + ' older than 60 days (review in Quotes)</div>' : '');
+      if (!body) return '';
+      var _tbCollapsed = false;
+      try { _tbCollapsed = localStorage.getItem('bm-today-collapsed') === '1'; } catch (e) {}
+      return '<div style="border:1px solid var(--border);border-radius:12px;background:var(--white);margin-bottom:20px;overflow:hidden;' + (_cl ? 'box-shadow:0 1px 3px rgba(0,0,0,0.04);' : '') + '">'
+        + '<div onclick="DashboardPage._toggleTodayBoard()" style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;">'
+        + '<h3 style="margin:0;font-size:18px;font-weight:' + (_cl ? '700' : '800') + ';' + (_cl ? '' : 'font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;') + '">Today board</h3>'
+        + '<span id="bm-today-chevron" style="font-size:14px;color:var(--text-light);transition:transform .15s ease;transform:rotate(' + (_tbCollapsed ? '-90deg' : '0deg') + ');">&#9662;</span></div>'
+        + '<div id="bm-today-body" style="' + (_tbCollapsed ? 'display:none;' : '') + '">' + body + '</div>'
+        + '</div>';
+    } catch (e) { return ''; /* never break the dashboard */ }
+  },
+
+  _toggleTodaySection: function(key) {
+    var b = document.getElementById(key + '-body');
+    var c = document.getElementById(key + '-chev');
+    if (!b) return;
+    var collapse = b.style.display !== 'none';
+    b.style.display = collapse ? 'none' : '';
+    if (c) c.style.transform = 'rotate(' + (collapse ? '-90deg' : '0deg') + ')';
+    try { localStorage.setItem('bm-' + key, collapse ? '1' : '0'); } catch (e) {}
+  },
+
+  _toggleTodayBoard: function() {
+    var b = document.getElementById('bm-today-body');
+    var c = document.getElementById('bm-today-chevron');
+    if (!b) return;
+    var collapse = b.style.display !== 'none';
+    b.style.display = collapse ? 'none' : '';
+    if (c) c.style.transform = 'rotate(' + (collapse ? '-90deg' : '0deg') + ')';
+    try { localStorage.setItem('bm-today-collapsed', collapse ? '1' : '0'); } catch (e) {}
+  },
+
+  _renderMobileFocusBlock: function(now, todayStr) {
+    var html = '<div class="dash-mobile-focus">';
+
+    // Resolve current user for time clock
+    var userName = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) || 'You';
+
+    // Find the active time entry (today, no clockOut)
+    var activeEntry = null;
+    try {
+      var todayEntries = (DB.timeEntries && DB.timeEntries.getAll ? DB.timeEntries.getAll() : []).filter(function(t) {
+        return t.clockIn && t.clockIn.split('T')[0] === todayStr;
+      });
+      activeEntry = todayEntries.find(function(t) { return !t.clockOut; });
+    } catch (e) { /* timeEntries optional */ }
+
+    // Today's jobs in scheduled order
+    var todayJobs = DB.jobs.getAll().filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0, 10) === todayStr;
+    }).sort(function(a, b) { return (a.startTime || '99:99').localeCompare(b.startTime || '99:99'); });
+    var firstUpcoming = todayJobs.find(function(j) { return j.status !== 'completed'; }) || todayJobs[0] || null;
+
+    // ── State 1: clocked in — show live timer ──
+    if (activeEntry) {
+      var job = activeEntry.jobId ? DB.jobs.getById(activeEntry.jobId) : null;
+      var elapsedH = ((Date.now() - new Date(activeEntry.clockIn).getTime()) / 3600000);
+      var hh = Math.floor(elapsedH);
+      var mm = Math.floor((elapsedH - hh) * 60);
+      var elapsedStr = hh + 'h ' + (mm < 10 ? '0' : '') + mm + 'm';
+
+      html += '<div class="dash-clock-card live">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-size:11px;font-weight:700;color:var(--green-dark);letter-spacing:.05em;text-transform:uppercase;">⏱ Clocked in</div>'
+        +     '<div style="font-size:24px;font-weight:800;color:var(--green-dark);">' + elapsedStr + '</div>'
+        +     (job ? '<div style="font-size:13px;color:var(--text);margin-top:2px;">' + UI.esc(job.clientName || '') + ' · #' + (job.jobNumber || '') + '</div>' : '<div style="font-size:13px;color:var(--text-light);">No job</div>')
+        +   '</div>'
+        +   '<button class="dash-clock-btn out" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockOut(\'' + activeEntry.id + '\');setTimeout(function(){loadPage(\'dashboard\');},150);}">Clock Out</button>'
+        + '</div>';
+    } else {
+      // ── State 2: not clocked in — Clock In CTA ──
+      var firstJobId = firstUpcoming ? firstUpcoming.id : null;
+      var ctaLabel = firstUpcoming ? "Clock In" : "Clock In";
+      var subLabel = firstUpcoming
+        ? ('Start the day on ' + (firstUpcoming.clientName || 'this job'))
+        : "Let's get started";
+      html += '<div class="dash-clock-card">'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="font-size:14px;font-weight:700;">' + UI.esc(subLabel) + '</div>'
+        +     (firstUpcoming && firstUpcoming.startTime
+                ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">First visit @ ' + UI.esc(firstUpcoming.startTime) + '</div>'
+                : '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">No visits scheduled today</div>')
+        +   '</div>'
+        +   '<button class="dash-clock-btn" onclick="if(typeof TimeTrackPage!==\'undefined\'){TimeTrackPage.clockIn(' + (firstJobId ? '\'' + firstJobId + '\'' : 'null') + ', \'labor\');setTimeout(function(){loadPage(\'dashboard\');},150);}else{loadPage(\'timetrack\');}">▶ Clock In</button>'
+        + '</div>';
+    }
+
+    // ── First visit hero card ──
+    if (firstUpcoming) {
+      var visitTime = firstUpcoming.startTime || 'Anytime';
+      var statusLabel = (firstUpcoming.status || 'scheduled').replace('_', ' ');
+      var statusColor = firstUpcoming.status === 'in_progress' ? '#e07c24' : firstUpcoming.status === 'completed' ? '#2e7d32' : '#1565c0';
+      html += '<div class="dash-visit-card" onclick="loadPage(\'jobs\');setTimeout(function(){if(typeof JobsPage!==\'undefined\'&&JobsPage.showDetail)JobsPage.showDetail(\'' + firstUpcoming.id + '\');},120);">'
+        +   '<div style="display:flex;gap:14px;align-items:flex-start;">'
+        +     '<div class="accent" style="background:' + statusColor + ';"></div>'
+        +     '<div style="flex:1;min-width:0;">'
+        +       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">'
+        +         '<div style="font-size:11px;color:var(--text-light);font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Today · ' + UI.esc(visitTime) + '</div>'
+        +         '<div style="font-size:13px;font-weight:700;color:var(--text);">' + UI.money(firstUpcoming.total || 0) + '</div>'
+        +       '</div>'
+        +       '<div style="font-size:18px;font-weight:700;line-height:1.25;margin-bottom:2px;">' + UI.esc(firstUpcoming.clientName || '—') + '</div>'
+        +       (firstUpcoming.property ? '<div style="font-size:13px;color:var(--text-light);">' + UI.esc(firstUpcoming.property) + '</div>' : '')
+        +       (firstUpcoming.description ? '<div style="font-size:13px;color:var(--text);margin-top:6px;line-height:1.4;">' + UI.esc(firstUpcoming.description) + '</div>' : '')
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+
+      if (todayJobs.length > 1) {
+        html += '<div onclick="loadPage(\'schedule\')" style="text-align:center;font-size:13px;font-weight:600;color:var(--accent);padding:6px 0 14px;cursor:pointer;">View all ' + todayJobs.length + ' visits today →</div>';
+      }
+    } else {
+      // No jobs today — gentle nudge
+      html += '<div onclick="loadPage(\'schedule\')" style="background:var(--white);border:1px dashed var(--border);border-radius:14px;padding:24px 16px;margin-bottom:14px;text-align:center;cursor:pointer;">'
+        +   '<div style="font-size:32px;margin-bottom:6px;">📅</div>'
+        +   '<div style="font-size:14px;font-weight:600;">No jobs scheduled today</div>'
+        +   '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">Tap to open Schedule</div>'
+        + '</div>';
+    }
+
+    html += '</div>'; // close .dash-mobile-focus
+    return html;
+  },
+
+  // v655: _fillAnalyticsWidget removed — moved to shared AnalyticsWidget
+  // module (src/pages/analytics-widget.js). Single source of truth.
+
+  _toggleCCCollapse: function() {
+    var collapsed = localStorage.getItem('bm-dash-cc-collapsed') === '1';
+    collapsed = !collapsed;
+    localStorage.setItem('bm-dash-cc-collapsed', collapsed ? '1' : '0');
+    var items = document.getElementById('dash-cc-items');
+    var btn = document.getElementById('dash-cc-collapse-btn');
+    var header = items && items.previousElementSibling;
+    if (items) items.style.display = collapsed ? 'none' : '';
+    if (btn) btn.textContent = collapsed ? '▾' : '▴';
+    if (header) header.style.marginBottom = collapsed ? '0' : '12px';
+  },
+
+  _fillDateWeather: function() {
+    var el = document.getElementById('dash-date-weather');
+    if (!el || typeof Weather === 'undefined') return;
+    var todayStr = new Date().toISOString().split('T')[0];
+    function _applyWeather() {
+      var el2 = document.getElementById('dash-date-weather');
+      if (!el2 || !Weather.cache || !Weather.cache.daily) return;
+      var days = Weather.cache.daily;
+      for (var i = 0; i < days.time.length; i++) {
+        if (days.time[i] === todayStr) {
+          var hi = Math.round(days.temperature_2m_max[i]);
+          var lo = Math.round(days.temperature_2m_min[i]);
+          var icon = Weather._icon(days.weathercode[i]);
+          var rain = days.precipitation_probability_max ? days.precipitation_probability_max[i] : 0;
+          var rainStr = rain > 20 ? ' <span style="color:' + (rain > 60 ? '#e65100' : '#1976d2') + ';">· ' + rain + '% rain</span>' : '';
+          // v663: chip goes to standalone Weather.renderPage() (the hourly
+          // forecast view). Was routing through Operations›Weather tab,
+          // but that tab was removed in v660 and the chip silently broke.
+          el2.innerHTML = '<span onclick="loadPage(\'weather\')" style="font-size:13px;cursor:pointer;text-decoration:none;border-bottom:1px dotted var(--text-light);">' + icon + ' ' + hi + '°/' + lo + '°' + rainStr + '</span>';
+          return;
+        }
+      }
+    }
+    if (Weather.cache) {
+      _applyWeather();
+    } else {
+      Weather.fetch();
+      setTimeout(_applyWeather, 2500);
+    }
+  },
+
+  _fillCallCenterWidget: async function() {
+    // v670: dual layout — supports the new compact stat-card (countEl +
+    // badge only) AND the legacy expanded widget (dash-cc-items list). The
+    // count + sub-text are filled regardless of which layout is mounted.
+    var el = document.getElementById('dash-cc-items');
+    var countEl = document.getElementById('dash-cc-count');
+    var badge = document.getElementById('dash-cc-badge');
+    var compactMode = !el && (countEl || badge);
+    if (!el && !compactMode) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) {
+      if (compactMode) {
+        if (countEl) countEl.textContent = '—';
+        if (badge) badge.textContent = 'Supabase not connected';
+      } else if (el) {
+        el.innerHTML = '<div style="font-size:13px;color:var(--text-light);padding:4px 0;">Supabase not connected.</div>';
+      }
+      return;
+    }
+    try {
+      var cutoff = new Date(Date.now() - 72 * 3600000).toISOString();
+      var { data, error } = await sb.from('communications')
+        .select('id,channel,direction,from_number,to_number,body,created_at,metadata')
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+
+      var widget = document.getElementById('dash-callcenter-widget');
+
+      if (!data || data.length === 0) {
+        if (compactMode) {
+          if (countEl) countEl.textContent = '0';
+          if (badge) badge.textContent = 'No recent activity';
+          return;
+        }
+        if (widget) {
+          widget.style.cssText = 'background:var(--white);border-radius:10px;padding:10px 16px;border:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--text-light);';
+          widget.onclick = function() { loadPage('callcenter'); };
+          widget.innerHTML = '<span><strong style="color:var(--text);">Leads Center</strong> · No recent activity</span>'
+            + '<span style="color:var(--accent);font-size:12px;">Open →</span>';
+        }
+        return;
+      }
+
+      var clients = typeof DB !== 'undefined' ? DB.clients.getAll() : [];
+      var _fp = function(p) { var d=(p||'').replace(/\D/g,''); if(d.length===10) return '('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6); if(d.length===11&&d[0]==='1') return '('+d.slice(1,4)+') '+d.slice(4,7)+'-'+d.slice(7); return p||'—'; };
+      var _ago = function(d) { var s=Math.floor((Date.now()-new Date(d))/1000); if(s<60) return s+'s'; if(s<3600) return Math.floor(s/60)+'m'; if(s<86400) return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; };
+      var _name = function(c) {
+        var phone = c.direction==='inbound' ? c.from_number : c.to_number;
+        var match = clients.find(function(cl) { var p=(cl.phone||'').replace(/\D/g,''),q=(phone||'').replace(/\D/g,''); return p.length>=7&&q.length>=7&&(p===q||p.endsWith(q)||q.endsWith(p)); });
+        return match ? (match.name||match.firstName+' '+(match.lastName||'')).trim() : _fp(phone);
+      };
+
+      // Separate into 3 buckets
+      var texts = data.filter(function(c) { return c.channel === 'sms'; }).slice(0, 4);
+      var calls = data.filter(function(c) { return c.channel === 'call' || c.channel === 'voicemail'; }).slice(0, 4);
+      var emails = data.filter(function(c) { return c.channel === 'email'; }).slice(0, 4);
+
+      var totalCount = texts.length + calls.length + emails.length;
+      if (countEl) countEl.textContent = data.length;
+      if (badge) badge.textContent = totalCount + ' recent · last 72h';
+      if (compactMode) return;  // v670 — compact stat-card stops here
+
+      var _renderSection = function(key, label, icon, items, dot) {
+        if (items.length === 0) return '';
+        var collapsed = localStorage.getItem('bm-lc-' + key + '-collapsed') === '1';
+        var rows = '';
+        items.forEach(function(c, idx) {
+          var name = _name(c);
+          var preview = c.channel === 'sms' ? (c.body || '').substring(0, 45)
+            : c.channel === 'voicemail' ? 'Voicemail'
+            : (c.direction === 'inbound' ? 'Inbound call' : 'Outbound call');
+          var isLast = idx === items.length - 1;
+          rows += '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + 'cursor:pointer;" onclick="loadPage(\'callcenter\')">'
+            + '<div style="width:8px;height:8px;border-radius:50%;background:' + (c.direction==='inbound'?'#2e7d32':'#1565c0') + ';flex-shrink:0;"></div>'
+            + '<div style="font-size:13px;font-weight:600;flex-shrink:0;white-space:nowrap;">' + UI.esc(name) + '</div>'
+            + '<div style="flex:1;min-width:0;font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(preview) + '</div>'
+            + '<span style="font-size:11px;color:var(--text-light);flex-shrink:0;">' + _ago(c.created_at) + '</span>'
+            + '</div>';
+        });
+        return '<div style="margin-top:8px;">'
+          + '<div onclick="DashboardPage._toggleLeadSection(\'' + key + '\')" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:3px 0;user-select:none;">'
+          + '<span style="font-size:12px;">' + icon + '</span>'
+          + '<span style="font-size:12px;font-weight:700;color:var(--text);">' + label + '</span>'
+          + '<span style="font-size:11px;color:var(--text-light);margin-left:2px;">(' + items.length + ')</span>'
+          + '<span style="font-size:11px;color:var(--text-light);margin-left:auto;">' + (collapsed ? '▾' : '▴') + '</span>'
+          + '</div>'
+          + '<div id="bm-lc-' + key + '-rows" style="' + (collapsed ? 'display:none;' : '') + '">' + rows + '</div>'
+          + '</div>';
+      };
+
+      // v672: only render the lead-list sections in legacy (non-compact) layout.
+      // The compact stat-card has already been filled by countEl + badge above.
+      if (el) {
+        el.innerHTML = _renderSection('texts', 'Texts', '💬', texts)
+          + _renderSection('calls', 'Calls', '📞', calls)
+          + _renderSection('emails', 'Email', '✉️', emails);
+      }
+
+    } catch(e) {
+      if (el) el.innerHTML = '<div style="font-size:13px;color:var(--text-light);">Could not load activity.</div>';
+      else if (badge) badge.textContent = 'Could not load';
+    }
+  },
+
+  _toggleLeadSection: function(key) {
+    var collapsed = localStorage.getItem('bm-lc-' + key + '-collapsed') === '1';
+    collapsed = !collapsed;
+    localStorage.setItem('bm-lc-' + key + '-collapsed', collapsed ? '1' : '0');
+    var rows = document.getElementById('bm-lc-' + key + '-rows');
+    if (rows) rows.style.display = collapsed ? 'none' : '';
+    // Update chevron
+    if (rows && rows.previousElementSibling) {
+      var chevron = rows.previousElementSibling.querySelector('span:last-child');
+      if (chevron) chevron.textContent = collapsed ? '▾' : '▴';
+    }
+  },
+
+  syncNow: function() {
+    var btn = document.getElementById('sync-btn');
+    if (btn) { btn.textContent = 'Syncing...'; btn.disabled = true; }
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.ready) {
+      SupabaseDB._pullFromCloud().then(function() {
+        loadPage('dashboard');
+      }).catch(function(e) {
+        console.warn('Sync error:', e);
+        loadPage('dashboard');
+      });
+    } else {
+      // Direct fetch if SupabaseDB not initialized yet
+      var url = 'https://ltpivkqahvplapyagljt.supabase.co';
+      var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+      var tables = [
+        { local: 'bm-clients', remote: 'clients' },
+        { local: 'bm-requests', remote: 'requests' },
+        { local: 'bm-quotes', remote: 'quotes' },
+        { local: 'bm-jobs', remote: 'jobs' },
+        { local: 'bm-invoices', remote: 'invoices' },
+        { local: 'bm-services', remote: 'services' },
+        { local: 'bm-team', remote: 'team_members' }
+      ];
+      var total = 0;
+      var idx = 0;
+      function fetchNext() {
+        if (idx >= tables.length) {
+          if (typeof UI !== 'undefined') UI.toast(total + ' records synced from cloud!');
+          loadPage('dashboard');
+          return;
+        }
+        var t = tables[idx++];
+        var _tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+        var _tfilter = _tid ? '&tenant_id=eq.' + encodeURIComponent(_tid) : '';
+        fetch(url + '/rest/v1/' + t.remote + '?select=*&limit=5000&order=created_at.desc' + _tfilter, {
+          headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+        }).then(function(resp) {
+          return resp.json();
+        }).then(function(data) {
+          if (data && data.length > 0) {
+            // Convert snake_case to camelCase
+            var converted = data.map(function(row) {
+              var newRow = {};
+              Object.keys(row).forEach(function(k) {
+                var camel = k.replace(/_([a-z])/g, function(m, p1) { return p1.toUpperCase(); });
+                newRow[camel] = row[k];
+              });
+              return newRow;
+            });
+            localStorage.setItem(t.local, JSON.stringify(converted));
+            total += converted.length;
+          }
+          fetchNext();
+        }).catch(function(e) {
+          console.warn('Sync error:', t.remote, e);
+          fetchNext();
+        });
+      }
+      fetchNext();
+    }
+  },
+
+  // ── Briefing task dismissal ──
+  // Per-day map keyed by date so dismissals reset at midnight rollover.
+  // Storage shape: { "2026-04-28": ["bfABC", "bfXYZ"] }
+  _briefingDateStr: function() {
+    var n = new Date();
+    return n.getFullYear() + '-' + (n.getMonth() + 1 < 10 ? '0' : '') + (n.getMonth() + 1) + '-' + (n.getDate() < 10 ? '0' : '') + n.getDate();
+  },
+  _readDismissed: function() {
+    try { return JSON.parse(localStorage.getItem('bm-briefing-dismissed-items') || '{}'); } catch(e) { return {}; }
+  },
+  _writeDismissed: function(map) {
+    try { localStorage.setItem('bm-briefing-dismissed-items', JSON.stringify(map)); } catch(e) {}
+  },
+
+  // Dismiss one task by ID — slides the row out, then collapses the whole
+  // briefing if no rows remain.
+  dismissInsight: function(id) {
+    var dateKey = DashboardPage._briefingDateStr();
+    var map = DashboardPage._readDismissed();
+    if (!map[dateKey]) map[dateKey] = [];
+    if (map[dateKey].indexOf(id) === -1) map[dateKey].push(id);
+    DashboardPage._writeDismissed(map);
+    var row = document.querySelector('[data-bf-id="' + id + '"]');
+    if (row) row.remove();
+    var briefing = document.getElementById('daily-briefing');
+    if (briefing && !briefing.querySelector('[data-bf-id]')) briefing.remove();
+  },
+
+  // Dismiss every visible task in one shot.
+  dismissAllInsights: function() {
+    var dateKey = DashboardPage._briefingDateStr();
+    var map = DashboardPage._readDismissed();
+    var rows = document.querySelectorAll('#daily-briefing [data-bf-id]');
+    if (!map[dateKey]) map[dateKey] = [];
+    rows.forEach(function(r) {
+      var id = r.getAttribute('data-bf-id');
+      if (id && map[dateKey].indexOf(id) === -1) map[dateKey].push(id);
+    });
+    DashboardPage._writeDismissed(map);
+    var el = document.getElementById('daily-briefing');
+    if (el) el.remove();
+  },
+
+  // Legacy alias — earlier inline onclicks in older bundle versions called
+  // DashboardPage.dismissBriefing(). Keep it working for backward compat.
+  dismissBriefing: function() { DashboardPage.dismissAllInsights(); },
+
+  // Vehicle Inspection
+  _toggleInspection: function() {
+    var body = document.getElementById('insp-body');
+    var btn = document.getElementById('insp-toggle-btn');
+    if (body.style.display === 'none') {
+      body.style.display = 'block';
+      btn.textContent = 'Hide ▴';
+      // Pre-fill driver name
+      var user = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.name : '';
+      var driverEl = document.getElementById('insp-driver');
+      if (driverEl && !driverEl.value && user) driverEl.value = user;
+    } else {
+      body.style.display = 'none';
+      btn.textContent = 'Start ▾';
+    }
+  },
+
+  _inspCount: function() {
+    var checks = document.querySelectorAll('.insp-check');
+    var done = Array.from(checks).filter(function(c) { return c.checked; }).length;
+    var el = document.getElementById('insp-count');
+    if (el) el.textContent = done + ' / ' + checks.length + ' checked';
+  },
+
+  _completeInspection: function() {
+    var checks = document.querySelectorAll('.insp-check');
+    var done = Array.from(checks).filter(function(c) { return c.checked; }).length;
+    if (done < checks.length) {
+      if (!confirm(done + ' of ' + checks.length + ' items checked. Complete anyway with defects noted?')) return;
+    }
+    var driver = (document.getElementById('insp-driver') || {}).value || '';
+    var vehicle = (document.getElementById('insp-vehicle') || {}).value || '';
+    if (!driver) { alert('Enter driver name'); return; }
+
+    var today = new Date().toISOString().split('T')[0];
+    var record = {
+      date: today,
+      driver: driver,
+      vehicle: vehicle,
+      checked: done,
+      total: checks.length,
+      pass: done === checks.length,
+      completedAt: new Date().toISOString()
+    };
+
+    // Save to daily key
+    localStorage.setItem('bm-inspection-' + today, JSON.stringify(record));
+
+    // Save to history
+    var history = [];
+    try { history = JSON.parse(localStorage.getItem('bm-inspection-history') || '[]'); } catch(e) {}
+    history.unshift(record);
+    if (history.length > 90) history = history.slice(0, 90);
+    localStorage.setItem('bm-inspection-history', JSON.stringify(history));
+
+    UI.toast('Vehicle inspection complete — ' + (record.pass ? 'all clear' : done + '/' + checks.length + ' passed'));
+    var el = document.getElementById('daily-inspection');
+    if (el) el.remove();
+  },
+
+  _branchCamWidget: function() {
+    // Aggregate every Branch Cam photo + bucket by day in last 7 days
+    var photos = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k || k.indexOf('bm-photos-') !== 0) continue;
+      try {
+        var arr = JSON.parse(localStorage.getItem(k)) || [];
+        photos = photos.concat(arr);
+      } catch(e) {}
+    }
+    if (!photos.length) {
+      return '<div style="background:linear-gradient(135deg,#1a3c12,#2e7d32);color:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="loadPage(\'tools\')">'
+        + '<div><div style="font-size:11px;opacity:0.8;letter-spacing:0.1em;text-transform:uppercase;">📸 Branch Cam</div>'
+        + '<div style="font-size:16px;font-weight:700;margin-top:4px;">No photos yet — start documenting jobs</div></div>'
+        + '<div style="font-size:24px;opacity:0.6;">→</div></div>';
+    }
+
+    var now = Date.now();
+    var weekAgo = now - 7 * 86400000;
+    var thisWeek = photos.filter(function(p) { return p.date && new Date(p.date).getTime() >= weekAgo; });
+    var today0 = new Date(); today0.setHours(0,0,0,0);
+    var todayCount = photos.filter(function(p) { return p.date && new Date(p.date) >= today0; }).length;
+
+    // Tag tally
+    var tagCounts = {};
+    photos.forEach(function(p) {
+      var tags = Array.isArray(p.tags) ? p.tags : (p.label ? p.label.split(',').map(function(s){return s.trim();}).filter(Boolean) : []);
+      tags.forEach(function(t) { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+    });
+    var topTags = Object.keys(tagCounts).sort(function(a,b){ return tagCounts[b] - tagCounts[a]; }).slice(0, 3);
+
+    // Last 4 thumbnail strip
+    var recent = photos.filter(function(p){ return p.url; }).sort(function(a,b){ return (b.date || '').localeCompare(a.date || ''); }).slice(0, 4);
+
+    var html = '<div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+      + '<div><div style="font-size:11px;color:#2e7d32;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;">📸 Branch Cam</div>'
+      + '<div style="font-size:18px;font-weight:700;margin-top:2px;">' + photos.length + ' photos · ' + todayCount + ' today · ' + thisWeek.length + ' this week</div></div>'
+      + '<button class="btn btn-outline" onclick="loadPage(\'branchcam\')" style="font-size:12px;padding:6px 12px;">Library →</button>'
+      + '</div>';
+
+    // Recent thumb strip
+    if (recent.length) {
+      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;">';
+      recent.forEach(function(p) {
+        html += '<div style="aspect-ratio:1;background-image:url(\'' + p.url + '\');background-size:cover;background-position:center;border-radius:6px;"></div>';
+      });
+      html += '</div>';
+    }
+
+    // Top tags
+    if (topTags.length) {
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+      topTags.forEach(function(t) {
+        html += '<span style="background:#e8f5e9;color:#1a3c12;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;">' + t + ' (' + tagCounts[t] + ')</span>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+};

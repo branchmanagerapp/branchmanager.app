@@ -1,0 +1,6547 @@
+[
+  {
+    "jobNumber": 313,
+    "status": "archived",
+    "total": 2500,
+    "clientName": "Christina Eckhart",
+    "property": "7 East Willow Street, Beacon",
+    "createdAt": "2026-03-21T16:19:11Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple - tridominant, contact with neighbors garage, very tight union with bacterial wet wood present - failure risk\n\n* all debris removed",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500
+      }
+    ]
+  },
+  {
+    "jobNumber": 312,
+    "status": "late",
+    "total": 2500,
+    "clientName": "Christina Eckhart",
+    "property": "7 East Willow Street, Beacon",
+    "createdAt": "2026-03-14T15:13:49Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple - tridominant, contact with neighbors garage, very tight union with bacterial wet wood present - failure risk\n\n* all debris removed",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500
+      }
+    ]
+  },
+  {
+    "jobNumber": 311,
+    "status": "archived",
+    "total": 1400,
+    "clientName": "John Hyland",
+    "property": "3 Robin Lane, Croton-on-Hudson",
+    "createdAt": "2026-03-12T19:05:39Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches - bring back to prior pruning points along the house",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Gutter Clean Out",
+        "description": "",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 310,
+    "status": "archived",
+    "total": 1000,
+    "clientName": "Jenny Palladino",
+    "property": "9 Pheasant Run Road, Putnam Valley",
+    "createdAt": "2026-02-11T20:19:53Z",
+    "lineItems": [
+      {
+        "service": "Ice Dam Removal",
+        "description": "Clearing snow and ice from impacted roof area",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 309,
+    "status": "archived",
+    "total": 1000,
+    "clientName": "Sharyn Fedele",
+    "property": "44 Wenonah Road, Putnam valley",
+    "createdAt": "2026-02-11T15:49:46Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Clearing snow and ice from impacted roof area, utilizing bucket truck for access",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 307,
+    "status": "archived",
+    "total": 10500,
+    "clientName": "Brian Heermance",
+    "property": "7 Lynwood Court, Cortlandt Manor",
+    "createdAt": "2025-12-06T02:29:30Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "5x hemlock (co & tri dominant, <5” dbh)",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x spruce (10” & 12” dbh)",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x shag bark hickory (18” & 16”)",
+        "qty": 1,
+        "rate": 2900,
+        "amount": 2900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove cherry adjacent to patio (22” dbh)",
+        "qty": 1,
+        "rate": 2600,
+        "amount": 2600
+      },
+      {
+        "service": "Stump & Debris Removal",
+        "description": "Stump grinding of spruce and hemlock, leaf litter removal",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Tree Removal Additional",
+        "description": "Remove additional 2x hemlock, 1x spruce\nGrind stumps",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Tree Removal Additional",
+        "description": "Remove black birch (10” dbh) and shag bark hickory (14”) over driveway",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 284,
+    "status": "archived",
+    "total": 5550,
+    "clientName": "Rachel Sloane",
+    "property": "103 Meadow Road, Briarcliff Manor",
+    "createdAt": "2025-07-30T18:25:51Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Remove Sugar maple lead over sun porch (+/- 13” dia); prune deadwood; cut failed cable, full safety inspection - discuss any remediation needs prior to action\n\n*climb & rig",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple (codominant, 18” dbh 19” dbh)\n\n* Bucket from driveway",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove tulip (22” dbh) over property line; canopy is gone, one lead into neighbors yard\n\n*climb & rig",
+        "qty": 1,
+        "rate": 1300,
+        "amount": 1300
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Hard prune of rhododendron, away from window",
+        "qty": 1,
+        "rate": 350,
+        "amount": 350
+      },
+      {
+        "service": "Stump Grinding",
+        "description": "Grind 1x  stump - Norway maple 2” below grade, rake, top dress and seed",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 308,
+    "status": "archived",
+    "total": 7500,
+    "clientName": "Fred Romer",
+    "property": "49 Highland Drive, Philipstown",
+    "createdAt": "2025-12-15T17:22:28Z",
+    "lineItems": [
+      {
+        "service": "Playground Removal",
+        "description": "Remove and dispose playground\r\nRemove and dispose existing footings \r\nRemove and dispose old pt ties \r\nLeave area flat and machine graded",
+        "qty": 1,
+        "rate": 7500,
+        "amount": 7500
+      }
+    ]
+  },
+  {
+    "jobNumber": 298,
+    "status": "archived",
+    "total": 1950,
+    "clientName": "Jason Redman",
+    "property": "40 Welcher Ave, Peekskill",
+    "createdAt": "2025-10-15T18:04:19Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead Japanese maple covered in English ivy (14” dbh)",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Stump Grinding",
+        "description": "Remove plastic edging, grind stump, top dress with soil and seed - 24” diameter",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      }
+    ]
+  },
+  {
+    "jobNumber": 292,
+    "status": "archived",
+    "total": 3350,
+    "clientName": "Sarah Moden-Alliston",
+    "property": "39 Partridge Lane, Putnam Valley",
+    "createdAt": "2025-09-10T22:14:21Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Remove all dead branches, up canopy",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x standing dead trees - chip all debris, leave chips",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Standing dead tree removal - chip all debris, leave all chips",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove declining maple (8” dbh) - hypotrophic, significant rot\n\n*bucket truck, chip all debris, leave chips",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Stump Grinding",
+        "description": "Grind 2x stumps in backyard (approx 50” diameter total)",
+        "qty": 1,
+        "rate": 850,
+        "amount": 850
+      }
+    ]
+  },
+  {
+    "jobNumber": 306,
+    "status": "archived",
+    "total": 4000,
+    "clientName": "Paul Williams",
+    "property": "12 River lane, Croton",
+    "createdAt": "2025-11-19T15:06:09Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "brushing out the canopy, chipping debris, and rigging down the Y shaped leaders, leaving the trunk stem standing (log lengths for firewood left behind)",
+        "qty": 1,
+        "rate": 4000,
+        "amount": 4000
+      }
+    ]
+  },
+  {
+    "jobNumber": 302,
+    "status": "archived",
+    "total": 7000,
+    "clientName": "Cristina Brito",
+    "property": "9 Bonnie Hollow Lane, Montrose",
+    "createdAt": "2025-11-03T21:28:49Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove damaged oak from back yard (51” dbh)\n\n- 2 climbers\n- dump fees",
+        "qty": 1,
+        "rate": 7000,
+        "amount": 7000
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Chip and haul existing debris from failed oak leader, chip and haul all debris from removal \n\n- leave wood working lengths for homeowner",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove hemlock (5” dbh)",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 305,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Johanna Spacek",
+    "property": "33 Sleepy Hollow Road, Briarcliff Manor",
+    "createdAt": "2025-11-18T12:57:21Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 2x dead trees from front yard, remove all debris",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 304,
+    "status": "archived",
+    "total": 17000,
+    "clientName": "Kerry Scala",
+    "property": "60 BETSY BROWN RD 60 BETSY BROWN RD, Port Chester",
+    "createdAt": "2025-11-13T14:13:07Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove mulberry tree over neighbors garage; failing/rotting union with large failure risk",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove silver maple (54” dbh) utilizing crane. Uneven weight distribution, significant rot present in trunk and lower unions, poses threat to fencing and neighbors property (pool/fence).",
+        "qty": 1,
+        "rate": 8500,
+        "amount": 8500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 3x maples (~28” dbh) with crane to mitigate damage to fencing, neighbors roof, and landscaping below.",
+        "qty": 1,
+        "rate": 5000,
+        "amount": 5000
+      },
+      {
+        "service": "Debris Disposal",
+        "description": "Haul all debris (wood chips, trunk wood, etc) from property and dispose.\n\n+/- 40 cubic yards",
+        "qty": 1,
+        "rate": 2000,
+        "amount": 2000
+      }
+    ]
+  },
+  {
+    "jobNumber": 301,
+    "status": "archived",
+    "total": 5500,
+    "clientName": "Brian Sussman",
+    "property": "1733 Crawford Road, Mohegan Lake",
+    "createdAt": "2025-10-28T20:34:05Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove maple over fence (28” dbh)",
+        "qty": 1,
+        "rate": 2200,
+        "amount": 2200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove back lead of codominant Norway maple (7” dbh)",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Reshape catalpa over pool, remove lowest lead, general pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Raise canopy of cedar off roof",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove sucker growth from silver maple - inspect for rot in upper 1/3\n\n* decay present at root flare from old cut (fence installation) - monitor",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove sucker growth from silver maple, thin canopy - inspect for rot in upper 1/3",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Removal of back lead of silver maple; significant decay present at union",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune sucker growth from cherry; inspect upper 1/3 for rot",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Firewood Splitting",
+        "description": "",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 300,
+    "status": "archived",
+    "total": 2600,
+    "clientName": "Brian Reilly",
+    "property": "42 Ruth Road, Cortlandt Manor",
+    "createdAt": "2025-10-23T13:04:19Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead chestnut oak (20” dbh) - climb, rig to ailanthus away from service lines, remove all debris from property",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove dying conifer",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 295,
+    "status": "archived",
+    "total": 3002,
+    "clientName": "Liz Ford",
+    "property": "305 Furnace Dock Road, Cortlandt",
+    "createdAt": "2025-09-26T18:25:14Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Dead oak",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Hemlock pruning.  Low dead branches",
+        "qty": 1,
+        "rate": 1,
+        "amount": 1
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Alianthus large and small",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      },
+      {
+        "service": "Vines cut",
+        "description": "Cut any vines we see at bases of trees near the Atlantis tree in back.",
+        "qty": 1,
+        "rate": 1,
+        "amount": 1
+      }
+    ]
+  },
+  {
+    "jobNumber": 299,
+    "status": "archived",
+    "total": 1200,
+    "clientName": "Tomas Rodriquez",
+    "property": "1374 White Hill Rd Yorktown Heights, NY  10598 United States, Yorktown Heights",
+    "createdAt": "2025-10-15T21:06:33Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove leaning Norway maple",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 297,
+    "status": "unscheduled",
+    "total": 7750,
+    "clientName": "Scott Carey",
+    "property": "2373 Evergreen Street, Yorktown Heights",
+    "createdAt": "2025-10-13T15:07:01Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead Beech in backyard",
+        "qty": 1,
+        "rate": 2900,
+        "amount": 2900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove cherry in front",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove deadwood on spruce",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Spruce 2. Remove deadwood",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple removal",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Tree removal and pruning 3 maples",
+        "description": "Remove two maples and raise canopy on maple to give room for Japanese maples.  Remove deadwood on spruce",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Japanese maple left of driveway\r\n\r\nRemove deadwood",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Deadwood Eastern White Pine",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune large leader.  Maple?  Left side of driveway.  Drop and leave.  If want cleaned up add 300",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Log removal off site",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 296,
+    "status": "archived",
+    "total": 4100,
+    "clientName": "Brendan Murphy",
+    "property": "The Highlands Country Club, New York 9D, Garrison, NY, Philipstown",
+    "createdAt": "2025-09-26T18:26:09Z",
+    "lineItems": [
+      {
+        "service": "Tree & Brush Removal",
+        "description": "Remove maple (20” dbh) from dam wall. Maple to be winched and chipped.\n\nClear ~50’ of dam spillway and frontage. Brush piles to be left clear of any dam earthen works. \n\n*price reflective of being able to use winch across water hazard",
+        "qty": 1,
+        "rate": 4100,
+        "amount": 4100
+      }
+    ]
+  },
+  {
+    "jobNumber": 294,
+    "status": "archived",
+    "total": 3400,
+    "clientName": "pia salk salk",
+    "property": "130 Palmer Avenue, Sleepy Hollow",
+    "createdAt": "2025-09-16T14:39:33Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove leaning Bradford pear (16” dbh) over cherry tree and shed - climb and piece out\n\nPrune cherry tree, give canopy shape after being under Bradford pear for a year, remove limb touching shed roof",
+        "qty": 1,
+        "rate": 3000,
+        "amount": 3000
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove Bradford pear leader off secondary tree",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 293,
+    "status": "archived",
+    "total": 1200,
+    "clientName": "Brendan Murphy",
+    "property": "41°22'15.2\"N 73°55'59.9\"W",
+    "createdAt": "2025-09-16T11:13:50Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Climb and piece out red oak leaning across road. Using Giant 254 Telehandler, move remaining log lengths to shoulder of roadway (2’ clearance from berm).",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 272,
+    "status": "archived",
+    "total": 3000,
+    "clientName": "Dana Lanza",
+    "property": "43 Trail of Hemlocks, Putnam Valley",
+    "createdAt": "2025-06-26T00:26:38Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead maple\nDrop and leave\n\nCleanup in part two",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove trunk with large deadwood and vines going over neighbors\n\nCut the vines at least from base but likely higher for the remaining two leaders\n\nIncludes small dead tree nearby\n\nAll cleaned up.",
+        "qty": 1,
+        "rate": 2600,
+        "amount": 2600
+      }
+    ]
+  },
+  {
+    "jobNumber": 291,
+    "status": "archived",
+    "total": 6500,
+    "clientName": "Jennifer Larrabee",
+    "property": "11 Arthur St., Cortlandt manor",
+    "createdAt": "2025-09-09T12:58:33Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple (45” dbh)",
+        "qty": 1,
+        "rate": 5400,
+        "amount": 5400
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Haul all debris from removal (trunk wood unable to chip) - dump fees etc",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 3x dead hemlock",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 290,
+    "status": "archived",
+    "total": 6000,
+    "clientName": "Adriana Selwyn",
+    "property": "76 Valley Lane, Chappaqua",
+    "createdAt": "2025-09-02T21:00:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 2x dead black birch (bottom yard)\n(30” & 12” dbh)",
+        "qty": 1,
+        "rate": 2400,
+        "amount": 2400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove maple limbs from 3x trees currently touching roof/gutters/siding",
+        "qty": 1,
+        "rate": 3600,
+        "amount": 3600
+      }
+    ]
+  },
+  {
+    "jobNumber": 285,
+    "status": "archived",
+    "total": 5150,
+    "clientName": "Dave Parra",
+    "property": "40 Reichert Street",
+    "createdAt": "2025-08-14T10:33:29Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal   Tulip",
+        "description": "No clean up",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Tree Removal- hickory",
+        "description": "No clean up",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      },
+      {
+        "service": "Tree Removal - white oak",
+        "description": "Full clean up.  Wood and chips on other side of property.",
+        "qty": 1,
+        "rate": 2900,
+        "amount": 2900
+      }
+    ]
+  },
+  {
+    "jobNumber": 289,
+    "status": "archived",
+    "total": 6500,
+    "clientName": "Abraham Kraus",
+    "property": "1 Highland Indust Park, Peekskill",
+    "createdAt": "2025-08-29T21:04:43Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Eastern white pine growing through power lines.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead cherry x3 and dead maple",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead Eastern white pine",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Storm damaged black walnut",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead Alianthus",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x dead black walnut and 3x dead maples",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove vines",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Labor",
+        "description": "Clear mugwort growing into road",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 288,
+    "status": "archived",
+    "total": 8500,
+    "clientName": "Megan Benay",
+    "property": "1 Mathes Street",
+    "createdAt": "2025-08-25T20:56:30Z",
+    "lineItems": [
+      {
+        "service": "Emergency Removal",
+        "description": "Remove silver maple leader (22” diameter, 47’ long) off of house - inclusive of all rigging, climbing, cutting, etc. - clean all debris from roof & deck area",
+        "qty": 1,
+        "rate": 7500,
+        "amount": 7500
+      },
+      {
+        "service": "Tarp Roof",
+        "description": "Tarp damaged roof [tarp(s), tie downs, sand bags, installation]",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Debris Disposal",
+        "description": "Debris disposal",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 286,
+    "status": "archived",
+    "total": 2850,
+    "clientName": "Chung Wong",
+    "property": "2843 Birch Street, Yorktown Heights",
+    "createdAt": "2025-08-18T16:53:13Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Cabling",
+        "description": "Installation of ~75’ of cable",
+        "qty": 1,
+        "rate": 950,
+        "amount": 950
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Elevate canopy of conifer at end of driveway",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove scrub maples (+/- 10, <3” dbh) at corner of yard",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 287,
+    "status": "archived",
+    "total": 2775,
+    "clientName": "Patrick Horn",
+    "property": "28 Pine Street, Lake Peekskill",
+    "createdAt": "2025-08-19T13:19:05Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 6x hemlocks from property line (dbh <9”) - fell into yard, chip, and clean debris",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove pine adjacent to oak (12” dbh) - climb, pop top, take trunk in 2 pieces",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Fell dead tulip into woods - pull line needed",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 3x pine (<10” dbh)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Add dogwood removal & Japanese maple prune",
+        "qty": 1,
+        "rate": 175,
+        "amount": 175
+      }
+    ]
+  },
+  {
+    "jobNumber": 275,
+    "status": "archived",
+    "total": 950,
+    "clientName": "Jennifer Colandrea",
+    "property": "308 Indian Brook Road, Philipstown",
+    "createdAt": "2025-07-01T13:05:09Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Cluster of 5 trees behind house",
+        "qty": 1,
+        "rate": 950,
+        "amount": 950
+      }
+    ]
+  },
+  {
+    "jobNumber": 283,
+    "status": "archived",
+    "total": 3100,
+    "clientName": "Nycole Tobey",
+    "property": "1110 Frost Ln, Peekskill",
+    "createdAt": "2025-07-23T11:10:21Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove spruce.",
+        "qty": 1,
+        "rate": 2300,
+        "amount": 2300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove arborvitae",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Tree Pruning hickory",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 211,
+    "status": "archived",
+    "total": 2800,
+    "clientName": "Lindsay Frusciante",
+    "property": "45 Brandeis Avenue, Mohegan Lake",
+    "createdAt": "2024-11-22T14:50:10Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Red oak removal (27” dbh)",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      }
+    ]
+  },
+  {
+    "jobNumber": 281,
+    "status": "archived",
+    "total": 5300,
+    "clientName": "Greg Ellson",
+    "property": "308 Law Road, Briarvliff Manor",
+    "createdAt": "2025-07-16T19:11:48Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove codominant silver maple (28” & 34” dbh) - NOTE cables approx 50’ high to 3 stems. \n\nChip all brush",
+        "qty": 1,
+        "rate": 3200,
+        "amount": 3200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove silver maple (28” dbh); Chip all brush",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning of birch to remove dead, damaged or crossing branches; pull tips off roof line",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove all wood chips and haul trunk wood from site for disposal - included.",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 282,
+    "status": "archived",
+    "total": 3750,
+    "clientName": "Julia Mack",
+    "property": "66 Winston Lane, Garrison",
+    "createdAt": "2025-07-18T01:29:01Z",
+    "lineItems": [
+      {
+        "service": "Chipping Brush",
+        "description": "3x brush piles chipped",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Clean Up",
+        "description": "Winch/grapple all downed oak limbs along creek; chip",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 10x dead birch (3-5” dbh); chip",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Stump Removal",
+        "description": "Flush cut and chip debris",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 2x dead hemlock (<14” dbh)",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      }
+    ]
+  },
+  {
+    "jobNumber": 276,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Peter Zeerle",
+    "property": "28 North 2nd Street, Cortlandt",
+    "createdAt": "2025-07-01T13:05:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Red oak deadwood\r\n\r\nRemove any debris\r\nCable if needed",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 277,
+    "status": "archived",
+    "total": 500,
+    "clientName": "Dave Noeth",
+    "property": "27 North 1st Street, Cortlandt",
+    "createdAt": "2025-07-01T13:06:11Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Sugar maple on ground",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 280,
+    "status": "archived",
+    "total": 200,
+    "clientName": "Mike Diago",
+    "property": "21 Goodrich Street, Beacon",
+    "createdAt": "2025-07-05T17:54:12Z",
+    "lineItems": [
+      {
+        "service": "Firewood",
+        "description": "2 creates loose",
+        "qty": 2,
+        "rate": 100,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 175,
+    "status": "unscheduled",
+    "total": 1200,
+    "clientName": "Denise Weber",
+    "property": "15 PINE CT, BRIARCLIFF",
+    "createdAt": "2024-10-11T22:23:07Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "3x Norway Maples (1x solo, 2x codominant) adjacent to rock wall, <6” dbh",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x Norway maple above garden, ~6” dbh",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x Norway maples under cherry, <3” dbh",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Chip all, and haul debris from site",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 279,
+    "status": "unscheduled",
+    "total": 5300,
+    "clientName": "Greg Ellson",
+    "property": "308 Law Road, Briarvliff Manor",
+    "createdAt": "2025-07-05T17:53:04Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove codominant silver maple (28” & 34” dbh) - NOTE cables approx 50’ high to 3 stems. \r\n\r\nChip all brush",
+        "qty": 1,
+        "rate": 3200,
+        "amount": 3200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove silver maple (28” dbh); Chip all brush",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning of birch to remove dead, damaged or crossing branches; pull tips off roof line",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove all wood chips and haul trunk wood from site for disposal - included.",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 273,
+    "status": "archived",
+    "total": 1600,
+    "clientName": "Kelly Malzahn Godbee",
+    "property": "1001 Garfield Street, Peekskill",
+    "createdAt": "2025-07-01T13:03:33Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune evergreens back approximately 1’-2’, clean sight down the fence line and around the garage; reduce height of evergreens by approximately 3’ to match the rest of the conical arborvitae",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Labor",
+        "description": "Remove vines from arborvitae and spruce (interior of trees, at the ground etc)",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 274,
+    "status": "archived",
+    "total": 800,
+    "clientName": "Fred Romer",
+    "property": "49 Highland Drive, Philipstown",
+    "createdAt": "2025-07-01T13:04:35Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning - Sugar Maple",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      }
+    ]
+  },
+  {
+    "jobNumber": 234,
+    "status": "late",
+    "total": 1650,
+    "clientName": "Kyle Henderson",
+    "property": "530 LANE GATE RD, Cold Spring",
+    "createdAt": "2025-01-03T21:06:54Z",
+    "lineItems": [
+      {
+        "service": "Chipping Log Pile",
+        "description": "Fly chip log pile, remove what cannot be chipped",
+        "qty": 1,
+        "rate": 1650,
+        "amount": 1650
+      }
+    ]
+  },
+  {
+    "jobNumber": 176,
+    "status": "archived",
+    "total": 2950,
+    "clientName": "Uma Shanker",
+    "property": "8 Cross Road, Cortlandt",
+    "createdAt": "2024-10-12T23:20:26Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune and shape 10 pines along driveway; reduce height by 3'-4'",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune and shape 20+ pine, hemlock, spruce along front yard fence",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 7-9 dead or dying hemlock along front fence",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune and shape Japanese maple to promote airflow and growth",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 266,
+    "status": "archived",
+    "total": 3200,
+    "clientName": "Paul Hintz",
+    "property": "170 Tackora Trail, Ridgefield",
+    "createdAt": "2025-06-06T22:01:30Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove ~15 dead/broken trees around the shed",
+        "qty": 1,
+        "rate": 2000,
+        "amount": 2000
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Fell dead trees (~6) around property line, leave trunk wood for firewood",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 193,
+    "status": "archived",
+    "total": 60,
+    "clientName": "Christine Colasurdo",
+    "property": "67 Old Highland Turnpike, Garrison, Philipstown",
+    "createdAt": "2024-10-26T12:31:56Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway (2-3 passes)",
+        "qty": 1,
+        "rate": 60,
+        "amount": 60
+      }
+    ]
+  },
+  {
+    "jobNumber": 161,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Scott Brownstein",
+    "property": "19 winston lane, garrison",
+    "createdAt": "2024-10-09T18:34:43Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n* call ahead to move cars",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 74,
+    "status": "archived",
+    "total": 100,
+    "clientName": "Kakyung Cho",
+    "property": "18 Country Lane, Philipstown",
+    "createdAt": "2024-02-13T18:34:44Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services for residential.",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 170,
+    "status": "archived",
+    "total": 85,
+    "clientName": "Frances Rodriguez",
+    "property": "78 Pudding Street, Putnam Valley",
+    "createdAt": "2024-10-10T13:44:05Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- clear walkways",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 268,
+    "status": "archived",
+    "total": 5750,
+    "clientName": "Charles Di Carlo",
+    "property": "8 5 Ponds Drive, Waccabuc",
+    "createdAt": "2025-06-19T12:27:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches, raise canopy, shape",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead pines, remove and chip",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead pines, remove and chip",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead, remove and chip",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches; bring off house",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove copper beech",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove black birch & 2x English beech",
+        "qty": 1,
+        "rate": 1900,
+        "amount": 1900
+      }
+    ]
+  },
+  {
+    "jobNumber": 271,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Molly Heily",
+    "property": "36 Winston Lane, Garrison",
+    "createdAt": "2025-06-22T23:35:47Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove hemlocks",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 270,
+    "status": "archived",
+    "total": 3400,
+    "clientName": "Peter Kovacs",
+    "property": "11 Springvale Road, Croton on Hudson",
+    "createdAt": "2025-06-22T23:34:59Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Black walnut removal, back of yard, all chips removed",
+        "qty": 1,
+        "rate": 1900,
+        "amount": 1900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Black walnut removal, above garden",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Black walnut - General pruning to remove dead, damaged or crossing branches - remove density over deck and shed, reshape canopy",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 265,
+    "status": "archived",
+    "total": 3000,
+    "clientName": "Mike Sniffen",
+    "property": "2021 Maple Avenue, Cortlandt",
+    "createdAt": "2025-06-06T22:00:38Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove red oak\n\n- utilize speedline and winch line to Keith access road to get trunk wood out",
+        "qty": 1,
+        "rate": 3000,
+        "amount": 3000
+      }
+    ]
+  },
+  {
+    "jobNumber": 257,
+    "status": "archived",
+    "total": 4100,
+    "clientName": "Peter Petrov",
+    "property": "2185 Oscar Court, Cortlandt",
+    "createdAt": "2025-05-18T12:36:26Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove shag bark hickory (22” dbh)",
+        "qty": 1,
+        "rate": 1300,
+        "amount": 1300
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Beech in front yard; remove 3 leaders over corner of house/garage; ensure roof clearance",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove black birch (23” dbh) in backyard",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Beech above driveway - remove 3 leaders towards daughter’s bedroom, give driveway clearance. General pruning to remove dead, damaged or crossing branches. *bucket",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Stump Grinding",
+        "description": "Grind stumps and smooth soil to repair for seed/sod (hickory, birch)",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 138,
+    "status": "archived",
+    "total": 3300,
+    "clientName": "Scott Sailor",
+    "property": "300 Simpson Place, Peekskill",
+    "createdAt": "2024-08-21T15:38:00Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Norway Maple removal - 30” dbh, 6’ cavity with rot, extensive root damage\r\n\r\n* utility pole guide line attached to road side leader",
+        "qty": 1,
+        "rate": 2200,
+        "amount": 2200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Locust removal, 24” dbh, leave all debris",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Raise canopy of locust closest to fence 28” dbh, leave all debris",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 256,
+    "status": "archived",
+    "total": 400,
+    "clientName": "Mike Saccamano",
+    "property": "14 Ethan Drive",
+    "createdAt": "2025-05-16T13:40:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead maple",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 260,
+    "status": "archived",
+    "total": 4000,
+    "clientName": "Laura Teetz",
+    "property": "39 Cumberland Road, Fishkill",
+    "createdAt": "2025-05-19T20:43:00Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove catalpa from backyard",
+        "qty": 1,
+        "rate": 3300,
+        "amount": 3300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove small dogwood",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Trim & shape as directed (juniper, maples over fence)",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 173,
+    "status": "archived",
+    "total": 125,
+    "clientName": "Basquali",
+    "property": "501 Richardsville Road, Carmel Hamlet",
+    "createdAt": "2024-10-10T13:45:52Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway +/- 50 yds to circle, create parking space(s) \r\n- shovel walkway to house \r\n- clean off deck",
+        "qty": 1,
+        "rate": 125,
+        "amount": 125
+      }
+    ]
+  },
+  {
+    "jobNumber": 171,
+    "status": "archived",
+    "total": 85,
+    "clientName": "Frances Rodriguez",
+    "property": "80 Pudding Street, Putnam Valley",
+    "createdAt": "2024-10-10T13:44:45Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway \r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 263,
+    "status": "archived",
+    "total": 7800,
+    "clientName": "Heather Cassar",
+    "property": "30 Spruce Street",
+    "createdAt": "2025-06-03T11:19:08Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 2x red oak (9” dbh)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches in 2x sugar maples around play set",
+        "qty": 1,
+        "rate": 950,
+        "amount": 950
+      },
+      {
+        "service": "Tree Removal",
+        "description": "6x red oak & black birch (dbh 18”-25”) remove",
+        "qty": 1,
+        "rate": 6150,
+        "amount": 6150
+      }
+    ]
+  },
+  {
+    "jobNumber": 258,
+    "status": "archived",
+    "total": 2550,
+    "clientName": "Anil Nathan",
+    "property": "1 Shingle House Road, Millwood",
+    "createdAt": "2025-05-18T12:36:47Z",
+    "lineItems": [
+      {
+        "service": "Tree Prune",
+        "description": "Salvage Apple tree best as possible, remove broken limbs, reshape where able.",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove dying pine",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune sugar maple. General pruning to remove dead, damaged or crossing branches. Safety inspection of unions.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Stump Grinding",
+        "description": "Grind all accessible stumps within yard space (old and new) *schedule after tree work complete",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Swing Install - Maple “Martha”",
+        "description": "Safety inspection of limb, drill guide hole, install bolt for swing.",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      }
+    ]
+  },
+  {
+    "jobNumber": 259,
+    "status": "archived",
+    "total": 2850,
+    "clientName": "Sophie McGhee",
+    "property": "149 Mill Hill Road, Pine Plains",
+    "createdAt": "2025-05-19T13:35:42Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 1x spruce (50” dbh) - chip all brush; leave logs too big to chip",
+        "qty": 1,
+        "rate": 2400,
+        "amount": 2400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Fell 3x walnut",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      }
+    ]
+  },
+  {
+    "jobNumber": 262,
+    "status": "archived",
+    "total": 5350,
+    "clientName": "Peter Petrov",
+    "property": "2185 Oscar Court, Cortlandt",
+    "createdAt": "2025-05-20T20:31:10Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove shag bark hickory (22” dbh)",
+        "qty": 1,
+        "rate": 1300,
+        "amount": 1300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Beech in front yard; update to removal",
+        "qty": 1,
+        "rate": 1650,
+        "amount": 1650
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove black birch (23” dbh) in backyard",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Beech above driveway - remove 3 leaders towards daughter’s bedroom, give driveway clearance. General pruning to remove dead, damaged or crossing branches. *bucket",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Stump Grinding",
+        "description": "Grind stumps and smooth soil to repair for seed/sod (hickory, birch, beech)",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 261,
+    "status": "archived",
+    "total": 2700,
+    "clientName": "Tom Brown",
+    "property": "25 Old Sleepy Hollow Road, Pleasantville",
+    "createdAt": "2025-05-20T12:01:34Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 4x Red maples, stack brush and logs",
+        "qty": 1,
+        "rate": 2700,
+        "amount": 2700
+      }
+    ]
+  },
+  {
+    "jobNumber": 255,
+    "status": "archived",
+    "total": 1100,
+    "clientName": "Sarah Woodbury",
+    "property": "109 Young Ave, Croton-on-Hudson",
+    "createdAt": "2025-05-16T13:30:11Z",
+    "lineItems": [
+      {
+        "service": "Stump Removal",
+        "description": "2x - shared 105/109 Young",
+        "qty": 1,
+        "rate": 1100,
+        "amount": 1100
+      }
+    ]
+  },
+  {
+    "jobNumber": 254,
+    "status": "archived",
+    "total": 8689.86,
+    "clientName": "ASG Solutions",
+    "property": "670 N Beers Street, Building 3, Holmdel",
+    "createdAt": "2025-05-15T15:56:06Z",
+    "lineItems": [
+      {
+        "service": "Outstanding Invoices",
+        "description": "#267\r\n#268\r\n#269\r\n#270\r\n#271",
+        "qty": 1,
+        "rate": 8436.76,
+        "amount": 8436.76
+      },
+      {
+        "service": "Credit Card Processing Fee",
+        "description": "3% on $8436.76",
+        "qty": 1,
+        "rate": 253.1,
+        "amount": 253.1
+      }
+    ]
+  },
+  {
+    "jobNumber": 253,
+    "status": "archived",
+    "total": 5500,
+    "clientName": "Antonio.",
+    "property": "65 Dutch Street, Montrose",
+    "createdAt": "2025-04-28T19:10:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "clearing for new construction\n2 gums at 11”\nSpruce 11” Cottonwood\nCo dom 20” and 30” Red maple 19”, 12”, 15” Red oak 49”\nTulip 20”, 12”, 12”",
+        "qty": 1,
+        "rate": 5500,
+        "amount": 5500
+      }
+    ]
+  },
+  {
+    "jobNumber": 251,
+    "status": "archived",
+    "total": 2500,
+    "clientName": "Sarah Woodbury",
+    "property": "109 Young Ave, Croton-on-Hudson",
+    "createdAt": "2025-04-28T19:04:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple on property line (109/105 Young)",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500
+      }
+    ]
+  },
+  {
+    "jobNumber": 252,
+    "status": "archived",
+    "total": 2800,
+    "clientName": "Susan McCormack",
+    "property": "105 Young Avenue, Croton-on-Hudson",
+    "createdAt": "2025-04-28T19:05:21Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple (41” dbh)",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      }
+    ]
+  },
+  {
+    "jobNumber": 250,
+    "status": "archived",
+    "total": 1300,
+    "clientName": "Blair Jarvis",
+    "property": "47 Lakeview Ave W, Cortlandt Manor",
+    "createdAt": "2025-04-25T19:53:28Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "2x Oak leaders (driveway)",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove birch (front yard, overhang front steps/roof)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 249,
+    "status": "archived",
+    "total": 5100,
+    "clientName": "Ahmad Harilall (Ed)",
+    "property": "4 bridge terrace, Ft Montgomery",
+    "createdAt": "2025-04-15T02:03:16Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Reduce canopy height ~6’ from yard to train tracks (+/- 40 trees)",
+        "qty": 1,
+        "rate": 4400,
+        "amount": 4400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Drop any dead or hazardous trees from yard to train tracks - focus on safety of footpath (+/- 20 trees)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 248,
+    "status": "archived",
+    "total": 5550,
+    "clientName": "Anthony Jamsek",
+    "property": "6 Stephen Lane, Cortlandt",
+    "createdAt": "2025-04-04T21:04:11Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "White oak",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Red oak",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Red oak",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "All driveway work.  Removal and pruning as spoken about.\n\nRemove cottonwood, 3 ailiathus, trim tulip, remove tulip.",
+        "qty": 1,
+        "rate": 2400,
+        "amount": 2400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Raise Pines in front left of house",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Light prune on the Japanese maple",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Neighbor work\nTrim limbs along driveway",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 205,
+    "status": "archived",
+    "total": 1400,
+    "clientName": "John Lindo",
+    "property": "12 Lakeside Road, Mount Kisco",
+    "createdAt": "2024-11-16T01:44:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "3x removals along 12 Lakeview property line\r\n1x Red cedar 16” dbh\r\n2x Hemlock 33” dbh, 24” dbh\r\n\r\n*1/2 of cost",
+        "qty": 0.5,
+        "rate": 2800,
+        "amount": 1400
+      }
+    ]
+  },
+  {
+    "jobNumber": 206,
+    "status": "archived",
+    "total": 5250,
+    "clientName": "Jeannine Russo",
+    "property": "16 lakeside road, Mount Kisco",
+    "createdAt": "2024-11-16T01:45:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "3x removals along 12 Lakeview property line\r\n1x Red cedar 16” dbh\r\n2x Hemlock 33” dbh, 24” dbh\r\n\r\n*1/2 of cost - splitting with neighbor @ 12 Lakeside Rd",
+        "qty": 0.5,
+        "rate": 2800,
+        "amount": 1400
+      },
+      {
+        "service": "Cabling",
+        "description": "3/4” cable silver maple leaders - inspect union for rot** discussion of next steps if needed after inspection",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x hemlock 24” dbh",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Clean Up",
+        "description": "Remove vines and deadwood from Pine and Hemlock",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple above utility lines",
+        "qty": 1,
+        "rate": 1900,
+        "amount": 1900
+      }
+    ]
+  },
+  {
+    "jobNumber": 153,
+    "status": "archived",
+    "total": 3000,
+    "clientName": "Antonio.",
+    "property": "65 Dutch St Montrose NY United States, Montrose",
+    "createdAt": "2024-09-29T20:46:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Neighbors trees\r\n2 pignut hickory 21” and 34”\r\n1 Japanese maple 8”",
+        "qty": 1,
+        "rate": 3000,
+        "amount": 3000
+      }
+    ]
+  },
+  {
+    "jobNumber": 203,
+    "status": "archived",
+    "total": 2623.51,
+    "clientName": "ASG Solutions",
+    "property": "380 Mountaindale Road, Woodridge",
+    "createdAt": "2024-11-12T03:42:03Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Tree Removal",
+        "qty": 1,
+        "rate": 2623.51,
+        "amount": 2623.51
+      }
+    ]
+  },
+  {
+    "jobNumber": 217,
+    "status": "archived",
+    "total": 4693.11,
+    "clientName": "ASG Solutions",
+    "property": "9 Niagara Court, Carmel Hamlet",
+    "createdAt": "2024-12-09T09:26:36Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Tree Removal",
+        "qty": 1,
+        "rate": 4693.11,
+        "amount": 4693.11
+      }
+    ]
+  },
+  {
+    "jobNumber": 247,
+    "status": "archived",
+    "total": 1400,
+    "clientName": "Ryan Holdridge",
+    "property": "117 Lake Shore Road, Putnam Valley",
+    "createdAt": "2025-03-30T15:00:19Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Black birch.  Get on ground buck trunk to firewood length",
+        "qty": 1,
+        "rate": 550,
+        "amount": 550
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Red oak",
+        "qty": 1,
+        "rate": 850,
+        "amount": 850
+      }
+    ]
+  },
+  {
+    "jobNumber": 235,
+    "status": "archived",
+    "total": 85,
+    "clientName": "Tony Carlucci",
+    "property": "29 Valley Lane, Philipstown",
+    "createdAt": "2025-01-18T09:09:27Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel walkway\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 162,
+    "status": "archived",
+    "total": 160,
+    "clientName": "Tony Carlucci",
+    "property": "490 Sprout Brook Road, Philipstown",
+    "createdAt": "2024-10-09T18:35:47Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel front walkway\r\n- clear front steps\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 160,
+        "amount": 160
+      }
+    ]
+  },
+  {
+    "jobNumber": 246,
+    "status": "archived",
+    "total": 2800,
+    "clientName": "Mike Cozetti",
+    "property": "43 Aqueduct Rd, Garrison",
+    "createdAt": "2025-03-28T19:09:02Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "- Remove 5x trees (5”-10” dbh)\n- Remove shrubs and saplings ~100’",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x chestnut oak (12” dbh)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x chestnut oak (<12” dbh)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 165,
+    "status": "archived",
+    "total": 110,
+    "clientName": "Linda Liotti",
+    "property": "43 Aqueduct Road, Philipstown",
+    "createdAt": "2024-10-09T18:38:05Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel steps & front walkway\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 110,
+        "amount": 110
+      }
+    ]
+  },
+  {
+    "jobNumber": 166,
+    "status": "archived",
+    "total": 100,
+    "clientName": "Monty Montero",
+    "property": "28 Putnam Road, Cortlandt",
+    "createdAt": "2024-10-09T18:39:30Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- shovel driveway\r\n- shovel back walkway\r\n- apply deicer/snow melt\r\n*no plow",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 231,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Billie Jean Frith",
+    "property": "10 Sunny Way, Cortlandt",
+    "createdAt": "2024-12-24T12:27:23Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel walkway\r\n- apply deicer throughout",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 167,
+    "status": "archived",
+    "total": 70,
+    "clientName": "Lynda Karanikolas",
+    "property": "16 Melnick Place Apt B, Putnam Valley",
+    "createdAt": "2024-10-09T18:40:25Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel steps\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 70,
+        "amount": 70
+      }
+    ]
+  },
+  {
+    "jobNumber": 224,
+    "status": "archived",
+    "total": 75,
+    "clientName": "Ronald Taylor",
+    "property": "125 Gallows Hill Road, Cortlandt",
+    "createdAt": "2024-12-16T15:07:07Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel front steps\r\n- apply deicer/snow melt aggressively to the crest of the driveway",
+        "qty": 1,
+        "rate": 75,
+        "amount": 75
+      }
+    ]
+  },
+  {
+    "jobNumber": 64,
+    "status": "archived",
+    "total": 20,
+    "clientName": "Lisa",
+    "property": "1101 Stonegate Road, Shrub Oak",
+    "createdAt": "2024-01-14T15:32:04Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Clear end of driveway, shovel walkway and steps.",
+        "qty": 1,
+        "rate": 20,
+        "amount": 20
+      }
+    ]
+  },
+  {
+    "jobNumber": 163,
+    "status": "archived",
+    "total": 40,
+    "clientName": "Jo Frietta",
+    "property": "18 Andre Lane, Cortlandt",
+    "createdAt": "2024-10-09T18:36:29Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel around car(s)\r\n- shovel back walkway\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 40,
+        "amount": 40
+      }
+    ]
+  },
+  {
+    "jobNumber": 172,
+    "status": "archived",
+    "total": 75,
+    "clientName": "Basquali",
+    "property": "94 Pudding Street, Putnam Valley",
+    "createdAt": "2024-10-10T13:45:21Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel steps and patio\r\n- apply pet friendly deicer/snow melt",
+        "qty": 1,
+        "rate": 75,
+        "amount": 75
+      }
+    ]
+  },
+  {
+    "jobNumber": 168,
+    "status": "archived",
+    "total": 35,
+    "clientName": "Rachel Duclos Pilla",
+    "property": "117 Putnam Road, Cortlandt",
+    "createdAt": "2024-10-09T19:03:19Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel front steps\r\n- apply deicer/ice melt",
+        "qty": 1,
+        "rate": 35,
+        "amount": 35
+      }
+    ]
+  },
+  {
+    "jobNumber": 212,
+    "status": "archived",
+    "total": 180,
+    "clientName": "Kathleen Auer",
+    "property": "24 Healy Lane, Stormville",
+    "createdAt": "2024-11-26T01:43:08Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Plow driveway ~200 yds",
+        "qty": 1,
+        "rate": 180,
+        "amount": 180
+      },
+      {
+        "service": "Labor",
+        "description": "Apply client provided salt to walk way",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 225,
+    "status": "archived",
+    "total": 40,
+    "clientName": "Raissa De Souza",
+    "property": "2597 New York 301, Carmel Hamlet",
+    "createdAt": "2024-12-16T15:14:08Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services for residential locations; gravel driveway",
+        "qty": 1,
+        "rate": 40,
+        "amount": 40
+      }
+    ]
+  },
+  {
+    "jobNumber": 180,
+    "status": "archived",
+    "total": 85,
+    "clientName": "Tony Carlucci",
+    "property": "29 Valley Lane, Philipstown",
+    "createdAt": "2024-10-14T17:09:22Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel walkway\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 223,
+    "status": "archived",
+    "total": 85,
+    "clientName": "George Grant",
+    "property": "51 North Shore Road, Putnam Valley",
+    "createdAt": "2024-12-16T15:05:49Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel steps & front walkway\r\n- clear path from driveway to outbuilding\r\n- apply deicer/snow melt",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 158,
+    "status": "archived",
+    "total": 65,
+    "clientName": "Ellen Moore",
+    "property": "159 Lake Shore Road, Putnam Valley",
+    "createdAt": "2024-10-09T12:39:52Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\r\n- plow driveway\r\n- shovel front steps/walkway\r\n- apply pet friendly snow melt",
+        "qty": 1,
+        "rate": 65,
+        "amount": 65
+      }
+    ]
+  },
+  {
+    "jobNumber": 160,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Marlene Colangelo",
+    "property": "95 Barger Street, Putnam Valley",
+    "createdAt": "2024-10-09T18:33:30Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow main driveway\r\n- snowblow/shovel near garage\r\n- shovel walkway & front steps\r\n- apply pet friendly deicer/snow melt",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 244,
+    "status": "archived",
+    "total": 1925,
+    "clientName": "Maria Zeoli",
+    "property": "21 Spring St Chelsea, NY  12590 United States",
+    "createdAt": "2025-03-10T01:29:42Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning   Red oak backyard",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      },
+      {
+        "service": "Tree Pruning   2 maples in front",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 2,
+        "rate": 125,
+        "amount": 250
+      },
+      {
+        "service": "Tree Pruning   2 between driveway and garden",
+        "description": "General pruning to remove dead, damaged or crossing branches\n\nRemove larger branches over garden and prune rest of trees normally.",
+        "qty": 2,
+        "rate": 175,
+        "amount": 350
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Bradford pear",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Pruning   Ginko",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 75,
+        "amount": 75
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 7 fruit trees",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 245,
+    "status": "archived",
+    "total": 1925,
+    "clientName": "Maria Zeoli",
+    "property": "21 Spring St Chelsea, NY  12590 United States",
+    "createdAt": "2025-03-10T01:30:56Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning   Red oak backyard",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      },
+      {
+        "service": "Tree Pruning   2 maples in front",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 2,
+        "rate": 125,
+        "amount": 250
+      },
+      {
+        "service": "Tree Pruning   2 between driveway and garden",
+        "description": "General pruning to remove dead, damaged or crossing branches\n\nRemove larger branches over garden and prune rest of trees normally.",
+        "qty": 2,
+        "rate": 175,
+        "amount": 350
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Bradford pear",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Pruning   Ginko",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 75,
+        "amount": 75
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 7 fruit trees",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 164,
+    "status": "archived",
+    "total": 135,
+    "clientName": "Sarah Moden-Alliston",
+    "property": "39 Partridge Lane, Putnam Valley",
+    "createdAt": "2024-10-09T18:37:18Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\r\n- shovel front steps & walkway\r\n- shovel back steps & deck\r\n- apply pet friendly deicer/snow melt",
+        "qty": 1,
+        "rate": 135,
+        "amount": 135
+      }
+    ]
+  },
+  {
+    "jobNumber": 209,
+    "status": "archived",
+    "total": 431.71,
+    "clientName": "ASG Solutions",
+    "property": "65 Reservoir Road Van Steenburg Lane, Shokan",
+    "createdAt": "2024-11-22T14:43:15Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "3092695               65 Reservoir Rd  (Van Steenburg Ln) \n\nDrop dead spar away from power lines at intersection of Van Steenbergh Lane & Reservoir Road",
+        "qty": 1,
+        "rate": 431.71,
+        "amount": 431.71
+      }
+    ]
+  },
+  {
+    "jobNumber": 210,
+    "status": "archived",
+    "total": 699.51,
+    "clientName": "ASG Solutions",
+    "property": "17 Greenbush Drive, Poughkeepsie",
+    "createdAt": "2024-11-22T14:45:37Z",
+    "lineItems": [
+      {
+        "service": "Tree Prune",
+        "description": "Remove broken leader from utility lines, ensure clearance of any other debris from Verizon lines",
+        "qty": 1,
+        "rate": 699.51,
+        "amount": 699.51
+      }
+    ]
+  },
+  {
+    "jobNumber": 218,
+    "status": "archived",
+    "total": 3917.51,
+    "clientName": "ASG Solutions",
+    "property": "21 Milton Turnpike, Milton",
+    "createdAt": "2024-12-09T09:29:05Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Remove branches touching cable",
+        "qty": 1,
+        "rate": 3917.51,
+        "amount": 3917.51
+      }
+    ]
+  },
+  {
+    "jobNumber": 243,
+    "status": "archived",
+    "total": 85.67,
+    "clientName": "ASG Solutions",
+    "property": "Tanglewylde Avenue Woodland Road, Bronxville",
+    "createdAt": "2025-02-12T17:45:27Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Pruning and aerial line clearance",
+        "qty": 1,
+        "rate": 85.67,
+        "amount": 85.67
+      }
+    ]
+  },
+  {
+    "jobNumber": 242,
+    "status": "archived",
+    "total": 1980.51,
+    "clientName": "ASG Solutions",
+    "property": "65 Merriam Avenue, Yonkers",
+    "createdAt": "2025-02-12T17:29:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "",
+        "qty": 1,
+        "rate": 1980.51,
+        "amount": 1980.51
+      }
+    ]
+  },
+  {
+    "jobNumber": 241,
+    "status": "archived",
+    "total": 114.91,
+    "clientName": "ASG Solutions",
+    "property": "138 Gramatan Avenue, Mount Vernon",
+    "createdAt": "2025-02-12T01:51:27Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 114.91,
+        "amount": 114.91
+      }
+    ]
+  },
+  {
+    "jobNumber": 222,
+    "status": "archived",
+    "total": 11200,
+    "clientName": "Mt. Lebanon Baptist Church",
+    "property": "648 Harrison Avenue, Peekskill",
+    "createdAt": "2024-12-13T12:42:30Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "6x above parking lot (5x Norway maples, 1x red oak)",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Cherry & twisted Norway maple",
+        "qty": 1,
+        "rate": 2100,
+        "amount": 2100
+      },
+      {
+        "service": "Tree Removal",
+        "description": "4x Norway maples (18-22” dbh)",
+        "qty": 1,
+        "rate": 3200,
+        "amount": 3200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Struck Norway maple (blue)\r\nCodominant Norway maple (2x 16” dbh)\r\nScrub Norway maple (10” dbh)",
+        "qty": 1,
+        "rate": 2700,
+        "amount": 2700
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple over gazebo (21” dbh)",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      }
+    ]
+  },
+  {
+    "jobNumber": 227,
+    "status": "archived",
+    "total": 1990,
+    "clientName": "Empire Solar",
+    "property": "1 Brookside Way, Rye Brook",
+    "createdAt": "2024-12-21T00:46:08Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "1x removal",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove trunk wood and woodchips",
+        "qty": 1,
+        "rate": 390,
+        "amount": 390
+      }
+    ]
+  },
+  {
+    "jobNumber": 214,
+    "status": "archived",
+    "total": 1100,
+    "clientName": "Pia Riverso",
+    "property": "2308 Broad Street, Yorktown Heights",
+    "createdAt": "2024-11-26T01:56:20Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune and shape White Pine; utilize heading cuts from 2018 prune as guide - ensure roof clearance",
+        "qty": 1,
+        "rate": 1100,
+        "amount": 1100
+      }
+    ]
+  },
+  {
+    "jobNumber": 233,
+    "status": "archived",
+    "total": 200,
+    "clientName": "Jesse Lubbers",
+    "property": "456 Sprout Brook Road, Philipstown",
+    "createdAt": "2025-01-01T03:39:25Z",
+    "lineItems": [
+      {
+        "service": "Firewood Bag",
+        "description": "Firewood bag delivered within 10 miles of 10566 on the east side of the Hudson River.",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 228,
+    "status": "archived",
+    "total": 325,
+    "clientName": "Denise Biebel",
+    "property": "1331 Echo Hill Path, Yorktown Heights",
+    "createdAt": "2024-12-21T13:54:31Z",
+    "lineItems": [
+      {
+        "service": "Firewood Bag",
+        "description": "4'x4'x4' bag of split, seasoned firewood delivered within 10 miles of our yard",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Firewood Stacking",
+        "description": "Stacking of firewood (either fresh split or already on site) to customers desired specifications",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove bamboo shoots",
+        "qty": 1,
+        "rate": 75,
+        "amount": 75
+      }
+    ]
+  },
+  {
+    "jobNumber": 232,
+    "status": "archived",
+    "total": 225,
+    "clientName": "Peter Spyrou",
+    "property": "335 Jaclyn Lane, Ossining",
+    "createdAt": "2024-12-31T19:31:31Z",
+    "lineItems": [
+      {
+        "service": "Firewood Bag",
+        "description": "4'x4'x4' bag of split, seasoned firewood delivered within 10 miles of our yard",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Delivery",
+        "description": "",
+        "qty": 1,
+        "rate": 25,
+        "amount": 25
+      }
+    ]
+  },
+  {
+    "jobNumber": 230,
+    "status": "late",
+    "total": 250,
+    "clientName": "Patrick Vasi",
+    "property": "14 South Street, Putnam Valley",
+    "createdAt": "2024-12-22T21:18:18Z",
+    "lineItems": [
+      {
+        "service": "Firewood Cord",
+        "description": "Firewood cord delivered within 10 miles of 10566 on the east side of the Hudson River.",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 229,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Billie Jean Frith",
+    "property": "10 Sunny Way, Cortlandt",
+    "createdAt": "2024-12-21T21:09:13Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "- plow driveway\n- shovel walkway and steps\n- apply deicer throughout",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 216,
+    "status": "archived",
+    "total": 1600,
+    "clientName": "Empire Solar",
+    "property": "9 Grandmour Drive, Red Hook",
+    "createdAt": "2024-12-05T13:46:02Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "2 leads going over roof/solar panels",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      }
+    ]
+  },
+  {
+    "jobNumber": 221,
+    "status": "archived",
+    "total": 200,
+    "clientName": "ROBERT SABO",
+    "property": "7 HAMILTON AVE, CROTON ON HUDSON",
+    "createdAt": "2024-12-11T19:21:47Z",
+    "lineItems": [
+      {
+        "service": "Firewood Bag",
+        "description": "Firewood bag (4x4x4) delivered within 10 miles of 10566.",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 220,
+    "status": "archived",
+    "total": 200,
+    "clientName": "Pablo Aguilar",
+    "property": "136 Cleveland drive, Croton on hudson",
+    "createdAt": "2024-12-11T19:21:00Z",
+    "lineItems": [
+      {
+        "service": "Firewood Bag",
+        "description": "Firewood bag (4x4x4) delivered within 10 miles of 10566.",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 125,
+    "status": "archived",
+    "total": 850,
+    "clientName": "Terise Levine",
+    "property": "18 Kings Grant Way, Briarcliff Manor",
+    "createdAt": "2024-06-29T23:08:47Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 350,
+        "amount": 350
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "The bottom limb of the tree on the right. This is by the left side of the deck",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "This tree is across from the garage. There is a 1 bottom limb that I am hoping when removed will let more sun into my garden",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "The thin bottom limbs. The tree is by the mailbox",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 192,
+    "status": "archived",
+    "total": 8100,
+    "clientName": "Emroy Rochester",
+    "property": "675 McCord Place, Peekskill",
+    "createdAt": "2024-10-26T12:23:41Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "2x Norway Maple (675 McCord) ~18” dbh\r\n- rot, broken unions, and poor canopy health all suggest removal is best option for the 2 maples on the left of the photo",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Cabling",
+        "description": "2x 3/4” cable in Norway Maple (675 McCord). Remove parts of limbs that go over wires as well",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x codominant Norway maple <20” dbh",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x Norway maple, severely compromised.  Price Requires access from Neighbors driveway",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x Cherry 22” dbh - infested with carpenter ants, leaning towards church.  ",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x cherry 18” dbh - large vertical wound & rot",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple removal at 641",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Tree Removal *additonal",
+        "description": "4x Norway maples (<9” dbh)",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Removal *additional",
+        "description": "Co-dominant Norway maple with included bark and compromised union (22” dbh)",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 197,
+    "status": "archived",
+    "total": 2737.5,
+    "clientName": "Empire Solar",
+    "property": "54 Boulevard Knolls, Poughkeepsie",
+    "createdAt": "2024-11-08T12:24:10Z",
+    "lineItems": [
+      {
+        "service": "Christian Line Items",
+        "description": "18\" dbh",
+        "qty": 1,
+        "rate": 2737.5,
+        "amount": 2737.5
+      }
+    ]
+  },
+  {
+    "jobNumber": 215,
+    "status": "archived",
+    "total": 8100,
+    "clientName": "Mt. Lebanon Baptist Church",
+    "property": "648 Harrison Avenue, Peekskill",
+    "createdAt": "2024-12-05T13:12:27Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "2x Norway Maple (675 McCord) ~18” dbh\r\n- rot, broken unions, and poor canopy health all suggest removal is best option for the 2 maples on the left of the photo",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Cabling",
+        "description": "2x 3/4” cable in Norway Maple (675 McCord). Remove parts of limbs that go over wires as well",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2x codominant Norway maple <20” dbh",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x Norway maple, severely compromised.  Price Requires access from Neighbors driveway",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x Cherry 22” dbh - infested with carpenter ants, leaning towards church.  ",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "1x cherry 18” dbh - large vertical wound & rot",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple removal at 641",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Tree Removal *additonal",
+        "description": "4x Norway maples (<9” dbh)",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Removal *additional",
+        "description": "Co-dominant Norway maple with included bark and compromised union (22” dbh)",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 213,
+    "status": "archived",
+    "total": 0,
+    "clientName": "Anthony Demuro",
+    "property": "27 Darlene drive, Poughkeepsie",
+    "createdAt": "2024-11-26T01:44:49Z",
+    "lineItems": [
+      {
+        "service": "Free Woodchips",
+        "description": "Free Woodchips ",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 183,
+    "status": "archived",
+    "total": 1700,
+    "clientName": "Caryn Rosenblatt",
+    "property": "173 Frederick Street, Cortlandt",
+    "createdAt": "2024-10-19T16:22:33Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Remove red oak leader going over roof; prune 2 branches above removed leader for weight reduction; prune deadwood\n*Ryan climb, 3-4 hours",
+        "qty": 1,
+        "rate": 1700,
+        "amount": 1700
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Chip & remove all debris from property",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Labor",
+        "description": "Place protective mats over septic/leech field",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Norway maple (6” dbh) in drop zone",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 208,
+    "status": "archived",
+    "total": 2400,
+    "clientName": "Linda Liotti",
+    "property": "43 Aqueduct Road, Philipstown",
+    "createdAt": "2024-11-20T18:49:25Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Schedule an estimate for tree removal",
+        "qty": 1,
+        "rate": 2400,
+        "amount": 2400
+      }
+    ]
+  },
+  {
+    "jobNumber": 110,
+    "status": "archived",
+    "total": 4300,
+    "clientName": "Tom Brown",
+    "property": "25 Old Sleepy Hollow Road, Pleasantville",
+    "createdAt": "2024-04-25T22:41:57Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Silver maple over pool",
+        "qty": 1,
+        "rate": 2200,
+        "amount": 2200
+      },
+      {
+        "service": "Prune Cherry",
+        "description": "Remove horizontal limbs and dead limbs",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Pine by bridge",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      }
+    ]
+  },
+  {
+    "jobNumber": 207,
+    "status": "archived",
+    "total": 800,
+    "clientName": "Chris Peekskill water",
+    "property": "1000 Lindbergh Place, Peekskill",
+    "createdAt": "2024-11-19T17:25:54Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove oak leaning towards utility pole, remove red oak and cherry, top Norway maple to about 20’",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      }
+    ]
+  },
+  {
+    "jobNumber": 150,
+    "status": "archived",
+    "total": 3100,
+    "clientName": "Ruth Waugh",
+    "property": "32 Cardoza Avenue, Mohegan Lake",
+    "createdAt": "2024-09-16T01:01:31Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Oak, full inspection, canopy clean, weight reduction and safety prune\r\n\r\nLeader over deck/roof, lowest branch over roof",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dogwood removal",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Birch prune lower branches",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 189,
+    "status": "archived",
+    "total": 1200,
+    "clientName": "Alison Pascoe",
+    "property": "33 Dirubbo Dr, Cortlandt Manor",
+    "createdAt": "2024-10-23T11:25:25Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 3x red oak leader over house back to trunk",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Pruning & Inspection",
+        "description": "Prune sprout growth, clean canopy, remove deadwood",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 104,
+    "status": "archived",
+    "total": 2350,
+    "clientName": "Anna & Shawn Healey",
+    "property": "33 Lakeview Road, Cortlandt",
+    "createdAt": "2024-04-21T20:46:13Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune deadwood sugar maple",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove leader off red maple by hot tub",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Two lowest branches on oak that go over the house",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Cut logs to 16”",
+        "description": "",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Oak limbs front yard",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 201,
+    "status": "archived",
+    "total": 175,
+    "clientName": "Silverio  Pacifico",
+    "property": "365 Columbine Court, Yorktown Heights",
+    "createdAt": "2024-11-09T20:20:37Z",
+    "lineItems": [
+      {
+        "service": "Firewood",
+        "description": "1/2 Cord, loose dumped",
+        "qty": 1,
+        "rate": 175,
+        "amount": 175
+      }
+    ]
+  },
+  {
+    "jobNumber": 185,
+    "status": "archived",
+    "total": 2300,
+    "clientName": "Edgar Rust",
+    "property": "72 Morningside Dr, Croton on Hudson",
+    "createdAt": "2024-10-20T13:08:18Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune white oak leader over house to growth point",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Pruning & Vine Removal",
+        "description": "- Prune red oak leader to trunk to eliminate overhang of house & reduce weight\n- remove English ivy from trunk",
+        "qty": 1,
+        "rate": 1300,
+        "amount": 1300
+      }
+    ]
+  },
+  {
+    "jobNumber": 148,
+    "status": "archived",
+    "total": 2900,
+    "clientName": "Catherine Scott",
+    "property": "70 Hudson Ridge, Garrison",
+    "createdAt": "2024-09-16T00:59:13Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "3 oaks, head of driveway. General pruning to remove dead, damaged or crossing branches.",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Oaks surrounding kids play set/area - General pruning to remove dead and damaged branches",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Oak in front yard. Remove large, dead bottom leader.",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple bottom corner of yard",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Oak above flagpole - general pruning to reduce weight, remove limbs towards service lines",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Cabling",
+        "description": "Cable oak at head of driveway closest to the house",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 196,
+    "status": "archived",
+    "total": 2800,
+    "clientName": "John Uhle",
+    "property": "5 Ryder Court, Philipstown",
+    "createdAt": "2024-11-06T00:59:05Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove red oak over barn; fly chip brush; buck trunk wood 16” lengths & leave on site",
+        "qty": 1,
+        "rate": 1300,
+        "amount": 1300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove white pine 4” dbh",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead locust 10” dbh & Norway maple 6” dbh; fly chip locust, buck Maple 16” lengths",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 5 maple/locust pest trees from septic field (all <6” dbh) - chip brush, buck viable firewood 16” lengths",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Labor",
+        "description": "Drop dead hanger in woods, buck viable firewood 16” lengths",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 195,
+    "status": "archived",
+    "total": 3850,
+    "clientName": "Kerry Scala",
+    "property": "60 BETSY BROWN RD 60 BETSY BROWN RD, Port Chester",
+    "createdAt": "2024-11-05T12:47:28Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches - open canopy of Silver maple to encourage growth of River birch & willow below\n\n*climb",
+        "qty": 1,
+        "rate": 650,
+        "amount": 650
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple - 10” dbh - growing co-dominant with silver maple (to stay); bring stump as low as possible and maintain silver maple.",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple - 8” dbh - growing through fence. Leave as clean as possible (both sides)",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Black walnut - prune 2-3 leads over yard back to property line or growth point, whichever results in better outcome for tree.\n\n*climb",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove all debris from site",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 184,
+    "status": "archived",
+    "total": 1700,
+    "clientName": "Chris Nelson",
+    "property": "5 Brookview Lane, GARRISON",
+    "createdAt": "2024-10-19T19:47:05Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove tree on edge of Steuben/Brookview *no clean up*",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Chip and remove all debris from worksite (branches, trunk wood, vines, etc)",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 191,
+    "status": "archived",
+    "total": 125,
+    "clientName": "Mark Magel",
+    "property": "18 Briggs Lane (off Warren, off 9A), Croton-on-Hudson",
+    "createdAt": "2024-10-26T12:12:45Z",
+    "lineItems": [
+      {
+        "service": "Firewood",
+        "description": "1 tote of hickory smoking wood, delivered",
+        "qty": 1,
+        "rate": 125,
+        "amount": 125
+      }
+    ]
+  },
+  {
+    "jobNumber": 187,
+    "status": "archived",
+    "total": 2800,
+    "clientName": "Liz Ford",
+    "property": "305 Furnace Dock Road, Cortlandt",
+    "createdAt": "2024-10-21T16:13:04Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      }
+    ]
+  },
+  {
+    "jobNumber": 177,
+    "status": "archived",
+    "total": 3685,
+    "clientName": "Empire Solar",
+    "property": "318 Church Road, Putnam Valley",
+    "createdAt": "2024-10-14T16:36:23Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "2 Sugar maples, remove for solar installation\r\n- chip haul, log removal",
+        "qty": 1,
+        "rate": 3685,
+        "amount": 3685
+      }
+    ]
+  },
+  {
+    "jobNumber": 190,
+    "status": "archived",
+    "total": 250,
+    "clientName": "Gianna Reddick",
+    "property": "36 Northway, Lake Peekskill",
+    "createdAt": "2024-10-25T13:40:59Z",
+    "lineItems": [
+      {
+        "service": "Firewood Cord",
+        "description": "Firewood cord delivered within 10 miles of 10566 on the east side of the Hudson River.",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 157,
+    "status": "archived",
+    "total": 2050,
+    "clientName": "Colin Cotter",
+    "property": "951 Orchard St, Peekskill",
+    "createdAt": "2024-10-06T19:01:42Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove smooth hickory behind garage",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 3 limbs off Norway maple behind garage",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Thin Norway maples on back right side of yard",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 2 Large leaders going over house\r\n\r\n$1000 if one leader and some pruning on other\r\n\r\nPruning less now, according to photos sent in text with red marks.   See red marks on photos in notes.",
+        "qty": 1,
+        "rate": 650,
+        "amount": 650
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Pin oak pruning.  Elevate canopy and remove deadwood.",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      }
+    ]
+  },
+  {
+    "jobNumber": 186,
+    "status": "archived",
+    "total": 250,
+    "clientName": "Carol Russell",
+    "property": "2906 Quinlan Street, Yorktown Heights",
+    "createdAt": "2024-10-21T14:36:11Z",
+    "lineItems": [
+      {
+        "service": "Firewood Cord",
+        "description": "Firewood cord delivered within 10 miles of 10566 on the east side of the Hudson River.",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 188,
+    "status": "action_required",
+    "total": 250,
+    "clientName": "Harlan Jacobsen",
+    "property": "135 Colabaugh Pond Road, Croton-on-Hudson",
+    "createdAt": "2024-10-21T17:20:22Z",
+    "lineItems": [
+      {
+        "service": "Firewood Cord",
+        "description": "Firewood cord",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 178,
+    "status": "archived",
+    "total": 3400,
+    "clientName": "Empire Solar",
+    "property": "105 Masten Road, Pleasant Valley",
+    "createdAt": "2024-10-14T16:37:45Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "3 tree removals\r\n- chip drop, log removal",
+        "qty": 1,
+        "rate": 3400,
+        "amount": 3400
+      }
+    ]
+  },
+  {
+    "jobNumber": 181,
+    "status": "archived",
+    "total": 560.03,
+    "clientName": "Tom Halleran",
+    "property": "133 Bonnie Brae Ct, Granite Springs",
+    "createdAt": "2024-10-14T17:44:40Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Shape and prune 2x",
+        "qty": 1,
+        "rate": 560.03,
+        "amount": 560.03
+      }
+    ]
+  },
+  {
+    "jobNumber": 179,
+    "status": "archived",
+    "total": 1700,
+    "clientName": "Joe Magaletti",
+    "property": "308 Sprout Brook Road, Philipstown",
+    "createdAt": "2024-10-14T16:46:33Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "- Oak\r\n- prune deadwood over yard (3 leaders, various limbs)\r\n- prune deadwood of maple supporting leader over road\r\n- reduce tip weight of leader over street, prune back to growth point",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "- clear the top left corner of the driveway\r\n- remove pest trees (6 Norway maples < 3\" dbh, 1 Ailanthus 4\" dbh, 1 Oak 3\" dbh, any other immature growth)",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Haul Debris",
+        "description": "- chip all debris, remove from property",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 154,
+    "status": "archived",
+    "total": 750,
+    "clientName": "Nicholas DeMaison",
+    "property": "917 Reynolds St, Peekskill",
+    "createdAt": "2024-09-29T20:48:02Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune cypress",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune juniper",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      }
+    ]
+  },
+  {
+    "jobNumber": 151,
+    "status": "archived",
+    "total": 550,
+    "clientName": "Trisha Ensley",
+    "property": "28 Cardoza Ave, Mohegan Lake",
+    "createdAt": "2024-09-23T21:57:47Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Remove tulip and half of honey locust",
+        "qty": 1,
+        "rate": 550,
+        "amount": 550
+      }
+    ]
+  },
+  {
+    "jobNumber": 127,
+    "status": "archived",
+    "total": 3600,
+    "clientName": "Ahmad Harilall (Ed)",
+    "property": "4 Bridge Terrace, Highland Falls",
+    "createdAt": "2024-06-30T01:57:23Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Hickory.  Take large leader going over driveway.",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Norway maple",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Maple",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 174,
+    "status": "archived",
+    "total": 300,
+    "clientName": "Billie Jean Frith",
+    "property": "10 Sunny Way, Cortlandt",
+    "createdAt": "2024-10-10T22:01:41Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Trim back branches overhanging driveway to ensure vehicle clearance",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Shrub Pruning",
+        "description": "Prune/shape juniper bush along driveway",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 1x dead pine along fence",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Chip and remove all debris from work completed",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 102,
+    "status": "archived",
+    "total": 1325,
+    "clientName": "Sarah Hunter",
+    "property": "1405 The Circle, Peekskill",
+    "createdAt": "2024-04-15T21:47:14Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune Red Bud, maintain shape, interior thinning (increase airflow)",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Clear 4x Maples adjacent to carport & selective limbs on surrounding trees",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 1x Elm on backside of carport",
+        "qty": 1,
+        "rate": 125,
+        "amount": 125
+      },
+      {
+        "service": "Debris Clean Up",
+        "description": "Collect downed branches and vines, clear “strip” adjacent to fence, chip debris (leave on site for spreading by owner)",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 155,
+    "status": "archived",
+    "total": 2550,
+    "clientName": "Michelle Manzares",
+    "property": "20 Knollwood Road, Cortlandt Manor",
+    "createdAt": "2024-09-29T20:49:09Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune leader going over driveway, prune branch going over house, prune a few branches going over the neighbors house.  Add safety cable between main leaders.",
+        "qty": 1,
+        "rate": 1100,
+        "amount": 1100
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune Japanese maple mostly from the exterior shaping to reduce in size. Minor interior thinning.",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Remove brush from back of property",
+        "description": "",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 135,
+    "status": "archived",
+    "total": 4901,
+    "clientName": "Anthony Conforti",
+    "property": "72 Woodbine Drive, Mahopac",
+    "createdAt": "2024-08-06T22:39:57Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Red oak in back",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Cherry over propane.  HAs black not fungus.",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Smaller codominant cherry and maple",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 3-4 maple limbs going towards house",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune back cherry blossom from power lines.",
+        "qty": 1,
+        "rate": 1,
+        "amount": 1
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dying Maple tree closer to road",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 149,
+    "status": "archived",
+    "total": 750,
+    "clientName": "Brian McCarthy",
+    "property": "160 Lake Shore Dr, Pleasantville",
+    "createdAt": "2024-09-16T01:00:15Z",
+    "lineItems": [
+      {
+        "service": "Firewood Splitting",
+        "description": "- Move rounds from back yard to driveway\r\n- Split logs to firewood on site, into dump truck\r\n- Move half of split logs to 130 lake shore drive\r\n- Remove remaining materials",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      }
+    ]
+  },
+  {
+    "jobNumber": 156,
+    "status": "archived",
+    "total": 575,
+    "clientName": "Dennis Daly",
+    "property": "1 Field Place, Cortlandt",
+    "createdAt": "2024-10-02T15:27:35Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove Japanese maple",
+        "qty": 1,
+        "rate": 575,
+        "amount": 575
+      }
+    ]
+  },
+  {
+    "jobNumber": 146,
+    "status": "archived",
+    "total": 3050,
+    "clientName": "Peter Kovacs",
+    "property": "11 Springvale Road, Croton on Hudson",
+    "createdAt": "2024-09-16T00:44:42Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove canopy of silver maple, 50” dbh",
+        "qty": 1,
+        "rate": 2200,
+        "amount": 2200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove 3 arbor vitae, back of house",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune neighbor chokeberry off service lines",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Transplant Bush",
+        "description": "Hourly labor charge",
+        "qty": 2,
+        "rate": 100,
+        "amount": 200
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune deadwood from hemlock",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 147,
+    "status": "archived",
+    "total": 5000,
+    "clientName": "Michael Beakes",
+    "property": "1750 Darby St, Yorktown Heights",
+    "createdAt": "2024-09-16T00:56:46Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "- Japanese maple above garage wall\r\n- Oak with significant bend towards house\r\n- various dead standing pine along road\r\n- dead ash along road",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "- pruning deadwood and safety hazard limbs from trees along frontage (both sides of road)\r\n- remove major deadwood from tulip tree",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Chipping Brush",
+        "description": "- chipping brush piles currently accumulated along frontage",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Haul Debris",
+        "description": "- chips removed $100 per load\r\n- logs (not able to be chipped) removed $200 per load",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      },
+      {
+        "service": "Labor",
+        "description": "Daily rate for all items to be completed",
+        "qty": 2,
+        "rate": 2500,
+        "amount": 5000
+      }
+    ]
+  },
+  {
+    "jobNumber": 140,
+    "status": "archived",
+    "total": 1250,
+    "clientName": "Erik Lindberg",
+    "property": "92 McGuire Ave., Peekskill",
+    "createdAt": "2024-09-02T23:14:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Front cherry - prune for health and longevity, ensure clearance from house & power lines",
+        "qty": 1,
+        "rate": 550,
+        "amount": 550
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Japanese maple removal",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Back yard cherry tree - prune for overall health & longevity, ensure clearance of deck, shed and adjacent out building",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 144,
+    "status": "archived",
+    "total": 350,
+    "clientName": "Evelyn Anderson",
+    "property": "459 Georgian Court, Peekskill",
+    "createdAt": "2024-09-08T21:01:24Z",
+    "lineItems": [
+      {
+        "service": "Chipping Brush",
+        "description": "Chip brush pile at head of driveway",
+        "qty": 1,
+        "rate": 350,
+        "amount": 350
+      }
+    ]
+  },
+  {
+    "jobNumber": 145,
+    "status": "archived",
+    "total": 4600,
+    "clientName": "Shawn Kerry",
+    "property": "23 Brandeis Avenue, Mohegan Lake",
+    "createdAt": "2024-09-08T23:21:19Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Cherry removal, 28” dbh",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Red maple removal, 30” dbh",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove all debris",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 143,
+    "status": "archived",
+    "total": 1200,
+    "clientName": "Mathews",
+    "property": "24 Buena Vista Avenue, Peekskill",
+    "createdAt": "2024-09-04T18:10:47Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Oak, front yard. General pruning to remove dead, damaged or crossing branches, prepare house side of tree for solar installation.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Oak, back yard. General pruning to remove dead, damaged or crossing branches. Remove branches overhanging roof and deck.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 142,
+    "status": "archived",
+    "total": 2200,
+    "clientName": "Peter Gruer",
+    "property": "459 Sprout Brook Road, Philipstown",
+    "createdAt": "2024-09-04T18:08:30Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "River birch",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "River birch by house",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Dead trees across driveway",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Black Birch across from House",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 139,
+    "status": "archived",
+    "total": 600,
+    "clientName": "Romeo Seenjan",
+    "property": "51A Laurel Hill Road, Croton On Hudson",
+    "createdAt": "2024-08-29T13:32:59Z",
+    "lineItems": [
+      {
+        "service": "Firewood Splitting",
+        "description": "Buck remaining logs, split into firewood (16”) on site into loose pile using Eastonmade 22-28 splitter",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove any unwanted logs and splitting debris from site",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 137,
+    "status": "archived",
+    "total": 2900,
+    "clientName": "Windell and Cathy Smythe",
+    "property": "114 High Street, Peekskill",
+    "createdAt": "2024-08-12T23:06:21Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning  large sugar maple",
+        "description": "Add 3 cables.  weight reduction and airflow pruning as sensible.  Remove vines.  Full inspection.",
+        "qty": 1,
+        "rate": 1750,
+        "amount": 1750
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Exterior shaping about a yard off tree and give a more rounded shape.",
+        "qty": 1,
+        "rate": 850,
+        "amount": 850
+      },
+      {
+        "service": "Cut back vines",
+        "description": "Cut vines back to fence",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 136,
+    "status": "archived",
+    "total": 975,
+    "clientName": "Sarah Woodbury",
+    "property": "109 Young Ave, Croton-on-Hudson",
+    "createdAt": "2024-08-06T22:43:45Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "-remove two Japanese honeysuckle and a locust tree from our yard",
+        "qty": 1,
+        "rate": 175,
+        "amount": 175
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "prune the dead branches on the mulberry tree",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Cabling",
+        "description": "Add a cable to the codominant, Norway Maple,",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 124,
+    "status": "archived",
+    "total": 500,
+    "clientName": "Laura",
+    "property": "38 Crest Drive, Yorktown Heights",
+    "createdAt": "2024-06-24T23:55:11Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove damaged sassafras tree",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Clean up, chip, and haul debris from site",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 133,
+    "status": "archived",
+    "total": 7301,
+    "clientName": "William Solorzano",
+    "property": "10 Bell Air Lane, Wappingers Falls",
+    "createdAt": "2024-07-23T23:30:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Cracked leader by neighbors barn",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Red maple leaning into yard",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2 dead trees by back wood line and the maple",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Clear hanger and cut dead maple about 5 feet above squirrel home",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Cabling",
+        "description": "Add two cables to support the leader in the maple closest to house.  Do some weight reduction pruning at same time.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Cabling",
+        "description": "Add cable to maple and do some weight reduction pruning on maple middle of yard",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Red maple by shed.  Cut lower limbs as spoken about.",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Creating path through woods and spreading mulch",
+        "description": "",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "any shrubs or smaller trees you want  cleared and the brush piles chipped",
+        "qty": 1,
+        "rate": 1,
+        "amount": 1
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Tree hung up in other tree by barn",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 134,
+    "status": "archived",
+    "total": 3925,
+    "clientName": "Teckla Pratt",
+    "property": "13 Upland Drive, Philipstown",
+    "createdAt": "2024-07-25T14:23:34Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove trees as talked about in back of house.  Two catalpas, hemlock, oak, smaller locusts.\n\nThe oak limb should be removed after Nov 15th and the oak tree farther down will be removed after survey.",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove co dominant chestnut oak in front of house \n\nBoth trunks/trees.",
+        "qty": 1,
+        "rate": 2000,
+        "amount": 2000
+      },
+      {
+        "service": "Bamboo Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 175,
+        "amount": 175
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Smaller trees on Front and side of house.",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      },
+      {
+        "service": "Clean Up",
+        "description": "Clear out around walkway.  6” clearance behind railing",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      },
+      {
+        "service": "Clear vines on house and cut bamboo lower for now",
+        "description": "",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Brush removal",
+        "description": "Take sections of trees we can reach from porch and carry to chipper.",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 119,
+    "status": "archived",
+    "total": 1600,
+    "clientName": "Jesse Lubbers",
+    "property": "456 Sprout Brook Road, Philipstown",
+    "createdAt": "2024-05-31T01:30:25Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Oak",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Hickory",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 132,
+    "status": "archived",
+    "total": 800,
+    "clientName": "Courtney  Atkinson",
+    "property": "615 Cardinal Rd, Cortlandt Manor",
+    "createdAt": "2024-07-22T23:26:40Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove shrubs",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      }
+    ]
+  },
+  {
+    "jobNumber": 130,
+    "status": "archived",
+    "total": 3500,
+    "clientName": "Denise Weber",
+    "property": "15 PINE CT, BRIARCLIFF",
+    "createdAt": "2024-07-19T01:29:59Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Storm damage",
+        "qty": 1,
+        "rate": 3500,
+        "amount": 3500
+      }
+    ]
+  },
+  {
+    "jobNumber": 131,
+    "status": "archived",
+    "total": 2350,
+    "clientName": "Peter and jess Rossi",
+    "property": "9 Hilldale Avenue, Somers",
+    "createdAt": "2024-07-22T21:53:08Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Storm cleanup, take limb off roof and leaf blow.  Cut trunk back to specified point leaving part of trunk in woods.  Attempt to bend gutter back and remove moss.",
+        "qty": 1,
+        "rate": 950,
+        "amount": 950
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove two limbs on maple",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Fell last part of co dominant tree that fell",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead ash tree",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      }
+    ]
+  },
+  {
+    "jobNumber": 128,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Ann Schmidt",
+    "property": "25 Bridge Terrace, Fort Montgomery",
+    "createdAt": "2024-07-16T19:02:19Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning Oak",
+        "description": "",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove 2 small dead spruce, lower deadwood on two oaks",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "jobNumber": 129,
+    "status": "archived",
+    "total": 5000,
+    "clientName": "Hector Marrero",
+    "property": "6 School Street, Cortlandt",
+    "createdAt": "2024-07-16T22:48:26Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Storm Work dead spruce on house",
+        "qty": 1,
+        "rate": 5000,
+        "amount": 5000
+      }
+    ]
+  },
+  {
+    "jobNumber": 126,
+    "status": "archived",
+    "total": 1800,
+    "clientName": "Sheila Alan",
+    "property": "230 Andrea Road, Yorktown Heights",
+    "createdAt": "2024-06-30T00:28:02Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Large silver maple - reduce weight taking two low leaders, take selective limbs higher up",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Silver maple yard.  Long branch over the yard.",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Mulberry by fence",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      }
+    ]
+  },
+  {
+    "jobNumber": 113,
+    "status": "archived",
+    "total": 1600,
+    "clientName": "Neville Newton",
+    "property": "121 Allan Street, Cortlandt",
+    "createdAt": "2024-04-29T21:58:52Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove three trees in backyard",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Haul debris from site",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove two low limbs on sugar maple in front",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Uproot pine in front",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 66,
+    "status": "archived",
+    "total": 80,
+    "clientName": "John Voelp",
+    "property": "29 Country Lane, Philipstown",
+    "createdAt": "2024-01-18T17:30:43Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 80,
+        "amount": 80
+      }
+    ]
+  },
+  {
+    "jobNumber": 54,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Matt Backer",
+    "property": "2 Garrison Inn Lane, Garrison",
+    "createdAt": "2024-01-14T15:06:45Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 52,
+    "status": "archived",
+    "total": 70,
+    "clientName": "Lynda Karanikolas",
+    "property": "16 Melnick Place Apt B, Putnam Valley",
+    "createdAt": "2024-01-14T15:03:57Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal of driveway, shoveling steps/walkway. ",
+        "qty": 1,
+        "rate": 70,
+        "amount": 70
+      },
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal of driveway, shoveling steps/walkway. ",
+        "qty": 0,
+        "rate": 70,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 121,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Lara & Mike Liotti",
+    "property": "42 Ivy Hill Road, Mahopac",
+    "createdAt": "2024-06-10T12:03:25Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Dead sugar maple.",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 114,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Chrysalis Hawk",
+    "property": "236 Kings Ferry Road, Montrose",
+    "createdAt": "2024-05-01T01:50:58Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove 2 maples over deck and the two trees with black knot",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 123,
+    "status": "archived",
+    "total": 1775,
+    "clientName": "Harry Wallen",
+    "property": "16 Rochambeau Road, Philipstown",
+    "createdAt": "2024-06-18T23:03:17Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Saturday 5 hours\r\n",
+        "qty": 5,
+        "rate": 80,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Monday 5 hours",
+        "qty": 5.5,
+        "rate": 250,
+        "amount": 1375
+      }
+    ]
+  },
+  {
+    "jobNumber": 116,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Frank  Callagy",
+    "property": "1 Meadow road,, Montrose",
+    "createdAt": "2024-05-04T16:43:36Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning on a Friday monday",
+        "description": "Japanese maple by neighbor. Dave. Prune off each driveway.  \n\nPrune oak to separate and from maple and raise canopy\n\nSmaller Japanese maple prune off driveway\n\nPrune deadwood on nectarine\n\nPrune back white pine just a bit\n\nFlatten yew with roof line. \n\nTake boxwood down to just above window height\n\nIn back\n\nForsythia in back trim on face and top\n\nMulberry. Dead piece towards Dave’s\nAnd get a lot of the sucker growth",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 118,
+    "status": "archived",
+    "total": 1350,
+    "clientName": "Pete Lesser",
+    "property": "53 Philipse Brook Road, Philipstown",
+    "createdAt": "2024-05-22T01:10:05Z",
+    "lineItems": [
+      {
+        "service": "Dead ash and small maple removal by road",
+        "description": "",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "2 pines in back",
+        "qty": 1,
+        "rate": 450,
+        "amount": 450
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Lower limbs on tulip",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 112,
+    "status": "archived",
+    "total": 1100,
+    "clientName": "Timmy Feeney",
+    "property": "1800 Carhart Avenue, Peekskill",
+    "createdAt": "2024-04-29T20:45:03Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune limb, cable, clear brush pile, remove cherry x3",
+        "qty": 1,
+        "rate": 1100,
+        "amount": 1100
+      }
+    ]
+  },
+  {
+    "jobNumber": 107,
+    "status": "archived",
+    "total": 200,
+    "clientName": "Ana",
+    "property": "8 Barger Street, Cortlandt",
+    "createdAt": "2024-04-24T12:12:13Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Small elm",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "General pruning to remove dead, damaged or crossing branches",
+        "qty": 1,
+        "rate": 150,
+        "amount": 150
+      }
+    ]
+  },
+  {
+    "jobNumber": 106,
+    "status": "archived",
+    "total": 2300,
+    "clientName": "Mike Ryan Joseph Povella",
+    "property": "64 Pudding Street, Putnam Valley",
+    "createdAt": "2024-04-23T15:34:02Z",
+    "lineItems": [
+      {
+        "service": "Chip brush",
+        "description": "Fly chip large brush pile",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Junk Removal",
+        "description": "Remove trash or junk next to building by brush pile",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove rest of dead trees",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 94,
+    "status": "archived",
+    "total": 1200,
+    "clientName": "Elizabeth Murphy",
+    "property": "118 Wilson St, Beacon",
+    "createdAt": "2024-03-21T22:34:05Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 98,
+    "status": "archived",
+    "total": 1500,
+    "clientName": "Tom Brown",
+    "property": "25 Old Sleepy Hollow Road, Pleasantville",
+    "createdAt": "2024-03-27T09:38:09Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Holly, etc.",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      }
+    ]
+  },
+  {
+    "jobNumber": 101,
+    "status": "archived",
+    "total": 925,
+    "clientName": "Joe Guilderson",
+    "property": "1753 Decatur Road, Mohegan Lake",
+    "createdAt": "2024-04-15T21:46:47Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove fallen part of Japanese maple and make a clean cut on what remains of that leader.",
+        "qty": 1,
+        "rate": 175,
+        "amount": 175
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove fallen tree leaning on neighboring tree",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      }
+    ]
+  },
+  {
+    "jobNumber": 95,
+    "status": "archived",
+    "total": 3350,
+    "clientName": "Rich. Tree 10 Robbie Rd",
+    "property": "10 Robbie Road, Cortlandt",
+    "createdAt": "2024-03-21T22:35:14Z",
+    "lineItems": [
+      {
+        "service": "Dead trees in back",
+        "description": "Fell 2 dead trees in back small tree on side",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove red maple over house",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove Eastern White Pine",
+        "qty": 1,
+        "rate": 550,
+        "amount": 550
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune limb on Oak between Pine and maple",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove oak Hanging over Steve’s house",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 103,
+    "status": "archived",
+    "total": 250,
+    "clientName": "Phil Heidelberger",
+    "property": "7 Stephen Lane, Cortlandt",
+    "createdAt": "2024-04-16T20:38:55Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 99,
+    "status": "archived",
+    "total": 1450,
+    "clientName": "Heather Jones",
+    "property": "11 Valley Lane, Philipstown",
+    "createdAt": "2024-03-28T23:27:46Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove box elder, take all away",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove small dead tree on top of driveway",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      },
+      {
+        "service": "Swale",
+        "description": "",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Dig for planting",
+        "description": "",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 100,
+    "status": "archived",
+    "total": 1600,
+    "clientName": "Kiono Francis",
+    "property": "18 Elm Street, Cortlandt manor",
+    "createdAt": "2024-04-13T13:41:37Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Take 2 feet off the top and shape 20 arborvitae, four of which need to be re-planted with guy lines",
+        "qty": 1,
+        "rate": 1600,
+        "amount": 1600
+      }
+    ]
+  },
+  {
+    "jobNumber": 53,
+    "status": "archived",
+    "total": 65,
+    "clientName": "Andrea O'Brien",
+    "property": "6 Mathes Court, Putnam Valley",
+    "createdAt": "2024-01-14T15:05:03Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal on driveway, garage structure, walkway and patio. ",
+        "qty": 1,
+        "rate": 65,
+        "amount": 65
+      }
+    ]
+  },
+  {
+    "jobNumber": 46,
+    "status": "archived",
+    "total": 2000,
+    "clientName": "Nick Caretaker @Forest Farm",
+    "property": "20 Forest Farm Road, Philipstown",
+    "createdAt": "2024-01-11T19:22:18Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Chip brush and smaller logs into woods\nLarge logs removed off site.",
+        "qty": 1,
+        "rate": 2000,
+        "amount": 2000
+      }
+    ]
+  },
+  {
+    "jobNumber": 93,
+    "status": "archived",
+    "total": 1270,
+    "clientName": "Jo Frietta",
+    "property": "18 Andre Lane, Cortlandt",
+    "createdAt": "2024-03-21T22:27:24Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dying Alberta spruce",
+        "qty": 1,
+        "rate": 20,
+        "amount": 20
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove sumac/alianthus",
+        "qty": 1,
+        "rate": 350,
+        "amount": 350
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove two larger spruce and two small spruce by road",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune Oak limb growing into spruce back to trunk",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 96,
+    "status": "archived",
+    "total": 1000,
+    "clientName": "Paul Morrill",
+    "property": "2 Twin Pines Road, Putnam Valley",
+    "createdAt": "2024-03-22T01:27:50Z",
+    "lineItems": [
+      {
+        "service": "Splitting Firewood",
+        "description": "16” max length. All wood split and piled next to porch/deck.",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 97,
+    "status": "archived",
+    "total": 2350,
+    "clientName": "Brian",
+    "property": "525 North Division Street, Peekskill",
+    "createdAt": "2024-03-27T01:39:04Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Closest to N Division. Pruning off house, removing leader.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Middle of property. Co dominant- remove leader to growth point. Remove remaining dead leader.",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Top of property. Remove small branch.",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove neighbors tree with rot at base",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      }
+    ]
+  },
+  {
+    "jobNumber": 75,
+    "status": "archived",
+    "total": 25,
+    "clientName": "George Grant",
+    "property": "51 North Shore Road, Putnam Valley",
+    "createdAt": "2024-02-14T01:48:44Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\n- plow driveway\n- shovel walkway\n- salt throughout",
+        "qty": 1,
+        "rate": 25,
+        "amount": 25
+      }
+    ]
+  },
+  {
+    "jobNumber": 63,
+    "status": "archived",
+    "total": 70,
+    "clientName": "Basquali",
+    "property": "94 Pudding Street, Putnam Valley",
+    "createdAt": "2024-01-14T15:26:12Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\r\n- plow driveway\r\n- shovel stairs and patio\r\n- apply pet friendly snow melt",
+        "qty": 1,
+        "rate": 70,
+        "amount": 70
+      }
+    ]
+  },
+  {
+    "jobNumber": 77,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Basquali",
+    "property": "501 Richardsville Road, Carmel Hamlet",
+    "createdAt": "2024-02-17T03:07:56Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal:\r\n- plow driveway +/- 50 yds to circle, create parking space(s)\r\n- shovel walkway to house\r\n- clean off deck",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 76,
+    "status": "archived",
+    "total": 80,
+    "clientName": "George Grant",
+    "property": "51 North Shore Road, Putnam Valley",
+    "createdAt": "2024-02-17T01:11:57Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\r\n- plow driveway\r\n- shovel walkway\r\n- salt throughout",
+        "qty": 1,
+        "rate": 80,
+        "amount": 80
+      }
+    ]
+  },
+  {
+    "jobNumber": 67,
+    "status": "archived",
+    "total": 85,
+    "clientName": "Frances Rodriguez",
+    "property": "80 Pudding Street, Putnam Valley",
+    "createdAt": "2024-01-19T18:36:56Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services \n- plow driveway\n- shovel path to door\n- salt",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 68,
+    "status": "archived",
+    "total": 85,
+    "clientName": "Frances Rodriguez",
+    "property": "78 Pudding Street, Putnam Valley",
+    "createdAt": "2024-01-19T18:37:59Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services: \n- plow driveway\n- shovel path to door\n- salt",
+        "qty": 1,
+        "rate": 85,
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "jobNumber": 62,
+    "status": "archived",
+    "total": 160,
+    "clientName": "Tony Carlucci",
+    "property": "490 Sprout Brook Road, Philipstown",
+    "createdAt": "2024-01-14T15:17:33Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal, shoveling & salting for > 3\" of snow",
+        "qty": 1,
+        "rate": 160,
+        "amount": 160
+      }
+    ]
+  },
+  {
+    "jobNumber": 61,
+    "status": "archived",
+    "total": 45,
+    "clientName": "Jennifer Carlucci",
+    "property": "73 Steuben Road, Philipstown",
+    "createdAt": "2024-01-14T15:16:44Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 45,
+        "amount": 45
+      }
+    ]
+  },
+  {
+    "jobNumber": 60,
+    "status": "archived",
+    "total": 30,
+    "clientName": "Rachel Duclos Pilla",
+    "property": "117 Putnam Road, Cortlandt",
+    "createdAt": "2024-01-14T15:15:54Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 30,
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "jobNumber": 57,
+    "status": "archived",
+    "total": 110,
+    "clientName": "Linda Liotti",
+    "property": "43 Aqueduct Road, Philipstown",
+    "createdAt": "2024-01-14T15:09:50Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 110,
+        "amount": 110
+      }
+    ]
+  },
+  {
+    "jobNumber": 73,
+    "status": "archived",
+    "total": 70,
+    "clientName": "Ronald Taylor",
+    "property": "125 Gallows Hill Road, Cortlandt",
+    "createdAt": "2024-02-13T15:57:03Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\n- plow driveway \n- shovel walkway to door\n- salt",
+        "qty": 1,
+        "rate": 70,
+        "amount": 70
+      }
+    ]
+  },
+  {
+    "jobNumber": 59,
+    "status": "archived",
+    "total": 40,
+    "clientName": "Jo Frietta",
+    "property": "18 Andre Lane, Cortlandt",
+    "createdAt": "2024-01-14T15:15:01Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 40,
+        "amount": 40
+      },
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 0,
+        "rate": 20,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 56,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Scott Brownstein",
+    "property": "19 winston lane, garrison",
+    "createdAt": "2024-01-14T15:08:59Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 55,
+    "status": "archived",
+    "total": 40,
+    "clientName": "Christine Colasurdo",
+    "property": "67 Old Highland Turnpike, Garrison, Philipstown",
+    "createdAt": "2024-01-14T15:08:02Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 40,
+        "amount": 40
+      }
+    ]
+  },
+  {
+    "jobNumber": 51,
+    "status": "archived",
+    "total": 80,
+    "clientName": "Marlene Colangelo",
+    "property": "95 Barger Street, Putnam Valley",
+    "createdAt": "2024-01-14T15:02:21Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "90' driveway - plow\r\nsmall driveway - clean off car, shovel around it\r\nshovel small walkway to drive to to driveway",
+        "qty": 1,
+        "rate": 80,
+        "amount": 80
+      }
+    ]
+  },
+  {
+    "jobNumber": 49,
+    "status": "archived",
+    "total": 140,
+    "clientName": "Matt Heid",
+    "property": "150 Sunset Hill Road, Putnam Valley",
+    "createdAt": "2024-01-14T14:55:47Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\r\n- plow driveway (ensure drain access)\r\n- shovel access to port-o-john",
+        "qty": 1,
+        "rate": 140,
+        "amount": 140
+      }
+    ]
+  },
+  {
+    "jobNumber": 48,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Matt Heid",
+    "property": "144 Dogwood Road, Cortlandt",
+    "createdAt": "2024-01-14T14:52:01Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services (1st push):\r\n- plow driveway\r\n- shovel walkway to front door\r\n- apply pet friendly snow melt",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 65,
+    "status": "archived",
+    "total": 60,
+    "clientName": "Ellen Moore",
+    "property": "159 Lake Shore Road, Putnam Valley",
+    "createdAt": "2024-01-14T15:32:51Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\r\n- plow driveway\r\n- shovel walkway\r\n- apply pet friendly snow melt",
+        "qty": 1,
+        "rate": 60,
+        "amount": 60
+      }
+    ]
+  },
+  {
+    "jobNumber": 87,
+    "status": "archived",
+    "total": 1400,
+    "clientName": "Chris McManus",
+    "property": "5 Red Oak Ln Cortlandt Manor, NY  10567 United States, Cortlandt",
+    "createdAt": "2024-03-12T14:49:07Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal  hickory",
+        "description": "Rig down and Carry out so no lawn damage as very wet near pool.",
+        "qty": 1,
+        "rate": 1400,
+        "amount": 1400
+      }
+    ]
+  },
+  {
+    "jobNumber": 92,
+    "status": "archived",
+    "total": 1400,
+    "clientName": "Eric Kelly",
+    "property": "21 Knollwood Road, Cortlandt",
+    "createdAt": "2024-03-20T18:09:46Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning   Sycamore",
+        "description": "Remove lower 6 branches or so as talked about.",
+        "qty": 1,
+        "rate": 600,
+        "amount": 600
+      },
+      {
+        "service": "Tree Pruning   Oak",
+        "description": "General pruning to remove dead, damaged or crossing branches.  \r\n\r\nTake large branch going over Norway Maple.\r\nDo this work after first frost which is generally around November 15th",
+        "qty": 1,
+        "rate": 800,
+        "amount": 800
+      }
+    ]
+  },
+  {
+    "jobNumber": 89,
+    "status": "archived",
+    "total": 950,
+    "clientName": "Dan Roy",
+    "property": "6 Fox Hill Road, Cortlandt",
+    "createdAt": "2024-03-14T14:16:51Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 4 limbs from oak",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Additional 2 limbs pruned from oak, to be discussed",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune dead wood from cherry",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "jobNumber": 86,
+    "status": "archived",
+    "total": 1000,
+    "clientName": "Anastasia Menard",
+    "property": "310 Simpson Place, Peekskill",
+    "createdAt": "2024-03-07T21:45:31Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune/shape/top holly tree - in line with 2nd story gutters",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Remove majority of red cedar, leaving 8’ of trunk wood for children climbing apparatus",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 90,
+    "status": "archived",
+    "total": 950,
+    "clientName": "Dan Roy",
+    "property": "6 Fox Hill Road, Cortlandt",
+    "createdAt": "2024-03-14T22:06:38Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Prune 4 limbs from oak",
+        "qty": 1,
+        "rate": 750,
+        "amount": 750
+      },
+      {
+        "service": "Tree Pruning",
+        "description": "Prune cherry",
+        "qty": 1,
+        "rate": 200,
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "jobNumber": 88,
+    "status": "archived",
+    "total": 6800,
+    "clientName": "Steve Silber",
+    "property": "8 Robbie Road, Cortlandt",
+    "createdAt": "2024-03-13T16:34:03Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal -Emergency",
+        "description": "Remove eastern white pine trees using crane.",
+        "qty": 1,
+        "rate": 6300,
+        "amount": 6300
+      },
+      {
+        "service": "Log and chip removal",
+        "description": "",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 85,
+    "status": "archived",
+    "total": 3000,
+    "clientName": "Victor Bramble",
+    "property": "43 Oakdale Avenue, Poughkeepsie",
+    "createdAt": "2024-03-06T23:17:16Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 3000,
+        "amount": 3000
+      }
+    ]
+  },
+  {
+    "jobNumber": 82,
+    "status": "archived",
+    "total": 2000,
+    "clientName": "Ray Jagelski",
+    "property": "96 Putnam Road, Cortlandt",
+    "createdAt": "2024-03-04T14:43:20Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Sugar Maple infected with soot mold; center of backyard - removal",
+        "qty": 1,
+        "rate": 2000,
+        "amount": 2000
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove from property",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 50,
+    "status": "archived",
+    "total": 135,
+    "clientName": "Sarah Moden-Alliston",
+    "property": "39 Partridge Lane, Putnam Valley",
+    "createdAt": "2024-01-14T14:58:46Z",
+    "lineItems": [
+      {
+        "service": "Snow Removal",
+        "description": "Snow removal services:\r\n- plow driveway\r\n- shovel front walk, front porch, back deck, back walk way\r\n- apply pet friendly show melt throughout",
+        "qty": 1,
+        "rate": 135,
+        "amount": 135
+      }
+    ]
+  },
+  {
+    "jobNumber": 83,
+    "status": "archived",
+    "total": 2000,
+    "clientName": "Ray Jagelski",
+    "property": "96 Putnam Road, Cortlandt",
+    "createdAt": "2024-03-04T14:43:34Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Sugar Maple infected with soot mold; center of backyard - removal",
+        "qty": 1,
+        "rate": 2000,
+        "amount": 2000
+      },
+      {
+        "service": "Haul Debris",
+        "description": "Remove from property",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0
+      }
+    ]
+  },
+  {
+    "jobNumber": 81,
+    "status": "archived",
+    "total": 225,
+    "clientName": "Todd",
+    "property": "1727 Horton Road, Mohegan Lake",
+    "createdAt": "2024-02-27T17:32:14Z",
+    "lineItems": [
+      {
+        "service": "Firewood Cord",
+        "description": "Mixed green hardwoods, approximately 16\" - loose dumped at client discretion. Stacking available upon request. ",
+        "qty": 1,
+        "rate": 225,
+        "amount": 225
+      }
+    ]
+  },
+  {
+    "jobNumber": 80,
+    "status": "archived",
+    "total": 300,
+    "clientName": "Caitlin Gruer",
+    "property": "10 Ferris Drive, Philipstown",
+    "createdAt": "2024-02-27T17:29:23Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "Remove branches around utility lines",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 79,
+    "status": "archived",
+    "total": 2100,
+    "clientName": "Dan Barbuto",
+    "property": "120 Oscawana Heights Road, Putnam Valley",
+    "createdAt": "2024-02-20T22:09:55Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Sugar Maple Removal",
+        "qty": 1,
+        "rate": 2100,
+        "amount": 2100
+      }
+    ]
+  },
+  {
+    "jobNumber": 78,
+    "status": "archived",
+    "total": 500,
+    "clientName": "Ellen Moore",
+    "property": "159 Lake Shore Road, Putnam Valley",
+    "createdAt": "2024-02-20T14:22:39Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "- Removal of \"Y\" white oak with broken tops\r\n- Removal of small oak leaning towards deck\r\n- Removal of dead undergrowth along back yard",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 72,
+    "status": "archived",
+    "total": 550,
+    "clientName": "Amanda Birro",
+    "property": "33 Garretson Road, White Plains",
+    "createdAt": "2024-02-02T16:49:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "",
+        "qty": 1,
+        "rate": 550,
+        "amount": 550
+      }
+    ]
+  },
+  {
+    "jobNumber": 71,
+    "status": "archived",
+    "total": 550,
+    "clientName": "Ginger Mckee",
+    "property": "53 Cardoza Avenue, Mohegan Lake",
+    "createdAt": "2024-02-02T12:31:44Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Remove dead arborvitae.  Probably can’t uproot as will damage other roots",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Remove plum by uprooting.",
+        "qty": 1,
+        "rate": 100,
+        "amount": 100
+      },
+      {
+        "service": "Uproot forsythia",
+        "description": "",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 70,
+    "status": "archived",
+    "total": 2200,
+    "clientName": "Luigi Vuolo",
+    "property": "99 Putnam Road, Cortlandt",
+    "createdAt": "2024-02-02T12:29:40Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Bradford pear removal",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "eastern white pine",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      },
+      {
+        "service": "Tree Removal",
+        "description": "3 small Norway maples",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Smaller sugar maple removed and two small ones right by lake",
+        "qty": 1,
+        "rate": 300,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 58,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Chrysalis Hawk",
+    "property": "236 Kings Ferry Road, Montrose",
+    "createdAt": "2024-01-14T15:11:31Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 18,
+    "status": "archived",
+    "total": 1000,
+    "clientName": "Frank Bukovsky",
+    "property": "151 Walnut Rd  Lake Peekskill NY 10537 United States, Putnam Valley",
+    "createdAt": "2023-11-01T19:02:40Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "remove pine in front\n5 small trees in front \nclear trees in back",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      }
+    ]
+  },
+  {
+    "jobNumber": 29,
+    "status": "archived",
+    "total": 160,
+    "clientName": "Tony Carlucci",
+    "property": "490 Sprout Brook Road, Philipstown",
+    "createdAt": "2024-01-07T18:11:59Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal, shoveling & salting for > 3\" of snow",
+        "qty": 1,
+        "rate": 160,
+        "amount": 160
+      }
+    ]
+  },
+  {
+    "jobNumber": 47,
+    "status": "archived",
+    "total": 400,
+    "clientName": "Luca Dombre",
+    "property": "10 Ethan Drive, Philipstown",
+    "createdAt": "2024-01-12T22:38:08Z",
+    "lineItems": [
+      {
+        "service": "Firewood Cord",
+        "description": "Seasoned oak log; split for pizza oven (box, 12”-14” lengths) into dump trailer & delivered *no wet bark or debris*",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      }
+    ]
+  },
+  {
+    "jobNumber": 32,
+    "status": "archived",
+    "total": 80,
+    "clientName": "Marlene Colangelo",
+    "property": "95 Barger Street, Putnam Valley",
+    "createdAt": "2024-01-07T18:34:59Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "90' driveway - plow\r\nsmall driveway - clean off car, shovel around it\r\nshovel small walkway to drive to to driveway",
+        "qty": 1,
+        "rate": 80,
+        "amount": 80
+      }
+    ]
+  },
+  {
+    "jobNumber": 34,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Scott Brownstein",
+    "property": "19 winston lane, garrison",
+    "createdAt": "2024-01-07T18:36:08Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 28,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Scott Brownstein",
+    "property": "19 winston lane, garrison",
+    "createdAt": "2024-01-07T18:10:21Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 27,
+    "status": "archived",
+    "total": 70,
+    "clientName": "Lynda Karanikolas",
+    "property": "16 Melnick Place Apt B, Putnam Valley",
+    "createdAt": "2024-01-07T18:09:43Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal of driveway, shoveling steps/walkway. ",
+        "qty": 1,
+        "rate": 70,
+        "amount": 70
+      }
+    ]
+  },
+  {
+    "jobNumber": 43,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Chrysalis Hawk",
+    "property": "236 Kings Ferry Road, Montrose",
+    "createdAt": "2024-01-07T18:43:03Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 26,
+    "status": "archived",
+    "total": 65,
+    "clientName": "Andrea O'Brien",
+    "property": "6 Mathes Court, Putnam Valley",
+    "createdAt": "2024-01-07T18:08:12Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal on driveway, garage structure, walkway and patio. ",
+        "qty": 1,
+        "rate": 65,
+        "amount": 65
+      }
+    ]
+  },
+  {
+    "jobNumber": 35,
+    "status": "archived",
+    "total": 40,
+    "clientName": "Christine Colasurdo",
+    "property": "67 Old Highland Turnpike, Garrison, Philipstown",
+    "createdAt": "2024-01-07T18:36:35Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 40,
+        "amount": 40
+      }
+    ]
+  },
+  {
+    "jobNumber": 22,
+    "status": "archived",
+    "total": 300,
+    "clientName": "Michael firewood",
+    "property": "1 Woods Court, Buchanan",
+    "createdAt": "2023-11-07T22:52:00Z",
+    "lineItems": [
+      {
+        "service": "Firewood",
+        "description": "delivery of 2x bagged firewood",
+        "qty": 2,
+        "rate": 150,
+        "amount": 300
+      }
+    ]
+  },
+  {
+    "jobNumber": 45,
+    "status": "archived",
+    "total": 120,
+    "clientName": "Matt Backer",
+    "property": "2 Garrison Inn Lane, Garrison",
+    "createdAt": "2024-01-08T00:07:27Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 120,
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "jobNumber": 44,
+    "status": "archived",
+    "total": 50,
+    "clientName": "Chrysalis Hawk",
+    "property": "236 Kings Ferry Road, Montrose",
+    "createdAt": "2024-01-07T18:43:25Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 50,
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "jobNumber": 40,
+    "status": "archived",
+    "total": 45,
+    "clientName": "Jennifer Carlucci",
+    "property": "73 Steuben Road, Philipstown",
+    "createdAt": "2024-01-07T18:40:23Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 45,
+        "amount": 45
+      }
+    ]
+  },
+  {
+    "jobNumber": 42,
+    "status": "archived",
+    "total": 40,
+    "clientName": "Jo Frietta",
+    "property": "18 Andre Lane, Cortlandt",
+    "createdAt": "2024-01-07T18:42:44Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 40,
+        "amount": 40
+      }
+    ]
+  },
+  {
+    "jobNumber": 37,
+    "status": "archived",
+    "total": 65,
+    "clientName": "Andrea O'Brien",
+    "property": "6 Mathes Court, Putnam Valley",
+    "createdAt": "2024-01-07T18:37:29Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal on driveway, garage structure, walkway and patio. ",
+        "qty": 1,
+        "rate": 65,
+        "amount": 65
+      }
+    ]
+  },
+  {
+    "jobNumber": 41,
+    "status": "archived",
+    "total": 30,
+    "clientName": "Rachel Duclos Pilla",
+    "property": "117 Putnam Road, Cortlandt",
+    "createdAt": "2024-01-07T18:42:07Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 30,
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "jobNumber": 33,
+    "status": "archived",
+    "total": 110,
+    "clientName": "Linda Liotti",
+    "property": "43 Aqueduct Road, Philipstown",
+    "createdAt": "2024-01-07T18:35:32Z",
+    "lineItems": [
+      {
+        "service": "Snowplowing",
+        "description": "Snow removal services for residential or corporate locations. Please reach out for salting.",
+        "qty": 1,
+        "rate": 110,
+        "amount": 110
+      }
+    ]
+  },
+  {
+    "jobNumber": 16,
+    "status": "archived",
+    "total": 4500,
+    "clientName": "Simone & Daniel Pero",
+    "property": "19 Hy Vue Terrace, Cold Spring",
+    "createdAt": "2023-06-24T21:57:27Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning",
+        "description": "winter oaks\r\n\r\nRemove large oak leader growing over house.  Septic under 1400\nSplit trunk.\n\r\nRemove large leader on oak behind clothesline.   600\r\n\r\nTake low lateral branch on black oak mid yard.  200\r\n\r\nTake ~6 large branches off black oak front yard.  Has rock ring.  600\n\nClean up bushes and leaves.  push over wall. 200\n\nFinish path to river closer to road.  Clear saplings, push chips, cut log. 300",
+        "qty": 1,
+        "rate": 3300,
+        "amount": 3300
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Extra costs with bucket truck,etc",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200
+      }
+    ]
+  },
+  {
+    "jobNumber": 17,
+    "status": "archived",
+    "total": 2800,
+    "clientName": "Rosie",
+    "property": "133 Dale Avenue Cortlandt Manor NY, Cortlandt",
+    "createdAt": "2023-11-01T19:01:30Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Ash closer to house800\nLarger ash behind hemlocks1400\nBeech 1200\nRemove hanger 100\nRemove rose of Sharon 100\nLog removal 400\nTotal.    4000",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800
+      }
+    ]
+  },
+  {
+    "jobNumber": 14,
+    "status": "archived",
+    "total": 2900,
+    "clientName": "Joseph Chappell",
+    "property": "1252 Old Albany Post Road, Philipstown",
+    "createdAt": "2023-05-24T19:22:52Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "3 walnuts, downed ash, downed oak, ash in front.  Logs removed off site",
+        "qty": 1,
+        "rate": 2400,
+        "amount": 2400
+      },
+      {
+        "service": "Mulch",
+        "description": "Bring load, spread load and chips we make on path as spoken about.",
+        "qty": 1,
+        "rate": 500,
+        "amount": 500
+      }
+    ]
+  },
+  {
+    "jobNumber": 1,
+    "status": "archived",
+    "total": 2100,
+    "clientName": "Elise Martos",
+    "property": "36 Scarborough Road, Briarcliff Manor",
+    "createdAt": "2023-04-15T19:52:26Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning larger maple",
+        "description": "General pruning to remove dead, damaged or crossing branches.  Remove hanger.  Cable leaders",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Cabling maple play area",
+        "description": "Cable limb to trunk",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Stump Removal",
+        "description": "Remove stump off site",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  },
+  {
+    "jobNumber": 15,
+    "status": "archived",
+    "total": 2400,
+    "clientName": "Torrey and Renee",
+    "property": "115 Avery Rd 10524 United States, Philipstown",
+    "createdAt": "2023-06-03T18:20:02Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal white pine",
+        "description": "Brush chipped.  Logs into woods.",
+        "qty": 1,
+        "rate": 1500,
+        "amount": 1500
+      },
+      {
+        "service": "Tree Removal",
+        "description": "Second pine",
+        "qty": 1,
+        "rate": 900,
+        "amount": 900
+      }
+    ]
+  },
+  {
+    "jobNumber": 9,
+    "status": "archived",
+    "total": 1250,
+    "clientName": "Tomas Rodriquez",
+    "property": "1374 White Hill Rd Yorktown Heights, NY  10598 United States, Yorktown Heights",
+    "createdAt": "2023-05-03T12:56:52Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal   Norway Maple",
+        "description": "Remove maple.  Chips and logs put next to dirt pile basketball.  Flush stump low.",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Rip out Barberry",
+        "description": "",
+        "qty": 1,
+        "rate": 250,
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "jobNumber": 7,
+    "status": "archived",
+    "total": 1650,
+    "clientName": "Michael Anderson",
+    "property": "9 Creekside Lane, Pleasant Valley",
+    "createdAt": "2023-04-24T12:01:37Z",
+    "lineItems": [
+      {
+        "service": "Tree Removal",
+        "description": "Maple by road double leader 11” and 16.5”\nOak overhanging house 21”\nDouble leader Maple overhanging house 10”and 10”\nDead ash plus 2 hangers 29”",
+        "qty": 1,
+        "rate": 1650,
+        "amount": 1650
+      }
+    ]
+  },
+  {
+    "jobNumber": 8,
+    "status": "archived",
+    "total": 2100,
+    "clientName": "Elise Martos",
+    "property": "36 Scarborough Road, Briarcliff Manor",
+    "createdAt": "2023-04-25T17:04:22Z",
+    "lineItems": [
+      {
+        "service": "Tree Pruning larger maple",
+        "description": "General pruning to remove dead, damaged or crossing branches.  Remove hanger.  Cable leaders",
+        "qty": 1,
+        "rate": 1000,
+        "amount": 1000
+      },
+      {
+        "service": "Tree Cabling maple play area",
+        "description": "Cable limb to trunk",
+        "qty": 1,
+        "rate": 400,
+        "amount": 400
+      },
+      {
+        "service": "Stump Removal",
+        "description": "Remove stump off site",
+        "qty": 1,
+        "rate": 700,
+        "amount": 700
+      }
+    ]
+  }
+]

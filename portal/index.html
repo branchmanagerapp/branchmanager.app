@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Sign in — Branch Manager</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #14331a 0%, #1e5428 50%, #1a3c12 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    color: #1a3c12;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 100%;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .icon { font-size: 40px; margin-bottom: 8px; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #1a3c12; }
+  .subtitle { font-size: 13px; color: #6b7280; line-height: 1.5; }
+  .field { margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  input[type=email] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 15px;
+    background: #fff;
+    transition: border-color .12s;
+  }
+  input[type=email]:focus { outline: none; border-color: #1a3c12; }
+  .btn-primary {
+    width: 100%;
+    padding: 13px 16px;
+    background: linear-gradient(135deg, #1a3c12, #2e7d32);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(26,60,18,.2);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(26,60,18,.28); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .status { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+  .status.ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .status.err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .footer { margin-top: 22px; padding-top: 16px; border-top: 1px solid #f0f0f0; font-size: 12px; color: #6b7280; text-align: center; line-height: 1.6; }
+  .footer a { color: #1a3c12; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="icon">🌳</div>
+      <h1>Branch Manager</h1>
+      <div class="subtitle">Sign in to view your invoices, quotes, and job history.</div>
+    </div>
+
+    <div class="field">
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email" autofocus required>
+    </div>
+
+    <button class="btn-primary" id="send-btn" onclick="sendLink()">Email me a sign-in link</button>
+
+    <div id="status" style="display:none;"></div>
+
+    <div class="footer">
+      We'll email a one-tap link. No password needed.<br>
+      Questions? Reply to any email from your tree-service company.
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPA_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  // If they're already signed in, jump to dashboard.
+  sb.auth.getSession().then(({ data }) => {
+    if (data && data.session) location.href = 'dashboard.html';
+  });
+
+  function setStatus(msg, ok) {
+    const el = document.getElementById('status');
+    el.className = 'status ' + (ok ? 'ok' : 'err');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function sendLink() {
+    const email = document.getElementById('email').value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('Enter a valid email address.', false);
+      return;
+    }
+    const btn = document.getElementById('send-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    const redirect = location.origin + location.pathname.replace(/index\.html$/, '') + 'dashboard.html';
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirect }
+    });
+
+    if (error) {
+      setStatus(error.message || 'Could not send link. Try again.', false);
+      btn.disabled = false;
+      btn.textContent = 'Email me a sign-in link';
+      return;
+    }
+    setStatus('✅ Link sent. Check your inbox (and spam folder). Tap the link to sign in.', true);
+    btn.textContent = 'Sent ✓';
+  }
+
+  document.getElementById('email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendLink();
+  });
+</script>
+</body>
+</html>

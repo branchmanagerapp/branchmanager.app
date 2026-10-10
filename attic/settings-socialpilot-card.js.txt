@@ -1,0 +1,25 @@
+    // ── SocialPilot (Webhook OR direct API key) ──
+    var spWebhook = localStorage.getItem('bm-socialpilot-webhook') || '';
+    var spApiKey = localStorage.getItem('bm-socialpilot-key') || '';
+    var spOk = spWebhook.length > 10 || spApiKey.length > 10;
+    html += apiKeyHeader({
+        ok: spOk,
+        title: 'SocialPilot (Social Posting)',
+        emoji: '📢',
+        iconBg: '#FF6B35',
+        okText: '✅ Connected — Media Center can push to social',
+        warnText: '⚠️ Not connected — add webhook or API key below'
+      })
+      + '<div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:4px;">Option A — Zapier / Make Webhook URL <span style="color:var(--green-dark);">(works on any paid SocialPilot plan)</span></div>'
+      + '<input type="text" id="sp-webhook" value="' + UI.esc(spWebhook) + '" placeholder="https://hooks.zapier.com/hooks/catch/..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:10px;">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:4px;">Option B — SocialPilot API Key <span style="color:var(--text-light);font-weight:400;">(Agency plan only)</span></div>'
+      + '<input type="password" id="sp-key" value="' + spApiKey + '" placeholder="sp_xxxxxxxxxxxx" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:10px;">'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      + '<button onclick="var w=document.getElementById(\'sp-webhook\').value.trim();var k=document.getElementById(\'sp-key\').value.trim();localStorage.setItem(\'bm-socialpilot-webhook\',w);localStorage.setItem(\'bm-socialpilot-key\',k);UI.toast(\'SocialPilot saved ✅\');loadPage(\'settings\');" style="background:var(--green-dark);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;">Save</button>'
+      + '<button onclick="SettingsPage._testSocialPilot()" style="background:#fff;color:var(--text);border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-weight:600;font-size:14px;cursor:pointer;">🔌 Test</button>'
+      + (spOk ? '<button onclick="if(confirm(\'Remove SocialPilot?\')){localStorage.removeItem(\'bm-socialpilot-webhook\');localStorage.removeItem(\'bm-socialpilot-key\');loadPage(\'settings\');}" style="background:none;border:1px solid var(--border);padding:10px 20px;border-radius:6px;font-size:13px;cursor:pointer;">Remove</button>' : '')
+      + '</div>'
+      + '<div id="sp-test-result" style="margin-top:10px;font-size:13px;"></div>'
+      + '<p style="font-size:11px;color:var(--text-light);margin-top:8px;">No API tab in SocialPilot? Use Option A: create a free <a href="https://zapier.com/apps/webhook/integrations" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Zapier Webhook → SocialPilot</a> Zap. Paste the "Catch Hook" URL above. POST payload: <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">{caption, imageUrl, platforms}</code>.</p>'
+      + '</div>';
+

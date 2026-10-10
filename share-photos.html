@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Photos · Branch Cam</title>
+<meta property="og:title" content="Project Photos">
+<meta property="og:description" content="Photos from your tree service project">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0e1410; color: #fff; min-height: 100vh; }
+  .head { background: linear-gradient(180deg, #1a3c12, #0e1410); padding: 24px 20px 30px; text-align: center; }
+  .brand { font-size: 13px; opacity: .7; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+  .title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; opacity: .75; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; padding: 6px; }
+  .tile { position: relative; aspect-ratio: 1; overflow: hidden; cursor: pointer; background: #000; }
+  .tile img { width: 100%; height: 100%; object-fit: cover; }
+  .tile .meta { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 8px; font-size: 10px; }
+  .tile .tag { display: inline-block; background: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-right: 3px; }
+  .empty { padding: 60px 20px; text-align: center; opacity: .6; }
+  .footer { padding: 30px 20px; text-align: center; font-size: 11px; opacity: .5; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.95); display: none; align-items: center; justify-content: center; z-index: 99; padding: 16px; flex-direction: column; }
+  .lightbox.on { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+  .lightbox-close { position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,.15); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="head">
+  <div class="brand">📸 Branch Cam</div>
+  <div class="title" id="title">Project Photos</div>
+  <div class="subtitle" id="subtitle">Loading…</div>
+</div>
+<div id="grid" class="grid"></div>
+<div id="empty" class="empty" style="display:none;">No photos available for this project.</div>
+<div class="footer">Powered by Branch Manager · branchmanager.app</div>
+<div class="lightbox" id="lb" onclick="closeLb(event)">
+  <button class="lightbox-close" onclick="closeLb(event, true)">Close</button>
+  <img id="lbimg" src="">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var params = new URLSearchParams(location.search);
+  var rt = params.get('type') || 'job';
+  var rid = params.get('id') || '';
+
+  function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, function(c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+
+  function openLb(url) { document.getElementById('lbimg').src = url; document.getElementById('lb').classList.add('on'); }
+  function closeLb(e, force) { if (force || e.target.id === 'lb') document.getElementById('lb').classList.remove('on'); }
+
+  async function load() {
+    if (!rid) { document.getElementById('subtitle').textContent = 'Invalid link'; return; }
+    var { data, error } = await sb.from('photos').select('*').eq('record_type', rt).eq('record_id', rid).order('taken_at', { ascending: true });
+    if (error) { document.getElementById('subtitle').textContent = 'Error loading photos'; console.warn(error); return; }
+    if (!data || !data.length) { document.getElementById('subtitle').style.display = 'none'; document.getElementById('empty').style.display = 'block'; return; }
+    document.getElementById('subtitle').textContent = data.length + ' photos';
+    var html = '';
+    data.forEach(function(p) {
+      var tags = Array.isArray(p.tags) ? p.tags : (p.label ? p.label.split(',').map(function(s){return s.trim();}).filter(Boolean) : []);
+      var tagHtml = tags.slice(0, 2).map(function(t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('');
+      var d = p.taken_at ? new Date(p.taken_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+      html += '<div class="tile" onclick="openLb(\'' + p.url.replace(/'/g, "\\'") + '\')">'
+        + '<img src="' + escapeHtml(p.url) + '" loading="lazy">'
+        + '<div class="meta">' + tagHtml + '<div>' + d + '</div></div>'
+        + '</div>';
+    });
+    document.getElementById('grid').innerHTML = html;
+  }
+  load();
+</script>
+</body>
+</html>

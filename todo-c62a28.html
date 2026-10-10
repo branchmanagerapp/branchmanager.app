@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>To-Do — Second Nature / SmartLawn / Skate</title>
+<style>
+:root{--ink:#16181d;--muted:#6b7280;--line:#e6e8eb;--bg:#f6f7f9;--card:#fff;
+--red:#c0392b;--amber:#9a6a00;--green:#1b7f3b;--blue:#0b5c8a;--purple:#6b3fa0;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:18px 14px 60px}
+h1{font-size:21px;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:15px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.tag{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:20px;color:#fff}
+.t-red{background:var(--red)}.t-amber{background:var(--amber)}.t-blue{background:var(--blue)}.t-green{background:var(--green)}.t-purple{background:var(--purple)}.t-gray{background:#5b6470}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;gap:9px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;align-items:flex-start}
+li:first-child{border-top:0}
+.box{flex:0 0 auto;width:16px;height:16px;border:2px solid #b9bec6;border-radius:4px;margin-top:2px}
+.done .box{background:var(--green);border-color:var(--green)}
+.done{color:var(--muted)}
+b{color:#000}
+.k{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#eef0f3;padding:1px 5px;border-radius:5px}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+li.done b{color:var(--muted);font-weight:600}
+</style></head><body><div class="wrap">
+<h1>To-Do — live</h1>
+<div class="sub">Second Nature · SmartLawn · Skate — updated Jul 1, 2026 · private</div>
+
+<div class="card"><h2><span class="tag t-red">Revenue · urgent</span></h2><ul>
+<li><span class="box"></span><span><b>SmartLawn checkout is BROKEN — losing every online sale.</b> The <span class="k">stripe-checkout</span> function rejects all items ("No valid items in cart") — the <span class="k">products</span> table is empty for the site's tenant. Root cause of Bynum & others' failed payments. Fix lives in the <b>other Claude account (POS)</b>.</span></li>
+<li><span class="box"></span><span><b>CADCO — $22,878 past due</b> (incl. $16,303 from March, 69 days). Pay to unfreeze shipments + order the <b>X430</b>. Marissa reply drafted in <b>info@peekskilltree Drafts</b>. Call Marissa: (908) 213-0303.</span></li>
+<li><span class="box"></span><span><b>Jobber invoices</b> (Tree acct, drafts): <b>Hope Bogart</b> $500 "Installing ceiling tile" · <b>Elizabeth Bynum</b> H220+garage+install+service — real total TBD (get her actual quoted prices).</span></li>
+</ul></div>
+
+<div class="card"><h2><span class="tag t-amber">Unblockers · credentials</span></h2><ul>
+<li><span class="box"></span><span><b>Brivo door — CONFIRMED MFA blocking the API</b> (not a password — a fresh reset still failed). Fix: (a) Nick makes a dedicated API user (password grant on, MFA off), or (b) enable authorization_code flow → I add a <span class="k">/callback</span> → one browser login = permanent token. Everything else built.</span></li>
+<li><span class="box"></span><span><b>Bring from the other Claude account:</b> SmartLawn POS creds (fixes checkout + pulls Bynum's invoice) + any working Brivo creds.</span></li>
+<li><span class="box"></span><span><b>Square PRODUCTION token</b> → <span class="k">~/Desktop/square-token.txt</span> (still sandbox). Finishes the door's Square side.</span></li>
+<li><span class="box"></span><span><b>Cloudflare multi-account</b> → one token per account into <span class="k">~/Desktop/REMOTE-AGENT-CREDS.txt</span> (for the Mac mini / Hermes).</span></li>
+</ul></div>
+
+<div class="card"><h2><span class="tag t-purple">AI agents · Mac mini</span></h2><ul>
+<li><span class="box"></span><span><b>Hermes</b> — installed + running; needs <span class="k">hermes setup</span> → model + API key.</span></li>
+<li><span class="box"></span><span><b>Fazm</b> — cloned, bridge built; needs <span class="k">./run.sh</span> (Apple ID + permissions).</span></li>
+<li><span class="box"></span><span><b>Buy Anker PowerConf S330</b> (~$100) — mic for the mini (it has no built-in mic).</span></li>
+</ul></div>
+
+<div class="card"><h2><span class="tag t-green">SmartLawn / Lucente</span></h2><ul>
+<li><span class="box"></span><span><b>Text Dennis</b> — X430 vs X450 (same, 450 bigger), CM120 $5,499 + partner price.</span></li>
+<li><span class="box"></span><span>Deploy the updated <b>Lucente page</b> (<span class="k">~/Desktop/lucente-update/</span>) — blocked on Cloudflare access.</span></li>
+<li><span class="box"></span><span><b>SmartLawn site redo</b> — 12 models, pricing, photos, fleet section — blocked on CF access.</span></li>
+</ul></div>
+
+<div class="card"><h2><span class="tag t-blue">Branch Manager / infra</span></h2><ul>
+<li><span class="box"></span><span><b>Finish the tenants leak fix</b> — config/names/plan sealed ✅; <span class="k">owner_email</span> still readable → build a SECURITY DEFINER RPC + revoke (app change + redeploy).</span></li>
+<li><span class="box"></span><span><b>Text Kevin the Intrepid pitch</b> — live at branchmanager.app/northeast-intrepid-kevin-995ead.html.</span></li>
+<li><span class="box"></span><span>CPA portal URL: <span class="k">branchmanager.app/cpa2025-1aefb4.html</span> (pw Fay25).</span></li>
+</ul></div>
+
+<div class="card"><h2><span class="tag t-gray">Tree · verify handled (Jun 13–22)</span></h2><ul>
+<li><span class="box"></span><span>Confirm worked: (845) 987-0553 hot lead · Colby Moore quote · Katz estimate · John Voelp trees · crane multi-neighbor day · firewood $3,400 · Mr. Tree/Nick limb → invoice · Braxton chipper rental · Giant 254T buyout number.</span></li>
+<li><span class="box"></span><span><b>Geneva financing</b> (loader/chipper) — don't complete until price/rate in writing + work booked to cover break-even.</span></li>
+<li><span class="box"></span><span>⚠ <b>Verify GL insurance audit ($3,279.54) actually PAID</b> — records conflict; GL cancels 9/18/26 if not.</span></li>
+</ul></div>
+
+<div class="card"><h2><span class="tag t-green">Done · Jul 1</span></h2><ul>
+<li class="done"><span class="box"></span><span>Full site audit — all 4 sites up + fast; found the SmartLawn checkout bug + BM tenants leak.</span></li>
+<li class="done"><span class="box"></span><span>BM tenants data leak <b>sealed</b> (config/names/plan hidden; verified; no regression).</span></li>
+<li class="done"><span class="box"></span><span>Brivo <b>narrowed & confirmed</b> — it's MFA (client proven valid).</span></li>
+<li class="done"><span class="box"></span><span>Kevin Intrepid pitch page built + deployed live.</span></li>
+<li class="done"><span class="box"></span><span>Fazm + Hermes installed; agent setup prompts staged + emailed.</span></li>
+<li class="done"><span class="box"></span><span>CADCO balance read; Marissa reply drafted; SmartLawn reconciliation reviewed.</span></li>
+</ul></div>
+
+<div class="foot">Private · noindex · Second Nature Tree / SmartLawn NY / 2nd Nature Skate</div>
+</div></body></html>

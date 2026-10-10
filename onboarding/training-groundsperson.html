@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groundsperson Training — {{business_name}}</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,sans-serif; background:#f5f5f5; color:#1a1a1a; }
+  .header { background:#1b5e20; color:#fff; padding:20px; }
+  .header a { color:#fff; opacity:.7; text-decoration:none; font-size:14px; }
+  .header h1 { font-size:22px; margin-top:8px; }
+  .header p { font-size:14px; opacity:.8; margin-top:4px; }
+  .container { max-width:700px; margin:0 auto; padding:20px; }
+  .progress-bar-wrap { background:#e5e7eb; border-radius:10px; height:8px; margin:16px 0 8px; }
+  .progress-fill { background:#1b5e20; border-radius:10px; height:100%; transition:width .3s; }
+  .module { background:#fff; border-radius:12px; padding:0; margin-bottom:16px; border:1px solid #e5e7eb; overflow:hidden; }
+  .module-header { padding:16px 20px; cursor:pointer; display:flex; align-items:center; gap:12px; }
+  .module-header:hover { background:#fafafa; }
+  .module-num { background:#1b5e20; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+  .module-num.done { background:#22c55e; }
+  .module-title { font-size:15px; font-weight:700; flex:1; }
+  .module-time { font-size:12px; color:#999; }
+  .module-arrow { font-size:18px; color:#ccc; transition:transform .2s; }
+  .module-body { display:none; padding:0 20px 20px; }
+  .module.open .module-body { display:block; }
+  .module.open .module-arrow { transform:rotate(90deg); }
+  .video-slot { background:#000; border-radius:8px; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; margin-bottom:16px; color:#fff; font-size:14px; position:relative; }
+  .video-slot iframe { width:100%; height:100%; border:none; border-radius:8px; }
+  .video-placeholder { text-align:center; padding:20px; }
+  .video-placeholder .play { font-size:48px; margin-bottom:8px; }
+  .steps { margin:12px 0; }
+  .steps li { font-size:14px; padding:6px 0; border-bottom:1px solid #f5f5f5; line-height:1.5; }
+  .steps li:last-child { border-bottom:none; }
+  .key-point { background:#fff8e1; border-left:3px solid #f59e0b; padding:10px 14px; font-size:13px; border-radius:0 6px 6px 0; margin:12px 0; }
+  .quiz { background:#f0fdf4; border-radius:8px; padding:16px; margin-top:16px; }
+  .quiz h4 { font-size:14px; margin-bottom:12px; color:#1b5e20; }
+  .quiz-q { font-size:14px; font-weight:600; margin-bottom:8px; }
+  .quiz label { display:block; padding:6px 0; font-size:14px; cursor:pointer; }
+  .quiz label input { margin-right:8px; }
+  .quiz-submit { margin-top:12px; padding:8px 20px; background:#1b5e20; color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px; }
+  .quiz-result { margin-top:8px; font-size:13px; font-weight:600; }
+  .field-signoff { background:#e8f5e9; border-radius:8px; padding:16px; margin-top:12px; }
+  .field-signoff h4 { font-size:14px; color:#1b5e20; margin-bottom:8px; }
+  .signoff-row { display:flex; gap:12px; align-items:center; margin-top:8px; }
+  .signoff-row input { flex:1; padding:8px; border:2px solid #ccc; border-radius:6px; font-size:14px; }
+  .complete-btn { display:block; width:100%; padding:14px; background:#1b5e20; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; margin-top:12px; }
+  .complete-btn:disabled { background:#ccc; }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html">← Back to Onboarding</a>
+  <h1>🧑‍🔧 Groundsperson Training</h1>
+  <p>6 modules · ~45 min total · Video + Quiz + Field Demo</p>
+</div>
+
+<div class="container">
+  <div class="progress-bar-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+  <p style="font-size:12px;color:#999;margin-bottom:20px;" id="progress-text">0 of 6 modules complete</p>
+
+  <!-- MODULE 1 -->
+  <div class="module" id="mod1">
+    <div class="module-header" onclick="toggleModule('mod1')">
+      <div class="module-num" id="mod1-num">1</div>
+      <div class="module-title">Job Site Setup & Work Zone Safety</div>
+      <div class="module-time">8 min</div>
+      <div class="module-arrow">›</div>
+    </div>
+    <div class="module-body">
+      <div class="video-slot">
+        <div class="video-placeholder">
+          <div class="play">▶</div>
+          <div>Video: Work Zone Setup (upload your video here)</div>
+          <div style="font-size:11px;margin-top:4px;opacity:.6;">Replace this with a YouTube embed or MP4</div>
+        </div>
+      </div>
+      <h4 style="font-size:14px;margin-bottom:8px;">Key Steps:</h4>
+      <ol class="steps">
+        <li><strong>Arrive early.</strong> Be at the truck by call time. Check schedule in Branch Manager app.</li>
+        <li><strong>Set up cones and signs</strong> before ANY equipment comes off the truck. 50ft minimum from work area on roads.</li>
+        <li><strong>Identify hazards</strong> — power lines, fences, cars, structures, slopes. Point them out to crew lead.</li>
+        <li><strong>Clear the drop zone</strong> — nothing within 2x the height of what's being cut.</li>
+        <li><strong>Barricade the area</strong> — no pedestrians within 2 tree-lengths. Use caution tape on residential streets.</li>
+      </ol>
+      <div class="key-point">⚡ <strong>Power lines:</strong> If ANY branch is within 10 feet of a power line, STOP. Tell the crew lead. We call Con Ed / NYSEG — never attempt it ourselves.</div>
+
+      <div class="quiz">
+        <h4>Knowledge Check</h4>
+        <div class="quiz-q">1. How far from the work area should cones be placed on a road?</div>
+        <label><input type="radio" name="q1" value="a"> 10 feet</label>
+        <label><input type="radio" name="q1" value="b"> 25 feet</label>
+        <label><input type="radio" name="q1" value="c"> 50 feet minimum</label>
+        <div class="quiz-q" style="margin-top:12px;">2. What do you do if a branch is within 10 feet of a power line?</div>
+        <label><input type="radio" name="q2" value="a"> Cut it carefully</label>
+        <label><input type="radio" name="q2" value="b"> Stop and tell the crew lead — call the utility</label>
+        <label><input type="radio" name="q2" value="c"> Use rubber gloves</label>
+        <button class="quiz-submit" onclick="checkQuiz('mod1',{q1:'c',q2:'b'})">Check Answers</button>
+        <div class="quiz-result" id="mod1-result"></div>
+      </div>
+
+      <div class="field-signoff">
+        <h4>Field Demonstration</h4>
+        <p style="font-size:13px;">Set up a real work zone with cones, signs, and caution tape. Crew lead observes and signs off.</p>
+        <div class="signoff-row">
+          <input type="text" placeholder="Crew Lead name" id="mod1-signoff">
+          <button class="complete-btn" style="width:auto;padding:8px 16px;" onclick="completeModule('mod1')">✓ Sign Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 2 -->
+  <div class="module" id="mod2">
+    <div class="module-header" onclick="toggleModule('mod2')">
+      <div class="module-num" id="mod2-num">2</div>
+      <div class="module-title">Chipper Operation & Safety</div>
+      <div class="module-time">10 min</div>
+      <div class="module-arrow">›</div>
+    </div>
+    <div class="module-body">
+      <div class="video-slot">
+        <div class="video-placeholder"><div class="play">▶</div><div>Video: Chipper Safety (upload your video)</div></div>
+      </div>
+      <ol class="steps">
+        <li><strong>Pre-check:</strong> Walk around chipper. Check blades, feed tray, discharge chute, safety bar.</li>
+        <li><strong>Feeding:</strong> Butt-end first. Stand to the SIDE, never directly behind material. Let the rollers grab — don't push.</li>
+        <li><strong>Emergency stop:</strong> Know where the feed bar reverse is. Hit it if ANYTHING goes wrong.</li>
+        <li><strong>Never:</strong> Reach into the feed tray. Never wear loose clothing, jewelry, or lanyards near the chipper.</li>
+        <li><strong>After use:</strong> Shut down, wait for full stop, inspect blades, clean feed tray.</li>
+      </ol>
+      <div class="key-point">🚨 <strong>The chipper is the most dangerous piece of equipment on the job.</strong> More tree worker fatalities involve chippers than chainsaws. Respect it every single time.</div>
+
+      <div class="quiz">
+        <h4>Knowledge Check</h4>
+        <div class="quiz-q">1. Which end of a branch goes into the chipper first?</div>
+        <label><input type="radio" name="q3" value="a"> Tip end</label>
+        <label><input type="radio" name="q3" value="b"> Butt end (thick end)</label>
+        <label><input type="radio" name="q3" value="c"> Doesn't matter</label>
+        <div class="quiz-q" style="margin-top:12px;">2. Where do you stand when feeding the chipper?</div>
+        <label><input type="radio" name="q4" value="a"> Directly behind the material</label>
+        <label><input type="radio" name="q4" value="b"> To the side</label>
+        <label><input type="radio" name="q4" value="c"> As close as possible to guide it in</label>
+        <button class="quiz-submit" onclick="checkQuiz('mod2',{q3:'b',q4:'b'})">Check Answers</button>
+        <div class="quiz-result" id="mod2-result"></div>
+      </div>
+
+      <div class="field-signoff">
+        <h4>Field Demonstration</h4>
+        <p style="font-size:13px;">Feed 10 branches through the chipper with crew lead observing proper technique.</p>
+        <div class="signoff-row">
+          <input type="text" placeholder="Crew Lead name" id="mod2-signoff">
+          <button class="complete-btn" style="width:auto;padding:8px 16px;" onclick="completeModule('mod2')">✓ Sign Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 3 -->
+  <div class="module" id="mod3">
+    <div class="module-header" onclick="toggleModule('mod3')">
+      <div class="module-num" id="mod3-num">3</div>
+      <div class="module-title">Brush Dragging & Cleanup Technique</div>
+      <div class="module-time">5 min</div>
+      <div class="module-arrow">›</div>
+    </div>
+    <div class="module-body">
+      <div class="video-slot">
+        <div class="video-placeholder"><div class="play">▶</div><div>Video: Efficient Brush Handling</div></div>
+      </div>
+      <ol class="steps">
+        <li><strong>Work in the direction of the chipper.</strong> Drag toward the feed, not away.</li>
+        <li><strong>Big stuff first.</strong> Drag large limbs to the chipper, then rake small debris.</li>
+        <li><strong>Protect the property.</strong> Don't drag branches across lawns (use tarps). Don't hit cars, fences, flower beds.</li>
+        <li><strong>Raking:</strong> Rake sawdust and small chips. Leave the site cleaner than you found it.</li>
+        <li><strong>Load wood:</strong> Stack logs neatly on truck. Heaviest on bottom. Secure with straps.</li>
+      </ol>
+      <div class="key-point">💡 <strong>Cleanup is what clients notice most.</strong> A perfect cut means nothing if the yard looks trashed. Take pride in the cleanup — it's what gets us 5-star reviews.</div>
+
+      <div class="field-signoff">
+        <h4>Field Demonstration</h4>
+        <p style="font-size:13px;">Clean up a real job site. Crew lead evaluates efficiency, property protection, and final result.</p>
+        <div class="signoff-row">
+          <input type="text" placeholder="Crew Lead name" id="mod3-signoff">
+          <button class="complete-btn" style="width:auto;padding:8px 16px;" onclick="completeModule('mod3')">✓ Sign Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 4 -->
+  <div class="module" id="mod4">
+    <div class="module-header" onclick="toggleModule('mod4')">
+      <div class="module-num" id="mod4-num">4</div>
+      <div class="module-title">Chainsaw Ground Operations</div>
+      <div class="module-time">10 min</div>
+      <div class="module-arrow">›</div>
+    </div>
+    <div class="module-body">
+      <div class="video-slot">
+        <div class="video-placeholder"><div class="play">▶</div><div>Video: Chainsaw Safety for Ground Crew</div></div>
+      </div>
+      <ol class="steps">
+        <li><strong>PPE check:</strong> Chaps ON, face shield DOWN, ear protection IN, gloves ON before starting.</li>
+        <li><strong>Pre-start:</strong> Check chain tension, bar oil, fuel, chain brake. Start on the ground — drop start only.</li>
+        <li><strong>Bucking:</strong> Cut from the top, watch for spring-back on bent logs. Support the log so the bar doesn't pinch.</li>
+        <li><strong>Carry:</strong> Chain brake ON, bar pointed behind you, engine off when walking more than 50 feet.</li>
+        <li><strong>Kickback zone:</strong> Never cut with the tip of the bar. That's the kickback zone.</li>
+      </ol>
+      <div class="key-point">⚠️ <strong>You will NOT use a chainsaw until your crew lead clears you.</strong> Minimum 3 supervised sessions before solo ground cuts. No exceptions.</div>
+
+      <div class="quiz">
+        <h4>Knowledge Check</h4>
+        <div class="quiz-q">1. What PPE is required specifically for chainsaw use?</div>
+        <label><input type="radio" name="q5" value="a"> Hard hat only</label>
+        <label><input type="radio" name="q5" value="b"> Chaps, face shield, ear protection, gloves</label>
+        <label><input type="radio" name="q5" value="c"> Safety glasses</label>
+        <div class="quiz-q" style="margin-top:12px;">2. What part of the chainsaw bar causes kickback?</div>
+        <label><input type="radio" name="q6" value="a"> The bottom</label>
+        <label><input type="radio" name="q6" value="b"> The middle</label>
+        <label><input type="radio" name="q6" value="c"> The tip</label>
+        <button class="quiz-submit" onclick="checkQuiz('mod4',{q5:'b',q6:'c'})">Check Answers</button>
+        <div class="quiz-result" id="mod4-result"></div>
+      </div>
+
+      <div class="field-signoff">
+        <h4>Field Demonstration</h4>
+        <p style="font-size:13px;">Buck 5 logs on the ground with proper PPE, stance, and technique. 3 supervised sessions required before solo use.</p>
+        <div class="signoff-row">
+          <input type="text" placeholder="Crew Lead name" id="mod4-signoff">
+          <button class="complete-btn" style="width:auto;padding:8px 16px;" onclick="completeModule('mod4')">✓ Sign Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 5 -->
+  <div class="module" id="mod5">
+    <div class="module-header" onclick="toggleModule('mod5')">
+      <div class="module-num" id="mod5-num">5</div>
+      <div class="module-title">Rigging & Rope Handling</div>
+      <div class="module-time">8 min</div>
+      <div class="module-arrow">›</div>
+    </div>
+    <div class="module-body">
+      <div class="video-slot">
+        <div class="video-placeholder"><div class="play">▶</div><div>Video: Ground Crew Rigging Basics</div></div>
+      </div>
+      <ol class="steps">
+        <li><strong>Communication:</strong> Climber says "STAND CLEAR" before any piece comes down. You respond "ALL CLEAR" only when the drop zone is actually clear.</li>
+        <li><strong>Rope handling:</strong> Run the rope through the Port-a-Wrap or lowering device. Keep tension — never let it run free.</li>
+        <li><strong>Tag lines:</strong> Use tag lines on large pieces to guide them away from targets (houses, fences).</li>
+        <li><strong>Never stand under:</strong> Never stand under a piece being lowered. Never stand under the climber.</li>
+        <li><strong>Rope care:</strong> Keep ropes out of the chipper path. Coil and store at end of day.</li>
+      </ol>
+      <div class="key-point">📢 <strong>Communication saves lives.</strong> If you can't hear the climber, STOP everything and re-establish voice contact. Hand signals: thumbs up = ready, fist = stop, wave = come here.</div>
+
+      <div class="field-signoff">
+        <h4>Field Demonstration</h4>
+        <p style="font-size:13px;">Operate the Port-a-Wrap for 3 lowering sequences. Demonstrate proper communication protocol.</p>
+        <div class="signoff-row">
+          <input type="text" placeholder="Crew Lead name" id="mod5-signoff">
+          <button class="complete-btn" style="width:auto;padding:8px 16px;" onclick="completeModule('mod5')">✓ Sign Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 6 -->
+  <div class="module" id="mod6">
+    <div class="module-header" onclick="toggleModule('mod6')">
+      <div class="module-num" id="mod6-num">6</div>
+      <div class="module-title">Using Branch Manager App</div>
+      <div class="module-time">5 min</div>
+      <div class="module-arrow">›</div>
+    </div>
+    <div class="module-body">
+      <div class="video-slot">
+        <div class="video-placeholder"><div class="play">▶</div><div>Video: Branch Manager App Walkthrough</div></div>
+      </div>
+      <ol class="steps">
+        <li><strong>Clock in</strong> at the start of every shift. Open the app → tap Clock In.</li>
+        <li><strong>Check schedule</strong> — your jobs for the day, addresses, client notes.</li>
+        <li><strong>Take photos</strong> — before/after photos on every job. Tap the camera icon on the job detail.</li>
+        <li><strong>Add notes</strong> — anything the next crew should know. Hazards, client requests, access issues.</li>
+        <li><strong>Clock out</strong> at end of shift. Your hours auto-feed to payroll.</li>
+      </ol>
+
+      <div class="field-signoff">
+        <h4>Hands-On Check</h4>
+        <p style="font-size:13px;">Clock in, view today's schedule, take a test photo, add a note, clock out.</p>
+        <div class="signoff-row">
+          <input type="text" placeholder="Crew Lead name" id="mod6-signoff">
+          <button class="complete-btn" style="width:auto;padding:8px 16px;" onclick="completeModule('mod6')">✓ Sign Off</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completion -->
+  <div id="completion" style="display:none;background:#e8f5e9;border-radius:12px;padding:24px;text-align:center;margin-bottom:20px;">
+    <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+    <h2 style="color:#1b5e20;">Training Complete!</h2>
+    <p style="color:#333;margin-top:8px;">You've completed all 6 Groundsperson training modules. You're cleared for supervised field work. Welcome to the crew!</p>
+    <a href="index.html" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#1b5e20;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">← Back to Onboarding</a>
+  </div>
+
+  <div style="text-align:center;padding:20px;">
+    <p style="font-size:13px;color:#999;">{{legal_name}} · {{address_short}}</p>
+  </div>
+</div>
+
+<script>
+var completed = JSON.parse(localStorage.getItem('training-ground-done') || '{}');
+
+function toggleModule(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function checkQuiz(modId, answers) {
+  var correct = 0, total = Object.keys(answers).length;
+  Object.keys(answers).forEach(function(q) {
+    var sel = document.querySelector('input[name="' + q + '"]:checked');
+    if (sel && sel.value === answers[q]) correct++;
+  });
+  var el = document.getElementById(modId + '-result');
+  if (correct === total) {
+    el.style.color = '#16a34a';
+    el.textContent = '✅ ' + correct + '/' + total + ' correct!';
+  } else {
+    el.style.color = '#dc2626';
+    el.textContent = '❌ ' + correct + '/' + total + ' — review the material and try again.';
+  }
+}
+
+function completeModule(id) {
+  var signoff = document.getElementById(id + '-signoff').value.trim();
+  if (!signoff) { alert('Crew Lead must enter their name to sign off.'); return; }
+  completed[id] = { signoff: signoff, date: new Date().toISOString() };
+  localStorage.setItem('training-ground-done', JSON.stringify(completed));
+  document.getElementById(id + '-num').classList.add('done');
+  document.getElementById(id + '-num').textContent = '✓';
+  document.getElementById(id).classList.remove('open');
+  updateTrainingProgress();
+}
+
+function updateTrainingProgress() {
+  var total = 6;
+  var done = Object.keys(completed).length;
+  document.getElementById('progress').style.width = Math.round((done/total)*100) + '%';
+  document.getElementById('progress-text').textContent = done + ' of ' + total + ' modules complete';
+  if (done === total) document.getElementById('completion').style.display = 'block';
+}
+
+// Restore
+Object.keys(completed).forEach(function(id) {
+  var num = document.getElementById(id + '-num');
+  if (num) { num.classList.add('done'); num.textContent = '✓'; }
+});
+updateTrainingProgress();
+</script>
+<script src="onboarding-sig.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function(){ if (typeof OnboardingSig !== "undefined") OnboardingSig.autoFillAll(); });</script>
+</body>
+</html>

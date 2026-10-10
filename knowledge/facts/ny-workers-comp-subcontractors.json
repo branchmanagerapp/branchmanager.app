@@ -1,0 +1,61 @@
+{
+  "topic": "ny-workers-comp-subcontractors",
+  "title": "New York: workers comp and subcontractors",
+  "summary": "What happens at audit when a sub has no comp policy, and what paper counts.",
+  "facts": [
+    {
+      "id": "nysif-uninsured-subs",
+      "kind": "fact",
+      "claim": "NYSIF: if a subcontractor has no workers comp coverage, the sub is included in the hiring company's policy, and the hiring company is responsible for the premium and for claims.",
+      "source": {
+        "name": "New York State Insurance Fund — Subcontractor Coverage",
+        "url": "https://ww3.nysif.com/en/Employer/WCpolicyholder/AboutYourPolicy/SubcontractorCoverage",
+        "tier": 1,
+        "published": "2022-07-07",
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "nysif-audit-certificates",
+      "kind": "fact",
+      "claim": "NYSIF asks for every subcontractor's certificate of insurance at premium audit. If they can't be produced, premium is recalculated with those subs counted as payroll. NYSIF-covered subs can be checked with NYSIF's Certificate Validation tool; others with the WCB Employer Coverage Search.",
+      "source": {
+        "name": "New York State Insurance Fund — Subcontractor Coverage",
+        "url": "https://ww3.nysif.com/en/Employer/WCpolicyholder/AboutYourPolicy/SubcontractorCoverage",
+        "tier": 1,
+        "published": "2022-07-07",
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "ce200-limits",
+      "kind": "fact",
+      "claim": "Form CE-200 (Certificate of Attestation of Exemption) is only for government permits, licenses and contracts. The WCB states it cannot be used to show another business, or that business's insurance carrier, that coverage is not required.",
+      "source": {
+        "name": "NYS Workers' Compensation Board — Certificate of Attestation of Exemption (CE-200)",
+        "url": "https://www.wcb.ny.gov/content/ebiz/wc_db_exemptions/exemption-certificates.jsp",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "What a carrier will accept from a one-person sub with no comp policy is a question for the carrier, before the first job.",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    }
+  ]
+}

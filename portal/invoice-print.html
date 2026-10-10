@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Invoice — Branch Manager</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7f6; color: #1a3c12; padding: 24px 16px; }
+  .controls { max-width: 720px; margin: 0 auto 16px; display: flex; justify-content: space-between; gap: 8px; }
+  .btn {
+    background: #2e7d32; color: #fff; border: none; padding: 10px 18px;
+    border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn.outline { background: #fff; color: #1a3c12; border: 1px solid #1a3c12; }
+  .invoice {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 36px 40px;
+    max-width: 720px;
+    margin: 0 auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #1a3c12;
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+  }
+  .brand h1 { font-size: 22px; font-weight: 800; color: #1a3c12; margin-bottom: 2px; }
+  .brand p { font-size: 12px; color: #6b7280; line-height: 1.5; }
+  .doc-meta { text-align: right; }
+  .doc-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; font-weight: 700; }
+  .doc-meta .num { font-size: 22px; font-weight: 800; color: #1a3c12; margin-top: 2px; margin-bottom: 8px; }
+  .meta-row { display: flex; justify-content: space-between; gap: 28px; margin-bottom: 24px; font-size: 13px; }
+  .meta-row .col label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; font-weight: 700; margin-bottom: 4px; }
+  .meta-row .col .val { color: #1a3c12; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 13px; }
+  th { text-align: left; padding: 10px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; font-weight: 700; border-bottom: 2px solid #e5e7eb; }
+  th.r, td.r { text-align: right; }
+  td { padding: 12px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  td .desc { color: #6b7280; font-size: 12px; margin-top: 2px; }
+  .totals { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+  .totals-inner { width: 280px; font-size: 13px; }
+  .tot-row { display: flex; justify-content: space-between; padding: 6px 0; }
+  .tot-row.total { border-top: 2px solid #1a3c12; padding-top: 10px; margin-top: 4px; font-weight: 800; font-size: 16px; }
+  .tot-row.bal { color: #dc2626; font-weight: 700; padding-top: 4px; }
+  .tot-row.paid { color: #166534; font-weight: 700; }
+  .footer-note {
+    font-size: 12px; color: #6b7280; line-height: 1.6;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+    margin-top: 8px;
+    text-align: center;
+  }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .pill.paid { background: #dcfce7; color: #166534; }
+  .pill.due { background: #fef3c7; color: #92400e; }
+  .pill.past { background: #fee2e2; color: #b91c1c; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .controls { display: none; }
+    .invoice { border: none; box-shadow: none; max-width: none; padding: 24px 32px; }
+  }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <a href="dashboard.html" class="btn outline">← Back</a>
+    <button class="btn" onclick="window.print()">🖨 Save as PDF / Print</button>
+  </div>
+  <div id="invoice-mount"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPA_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  function fmt(n){ return '$' + (parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function dateLong(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function load() {
+    const { data: sess } = await sb.auth.getSession();
+    if (!sess || !sess.session) { location.href = 'index.html'; return; }
+    const id = new URLSearchParams(location.search).get('id');
+    if (!id) { document.body.innerHTML = '<p style="text-align:center;padding:60px;color:#6b7280;">Invoice ID missing.</p>'; return; }
+
+    const [invRes, payRes, clientRes] = await Promise.all([
+      sb.from('invoices').select('*').eq('id', id).single(),
+      sb.from('payments').select('*').eq('invoice_id', id).order('date', { ascending: true }),
+      sb.from('clients').select('*').limit(1)
+    ]);
+    const inv = invRes.data;
+    const payments = payRes.data || [];
+    const client = clientRes.data && clientRes.data[0];
+    if (!inv) { document.body.innerHTML = '<p style="text-align:center;padding:60px;color:#6b7280;">Invoice not found or not yours.</p>'; return; }
+
+    // White-label: this invoice's issuing company = the customer's own
+    // client.tenant_id, never hardcoded SNT. Generic if RLS withholds it
+    // (a customer never sees another business on their invoice).
+    let co = { name: '', addr: '', phone: '', email: '', lic: '', digits: '' };
+    try {
+      const tid = inv.tenant_id || (client && client.tenant_id);
+      if (tid) {
+        const { data: trows } = await sb.from('tenants').select('name,config').eq('id', tid);
+        const t = trows && trows[0];
+        if (t) {
+          const c = t.config || {};
+          co.name = c.company_name || t.name || '';
+          co.addr = [c.address_line1, c.address_line2, [c.city, c.state, c.zip].filter(Boolean).join(', ')].filter(Boolean).join(', ');
+          co.phone = c.company_phone || '';
+          co.digits = String(co.phone).replace(/\D/g, '');
+          co.email = c.company_email || c.from_email || '';
+          co.lic = c.license_text || (c.wc_number ? ('Licensed & Insured · ' + c.wc_number) : '');
+        }
+      }
+    } catch (e) { /* generic */ }
+    const coTitle = co.name || 'Invoice';
+    const coLine2 = [co.addr, [co.phone, co.email].filter(Boolean).join(' · '), co.lic]
+      .filter(Boolean).map(s => esc(s)).join('<br>');
+
+    const items = inv.line_items || [];
+    const subtotal = inv.subtotal != null ? parseFloat(inv.subtotal) : (inv.total - (inv.tax_amount || 0));
+    const totalPaid = payments.reduce((s,p) => s + (parseFloat(p.amount) || 0), 0);
+    const balance = parseFloat(inv.balance) != null ? parseFloat(inv.balance) : Math.max(0, parseFloat(inv.total) - totalPaid);
+    const isPaid = inv.status === 'paid';
+    const isPastDue = !isPaid && inv.due_date && new Date(inv.due_date) < new Date();
+    const statusPill = isPaid
+      ? '<span class="pill paid">Paid</span>'
+      : (isPastDue ? '<span class="pill past">Past due</span>' : '<span class="pill due">Balance due</span>');
+
+    let lineHtml = '';
+    items.forEach(it => {
+      const amt = it.amount != null ? parseFloat(it.amount) : ((it.qty || 1) * (it.rate || 0));
+      lineHtml += '<tr>'
+        +   '<td><strong>' + esc(it.service || it.name || 'Service') + '</strong>'
+        +     (it.description ? '<div class="desc">' + esc(it.description) + '</div>' : '')
+        +   '</td>'
+        +   '<td class="r">' + (it.qty || 1) + '</td>'
+        +   '<td class="r">' + fmt(it.rate || 0) + '</td>'
+        +   '<td class="r"><strong>' + fmt(amt) + '</strong></td>'
+        + '</tr>';
+    });
+
+    const html = '<div class="invoice">'
+      + '<div class="header">'
+      +   '<div class="brand">'
+      +     '<h1>🌳 ' + esc(coTitle) + '</h1>'
+      +     (coLine2 ? '<p>' + coLine2 + '</p>' : '')
+      +   '</div>'
+      +   '<div class="doc-meta">'
+      +     '<div class="label">Invoice</div>'
+      +     '<div class="num">#' + esc(inv.invoice_number || '—') + '</div>'
+      +     statusPill
+      +   '</div>'
+      + '</div>'
+      + '<div class="meta-row">'
+      +   '<div class="col"><label>Bill to</label><div class="val">' + esc(inv.client_name || (client && client.name) || '—') + '</div>'
+      +     ((client && client.address) ? '<div style="font-size:12px;color:#6b7280;margin-top:2px;">' + esc(client.address) + '</div>' : '')
+      +   '</div>'
+      +   '<div class="col"><label>Invoice Date</label><div class="val">' + dateLong(inv.issued_date || inv.created_at) + '</div></div>'
+      +   '<div class="col"><label>Due Date</label><div class="val">' + (inv.due_date ? dateLong(inv.due_date) : 'Due on receipt') + '</div></div>'
+      + '</div>'
+      + (inv.subject ? '<div style="font-size:13px;color:#6b7280;margin-bottom:12px;"><strong style="color:#1a3c12;">Re:</strong> ' + esc(inv.subject) + '</div>' : '')
+      + '<table>'
+      +   '<thead><tr><th>Service / Description</th><th class="r" style="width:60px;">Qty</th><th class="r" style="width:100px;">Rate</th><th class="r" style="width:120px;">Amount</th></tr></thead>'
+      +   '<tbody>' + (lineHtml || '<tr><td colspan="4" style="color:#9ca3af;text-align:center;padding:20px;">No line items</td></tr>') + '</tbody>'
+      + '</table>'
+      + '<div class="totals"><div class="totals-inner">'
+      +   '<div class="tot-row"><span>Subtotal</span><span>' + fmt(subtotal) + '</span></div>'
+      +   (inv.tax_rate ? '<div class="tot-row"><span>Tax (' + inv.tax_rate + '%)</span><span>' + fmt(inv.tax_amount || 0) + '</span></div>' : '')
+      +   '<div class="tot-row total"><span>Total</span><span>' + fmt(inv.total) + '</span></div>'
+      +   (totalPaid > 0 ? '<div class="tot-row paid"><span>Paid</span><span>−' + fmt(totalPaid) + '</span></div>' : '')
+      +   (!isPaid ? '<div class="tot-row bal"><span>Balance due</span><span>' + fmt(balance) + '</span></div>' : '')
+      + '</div></div>'
+      + (payments.length ? '<div style="font-size:11px;color:#6b7280;margin-top:8px;"><strong>Payment history:</strong> '
+          + payments.map(p => fmt(p.amount) + ' on ' + dateLong(p.date) + (p.method ? ' (' + esc(p.method) + ')' : '')).join(' · ') + '</div>' : '')
+      + '<div class="footer-note">Thank you for choosing ' + esc(co.name || 'us') + '.<br>'
+      +   'Questions? Reply to your email' + (co.digits ? ' or call ' + esc(co.phone) : '') + '.'
+      + '</div>'
+      + '</div>';
+
+    document.getElementById('invoice-mount').innerHTML = html;
+    document.title = 'Invoice #' + (inv.invoice_number || id) + ' — Branch Manager';
+  }
+  load().catch(e => {
+    document.getElementById('invoice-mount').innerHTML = '<p style="text-align:center;padding:60px;color:#dc2626;">Could not load invoice: ' + (e.message || e) + '</p>';
+  });
+</script>
+</body>
+</html>

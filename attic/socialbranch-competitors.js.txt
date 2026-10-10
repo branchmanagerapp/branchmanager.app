@@ -1,0 +1,212 @@
+  // ─────────────────────────────────────────────────────────
+  // COMPETITORS — v428: SocialPilot-style competitor tracking
+  // Enter a company name + city; AI auto-suggests their socials; track posts/engagement.
+  // ─────────────────────────────────────────────────────────
+  _competitorsCache: null,
+  _competitorsFetched: false,
+
+  _renderCompetitors: function() {
+    var self = SocialBranch;
+    self._fetchCompetitors();
+    var list = self._competitorsCache || [];
+
+    var html = '';
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +   '<h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px;">' + self._netIcon('binoculars', 16) + 'Competitors (' + list.length + ')</h3>'
+      +   '<button onclick="SocialBranch._addCompetitor()" class="btn btn-primary" style="font-size:13px;">+ Add Competitor</button>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">Just type the company name + city. AI auto-discovers their website, Facebook page, Instagram, Google Business, YouTube. Then you can see their post cadence + engagement, get content ideas from what works for them.</div>'
+      + '</div>';
+
+    if (!list.length) {
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:30px;text-align:center;">'
+        + '<div style="font-size:36px;margin-bottom:8px;">🔭</div>'
+        + '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">No competitors tracked yet</div>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Add a tree service in your area to start tracking their content strategy.</div>'
+        + '<button onclick="SocialBranch._addCompetitor()" class="btn btn-primary" style="font-size:13px;">+ Add First Competitor</button>'
+        + '</div>';
+      return html;
+    }
+
+    list.forEach(function(c) {
+      var lastCheck = c.last_checked_at ? UI.timeAgo(c.last_checked_at) : 'never checked';
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">'
+        +   '<div><div style="font-weight:700;font-size:15px;">' + UI.esc(c.name) + (c.city ? ' <span style="font-size:12px;color:var(--text-light);font-weight:500;">· ' + UI.esc(c.city) + '</span>' : '') + '</div>'
+        +   '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">Last check: ' + lastCheck + '</div></div>'
+        +   '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+        +     '<button onclick="SocialBranch._refreshCompetitor(\'' + c.id + '\')" class="btn btn-outline" style="font-size:11px;padding:5px 10px;">↻ AI check</button>'
+        +     '<button onclick="SocialBranch._editCompetitor(\'' + c.id + '\')" style="background:none;border:1px solid var(--border);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;">Edit</button>'
+        +     '<button onclick="SocialBranch._removeCompetitor(\'' + c.id + '\')" style="background:none;border:none;color:var(--text-light);font-size:11px;cursor:pointer;">Remove</button>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+      var links = [
+        ['website', c.website, '🌐 Website'],
+        ['facebook', c.facebook_url, '📘 Facebook'],
+        ['instagram', c.instagram_handle ? 'https://instagram.com/' + c.instagram_handle.replace(/^@/, '') : '', '📷 Instagram'],
+        ['gmb', c.gmb_url, '📍 Google Business'],
+        ['youtube', c.youtube_url, '🎥 YouTube'],
+        ['tiktok', c.tiktok_handle ? 'https://tiktok.com/@' + c.tiktok_handle.replace(/^@/, '') : '', '🎵 TikTok']
+      ];
+      links.forEach(function(L) {
+        if (!L[1]) return;
+        html += '<a href="' + UI.esc(L[1]) + '" target="_blank" rel="noopener noreferrer" style="background:var(--bg);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-size:11px;text-decoration:none;color:var(--text);">' + L[2] + ' →</a>';
+      });
+      html += '</div>';
+      if (c.last_check_summary) {
+        html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text);"><strong>AI summary:</strong> ' + UI.esc(c.last_check_summary) + '</div>';
+      }
+      if (c.notes) {
+        html += '<div style="margin-top:8px;font-size:12px;color:var(--text-light);">' + UI.esc(c.notes) + '</div>';
+      }
+      html += '</div>';
+    });
+
+    return html;
+  },
+
+  _fetchCompetitors: function() {
+    if (SocialBranch._competitorsFetched) return;
+    SocialBranch._competitorsFetched = true;
+    if (!window.SB || !SB.from) return;
+    SB.from('competitors').select('*').eq('active', true).order('name', { ascending: true }).then(function(r) {
+      if (r.error) { console.warn('competitors fetch:', r.error.message); return; }
+      SocialBranch._competitorsCache = r.data || [];
+      if (SocialBranch._tab === 'competitors') loadPage('socialbranch');
+    });
+  },
+
+  _addCompetitor: function() {
+    UI.modal({
+      title: 'Add Competitor',
+      html: '<div style="display:grid;gap:10px;">'
+        + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">Company Name<input id="c-name" placeholder="e.g. Hudson Valley Tree Care" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
+        + '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">City / Region<input id="c-city" placeholder="e.g. Peekskill, NY" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-top:4px;"></label>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-top:4px;">After save, AI will auto-discover their website, FB, IG, GMB, YouTube. You can refine manually after.</div>'
+        + '</div>',
+      buttons: [
+        { label: 'Cancel', action: 'close' },
+        { label: 'Save & Auto-Discover', primary: true, action: 'SocialBranch._saveCompetitor()' }
+      ]
+    });
+  },
+
+  _saveCompetitor: function() {
+    var name = document.getElementById('c-name').value.trim();
+    var city = document.getElementById('c-city').value.trim();
+    if (!name) { UI.toast('Name required', 'error'); return; }
+    var row = {
+      tenant_id: window.resolveTenantId(),
+      name: name,
+      city: city || null,
+      active: true
+    };
+    SB.from('competitors').insert(row).select().single().then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Saved — AI is searching for their socials…');
+      UI.closeModal();
+      SocialBranch._refreshCompetitor(r.data.id, true);
+    });
+  },
+
+  _refreshCompetitor: function(id, isFresh) {
+    var c = (SocialBranch._competitorsCache || []).find(function(x){ return x.id === id; });
+    var name = (c && c.name) || '';
+    var city = (c && c.city) || '';
+    if (!name && !isFresh) {
+      // Fetch row first
+      SB.from('competitors').select('*').eq('id', id).single().then(function(r) {
+        if (!r.error && r.data) SocialBranch._refreshCompetitor(id, true);
+      });
+      return;
+    }
+    var prompt = 'Find the social media + web presence for this small business. Return ONLY a JSON object with these keys (use empty string if unknown): {"website":"","facebook_url":"","instagram_handle":"","gmb_url":"","youtube_url":"","tiktok_handle":"","summary":""}. The summary should be 1-2 sentences about their content strategy if you can tell. Business: ' + name + (city ? ' in ' + city : '') + '. Industry: tree service.';
+    if (typeof callAI !== 'function' && (!window.AI || !AI.chat)) {
+      UI.toast('AI not available — add socials manually via Edit', 'error');
+      return;
+    }
+    UI.toast('AI is searching…');
+    var ai = (typeof callAI === 'function') ? callAI(prompt) : AI.chat(prompt);
+    Promise.resolve(ai).then(function(resp) {
+      var text = typeof resp === 'string' ? resp : (resp && resp.text) || '';
+      var m = text.match(/\{[\s\S]*\}/);
+      if (!m) { UI.toast('AI returned unexpected format — try Edit manually', 'error'); return; }
+      try {
+        var data = JSON.parse(m[0]);
+        var update = {
+          website: data.website || null,
+          facebook_url: data.facebook_url || null,
+          instagram_handle: data.instagram_handle || null,
+          gmb_url: data.gmb_url || null,
+          youtube_url: data.youtube_url || null,
+          tiktok_handle: data.tiktok_handle || null,
+          last_check_summary: data.summary || null,
+          last_checked_at: new Date().toISOString()
+        };
+        SB.from('competitors').update(update).eq('id', id).then(function(r) {
+          if (r.error) { UI.toast('Update failed: ' + r.error.message, 'error'); return; }
+          UI.toast('AI discovery complete');
+          SocialBranch._competitorsFetched = false;
+          SocialBranch._fetchCompetitors();
+        });
+      } catch (e) { UI.toast('AI parse error', 'error'); }
+    }).catch(function(e) { UI.toast('AI error: ' + (e && e.message || ''), 'error'); });
+  },
+
+  _editCompetitor: function(id) {
+    var c = (SocialBranch._competitorsCache || []).find(function(x){ return x.id === id; });
+    if (!c) return;
+    var fields = [
+      ['name', 'Name', c.name],
+      ['city', 'City', c.city || ''],
+      ['website', 'Website URL', c.website || ''],
+      ['facebook_url', 'Facebook URL', c.facebook_url || ''],
+      ['instagram_handle', 'Instagram (handle, no @)', c.instagram_handle || ''],
+      ['gmb_url', 'Google Business URL', c.gmb_url || ''],
+      ['youtube_url', 'YouTube URL', c.youtube_url || ''],
+      ['tiktok_handle', 'TikTok (handle, no @)', c.tiktok_handle || ''],
+      ['notes', 'Notes', c.notes || '']
+    ];
+    var rows = fields.map(function(f) {
+      return '<label style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;">' + f[1] + '<input id="c-edit-' + f[0] + '" value="' + UI.esc(f[2]) + '" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-top:4px;"></label>';
+    }).join('');
+    UI.modal({
+      title: 'Edit ' + c.name,
+      html: '<div style="display:grid;gap:8px;max-height:60vh;overflow:auto;">' + rows + '</div>',
+      buttons: [
+        { label: 'Cancel', action: 'close' },
+        { label: 'Save', primary: true, action: 'SocialBranch._saveEditCompetitor(\'' + id + '\')' }
+      ]
+    });
+  },
+
+  _saveEditCompetitor: function(id) {
+    var keys = ['name','city','website','facebook_url','instagram_handle','gmb_url','youtube_url','tiktok_handle','notes'];
+    var update = {};
+    keys.forEach(function(k) {
+      var el = document.getElementById('c-edit-' + k);
+      if (el) update[k] = el.value.trim() || null;
+    });
+    SB.from('competitors').update(update).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Save failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Saved');
+      UI.closeModal();
+      SocialBranch._competitorsFetched = false;
+      SocialBranch._fetchCompetitors();
+    });
+  },
+
+  _removeCompetitor: function(id) {
+    if (!confirm('Stop tracking this competitor?')) return;
+    SB.from('competitors').update({ active: false }).eq('id', id).then(function(r) {
+      if (r.error) { UI.toast('Failed: ' + r.error.message, 'error'); return; }
+      UI.toast('Removed');
+      SocialBranch._competitorsFetched = false;
+      SocialBranch._fetchCompetitors();
+    });
+  },
+
+  // ─────────────────────────────────────────────────────────
+  // INBOX (placeholder)

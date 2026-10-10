@@ -1,0 +1,4 @@
+# Local BM-state snapshots — don't commit (large + recreatable from cloud)
+bm-*.json
+update-patches.json
+payments-diff.json

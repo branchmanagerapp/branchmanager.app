@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doug Brown — What I Build &amp; Run</title>
+<meta name="description" content="Tree care, software, robotics, and a few things in between — the businesses Doug Brown builds and runs in Westchester, NY.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f3ee; --ink:#2c2a25; --muted:#6f6a60; --line:#e3ded3;
+    --card:#fffdf8; --green:#3f6b3a; --green-d:#2c4f29; --bark:#6b4f34; --sky:#3a6b7a; --clay:#9c5a3c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Inter",-apple-system,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;}
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px 70px;}
+  .hero{padding:60px 0 22px;}
+  .hero .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--green);font-weight:700;}
+  h1{font-family:"Fraunces",serif;font-size:46px;line-height:1.05;font-weight:600;margin:14px 0 12px;letter-spacing:-.01em;}
+  .hero p{font-size:18px;color:var(--muted);max-width:640px;}
+  h2{font-family:"Fraunces",serif;font-size:26px;font-weight:600;margin:46px 0 4px;letter-spacing:-.01em;}
+  h2 .s{display:block;font-family:"Inter";font-size:14px;font-weight:500;color:var(--muted);margin-top:4px;}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;}
+  .card.wide{grid-column:1/-1;}
+  .card .tag{display:inline-block;align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-bottom:10px;}
+  .card h3{font-family:"Fraunces",serif;font-size:20px;font-weight:600;margin:0 0 6px;}
+  .card p{margin:0 0 12px;font-size:14.5px;color:var(--muted);flex:1;}
+  .card a.visit{align-self:flex-start;font-size:13.5px;font-weight:700;color:var(--green-d);text-decoration:none;border-bottom:2px solid #cfe0c6;padding-bottom:1px;}
+  .card a.visit:hover{border-color:var(--green-d);}
+  .card .soon{font-size:13px;color:var(--muted);font-weight:600;}
+  .t-tree{background:#e7efe2;color:var(--green-d);} .t-build{background:#e3edf0;color:var(--sky);}
+  .t-lawn{background:#eaf1e4;color:var(--green);} .t-skate{background:#efe6dd;color:var(--clay);}
+  .t-idea{background:#efece4;color:var(--bark);}
+  .hats{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+  .hat{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:14px;font-weight:600;}
+  .hat span{color:var(--muted);font-weight:500;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-top:18px;}
+  .panel h4{font-family:"Fraunces",serif;font-size:17px;font-weight:600;margin:0 0 10px;}
+  .panel ul{margin:0;padding-left:18px;} .panel li{font-size:14px;color:var(--muted);margin:5px 0;}
+  .panel li b{color:var(--ink);font-weight:600;}
+  .built{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 22px;margin-top:18px;}
+  .built .row{display:flex;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line);}
+  .built .row:last-child{border-bottom:none;}
+  .built .n{font-family:"Fraunces",serif;font-size:24px;font-weight:600;color:var(--green-d);flex-shrink:0;min-width:130px;}
+  .built .d{font-size:14.5px;color:var(--muted);} .built .d b{color:var(--ink);}
+  .close{margin-top:44px;padding:30px 26px;background:linear-gradient(180deg,#eef2e8,#f5f3ee);border:1px solid var(--line);border-radius:18px;text-align:center;}
+  .close p{font-family:"Fraunces",serif;font-size:22px;line-height:1.4;font-weight:500;margin:0 0 14px;color:var(--green-d);}
+  .close a{display:inline-block;background:var(--green-d);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 24px;border-radius:999px;font-family:"Inter";}
+  .foot{margin-top:30px;font-size:12.5px;color:var(--muted);text-align:center;}
+  @media(max-width:680px){ .cards{grid-template-columns:1fr;} h1{font-size:34px;} .built .n{min-width:104px;font-size:21px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Doug Brown · Westchester, NY</div>
+    <h1>What I build &amp; run.</h1>
+    <p>Tree care, software, robotics, and a few things in between. A quick map of the businesses I run — and where to find each one.</p>
+  </div>
+
+  <h2>What I run</h2>
+  <div class="cards">
+    <div class="card wide">
+      <span class="tag t-tree">The core · est. 2018</span>
+      <h3>Second Nature Tree Service</h3>
+      <p>Technical removals and takedowns, pruning, storm response, and utility / right-of-way line-clearance across Westchester &amp; Putnam — plus conservation work, snow, and firewood through the off-season. A real crew, real iron, and hundreds of clients who call back.</p>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+        <a class="visit" href="https://branchmanager.app/second-nature-tree.html">The crew &amp; fleet →</a>
+        <a class="visit" href="https://peekskilltree.com" target="_blank" rel="noopener">peekskilltree.com →</a>
+      </div>
+    </div>
+    <div class="card">
+      <span class="tag t-build">Software</span>
+      <h3>Branch Manager</h3>
+      <p>A full field-service software platform I designed and built — Schedule, Clients, Quotes, Jobs, Invoices, Payments, Books, Payroll, Marketing, and an AI assistant. Cloud-synced, installable, and ready to run any service business.</p>
+      <a class="visit" href="https://branchmanager.app" target="_blank" rel="noopener">branchmanager.app →</a>
+    </div>
+    <div class="card">
+      <span class="tag t-lawn">Robotics</span>
+      <h3>SmartLawn NY</h3>
+      <p>Authorized robotic-mower dealer, installer, and service — the full Navimow line, from small residential up to 6-acre commercial machines. Autonomous mowing, set up and supported locally.</p>
+      <a class="visit" href="https://smartlawnny.com" target="_blank" rel="noopener">smartlawnny.com →</a>
+    </div>
+    <div class="card">
+      <span class="tag t-idea">In motion</span>
+      <h3>Northeast Intrepid</h3>
+      <p>A compact-loader dealership &amp; demo center in the works — bringing a versatile European loader line to the Northeast, with hands-on demos.</p>
+      <a class="visit" href="https://branchmanager.app/northeast-intrepid-c83567.html" target="_blank" rel="noopener">See the pitch →</a>
+    </div>
+    <div class="card">
+      <span class="tag t-skate">Community · since 2004</span>
+      <h3>The Skate Park</h3>
+      <p>Opened in 2004 as a small skate shop in Sleepy Hollow, expanded to Mamaroneck in 2007, and the skate park opened in 2011. The retail shops have since closed — the park is what's still standing. The one that was never about money.</p>
+      <span class="soon">Est. 2004 · the park lives on</span>
+    </div>
+    <div class="card">
+      <span class="tag t-idea">Building</span>
+      <h3>The Operator Network</h3>
+      <p>A shared back-office and job board for independent tree companies — running on Branch Manager. A co-op for solo operators who want the tools the big shops have.</p>
+      <span class="soon">In development</span>
+    </div>
+  </div>
+
+  <h2>The hats I wear <span class="s">One person, most of the org chart.</span></h2>
+  <div class="hats">
+    <div class="hat">Arborist &amp; <span>owner</span></div>
+    <div class="hat">Software <span>developer</span></div>
+    <div class="hat">Estimator &amp; <span>salesman</span></div>
+    <div class="hat">Fleet <span>manager</span></div>
+    <div class="hat">Mower dealer &amp; <span>installer</span></div>
+    <div class="hat">Dad</div>
+  </div>
+
+  <h2>What I've built</h2>
+  <div class="built">
+    <div class="row"><div class="n">A company</div><div class="d">Grew <b>Second Nature Tree</b> from nothing into a real operation — a crew, a fleet, and a loyal client base.</div></div>
+    <div class="row"><div class="n">A platform</div><div class="d">Designed and coded <b>an entire field-service software product</b> — the kind teams of engineers get hired to build.</div></div>
+    <div class="row"><div class="n">A new line</div><div class="d">Stood up <b>SmartLawn</b> from scratch — dealer relationships, a website, and a working savings calculator.</div></div>
+    <div class="row"><div class="n">A network</div><div class="d">Connecting independent operators with the tools to run like the big shops.</div></div>
+  </div>
+
+  <div class="close">
+    <p>Always building something. If any of it's useful to you, let's talk.</p>
+    <a href="tel:19146477276">Call Doug · (914) 647-7276</a>
+  </div>
+
+  <div class="foot">
+    Doug Brown · Westchester County, NY · peekskilltree.com · branchmanager.app · smartlawnny.com
+  </div>
+
+</div>
+<script src="nav-snt.js?v=5" defer></script>
+</body>
+</html>

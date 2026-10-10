@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f0; color: #1d1d1f; min-height: 100vh; }
+    .page { max-width: 640px; margin: 0 auto; padding: 20px; }
+    .header { background: #1a3c12; color: #fff; padding: 24px; border-radius: 12px; margin-bottom: 16px; }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header p { font-size: 13px; opacity: .75; margin-top: 4px; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 14px; border: 1px solid #e8e8e8; }
+    .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #1a3c12; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-sent, .badge-awaiting { background: #fff3e0; color: #e65100; }
+    .badge-approved { background: #e8f5e9; color: #2e7d32; }
+    .badge-paid { background: #e8f5e9; color: #2e7d32; }
+    .badge-overdue { background: #ffebee; color: #c62828; }
+    .badge-scheduled { background: #e3f2fd; color: #1565c0; }
+    .badge-completed { background: #f3e5f5; color: #6a1b9a; }
+    .badge-draft { background: #f5f5f5; color: #666; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+    .row:last-child { border-bottom: none; }
+    .row-label { font-weight: 600; font-size: 14px; }
+    .row-sub { font-size: 12px; color: #888; margin-top: 2px; }
+    .row-right { text-align: right; }
+    .row-amount { font-weight: 700; font-size: 16px; color: #1a3c12; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all .15s; }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: #1a3c12; color: #fff; }
+    .btn-primary:hover { background: #245219; }
+    .btn-outline { background: #fff; color: #1a3c12; border: 2px solid #1a3c12; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .empty { text-align: center; padding: 20px; color: #888; font-size: 13px; }
+    .loader { text-align: center; padding: 80px 20px; }
+    .loader .icon { font-size: 48px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .error-card { text-align: center; padding: 60px 24px; }
+    .error-card .icon { font-size: 48px; margin-bottom: 16px; }
+    .footer { text-align: center; font-size: 12px; color: #999; padding: 8px 0 24px; }
+    .footer a { color: #1a3c12; text-decoration: none; }
+    .contact-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div id="root">
+    <div class="loader">
+      <div class="icon"></div>
+      <div>Loading your portal...</div>
+    </div>
+  </div>
+  <div class="footer" id="portal-footer"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="tenant-slug-bootstrap.js"></script>
+<script>
+// White-label: stay neutral until the client's real tenant resolves
+// (init → bmApplyTenantBranding → bmPaintPortalBrand). Never paint
+// Second Nature Tree (BM_CONFIG defaults) on load.
+document.title = 'Client Portal';
+function bmPaintPortalBrand() {
+  try {
+    document.title = 'Client Portal' + (BM_CONFIG.companyName ? ' — ' + BM_CONFIG.companyName : '');
+    var f = document.getElementById('portal-footer');
+    if (!f) return;
+    var bits = [];
+    if (BM_CONFIG.website) bits.push('<a href="' + BM_CONFIG.websiteUrl + '">' + BM_CONFIG.website + '</a>');
+    if (BM_CONFIG.phoneDigits) bits.push('<a href="tel:' + BM_CONFIG.phoneDigits + '">' + BM_CONFIG.phone + '</a>');
+    if (BM_CONFIG.email) bits.push('<a href="mailto:' + BM_CONFIG.email + '">' + BM_CONFIG.email + '</a>');
+    f.innerHTML = bits.join(' &bull; ');
+  } catch (e) {}
+}
+</script>
+<script>
+var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+
+function money(n) {
+  return '$' + (parseFloat(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function dateShort(s) {
+  if (!s) return '—';
+  var d = new Date(s);
+  return isNaN(d) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function badge(status) {
+  return '<span class="badge badge-' + (status || 'draft') + '">' + (status || 'draft').replace(/_/g,' ') + '</span>';
+}
+async function api(path) {
+  var r = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
+  return r.ok ? r.json() : [];
+}
+
+async function init() {
+  var params = new URLSearchParams(location.search);
+  var clientId = params.get('id');
+  if (!clientId) {
+    showError('No client ID provided. Check the link you were sent.');
+    return;
+  }
+
+  try {
+    var [clients, quotes, jobs, invoices] = await Promise.all([
+      api('clients?id=eq.' + clientId + '&select=*&limit=1'),
+      api('quotes?client_id=eq.' + clientId + '&select=*&order=created_at.desc&limit=20'),
+      api('jobs?client_id=eq.' + clientId + '&select=*&order=scheduled_date.desc&limit=20'),
+      api('invoices?client_id=eq.' + clientId + '&select=*&order=created_at.desc&limit=20')
+    ]);
+
+    var client = clients && clients[0];
+    if (!client) {
+      showError('Client not found. Please contact your tree-service company directly.');
+      return;
+    }
+    // White-label: rebrand to THIS client's tenant before rendering.
+    try { if (window.bmApplyTenantBranding) await window.bmApplyTenantBranding(client.tenant_id); } catch (e) {}
+    bmPaintPortalBrand();
+
+    // Fetch any photos tied to this client's quotes or jobs (post-migration table)
+    var recordIds = []
+      .concat((quotes || []).map(function(q){ return q.id; }))
+      .concat((jobs   || []).map(function(j){ return j.id; }));
+    var photos = [];
+    if (recordIds.length) {
+      photos = await api('photos?record_id=in.(' + recordIds.map(encodeURIComponent).join(',') + ')&select=id,record_type,record_id,url,label,taken_at&order=taken_at.desc.nullslast,created_at.desc&limit=60');
+    }
+
+    render(client, quotes || [], jobs || [], invoices || [], photos || []);
+  } catch (e) {
+    showError('Unable to load portal. Please reply to your email from the company and we\'ll help.');
+  }
+}
+
+// Read Client Hub settings from localStorage (set in app Settings). Falls back
+// to sensible defaults so this works even when the hub is opened in a browser
+// that's never run the main app.
+function _hubPrefs() {
+  try { return JSON.parse(localStorage.getItem('bm-client-hub') || '{}') || {}; } catch(e){ return {}; }
+}
+function _hubBool(key, dflt) { var p = _hubPrefs(); return p[key] == null ? dflt : !!p[key]; }
+function _hubText(key, dflt) { var p = _hubPrefs(); return p[key] || dflt; }
+function _tokens(s, client) {
+  var first = ((client.name || client.first_name || '').split(' ')[0]) || 'there';
+  return (s || '').replace(/\{firstName\}/g, first).replace(/\{company\}/g, BM_CONFIG.companyName);
+}
+
+function render(client, quotes, jobs, invoices, photos) {
+  var name = client.name || (client.first_name + ' ' + client.last_name).trim();
+  var pendingQuotes = quotes.filter(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
+  var unpaidInvoices = invoices.filter(function(i) { return i.status !== 'paid' && i.status !== 'draft' && (i.balance || i.total) > 0; });
+  var upcomingJobs = jobs.filter(function(j) { return (j.status === 'scheduled' || j.status === 'in_progress') && j.scheduled_date && new Date(j.scheduled_date) >= new Date(); });
+
+  var html = '';
+
+  // Header — honors Client Hub settings for headline + sub
+  var headline = _tokens(_hubText('headline', 'Hello, {firstName}!'), client);
+  var subline  = _tokens(_hubText('sub',       'Your client portal — quotes, appointments & invoices'), client);
+  html += '<div class="header">'
+    + '<div style="font-size:13px;opacity:.75;margin-bottom:6px;">' + BM_CONFIG.companyName + '</div>'
+    + '<h1>' + headline + '</h1>'
+    + '<p>' + subline + '</p>'
+    + '</div>';
+
+  // Alert: pending quotes
+  if (pendingQuotes.length > 0) {
+    html += '<div style="background:#fff3e0;border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid #ffe0b2;">'
+      + '<strong style="color:#e65100;">' + pendingQuotes.length + ' quote' + (pendingQuotes.length > 1 ? 's' : '') + ' waiting for your approval</strong>'
+      + '<div style="font-size:13px;color:#666;margin-top:4px;">Review and approve below to schedule your service.</div>'
+      + '</div>';
+  }
+
+  // Alert: unpaid invoices
+  if (unpaidInvoices.length > 0) {
+    var unpaidTotal = unpaidInvoices.reduce(function(s, i) { return s + (i.balance || i.total || 0); }, 0);
+    html += '<div style="background:#ffebee;border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid #ffcdd2;">'
+      + '<strong style="color:#c62828;">' + money(unpaidTotal) + ' balance due</strong>'
+      + '<div style="font-size:13px;color:#666;margin-top:4px;">Pay securely online via card.</div>'
+      + '</div>';
+  }
+
+  // Pending Quotes
+  if (pendingQuotes.length > 0 && _hubBool('showQuotes', true)) {
+    html += '<div class="card"><h3>Quotes Awaiting Approval</h3>';
+    pendingQuotes.forEach(function(q) {
+      html += '<div class="row">'
+        + '<div><div class="row-label">Quote #' + (q.quote_number || '') + '</div>'
+        + '<div class="row-sub">' + (q.description || q.property || '') + '</div>'
+        + '<div style="margin-top:6px;">' + badge(q.status) + '</div>'
+        + '</div>'
+        + '<div class="row-right">'
+        + '<div class="row-amount">' + money(q.total) + '</div>'
+        + '<div class="action-bar" style="margin-top:6px;">'
+        + '<a href="approve.html?id=' + q.id + '" class="btn btn-primary btn-sm">Review & Approve</a>'
+        + '</div></div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Upcoming Appointments
+  if (upcomingJobs.length > 0 && _hubBool('showUpcoming', true)) {
+    html += '<div class="card"><h3>Upcoming Appointments</h3>';
+    upcomingJobs.forEach(function(j) {
+      html += '<div class="row">'
+        + '<div><div class="row-label">' + (j.description || j.title || 'Scheduled Service') + '</div>'
+        + '<div class="row-sub">' + dateShort(j.scheduled_date) + (j.property ? ' — ' + j.property : '') + '</div></div>'
+        + '<div>' + badge(j.status) + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Unpaid Invoices
+  if (unpaidInvoices.length > 0 && _hubBool('showInvoices', true)) {
+    html += '<div class="card"><h3>Invoices Due</h3>';
+    unpaidInvoices.forEach(function(i) {
+      html += '<div class="row">'
+        + '<div><div class="row-label">Invoice #' + (i.invoice_number || '') + '</div>'
+        + '<div class="row-sub">Due ' + dateShort(i.due_date) + ' — ' + (i.subject || 'For Services Rendered') + '</div>'
+        + '<div style="margin-top:6px;">' + badge(i.status) + '</div></div>'
+        + '<div class="row-right">'
+        + '<div class="row-amount">' + money(i.balance || i.total) + '</div>'
+        + '<div class="action-bar" style="margin-top:6px;">'
+        + '<a href="pay.html?id=' + i.id + '" class="btn btn-primary btn-sm">Pay Now</a>'
+        + '</div></div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Job History
+  var pastJobs = jobs.filter(function(j) { return j.status === 'completed'; }).slice(0, 5);
+  if (pastJobs.length > 0 && _hubBool('showHistory', true)) {
+    html += '<div class="card"><h3>Service History</h3>';
+    pastJobs.forEach(function(j) {
+      html += '<div class="row">'
+        + '<div><div class="row-label">' + (j.description || 'Service') + '</div>'
+        + '<div class="row-sub">' + dateShort(j.scheduled_date || j.completed_date) + '</div></div>'
+        + '<div class="row-right"><div style="font-weight:600;">' + money(j.total) + '</div>'
+        + badge(j.status) + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Photos — from past quotes + jobs
+  if (photos && photos.length && _hubBool('showPhotos', true)) {
+    html += '<div class="card"><h3>Property Photos</h3>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">';
+    photos.slice(0, 24).forEach(function(p){
+      html += '<a href="' + p.url + '" target="_blank" rel="noopener" style="display:block;aspect-ratio:1;background:#eee url(\'' + p.url + '\') center/cover no-repeat;border-radius:10px;" title="' + (p.label || '').replace(/"/g,'&quot;') + '"></a>';
+    });
+    html += '</div>';
+    if (photos.length > 24) html += '<p style="font-size:12px;color:#888;margin-top:10px;">Showing 24 of ' + photos.length + '.</p>';
+    html += '</div>';
+  }
+
+  // Documents — quote PDFs + invoice PDFs via existing approve/pay pages
+  var allQuotes = quotes.filter(function(q){ return q.status !== 'draft'; });
+  var allInvoices = invoices.filter(function(i){ return i.status !== 'draft'; });
+  if ((allQuotes.length || allInvoices.length) && _hubBool('showDocs', true)) {
+    html += '<div class="card"><h3>Documents</h3>';
+    allQuotes.slice(0, 10).forEach(function(q){
+      html += '<div class="row">'
+        + '<div><div class="row-label">Quote #' + (q.quote_number || '') + '</div>'
+        + '<div class="row-sub">' + (q.description || q.property || '') + ' · ' + dateShort(q.created_at) + '</div></div>'
+        + '<div class="row-right"><a href="approve.html?id=' + q.id + '" class="btn btn-outline btn-sm">View</a></div></div>';
+    });
+    allInvoices.slice(0, 10).forEach(function(i){
+      html += '<div class="row">'
+        + '<div><div class="row-label">Invoice #' + (i.invoice_number || '') + '</div>'
+        + '<div class="row-sub">' + (i.subject || 'For Services Rendered') + ' · ' + dateShort(i.issued_date || i.created_at) + '</div></div>'
+        + '<div class="row-right"><a href="pay.html?id=' + i.id + '" class="btn btn-outline btn-sm">View</a></div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Contact & new request
+  if (_hubBool('showContact', true))
+  html += '<div class="card"><h3>Get in Touch</h3>'
+    + '<p style="font-size:13px;color:#666;margin-bottom:12px;">Need a new estimate or have a question? Reach out anytime.</p>'
+    + '<div class="contact-bar">'
+    + '<a href="tel:' + BM_CONFIG.phoneDigits + '" class="btn btn-primary" style="text-decoration:none;">Call Us</a>'
+    + '<a href="book.html" class="btn btn-outline" style="text-decoration:none;">New Request</a>'
+    + '</div></div>';
+
+  document.getElementById('root').innerHTML = html;
+}
+
+function showError(msg) {
+  // White-label: error states have no resolved tenant — stay generic,
+  // never render Second Nature Tree (BM_CONFIG) name/phone.
+  document.getElementById('root').innerHTML = '<div class="card error-card">'
+    + '<div class="icon"></div>'
+    + '<h2 style="color:#1a3c12;margin-bottom:8px;">Client Portal</h2>'
+    + '<p style="color:#888;margin-bottom:20px;">' + msg + '</p>'
+    + '</div>';
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Connecting Jobber…</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4f5f2;color:#1a2b1a;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px;}
+  .card{background:#fff;border:1px solid #d9ddd6;border-radius:16px;padding:28px 24px;max-width:420px;width:100%;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+  h1{font-size:19px;margin:0 0 8px;}
+  p{font-size:14px;color:#556;line-height:1.55;margin:8px 0;}
+  .spin{width:34px;height:34px;border:3px solid #e2e6e0;border-top-color:#1a3c12;border-radius:50%;margin:6px auto 14px;animation:s .8s linear infinite;}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .ok{color:#1a7a1a;font-weight:800;} .err{color:#b91c1c;font-weight:800;}
+  a.btn{display:inline-block;margin-top:14px;background:#1a3c12;color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:700;font-size:14px;}
+  code{background:#f0f2ee;padding:1px 5px;border-radius:4px;font-size:12px;}
+</style></head><body>
+<div class="card">
+  <div id="spin" class="spin"></div>
+  <h1 id="title">Connecting Branch Manager to Jobber…</h1>
+  <p id="msg">Exchanging authorization with Jobber. One moment.</p>
+  <div id="cta"></div>
+</div>
+<script>
+  // OAuth 2.0 redirect receiver for the Jobber app. Jobber sends ?code=…&state=…
+  // here; we hand the code to the jobber-oauth edge function, which does the
+  // server-side token exchange (client_secret never touches the browser).
+  var EXCHANGE_URL = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/jobber-oauth';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  function q(k){ return new URLSearchParams(location.search).get(k); }
+  function done(ok, title, msg, showApp){
+    document.getElementById('spin').style.display='none';
+    document.getElementById('title').innerHTML = (ok?'✅ ':'⚠️ ') + title;
+    document.getElementById('title').className = ok?'ok':'err';
+    document.getElementById('msg').innerHTML = msg;
+    if (showApp!==false) document.getElementById('cta').innerHTML = '<a class="btn" href="https://branchmanager.app/#settings">Back to Branch Manager</a>';
+  }
+  var code = q('code'), err = q('error'), state = q('state');
+  if (err) { done(false, 'Jobber declined', 'Jobber returned: <code>'+String(err).slice(0,80)+'</code>. Try Connect again from Settings.'); }
+  else if (!code) { done(false, 'No authorization code', 'This page is the Jobber connect callback. Start from <b>Settings → Connect Jobber</b> in Branch Manager.'); }
+  else {
+    fetch(EXCHANGE_URL, { method:'POST', headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+ANON}, body: JSON.stringify({ code: code, state: state, redirect_uri: location.origin + location.pathname }) })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if (res.ok && res.j && res.j.connected) done(true, 'Jobber connected', 'Branch Manager is now linked to your Jobber account. Real-time sync will begin shortly.');
+        else done(false, 'Could not finish connecting', 'Jobber token exchange failed: <code>'+String((res.j&&(res.j.error||res.j.message))||'unknown').slice(0,120)+'</code>. The jobber-oauth function may not be deployed yet.');
+      })
+      .catch(function(e){ done(false, 'Connection error', 'Could not reach the exchange service: <code>'+String(e.message||e).slice(0,100)+'</code>'); });
+  }
+</script>
+</body></html>

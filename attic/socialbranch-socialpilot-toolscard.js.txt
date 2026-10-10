@@ -1,0 +1,6 @@
+      // SP Import
+      +   '<div style="padding:12px;border:1px solid var(--border);border-radius:8px;">'
+      +     '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">Import SocialPilot History</div>'
+      +     '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">57 posts scraped Apr 23. ' + (spImported > 0 ? spImported + ' already imported.' : 'Not imported yet.') + '</div>'
+      +     '<button id="sb-sp-import-btn" onclick="SocialBranch.importFromSocialPilot()" ' + (spImported > 0 ? 'disabled' : '') + ' class="btn btn-outline" style="font-size:12px;">' + (spImported > 0 ? 'Already imported' : 'Import now') + '</button>'
+      +   '</div>'

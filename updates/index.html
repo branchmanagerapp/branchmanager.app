@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>We've Moved to BranchManager — Second Nature Tree</title>
+<style>
+  :root{
+    --green:#2e7d32; --green-d:#1b5e20; --green-l:#e8f5e9;
+    --ink:#1a1a1a; --muted:#5f6b62; --line:#e2e8e2; --bg:#f6f9f6; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  .wrap{max-width:780px;margin:0 auto;padding:0 20px}
+  /* hero */
+  header{background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;padding:48px 0 40px;text-align:center}
+  header .wrap{max-width:780px}
+  .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);padding:5px 13px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.3px;margin-bottom:16px}
+  header h1{margin:0 0 8px;font-size:30px;line-height:1.2}
+  header p{margin:0;font-size:17px;opacity:.95}
+  .leaf{font-size:34px;margin-bottom:6px}
+  /* cards */
+  section{margin:30px 0}
+  h2{font-size:21px;margin:0 0 14px;color:var(--green-d);display:flex;align-items:center;gap:9px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,20,.04)}
+  .lead{font-size:17px;color:var(--ink)}
+  .muted{color:var(--muted)}
+  /* login callout */
+  .login{background:var(--green-l);border:1px solid #c8e6c9;border-radius:14px;padding:22px;text-align:center}
+  .login a.btn{display:inline-block;background:var(--green);color:#fff;text-decoration:none;font-weight:700;font-size:17px;padding:13px 30px;border-radius:10px;margin:10px 0 6px}
+  .login a.btn:hover{background:var(--green-d)}
+  /* stat grid */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 10px;text-align:center}
+  .stat b{display:block;font-size:26px;color:var(--green-d);line-height:1.1}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  /* map table */
+  table{width:100%;border-collapse:collapse;font-size:14.5px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f0f5f0;color:var(--green-d);font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+  tr:last-child td{border-bottom:none}
+  td.from{color:var(--muted);width:34%}
+  .arrow{color:var(--green);font-weight:700}
+  /* checklist */
+  ol.check{list-style:none;counter-reset:c;padding:0;margin:0}
+  ol.check li{counter-increment:c;position:relative;padding:12px 12px 12px 50px;background:#fff;border:1px solid var(--line);border-radius:12px;margin:10px 0}
+  ol.check li::before{content:counter(c);position:absolute;left:14px;top:12px;width:24px;height:24px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  ol.check li b{display:block}
+  /* faq */
+  details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 16px;margin:10px 0}
+  details summary{font-weight:600;cursor:pointer;padding:12px 0;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:"＋";color:var(--green);font-weight:700;margin-right:10px}
+  details[open] summary::before{content:"－"}
+  details .ans{padding:0 0 14px;color:var(--ink)}
+  .tip{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:14px}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:30px 0 50px}
+  .pill{display:inline-block;background:var(--green-l);color:var(--green-d);font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px}
+  @media(max-width:560px){.stats{grid-template-columns:repeat(3,1fr)}header h1{font-size:24px}td.from{width:42%}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="leaf">🌳➡️🚀</div>
+    <div class="badge">TEAM UPDATE</div>
+    <h1>We're fully on BranchManager</h1>
+    <p>Second Nature Tree has officially migrated off Jobber. Here's everything you need, Catherine.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="card">
+      <p class="lead" style="margin-top:0">Hey Catherine 👋</p>
+      <p>As of this week we've made the <b>final switch from Jobber to BranchManager (BM)</b> — our own all-in-one system for clients, scheduling, quotes, invoices, payments, and the books. Everything that lived in Jobber is now in BM, and going forward <b>we work entirely out of BranchManager.</b></p>
+      <p class="muted" style="margin-bottom:0">This page walks you through where everything moved, how to log in, and a quick checklist to get going. Bookmark it — you can always come back.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>🔑 How to log in</h2>
+    <div class="login">
+      <div style="font-size:15px;color:var(--green-d);font-weight:600">Your new home base:</div>
+      <a class="btn" href="https://branchmanager.app">branchmanager.app</a>
+      <div class="muted" style="font-size:14px">Works on your phone and computer — no app to install, just open the link.<br>
+      Doug will text you your login &amp; password. Tap the link, sign in, and you're in.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>✅ What's already moved over</h2>
+    <p class="muted" style="margin-top:0">All of it is in BM right now — nothing was left behind in Jobber:</p>
+    <div class="stats">
+      <div class="stat"><b>545</b><span>Clients</span></div>
+      <div class="stat"><b>510</b><span>Quotes</span></div>
+      <div class="stat"><b>493</b><span>Requests</span></div>
+      <div class="stat"><b>309</b><span>Jobs</span></div>
+      <div class="stat"><b>355</b><span>Invoices</span></div>
+      <div class="stat"><b>368</b><span>Payments</span></div>
+    </div>
+    <p class="muted" style="margin-bottom:0;font-size:13.5px">Plus all 63 services/price items, the team, and full job history. Customer contact info, notes, and past work all came across.</p>
+  </section>
+
+  <section>
+    <h2>🧭 Where everything moved (Jobber → BranchManager)</h2>
+    <table>
+      <thead><tr><th>In Jobber you used…</th><th>In BranchManager it's…</th></tr></thead>
+      <tbody>
+        <tr><td class="from">Clients / Customers</td><td><span class="arrow">→</span> <b>Clients</b> — same list, searchable, with full history &amp; notes</td></tr>
+        <tr><td class="from">Requests (new leads)</td><td><span class="arrow">→</span> <b>Requests</b> — new inquiries land here to be quoted</td></tr>
+        <tr><td class="from">Quotes</td><td><span class="arrow">→</span> <b>Quotes</b> — build, send, and track approvals</td></tr>
+        <tr><td class="from">Scheduling / Calendar</td><td><span class="arrow">→</span> <b>Schedule</b> — calendar + live <b>Map</b> view, an <b>Unscheduled</b> rail to drag jobs onto days, and a <b>Budget</b> rail showing the week's revenue vs. expenses</td></tr>
+        <tr><td class="from">Jobs / Visits</td><td><span class="arrow">→</span> <b>Jobs</b> — assign the crew, add line items, mark complete</td></tr>
+        <tr><td class="from">Invoicing</td><td><span class="arrow">→</span> <b>Invoices</b> (under <b>Books</b>) — create, send, and "Send to Client"</td></tr>
+        <tr><td class="from">Collecting payment</td><td><span class="arrow">→</span> <b>Payments</b> — card links &amp; tracking; deposits auto-sync from the bank</td></tr>
+        <tr><td class="from">Reports</td><td><span class="arrow">→</span> <b>Books</b> — Overview, Transactions, live P&amp;L, Invoices, and a Taxes tab (sales-tax due dates built in)</td></tr>
+        <tr><td class="from">Team / Timesheets</td><td><span class="arrow">→</span> <b>Payroll &amp; Team</b> — crew, rates, and payroll approvals</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>✨ What's better now</h2>
+    <div class="card">
+      <ul style="margin:0;padding-left:20px">
+        <li><b>One system, no double-entry.</b> Quotes flow into jobs, jobs into invoices, invoices into the books — automatically.</li>
+        <li><b>Live money picture.</b> The bank feeds in daily, so the P&amp;L and cash on hand are real-time — not a month behind.</li>
+        <li><b>Built for us.</b> Tree-service workflows, our price list, our crew — not a generic template.</li>
+        <li><b>Sales tax handled.</b> Due dates and amounts are tracked right in the Books → Taxes tab.</li>
+        <li><b>No more Jobber subscription.</b> 🎉</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>📋 Your quick-start checklist</h2>
+    <ol class="check">
+      <li><b>Log in</b><span class="muted">Open branchmanager.app and sign in with the login Doug sends you. Bookmark it / add to your home screen.</span></li>
+      <li><b>Find a client</b><span class="muted">Go to Clients and search someone you know — confirm their info &amp; history look right.</span></li>
+      <li><b>Look at the Schedule</b><span class="muted">Check this week. Drag anything from the Unscheduled rail onto a day to book it.</span></li>
+      <li><b>Open an invoice</b><span class="muted">Under Books → Invoices, open a recent one to see how sending works.</span></li>
+      <li><b>Stop using Jobber</b><span class="muted">From now on, do everything in BM. If something's only in Jobber, tell Doug so we grab it.</span></li>
+    </ol>
+    <p class="tip">💡 <b>Tip:</b> Anything you would have done in Jobber, do it in BranchManager now. If you can't find where something lives, don't go back to Jobber — just ask Doug and we'll point you to it (or add it).</p>
+  </section>
+
+  <section>
+    <h2>❓ Questions</h2>
+    <details><summary>Is anything still in Jobber I need to check?</summary><div class="ans">No — clients, quotes, jobs, invoices, and payments all came over (the counts above are live from BM). Keep Jobber open as a read-only backup for now, but do all <b>new</b> work in BranchManager.</div></details>
+    <details><summary>What if a client or job looks wrong or is missing?</summary><div class="ans">Text or call Doug with the client/job name. We can fix or re-import it quickly — please don't re-enter it in Jobber.</div></details>
+    <details><summary>Can I use it on my phone?</summary><div class="ans">Yes. branchmanager.app works in your phone's browser. Open it once and "Add to Home Screen" so it acts like an app.</div></details>
+    <details><summary>How do customers pay now?</summary><div class="ans">Invoices send from Books → Invoices with a card-payment link, just like before. Payments and bank deposits track automatically.</div></details>
+    <details><summary>What about the books / taxes?</summary><div class="ans">All handled inside BM under Books — live P&amp;L, transactions, and a Taxes tab with sales-tax due dates. You don't have to do anything there unless Doug asks.</div></details>
+  </section>
+
+  <section>
+    <div class="card" style="text-align:center;background:var(--green-l);border-color:#c8e6c9">
+      <div style="font-size:16px;font-weight:700;color:var(--green-d)">Stuck on anything?</div>
+      <p style="margin:8px 0 0">Just text Doug — happy to walk you through it. Welcome to BranchManager! 🌳</p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Second Nature Tree Service · BranchManager · <span class="pill">Jobber → BM migration complete</span><br>
+  Internal team page — please don't share publicly.
+</footer>
+
+</body>
+</html>

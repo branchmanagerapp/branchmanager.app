@@ -1,0 +1,15 @@
+  _testSocialPilot: function() {
+    var webhook = localStorage.getItem('bm-socialpilot-webhook') || '';
+    var apiKey = localStorage.getItem('bm-socialpilot-key') || '';
+    var result = document.getElementById('sp-test-result');
+    if (!webhook && !apiKey) { result.innerHTML = '<span style="color:var(--red);">Save a webhook or key first.</span>'; return; }
+    result.innerHTML = '<span style="color:var(--text-light);">Testing…</span>';
+    var payload = { caption: 'Branch Manager connection test — ignore', imageUrl: '', platforms: ['test'], test: true };
+    var url = webhook || 'https://panel.socialpilot.co/api/v1/ping';
+    var headers = { 'Content-Type': 'application/json' };
+    if (!webhook && apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+    fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) })
+      .then(function(r) { result.innerHTML = r.ok ? '<span style="color:var(--green-dark);">✅ Reached endpoint (status ' + r.status + ')</span>' : '<span style="color:#e07c24;">⚠️ Status ' + r.status + ' — check your webhook/key.</span>'; })
+      .catch(function(e) { result.innerHTML = '<span style="color:var(--red);">Network error: ' + UI.esc(String(e.message || e)) + '</span>'; });
+  },
+

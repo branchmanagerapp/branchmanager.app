@@ -1,0 +1,1329 @@
+/**
+ * Branch Manager — Call Center
+ * Full-page layout matching Requests. Dial pad lives in a modal.
+ */
+// v774: AI-classified intent pill labels. Lives outside the module so
+// CallCenter._intentBadges can reference it as a plain constant.
+var AI_INTENT_PILLS = {
+  job_inquiry:      { icon: '🌳', label: 'Job inquiry',      color: '#16a34a' },
+  price_question:   { icon: '💰', label: 'Asks about price', color: '#92400e' },
+  schedule_request: { icon: '📅', label: 'Scheduling',       color: '#1d4ed8' },
+  urgent_hazard:    { icon: '⚠',  label: 'Urgent / hazard',  color: '#c2410c' },
+  confirmation:     { icon: '✅', label: 'Confirmation',     color: '#16a34a' },
+  cancellation:     { icon: '✗',  label: 'Cancellation',     color: '#dc2626' },
+  complaint:        { icon: '⚠',  label: 'Complaint',        color: '#c2410c' },
+  spam:             { icon: '🛑', label: 'Spam',             color: '#991b1b' },
+  other:            { icon: '·',  label: 'Other',            color: '#525252' }
+};
+
+var CallCenter = {
+  _activeTab: 'missed',  // 'missed' | 'threads' | 'activity'
+  _activeThread: null,
+  _pendingThread: null,  // v1017: deep-link target set before loadPage('callcenter')
+  _realtimeSub: null,
+
+  render: function() {
+    var html = '<div style="max-width:960px;margin:0 auto;">';
+
+    // ── Header ──────────────────────────────────────────────────
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">'
+      + '<div>'
+      + '<h2 style="font-size:22px;font-weight:700;margin:0 0 2px 0;">📞 Leads Center</h2>'
+      + '<div style="font-size:12px;color:var(--text-light);">Inbound calls, SMS threads, voicemails &amp; bid emails</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;">'
+      + '<button onclick="CallCenter._openDialModal(\'call\')" style="padding:7px 14px;background:none;color:var(--text);border:1px solid var(--border);border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">📞 Call</button>'
+      + '<button onclick="CallCenter._openDialModal(\'sms\')"  style="padding:7px 14px;background:none;color:var(--text);border:1px solid var(--border);border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">💬 SMS</button>'
+      + '</div>'
+      + '</div>';
+
+    // ── Tab bar ─────────────────────────────────────────────────
+    // v759: "Missed" → "Triage" — the tab is the qualify-then-promote zone,
+    // not a missed-call list. Missed calls are excluded entirely.
+    var _tabs = [['missed','🎯 Triage'],['threads','💬 Messages'],['emails','📧 Emails'],['activity','📋 All Activity']];
+    html += '<div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:0;gap:0;">';
+    _tabs.forEach(function(t) {
+      var active = CallCenter._activeTab === t[0];
+      html += '<button id="cc-tab-' + t[0] + '" onclick="CallCenter._switchTab(\'' + t[0] + '\')"'
+        + ' style="padding:10px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;'
+        + 'color:' + (active ? 'var(--accent)' : 'var(--text-light)') + ';'
+        + 'border-bottom:2px solid ' + (active ? 'var(--accent)' : 'transparent') + ';margin-bottom:-2px;">'
+        + t[1] + '</button>';
+    });
+    html += '</div>';
+
+    // ── Panel ────────────────────────────────────────────────────
+    html += '<div id="cc-panel" style="min-height:400px;">'
+      + '<div style="text-align:center;padding:60px;color:var(--text-light);font-size:13px;">Loading…</div>'
+      + '</div>';
+
+    html += '</div>'; // outer
+
+    setTimeout(function() {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      // v1017: deep-link straight into a specific SMS thread (e.g. Text Receipt from an
+      // invoice). Open it AFTER render so the default panel load can't clobber it.
+      if (CallCenter._pendingThread) {
+        var pt = CallCenter._pendingThread;
+        CallCenter._pendingThread = null;
+        CallCenter._activeTab = 'threads';
+        ['missed','emails','threads','activity'].forEach(function(t) {
+          var btn = document.getElementById('cc-tab-' + t);
+          if (btn) { var a = t === 'threads'; btn.style.color = a ? 'var(--accent)' : 'var(--text-light)'; btn.style.borderBottom = '2px solid ' + (a ? 'var(--accent)' : 'transparent'); }
+        });
+        CallCenter._openThread(pt);
+        return;
+      }
+      CallCenter._loadPanel();
+    }, 0);
+
+    return html;
+  },
+
+  // ── Tab switching ────────────────────────────────────────────
+
+  _switchTab: function(tab) {
+    // Clean up realtime sub when leaving SMS threads
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (sb && CallCenter._realtimeSub && tab !== 'threads') {
+      try { sb.removeChannel(CallCenter._realtimeSub); } catch(e) {}
+      CallCenter._realtimeSub = null;
+    }
+    CallCenter._activeTab = tab;
+    CallCenter._activeThread = null;
+    ['missed','emails','threads','activity'].forEach(function(t) {
+      var btn = document.getElementById('cc-tab-' + t);
+      if (!btn) return;
+      var active = t === tab;
+      btn.style.color = active ? 'var(--accent)' : 'var(--text-light)';
+      btn.style.borderBottom = '2px solid ' + (active ? 'var(--accent)' : 'transparent');
+    });
+    CallCenter._loadPanel();
+  },
+
+  _loadPanel: function() {
+    if (CallCenter._activeTab === 'threads') CallCenter._loadThreads();
+    else if (CallCenter._activeTab === 'missed') CallCenter._loadMissed();
+    else if (CallCenter._activeTab === 'emails') CallCenter._loadEmails();
+    else CallCenter._loadActivity();
+  },
+
+  // ── Dial Modal ───────────────────────────────────────────────
+
+  _number: '',
+  _clientId: null,
+  _clientName: null,
+  _dialMode: 'call',
+
+  _openDialModal: function(mode) {
+    CallCenter._dialMode = mode || 'call';
+    CallCenter._number = '';
+    CallCenter._clientId = null;
+    CallCenter._clientName = null;
+
+    var title = mode === 'sms' ? '💬 New SMS' : '📞 New Call';
+
+    var body = '<div style="min-width:280px;">'
+      // Client search
+      + '<div style="position:relative;margin-bottom:10px;">'
+      + '<input type="text" id="cc-search" placeholder="Search clients…" autocomplete="off"'
+      + '  onkeyup="CallCenter._onSearch(this.value)"'
+      + '  style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box;background:var(--bg);color:var(--text);">'
+      + '<div id="cc-search-results" style="display:none;position:absolute;left:0;right:0;z-index:99;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.14);"></div>'
+      + '</div>'
+
+      // Number display
+      + '<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:10px;">'
+      + '<div id="cc-client-label" style="font-size:11px;color:var(--accent);min-height:14px;margin-bottom:2px;font-weight:700;letter-spacing:.3px;"></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;">'
+      + '<div id="cc-display" style="flex:1;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px;min-height:28px;color:var(--text);">—</div>'
+      + (mode !== 'sms' ? '<button onclick="CallCenter._backspace()" title="Backspace" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;color:var(--text-light);">⌫</button>' : '')
+      + '</div>'
+      + '<input type="tel" id="cc-raw-input" placeholder="or type a number…" autocomplete="off"'
+      + '  oninput="CallCenter._onRawInput(this.value)"'
+      + '  style="width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14px;box-sizing:border-box;background:var(--bg);color:var(--text);">'
+      + '</div>';
+
+    // Dial pad — CALLS ONLY. v1013: texting goes through Dialpad with a typed message;
+    // a phone dialer makes no sense for SMS (Doug: "everything should go through Dialpad").
+    if (mode !== 'sms') {
+      body += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;">';
+      ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(function(k) {
+        body += '<button onclick="CallCenter._press(\'' + k + '\')"'
+          + ' style="padding:11px 0;font-size:17px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;"'
+          + ' onmousedown="this.style.background=\'var(--border)\'" onmouseup="this.style.background=\'var(--surface)\'">'
+          + k + '</button>';
+      });
+      body += '</div>';
+    }
+
+    // Message field (SMS only) — the whole point of New SMS: type it, send through Dialpad
+    if (mode === 'sms') {
+      body += '<textarea id="cc-sms-msg" placeholder="Type your message…" '
+        + 'style="width:100%;min-height:110px;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px;background:var(--bg);color:var(--text);resize:vertical;"></textarea>';
+    }
+
+    // Action button
+    body += '<button onclick="CallCenter._dialGo()" style="width:100%;padding:13px;background:' + (mode==='sms'?'var(--green-dark)':'#1a7a3c') + ';color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;">'
+      + (mode === 'sms' ? '💬 Send Text via Dialpad' : '📞 Make Call')
+      + '</button></div>';
+
+    UI.showModal(title, body, { keepModal: true });
+
+    setTimeout(function() {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      var inp = document.getElementById('cc-raw-input');
+      if (inp) {
+        inp.focus();
+        inp.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') CallCenter._dialGo();
+          if (e.key === 'Escape') UI.closeModal();
+        });
+      }
+    }, 50);
+  },
+
+  _dialGo: function() {
+    var num = CallCenter._number.replace(/\D/g, '');
+    if (!num) { UI.toast('Enter a phone number first', 'error'); return; }
+    if (CallCenter._dialMode === 'sms') {
+      // v1012: read + require the message BEFORE closing the modal (closeModal destroys the field).
+      // Blank guard: never fire an empty text.
+      var msgEl = document.getElementById('cc-sms-msg');
+      var msg = msgEl ? msgEl.value.trim() : '';
+      if (!msg) { UI.toast('Type a message first', 'error'); if (msgEl) msgEl.focus(); return; }
+      var cid = CallCenter._clientId, cname = CallCenter._clientName;
+      UI.closeModal();
+      if (typeof Dialpad !== 'undefined' && Dialpad.sendSMS) {
+        Dialpad.sendSMS(num, msg, cid);   // sends through Dialpad + shows its own "Text sent" toast
+      } else {
+        window.open('sms:' + num + '?body=' + encodeURIComponent(msg));
+      }
+      CallCenter._activeTab = 'threads';
+      CallCenter._switchTab('threads');
+      CallCenter._openThread({ phone: num, clientId: cid, name: cname || CallCenter._fmtPhone(num) });
+    } else {
+      UI.closeModal();
+      if (typeof Dialpad !== 'undefined') Dialpad.call(num, CallCenter._clientId, CallCenter._clientName);
+      else window.open('tel:' + num);
+    }
+  },
+
+  // ── Dial pad helpers ─────────────────────────────────────────
+
+  _press: function(key) {
+    CallCenter._number += key;
+    CallCenter._refreshDisplay();
+    var inp = document.getElementById('cc-raw-input');
+    if (inp) inp.value = CallCenter._number;
+  },
+
+  _backspace: function() {
+    CallCenter._number = CallCenter._number.slice(0, -1);
+    CallCenter._refreshDisplay();
+    var inp = document.getElementById('cc-raw-input');
+    if (inp) inp.value = CallCenter._number;
+  },
+
+  _onRawInput: function(val) {
+    CallCenter._number = val.replace(/[^\d\+\*\#]/g, '');
+    CallCenter._refreshDisplay();
+    CallCenter._clientId = null;
+    CallCenter._clientName = null;
+    var lbl = document.getElementById('cc-client-label');
+    if (lbl) lbl.textContent = '';
+  },
+
+  _refreshDisplay: function() {
+    var disp = document.getElementById('cc-display');
+    if (!disp) return;
+    if (!CallCenter._number) { disp.textContent = '—'; return; }
+    var d = CallCenter._number.replace(/\D/g, '');
+    var formatted = CallCenter._number;
+    if (d.length === 10) formatted = '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+    else if (d.length === 11 && d[0] === '1') formatted = '+1 (' + d.slice(1,4) + ') ' + d.slice(4,7) + '-' + d.slice(7);
+    disp.textContent = formatted;
+  },
+
+  _onSearch: function(q) {
+    var res = document.getElementById('cc-search-results');
+    if (!res) return;
+    q = q.trim().toLowerCase();
+    if (!q) { res.style.display = 'none'; res.innerHTML = ''; return; }
+    var clients = (typeof ClientsPage !== 'undefined' && ClientsPage._cache) ? ClientsPage._cache : [];
+    var matches = clients.filter(function(c) {
+      return (c.name || '').toLowerCase().includes(q) && c.phone;
+    }).slice(0, 8);
+    if (!matches.length) {
+      res.innerHTML = '<div style="padding:10px 14px;color:var(--text-light);font-size:13px;">No clients found</div>';
+    } else {
+      res.innerHTML = matches.map(function(c) {
+        var safeName  = (c.name  || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safePhone = (c.phone || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div onclick="CallCenter._selectClient(\'' + (c.id||'') + '\',\'' + safeName + '\',\'' + safePhone + '\')"'
+          + ' style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"'
+          + ' onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\';">'
+          + '<div style="font-weight:600;">' + (c.name || '') + '</div>'
+          + '<div style="color:var(--text-light);font-size:12px;">' + (c.phone || '') + '</div>'
+          + '</div>';
+      }).join('');
+    }
+    res.style.display = 'block';
+  },
+
+  _selectClient: function(id, name, phone) {
+    CallCenter._clientId   = id || null;
+    CallCenter._clientName = name || null;
+    CallCenter._number     = phone.replace(/\D/g, '');
+    var inp = document.getElementById('cc-raw-input');
+    if (inp) inp.value = phone;
+    CallCenter._refreshDisplay();
+    var lbl = document.getElementById('cc-client-label');
+    if (lbl) lbl.textContent = name;
+    var srch = document.getElementById('cc-search');
+    if (srch) srch.value = '';
+    var res = document.getElementById('cc-search-results');
+    if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+  },
+
+  // ── Missed Calls / Voicemails ────────────────────────────────
+
+  _loadMissed: async function() {
+    var el = document.getElementById('cc-panel');
+    if (!el) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-light);">Sign in to view missed calls.</div>'; return; }
+
+    try {
+      var { data, error } = await sb.from('communications')
+        .select('id,client_id,channel,direction,body,from_number,to_number,status,duration_seconds,recording_url,created_at,metadata')
+        .eq('direction', 'inbound')
+        .in('channel', ['call', 'voicemail', 'sms'])
+        .order('created_at', { ascending: false })
+        .limit(150);
+
+      if (error) throw error;
+      var allRows = data || [];
+
+      // v759: Leads Center is a triage zone. Hide rows already qualified
+      // (promoted to a request) or marked junk so Doug only sees what
+      // still needs a decision. "Show qualified/junk" toggle lets him
+      // re-open the full history.
+      var showHandled = !!CallCenter._showHandled;
+      var rows = showHandled ? allRows : allRows.filter(function(c) {
+        var m = (c.metadata && typeof c.metadata === 'object') ? c.metadata : {};
+        return !m.qualified && !m.junk;
+      });
+      // v759: same rule as v748 — missed calls should NOT show in the
+      // system at all. Defense-in-depth: even if a row sneaks past the
+      // webhook filter, drop it here too.
+      rows = rows.filter(function(c) {
+        if (c.channel !== 'call') return true;
+        var s = (c.status || '').toLowerCase();
+        return s !== 'missed' && s !== 'no-answer' && s !== 'no_answer' && s !== 'hangup';
+      });
+
+      // v774: kick a Claude classification pass for rows still lacking
+      // metadata.ai_intent. Best-effort, throttled to one pass per
+      // Triage render so we don't burn tokens on every keystroke.
+      if (!CallCenter._classifyTimer) {
+        CallCenter._classifyTimer = setTimeout(function() {
+          CallCenter._classifyTimer = null;
+          CallCenter._classifyUnclassified(rows);
+        }, 1500);
+      }
+
+      var clients = (typeof ClientsPage !== 'undefined' && ClientsPage._cache) ? ClientsPage._cache : [];
+      var clientMap = {};
+      clients.forEach(function(c) { if (c.id) clientMap[c.id] = c; });
+
+      // v844: client-side re-link pass — rows whose client_id is null but
+      // whose from_number now matches a known client get auto-linked here
+      // (and persisted back to communications.client_id, best-effort). This
+      // catches the common case of a call coming in BEFORE the client was
+      // added in BM, leaving an "Unknown" row that's actually a real client.
+      try {
+        if (!CallCenter._relinkTimer) {
+          CallCenter._relinkTimer = setTimeout(function() {
+            CallCenter._relinkTimer = null;
+            var phoneToClient = {};
+            clients.forEach(function(cli) {
+              var p = String(cli.phone || '').replace(/\D/g, '').slice(-10);
+              if (p && !phoneToClient[p]) phoneToClient[p] = cli;
+            });
+            var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+            rows.forEach(function(c) {
+              if (c.client_id) return;
+              var fp = String(c.from_number || '').replace(/\D/g, '').slice(-10);
+              if (!fp) return;
+              var hit = phoneToClient[fp];
+              if (!hit) return;
+              c.client_id = hit.id; // local cache fix so the next render picks it up
+              if (sb) sb.from('communications').update({ client_id: hit.id }).eq('id', c.id).then(function(){});
+            });
+          }, 600);
+        }
+      } catch(e) { /* never block triage render */ }
+
+      // ── Header banner: explain the qualify-then-promote model ──
+      var handledCount = allRows.length - rows.length;
+      var bannerHtml = '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+        + '<div style="flex:1;min-width:200px;"><b>Triage inbox.</b> Raw inbound lands here. <b>✓ Qualify</b> a real lead to promote it to Requests with a name + service. <b>✗ Junk</b> wrong numbers / robocalls.</div>'
+        + (handledCount > 0 ? '<button onclick="CallCenter._showHandled=' + (showHandled ? 'false' : 'true') + ';CallCenter._loadMissed();" style="font-size:11px;padding:4px 10px;background:var(--white);border:1px solid #fbbf24;border-radius:6px;cursor:pointer;font-weight:700;color:#92400e;">' + (showHandled ? 'Hide handled' : 'Show ' + handledCount + ' handled') + '</button>' : '')
+        + '</div>';
+
+      // v775: select-all bar + fixed bottom bulk bar (matches the
+      // TaskReminders pattern). Visible whenever rows.length > 0.
+      var selectAllHtml = '<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">'
+        + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-light);">'
+        +   '<input type="checkbox" onchange="CallCenter._selectAll(this)" style="width:16px;height:16px;cursor:pointer;">'
+        +   '<span>Select all (' + rows.length + ')</span>'
+        + '</label>'
+        + '</div>';
+      var bulkBarHtml = '<div id="cc-bulk-bar" style="display:none;position:fixed;bottom:0;left:var(--sidebar-w,0);right:0;z-index:500;background:#1a1a2e;color:#fff;padding:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+        + '<span id="cc-bulk-count" style="font-weight:700;font-size:14px;">0 selected</span>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        +   '<button onclick="CallCenter._bulkQualify()" style="background:var(--green-dark);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">✓ Promote to Requests</button>'
+        +   '<button onclick="CallCenter._bulkJunk()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">✗ Junk</button>'
+        +   '<button onclick="CallCenter._bulkDelete()" style="background:#c62828;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🗑 Delete</button>'
+        +   '<button onclick="CallCenter._clearBulk()" style="background:none;color:rgba(255,255,255,.6);border:none;font-size:13px;cursor:pointer;padding:7px 0;">Cancel</button>'
+        + '</div>'
+        + '</div>';
+
+      if (!rows.length) {
+        el.innerHTML = bannerHtml + '<div style="padding:80px 24px;text-align:center;color:var(--text-light);">'
+          + '<div style="font-size:40px;margin-bottom:12px;">✅</div>'
+          + '<div style="font-size:15px;font-weight:600;margin-bottom:6px;">Inbox clean</div>'
+          + '<div style="font-size:13px;">' + (handledCount > 0 ? 'All ' + handledCount + ' inbound items have been qualified or dismissed.' : 'New inbound calls / voicemails / SMS will appear here for triage.') + '</div>'
+          + '</div>';
+        return;
+      }
+
+      var html = bannerHtml + selectAllHtml + bulkBarHtml + '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px;">';
+
+      rows.forEach(function(c, idx) {
+        var cl = c.client_id ? clientMap[c.client_id] : null;
+        var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+        var isEmail = c.channel === 'email';
+        var isVM   = c.channel === 'voicemail';
+        var isSMS  = c.channel === 'sms';
+        var isMissed = c.status === 'missed' || c.status === 'no-answer' || c.status === 'no_answer';
+        var phone = isEmail ? '' : (c.from_number || '');
+        var digits = phone.replace(/\D/g, '');
+
+        // ── Email / BidNet row ───────────────────────────────────
+        if (isEmail) {
+          var bidType  = meta.email_type || meta.bidnet_type || 'new_solicitation';
+          var bidIcon  = bidType === 'award' ? '🏆' : bidType === 'addendum' ? '📎' : '📋';
+          var bidLabel = bidType === 'award' ? 'Award Notice' : bidType === 'addendum' ? 'Addendum' : 'New Solicitation';
+          var bidColor = bidType === 'award' ? '#92400e' : bidType === 'addendum' ? '#6a1b9a' : '#1565c0';
+          var bidBg    = bidType === 'award' ? '#fef3c7' : bidType === 'addendum' ? '#f3e8ff' : '#eff6ff';
+          var bidBorder= bidType === 'award' ? '#fde68a' : bidType === 'addendum' ? '#d8b4fe' : '#bfdbfe';
+          var agency   = meta.agency || c.from_number || 'Unknown Agency';
+          var solNum   = meta.sol_number || meta.solicitation_number || '';
+          var solTitle = meta.sol_title || c.body || '';
+          var gmailUrl = meta.thread_id ? 'https://mail.google.com/mail/u/0/#inbox/' + meta.thread_id : '';
+          var ts = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : (c.created_at||'').slice(0,10);
+          var isLast = idx === rows.length - 1;
+          var safeId = JSON.stringify(c.id);
+          // Push to email cache so modal can find it
+          if (!CallCenter._emailRows) CallCenter._emailRows = [];
+          if (!CallCenter._emailRows.find(function(r){ return r.id === c.id; })) CallCenter._emailRows.push(c);
+          html += '<div onclick="CallCenter._openEmailModal(' + safeId + ')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + '" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\'">'
+            + '<label onclick="event.stopPropagation()" style="display:flex;align-items:center;flex-shrink:0;cursor:pointer;"><input type="checkbox" class="cc-check" value="' + UI.esc(c.id) + '" onchange="CallCenter._updateBulk()" style="width:16px;height:16px;cursor:pointer;"></label>'
+            + '<div style="flex-shrink:0;width:34px;height:34px;background:' + bidBg + ';border:1px solid ' + bidBorder + ';border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;">' + bidIcon + '</div>'
+            + '<div style="flex:1;min-width:0;">'
+            + '<div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(agency) + '</div>'
+            + '<div style="font-size:11px;font-weight:700;color:' + bidColor + ';margin-top:2px;">' + bidLabel + (solNum ? ' · ' + solNum : '') + '</div>'
+            + (solTitle ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(solTitle) + '</div>' : '')
+            + '</div>'
+            + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+            + '<span style="font-size:11px;color:var(--text-light);">' + ts + '</span>'
+            + (gmailUrl ? '<a href="' + gmailUrl + '" target="_blank" onclick="event.stopPropagation()" title="Open Gmail" style="width:28px;height:28px;background:none;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;">✉️</a>' : '')
+            + '</div>'
+            + '</div>';
+          return;
+        }
+
+        // ── Call / SMS / Voicemail row ───────────────────────────
+        // v842: explicit disposition labels for calls — Missed (no answer)
+        // / Answered (with duration) / In progress. Was: blanket "Inbound
+        // call" with no way to tell if it picked up.
+        // v844: caller-name resolution order — linked client → request-form
+        // name → past-comm name → carrier CNAM → formatted phone → "Unknown".
+        // Also tags the row with the resolution source so Doug can tell at
+        // a glance where the name came from (◎ for client, ✎ for request,
+        // 🆔 for CNAM).
+        var resolved = (meta.caller_resolution && typeof meta.caller_resolution === 'object') ? meta.caller_resolution : null;
+        var resolvedName = resolved && resolved.name;
+        var resolvedAddr = resolved && resolved.address;
+        var cnamName = meta.caller_id_name || null;
+        var name = (cl && cl.name) || meta.name || resolvedName || cnamName || CallCenter._fmtPhone(phone) || 'Unknown';
+        var sourceBadge = '';
+        if (cl) sourceBadge = '<span title="Linked to client" style="font-size:9px;color:#1565c0;margin-left:5px;">◎ client</span>';
+        else if (resolved && resolved.source === 'requests') sourceBadge = '<span title="Matched from a past request form" style="font-size:9px;color:#7b1fa2;margin-left:5px;">✎ from request</span>';
+        else if (resolved && resolved.source === 'communications') sourceBadge = '<span title="Name learned from prior calls/texts" style="font-size:9px;color:#6a1b9a;margin-left:5px;">🕘 prior</span>';
+        else if (cnamName && name === cnamName) sourceBadge = '<span title="Caller ID (carrier-supplied)" style="font-size:9px;color:#374151;margin-left:5px;">🆔 caller-id</span>';
+        var callConnected = c.channel === 'call' && (Number(c.duration_seconds) > 0 || (c.status||'').toLowerCase() === 'connected' || (c.status||'').toLowerCase() === 'active' || (c.status||'').toLowerCase() === 'completed');
+        var icon  = isVM ? '📭' : (isSMS ? '💬' : (isMissed ? '📵' : (callConnected ? '✅' : '📞')));
+        var label = isVM ? 'Voicemail' : (isSMS ? 'SMS' : (isMissed ? 'Missed call' : (callConnected ? 'Answered call' : 'Inbound call')));
+        var labelColor = isVM ? '#7b1fa2' : (isSMS ? '#1565c0' : (isMissed ? '#c62828' : (callConnected ? '#2e7d32' : '#374151')));
+        // v844: show clock time alongside relative time — "2:14 PM · 3h ago"
+        // so Doug can tell at a glance when a call landed without doing
+        // mental arithmetic. Same-day shows time-of-day; older shows the date.
+        var tsRel = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : '';
+        var tsAbs = '';
+        try {
+          var _d = new Date(c.created_at);
+          if (!isNaN(_d.getTime())) {
+            var sameDay = (new Date().toDateString() === _d.toDateString());
+            tsAbs = sameDay
+              ? _d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              : _d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + _d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          }
+        } catch (e) {}
+        var ts = tsAbs ? (tsAbs + (tsRel ? '<br><span style="opacity:.7;">' + tsRel + '</span>' : '')) : tsRel;
+        var dur = c.duration_seconds ? Math.floor(c.duration_seconds/60) + ':' + String(c.duration_seconds%60).padStart(2,'0') : '';
+        var service = meta.service_wanted || '';
+        var safePhone = digits.replace(/'/g,"\\'");
+        var safeName  = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safeId    = (c.client_id||'').replace(/'/g,"\\'");
+        var isLast = idx === rows.length - 1;
+
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + '">'
+          + '<label style="display:flex;align-items:center;flex-shrink:0;cursor:pointer;"><input type="checkbox" class="cc-check" value="' + UI.esc(c.id) + '" onchange="CallCenter._updateBulk()" style="width:16px;height:16px;cursor:pointer;"></label>'
+          + '<div style="flex-shrink:0;width:32px;height:32px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">' + icon + '</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + sourceBadge + '</div>'
+          + '<div style="font-size:12px;color:' + labelColor + ';font-weight:600;margin-top:1px;">'
+          + label + (dur ? ' · ' + dur : '') + (phone ? ' · ' + CallCenter._fmtPhone(phone) : '')
+          + '</div>'
+          + (resolvedAddr ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ' + UI.esc(resolvedAddr) + '</div>' : '')
+          + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (meta.ai_summary ? '🤖 ' : '') + c.body.slice(0, 90) + (c.body.length > 90 ? '…' : '') + '</div>' : '')
+          + (service ? '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">Wants: ' + service + '</div>' : '')
+          + CallCenter._intentBadges(c)
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;flex-shrink:0;">' + ts + '</div>'
+          + '<div style="display:flex;gap:4px;flex-shrink:0;align-items:center;">'
+            + (digits ? '<button onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeName + '\',\'' + safePhone + '\',\'call\')" title="Call back" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">📞</button>' : '')
+            + (digits ? '<button onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeName + '\',\'' + safePhone + '\',\'sms\')" title="Text back" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">💬</button>' : '')
+            + (c.recording_url ? '<a href="' + c.recording_url + '" target="_blank" rel="noopener noreferrer" title="Listen" style="width:30px;height:30px;background:none;border:1px solid var(--border);border-radius:7px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;">▶</a>' : '')
+            // v759: qualify-then-promote
+            + '<button onclick="CallCenter._qualifyComm(\'' + c.id + '\')" title="Qualify → promote to Requests" style="height:30px;padding:0 10px;background:var(--green-dark);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">✓ Qualify</button>'
+            + '<button onclick="CallCenter._junkComm(\'' + c.id + '\')" title="Mark junk — won\'t show again" style="width:30px;height:30px;background:none;border:1px solid #fecaca;color:#c62828;border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✗</button>'
+            + '</div>'
+          + '</div>';
+      });
+
+      html += '</div>';
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light);">Failed to load. ' + e.message + '</div>';
+    }
+  },
+
+  // v767: Intent badges — pure rule-based scan of the SMS/voicemail
+  // body so Doug can triage faster. No AI cost, runs on every render.
+  // v774: AI-classified intent overlay — when comm.metadata.ai_intent
+  // is present (set by background Claude classifier below), render it
+  // as a more confident primary pill while keeping the rule-based set
+  // as a fallback / supplement.
+  _intentBadges: function(c) {
+    var body = String(c.body || '').toLowerCase();
+    if (!body) return '';
+    var badges = [];
+    // AI overlay first (highest signal)
+    var aiIntent = c.metadata && c.metadata.ai_intent;
+    if (aiIntent && AI_INTENT_PILLS[aiIntent]) {
+      var p = AI_INTENT_PILLS[aiIntent];
+      badges.push([p.icon, p.label + ' (AI)', p.color]);
+    }
+    // Rule-based — always run, but skip duplicates the AI already covers.
+    var aiCovers = {
+      stop: ['🛑'], urgent: ['⚠'], price: ['💰'], schedule: ['📅'],
+      confirm: ['✅'], spam: ['🛑'], complaint: ['⚠']
+    };
+    var skipIcons = aiCovers[aiIntent] || [];
+    function pushIfNew(icon, label, color) {
+      if (skipIcons.indexOf(icon) >= 0) return;
+      badges.push([icon, label, color]);
+    }
+    if (/\b(stop|stopall|unsubscribe|quit|cancel)\b/.test(body)) pushIfNew('🛑', 'STOP — TCPA opt-out', '#991b1b');
+    if (/\b(emergency|hazard|asap|urgent|today|right now|fallen|down on|on my house|on my car)\b/.test(body)) pushIfNew('⚠', 'Urgent', '#c2410c');
+    if (/(\$\d|price|cost|estimate|quote|how much)/.test(body)) pushIfNew('💰', 'Asks about price', '#92400e');
+    if (/\b(reschedule|schedul|when can|what time|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|am|pm|appointment)\b/.test(body)) pushIfNew('📅', 'Scheduling', '#1d4ed8');
+    if (/\b(yes|yep|confirm|approved|sounds good|go ahead|all set)\b/.test(body) && !c.metadata?.suggested_action) pushIfNew('✅', 'Confirmation-like reply', '#16a34a');
+    if (/\?\s*$/.test(body)) pushIfNew('❓', 'Open question', '#525252');
+    if (!badges.length) return '';
+    return '<div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">' + badges.map(function(b) {
+      return '<span title="' + b[1] + '" style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + b[2] + '20;color:' + b[2] + ';border:1px solid ' + b[2] + '40;font-weight:600;">' + b[0] + ' ' + b[1] + '</span>';
+    }).join('') + '</div>';
+  },
+
+  // v774: kick a Claude classification pass for inbound SMS rows that
+  // haven't been classified yet. Runs once per visit to the Triage tab,
+  // batched up to 5 unclassified rows per call. Stamps the result on
+  // communications.metadata.ai_intent so it persists.
+  _classifyUnclassified: function(rows) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var todo = rows.filter(function(c) {
+      if (c.channel !== 'sms' && c.channel !== 'voicemail') return false;
+      if (!c.body || c.body.length < 5) return false;
+      var m = c.metadata || {};
+      if (m.ai_intent) return false;
+      return true;
+    }).slice(0, 5);
+    if (!todo.length) return;
+    // Build a single batched prompt to keep token cost low.
+    var bodies = todo.map(function(c, i) {
+      return '[' + (i + 1) + '] ' + (c.body || '').replace(/\s+/g, ' ').slice(0, 240);
+    }).join('\n');
+    var prompt = 'Classify each inbound message from a tree-service customer with ONE of these intents:\n'
+      + 'job_inquiry · price_question · schedule_request · urgent_hazard · confirmation · cancellation · complaint · spam · other\n\n'
+      + 'Messages:\n' + bodies + '\n\n'
+      + 'Reply with ONLY a JSON array of intents in order, no prose. Example: ["job_inquiry","price_question","spam"]';
+    var apiKey = (typeof window !== 'undefined' && window.bmAIKey) ? window.bmAIKey() : null;
+    fetch('https://ltpivkqahvplapyagljt.supabase.co/functions/v1/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: apiKey,
+        model: 'claude-haiku-4-5',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    }).then(function(r) { return r.json(); }).then(function(res) {
+      var text = '';
+      if (res.content && res.content[0] && res.content[0].text) text = res.content[0].text.trim();
+      else if (res.choices && res.choices[0]) text = (res.choices[0].message || res.choices[0]).content || '';
+      text = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      var arr;
+      try { arr = JSON.parse(text); } catch(e) { return; }
+      if (!Array.isArray(arr)) return;
+      // Persist each classification + update local cache so the UI re-renders
+      var updates = [];
+      arr.forEach(function(intent, i) {
+        var c = todo[i];
+        if (!c || typeof intent !== 'string') return;
+        var nextMeta = Object.assign({}, c.metadata || {}, { ai_intent: intent, ai_intent_at: new Date().toISOString() });
+        c.metadata = nextMeta;
+        updates.push(sb.from('communications').update({ metadata: nextMeta }).eq('id', c.id));
+      });
+      if (updates.length) {
+        Promise.all(updates).then(function() {
+          if (window._currentPage === 'callcenter' || window._currentPage === 'receptionist') CallCenter._loadMissed();
+        });
+      }
+    }).catch(function() { /* swallow — classification is best-effort */ });
+  },
+
+  // v759: Qualify a raw inbound row → promote to Requests with a real
+  // name + service interest. Opens a small modal pre-filled from the
+  // comm row (transcript / SMS body / phone), Doug confirms name +
+  // service, save creates a `requests` row AND flags the comm row's
+  // metadata.qualified=true so it falls off the triage list.
+  _qualifyComm: async function(commId) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    var r = await sb.from('communications').select('*').eq('id', commId).maybeSingle();
+    var c = r && r.data;
+    if (!c) { UI.toast('Inbound row not found', 'error'); return; }
+    var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+    var defaultName = meta.name || meta.from_name || meta.caller_name || '';
+    var transcriptOrBody = (c.body || '').slice(0, 500);
+    var phone = c.from_number || '';
+    var phoneFmt = CallCenter._fmtPhone(phone) || phone;
+    CallCenter._qualCommId = commId;
+    var html = '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">From <b style="color:var(--text);">' + UI.esc(phoneFmt) + '</b> · ' + UI.esc(c.channel) + (c.status ? ' · ' + UI.esc(c.status) : '') + '</div>'
+      + UI.field('Caller name *', '<input id="qc-name" type="text" value="' + UI.esc(defaultName) + '" placeholder="Real name — not &quot;Phone caller&quot;" autofocus>')
+      + UI.field('Service wanted *', '<input id="qc-service" type="text" placeholder="e.g. tree removal at 123 Main St">')
+      + UI.field('Address (optional)', '<input id="qc-addr" type="text" placeholder="Property address if known">')
+      + UI.field('Notes', '<textarea id="qc-notes" rows="4" style="font-family:inherit;">' + UI.esc(transcriptOrBody) + '</textarea>');
+    UI.showModal('✓ Qualify — promote to Requests', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="CallCenter._saveQualification()">Promote to Request</button>'
+    });
+  },
+
+  _saveQualification: async function() {
+    var commId = CallCenter._qualCommId;
+    var name = (document.getElementById('qc-name') || {}).value || '';
+    var service = (document.getElementById('qc-service') || {}).value || '';
+    var addr = (document.getElementById('qc-addr') || {}).value || '';
+    var notes = (document.getElementById('qc-notes') || {}).value || '';
+    name = name.trim(); service = service.trim();
+    if (!name) { UI.toast('Name is required', 'error'); return; }
+    if (!service) { UI.toast('Service wanted is required', 'error'); return; }
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    var r = await sb.from('communications').select('*').eq('id', commId).maybeSingle();
+    var c = (r && r.data) || null;
+    if (!c) { UI.toast('Row vanished', 'error'); return; }
+    // 1. Insert a real `requests` row
+    var reqRow = {
+      client_name: name,
+      title: service,
+      property: addr || null,
+      client_phone: c.from_number || null,
+      notes: (notes || '').trim() || null,
+      source: 'Leads Center (qualified)',
+      status: 'new'
+    };
+    if (tenantId) reqRow.tenant_id = tenantId;
+    var ins = await sb.from('requests').insert(reqRow).select('id').single();
+    if (ins.error) { UI.toast('Save failed: ' + ins.error.message, 'error'); return; }
+    // 2. Mark the comm row qualified so it falls off the triage list
+    var nextMeta = Object.assign({}, c.metadata || {}, {
+      qualified: true,
+      qualified_at: new Date().toISOString(),
+      qualified_request_id: ins.data && ins.data.id,
+      qualified_name: name,
+      qualified_service: service
+    });
+    await sb.from('communications').update({ metadata: nextMeta }).eq('id', commId);
+    UI.closeModal();
+    UI.toast('Promoted to Requests as "' + name + '" ✓');
+    CallCenter._loadMissed();
+  },
+
+  _junkComm: async function(commId) {
+    if (!confirm('Mark this as junk?\n\nIt won\'t show in the Leads Center triage list anymore. Use "Show handled" to bring it back.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var r = await sb.from('communications').select('metadata').eq('id', commId).maybeSingle();
+    var cur = (r && r.data && r.data.metadata) || {};
+    var nextMeta = Object.assign({}, cur, { junk: true, junk_at: new Date().toISOString() });
+    await sb.from('communications').update({ metadata: nextMeta }).eq('id', commId);
+    UI.toast('Marked junk');
+    CallCenter._loadMissed();
+  },
+
+  // v775: bulk-action plumbing for the Triage tab. Mirrors the
+  // TaskReminders pattern — checkboxes per row, dark bottom bar,
+  // Junk (soft-hide) / Delete (hard-remove from communications).
+  _updateBulk: function() {
+    var checked = document.querySelectorAll('.cc-check:checked');
+    var bar = document.getElementById('cc-bulk-bar');
+    var cnt = document.getElementById('cc-bulk-count');
+    if (bar) bar.style.display = checked.length > 0 ? 'flex' : 'none';
+    if (cnt) cnt.textContent = checked.length + ' selected';
+  },
+  _selectAll: function(cb) {
+    document.querySelectorAll('.cc-check').forEach(function(c) { c.checked = cb.checked; });
+    CallCenter._updateBulk();
+  },
+  _clearBulk: function() {
+    document.querySelectorAll('.cc-check').forEach(function(c) { c.checked = false; });
+    CallCenter._updateBulk();
+  },
+  _selectedIds: function() {
+    return Array.from(document.querySelectorAll('.cc-check:checked')).map(function(c) { return c.value; });
+  },
+  _bulkJunk: async function() {
+    var ids = CallCenter._selectedIds();
+    if (!ids.length) return;
+    if (!confirm('Mark ' + ids.length + ' inbound row' + (ids.length === 1 ? '' : 's') + ' as junk?\n\nThey\'ll fall off the triage list. Use "Show handled" to bring them back.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    // Fetch existing metadata so we don't blow away other keys, then patch each.
+    var pulls = ids.map(function(id) {
+      return sb.from('communications').select('id,metadata').eq('id', id).maybeSingle();
+    });
+    var results = await Promise.all(pulls);
+    var updates = results.map(function(r) {
+      if (!r || !r.data) return Promise.resolve();
+      var cur = r.data.metadata || {};
+      var nextMeta = Object.assign({}, cur, { junk: true, junk_at: new Date().toISOString() });
+      return sb.from('communications').update({ metadata: nextMeta }).eq('id', r.data.id);
+    });
+    await Promise.all(updates);
+    UI.toast('Marked ' + ids.length + ' junk');
+    CallCenter._clearBulk();
+    CallCenter._loadMissed();
+  },
+  _bulkDelete: async function() {
+    var ids = CallCenter._selectedIds();
+    if (!ids.length) return;
+    if (!confirm('Permanently delete ' + ids.length + ' inbound row' + (ids.length === 1 ? '' : 's') + ' from communications?\n\nThis removes the rows entirely — transcript / SMS body / call record gone. Can\'t be undone. Use Junk instead if you might want to review later.')) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var r = await sb.from('communications').delete().in('id', ids);
+    if (r.error) { UI.toast('Delete failed: ' + r.error.message, 'error'); return; }
+    UI.toast('Deleted ' + ids.length);
+    CallCenter._clearBulk();
+    CallCenter._loadMissed();
+  },
+
+  // v777: bulk-qualify — promote N selected inbound rows to real
+  // `requests` at once. Opens a single review modal listing each row
+  // with a pre-filled name (from metadata, phone format, or "Phone
+  // caller") and a shared service field. Doug can edit each name
+  // inline if needed, types ONE service that applies to all (since
+  // they're being batch-qualified, presumably similar intent), and
+  // hits Promote. Inserts N requests rows + flags N comm rows.
+  _bulkQualify: async function() {
+    var ids = CallCenter._selectedIds();
+    if (!ids.length) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    // Pull the selected comm rows
+    var pulls = ids.map(function(id) {
+      return sb.from('communications').select('*').eq('id', id).maybeSingle();
+    });
+    var results = await Promise.all(pulls);
+    var rows = results.map(function(r) { return r && r.data; }).filter(Boolean);
+    if (!rows.length) { UI.toast('Could not load selected rows', 'error'); return; }
+
+    // Build the inline review form
+    CallCenter._bulkPending = rows;
+    var rowsHtml = rows.map(function(c, idx) {
+      var meta = (c.metadata && typeof c.metadata === 'object') ? c.metadata : {};
+      var phone = c.from_number || '';
+      var phoneFmt = CallCenter._fmtPhone(phone) || phone || '';
+      var suggestedName = meta.name || meta.from_name || meta.caller_name || phoneFmt || 'Phone caller';
+      var preview = ((c.body || '').replace(/\s+/g, ' ').slice(0, 100)).trim();
+      return '<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 0;' + (idx < rows.length - 1 ? 'border-bottom:1px solid var(--border);' : '') + '">'
+        +   '<div style="font-size:11px;color:var(--text-light);width:90px;flex-shrink:0;padding-top:6px;">' + UI.esc(phoneFmt || c.channel) + '</div>'
+        +   '<input class="bulk-q-name" data-comm="' + UI.esc(c.id) + '" value="' + UI.esc(suggestedName) + '" placeholder="Real name" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+        +   (preview ? '<div title="' + UI.esc(c.body || '') + '" style="flex:2;min-width:160px;font-size:11px;color:var(--text-light);padding-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(preview) + '</div>' : '')
+        + '</div>';
+    }).join('');
+
+    var html = '<div style="font-size:13px;color:var(--text-light);margin-bottom:10px;">'
+      + 'Promoting <b style="color:var(--text);">' + rows.length + '</b> inbound row' + (rows.length === 1 ? '' : 's') + ' to Requests. They\'ll show up in the Pipeline once qualified.'
+      + '</div>'
+      + UI.field('Service wanted (applied to all) *', '<input id="bulk-q-service" placeholder="e.g. tree removal, pruning, estimate" autofocus>')
+      + '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:10px;max-height:340px;overflow-y:auto;">'
+      +   '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);margin-bottom:6px;">Names (edit if needed)</div>'
+      +   rowsHtml
+      + '</div>';
+    UI.showModal('✓ Bulk promote to Requests', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="CallCenter._saveBulkQualify()">Promote ' + rows.length + ' →</button>'
+    });
+  },
+
+  _saveBulkQualify: async function() {
+    var rows = CallCenter._bulkPending || [];
+    if (!rows.length) { UI.closeModal(); return; }
+    var service = ((document.getElementById('bulk-q-service') || {}).value || '').trim();
+    if (!service) { UI.toast('Service wanted is required', 'error'); return; }
+    // Collect per-row names
+    var nameById = {};
+    document.querySelectorAll('.bulk-q-name').forEach(function(inp) {
+      nameById[inp.getAttribute('data-comm')] = (inp.value || '').trim();
+    });
+    var missing = rows.filter(function(c) { return !nameById[c.id]; });
+    if (missing.length) { UI.toast(missing.length + ' row(s) missing a name', 'error'); return; }
+
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { UI.toast('Supabase not connected', 'error'); return; }
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+
+    // Build all the request rows + the corresponding comm-update payloads
+    var reqRows = rows.map(function(c) {
+      var notes = (c.body || '').trim().slice(0, 500);
+      var row = {
+        client_name: nameById[c.id],
+        title: service,
+        property: null,
+        client_phone: c.from_number || null,
+        notes: notes || null,
+        source: 'Leads Center (qualified)',
+        status: 'new'
+      };
+      if (tenantId) row.tenant_id = tenantId;
+      return { commId: c.id, commMeta: c.metadata || {}, row: row };
+    });
+
+    var ok = 0, failed = 0;
+    for (var i = 0; i < reqRows.length; i++) {
+      var entry = reqRows[i];
+      var ins = await sb.from('requests').insert(entry.row).select('id').single();
+      if (ins.error) { failed++; continue; }
+      var nextMeta = Object.assign({}, entry.commMeta, {
+        qualified: true,
+        qualified_at: new Date().toISOString(),
+        qualified_request_id: ins.data && ins.data.id,
+        qualified_name: entry.row.client_name,
+        qualified_service: service
+      });
+      await sb.from('communications').update({ metadata: nextMeta }).eq('id', entry.commId);
+      ok++;
+    }
+    UI.closeModal();
+    UI.toast('Promoted ' + ok + (failed ? ' · ' + failed + ' failed' : '') + ' to Requests');
+    CallCenter._bulkPending = null;
+    CallCenter._clearBulk();
+    CallCenter._loadMissed();
+  },
+
+  // ── Email Leads ──────────────────────────────────────────────
+
+  _loadEmails: async function() {
+    var el = document.getElementById('cc-panel');
+    if (!el) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-light);">Sign in to view emails.</div>'; return; }
+
+    try {
+      var { data, error } = await sb.from('communications')
+        .select('id,client_id,channel,direction,body,from_number,to_number,status,created_at,metadata')
+        .eq('channel', 'email')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      var rows = data || [];
+
+      if (!rows.length) {
+        el.innerHTML = '<div style="padding:60px 24px;text-align:center;color:var(--text-light);">'
+          + '<div style="font-size:40px;margin-bottom:12px;">📧</div>'
+          + '<div style="font-size:15px;font-weight:600;margin-bottom:6px;">No emails yet</div>'
+          + '<div style="font-size:13px;margin-bottom:20px;">BidNet solicitations will appear here automatically.</div>'
+          + '<a href="https://www.bidnetdirect.com" target="_blank" style="display:inline-block;padding:10px 22px;background:#1a3c12;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">🔗 Open BidNet Direct</a>'
+          + '</div>';
+        return;
+      }
+
+      // Header with BidNet shortcut
+      var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+        + '<div style="font-size:13px;color:var(--text-light);">' + rows.length + ' bid email' + (rows.length !== 1 ? 's' : '') + '</div>'
+        + '<a href="https://www.bidnetdirect.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#1a3c12;color:#fff;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;">🔗 BidNet Direct</a>'
+        + '</div>';
+
+      html += '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;">';
+      rows.forEach(function(c, idx) {
+        var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+        // Support both field name conventions
+        var bidType  = meta.email_type || meta.bidnet_type || 'new_solicitation';
+        var bidIcon  = bidType === 'award' ? '🏆' : bidType === 'addendum' ? '📎' : '📋';
+        var bidLabel = bidType === 'award' ? 'Award Notice' : bidType === 'addendum' ? 'Addendum' : 'New Solicitation';
+        var bidColor = bidType === 'award' ? '#92400e' : bidType === 'addendum' ? '#6a1b9a' : '#1565c0';
+        var bidBg    = bidType === 'award' ? '#fef3c7' : bidType === 'addendum' ? '#f3e8ff' : '#eff6ff';
+        var bidBorder= bidType === 'award' ? '#fde68a' : bidType === 'addendum' ? '#d8b4fe' : '#bfdbfe';
+        var agency   = meta.agency || c.from_number || 'Unknown Agency';
+        var solNum   = meta.sol_number || meta.solicitation_number || '';
+        var solTitle = meta.sol_title || c.body || '';
+        // Gmail deep-link if thread_id present, else BidNet search
+        var gmailUrl = meta.thread_id ? 'https://mail.google.com/mail/u/0/#inbox/' + meta.thread_id : '';
+        var ts = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : (c.created_at||'').slice(0,10);
+        var isLast = idx === rows.length - 1;
+        var safeId = JSON.stringify(c.id);
+
+        html += '<div onclick="CallCenter._openEmailModal(' + safeId + ')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + '" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\'">'
+          + '<div style="flex-shrink:0;width:34px;height:34px;background:' + bidBg + ';border:1px solid ' + bidBorder + ';border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;">' + bidIcon + '</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(agency) + '</div>'
+          + '<div style="font-size:11px;font-weight:700;color:' + bidColor + ';margin-top:2px;">' + bidLabel + (solNum ? ' · ' + solNum : '') + '</div>'
+          + (solTitle ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(solTitle) + '</div>' : '')
+          + '</div>'
+          + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+          + '<span style="font-size:11px;color:var(--text-light);white-space:nowrap;">' + ts + '</span>'
+          + (gmailUrl ? '<a href="' + gmailUrl + '" target="_blank" onclick="event.stopPropagation()" title="Open in Gmail" style="width:28px;height:28px;background:none;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;flex-shrink:0;">✉️</a>' : '')
+          + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+
+      // Store rows for modal lookup
+      CallCenter._emailRows = rows;
+    } catch(e) {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light);">Failed to load emails. ' + e.message + '</div>';
+    }
+  },
+
+  _emailRows: [],
+
+  _openEmailModal: function(id) {
+    var c = (CallCenter._emailRows || []).find(function(r) { return r.id === id; });
+    if (!c) return;
+    var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+    var bidType  = meta.email_type || meta.bidnet_type || 'new_solicitation';
+    var bidIcon  = bidType === 'award' ? '🏆' : bidType === 'addendum' ? '📎' : '📋';
+    var bidLabel = bidType === 'award' ? 'Award Notice' : bidType === 'addendum' ? 'Addendum' : 'New Solicitation';
+    var bidColor = bidType === 'award' ? '#92400e' : bidType === 'addendum' ? '#6a1b9a' : '#1565c0';
+    var agency   = meta.agency || c.from_number || 'Unknown Agency';
+    var solNum   = meta.sol_number || meta.solicitation_number || '';
+    var solTitle = meta.sol_title || c.body || '';
+    var gmailUrl = meta.thread_id ? 'https://mail.google.com/mail/u/0/#inbox/' + meta.thread_id : '';
+    var ts = typeof UI !== 'undefined' && UI.dateRelative ? UI.dateRelative(c.created_at) : c.created_at;
+
+    var html = '<div style="padding:4px 0;">'
+      // Type badge + agency
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">'
+      + '<div style="font-size:28px;">' + bidIcon + '</div>'
+      + '<div>'
+      + '<div style="font-size:16px;font-weight:800;color:var(--text);">' + UI.esc(agency) + '</div>'
+      + '<div style="font-size:12px;font-weight:700;color:' + bidColor + ';margin-top:2px;">' + bidLabel + '</div>'
+      + '</div>'
+      + '</div>'
+      // Details grid
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">'
+      + (solNum   ? '<div style="background:var(--surface);border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;margin-bottom:3px;">Solicitation #</div><div style="font-size:13px;font-weight:600;">' + UI.esc(solNum) + '</div></div>' : '')
+      + '<div style="background:var(--surface);border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;margin-bottom:3px;">Received</div><div style="font-size:13px;font-weight:600;">' + UI.esc(ts) + '</div></div>'
+      + (meta.source ? '<div style="background:var(--surface);border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;margin-bottom:3px;">Source</div><div style="font-size:13px;font-weight:600;">' + UI.esc(meta.source) + '</div></div>' : '')
+      + '</div>'
+      // Title/subject
+      + (solTitle ? '<div style="background:var(--surface);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.5;">' + UI.esc(solTitle) + '</div>' : '')
+      // Action buttons
+      + '<div style="display:flex;flex-direction:column;gap:8px;">'
+      + (gmailUrl ? '<a href="' + gmailUrl + '" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 0;background:#1a3c12;color:#fff;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">✉️ Open in Gmail</a>' : '')
+      + '<a href="https://www.bidnetdirect.com" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 0;background:none;color:var(--text);border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">🔗 Open BidNet Direct</a>'
+      + '<button onclick="UI.closeModal();QuotesPage.showForm(null,{description:' + JSON.stringify(UI.esc(solTitle)) + ',source:\'bidnet\'})" style="padding:11px 0;background:none;color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">📋 Create Quote from This Bid</button>'
+      + '</div>'
+      + '</div>';
+
+    UI.showModal(bidIcon + ' ' + UI.esc(agency), html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+    });
+  },
+
+  // ── SMS Threads ──────────────────────────────────────────────
+
+  _loadThreads: async function() {
+    var el = document.getElementById('cc-panel');
+    if (!el) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-light);">Sign in to view messages.</div>'; return; }
+
+    try {
+      var { data, error } = await sb.from('communications')
+        .select('id,client_id,channel,direction,body,from_number,to_number,created_at,metadata')
+        .eq('channel', 'sms')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+
+      var threadMap = {};
+      (data || []).forEach(function(row) {
+        var phone = (row.direction === 'inbound' ? row.from_number : row.to_number) || '';
+        phone = phone.replace(/\D/g, '');
+        if (!phone) return;
+        if (!threadMap[phone]) threadMap[phone] = { phone: phone, clientId: row.client_id, msgs: [], lastTs: row.created_at };
+        threadMap[phone].msgs.push(row);
+        if (row.created_at > threadMap[phone].lastTs) threadMap[phone].lastTs = row.created_at;
+      });
+
+      var threads = Object.values(threadMap).sort(function(a, b) { return b.lastTs > a.lastTs ? 1 : -1; });
+
+      if (!threads.length) {
+        el.innerHTML = '<div style="padding:80px 24px;text-align:center;color:var(--text-light);">'
+          + '<div style="font-size:40px;margin-bottom:12px;">💬</div>'
+          + '<div style="font-size:15px;font-weight:600;margin-bottom:6px;">No messages yet</div>'
+          + '<div style="font-size:13px;">Use <strong>New SMS</strong> to start a thread.</div>'
+          + '</div>';
+        return;
+      }
+
+      var clients = (typeof ClientsPage !== 'undefined' && ClientsPage._cache) ? ClientsPage._cache : [];
+      var clientMap = {};
+      clients.forEach(function(c) { if (c.id) clientMap[c.id] = c.name; });
+
+      var html = '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px;">';
+      threads.forEach(function(thr, idx) {
+        var last = thr.msgs[0];
+        var meta = last.metadata && typeof last.metadata === 'object' ? last.metadata : {};
+        var name = (thr.clientId && clientMap[thr.clientId]) || meta.name || CallCenter._fmtPhone(thr.phone);
+        var preview = (last.body || '').slice(0, 70) || '—';
+        var ts = UI.dateRelative(thr.lastTs);
+        var isIn = last.direction === 'inbound';
+        var unread = thr.msgs.filter(function(m) { return m.direction === 'inbound'; }).length;
+        var safePhone = thr.phone.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safeName  = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safeId    = (thr.clientId||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var isLast = idx === threads.length - 1;
+
+        html += '<div onclick="CallCenter._openThread({phone:\'' + safePhone + '\',clientId:\'' + safeId + '\',name:\'' + safeName + '\'})"'
+          + ' style="display:flex;gap:12px;padding:12px 18px;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + 'cursor:pointer;align-items:center;"'
+          + ' onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\';">'
+          + '<div style="flex-shrink:0;width:32px;height:32px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">💬</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</div>'
+          + '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+          + (isIn ? '' : 'You: ') + preview + '</div>'
+          + '</div>'
+          + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+          + '<span style="font-size:11px;color:var(--text-light);white-space:nowrap;">' + ts + '</span>'
+          + (unread > 0 && isIn ? '<div style="width:20px;height:20px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;">' + Math.min(unread,9) + '</div>' : '')
+          + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+
+      // Realtime: refresh thread list when a new inbound SMS arrives
+      CallCenter._subscribeRealtime(sb, null);
+
+    } catch(e) {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light);">Failed to load messages.</div>';
+    }
+  },
+
+  _subscribeRealtime: function(sb, activePhone) {
+    // Unsubscribe any existing channel
+    if (CallCenter._realtimeSub) {
+      try { sb.removeChannel(CallCenter._realtimeSub); } catch(e) {}
+      CallCenter._realtimeSub = null;
+    }
+    if (!sb || !sb.channel) return;
+    CallCenter._realtimeSub = sb.channel('cc-sms-' + Date.now())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'communications', filter: 'channel=eq.sms' }, function(payload) {
+        var row = payload.new || {};
+        if (activePhone) {
+          // Inside a thread — append if matching phone
+          var fromPhone = (row.from_number || '').replace(/\D/g, '').slice(-10);
+          var toPhone   = (row.to_number   || '').replace(/\D/g, '').slice(-10);
+          var thrPhone  = (activePhone || '').replace(/\D/g, '').slice(-10);
+          if (fromPhone === thrPhone || toPhone === thrPhone) {
+            CallCenter._appendThreadMsg(row);
+          }
+        } else {
+          // Thread list — re-render
+          if (CallCenter._activeTab === 'threads' && !CallCenter._activeThread) {
+            CallCenter._loadThreads();
+          }
+        }
+      })
+      .subscribe();
+  },
+
+  _appendThreadMsg: function(row) {
+    var msgsEl = document.getElementById('cc-thread-msgs');
+    if (!msgsEl) return;
+    var out = row.direction === 'outbound';
+    var ts = row.created_at ? new Date(row.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' · ' + new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'now';
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;flex-direction:column;align-items:' + (out?'flex-end':'flex-start') + ';';
+    div.innerHTML = '<div style="max-width:72%;padding:9px 13px;border-radius:' + (out?'14px 14px 4px 14px':'14px 14px 14px 4px') + ';background:' + (out?'var(--green-dark)':'var(--surface)') + ';color:' + (out?'#fff':'var(--text)') + ';font-size:13px;line-height:1.45;border:' + (out?'none':'1px solid var(--border)') + ';">' + (row.body||'') + '</div>'
+      + '<div style="font-size:10px;color:var(--text-light);margin-top:2px;padding:0 2px;">' + ts + '</div>';
+    msgsEl.appendChild(div);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  },
+
+  _openThread: async function(thr) {
+    CallCenter._activeThread = thr;
+    var el = document.getElementById('cc-panel');
+    if (!el) return;
+
+    el.innerHTML = '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px;display:flex;flex-direction:column;">'
+      // Thread header
+      + '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border);">'
+      + '<button onclick="CallCenter._switchTab(\'threads\')" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-light);padding:0;line-height:1;margin-right:4px;">‹</button>'
+      + '<div style="width:38px;height:38px;background:var(--green-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;">' + (thr.name||'?').charAt(0).toUpperCase() + '</div>'
+      + '<div style="flex:1;">'
+      + '<div style="font-weight:700;font-size:14px;">' + (thr.name || CallCenter._fmtPhone(thr.phone)) + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">' + CallCenter._fmtPhone(thr.phone) + '</div>'
+      + '</div>'
+      + '<button onclick="CallCenter._dialFrom(\'' + (thr.clientId||'').replace(/'/g,"\\'") + '\',\'' + (thr.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\',\'' + thr.phone.replace(/'/g,"\\'") + '\',\'call\')" style="padding:7px 14px;background:#1a7a3c;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">📞 Call</button>'
+      + '</div>'
+      // Messages area
+      + '<div id="cc-thread-msgs" style="flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:280px;max-height:450px;overflow-y:auto;">'
+      + '<div style="text-align:center;font-size:12px;color:var(--text-light);">Loading…</div>'
+      + '</div>'
+      // Reply box
+      + '<div style="padding:12px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end;">'
+      + '<textarea id="cc-reply-input" rows="2" placeholder="Type a message…"'
+      + ' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();CallCenter._sendReply();}"'
+      + ' style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;resize:none;font-family:inherit;background:var(--bg);color:var(--text);"></textarea>'
+      + '<button onclick="CallCenter._sendReply()" style="padding:9px 20px;background:var(--green-dark);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">Send ↑</button>'
+      + '</div>'
+      + '</div>';
+
+    // v1012: pre-filled draft (e.g. a receipt from an invoice) — user still taps Send, never auto-fired
+    if (thr.prefill) {
+      var _rin = document.getElementById('cc-reply-input');
+      if (_rin) { _rin.value = thr.prefill; setTimeout(function(){ _rin.focus(); }, 60); }
+    }
+
+    // Load messages
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    try {
+      var { data, error } = await sb.from('communications')
+        .select('id,direction,body,from_number,to_number,created_at,status')
+        .eq('channel', 'sms')
+        .or('from_number.eq.+' + thr.phone + ',to_number.eq.+' + thr.phone + ',from_number.eq.' + thr.phone + ',to_number.eq.' + thr.phone)
+        .order('created_at', { ascending: true })
+        .limit(100);
+      if (error) throw error;
+      var msgs = data || [];
+      var msgsEl = document.getElementById('cc-thread-msgs');
+      if (!msgsEl) return;
+      if (!msgs.length) { msgsEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-light);font-size:13px;">No messages yet — start the conversation!</div>'; return; }
+      msgsEl.innerHTML = msgs.map(function(m) {
+        var out = m.direction === 'outbound';
+        var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' · ' + new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+        return '<div style="display:flex;flex-direction:column;align-items:' + (out?'flex-end':'flex-start') + ';">'
+          + '<div style="max-width:72%;padding:9px 13px;border-radius:' + (out?'14px 14px 4px 14px':'14px 14px 14px 4px') + ';background:' + (out?'var(--green-dark)':'var(--surface)') + ';color:' + (out?'#fff':'var(--text)') + ';font-size:13px;line-height:1.45;border:' + (out?'none':'1px solid var(--border)') + ';">' + (m.body||'') + '</div>'
+          + '<div style="font-size:10px;color:var(--text-light);margin-top:2px;padding:0 2px;">' + ts + '</div>'
+          + '</div>';
+      }).join('');
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+      setTimeout(function() { msgsEl.scrollTop = msgsEl.scrollHeight; }, 50);
+      var ri = document.getElementById('cc-reply-input');
+      if (ri) ri.focus();
+      // Realtime: append new messages to this thread as they arrive
+      CallCenter._subscribeRealtime(sb, thr.phone);
+    } catch(e) { console.warn('Thread load failed:', e); }
+  },
+
+  _sendReply: async function() {
+    // v1133: in-flight guard — Enter + click (or any double trigger) was
+    // firing two Dialpad sends ~400ms apart (Nicholas got the invoice text
+    // twice, Aug 15). One send at a time, period.
+    if (CallCenter._replyInFlight) return;
+    CallCenter._replyInFlight = true;
+    setTimeout(function() { CallCenter._replyInFlight = false; }, 3000);
+    var thr = CallCenter._activeThread;
+    if (!thr) return;
+    var inp = document.getElementById('cc-reply-input');
+    var msg = inp ? inp.value.trim() : '';
+    if (!msg) return;
+    if (inp) { inp.value = ''; inp.disabled = true; }
+
+    var msgsEl = document.getElementById('cc-thread-msgs');
+    if (msgsEl) {
+      var div = document.createElement('div');
+      div.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;';
+      div.innerHTML = '<div style="max-width:72%;padding:9px 13px;border-radius:14px 14px 4px 14px;background:var(--green-dark);color:#fff;font-size:13px;line-height:1.45;">' + msg + '</div>'
+        + '<div style="font-size:10px;color:var(--text-light);margin-top:2px;">Sending…</div>';
+      msgsEl.appendChild(div);
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    var sent = false;
+    if (typeof Dialpad !== 'undefined') {
+      var result = await Dialpad.sendSMS(thr.phone, msg, thr.clientId);
+      sent = result && result.success;
+    }
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (sb) {
+      await sb.from('communications').insert({
+        client_id: thr.clientId || null, type: 'sms', channel: 'sms', direction: 'outbound',
+        status: sent ? 'sent' : 'sent_fallback', body: msg,
+        to_number: '+' + thr.phone, from_number: null,
+        dialpad_id: 'bm-out-' + Date.now(),
+        metadata: { sent_from: 'callcenter', method: sent ? 'dialpad' : 'fallback' }
+      }).catch(function(){});
+    }
+    if (inp) { inp.disabled = false; inp.focus(); }
+    if (msgsEl) {
+      var rows = msgsEl.querySelectorAll('div[style*="flex-end"]');
+      var last = rows[rows.length - 1];
+      if (last) { var tsEl = last.querySelector('div:last-child'); if (tsEl) tsEl.textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + (sent ? '' : ' · fallback'); }
+    }
+  },
+
+  // ── All Activity ─────────────────────────────────────────────
+
+  _loadActivity: async function() {
+    var el = document.getElementById('cc-panel');
+    if (!el) return;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) { el.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-light);">Sign in to view activity.</div>'; return; }
+
+    try {
+      var { data, error } = await sb.from('communications')
+        .select('id,client_id,channel,direction,body,from_number,to_number,status,created_at,metadata')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      var comms = data || [];
+
+      if (!comms.length) {
+        el.innerHTML = '<div style="padding:80px 24px;text-align:center;color:var(--text-light);"><div style="font-size:40px;margin-bottom:12px;">📋</div><div style="font-size:15px;font-weight:600;">No activity yet</div></div>';
+        return;
+      }
+
+      var clients = (typeof ClientsPage !== 'undefined' && ClientsPage._cache) ? ClientsPage._cache : [];
+      var clientMap = {};
+      clients.forEach(function(c) { if (c.id) clientMap[c.id] = c; });
+
+      var html = '<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px;">';
+      comms.forEach(function(c, idx) {
+        var isIn = c.direction === 'inbound';
+        var isEmail = c.channel === 'email';
+        var icon = c.channel === 'call' ? '📞' : c.channel === 'sms' ? '💬' : c.channel === 'voicemail' ? '📭' : '📧';
+        var cl = c.client_id ? clientMap[c.client_id] : null;
+        var meta = c.metadata && typeof c.metadata === 'object' ? c.metadata : {};
+        var ts = UI.dateRelative(c.created_at);
+        var isLast = idx === comms.length - 1;
+
+        if (isEmail) {
+          var bidType = meta.bidnet_type || 'new_solicitation';
+          var bidIcon = bidType === 'award' ? '🏆' : bidType === 'addendum' ? '📎' : '📧';
+          var bidLabel = bidType === 'award' ? 'Award' : bidType === 'addendum' ? 'Addendum' : 'New Bid';
+          var agency = meta.agency || c.from_number || 'BidNet';
+          var solNum  = meta.solicitation_number || '';
+          var bidUrl  = meta.bidnet_url || '';
+          html += '<div style="display:flex;gap:12px;padding:13px 18px;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + '">'
+            + '<div style="flex-shrink:0;width:38px;height:38px;background:#e3f2fd;border:1.5px solid #90caf9;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;">' + bidIcon + '</div>'
+            + '<div style="flex:1;min-width:0;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+            + '<span style="font-weight:600;font-size:13px;">' + agency + '</span>'
+            + '<span style="font-size:11px;color:var(--text-light);">' + ts + '</span>'
+            + '</div>'
+            + '<div style="font-size:11px;color:#1565c0;font-weight:600;margin-top:1px;">' + bidLabel + (solNum ? ' · ' + solNum : '') + '</div>'
+            + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c.body + '</div>' : '')
+            + (bidUrl ? '<a href="' + bidUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:4px;font-size:11px;color:#1565c0;font-weight:600;text-decoration:none;">🔗 View Bid</a>' : '')
+            + '</div>'
+            + '</div>';
+          return;
+        }
+
+        var dirColor = isIn ? '#1565c0' : '#2e7d32';
+        var who = (cl && cl.name) || meta.name || (isIn ? CallCenter._fmtPhone(c.from_number) : CallCenter._fmtPhone(c.to_number)) || 'Unknown';
+        var phone = (isIn ? c.from_number : c.to_number) || '';
+        var safePhone = phone.replace(/\D/g,'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safeWho = who.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var safeId = (c.client_id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+        html += '<div ' + (safePhone ? 'onclick="CallCenter._dialFrom(\'' + safeId + '\',\'' + safeWho + '\',\'' + safePhone + '\',\'sms\')"' : '') + ' style="display:flex;gap:12px;padding:13px 18px;' + (isLast ? '' : 'border-bottom:1px solid var(--border);') + (safePhone?'cursor:pointer;':'') + '"'
+          + (safePhone ? ' onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\';"' : '') + '>'
+          + '<div style="flex-shrink:0;width:38px;height:38px;background:var(--surface);border:1.5px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">' + icon + '</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+          + '<span style="font-weight:600;font-size:13px;">' + who + '</span>'
+          + '<span style="font-size:11px;color:var(--text-light);">' + ts + '</span>'
+          + '</div>'
+          + '<div style="font-size:11px;color:' + dirColor + ';font-weight:600;margin-top:1px;">' + (isIn ? '← Inbound' : '→ Outbound') + ' ' + c.channel + (phone ? ' · ' + CallCenter._fmtPhone(phone) : '') + '</div>'
+          + (c.body ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c.body + '</div>' : '')
+          + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light);">Failed to load activity.</div>';
+    }
+  },
+
+  // ── Helpers ──────────────────────────────────────────────────
+
+  _dialFrom: function(clientId, name, phone, mode) {
+    CallCenter._clientId = clientId || null;
+    CallCenter._clientName = name || null;
+    CallCenter._number = phone;
+    CallCenter._dialMode = mode || 'call';
+    if (mode === 'sms') {
+      CallCenter._activeTab = 'threads';
+      CallCenter._switchTab('threads');
+      CallCenter._openThread({ phone: phone, clientId: clientId, name: name || CallCenter._fmtPhone(phone) });
+    } else {
+      if (typeof Dialpad !== 'undefined') Dialpad.call(phone, clientId, name);
+      else window.open('tel:' + phone);
+    }
+  },
+
+  _fmtPhone: function(p) {
+    var d = (p || '').replace(/\D/g,'');
+    if (d.length === 10) return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+    if (d.length === 11 && d[0]==='1') return '+1 (' + d.slice(1,4) + ') ' + d.slice(4,7) + '-' + d.slice(7);
+    return p || '';
+  }
+};

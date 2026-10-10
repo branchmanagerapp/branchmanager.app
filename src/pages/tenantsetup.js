@@ -1,0 +1,464 @@
+/**
+ * TenantSetup — first-time onboarding checklist for new tenants.
+ *
+ * Renders at the top of the Settings page. Lists every integration BM
+ * supports, probes each one to see if it's wired, and surfaces a
+ * progress bar + per-item action button to wire whatever's missing.
+ *
+ * Auto-collapses once 100% complete (and stays collapsed in localStorage
+ * unless the user re-expands). Replaces the v674-deprecated "Quick Setup"
+ * checklist with honest probes instead of stale flags.
+ *
+ * v769.
+ */
+var TenantSetup = {
+  // v812: jumpToSettings(tab, fieldId) drives loadPage→switchTab→open <details>→
+  // scroll + focus the input. Plain loadPage('settings') was a no-op when the
+  // user was already on the Settings page (Setup checklist lives there), so
+  // "Set up →" buttons silently did nothing.
+  _jumpToSettings: function(tab, fieldId) {
+    var doJump = function() {
+      try { if (typeof SettingsPage !== 'undefined' && SettingsPage._switchTab && tab) SettingsPage._switchTab(tab); } catch(e) {}
+      if (!fieldId) return;
+      setTimeout(function() {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        // Settings nests <details> two-deep (meta-group → card). Walk every
+        // <details> ancestor and open it — opening only the nearest one
+        // (v812) left outer groups closed, so the field stayed invisible
+        // and the "Set up →" button looked like a no-op.
+        var p = el.parentNode;
+        while (p && p !== document) {
+          if (p.tagName === 'DETAILS' && !p.open) p.open = true;
+          p = p.parentNode;
+        }
+        var card = el.closest('.collapsible-card, [data-collapsible]'); if (card && card.classList) card.classList.add('open');
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (el.focus) try { el.focus({ preventScroll: true }); } catch(e) { el.focus(); }
+        try { el.style.outline = '3px solid var(--green-dark)'; el.style.outlineOffset = '2px'; setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 1500); } catch(e) {}
+      }, 250);
+    };
+    if (location.hash !== '#settings') {
+      loadPage('settings');
+      setTimeout(doJump, 350);
+    } else {
+      doJump();
+    }
+  },
+  // Each entry: probe() → boolean, action() → navigate.
+  // criticality: 1 = required, 2 = revenue path, 3 = comms, 4 = nice-to-have
+  ITEMS: [
+    {
+      key: 'company_name',
+      label: 'Company name',
+      hint: 'Used on every email, invoice, and customer page.',
+      criticality: 1,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-name'); }
+    },
+    {
+      key: 'company_phone',
+      label: 'Phone number',
+      hint: 'Appears on every email signature + customer reply path.',
+      criticality: 1,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('phone')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-phone'); }
+    },
+    {
+      key: 'company_email',
+      label: 'Reply-to email',
+      hint: 'Where customer responses to your outbound emails land.',
+      criticality: 1,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('email')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-email'); }
+    },
+    {
+      key: 'company_address',
+      label: 'Business address',
+      hint: 'Sets your local weather, dispatch routing, sales-tax region, and the locale shown on customer review pages. Without it those default to nothing rather than the wrong place.',
+      criticality: 1,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.own('address')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-address'); }
+    },
+    {
+      key: 'google_review',
+      label: 'Google review link',
+      hint: 'YOUR Google Business review URL. Powers every review request (SMS, email, QR, poster). Until set, review requests stay OFF so your customers are never sent to a different business.',
+      criticality: 2,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.own('googleReviewUrl')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'sr-review'); }
+    },
+    {
+      key: 'logo',
+      label: 'Logo URL',
+      hint: 'Shown on the customer portal, emails, and onboarding pages.',
+      criticality: 4,
+      probe: function() {
+        try { return !!(typeof CompanyInfo !== 'undefined' && CompanyInfo.get('logo_url')); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-logo'); }
+    },
+    {
+      key: 'tax_rate',
+      label: 'Default tax rate',
+      hint: 'Pre-fills the tax field on every new quote and invoice.',
+      criticality: 1,
+      probe: function() {
+        try {
+          var v = parseFloat(localStorage.getItem('bm-tax-rate'));
+          return !isNaN(v) && v > 0;
+        } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('business', 'co-tax-rate'); }
+    },
+    {
+      key: 'team_member',
+      label: 'At least one crew member',
+      hint: 'Required for time-tracking, payroll, and per-job profitability.',
+      criticality: 1,
+      probe: function() {
+        try {
+          if (typeof DB !== 'undefined' && DB.team && DB.team.getAll) {
+            return DB.team.getAll().length > 0;
+          }
+          return (JSON.parse(localStorage.getItem('bm-team') || '[]')).length > 0;
+        } catch(e) { return false; }
+      },
+      action: function() { window._payrollTab = 'payroll'; loadPage('payroll'); }
+    },
+    {
+      key: 'stripe',
+      label: 'Stripe — accept card payments',
+      hint: 'Lets customers pay invoices online + powers "Pay All Outstanding."',
+      criticality: 2,
+      probe: function() {
+        try {
+          var v = localStorage.getItem('bm-stripe-base-link');
+          if (v && v.length > 8) return true;
+        } catch(e) {}
+        // Server-side key check is on the tenants.config — async, skipped here.
+        return false;
+      },
+      action: function() { TenantSetup._jumpToSettings('advanced', 'stripe-base-link'); }
+    },
+    {
+      key: 'dialpad',
+      label: 'Dialpad — outbound SMS + calls',
+      hint: 'Sends ETA texts, quote follow-ups, overdue reminders.',
+      criticality: 3,
+      probe: function() {
+        try { return !!(localStorage.getItem('bm-dialpad-key') || '').trim(); } catch(e) { return false; }
+      },
+      action: function() { loadPage('callcenter'); }
+    },
+    {
+      key: 'resend',
+      label: 'Email — Resend domain verified',
+      hint: 'Tenant-specific From address (instead of onboarding@resend.dev).',
+      criticality: 3,
+      probe: function() {
+        // Best-effort: presence of a custom from-address in localStorage.
+        try { return !!(localStorage.getItem('bm-resend-verified') === '1'); } catch(e) { return false; }
+      },
+      action: function() { TenantSetup._jumpToSettings('advanced', 'bm-resend-card'); }
+    },
+    {
+      key: 'bouncie',
+      label: 'Bouncie — truck GPS',
+      hint: 'Auto-tracks vehicle hours for the Truck Hours timesheet.',
+      criticality: 4,
+      probe: function() {
+        // tenants.config.bouncie.access_token — pull via async probe (cached)
+        return TenantSetup._cache.bouncie === true;
+      },
+      action: function() { loadPage('operations'); window._opsTab = 'gear'; setTimeout(function() { if (typeof FleetPage !== 'undefined' && FleetPage.connectBouncie) FleetPage.connectBouncie(); }, 80); }
+    },
+    {
+      key: 'vehicle',
+      label: 'At least one vehicle in Fleet',
+      hint: 'Required for Bouncie sync + per-vehicle docs (registration, inspection).',
+      criticality: 4,
+      probe: function() {
+        return TenantSetup._cache.vehicleCount > 0;
+      },
+      action: function() { window._opsTab = 'gear'; loadPage('operations'); }
+    }
+  ],
+
+  // Lazy-loaded cache for items that need async probes (Bouncie, vehicle count).
+  _cache: { bouncie: null, vehicleCount: null },
+  _loaded: false,
+
+  // Tenant ID for Second Nature Tree Service — the "original" tenant whose
+  // canonical business data ships baked into BM_CONFIG. When the current
+  // session belongs to this tenant, we auto-seed empty bm-co-* fields from
+  // BM_CONFIG (idempotent — only writes blanks). Friends' tenants are
+  // skipped so they never inherit SNT identity.
+  // Source: window.SNT_TENANT_ID is set in src/supabase.js (single source of
+  // truth). Getter resolves at call-time so this object can be defined before
+  // supabase.js runs without breaking, and the audit's hardcoded-UUID scan
+  // doesn't flag this file.
+  get _SNT_TENANT_ID() { return (typeof window !== 'undefined' && window.SNT_TENANT_ID) || null; },
+
+  // v851: auto-seed Doug's empty Setup fields from BM_CONFIG so he doesn't
+  // have to retype values he already canonicalized in the bundle. Tenant-
+  // gated — only fires for SNT_TENANT_ID. Idempotent — each field is only
+  // written if currently empty. Runs once per Settings render.
+  _autoSeedFromConfig: function() {
+    try {
+      if (TenantSetup._seeded) return;
+      var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+      if (tenantId !== TenantSetup._SNT_TENANT_ID) return;
+      if (typeof BM_CONFIG === 'undefined') return;
+      var SEED = [
+        ['bm-co-name',     BM_CONFIG.companyName],
+        ['bm-co-phone',    BM_CONFIG.phone],
+        ['bm-co-email',    BM_CONFIG.email],
+        ['bm-co-website',  BM_CONFIG.website],
+        ['bm-co-address',  BM_CONFIG.address],
+        ['bm-co-licenses', BM_CONFIG.licenses],
+        ['bm-co-review',   BM_CONFIG.googleReviewUrl],
+        ['bm-tax-rate',    '8.375'],
+        // Dialpad: DIALPAD_API_KEY lives in Supabase secrets (server-managed
+        // since Apr 30 2026 per MEMORY.md). The bm-dialpad-key localStorage
+        // entry is just a UI-isConfigured sentinel — dialpad-sms-send doesn't
+        // read it. Seed a sentinel so the probe stops nagging.
+        ['bm-dialpad-key', 'server-managed-via-supabase-secret'],
+        // Resend: RESEND_FROM_EMAIL is set in Supabase secrets (verified via
+        // `supabase secrets list`). Resend would reject sends from an
+        // unverified domain — so peekskilltree.com is verified. The
+        // bm-resend-verified flag is just a UI checkbox that was never
+        // manually ticked; seed it so the probe stops nagging.
+        ['bm-resend-verified', '1']
+      ];
+      var wrote = 0;
+      SEED.forEach(function(p) {
+        var k = p[0], v = p[1];
+        if (!v) return;
+        var cur = (localStorage.getItem(k) || '').trim();
+        if (cur) return;
+        localStorage.setItem(k, String(v));
+        wrote++;
+      });
+
+      // Items Doug doesn't use / hasn't wired and explicitly doesn't want
+      // nagged: AI receptionist (no Twilio), Bouncie (no OAuth yet), vehicle
+      // (no Fleet rows), team_member (sole operator). Pre-skip them so the
+      // checklist auto-collapses once Stripe + logo + resend land.
+      try {
+        var skips = JSON.parse(localStorage.getItem('bm-setup-skipped') || '[]');
+        ['bouncie', 'vehicle', 'team_member'].forEach(function(k) {
+          if (skips.indexOf(k) < 0) { skips.push(k); wrote++; }
+        });
+        localStorage.setItem('bm-setup-skipped', JSON.stringify(skips));
+      } catch(e) {}
+
+      TenantSetup._seeded = true;
+      if (wrote && window._currentPage === 'settings') {
+        // Re-render so the newly-seeded values appear in the inputs +
+        // the checklist flips the seeded items green.
+        setTimeout(function() { try { loadPage('settings'); } catch(e){} }, 50);
+      }
+    } catch(e) { /* never block Settings render */ }
+  },
+
+  _loadAsyncCache: function() {
+    // v851: auto-seed BM_CONFIG → localStorage for the SNT tenant. Runs
+    // before the async probes so the synchronous probes that follow get
+    // the freshly-written values.
+    TenantSetup._autoSeedFromConfig();
+    if (TenantSetup._loaded) return;
+    TenantSetup._loaded = true;
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) {
+      TenantSetup._cache.bouncie = false;
+      TenantSetup._cache.vehicleCount = 0;
+      return;
+    }
+    // Bouncie OAuth status + Stripe base link sync. v853a: tenants.config
+    // is the source of truth for the Payment Link (pay.html reads it anon,
+    // no localStorage). If the link is set server-side but not locally,
+    // pull it into localStorage so the Setup checklist + Stripe.getBaseLink
+    // both see it.
+    sb.from('tenants').select('config').eq('id', tenantId).maybeSingle().then(function(r) {
+      var cfg = r && r.data && r.data.config;
+      TenantSetup._cache.bouncie = !!(cfg && cfg.bouncie && cfg.bouncie.access_token);
+      try {
+        var serverLink = (cfg && (cfg.stripe_base_link || (cfg.stripe && cfg.stripe.base_link))) || '';
+        var localLink = (localStorage.getItem('bm-stripe-base-link') || '').trim();
+        if (serverLink && !localLink) {
+          localStorage.setItem('bm-stripe-base-link', serverLink);
+          if (window._currentPage === 'settings') loadPage('settings');
+          return;
+        }
+      } catch(e) {}
+      if (window._currentPage === 'settings') loadPage('settings');
+    });
+    // Vehicle count
+    sb.from('vehicles').select('id', { count: 'exact', head: true }).then(function(r) {
+      TenantSetup._cache.vehicleCount = (r && r.count) || 0;
+      if (window._currentPage === 'settings') loadPage('settings');
+    });
+  },
+
+  _isCollapsed: function() {
+    try { return localStorage.getItem('bm-setup-collapsed') === '1'; } catch(e) { return false; }
+  },
+  _setCollapsed: function(v) {
+    try { localStorage.setItem('bm-setup-collapsed', v ? '1' : '0'); } catch(e) {}
+  },
+  toggle: function() {
+    TenantSetup._setCollapsed(!TenantSetup._isCollapsed());
+    loadPage(window._currentPage || 'settings');
+  },
+
+  // Re-arm the v642 welcome splash + un-collapse the checklist + reload.
+  // Triggered by the "↻ Restart tour" button on the collapsed bar. Useful
+  // for a friend who dismissed welcome accidentally, and for Doug demoing
+  // the onboarding flow.
+  restartTour: function() {
+    try {
+      var coName = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('name')) || '';
+      localStorage.setItem('bm-welcome-show', '1');
+      localStorage.setItem('bm-welcome-name', coName);
+      localStorage.setItem('bm-setup-collapsed', '0');
+    } catch(e) {}
+    // Full reload — the welcome splash binds on DOMContentLoaded, so
+    // toggling the localStorage flag isn't enough.
+    location.reload();
+  },
+
+  // Per-item skip — a tenant can dismiss any checklist item they don't
+  // need (e.g. no crew, no Stripe). Skipped items stop counting toward
+  // "critical left" and stop nagging, but stay listed with an Undo so
+  // nothing is lost. Persisted in localStorage.
+  _skipped: function() {
+    try { return JSON.parse(localStorage.getItem('bm-setup-skipped') || '[]'); }
+    catch (e) { return []; }
+  },
+  _isSkipped: function(key) {
+    return TenantSetup._skipped().indexOf(key) >= 0;
+  },
+  skip: function(key) {
+    try {
+      var s = TenantSetup._skipped();
+      if (s.indexOf(key) < 0) { s.push(key); localStorage.setItem('bm-setup-skipped', JSON.stringify(s)); }
+    } catch (e) {}
+    loadPage(window._currentPage || 'settings');
+  },
+  unskip: function(key) {
+    try {
+      var s = TenantSetup._skipped().filter(function(k) { return k !== key; });
+      localStorage.setItem('bm-setup-skipped', JSON.stringify(s));
+    } catch (e) {}
+    loadPage(window._currentPage || 'settings');
+  },
+
+  // Public — used by Settings render and (optionally) by Dashboard.
+  renderChecklist: function() {
+    TenantSetup._loadAsyncCache();
+    var _skips = TenantSetup._skipped();
+    var results = TenantSetup.ITEMS.map(function(item) {
+      var ok = false;
+      try { ok = !!item.probe(); } catch(e) { ok = false; }
+      var skipped = !ok && _skips.indexOf(item.key) >= 0;
+      // "resolved" = done OR explicitly skipped — both clear the nag.
+      return Object.assign({}, item, { ok: ok, skipped: skipped, resolved: ok || skipped });
+    });
+    var totalCritical = results.filter(function(r) { return r.criticality === 1; }).length;
+    var okCritical = results.filter(function(r) { return r.criticality === 1 && r.resolved; }).length;
+    var totalAll = results.length;
+    var okAll = results.filter(function(r) { return r.resolved; }).length;
+    var skippedCount = results.filter(function(r) { return r.skipped; }).length;
+    var pct = totalAll > 0 ? Math.round((okAll / totalAll) * 100) : 0;
+    var allCriticalDone = okCritical === totalCritical;
+    var allDone = okAll === totalAll;
+
+    // Collapsed state — render compact summary bar only.
+    var collapsed = TenantSetup._isCollapsed();
+    if (allDone && !collapsed) {
+      // Auto-collapse once 100% done. Subsequent renders honor user's
+      // toggle if they expand again to inspect.
+      TenantSetup._setCollapsed(true);
+      collapsed = true;
+    }
+
+    if (collapsed) {
+      return '<div style="background:' + (allDone ? '#f0fdf4' : '#fffbeb') + ';border:1px solid ' + (allDone ? '#86efac' : '#fde68a') + ';border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
+        + '<div style="font-size:20px;">' + (allDone ? '✅' : '🛠️') + '</div>'
+        + '<div style="flex:1;min-width:200px;font-size:13px;color:' + (allDone ? '#065f46' : '#92400e') + ';">'
+        +   '<b>Setup checklist</b>: ' + okAll + '/' + totalAll + ' ' + (allDone ? '— everything wired' : '· ' + (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left') + (skippedCount ? ' · ' + skippedCount + ' skipped' : '')
+        + '</div>'
+        + '<button onclick="TenantSetup.restartTour()" style="font-size:12px;padding:5px 12px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;color:var(--text-light);" title="Re-show the welcome splash + expand the checklist">↻ Restart tour</button>'
+        + '<button onclick="TenantSetup.toggle()" style="font-size:12px;padding:5px 12px;background:var(--white);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:600;">' + (allDone ? 'Show details' : 'Expand') + '</button>'
+        + '</div>';
+    }
+
+    // Full view — grouped by criticality.
+    var GROUP_LABELS = { 1: 'Required to operate', 2: 'Revenue path', 3: 'Communications', 4: 'Optional' };
+    var GROUP_COLORS = { 1: '#dc2626', 2: '#16a34a', 3: '#2563eb', 4: '#737373' };
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
+      +   '<div>'
+      +     '<h3 style="margin:0;font-size:15px;">🛠️ Setup checklist</h3>'
+      +     '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">' + okAll + '/' + totalAll + ' complete · ' + (allCriticalDone ? 'all critical items done ✓' : (totalCritical - okCritical) + ' critical item' + (totalCritical - okCritical === 1 ? '' : 's') + ' left') + (skippedCount ? ' · ' + skippedCount + ' skipped' : '') + '</div>'
+      +   '</div>'
+      +   '<button onclick="TenantSetup.toggle()" style="font-size:11px;padding:5px 10px;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-light);">Hide</button>'
+      + '</div>'
+      // Progress bar
+      + '<div style="height:6px;border-radius:3px;background:var(--bg);overflow:hidden;margin-bottom:14px;">'
+      +   '<div style="width:' + pct + '%;height:100%;background:' + (allCriticalDone ? '#16a34a' : '#dc2626') + ';transition:width .3s;"></div>'
+      + '</div>';
+
+    [1, 2, 3, 4].forEach(function(crit) {
+      var items = results.filter(function(r) { return r.criticality === crit; });
+      if (!items.length) return;
+      html += '<div style="margin-bottom:10px;">'
+        + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:' + GROUP_COLORS[crit] + ';margin-bottom:6px;">' + GROUP_LABELS[crit] + '</div>';
+      items.forEach(function(r) {
+        var icon = r.ok ? '✅' : (r.skipped ? '⏭️' : (crit === 1 ? '⛔' : '⚪'));
+        var muted = r.ok || r.skipped;
+        var rowBorder = muted ? 'var(--border)' : '#fef3c7';
+        var rowBg = muted ? 'var(--bg)' : '#fffbeb';
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid ' + rowBorder + ';background:' + rowBg + ';border-radius:8px;margin-bottom:5px;">'
+          + '<div style="font-size:16px;">' + icon + '</div>'
+          + '<div style="flex:1;min-width:0;">'
+          +   '<div style="font-size:13px;font-weight:' + (muted ? '500' : '700') + ';color:' + (muted ? 'var(--text-light)' : 'var(--text)') + ';' + (muted ? 'text-decoration:line-through;' : '') + '">' + r.label + (r.skipped ? ' <span style="font-size:10px;font-weight:600;text-decoration:none;color:var(--text-light);">· skipped</span>' : '') + '</div>'
+          +   (muted ? '' : '<div style="font-size:11px;color:var(--text-light);margin-top:1px;">' + r.hint + '</div>')
+          + '</div>'
+          + (r.ok ? ''
+              : r.skipped
+                ? '<button onclick="TenantSetup.unskip(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:5px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text-light);">Undo</button>'
+                : '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap;">'
+                  + '<button onclick="TenantSetup._fire(\'' + r.key + '\')" style="font-size:11px;padding:4px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:5px;font-weight:600;cursor:pointer;">Set up →</button>'
+                  // Skip only on non-required items (revenue/comms/optional —
+                  // e.g. Stripe, Dialpad, Bouncie). The "Required to operate"
+                  // basics can't be skipped — they genuinely must be set.
+                  + (crit !== 1 ? '<button onclick="TenantSetup.skip(\'' + r.key + '\')" style="font-size:11px;padding:4px 8px;background:none;border:none;color:var(--text-light);text-decoration:underline;cursor:pointer;">Skip</button>' : '')
+                  + '</div>')
+          + '</div>';
+      });
+      html += '</div>';
+    });
+
+    html += '</div>';
+    return html;
+  },
+
+  _fire: function(key) {
+    var item = TenantSetup.ITEMS.find(function(i) { return i.key === key; });
+    if (item && item.action) item.action();
+  }
+};

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estimator Training — {{business_name}}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,sans-serif; background:#f5f5f5; color:#1a1a1a; }
+  .header { background:#1b5e20; color:#fff; padding:20px; }
+  .header a { color:#fff; opacity:.7; text-decoration:none; font-size:14px; }
+  .header h1 { font-size:22px; margin-top:8px; }
+  .header p { font-size:14px; opacity:.8; margin-top:4px; }
+  .container { max-width:700px; margin:0 auto; padding:20px; }
+  .module { background:#fff; border-radius:12px; margin-bottom:16px; border:1px solid #e5e7eb; overflow:hidden; }
+  .module-header { padding:16px 20px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .module-header:hover { background:#fafafa; }
+  .mod-num { background:#ea580c; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+  .mod-title { font-size:15px; font-weight:700; flex:1; }
+  .mod-time { font-size:12px; color:#999; }
+  .mod-arrow { font-size:18px; color:#ccc; transition:transform .2s; }
+  .module.open .mod-arrow { transform:rotate(90deg); }
+  .mod-body { display:none; padding:0 20px 20px; }
+  .module.open .mod-body { display:block; }
+  .steps { margin:12px 0; padding-left:20px; }
+  .steps li { font-size:14px; padding:5px 0; line-height:1.5; }
+  .key-point { background:#fff7ed; border-left:3px solid #ea580c; padding:10px 14px; font-size:13px; border-radius:0 6px 6px 0; margin:12px 0; }
+  .video-slot { background:#000; border-radius:8px; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; margin-bottom:16px; color:#fff; font-size:14px; text-align:center; padding:20px; }
+  .pricing { background:#f0fdf4; border-radius:8px; padding:14px; margin:12px 0; }
+  .pricing table { width:100%; font-size:13px; border-collapse:collapse; }
+  .pricing td { padding:6px 8px; border-bottom:1px solid #e5e7eb; }
+  .pricing td:last-child { text-align:right; font-weight:700; }
+  .signoff { background:#fff7ed; border-radius:8px; padding:14px; margin-top:12px; font-size:13px; }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html">← Back to Onboarding</a>
+  <h1>📋 Estimator / Sales Training</h1>
+  <p>5 modules · ~45 min · Site assessment, pricing, closing</p>
+</div>
+
+<div class="container">
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">1</div>
+      <div class="mod-title">Site Assessment Walk-Through</div>
+      <div class="mod-time">10 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: How to Assess a Job Site</div>
+      <ol class="steps">
+        <li><strong>Arrive on time.</strong> Within 5 min of scheduled window. Call if late. First impression matters.</li>
+        <li><strong>Walk the property</strong> with the client. Let THEM show you what they want. Listen first.</li>
+        <li><strong>Measure DBH</strong> (diameter at breast height, 4.5 ft) of every tree being quoted. Use a tape or D-tape.</li>
+        <li><strong>Identify hazards:</strong> Power lines, structures, fences, septic, underground utilities, slopes, access issues.</li>
+        <li><strong>Assess access:</strong> Can the bucket truck get in? Is there room for the chipper? Tight backyard = more labor.</li>
+        <li><strong>Take photos:</strong> Every tree, the access path, any hazards, the overall property.</li>
+        <li><strong>Note species:</strong> Hardwood vs softwood matters for pricing and difficulty.</li>
+      </ol>
+      <div class="key-point">👀 <strong>You're the expert. Clients look to you.</strong> Be confident, knowledgeable, and honest. If you don't know something, say "Let me check with our arborist and get back to you."</div>
+      <div class="signoff"><strong>Field Demo:</strong> Shadow Doug on 3 estimates. Then do 2 solo with Doug reviewing your quotes.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">2</div>
+      <div class="mod-title">Pricing — The DBH Formula</div>
+      <div class="mod-time">10 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: How We Price Tree Work</div>
+
+      <div class="pricing">
+        <h4 style="margin-bottom:8px;">Base Pricing Guide</h4>
+        <table>
+          <tr><td><strong>Tree Removal</strong></td><td>$100 per inch DBH (base)</td></tr>
+          <tr><td>Complexity multiplier</td><td>1.0x easy → 2.0x hazardous</td></tr>
+          <tr><td>Bucket truck access</td><td>-20% if bucket can reach</td></tr>
+          <tr><td>Crane required</td><td>+$2,000–5,000</td></tr>
+          <tr><td><strong>Pruning</strong></td><td>$50–200/tree (size dependent)</td></tr>
+          <tr><td><strong>Stump Grinding</strong></td><td>$150/stump (add-on)</td></tr>
+          <tr><td><strong>Haul Debris</strong></td><td>$350 flat</td></tr>
+          <tr><td><strong>Bucket Truck</strong></td><td>$75/hr, $300/half, $600/day</td></tr>
+          <tr><td><strong>Labor</strong></td><td>$50/hr per crew member</td></tr>
+          <tr><td><strong>Arborist Letter</strong></td><td>$250</td></tr>
+        </table>
+      </div>
+
+      <ol class="steps">
+        <li><strong>Measure DBH:</strong> 24" oak removal = 24 × $100 = $2,400 base</li>
+        <li><strong>Complexity:</strong> Near house? Power lines? Steep slope? Multiply by 1.2–2.0x</li>
+        <li><strong>Add-ons:</strong> Stump grinding ($150/stump), haul debris ($350), wood splitting ($200)</li>
+        <li><strong>Round to clean number:</strong> $2,400 + $150 + $350 = $2,900. Quote $2,900 or $3,000.</li>
+        <li><strong>Never price below cost.</strong> Use the in-app Job Cost Calculator (BM → Tools → Calculators → Full Rate Sheet) to verify margins.</li>
+      </ol>
+      <div class="key-point">💰 <strong>Our average job is $1,800. Our close rate is 45%.</strong> Price fairly but don't leave money on the table. A 24" oak near a house is a $3,000-$4,000 job — not $1,500.</div>
+      <div class="signoff"><strong>Assessment:</strong> Price 5 hypothetical jobs from photos. Doug reviews for accuracy.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">3</div>
+      <div class="mod-title">Creating Quotes in Branch Manager</div>
+      <div class="mod-time">8 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Branch Manager Quote Builder</div>
+      <ol class="steps">
+        <li>Open Branch Manager → Quotes → + New Quote</li>
+        <li><strong>Select client</strong> (or create new from the request)</li>
+        <li><strong>Add line items:</strong> Each service as a separate line — Tree Removal, Stump Grinding, Haul Debris, etc.</li>
+        <li><strong>Add description:</strong> Be specific — "Remove 24" DBH red oak in backyard, near shed, bucket truck access from driveway"</li>
+        <li><strong>Add photos</strong> from your site visit</li>
+        <li><strong>Set total</strong> and review</li>
+        <li><strong>Send to client</strong> — email with approval link, or text the link directly</li>
+      </ol>
+      <div class="key-point">⚡ <strong>Send the quote within 2 hours of the site visit.</strong> Our data shows quotes sent same-day close at 52%. Quotes sent 3+ days later close at 28%.</div>
+      <div class="signoff"><strong>Field Demo:</strong> Create and send 3 real quotes in Branch Manager.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">4</div>
+      <div class="mod-title">Follow-Up & Closing</div>
+      <div class="mod-time">10 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Following Up on Quotes</div>
+      <ol class="steps">
+        <li><strong>Day 1:</strong> Send the quote (email + text link)</li>
+        <li><strong>Day 3:</strong> If no response — text "Hi [name], just checking if you had any questions about the quote?"</li>
+        <li><strong>Day 5:</strong> Automated follow-up email from Branch Manager (if enabled)</li>
+        <li><strong>Day 7:</strong> Call. "Hi [name], this is [you] from {{business_short_name}}. Wanted to follow up on your quote."</li>
+        <li><strong>Day 10:</strong> Final automated follow-up</li>
+        <li><strong>Day 14:</strong> If still no response, mark as stale. Move on.</li>
+      </ol>
+      <div class="key-point">📞 <strong>80% of sales happen between the 3rd and 7th follow-up.</strong> Most competitors quit after one email. Persistence (not pushiness) wins jobs.</div>
+      <div class="signoff"><strong>Assessment:</strong> Show your follow-up log for 5 quotes over 2 weeks.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">5</div>
+      <div class="mod-title">Handling Objections</div>
+      <div class="mod-time">8 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Common Objections & Responses</div>
+      <ol class="steps">
+        <li><strong>"That's too expensive"</strong> → "I understand. What we include is full cleanup, stump grinding, and hauling — a lot of companies charge extra for those. What price were you expecting?"</li>
+        <li><strong>"I need to get other quotes"</strong> → "Absolutely, that's smart. I'd just mention we're booking 2-3 weeks out right now, so if you decide to go with us, the sooner we know the sooner we can get you on the schedule."</li>
+        <li><strong>"Can you do it cheaper?"</strong> → "I can look at the scope — is there anything we could leave out? For example, if you keep the wood, I can take $200 off." Never just drop price for no reason.</li>
+        <li><strong>"I'll think about it"</strong> → "Sure, no pressure. I'll follow up in a few days. Is there anything specific you're unsure about that I can help with?"</li>
+        <li><strong>"The other company is cheaper"</strong> → "That happens. We're fully insured, licensed in Westchester and Putnam, and have 100 five-star Google reviews. The cheapest tree company is usually the most expensive when something goes wrong."</li>
+      </ol>
+      <div class="key-point">🎯 <strong>Never badmouth competitors.</strong> Sell our value: insurance, reviews, cleanup quality, reliability. Let the work speak for itself.</div>
+      <div class="signoff"><strong>Assessment:</strong> Role-play 5 objection scenarios with Doug.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:30px;">
+    <a href="index.html" style="padding:12px 24px;background:#1b5e20;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">← Back to Onboarding</a>
+    <p style="font-size:13px;color:#999;margin-top:16px;">{{legal_name}} · {{address_short}}</p>
+  </div>
+</div>
+<script src="onboarding-sig.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function(){ if (typeof OnboardingSig !== "undefined") OnboardingSig.autoFillAll(); });</script>
+</body>
+</html>

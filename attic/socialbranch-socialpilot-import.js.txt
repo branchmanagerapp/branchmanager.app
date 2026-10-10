@@ -1,0 +1,64 @@
+  // ─────────────────────────────────────────────────────────
+  // SOCIALPILOT IMPORT — reads public/sp_scrape_initial.json
+  // and merges into bm-social-posts with import_source tag.
+  // ─────────────────────────────────────────────────────────
+  importFromSocialPilot: function(silent) {
+    if (!silent && !confirm('Import SocialPilot history into BM?\n\nThis will add any posts not already present (dedup by caption). Your existing posts are untouched.')) return;
+    var btn = document.getElementById('sb-sp-import-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Importing…'; }
+    // Try app-root path first, fall back to /public path (legacy).
+    var tryFetch = function(path) {
+      return fetch(path, { cache: 'no-cache' }).then(function(r) {
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json();
+      });
+    };
+    // tryFetch already returns the parsed JSON; the previous .then double-parsed
+    // and threw on every call. Removed v376.
+    tryFetch('./sp_scrape_initial.json')
+      .catch(function() { return tryFetch('./public/sp_scrape_initial.json'); })
+      .then(function(data) {
+        var existing = SocialBranch._getPosts();
+        var existingCaptions = existing.map(function(p){ return (p.caption || '').trim().toLowerCase().slice(0,120); });
+        var added = 0, skipped = 0;
+        function parseDate(s) {
+          if (!s) return '';
+          var m = String(s).match(/([A-Z][a-z]{2})\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)/);
+          if (!m) return '';
+          var months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+          var h = parseInt(m[4],10); if (m[6]==='PM' && h<12) h+=12; if (m[6]==='AM' && h===12) h=0;
+          return new Date(parseInt(m[3],10), months[m[1]], parseInt(m[2],10), h, parseInt(m[5],10)).toISOString();
+        }
+        ['queued','delivered','drafts','failed'].forEach(function(bucket) {
+          (data[bucket] || []).forEach(function(p) {
+            var capKey = (p.caption || '').trim().toLowerCase().slice(0,120);
+            if (!capKey) { skipped++; return; }
+            if (existingCaptions.indexOf(capKey) >= 0) { skipped++; return; }
+            var post = {
+              id: 'sp_' + (p.id || Math.random().toString(36).slice(2,10)),
+              caption: p.caption || '',
+              media: p.media || [],
+              networks: p.networks || ['gmb'],
+              scheduledAt: parseDate(p.dateText) || '',
+              status: p.status || 'draft',
+              postedAt: p.status === 'posted' ? parseDate(p.dateText) : '',
+              createdAt: new Date().toISOString(),
+              import_source: 'socialpilot-html-scrape'
+            };
+            existing.unshift(post);
+            existingCaptions.push(capKey);
+            added++;
+          });
+        });
+        if (added) SocialBranch._setPosts(existing);
+        // Only set imported flag on success so future visits retry if something went wrong.
+        localStorage.setItem('bm-sb-sp-imported', '1');
+        if (added) { UI.toast('Imported ' + added + ' posts from SocialPilot (' + skipped + ' duplicates skipped).'); loadPage('socialbranch'); }
+        else if (btn) { btn.disabled = true; btn.textContent = 'Nothing new to import'; }
+      })
+      .catch(function(e) {
+        UI.toast('Import failed: ' + String(e.message || e), 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Import from SocialPilot'; }
+      });
+  },
+

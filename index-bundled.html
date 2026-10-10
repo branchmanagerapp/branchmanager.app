@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+// Self-healing version check — runs BEFORE anything else caches.
+// Fetches version.json with no-store; if the server's version doesn't match
+// what's bundled here, we unregister all SWs, blow away all caches, and reload.
+// This breaks the iOS "stale SW holds cached SW" deadlock permanently.
+(function() {
+  var BUNDLED_VERSION = 365; // bump with every deploy (must match version.json)
+  window.BUNDLED_VERSION = BUNDLED_VERSION;
+  try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
+  // Skip version check if user explicitly passed ?reset=1 (handled later in the file)
+  if (/[?&]reset=/.test(location.search)) return;
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (!data || typeof data.version !== 'number') return;
+      if (data.version > BUNDLED_VERSION) {
+        console.log('[BM] Stale app (bundled ' + BUNDLED_VERSION + ' < server ' + data.version + ') — force refresh.');
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              Promise.all(regs.map(function(r){ return r.unregister(); })).then(function() {
+                if (window.caches) {
+                  caches.keys().then(function(keys) {
+                    Promise.all(keys.map(function(k){ return caches.delete(k); })).then(function() {
+                      location.reload();
+                    });
+                  });
+                } else { location.reload(); }
+              });
+            });
+          } else if (window.caches) {
+            caches.keys().then(function(keys) {
+              Promise.all(keys.map(function(k){ return caches.delete(k); })).then(function() {
+                location.reload();
+              });
+            });
+          } else { location.reload(); }
+        } catch(e) { location.reload(); }
+      }
+    })
+    .catch(function(){ /* offline is fine — skip check */ });
+})();
+
+// PWA navigation style — Top (default) or Bottom tab bar.
+// Only applies when user chose 'bottom' AND the app is running as an
+// installed standalone PWA. Desktop + browser tabs keep the sidebar.
+(function() {
+  try {
+    // Separate nav style for PWA (Safari home-screen install) vs App (Capacitor native)
+    var isCapacitorApp = !!window.Capacitor;
+    var isPwaInstall = !isCapacitorApp && (
+      window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone
+    );
+    var isStandalone = isPwaInstall || isCapacitorApp;
+    if (isStandalone) document.documentElement.classList.add('bm-standalone');
+
+    var navKey = isCapacitorApp ? 'bm-app-nav' : 'bm-pwa-nav';
+    var mode = localStorage.getItem(navKey) || 'top';
+    if (isStandalone) {
+      if (mode === 'bottom') {
+        document.documentElement.classList.add('bm-bottom-nav');
+      } else if (mode === 'both') {
+        document.documentElement.classList.add('bm-bottom-nav');
+        document.documentElement.classList.add('bm-nav-both');
+      }
+    }
+  } catch(e) {}
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- Content Security Policy — first line of XSS defense. Allows only trusted origins.
+     'unsafe-inline' is required for the legacy inline onclick handlers + inline <style>
+     blocks scattered through the JS; removing them is a longer refactor.
+     'unsafe-eval' is needed by maplibre-gl WASM; removing would require CSP-safe build. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src  'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://*.supabase.co https://js.stripe.com;
+  style-src   'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com;
+  font-src    'self' https://fonts.gstatic.com data:;
+  img-src     'self' data: blob: https: https://*.supabase.co;
+  media-src   'self' data: blob: https://*.supabase.co;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co
+              https://api.anthropic.com https://api.stripe.com
+              https://api.open-meteo.com https://geocoding-api.open-meteo.com https://api.qrserver.com
+              https://epqs.nationalmap.gov https://nominatim.openstreetmap.org
+              https://my-api.plantnet.org https://dialpad.com
+              https://server.arcgisonline.com https://s3.amazonaws.com
+              https://*.tile.openstreetmap.org
+              https://hook.us1.make.com https://hook.us2.make.com
+              https://hook.eu1.make.com https://hook.eu2.make.com
+              https://hooks.zapier.com;
+  frame-src   https://js.stripe.com https://hooks.stripe.com;
+  worker-src  'self' blob:;
+  object-src  'none';
+  base-uri    'self';
+  form-action 'self';
+  frame-ancestors 'none';
+">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Branch Manager</title>
+<meta name="description" content="Second Nature Tree Service — Job Management">
+<meta name="theme-color" content="#1a8a5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Branch Manager">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://ltpivkqahvplapyagljt.supabase.co">
+<link rel="dns-prefetch" href="https://ltpivkqahvplapyagljt.supabase.co">
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="dns-prefetch" href="https://unpkg.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js" defer></script>
+<script src="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.js" defer></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.css">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  :root {
+    --green-dark: #00836c;
+    --green: #00a88a;
+    --green-light: #7ac143;
+    --green-bg: #f0f9f4;
+    --white: #ffffff;
+    --bg: #f5f6f8;
+    --text: #212529;
+    --text-light: #6c757d;
+    --border: #dee2e6;
+    --red: #dc3545;
+    --orange: #fd7e14;
+    --blue: #0d6efd;
+    --sidebar-w: 200px;
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e8eaed;
+    --sidebar-hover: rgba(0,0,0,.04);
+    --sidebar-active: rgba(0,131,108,.08);
+    --accent: #00836c;
+    --accent-hover: #006d59;
+  }
+  [data-theme="dark"] {
+    --green-bg: #1a2e23;
+    --white: #1e2128;
+    --bg: #15171c;
+    --text: #e2e8f0;
+    --text-light: #8492a6;
+    --border: #2d3748;
+    --sidebar-bg: #111122;
+    --sidebar-border: rgba(255,255,255,.05);
+    --sidebar-hover: rgba(255,255,255,.05);
+    --sidebar-active: rgba(255,255,255,.08);
+  }
+  [data-theme="dark"] .data-table th { background:#1a1d24; }
+  [data-theme="dark"] .stat-card { background:var(--white); }
+  [data-theme="dark"] .modal { background:#1e2128; color:var(--text); }
+  [data-theme="dark"] .modal-header { border-color:var(--border); }
+  [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background:#2d3748; color:var(--text); border-color:#4a5568; }
+  [data-theme="dark"] .toast { background:#2d3748; color:#e2e8f0; }
+  [data-theme="dark"] .sidebar-header h1 { color: rgba(255,255,255,.9); }
+  [data-theme="dark"] .sidebar-header h1 span { color: rgba(255,255,255,.35); }
+  [data-theme="dark"] .sidebar-user { color: rgba(255,255,255,.5); }
+  [data-theme="dark"] .nav-section { color: rgba(255,255,255,.3); }
+  [data-theme="dark"] .nav-item { color: rgba(255,255,255,.6); }
+  [data-theme="dark"] .nav-item:hover { color: rgba(255,255,255,.9); }
+  [data-theme="dark"] .nav-item.active { color: #fff; }
+  [data-theme="dark"] .nav-item .li { stroke: rgba(255,255,255,.5); }
+  [data-theme="dark"] .nav-item:hover .li { stroke: rgba(255,255,255,.9); }
+  [data-theme="dark"] .nav-item.active .li { stroke: #fff; }
+  [data-theme="dark"] .sidebar-footer { color: rgba(255,255,255,.4); }
+  [data-theme="dark"] .sidebar.collapsed .sidebar-footer #sidebar-toggle-btn { color: rgba(255,255,255,.5); }
+  /* Dark theme overrides for JS-generated content */
+  [data-theme="dark"] .content div[style*="background:#fff"],
+  [data-theme="dark"] .content div[style*="background: #fff"],
+  [data-theme="dark"] .content div[style*="background:white"],
+  [data-theme="dark"] .content div[style*="background:var(--white)"] { background:var(--white) !important; }
+  [data-theme="dark"] .content div[style*="color:#333"],
+  [data-theme="dark"] .content div[style*="color:#1a1a1a"],
+  [data-theme="dark"] .content span[style*="color:#333"] { color:var(--text) !important; }
+  [data-theme="dark"] .content div[style*="border:1px solid #e"],
+  [data-theme="dark"] .content div[style*="border:2px solid #e"],
+  [data-theme="dark"] .content div[style*="border:1px solid var(--border)"] { border-color:var(--border) !important; }
+  [data-theme="dark"] .content div[style*="background:var(--bg)"],
+  [data-theme="dark"] .content div[style*="background:#f5f5f5"],
+  [data-theme="dark"] .content div[style*="background:#f8f8f8"],
+  [data-theme="dark"] .content div[style*="background:#fafafa"] { background:var(--bg) !important; }
+  [data-theme="dark"] .content tr:hover { background:rgba(255,255,255,.03) !important; }
+  [data-theme="dark"] .content .data-table td { color:var(--text); border-color:var(--border); }
+  [data-theme="dark"] .content .form-group label { color:var(--text-light); }
+  [data-theme="dark"] .content .empty-state { color:var(--text-light); }
+  [data-theme="dark"] .content .empty-state h3 { color:var(--text); }
+  [data-theme="dark"] .topbar { background:var(--white); border-color:var(--border); }
+  [data-theme="dark"] .topbar h2 { color:var(--text); }
+  [data-theme="dark"] .topbar-avatar { background:#4a5568; }
+  [data-theme="dark"] .avatar-menu { background:var(--white); border-color:var(--border); }
+  [data-theme="dark"] .avatar-menu button { color:var(--text); }
+  [data-theme="dark"] .notif-dropdown { background:var(--white); border-color:var(--border); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; font-size:15px; }
+  /* Font loaded via <link> tag above */
+
+  /* ── Layout ── */
+  .app { display:flex; height:100vh; }
+
+  /* ── Sidebar (App-style light) ── */
+  .sidebar {
+    width:var(--sidebar-w); background:var(--sidebar-bg); color:var(--text);
+    display:flex; flex-direction:column; flex-shrink:0;
+    transition: width 0.2s ease, transform 0.25s ease;
+    z-index:100; border-right:1px solid var(--sidebar-border);
+    overflow:hidden;
+  }
+  .sidebar.collapsed { width:56px; }
+  .sidebar.collapsed .sidebar-header h1,
+  .sidebar.collapsed .sidebar-user,
+  .sidebar.collapsed .nav-section,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .nav-item span:not(.icon),
+  .sidebar.collapsed .nav-item .badge,
+  .sidebar.collapsed > div[style*="padding"]:not(.sidebar-footer) { display:none !important; }
+  .sidebar.collapsed .sidebar-footer { padding:8px !important; justify-content:center; }
+  .sidebar.collapsed .sidebar-footer .log-out-btn { display:none !important; }
+  .sidebar.collapsed .sidebar-footer #sidebar-toggle-btn { padding:6px; font-size:16px; color:#9ca3af; }
+  .sidebar.collapsed .sidebar-header { justify-content:center; padding:14px 8px; cursor:pointer; }
+  .sidebar.collapsed .nav-item { justify-content:center; padding:10px 0; font-size:0; overflow:hidden; }
+  .sidebar.collapsed .nav-item .icon { width:auto; font-size:16px; }
+  .sidebar.collapsed .nav-item .icon i, .sidebar.collapsed .nav-item .icon svg { width:20px; height:20px; }
+  .sidebar.collapsed .create-btn { font-size:0; padding:10px; }
+  .sidebar.collapsed .create-btn::before { content:'+'; font-size:18px; font-weight:700; }
+  .sidebar-header {
+    padding:14px 16px 12px; border-bottom:1px solid var(--sidebar-border);
+    display:flex; align-items:center; gap:10px; cursor:pointer;
+  }
+  .sidebar-logo {
+    width:32px; height:32px; flex-shrink:0; border-radius:8px; overflow:hidden;
+    background:linear-gradient(135deg, #00a88a 0%, #007a63 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .sidebar-logo svg { width:20px; height:20px; }
+  .sidebar-header h1 {
+    font-size:14px; font-weight:700; color:#1a1a2a; line-height:1.15; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sidebar-header h1 span { display:block; font-size:10px; font-weight:400; color:#9ca3af; margin-top:1px; letter-spacing:.01em; text-transform:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sidebar-user {
+    padding:10px 16px; font-size:12px; color:#6b7280; border-bottom:1px solid var(--sidebar-border);
+  }
+
+  .sidebar-nav { flex:1; padding:8px 10px; overflow-y:auto; }
+  .nav-section { padding:16px 10px 6px; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#9ca3af; font-weight:600; }
+  .nav-label { padding:12px 12px 4px; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.35); font-weight:700; }
+  .nav-item {
+    display:flex; align-items:center; gap:12px; padding:9px 12px;
+    font-size:14px; font-weight:400; color:#374151; cursor:pointer;
+    transition: all 0.12s; text-decoration:none; border:none; background:none; width:100%;
+    border-radius:7px; margin-bottom:1px; position:relative;
+  }
+  .nav-item:hover { background:var(--sidebar-hover); color:#111827; }
+  .nav-item.active { background:transparent; color:var(--accent); font-weight:600; }
+  /* v362 defensive — force SocialBranch + other essentials visible regardless of any legacy filter */
+  .nav-item[data-page="socialbranch"],
+  .nav-item[data-page="marketing"],
+  .nav-item[data-page="reports"] { display:flex !important; }
+  /* v365 SocialBranch calendar two-column → single column on narrow screens */
+  @media (max-width: 800px) {
+    .sb-cal-grid { grid-template-columns:1fr !important; }
+    .sb-compose-grid { grid-template-columns:1fr !important; }
+  }
+  .nav-item.active::before { content:''; position:absolute; left:-8px; top:6px; bottom:6px; width:3px; background:#00a88a; border-radius:0 3px 3px 0; }
+  .nav-item .icon { width:24px; text-align:center; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .nav-item .li { width:22px; height:22px; stroke:#9ca3af; stroke-width:1.75; }
+  .nav-item:hover .li { stroke:#374151; }
+  .nav-item.active .li { stroke:var(--accent); }
+  /* Inline Lucide icons in section headers — match text size, align with heading */
+  .li-hdr { width:18px; height:18px; stroke-width:2; vertical-align:-3px; margin-right:6px; stroke:currentColor; display:inline-block; }
+  /* Nav count badges hidden per user (felt noisy — counts live in page headers) */
+  .nav-item .badge { display:none !important; }
+
+  .sidebar-footer {
+    padding:10px 16px; border-top:1px solid var(--sidebar-border);
+    font-size:10px; color:#9ca3af;
+  }
+
+  /* ── Main Content (App style) ── */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:6px 24px; background:var(--white); border-bottom:1px solid var(--border);
+    min-height:44px;
+  }
+  .topbar h2 { font-size:18px; font-weight:700; color:var(--text); letter-spacing:-.01em; }
+  .topbar-actions { display:flex; gap:8px; align-items:center; }
+
+  .btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; border:none; transition:all .15s; text-decoration:none;
+  }
+  .btn-primary { background:var(--accent); color:#fff; box-shadow:0 1px 3px rgba(0,131,108,.2); }
+  .btn-primary:hover { background:var(--accent-hover); box-shadow:0 3px 8px rgba(0,131,108,.25); transform:translateY(-1px); }
+  .btn-primary:active { transform:translateY(0); box-shadow:0 1px 2px rgba(0,131,108,.15); }
+  .btn-outline { background:var(--white); color:var(--text); border:1px solid var(--border); }
+  .btn-outline:hover { background:var(--bg); border-color:#9ca3af; }
+  .btn-danger { background:#dc3545; color:#fff; box-shadow:0 1px 3px rgba(220,53,69,.2); }
+
+  .content { flex:1; overflow-y:auto; padding:24px; scroll-behavior:smooth; }
+  .content > * { animation:fadeInUp .25s ease-out; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+  /* ── Mobile hamburger ── */
+  .hamburger {
+    display:none; background:none; border:none; color:var(--text); font-size:24px;
+    cursor:pointer; padding:4px;
+  }
+  .sidebar-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:99;
+  }
+
+  /* ── Dashboard Cards (App style) ── */
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:20px; }
+  .stat-card {
+    background:var(--white); border-radius:10px; padding:16px 18px;
+    border:1px solid var(--border); position:relative;
+    transition: all .15s;
+  }
+  .stat-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.06); transform:translateY(-1px); }
+  .stat-card .stat-label { font-size:11px; color:var(--text-light); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; font-weight:600; }
+  .stat-card .stat-value { font-size:28px; font-weight:700; color:var(--text); }
+  .stat-card .stat-sub { font-size:12px; color:var(--text-light); margin-top:2px; }
+  .stat-card .stat-trend { font-size:11px; font-weight:700; }
+  .stat-card .stat-trend.up { color:#16a34a; }
+  .stat-card .stat-trend.down { color:var(--red); }
+
+  /* ── Tables (App style) ── */
+  .data-table { width:100%; border-collapse:collapse; background:var(--white); border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+  .data-table th { background:#f9fafb; padding:10px 16px; text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-light); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:1; }
+  .data-table th[onclick]:hover { background:#eef1f5; color:var(--text); }
+  .data-table th.sort-active { color:var(--accent); }
+  .data-table td { padding:12px 16px; font-size:14px; border-bottom:1px solid #f3f4f6; transition:background .1s; }
+  .data-table tbody tr:hover { background:#f0f9f4; cursor:pointer; }
+  .data-table tbody tr:hover td { color:var(--text); }
+  .data-table tr:last-child td { border:none; }
+  .data-table td:first-child { font-weight:500; }
+
+  /* Card-style list (Airbnb/legacy system look) */
+  /* Only mouse-hover devices get the lift. Touch devices previously jumped on every scroll
+     because :active fires during scroll-touch. Now we use shadow-only feedback on tap. */
+  @media (hover: hover) {
+    .client-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.08) !important; transform:translateY(-1px); }
+  }
+  .client-card:active { box-shadow:0 2px 6px rgba(0,0,0,0.06) !important; background:var(--green-bg) !important; }
+  [data-theme="dark"] .client-card { background:var(--white) !important; border-color:var(--border) !important; }
+
+  /* PWA standalone mode — hide dark-mode toggle + force light theme.
+     User specifically wanted dark mode gone on the installed app. */
+  @media (display-mode: standalone) {
+    #dark-mode-btn { display:none !important; }
+    html[data-theme="dark"] { /* un-applies dark vars by not matching */ }
+  }
+
+  /* Bottom nav bar — only when user has picked bottom + PWA standalone */
+  #bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    grid-template-columns: repeat(5, 1fr);
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+    z-index: 150;
+    box-shadow: 0 -2px 12px rgba(0,0,0,.08);
+  }
+  #bottom-nav button {
+    background: none;
+    border: none;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+  }
+  #bottom-nav button.active { color: var(--green-dark); }
+  #bottom-nav i { width: 22px; height: 22px; }
+
+  html.bm-bottom-nav #bottom-nav { display: grid !important; }
+
+  /* Floating "+" FAB — legacy system-style, only in bottom-nav mode */
+  #bm-fab {
+    display: none;
+    position: fixed;
+    right: 18px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent, #1a8a5c);
+    color: #fff;
+    border: none;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25);
+    font-size: 30px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 160;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #bm-fab:active { transform: scale(.92); }
+  #bm-fab:hover  { box-shadow: 0 8px 22px rgba(0,0,0,.3); }
+  html.bm-bottom-nav #bm-fab { display: flex; align-items: center; justify-content: center; }
+  html.bm-nav-both  #bm-fab { display: none; }
+  html.bm-bottom-nav .sidebar:not(.open) { display: none !important; }
+  /* When More is tapped, sidebar slides in as a drawer over the content */
+  html.bm-bottom-nav .sidebar.open {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 200;
+    max-width: 85vw;
+    box-shadow: 4px 0 24px rgba(0,0,0,.25);
+  }
+  html.bm-bottom-nav .sidebar-overlay.open {
+    display: block !important;
+    position: fixed !important;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 150;
+  }
+  /* Standalone top-nav: no forced padding — iOS/Capacitor native shells already
+     reserve the status-bar area. Forcing padding on top of that pushed the bar
+     noticeably too high in the viewport. Bar stays plain 48px tall. */
+
+  /* Bottom-nav mode: hide the topbar, reserve space for the fixed bottom bar */
+  html.bm-bottom-nav .content {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  html.bm-bottom-nav .topbar { display: none !important; }
+
+  /* "Both" mode: keep topbar + sidebar visible AND show bottom nav (power-user).
+     Overrides the hides applied by bm-bottom-nav above. */
+  html.bm-nav-both .topbar { display: flex !important; }
+  html.bm-nav-both .sidebar { display: flex !important; }
+
+  /* Quotes / Jobs / Invoices / Requests list — same card-on-mobile pattern */
+  @media (hover: hover) {
+    .quote-card:hover, .job-card:hover, .invoice-card:hover, .request-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.08) !important; transform:translateY(-1px); }
+  }
+  .quote-card:active, .job-card:active, .invoice-card:active, .request-card:active { box-shadow:0 2px 6px rgba(0,0,0,0.06) !important; background:var(--green-bg) !important; }
+  .q-mobile-only { display:none; }
+  .q-desktop-only { display:block; }
+  @media (max-width:720px) {
+    .q-mobile-only { display:block !important; }
+    .q-desktop-only { display:none !important; }
+
+    /* Quote form line items — stack vertically on mobile (was 6-col crush) */
+    .quote-item-row { grid-template-columns: 1fr 1fr 1fr !important; gap:8px !important; padding:14px !important; }
+    .quote-item-row > .form-group:nth-child(1),
+    .quote-item-row > .form-group:nth-child(2) { grid-column: 1 / -1 !important; }
+    .quote-item-row > button[onclick*="parentElement.remove"] { grid-column: 1 / -1 !important; padding:10px 0 !important; background:var(--bg) !important; border-radius:8px !important; font-size:14px !important; }
+    .quote-item-row input, .quote-item-row select { font-size:16px !important; padding:12px !important; } /* 16px prevents iOS auto-zoom on focus */
+  }
+
+  /* ── Status Badges (App colors) ── */
+  .status-badge {
+    display:inline-block; padding:2px 10px; border-radius:12px;
+    font-size:11px; font-weight:600; letter-spacing:.01em;
+  }
+  .status-active { background:#e6f9f2; color:#00836c; }
+  .status-lead { background:#e8f0fe; color:#2b6cb0; }
+  .status-late { background:#fde8e8; color:#c53030; }
+  .status-paid { background:#e6f9f2; color:#00836c; }
+  .status-draft { background:#f0f0f0; color:#6c757d; }
+  .status-sent { background:#fff3cd; color:#856404; }
+  .status-new { background:#cfe2ff; color:#084298; }
+  .status-completed { background:#e6f9f2; color:#00836c; }
+  .status-scheduled { background:#cfe2ff; color:#084298; }
+  .status-in_progress, .status-in-progress { background:#fff3cd; color:#856404; }
+  .status-awaiting, .status-awaiting_response, .status-awaiting_payment { background:#fff3cd; color:#856404; }
+  .status-approved, .status-converted { background:#e6f9f2; color:#00836c; }
+  .status-declined, .status-cancelled, .status-past_due, .status-overdue { background:#f8d7da; color:#842029; }
+  .status-archived, .status-inactive { background:#f0f0f0; color:#6c757d; }
+
+  /* ── Filter Buttons ── */
+  .filter-btn {
+    padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600;
+    border:1px solid var(--border); background:var(--white); color:var(--text-light);
+    cursor:pointer; transition:all .12s;
+  }
+  .filter-btn:hover { border-color:#9ca3af; color:var(--text); }
+  .filter-btn.active, .filter-btn[style*="background:var(--green-dark)"] { background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
+
+  /* ── Search (App style) ── */
+  .search-box {
+    display:flex; align-items:center; gap:8px; padding:8px 14px;
+    background:var(--bg); border:1px solid var(--border); border-radius:10px;
+    font-size:13px; min-width:260px; transition:all .15s;
+  }
+  .search-box:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,168,138,.12); background:var(--white); }
+  .search-box input { border:none; background:none; outline:none; flex:1; font-size:13px; color:var(--text); }
+  .search-box input::placeholder { color:var(--text-light); }
+
+  /* ── Empty state ── */
+  .empty-state { text-align:center; padding:48px 20px; color:var(--text-light); }
+  .empty-state .empty-icon { font-size:40px; margin-bottom:10px; }
+  .empty-state h3 { font-size:16px; color:var(--text); margin-bottom:6px; font-weight:600; }
+  .empty-state p { font-size:13px; max-width:380px; margin:0 auto; }
+
+  /* Bottom nav removed — using sidebar on all viewports */
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .sidebar { position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); }
+    .sidebar.open { transform:translateX(0); }
+    .sidebar-overlay.open { display:block; }
+    .hamburger { display:block; }
+    .stat-grid { grid-template-columns:1fr 1fr; }
+    .content { padding:16px; padding-bottom:24px; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; overflow-x:hidden !important; }
+    /* Tighter topbar on mobile — less vertical padding so it doesn't sit so high */
+    .topbar { padding:4px 14px !important; min-height:38px !important; }
+    .topbar h2 { font-size:15px !important; }
+    .search-box { min-width:auto; flex:1; }
+    /* bottom-nav removed */
+    .detail-grid { grid-template-columns:1fr !important; }
+    .option-grid { grid-template-columns:1fr !important; }
+
+    /* Full sidebar on mobile — slide in/out via hamburger */
+    .sidebar { display:flex !important; transform:translateX(-100%); z-index:200; }
+    .sidebar.open { transform:translateX(0); }
+    .sidebar-overlay { display:none; }
+    .sidebar-overlay.open { display:block !important; }
+    .hamburger { display:block !important; }
+    /* bottom-nav removed */
+    .main { margin-left:0 !important; }
+
+    /* Rounded cards */
+    .card, .stat-card { border-radius:14px !important; }
+    .stat-card { padding:14px !important; }
+
+    /* App stat card rows — stack 2x2 on mobile, 1 col on tiny */
+    .stat-row { grid-template-columns:1fr 1fr !important; }
+    @media (max-width:400px) { .stat-row { grid-template-columns:1fr !important; } }
+
+    /* Detail grids — stack on mobile */
+    .detail-grid { grid-template-columns:1fr !important; }
+
+    /* Quote/Invoice line items — single column on mobile */
+    .quote-item-row { grid-template-columns:1fr !important; gap:6px !important; }
+
+    /* Make tables horizontally scrollable on mobile */
+    div:has(> .data-table) { overflow-x:auto !important; -webkit-overflow-scrolling:touch; }
+    .data-table { min-width:620px; }
+    .data-table th, .data-table td { white-space:nowrap; font-size:12px !important; padding:10px 8px !important; }
+
+    /* Larger inputs + touch targets */
+    input, select, textarea { font-size:16px !important; padding:12px !important; border-radius:10px !important; }
+    .btn { min-height:44px; border-radius:12px !important; }
+
+    /* Touch targets for topbar */
+    .hamburger { padding:8px !important; min-width:44px; min-height:44px; display:flex !important; align-items:center; justify-content:center; }
+    .topbar-icon { min-width:38px; min-height:38px; }
+    .topbar-icon-create { width:38px !important; height:38px !important; }
+
+    /* Safe areas for iPhone notch/home indicator */
+    .content { padding-bottom:max(24px, env(safe-area-inset-bottom)) !important; }
+    /* Full-width centered toast on mobile — reset the desktop translateX(-50%) since we pin both edges */
+    .toast { bottom:max(24px, env(safe-area-inset-bottom)) !important; left:16px !important; right:16px !important; border-radius:12px !important; transform:translateY(120%) !important; text-align:center !important; }
+    .toast.show { transform:translateY(0) !important; }
+    .modal { padding-bottom:env(safe-area-inset-bottom) !important; }
+
+    /* z-index hierarchy: sidebar-overlay(150) < sidebar(200) < modal(300) < toast(400) < search(500) */
+    .sidebar-overlay { z-index:150 !important; }
+    .sidebar { z-index:200 !important; }
+    .modal-overlay { z-index:300 !important; }
+    .avatar-menu { z-index:350 !important; }
+    .toast { z-index:400 !important; }
+
+    /* Hide "Menu" text on very small screens */
+    @media (max-width:400px) { .hamburger::after { content:'' !important; } }
+
+    /* Modal full-screen on mobile */
+    .modal-overlay { padding:0 !important; align-items:flex-end !important; }
+    .modal { position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; max-width:none !important; width:100% !important; max-height:95vh !important; border-radius:20px 20px 0 0 !important; margin:0 !important; overflow:hidden !important; }
+    .modal-body { overflow-x:hidden !important; overflow-y:auto !important; -webkit-overflow-scrolling:touch; }
+    .modal-body form, .modal-body > div { max-width:100% !important; overflow-x:hidden !important; }
+
+    /* Filter chips wrap nicely */
+    .filter-btn { font-size:11px !important; padding:6px 10px !important; }
+
+    /* App-style topbar: hamburger + Menu left, icon row right */
+    .topbar h2 { display:none; }
+    .hamburger { display:flex !important; align-items:center; gap:6px; }
+    .hamburger::after { content:'Menu'; font-size:14px; font-weight:600; color:var(--text); }
+
+    /* Hide full search input bar — use icon instead */
+    .search-box { display:none !important; }
+
+    /* Show all topbar icons */
+    .topbar-icons { display:flex !important; gap:6px; }
+    .topbar-icons > button,
+    .topbar-icons > div { display:flex !important; }
+    .topbar-icons > div:first-of-type { display:none !important; } /* hide divider */
+
+    /* Show mobile search icon */
+    .mobile-search-icon { display:flex !important; }
+
+    /* Show all nav icons on mobile */
+    div.topbar-avatar { display:flex !important; }
+    button#dark-mode-btn { display:flex !important; }
+    button[onclick*="AI.toggle"] { display:flex !important; }
+
+    /* + button — mobile: just a clean + circle, no "New" label */
+    .topbar-icon-create { width:40px !important; min-width:40px !important; height:40px !important; padding:0 !important; display:flex !important; align-items:center !important; justify-content:center !important; font-weight:700 !important; color:#fff !important; border-radius:50% !important; }
+    .topbar-icon-create::after { content:none !important; }
+
+    /* Topbar compact padding — preserve safe-area-inset-top with PWA floor */
+    .topbar { padding-left:12px !important; padding-right:12px !important; padding-bottom:8px !important; gap:8px; }
+    #searchDropdown.mobile-open {
+      position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
+      bottom:0 !important; margin:0 !important; border-radius:0 !important;
+      max-height:none !important; min-width:0 !important; z-index:500 !important;
+      border:none !important; padding-top:calc(64px + env(safe-area-inset-top, 0px));
+      -webkit-overflow-scrolling:touch; overflow-y:auto !important;
+    }
+    /* search-mobile removed — using search page */
+  }
+  @media (max-width: 480px) {
+    .stat-grid { grid-template-columns:1fr; }
+  }
+
+  /* ── Print ── */
+  @media print {
+    .sidebar, .topbar, .modal-overlay, .sidebar-overlay, #inv-bulk-bar { display:none !important; }
+    .app { display:block !important; }
+    .content-area { margin-left:0 !important; }
+    .content { overflow:visible !important; height:auto !important; padding:0 !important; }
+    body { background:#fff !important; color:#000 !important; overflow:visible !important; height:auto !important; }
+    .stat-card { border:1px solid #ccc !important; break-inside:avoid; }
+    .data-table { font-size:11px; }
+    .data-table th { background:#f0f0f0 !important; }
+    .btn, button { display:none !important; }
+    a { color:#000 !important; text-decoration:none !important; }
+  }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    opacity:0; transition:opacity .2s;
+  }
+  .modal-overlay.open { opacity:1; }
+  .modal {
+    background:var(--white); border-radius:16px; max-width:560px; width:100%;
+    max-height:90vh; display:flex; flex-direction:column;
+    box-shadow:0 24px 80px rgba(0,0,0,.25), 0 8px 20px rgba(0,0,0,.1);
+    transform:translateY(20px) scale(.98); transition:transform .25s cubic-bezier(.16,1,.3,1);
+  }
+  .modal-overlay.open .modal { transform:translateY(0) scale(1); }
+  .modal.modal-wide { max-width:800px; }
+  .modal.modal-full {
+    max-height:none; height:100vh; border-radius:0; max-width:680px;
+  }
+  .modal.modal-full .modal-body {
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  @media (max-width:700px) {
+    .modal.modal-full { max-width:100%; }
+  }
+  .modal-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+  }
+  .modal-header h3 { font-size:18px; font-weight:700; }
+  .modal-close { background:none; border:none; font-size:28px; cursor:pointer; color:var(--text-light); line-height:1; padding:0 4px; }
+  .modal-body { padding:20px; overflow-y:auto; flex:1; }
+  .modal-footer {
+    display:flex; align-items:center; justify-content:flex-end; gap:8px;
+    padding:12px 20px; border-top:1px solid var(--border);
+  }
+
+  /* ── Forms ── */
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:9px 12px; border:2px solid var(--border); border-radius:8px;
+    font-size:14px; font-family:inherit; background:var(--white); color:var(--text);
+    transition:border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,131,108,.12);
+  }
+  .form-group textarea { resize:vertical; }
+
+  /* ── Toast ── */
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
+    padding:12px 24px; border-radius:12px; font-size:14px; font-weight:600;
+    z-index:300; transition:transform .3s cubic-bezier(.16,1,.3,1); box-shadow:0 8px 30px rgba(0,0,0,.2);
+    backdrop-filter:blur(8px);
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .toast-success { background:rgba(0,131,108,.95); color:#fff; }
+  .toast-error { background:rgba(220,53,69,.95); color:#fff; }
+
+  /* ── Topbar Icons (App style) ── */
+  .topbar-icons {
+    display:flex; align-items:center; gap:2px; margin-left:8px;
+  }
+  .topbar-icon {
+    position:relative; width:34px; height:34px; border-radius:8px; border:none;
+    background:transparent; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; font-size:16px; transition:background .12s, transform .12s;
+  }
+  .topbar-icon:hover { background:var(--bg); }
+  .topbar-icon:hover i { stroke:var(--text) !important; }
+  .topbar-icon:active { transform:scale(.93); }
+  .topbar-icon-create:hover { background:var(--accent-hover) !important; }
+  .topbar-dot {
+    position:absolute; top:6px; right:6px; width:8px; height:8px;
+    background:var(--red); border-radius:50%; display:none;
+    border:2px solid var(--white);
+  }
+  .topbar-dot.active { display:block; }
+
+  .topbar-avatar {
+    position:relative; width:34px; height:34px; border-radius:50%;
+    background:var(--accent); color:#fff; display:flex; align-items:center;
+    justify-content:center; font-size:12px; font-weight:700; cursor:pointer;
+    margin-left:6px; user-select:none;
+  }
+  .avatar-menu {
+    display:none; position:absolute; top:42px; right:0; width:200px;
+    background:var(--white); border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,.15);
+    border:1px solid var(--border); z-index:300; overflow:hidden;
+  }
+  .avatar-menu.open { display:block; }
+  .avatar-menu-header {
+    padding:14px 16px; font-size:14px; font-weight:700; color:var(--text);
+    border-bottom:1px solid var(--border); line-height:1.3;
+  }
+  .avatar-menu-header span { font-size:12px; font-weight:400; color:var(--text-light); }
+  .avatar-menu button {
+    display:flex; align-items:center; gap:8px; width:100%; padding:10px 16px;
+    font-size:13px; border:none; background:none; cursor:pointer; color:var(--text);
+    text-align:left;
+  }
+  .avatar-menu button:hover { background:var(--bg); }
+  .avatar-menu hr { border:none; border-top:1px solid var(--border); margin:0; }
+
+  /* ── Notification Dropdown ── */
+  .notif-dropdown {
+    display:none; position:absolute; top:44px; right:0; width:380px;
+    background:var(--white); border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.18);
+    border:1px solid var(--border); z-index:400; overflow:hidden;
+  }
+  .notif-dropdown.open { display:block; }
+  .notif-dropdown-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-bottom:1px solid var(--border);
+  }
+  .notif-dropdown-header h3 {
+    font-size:15px; font-weight:700; color:var(--text); margin:0;
+  }
+  .notif-dropdown-header a {
+    font-size:12px; color:var(--accent); cursor:pointer; text-decoration:none; font-weight:600;
+  }
+  .notif-dropdown-header a:hover { text-decoration:underline; }
+  .notif-dropdown-list {
+    max-height:420px; overflow-y:auto;
+  }
+  .notif-dropdown-item {
+    display:flex; align-items:flex-start; gap:10px; padding:12px 16px;
+    cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s;
+  }
+  .notif-dropdown-item:last-child { border-bottom:none; }
+  .notif-dropdown-item:hover { background:var(--bg); }
+  .notif-dropdown-item.unread { background:var(--green-bg); }
+  .notif-dropdown-item.unread:hover { background:#e2f5ea; }
+  [data-theme="dark"] .notif-dropdown-item.unread:hover { background:#243b2e; }
+  .notif-dropdown-icon {
+    width:32px; height:32px; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; font-size:15px;
+  }
+  .notif-dropdown-body { flex:1; min-width:0; }
+  .notif-dropdown-msg {
+    font-size:13px; color:var(--text); line-height:1.35; margin:0 0 2px;
+  }
+  .notif-dropdown-time {
+    font-size:11px; color:var(--text-light); margin:0;
+  }
+  .notif-dropdown-dot {
+    width:8px; height:8px; border-radius:50%; background:var(--accent);
+    flex-shrink:0; margin-top:6px;
+  }
+  .notif-dropdown-empty {
+    padding:40px 16px; text-align:center; color:var(--text-light); font-size:13px;
+  }
+  .notif-dropdown-footer {
+    padding:10px 16px; border-top:1px solid var(--border); text-align:center;
+  }
+  .notif-dropdown-footer a {
+    font-size:13px; color:var(--accent); cursor:pointer; text-decoration:none; font-weight:600;
+  }
+  .notif-dropdown-footer a:hover { text-decoration:underline; }
+  .notif-badge {
+    position:absolute; top:2px; right:2px; min-width:16px; height:16px;
+    background:var(--red); border-radius:8px; display:none; border:2px solid var(--white);
+    font-size:10px; font-weight:700; color:#fff; text-align:center; line-height:12px;
+    padding:0 3px;
+  }
+  .notif-badge.active { display:block; }
+  @media (max-width:600px) {
+    .notif-dropdown { width:calc(100vw - 24px); right:-60px; }
+  }
+
+  /* ── Filter buttons ── */
+  .client-filter.active { background:var(--green-dark) !important; color:var(--white) !important; border-color:var(--green-dark) !important; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-header" onclick="toggleSidebar()">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3C9.5 3 7.5 5 7.5 7.5c0 1.8 1 3.3 2.5 4.1-.3.1-1.8.6-2.8 1.4.8-.3 2-.3 2.6-.2-.6.3-1.5.9-1.8 1.6.6-.5 1.5-.7 2-.7-.3.3-.6.9-.6 1.5h1.6v1.8h2v-1.8H14.6c0-.6-.3-1.2-.6-1.5.5 0 1.5.2 2 .7-.3-.7-1.2-1.3-1.8-1.6.6-.1 1.8-.1 2.6.2-1-.8-2.5-1.3-2.8-1.4 1.5-.8 2.5-2.3 2.5-4.1C16.5 5 14.5 3 12 3z" fill="white" opacity=".95"/>
+          <rect x="11" y="17" width="2" height="4" rx="1" fill="white" opacity=".7"/>
+        </svg>
+      </div>
+      <h1>Branch Manager <span>Second Nature Tree Service</span></h1>
+    </div>
+    <div class="sidebar-nav">
+      <!-- Core nav — matches legacy system -->
+      <button class="nav-item active" data-page="dashboard"><span class="icon"><i data-lucide="layout-dashboard" class="li"></i></span> Home</button>
+      <button class="nav-item" data-page="schedule"><span class="icon"><i data-lucide="calendar" class="li"></i></span> Schedule</button>
+      <button class="nav-item" data-page="clients"><span class="icon"><i data-lucide="users" class="li"></i></span> Clients <span class="badge" id="badge-clients"></span></button>
+      <button class="nav-item" data-page="requests"><span class="icon"><i data-lucide="inbox" class="li"></i></span> Requests <span class="badge" id="badge-requests"></span></button>
+      <button class="nav-item" data-page="quotes"><span class="icon"><i data-lucide="file-text" class="li"></i></span> Quotes <span class="badge" id="badge-quotes"></span></button>
+      <button class="nav-item" data-page="jobs"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Jobs <span class="badge" id="badge-jobs"></span></button>
+      <button class="nav-item" data-page="pretrip"><span class="icon"><i data-lucide="clipboard-check" class="li"></i></span> Pre-Trip</button>
+      <button class="nav-item" data-page="invoices"><span class="icon"><i data-lucide="receipt" class="li"></i></span> Invoices <span class="badge" id="badge-invoices"></span></button>
+      <button class="nav-item" data-page="team"><span class="icon"><i data-lucide="hard-hat" class="li"></i></span> Team</button>
+
+      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
+      <button class="nav-item" data-page="reports"><span class="icon"><i data-lucide="pie-chart" class="li"></i></span> Reports</button>
+      <button class="nav-item" data-page="marketing"><span class="icon"><i data-lucide="bar-chart-3" class="li"></i></span> Marketing</button>
+      <button class="nav-item" data-page="socialbranch"><span class="icon"><i data-lucide="share-2" class="li"></i></span> SocialBranch</button>
+      <button class="nav-item" data-page="payroll"><span class="icon"><i data-lucide="wallet" class="li"></i></span> Payroll</button>
+      <button class="nav-item" data-page="employeecenter"><span class="icon"><i data-lucide="banknote" class="li"></i></span> My Pay</button>
+      <button class="nav-item" data-page="taskreminders"><span class="icon"><i data-lucide="check-circle" class="li"></i></span> Chat &amp; Tasks</button>
+      <button class="nav-item" data-page="operations"><span class="icon"><i data-lucide="truck" class="li"></i></span> Operations</button>
+      <!-- Media Center merged into SocialBranch v376 — deep link still works (#mediacenter) -->
+      <button class="nav-item" data-page="ai"><span class="icon"><i data-lucide="bot" class="li"></i></span> AI Assistant</button>
+      <button class="nav-item" data-page="tools"><span class="icon"><i data-lucide="wrench" class="li"></i></span> Tools</button>
+      <div style="border-top:1px solid var(--sidebar-border);margin:8px 10px 4px;"></div>
+      <button class="nav-item" data-page="archive"><span class="icon"><i data-lucide="archive" class="li"></i></span> Archive</button>
+      <button class="nav-item" data-page="settings"><span class="icon"><i data-lucide="settings" class="li"></i></span> Settings</button>
+    </div>
+
+    <div class="sidebar-footer" style="padding:10px 14px;">
+      <!-- Switch Mode disabled v360 — will restore once role-based access is the priority -->
+      <div style="display:flex;gap:6px;">
+        <button id="sidebar-toggle-btn" onclick="toggleSidebar()" style="background:rgba(0,0,0,.04);border:1px solid #e8eaed;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:14px;color:#9ca3af;flex:1;" title="Collapse sidebar">◀</button>
+        <button class="log-out-btn" onclick="Auth.logout()" style="background:rgba(0,0,0,.04);border:1px solid #e8eaed;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;color:#dc3545;white-space:nowrap;" title="Log out">Log Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile search overlay removed — using search page instead -->
+
+  <!-- Main Content -->
+  <div class="main" role="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Open navigation menu" role="button"><i data-lucide="menu" style="width:22px;height:22px;stroke:var(--text);stroke-width:1.75;"></i></button>
+        <h2 id="pageTitle">Dashboard</h2>
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-icon mobile-search-icon" onclick="loadPage('search')" title="Search" style="display:none;">
+          <i data-lucide="search" style="width:18px;height:18px;stroke:var(--text-light);stroke-width:1.75;"></i>
+        </button>
+        <div class="search-box" style="position:relative;">
+          <i data-lucide="search" style="width:15px;height:15px;stroke:var(--text-light);stroke-width:2;flex-shrink:0;"></i>
+          <input type="text" placeholder="Search clients, jobs..." id="globalSearch" autocomplete="off">
+          <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.15);max-height:70vh;overflow-y:auto;z-index:999;min-width:320px;"></div>
+        </div>
+        <div class="topbar-icons">
+          <button class="topbar-icon topbar-icon-create" onclick="BM_contextCreate()" title="New…" style="background:var(--accent);border-radius:8px;width:32px;height:32px;">
+            <i data-lucide="plus" style="width:18px;height:18px;stroke:#fff;stroke-width:2.5;"></i>
+          </button>
+          <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+          <button class="topbar-icon" onclick="loadPage('messaging')" title="Message Center">
+            <i data-lucide="message-square" style="width:18px;height:18px;stroke:var(--text-light);stroke-width:1.75;"></i>
+          </button>
+          <div style="position:relative;">
+            <button class="topbar-icon" id="notif-bell-btn" onclick="NotifCenter.toggle(event)" title="Activity Feed">
+              <i data-lucide="bell" style="width:18px;height:18px;stroke:var(--text-light);stroke-width:1.75;"></i>
+              <span class="notif-badge" id="notif-badge"></span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown"></div>
+          </div>
+          <button class="topbar-icon" onclick="AI.toggle()" title="AI Assistant">
+            <i data-lucide="sparkles" style="width:17px;height:17px;stroke:var(--text-light);stroke-width:1.75;"></i>
+          </button>
+          <div class="topbar-avatar" onclick="this.querySelector('.avatar-menu').classList.toggle('open')">
+            <span id="topbar-avatar-initials">DB</span>
+            <div class="avatar-menu">
+              <div class="avatar-menu-header" id="avatar-menu-header"><span data-bind="ownerName">Owner</span><br><span>Owner · <span data-bind="companyName">Branch Manager</span></span></div>
+              <button onclick="loadPage('employeecenter')"><i data-lucide="user" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>My Account</button>
+              <button onclick="loadPage('settings')"><i data-lucide="settings" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>Settings</button>
+              <button onclick="window.open('https://peekskilltree.com','_blank')"><i data-lucide="external-link" style="width:14px;height:14px;stroke:currentColor;vertical-align:middle;margin-right:6px;"></i>View Website</button>
+              <hr>
+              <button onclick="Auth.logout()" style="color:var(--red);"><i data-lucide="log-out" style="width:14px;height:14px;stroke:var(--red);vertical-align:middle;margin-right:6px;"></i>Log Out</button>
+            </div>
+          </div>
+        </div>
+        <!-- pageAction deprecated: universal '+' in topbar covers all create actions. Element kept with forced display:none so legacy loadPage() logic stays intact without breaking anything. -->
+        <button class="btn btn-primary" id="pageAction" style="display:none !important;" aria-hidden="true">+ New</button>
+        <span id="bmVersionBadge" onclick="if(confirm('Force-refresh the app (clear cache)?')){location.href='?reset=1';}" title="Tap to force-refresh. Version badge — if this doesn't match the latest, your PWA is stale." style="font-size:10px;color:#94a3b8;margin-left:10px;font-weight:600;letter-spacing:.05em;cursor:pointer;">v318</span>
+<script>(function(){try{var b=document.getElementById('bmVersionBadge');if(b&&typeof BUNDLED_VERSION!=='undefined')b.textContent='v'+BUNDLED_VERSION;}catch(e){}})();</script>
+      </div>
+    </div>
+
+    <div class="content" id="pageContent">
+      <!-- Dynamic page content loads here -->
+    </div>
+  </div>
+</div>
+
+<!-- Module scripts -->
+<script defer src="dist/bm.bundle.v941.min.js"></script>
+
+<script>
+// Auto-configure Supabase connection
+if (!localStorage.getItem('bm-supabase-url')) {
+  localStorage.setItem('bm-supabase-url', 'https://ltpivkqahvplapyagljt.supabase.co');
+  localStorage.setItem('bm-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI');
+}
+</script>
+
+<!-- photos.js moved earlier, before photomap.js -->
+
+<script>
+// ── Navigation ──
+var currentPage = 'dashboard';
+document.querySelectorAll('.nav-item').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var page = this.dataset.page;
+    if (!page) return;
+    // Always close sidebar on mobile, even if same page
+    if (window.innerWidth <= 768) toggleSidebar();
+    // Same page? Refresh it (scroll to top + reload content)
+    if (page === currentPage) {
+      window.scrollTo(0, 0);
+      loadPage(page);
+      return;
+    }
+    currentPage = page;
+    document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+    loadPage(page);
+  });
+});
+
+function toggleSidebar() {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('sidebarOverlay');
+  if (window.innerWidth <= 768) {
+    sb.classList.toggle('open');
+    ov.classList.toggle('open');
+  } else {
+    sb.classList.toggle('collapsed');
+    localStorage.setItem('bm-sidebar-collapsed', sb.classList.contains('collapsed'));
+    var btn = document.getElementById('sidebar-toggle-btn');
+    if (btn) btn.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+  }
+}
+
+// ── Page Config ──
+var pageConfigs = {
+  dashboard: { title: 'Dashboard', action: null },
+  pipeline: { title: 'Pipeline', action: '+ Add Deal', actionFn: 'PipelinePage.addDeal("new_lead")' },
+  schedule: { title: 'Schedule', action: null },
+  clients: { title: 'Clients', action: '+ New Client', actionFn: 'ClientsPage.showForm()' },
+  requests: { title: 'Requests', action: '+ New Request', actionFn: 'RequestsPage.showForm()' },
+  quotes: { title: 'Quotes', action: '+ New Quote', actionFn: 'QuotesPage.showForm()' },
+  jobs: { title: 'Jobs', action: null },
+  pretrip: { title: 'Pre-Trip Inspection', action: null },
+  invoices: { title: 'Invoices', action: '+ New Invoice', actionFn: 'InvoicesPage.showForm()' },
+  insights: { title: 'Insights', action: null },
+  reviews: { title: 'Reviews', action: null },
+  socialbranch: { title: 'SocialBranch', action: null },
+  team: { title: 'Team', action: '+ Add Member', actionFn: 'TeamPage.showForm()' },
+  operations: { title: 'Operations', action: null },
+  timesheet: { title: 'Timesheet', action: null },
+  automations: { title: 'Automations', action: null },
+  calculators: { title: 'Calculators', action: null },
+  cardone: { title: 'X Tools', action: null },
+  estimator: { title: 'Job Estimator', action: null },
+  aitreeid: { title: 'AI Tree ID', action: null },
+  videoquote: { title: 'Video Quote', action: null },
+  voicequote: { title: 'Voice-to-Quote', action: null },
+  tracking: { title: 'Location Tracking', action: null },
+  treemeasure: { title: 'Tree Measure', action: null },
+  crewview: { title: 'Crew View', action: null },
+  employeecenter: { title: 'My Pay & Hours', action: null },
+  budget: { title: 'Budget Planner', action: null },
+  dispatch: { title: 'Dispatch', action: 'Open Route', actionFn: 'DispatchPage.openRoute()' },
+  clientmap: { title: 'Client Map', action: null },
+  photomap: { title: 'Photo Map', action: null },
+  branchcam: { title: 'Branch Cam Library', action: null },
+  messaging: { title: 'Messages', action: null },
+  equipment: { title: 'Equipment', action: '+ Add', actionFn: 'EquipmentPage.showForm()' },
+  jobcosting: { title: 'Job Costing', action: null },
+  recurring: { title: 'Recurring Jobs', action: null },
+  notifications: { title: 'Activity', action: null },
+  expenses: { title: 'Expenses', action: '+ Add Expense', actionFn: 'loadPage("expenses")' },
+  profitloss: { title: 'Profit & Loss', action: null },
+  weeklysummary: { title: 'Weekly Summary', action: null },
+  reviewtools: { title: 'Review Tools', action: null },
+  reports: { title: 'Reports', action: null },
+  tools: { title: 'Tools', action: null },
+  onlinebooking: { title: 'Online Booking', action: null },
+  formbuilder: { title: 'Form Builder', action: null },
+  receptionist: { title: 'Receptionist', action: null },
+  campaigns: { title: 'Campaigns', action: '+ New Campaign', actionFn: 'loadPage("campaigns")' },
+  marketing: { title: 'Marketing Dashboard', action: null },
+  referrals: { title: 'Referrals', action: null },
+  import: { title: 'Import Data', action: null },
+  backup: { title: 'Backup & Restore', action: null },
+  settings: { title: 'Settings', action: null },
+  archive: { title: 'Archive', action: null },
+  crewperformance: { title: 'Crew Performance', action: null },
+  materials: { title: 'Materials & Inventory', action: '+ Add Material', actionFn: 'Materials.showAddMaterial()' },
+  beforeafter: { title: 'Before & After', action: null },
+  modeselector: { title: 'Branch Manager', action: null },
+  taskreminders: { title: 'Tasks & Reminders', action: '+ New Task', actionFn: 'TaskReminders._showForm()' },
+  teamchat: { title: 'Team Chat', action: null },
+  mediacenter: { title: 'Media Center', action: '+ Upload Photos', actionFn: 'MediaCenter.showUploadForm()' },
+  reminders: { title: 'Compliance & Reminders', action: '+ Add Reminder', actionFn: 'Reminders.showForm("other")' },
+  comms: { title: 'Communication Log', action: null },
+  satisfaction: { title: 'Client Satisfaction', action: null },
+  emailtemplates: { title: 'Email Templates', action: '+ New Template', actionFn: 'EmailTemplates._showNewTemplateForm()' },
+  customfields: { title: 'Custom Fields', action: null },
+  checklists: { title: 'Checklists', action: null },
+  payments: { title: 'Payment History', action: null },
+  ai: { title: 'AI Assistant', action: null },
+  clienthub: { title: 'Client Portal', action: null },
+  visits: { title: 'Visits', action: null },
+  workflow: { title: 'Workflow', action: null },
+  propertymap: { title: 'Property Map', action: null },
+  payroll: { title: 'Payroll', action: 'Summary', actionFn: 'PayrollPage.showPayrollSummary(PayrollPage._getWeekDates(PayrollPage._weekOffset)[0])' },
+  permissions: { title: 'Permissions & Roles', action: null },
+  search: { title: 'Search', action: null }
+};
+
+// ── Hub tab helper ──
+function _renderHubTabs(stateKey, tabs, activeFallback) {
+  var tab = window[stateKey] || activeFallback;
+  var valid = false;
+  for (var i = 0; i < tabs.length; i++) { if (tabs[i][0] === tab) { valid = true; break; } }
+  if (!valid) tab = activeFallback;
+  var html = '<div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+  for (var j = 0; j < tabs.length; j++) {
+    var t = tabs[j];
+    var active = tab === t[0];
+    html += '<button onclick="window.' + stateKey + '=\'' + t[0] + '\';loadPage(window._currentPage)" style="background:' + (active?'var(--white)':'transparent') + ';color:' + (active?'var(--green-dark)':'var(--text-light)') + ';border:none;border-bottom:3px solid ' + (active?'var(--green-dark)':'transparent') + ';padding:10px 14px;font-size:13px;font-weight:' + (active?'700':'500') + ';cursor:pointer;white-space:nowrap;">' + t[1] + '</button>';
+  }
+  html += '</div>';
+  return { tab: tab, html: html };
+}
+
+// ── Reports Hub ──
+var ReportsHub = {
+  render: function() {
+    var tabs = [
+      ['insights', 'Overview'],
+      ['profitloss', 'Profit & Loss'],
+      ['expenses', 'Expenses'],
+      ['jobcosting', 'Job Costing'],
+      ['budget', 'Budget'],
+      ['weeklysummary', 'Weekly Summary'],
+      ['export', 'Export']
+    ];
+    var r = _renderHubTabs('_reportsTab', tabs, 'insights');
+    var body = '';
+    try {
+      if (r.tab === 'insights') body = InsightsPage.render();
+      else if (r.tab === 'profitloss') body = ProfitLossPage.render();
+      else if (r.tab === 'expenses') body = ExpensesPage.render();
+      else if (r.tab === 'jobcosting') body = JobCosting.render();
+      else if (r.tab === 'budget') body = BudgetPage.render();
+      else if (r.tab === 'weeklysummary') body = WeeklySummary.render();
+      else if (r.tab === 'export') body = ReportsPage.render();
+    } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
+    return r.html + body;
+  }
+};
+
+// ── Marketing Hub ──
+var MarketingHub = {
+  render: function() {
+    var tabs = [
+      ['dashboard', 'Dashboard'],
+      ['reviews', 'Reviews'],
+      ['campaigns', 'Campaigns']
+    ];
+    var r = _renderHubTabs('_marketingTab', tabs, 'dashboard');
+    var body = '';
+    try {
+      if (r.tab === 'dashboard') body = MarketingPage.render();
+      else if (r.tab === 'reviews') body = ReviewsPage.render();
+      else if (r.tab === 'campaigns') body = Campaigns.render();
+    } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
+    return r.html + body;
+  }
+};
+
+// ── Tools Hub ──
+var ToolsHub = {
+  render: function() {
+    var tabs = [
+      ['calculators', 'Calculators'],
+      ['treemeasure', '📏 Measure'],
+      ['cardone', '10X Tools'],
+      ['voicequote', '🎙️ Voice Quote'],
+      ['videoquote', 'Video Quote'],
+      ['branchcam', '📸 Branch Cam']
+    ];
+    var r = _renderHubTabs('_toolsTab', tabs, 'calculators');
+    var body = '';
+    try {
+      if (r.tab === 'calculators') body = pageRenderers.calculators();
+      else if (r.tab === 'treemeasure') body = TreeMeasure.render();
+      else if (r.tab === 'cardone') body = CardoneTools.render();
+      else if (r.tab === 'voicequote') { setTimeout(function(){ VoiceQuote.render(); }, 0); body = '<div id="voicequote-placeholder"></div>'; }
+      else if (r.tab === 'videoquote') body = VideoQuote.render();
+      else if (r.tab === 'branchcam') { setTimeout(function(){ Photos.openLibrary(); }, 0); body = '<div id="page-content"></div>'; }
+    } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
+    return r.html + body;
+  }
+};
+
+// ── Team Hub ──
+var TeamHub = {
+  render: function() {
+    var tabs = [
+      ['members', 'Members'],
+      ['timesheets', 'Timesheets']
+    ];
+    var r = _renderHubTabs('_teamTab', tabs, 'members');
+    var body = '';
+    try {
+      if (r.tab === 'members') body = TeamPage.render();
+      else if (r.tab === 'timesheets') body = TimeTrackPage.render();
+    } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
+    return r.html + body;
+  }
+};
+
+var OperationsHub = {
+  render: function() {
+    var tabs = [
+      ['dispatch', 'Dispatch'],
+      ['equipment', 'Equipment']
+    ];
+    var r = _renderHubTabs('_opsTab', tabs, 'dispatch');
+    var body = '';
+    try {
+      if (r.tab === 'dispatch') body = DispatchPage.render();
+      else if (r.tab === 'equipment') body = EquipmentPage.render();
+    } catch (e) { body = '<div style="padding:16px;color:var(--red);">Error loading tab: ' + e.message + '</div>'; }
+    return r.html + body;
+  }
+};
+
+var pageRenderers = {
+  dashboard: function() { return DashboardPage.render(); },
+  pipeline: function() { return PipelinePage.render(); },
+  schedule: function() { return SchedulePage.render(); },
+  clients: function() { return ClientsPage.render(); },
+  requests: function() { return RequestsPage.render(); },
+  quotes: function() { return QuotesPage.render(); },
+  jobs: function() { return JobsPage.render(); },
+  pretrip: function() {
+    var html = '<div style="max-width:720px;margin:0 auto;">'
+      + '<h2 style="margin:0 0 6px;font-size:22px;">🛻 Daily Pre-Trip Vehicle Inspection</h2>'
+      + '<p style="font-size:13px;color:var(--text-light);margin:0 0 16px;">Complete before leaving the yard. DOT-style checklist tailored for tree-service rigs. History is saved per vehicle.</p>'
+      + (typeof DailyInspection !== 'undefined' ? DailyInspection.render() : '<div>Module not loaded.</div>')
+      + '</div>';
+    return html;
+  },
+  invoices: function() { return InvoicesPage.render(); },
+  insights: function() { return InsightsPage.render(); },
+  reviews: function() { return ReviewsPage.render(); },
+  socialbranch: function() { return SocialBranch.render(); },
+  team: function() { return TeamHub.render(); },
+  operations: function() { return OperationsHub.render(); },
+  timesheet: function() { return TimeTrackPage.render(); },
+  timetrack: function() { return TimeTrackPage.render(); },
+  automations: function() { return AutomationsPage.render(); },
+  crewview: function() { return CrewView.render(); },
+  employeecenter: function() { return EmployeeCenter.render(); },
+  budget: function() { return BudgetPage.render(); },
+  dispatch: function() { return DispatchPage.render(); },
+  clientmap: function() { return ClientMapPage.render(); },
+  photomap: function() { return PhotoMap.render(); },
+  branchcam: function() { setTimeout(function() { Photos.openLibrary(); }, 0); return '<div id="page-content"></div>'; },
+  messaging: function() { return MessagingPage.render(); },
+  equipment: function() { return EquipmentPage.render(); },
+  jobcosting: function() { return JobCosting.render(); },
+  recurring: function() { return RecurringJobs.render(); },
+  notifications: function() { return NotificationsPage.render(); },
+  expenses: function() { return ExpensesPage.render(); },
+  profitloss: function() { return ProfitLossPage.render(); },
+  weeklysummary: function() { return WeeklySummary.render(); },
+  reviewtools: function() { return ReviewTools.render(); },
+  reports: function() { return ReportsHub.render(); },
+  tools: function() { return ToolsHub.render(); },
+  onlinebooking: function() { return OnlineBooking.render(); },
+  formbuilder: function() { return FormBuilderPage.render(); },
+  receptionist: function() { return Receptionist.render(); },
+  campaigns: function() { return Campaigns.render(); },
+  marketing: function() { return MarketingHub.render(); },
+  referrals: function() { return Referrals.render(); },
+  import: function() { return ImportPage.render(); },
+  backup: function() { return BackupPage.render(); },
+  settings: function() { return SettingsPage.render(); },
+  archive: function() { return ArchivePage.render(); },
+  aitreeid: function() { return AITreeID.render(); },
+  videoquote: function() { return VideoQuote.render(); },
+  voicequote: function() { setTimeout(function(){ VoiceQuote.render(); }, 0); return '<div id="voicequote-placeholder">Loading…</div>'; },
+  tracking: function() { setTimeout(function(){ TrackingPage.render(); }, 0); return '<div id="tracking-placeholder">Loading…</div>'; },
+  treemeasure: function() { return TreeMeasure.render(); },
+  crewperformance: function() { return CrewPerformance.render(); },
+  materials: function() { return Materials.render(); },
+  beforeafter: function() { return BeforeAfter.render(); },
+  modeselector: function() { return ModeSelector.render(); },
+  taskreminders: function() { return TaskReminders.render(); },
+  teamchat: function() { return TeamChat.render(); },
+  mediacenter: function() { return MediaCenter.render(); },
+  reminders: function() { return Reminders.render(); },
+  comms: function() { return CommsLog.render(); },
+  satisfaction: function() { return Satisfaction.render(); },
+  emailtemplates: function() { return EmailTemplates.render(); },
+  customfields: function() { return CustomFields.render(); },
+  checklists: function() { return Checklists.render(); },
+  payments: function() { InvoicesPage._activeTab = 'payments'; return InvoicesPage.render(); },
+  ai: function() { return AI.render(); },
+  clienthub: function() { return ClientHub.render(); },
+  visits: function() { JobsPage._activeTab = 'visits'; return JobsPage.render(); },
+  workflow: function() { loadPage('dashboard'); return ''; },
+  propertymap: function() { return PropertyMap.render(); },
+  search: function() { return SearchPage.render(); },
+  payroll: function() { return PayrollPage.render(); },
+  permissions: function() { return RBAC.render(); },
+  estimator: function() { return Estimator.render(); },
+  cardone: function() { return CardoneTools.render(); },
+  calculators: function() {
+    return '<div class="stat-grid">'
+      + '<div class="stat-card" style="cursor:pointer;" onclick="loadPage(\'estimator\')">'
+      + '<div class="stat-label">🧮 Job Estimator</div><div class="stat-value" style="font-size:18px;">Price a Job</div><div class="stat-sub">Crew + equipment + insurance + markup → instant quote</div></div>'
+      + '<div class="stat-card" style="cursor:pointer;" onclick="loadPage(\'treemeasure\')">'
+      + '<div class="stat-label">🌲 Tree Measure</div><div class="stat-value" style="font-size:18px;">Height & DBH</div><div class="stat-sub">Phone angle for height, tape for DBH → instant estimate</div></div>'
+      + '<a href="https://peekskilltree.com/sub.html" target="_blank" class="stat-card" style="text-decoration:none;cursor:pointer;">'
+      + '<div class="stat-label">💰 Full Rate Sheet</div><div class="stat-value" style="font-size:18px;">Detailed Rates</div><div class="stat-sub">All rates, tiers, industry comparison</div></a>'
+      + '<a href="https://peekskilltree.com/be.html" target="_blank" class="stat-card" style="text-decoration:none;cursor:pointer;">'
+      + '<div class="stat-label">📈 Break-Even</div><div class="stat-value" style="font-size:18px;">Monthly P&L</div><div class="stat-sub">Fixed costs, job-by-job tracking</div></a>'
+      + '<a href="https://peekskilltree.com/ads.html" target="_blank" class="stat-card" style="text-decoration:none;cursor:pointer;">'
+      + '<div class="stat-label">📊 Ad ROI</div><div class="stat-value" style="font-size:18px;">Ad Performance</div><div class="stat-sub">Per-channel spend & returns</div></a>'
+      + '</div>';
+  }
+};
+
+// ── Auth Gate ──
+function checkAuth() {
+  if (!Auth.isLoggedIn()) {
+    var appEl = document.querySelector('.app');
+    if (appEl) appEl.style.display = 'none';
+    var loginDiv = document.getElementById('login-screen');
+    if (!loginDiv) {
+      loginDiv = document.createElement('div');
+      loginDiv.id = 'login-screen';
+      document.body.insertBefore(loginDiv, document.body.firstChild);
+    }
+    loginDiv.innerHTML = Auth.renderLogin();
+    return false;
+  }
+  var appEl = document.querySelector('.app');
+  if (appEl) appEl.style.display = '';
+  var loginDiv = document.getElementById('login-screen');
+  if (loginDiv) loginDiv.innerHTML = '';
+
+  // Update sidebar user info
+  var userEl = document.querySelector('.sidebar-user');
+  if (userEl) userEl.innerHTML = Auth.user.name + ' <span style="opacity:.6;">· ' + Auth.role.replace(/_/g, ' ') + '</span>';
+
+  // Hide nav items user can't access
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(btn) {
+    var page = btn.dataset.page;
+    btn.style.display = Auth.canAccess(page) ? '' : 'none';
+  });
+
+  // Compliance badge
+  if (typeof Reminders !== 'undefined') {
+    var reminderAlerts = Reminders.getAlerts();
+    var badgeEl = document.getElementById('badge-reminders');
+    if (badgeEl) {
+      badgeEl.textContent = reminderAlerts.length > 0 ? reminderAlerts.length : '';
+    }
+  }
+
+  return true;
+}
+
+// Context-aware + button — creates the right thing for the current page
+function BM_contextCreate() {
+  // Always show the QuickCreate menu with all options
+  QuickCreate.show();
+}
+
+function loadPage(page) {
+  if (!checkAuth()) return;
+  // Bulletproof: never wipe an open form when re-loading the SAME page (a sync tick).
+  // Different page = user intentionally navigating away → allow.
+  var hasOpenForm = document.getElementById('inv-form') || document.getElementById('quote-form')
+    || document.getElementById('client-form') || document.getElementById('job-form') || document.getElementById('req-form');
+  if (hasOpenForm && page === window._currentPage) return;
+  // Update URL hash for browser back button
+  if (window.location.hash !== '#' + page) {
+    history.pushState({ page: page }, '', '#' + page);
+  }
+  window._currentPage = page;
+  // Persist last page so refresh / PWA restart lands where the user was
+  try { localStorage.setItem('bm-last-page', page); localStorage.removeItem('bm-last-detail'); } catch(e) {}
+  var config = pageConfigs[page] || { title: page, action: null };
+  document.getElementById('pageTitle').textContent = config.title;
+  // pageAction button permanently hidden — universal '+' in topbar covers create.
+  var actionBtn = document.getElementById('pageAction');
+  if (actionBtn) actionBtn.style.cssText = 'display:none !important;';
+
+  // Update sidebar badges
+  var newReqs = DB.requests.countNew();
+  document.getElementById('badge-requests').textContent = newReqs > 0 ? newReqs : '';
+  document.getElementById('badge-clients').textContent = '';
+  // Quotes awaiting response
+  var awaitingQuotes = DB.quotes.count(function(q) { return q.status === 'sent' || q.status === 'awaiting'; });
+  var qBadge = document.getElementById('badge-quotes');
+  if (qBadge) qBadge.textContent = awaitingQuotes > 0 ? awaitingQuotes : '';
+  // Active jobs
+  var activeJobs = DB.jobs.count(function(j) { return j.status === 'scheduled' || j.status === 'in_progress'; });
+  var jBadge = document.getElementById('badge-jobs');
+  if (jBadge) jBadge.textContent = activeJobs > 0 ? activeJobs : '';
+  // Unpaid invoices
+  var unpaidInv = DB.invoices.count(function(i) { return i.status !== 'paid' && i.status !== 'cancelled' && i.balance > 0; });
+  var iBadge = document.getElementById('badge-invoices');
+  if (iBadge) iBadge.textContent = unpaidInv > 0 ? unpaidInv : '';
+  // Media center unreviewed badge
+  var mediaBadgeEl = document.getElementById('badge-mediacenter');
+  if (mediaBadgeEl && typeof MediaCenter !== 'undefined') {
+    var unreviewedCount = MediaCenter.getUnreviewedCount();
+    mediaBadgeEl.textContent = unreviewedCount > 0 ? unreviewedCount : '';
+  }
+
+  var content = document.getElementById('pageContent');
+  var renderer = pageRenderers[page];
+  if (renderer) {
+    content.innerHTML = renderer();
+  } else {
+    content.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:32px;color:var(--text-light);">—</div><h3>Page Not Available</h3><p>' + config.title + ' is not configured yet.</p></div>';
+  }
+
+  // Render Lucide icons added by page renderers
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Post-render hooks
+  // Dispatch map fires either as its own page OR as the active tab inside Operations hub
+  var dispatchActive = (page === 'dispatch') || (page === 'operations' && (window._opsTab || 'dispatch') === 'dispatch');
+  if (dispatchActive && typeof DispatchPage !== 'undefined' && DispatchPage.initMap) {
+    setTimeout(function() { DispatchPage.initMap(); }, 200);
+  }
+  if (page === 'crewview' && typeof CrewView !== 'undefined' && CrewView._resumeGPS) {
+    CrewView._resumeGPS();
+  }
+  // Clean up dispatch map when neither dispatch page nor operations/dispatch tab is active
+  if (!dispatchActive && typeof DispatchPage !== 'undefined' && DispatchPage._map) {
+    DispatchPage.destroyMap();
+  }
+}
+
+// ── Global Search (inline dropdown + mobile overlay) ──
+var searchTimeout;
+var searchDropdown = document.getElementById('searchDropdown');
+var _searchIdx = -1;
+var _isMobile = function() { return window.innerWidth <= 768; };
+
+function _closeSearch() {
+  searchDropdown.style.display='none';
+  searchDropdown.classList.remove('mobile-open');
+  document.getElementById('globalSearch').value='';
+  var mhdr = document.getElementById('search-mobile-header');
+  var minput = document.getElementById('search-mobile-input');
+  if (mhdr) { mhdr.classList.remove('visible'); minput.value=''; }
+  document.body.style.overflow='';
+  _searchIdx=-1;
+}
+
+function _closeMobileSearch() { _closeSearch(); }
+
+function _openMobileSearch() {
+  var mhdr = document.getElementById('search-mobile-header');
+  var minput = document.getElementById('search-mobile-input');
+  mhdr.classList.add('visible');
+  searchDropdown.style.display='block';
+  searchDropdown.classList.add('mobile-open');
+  document.body.style.overflow='hidden';
+  minput.focus();
+  // Capacitor/WKWebView fallback — second attempt after layout settles
+  setTimeout(function(){ minput.focus(); }, 80);
+}
+
+function _saveRecent(name, onclick) {
+  var recents = JSON.parse(localStorage.getItem('bm-recent-search') || '[]');
+  recents = recents.filter(function(r) { return r.name !== name; });
+  recents.unshift({ name: name, onclick: onclick, ts: Date.now() });
+  if (recents.length > 8) recents.length = 8;
+  localStorage.setItem('bm-recent-search', JSON.stringify(recents));
+}
+
+// Stage label maps
+var _stageLabels = {
+  // Requests
+  new: { label:'New', color:'#1565c0' },
+  assessment_scheduled: { label:'Scheduled', color:'#e07c24' },
+  assessment_complete: { label:'Assessed', color:'#6a1b9a' },
+  converted: { label:'Converted', color:'#2e7d32' },
+  quoted: { label:'Quoted', color:'#2e7d32' },
+  archived: { label:'Archived', color:'#9e9e9e' },
+  // Quotes
+  draft: { label:'Draft', color:'#9e9e9e' },
+  sent: { label:'Sent', color:'#1565c0' },
+  approved: { label:'Approved', color:'#2e7d32' },
+  declined: { label:'Declined', color:'#c62828' },
+  changes_requested: { label:'Changes', color:'#e07c24' },
+  // Jobs
+  active: { label:'Active', color:'#1565c0' },
+  scheduled: { label:'Scheduled', color:'#e07c24' },
+  completed: { label:'Complete', color:'#2e7d32' },
+  complete: { label:'Complete', color:'#2e7d32' },
+  on_hold: { label:'On Hold', color:'#9e9e9e' },
+  // Invoices
+  paid: { label:'Paid', color:'#2e7d32' },
+  overdue: { label:'Overdue', color:'#c62828' },
+  unpaid: { label:'Unpaid', color:'#e07c24' },
+  // Clients
+  lead: { label:'Lead', color:'#e07c24' },
+  inactive: { label:'Inactive', color:'#9e9e9e' }
+};
+
+function _stagePill(status) {
+  if (!status) return '';
+  var s = _stageLabels[status] || { label: status, color: '#9e9e9e' };
+  return '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:' + s.color + '20;color:' + s.color + ';white-space:nowrap;">' + s.label + '</span>';
+}
+
+function _renderSearchResults(q) {
+  var groups = [];
+  var addGroup = function(key, icon, items) { if (items.length) groups.push({ key:key, icon:icon, items:items }); };
+
+  var requests = DB.requests.search(q).slice(0,6).map(function(r) {
+    return { name: r.clientName || 'Unknown', line2: r.property || r.description || '', line3: r.phone || '', status: r.status, onclick: "RequestsPage._pendingDetail='" + r.id + "';loadPage('requests')" };
+  });
+  addGroup('Requests', '📥', requests);
+
+  var quotes = DB.quotes.search(q).slice(0,6).map(function(qr) {
+    return { name: (qr.clientName || ''), num: qr.quoteNumber ? '#' + qr.quoteNumber : '', line2: qr.description || (qr.lineItems && qr.lineItems[0] && qr.lineItems[0].name) || '', status: qr.status, onclick: "QuotesPage._pendingDetail='" + qr.id + "';loadPage('quotes')", amount: qr.total };
+  });
+  addGroup('Quotes', '📋', quotes);
+
+  var jobs = DB.jobs.search(q).slice(0,6).map(function(j) {
+    return { name: j.clientName || '', num: j.jobNumber ? '#' + j.jobNumber : '', line2: j.description || j.title || '', line3: j.property || '', status: j.status, onclick: "JobsPage._pendingDetail='" + j.id + "';loadPage('jobs')", amount: j.total };
+  });
+  addGroup('Jobs', '🔧', jobs);
+
+  var invoices = DB.invoices.search(q).slice(0,4).map(function(i) {
+    return { name: i.clientName || '', num: i.invoiceNumber ? '#' + i.invoiceNumber : '', line2: i.subject || '', status: i.status, onclick: "InvoicesPage._pendingDetail='" + i.id + "';loadPage('invoices')", amount: i.total };
+  });
+  addGroup('Invoices', '💰', invoices);
+
+  var clients = DB.clients.search(q).slice(0,5).map(function(c) {
+    return { name: c.name, line2: [c.address, c.city].filter(Boolean).join(', '), line3: c.phone || c.email || '', status: c.status, onclick: "ClientsPage._pendingDetail='" + c.id + "';loadPage('clients')" };
+  });
+  addGroup('Clients', '👥', clients);
+
+  var totalResults = groups.reduce(function(s,g){ return s + g.items.length; }, 0);
+
+  if (totalResults === 0) {
+    searchDropdown.innerHTML = '<div style="padding:32px 20px;text-align:center;color:var(--text-light);font-size:13px;">'
+      + '<div style="font-size:32px;margin-bottom:10px;">🔍</div>'
+      + 'No results for "<strong>' + UI.esc(q) + '</strong>"'
+      + '<div style="margin-top:8px;font-size:12px;">Try a name, address, phone number, or job number</div></div>';
+    searchDropdown.style.display = 'block';
+    return;
+  }
+
+  var html = '';
+  var itemIdx = 0;
+
+  groups.forEach(function(g) {
+    html += '<div style="padding:7px 14px 4px;font-size:10px;font-weight:800;color:var(--text-light);text-transform:uppercase;background:var(--bg);letter-spacing:.6px;position:sticky;top:0;">'
+      + g.icon + ' ' + g.key
+      + '<span style="float:right;font-weight:400;font-size:11px;text-transform:none;">' + g.items.length + ' result' + (g.items.length > 1 ? 's' : '') + '</span>'
+      + '</div>';
+
+    g.items.forEach(function(r) {
+      var nameStr = UI.esc(r.name);
+      var numStr = r.num ? '<span style="color:var(--text-light);font-weight:400;font-size:12px;margin-right:4px;">' + UI.esc(r.num) + '</span>' : '';
+      html += '<div class="search-item" data-idx="' + itemIdx + '" '
+        + 'onclick="_saveRecent(\'' + UI.esc(r.name).replace(/'/g,"\\'") + '\',\'' + r.onclick.replace(/'/g,"\\'") + '\');' + r.onclick + ';_closeSearch();" '
+        + 'style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #f5f5f5;transition:background .1s;" '
+        + 'onmouseover="this.style.background=\'var(--bg)\';_searchIdx=' + itemIdx + '" onmouseout="this.style.background=\'\'">'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+        + '<span style="font-weight:600;font-size:14px;">' + numStr + nameStr + '</span>'
+        + _stagePill(r.status)
+        + '</div>';
+
+      if (r.line2) html += '<div style="font-size:12px;color:var(--text-light);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(r.line2) + '</div>';
+      if (r.line3) html += '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(r.line3) + '</div>';
+
+      html += '</div>';
+      if (r.amount) html += '<div style="font-weight:700;font-size:13px;color:var(--green-dark);white-space:nowrap;margin-left:8px;">' + UI.money(r.amount) + '</div>';
+      html += '</div>';
+      itemIdx++;
+    });
+  });
+
+  // View all link
+  var qSafe = q.replace(/'/g,"\\'");
+  html += '<div onclick="_closeSearch();loadPage(\'search\');setTimeout(function(){var el=document.getElementById(\'search-page-input\');if(el){el.value=\'' + qSafe + '\';SearchPage._onPageSearch(\'' + qSafe + '\');}},100);" '
+    + 'style="padding:12px 14px;text-align:center;font-size:13px;color:var(--accent);font-weight:700;cursor:pointer;border-top:2px solid var(--border);" '
+    + 'onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">See all ' + totalResults + ' results for "' + UI.esc(q) + '" →</div>';
+
+  searchDropdown.innerHTML = html;
+  searchDropdown.style.display = 'block';
+  _searchIdx = -1;
+}
+
+function _showRecents() {
+  var recents = JSON.parse(localStorage.getItem('bm-recent-search') || '[]');
+  if (recents.length > 0) {
+    var html = '<div style="padding:7px 14px 4px;font-size:10px;font-weight:800;color:var(--text-light);text-transform:uppercase;background:var(--bg);letter-spacing:.6px;">🕐 Recent</div>';
+    recents.forEach(function(r) {
+      html += '<div onclick="' + r.onclick + ';_closeSearch();" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid #f5f5f5;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'
+        + '<span style="font-size:16px;color:#ccc;width:20px;text-align:center;">↩</span>'
+        + '<div style="font-weight:600;font-size:14px;">' + UI.esc(r.name) + '</div></div>';
+    });
+    html += '<div onclick="localStorage.removeItem(\'bm-recent-search\');_closeSearch();" style="padding:10px 14px;text-align:center;font-size:12px;color:var(--text-light);cursor:pointer;border-top:1px solid var(--border);">Clear recents</div>';
+    searchDropdown.innerHTML = html;
+    searchDropdown.style.display = 'block';
+  }
+}
+
+function _handleSearchInput(q, fromMobile) {
+  clearTimeout(searchTimeout);
+  if (!q || q.length < 1) {
+    if (fromMobile) {
+      var sd = document.getElementById('searchDropdown');
+      sd.innerHTML = '';
+      _showRecents();
+    } else {
+      _showRecents();
+    }
+    return;
+  }
+  searchTimeout = setTimeout(function() { _renderSearchResults(q); }, 150);
+}
+
+document.getElementById('globalSearch').addEventListener('focus', function() {
+  if (_isMobile()) {
+    this.blur();
+    _openMobileSearch();
+    _showRecents();
+    return;
+  }
+  if (!this.value.trim()) _showRecents();
+});
+
+// iOS requires focus() to be called synchronously in a touch event.
+// touchstart fires before focus, keeping us inside the user-gesture chain.
+document.getElementById('globalSearch').addEventListener('touchstart', function(e) {
+  if (_isMobile()) {
+    e.preventDefault();
+    _openMobileSearch();
+    _showRecents();
+  }
+}, { passive: false });
+
+document.getElementById('globalSearch').addEventListener('input', function() {
+  _handleSearchInput(this.value.trim(), false);
+});
+
+// Mobile search input
+var _mobileInput = document.getElementById('search-mobile-input');
+if (_mobileInput) {
+  _mobileInput.addEventListener('input', function() {
+    _handleSearchInput(this.value.trim(), true);
+    // Keep dropdown in mobile-open mode
+    if (!searchDropdown.classList.contains('mobile-open')) {
+      searchDropdown.classList.add('mobile-open');
+    }
+  });
+  _mobileInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var q = this.value.trim();
+      if (q) {
+        _closeSearch();
+        currentPage='search';
+        document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
+        document.getElementById('pageTitle').textContent='Search';
+        document.getElementById('pageAction').style.display='none';
+        document.getElementById('pageContent').innerHTML=SearchPage.render(q);
+      }
+    }
+  });
+}
+
+// Keyboard navigation
+document.getElementById('globalSearch').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { _closeSearch(); this.blur(); return; }
+
+  var items = searchDropdown.querySelectorAll('.search-item');
+  if (!items.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _searchIdx = Math.min(_searchIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _searchIdx = Math.max(_searchIdx - 1, 0);
+  } else if (e.key === 'Enter' && _searchIdx >= 0) {
+    e.preventDefault();
+    items[_searchIdx].click();
+    return;
+  } else if (e.key === 'Enter') {
+    // Search all results
+    var viewAll = searchDropdown.querySelector('[style*="text-align:center"]');
+    if (viewAll) viewAll.click();
+    return;
+  } else { return; }
+
+  items.forEach(function(item, i) {
+    item.style.background = i === _searchIdx ? 'var(--bg)' : '';
+  });
+  if (items[_searchIdx]) items[_searchIdx].scrollIntoView({ block: 'nearest' });
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-box') && !e.target.closest('#search-mobile-header') && !e.target.closest('#searchDropdown')) searchDropdown.style.display = 'none';
+  // Close any open More-actions dropdowns
+  if (!e.target.closest('.more-dd') && !e.target.closest('[onclick*="more-dd"]')) {
+    document.querySelectorAll('.more-dd').forEach(function(d) { d.style.display = 'none'; });
+  }
+});
+
+// ── Quick Create ──
+var QuickCreate = {
+  show: function() {
+    var btnStyle = 'width:100%;padding:14px;font-size:15px;justify-content:flex-start;gap:12px;min-height:52px;';
+    var html = '<div style="display:grid;gap:8px;">'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();ClientsPage.showForm()"><i data-lucide="user-plus" style="width:20px;height:20px;"></i> New Client</button>'
+      + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();RequestsPage.showForm()"><i data-lucide="inbox" style="width:20px;height:20px;"></i> New Request</button>'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();QuotesPage.showForm()"><i data-lucide="file-text" style="width:20px;height:20px;"></i> New Quote</button>'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();JobsPage.showForm()"><i data-lucide="wrench" style="width:20px;height:20px;"></i> New Job</button>'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();InvoicesPage.showForm()"><i data-lucide="receipt" style="width:20px;height:20px;"></i> New Invoice</button>'
+      + '<div style="height:1px;background:var(--border);margin:4px 0;"></div>'
+      + '<button class="btn btn-outline" style="' + btnStyle + '" onclick="UI.closeModal();loadPage(\'calculators\')"><i data-lucide="calculator" style="width:20px;height:20px;"></i> Quick Estimate</button>'
+      + '</div>';
+    UI.showModal('Create New', html);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+  },
+
+  // vCard import moved inside the New Client form (see ClientsPage._importVCard)
+};
+
+// Remember the current detail (quote/client/job/invoice) so refresh restores it
+window.bmRememberDetail = function(page, id) {
+  try { localStorage.setItem('bm-last-detail', JSON.stringify({ page: page, id: id, ts: Date.now() })); } catch(e) {}
+};
+
+// ── Init ──
+// Wait for deferred page scripts (SettingsPage, QuotesPage, ModeSelector, etc.) to finish loading
+// before calling loadPage(). Previously we ran synchronously from an inline script, which fired
+// BEFORE the defer'd <script> tags had evaluated, causing "SettingsPage is not defined" crashes
+// and dead submit handlers. DOMContentLoaded fires after all defer scripts have run.
+function bmInit() {
+if (checkAuth()) {
+  // Role-based default page
+  var hashPage = window.location.hash ? window.location.hash.slice(1) : '';
+  var savedPage = '';
+  var savedDetail = null;
+  try { savedPage = localStorage.getItem('bm-last-page') || ''; } catch(e) {}
+  try {
+    var rawDetail = localStorage.getItem('bm-last-detail');
+    if (rawDetail) {
+      savedDetail = JSON.parse(rawDetail);
+      // Expire stale detail (> 4 hours) so a cold reopen doesn't jump into an old record
+      if (!savedDetail.ts || (Date.now() - savedDetail.ts) > 4 * 3600 * 1000) savedDetail = null;
+    }
+  } catch(e) { savedDetail = null; }
+
+  // Mode selector DISABLED v361/v362 — nav filter was hiding items even in
+  // "owner" mode. All users land on dashboard regardless of stored mode.
+  // Purge any stored mode so nothing downstream re-applies.
+  try { localStorage.removeItem('bm-app-mode'); } catch(e){}
+  var defaultPage = 'dashboard';
+
+  // Priority: URL hash > saved page > default
+  var targetPage = (hashPage && pageRenderers[hashPage])
+    ? hashPage
+    : ((savedPage && pageRenderers[savedPage]) ? savedPage : defaultPage);
+  loadPage(targetPage);
+
+  // Restore detail if we have one that matches the loaded page
+  if (savedDetail && savedDetail.page === targetPage && savedDetail.id) {
+    setTimeout(function() {
+      try {
+        if (savedDetail.page === 'quotes' && typeof QuotesPage !== 'undefined') QuotesPage.showDetail(savedDetail.id);
+        else if (savedDetail.page === 'clients' && typeof ClientsPage !== 'undefined') ClientsPage.showDetail(savedDetail.id);
+        else if (savedDetail.page === 'jobs' && typeof JobsPage !== 'undefined') JobsPage.showDetail(savedDetail.id);
+        else if (savedDetail.page === 'invoices' && typeof InvoicesPage !== 'undefined') InvoicesPage.showDetail(savedDetail.id);
+        else if (savedDetail.page === 'requests' && typeof RequestsPage !== 'undefined' && RequestsPage.showDetail) RequestsPage.showDetail(savedDetail.id);
+      } catch(e) { console.warn('Detail restore failed:', e); }
+    }, 250);
+  }
+
+  // Show compliance popup after a short delay so the page settles first
+  setTimeout(function() {
+    if (typeof Reminders !== 'undefined') Reminders.checkLoginPopup();
+  }, 800);
+}
+} // end bmInit
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bmInit);
+} else {
+  bmInit();
+}
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  // Emergency reset: visit /?reset=1 to nuke SW + caches and reload clean
+  if (/[?&]reset=/.test(location.search)) {
+    (async function() {
+      try {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        for (var i = 0; i < regs.length; i++) { await regs[i].unregister(); }
+        var keys = await caches.keys();
+        for (var j = 0; j < keys.length; j++) { await caches.delete(keys[j]); }
+        alert('Cache cleared. Reloading…');
+        location.replace(location.pathname);
+      } catch(e) { alert('Reset error: ' + e.message); }
+    })();
+  } else {
+    // updateViaCache:'none' tells the browser NEVER to HTTP-cache sw.js itself
+    // (iOS PWA bug: without this, iOS holds the old sw.js for up to 24h and
+    // updates never land even when reg.update() fires).
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function(reg) {
+      // Check for SW update every time page loads
+      reg.update();
+      // Also re-check when the PWA comes back to foreground (iOS re-focus)
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') { try { reg.update(); } catch(e){} }
+      });
+      // And every 15 minutes if the app stays open
+      setInterval(function() { try { reg.update(); } catch(e){} }, 15 * 60 * 1000);
+      // If new SW waiting, activate it immediately
+      if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+      reg.addEventListener('updatefound', function() {
+        var newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', function() {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New SW is ready. DON'T auto-reload — that was interrupting users
+              // mid-task every 15 min during a deploy burst. Instead show a
+              // small dismissable toast the user taps when they're ready.
+              // If a form is open, queue a retry; otherwise prompt immediately.
+              var showUpdatePrompt = function() {
+                var hasOpenForm = !!(document.getElementById('inv-form') ||
+                                      document.getElementById('quote-form') ||
+                                      document.getElementById('client-form') ||
+                                      document.getElementById('job-form') ||
+                                      document.getElementById('req-form'));
+                if (hasOpenForm) {
+                  // User is typing — wait 2 min and ask again
+                  setTimeout(showUpdatePrompt, 2 * 60 * 1000);
+                  return;
+                }
+                if (document.getElementById('bm-update-toast')) return; // already showing
+                var toast = document.createElement('div');
+                toast.id = 'bm-update-toast';
+                toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a3c12;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:99999;display:flex;gap:10px;align-items:center;font-size:14px;max-width:90vw;';
+                toast.innerHTML = '<span>🎉 New Branch Manager version ready</span>' +
+                  '<button id="bm-upd-now" style="background:#00836c;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;">Refresh now</button>' +
+                  '<button id="bm-upd-later" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">Later</button>';
+                document.body.appendChild(toast);
+                document.getElementById('bm-upd-now').onclick = function() {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  setTimeout(function() { location.reload(); }, 300);
+                };
+                document.getElementById('bm-upd-later').onclick = function() {
+                  toast.remove();
+                  // Ask again in 30 min; otherwise user reloads whenever they want
+                  setTimeout(showUpdatePrompt, 30 * 60 * 1000);
+                };
+              };
+              showUpdatePrompt();
+            }
+          });
+        }
+      });
+    }).catch(function(e) { console.log('SW:', e); });
+  }
+}
+
+// ── PWA Install Prompt ──
+(function() {
+  // Don't show if already installed as PWA
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (window.navigator.standalone) return;
+  // Don't show if dismissed recently
+  var dismissed = localStorage.getItem('bm-install-dismissed');
+  if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
+
+  // Android/Chrome install prompt
+  var deferredPrompt;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallBanner('chrome');
+  });
+
+  // iOS Safari — show manual instructions
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  var isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+  if (isIOS && isSafari) {
+    setTimeout(function() { showInstallBanner('ios'); }, 3000);
+  }
+
+  function showInstallBanner(type) {
+    var banner = document.createElement('div');
+    banner.id = 'install-banner';
+    banner.style.cssText = 'position:fixed;bottom:' + (window.innerWidth<=768?'72px':'16px') + ';left:16px;right:16px;background:var(--accent);color:#fff;padding:14px 16px;border-radius:12px;display:flex;align-items:center;gap:12px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);font-size:14px;';
+
+    if (type === 'ios') {
+      banner.innerHTML = '<img src="icons/icon-48.png" style="width:40px;height:40px;border-radius:10px;">'
+        + '<div style="flex:1;"><strong>Install Branch Manager</strong><div style="font-size:12px;opacity:.8;margin-top:2px;">Tap <span style="font-size:16px;">⬆</span> Share then "Add to Home Screen"</div></div>'
+        + '<button onclick="this.parentNode.remove();localStorage.setItem(\'bm-install-dismissed\',Date.now())" style="background:none;border:none;color:#fff;font-size:20px;padding:4px;cursor:pointer;">✕</button>';
+    } else {
+      banner.innerHTML = '<img src="icons/icon-48.png" style="width:40px;height:40px;border-radius:10px;">'
+        + '<div style="flex:1;"><strong>Install Branch Manager</strong><div style="font-size:12px;opacity:.8;margin-top:2px;">Add to your home screen for quick access</div></div>'
+        + '<button onclick="installPWA()" style="background:#fff;color:var(--accent);border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">Install</button>'
+        + '<button onclick="this.parentNode.remove();localStorage.setItem(\'bm-install-dismissed\',Date.now())" style="background:none;border:none;color:#fff;font-size:20px;padding:4px;cursor:pointer;">✕</button>';
+    }
+    document.body.appendChild(banner);
+  }
+
+  window.installPWA = function() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+    }
+    var b = document.getElementById('install-banner');
+    if (b) b.remove();
+  };
+})();
+
+// Wrap loadPage to update sidebar active state
+var origLoadPage = window.loadPage;
+var _loadPageWrapped = function(page) {
+  currentPage = page;
+  origLoadPage(page);
+  document.querySelectorAll('.nav-item').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
+  document.querySelectorAll('#bottom-nav button[data-bottom-page]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.bottomPage === page);
+  });
+};
+// Override only if loadPage exists
+if (typeof origLoadPage === 'function') {
+  window.loadPage = _loadPageWrapped;
+}
+
+// ── Dark Mode ──
+function toggleDarkMode() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('bm-dark-mode', isDark ? '' : 'dark');
+  var icon = document.getElementById('dark-mode-icon');
+  if (icon) icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+// Restore on load — EXCEPT in PWA standalone mode where dark is disabled.
+var _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if (_isStandalone) {
+  document.documentElement.removeAttribute('data-theme');
+  localStorage.removeItem('bm-dark-mode');
+} else if (localStorage.getItem('bm-dark-mode') === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  setTimeout(function() { var icon = document.getElementById('dark-mode-icon'); if (icon) icon.setAttribute('data-lucide', 'sun'); if (typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
+}
+
+// ── Keyboard Shortcuts ──
+document.addEventListener('keydown', function(e) {
+  // Don't trigger in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  // Don't trigger in modals
+  if (document.querySelector('.modal-overlay')) return;
+
+  var meta = e.metaKey || e.ctrlKey;
+
+  if (meta && e.key === 'k') { e.preventDefault(); if(typeof CommandPalette!=='undefined') CommandPalette.show(); else document.getElementById('globalSearch').focus(); }
+  else if (meta && e.key === 'n') { e.preventDefault(); QuickCreate.show(); }
+  else if (meta && e.key === 'd') { e.preventDefault(); toggleDarkMode(); }
+  else if (meta && e.key === 'j') { e.preventDefault(); if(typeof AI!=='undefined') AI.toggle(); }
+  else if (e.key === '1') { loadPage('dashboard'); }
+  else if (e.key === '2') { loadPage('schedule'); }
+  else if (e.key === '3') { loadPage('clients'); }
+  else if (e.key === '4') { loadPage('quotes'); }
+  else if (e.key === '5') { loadPage('jobs'); }
+  else if (e.key === '6') { loadPage('invoices'); }
+  else if (e.key === '7') { loadPage('pipeline'); }
+  else if (e.key === '8') { loadPage('dispatch'); }
+  else if (e.key === '9') { loadPage('expenses'); }
+  else if (e.key === '0') { loadPage('settings'); }
+  else if (e.key === '?') {
+    var kbdStyle = 'background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:12px;font-family:monospace;';
+    var row = function(label, key) { return '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>' + label + '</span><kbd style="' + kbdStyle + '">' + key + '</kbd></div>'; };
+    UI.showModal('Keyboard Shortcuts', '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 32px;font-size:14px;">'
+      + '<div>'
+      + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-light);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;">Navigation</div>'
+      + row('Dashboard', '1') + row('Schedule', '2') + row('Clients', '3') + row('Quotes', '4')
+      + row('Jobs', '5') + row('Invoices', '6') + row('Pipeline', '7') + row('Dispatch', '8')
+      + row('Expenses', '9') + row('Settings', '0')
+      + '</div><div>'
+      + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-light);padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;">Actions</div>'
+      + row('Command Palette', '\u2318K') + row('Create New', '\u2318N') + row('Dark Mode', '\u2318D')
+      + row('AI Assistant', '\u2318J') + row('Help', '?')
+      + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-light);padding:12px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;">Tips</div>'
+      + '<div style="font-size:12px;color:var(--text-light);line-height:1.6;padding-top:4px;">Drag jobs onto the calendar to schedule them. Click column headers to sort tables. Use the command palette for quick access to any feature.</div>'
+      + '</div></div>'
+      + '</div>');
+  }
+});
+</script>
+
+<!-- Bottom nav removed — using sidebar on all viewports -->
+<script>
+/* ── Notification Center Dropdown ── */
+var NotifCenter = (function() {
+  var STORAGE_KEY = 'bm-notif-read';
+
+  function getReadIds() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; }
+  }
+
+  function setReadIds(ids) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)); } catch(e) {}
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    var now = new Date();
+    var then = new Date(dateStr);
+    var diff = Math.floor((now - then) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    return Math.floor(diff / 604800) + 'w ago';
+  }
+
+  function getClientName(clientId) {
+    if (!clientId || typeof DB === 'undefined') return 'Unknown';
+    var client = DB.clients.getById(clientId);
+    return client ? (client.name || client.firstName + ' ' + (client.lastName || '')) : 'Unknown';
+  }
+
+  function buildNotifications() {
+    if (typeof DB === 'undefined') return [];
+    var items = [];
+    var now = new Date();
+    var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // New requests (last 7 days)
+    var requests = DB.requests.getAll();
+    for (var i = 0; i < requests.length; i++) {
+      var r = requests[i];
+      if (r.createdAt && r.createdAt >= sevenDaysAgo) {
+        items.push({
+          id: 'req-' + r.id,
+          icon: '📥',
+          iconBg: '#e8f5e9',
+          msg: 'New request from ' + getClientName(r.clientId || r.client),
+          time: r.createdAt,
+          page: 'requests',
+          recordId: r.id
+        });
+      }
+    }
+
+    // Quotes sent
+    var quotes = DB.quotes.getAll();
+    for (var i = 0; i < quotes.length; i++) {
+      var q = quotes[i];
+      if (q.status === 'sent' && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
+        items.push({
+          id: 'qsent-' + q.id,
+          icon: '📤',
+          iconBg: '#e3f2fd',
+          msg: 'Quote #' + (q.quoteNumber || '?') + ' sent to ' + getClientName(q.clientId || q.client),
+          time: q.updatedAt || q.createdAt,
+          page: 'quotes',
+          recordId: q.id
+        });
+      }
+      // Quotes approved
+      if (q.status === 'approved' && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
+        items.push({
+          id: 'qappr-' + q.id,
+          icon: '✅',
+          iconBg: '#e8f5e9',
+          msg: 'Quote #' + (q.quoteNumber || '?') + ' approved by ' + getClientName(q.clientId || q.client),
+          time: q.updatedAt || q.createdAt,
+          page: 'quotes',
+          recordId: q.id
+        });
+      }
+      // Changes requested by client
+      if (q.status === 'awaiting' && q.updatedAt && q.updatedAt >= sevenDaysAgo) {
+        items.push({
+          id: 'qchg-' + q.id,
+          icon: '💬',
+          iconBg: '#fff3e0',
+          msg: 'Quote #' + (q.quoteNumber || '?') + ' — client requested changes',
+          time: q.updatedAt || q.createdAt,
+          page: 'quotes',
+          recordId: q.id
+        });
+      }
+    }
+
+    // Jobs completed (last 7 days)
+    var jobs = DB.jobs.getAll();
+    for (var i = 0; i < jobs.length; i++) {
+      var j = jobs[i];
+      if (j.status === 'completed' && j.updatedAt && j.updatedAt >= sevenDaysAgo) {
+        items.push({
+          id: 'jdone-' + j.id,
+          icon: '🔧',
+          iconBg: '#fff3e0',
+          msg: 'Job #' + (j.jobNumber || '?') + ' completed',
+          time: j.updatedAt || j.createdAt,
+          page: 'jobs',
+          recordId: j.id
+        });
+      }
+    }
+
+    // Invoices paid (last 7 days) + past due
+    var invoices = DB.invoices.getAll();
+    for (var i = 0; i < invoices.length; i++) {
+      var inv = invoices[i];
+      if (inv.status === 'paid' && (inv.paidDate || inv.updatedAt || '') >= sevenDaysAgo) {
+        items.push({
+          id: 'ipaid-' + inv.id,
+          icon: '💰',
+          iconBg: '#e8f5e9',
+          msg: 'Invoice #' + (inv.invoiceNumber || '?') + ' paid',
+          time: inv.paidDate || inv.updatedAt || inv.createdAt,
+          page: 'invoices',
+          recordId: inv.id
+        });
+      }
+      if (inv.status !== 'paid' && inv.status !== 'draft' && inv.dueDate) {
+        var due = new Date(inv.dueDate);
+        if (due < now) {
+          items.push({
+            id: 'idue-' + inv.id,
+            icon: '⚠️',
+            iconBg: '#fce4ec',
+            msg: 'Invoice #' + (inv.invoiceNumber || '?') + ' past due',
+            time: inv.dueDate,
+            page: 'invoices',
+            recordId: inv.id
+          });
+        }
+      }
+    }
+
+    // Sort by time descending
+    items.sort(function(a, b) {
+      return (b.time || '').localeCompare(a.time || '');
+    });
+
+    return items.slice(0, 30);
+  }
+
+  function render() {
+    var dropdown = document.getElementById('notif-dropdown');
+    if (!dropdown) return;
+
+    var items = buildNotifications();
+    var readIds = getReadIds();
+
+    var html = '<div class="notif-dropdown-header">'
+      + '<h3>Notifications</h3>'
+      + '<a onclick="NotifCenter.markAllRead()">Mark all read</a>'
+      + '</div>';
+
+    html += '<div class="notif-dropdown-list">';
+    if (items.length === 0) {
+      html += '<div class="notif-dropdown-empty">No recent notifications</div>';
+    } else {
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var isRead = readIds.indexOf(item.id) >= 0;
+        // Safely encode IDs so quotes/backslashes in data don't break the onclick
+        var safePage = String(item.page || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        var safeRecordId = String(item.recordId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        var safeId = String(item.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += '<div class="notif-dropdown-item' + (isRead ? '' : ' unread') + '" onclick="NotifCenter.clickItem(\'' + safePage + '\',\'' + safeRecordId + '\',\'' + safeId + '\')">'
+          + '<div class="notif-dropdown-icon" style="background:' + item.iconBg + ';">' + item.icon + '</div>'
+          + '<div class="notif-dropdown-body">'
+          + '<p class="notif-dropdown-msg">' + item.msg + '</p>'
+          + '<p class="notif-dropdown-time">' + timeAgo(item.time) + '</p>'
+          + '</div>'
+          + (isRead ? '' : '<div class="notif-dropdown-dot"></div>')
+          + '</div>';
+      }
+    }
+    html += '</div>';
+
+    html += '<div class="notif-dropdown-footer">'
+      + '<a onclick="NotifCenter.close();loadPage(\'notifications\');">View all activity &rarr;</a>'
+      + '</div>';
+
+    dropdown.innerHTML = html;
+  }
+
+  function updateBadge() {
+    var badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    var items = buildNotifications();
+    var readIds = getReadIds();
+    var unread = 0;
+    for (var i = 0; i < items.length; i++) {
+      if (readIds.indexOf(items[i].id) < 0) unread++;
+    }
+    if (unread > 0) {
+      badge.textContent = unread > 99 ? '99+' : unread;
+      badge.className = 'notif-badge active';
+    } else {
+      badge.textContent = '';
+      badge.className = 'notif-badge';
+    }
+  }
+
+  function toggle(e) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    var dropdown = document.getElementById('notif-dropdown');
+    if (!dropdown) return;
+    var isOpen = dropdown.classList.contains('open');
+    if (isOpen) {
+      close();
+    } else {
+      render();
+      dropdown.classList.add('open');
+    }
+  }
+
+  function close() {
+    var dropdown = document.getElementById('notif-dropdown');
+    if (dropdown) dropdown.classList.remove('open');
+  }
+
+  function clickItem(page, recordId, notifId) {
+    // Mark as read
+    var readIds = getReadIds();
+    if (readIds.indexOf(notifId) < 0) {
+      readIds.push(notifId);
+      setReadIds(readIds);
+    }
+    close();
+    updateBadge();
+    // Navigate to page
+    if (typeof loadPage === 'function') {
+      loadPage(page);
+    }
+  }
+
+  function markAllRead() {
+    var items = buildNotifications();
+    var readIds = getReadIds();
+    for (var i = 0; i < items.length; i++) {
+      if (readIds.indexOf(items[i].id) < 0) {
+        readIds.push(items[i].id);
+      }
+    }
+    setReadIds(readIds);
+    render();
+    updateBadge();
+    if (typeof UI !== 'undefined' && UI.toast) UI.toast('All notifications marked as read');
+  }
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    var dropdown = document.getElementById('notif-dropdown');
+    var bell = document.getElementById('notif-bell-btn');
+    if (!dropdown || !dropdown.classList.contains('open')) return;
+    if (!dropdown.contains(e.target) && (!bell || !bell.contains(e.target))) {
+      close();
+    }
+  });
+
+  // Update badge periodically
+  function init() {
+    updateBadge();
+    setInterval(updateBadge, 60000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 500);
+  }
+
+  return {
+    toggle: toggle,
+    close: close,
+    clickItem: clickItem,
+    markAllRead: markAllRead,
+    updateBadge: updateBadge
+  };
+})();
+</script>
+<script>
+// Daily automations — runs once per day in background
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof AutomationsPage !== 'undefined' && AutomationsPage.init) {
+      AutomationsPage.init();
+      if (AutomationsPage.startApprovalPolling) AutomationsPage.startApprovalPolling();
+    }
+    if (typeof SupabaseDB !== 'undefined' && SupabaseDB.startRequestPolling) {
+      SupabaseDB.startRequestPolling();
+    }
+    // Auto-mark overdue invoices and fix invalid job statuses on every app load
+    if (typeof DB !== 'undefined') {
+      if (DB.invoices && DB.invoices.markOverdue) DB.invoices.markOverdue();
+      if (DB.jobs && DB.jobs.fixStatuses) DB.jobs.fixStatuses();
+    }
+    // Start session timeout timer (auto-logout after 30 days inactivity)
+    if (typeof Auth !== 'undefined' && Auth.startSessionTimer) Auth.startSessionTimer();
+    // Biometric gate — if user has enabled Face ID / Touch ID, show lock screen now
+    if (typeof Biometric !== 'undefined' && Biometric.initGate) Biometric.initGate();
+    // Check for auto review requests
+    if (typeof ReviewsPage !== 'undefined' && ReviewsPage.checkAutoReviews) ReviewsPage.checkAutoReviews();
+  }, 3000);
+});
+// Initialize Lucide icons after DOM is ready
+if (typeof lucide !== 'undefined') lucide.createIcons();
+// Re-init after page loads (for dynamically added icons)
+document.addEventListener('DOMContentLoaded', function() { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+// Restore sidebar state
+if (localStorage.getItem('bm-sidebar-collapsed') === 'true') {
+  document.getElementById('sidebar').classList.add('collapsed');
+  var tb = document.getElementById('sidebar-toggle-btn');
+  if (tb) tb.textContent = '▶';
+}
+// Browser back/forward button support
+window.addEventListener('popstate', function(e) {
+  var page = (e.state && e.state.page) || (window.location.hash ? window.location.hash.slice(1) : 'dashboard');
+  if (page && typeof loadPage === 'function') loadPage(page);
+});
+// Load page from URL hash on initial load
+if (window.location.hash && window.location.hash.length > 1) {
+  var hashPage = window.location.hash.slice(1);
+  if (typeof loadPage === 'function' && typeof pageRenderers !== 'undefined' && pageRenderers[hashPage]) {
+    setTimeout(function() { loadPage(hashPage); }, 100);
+  }
+}
+</script>
+<button id="bm-fab" onclick="BM_contextCreate()" title="New…" aria-label="Create new">+</button>
+<nav id="bottom-nav">
+  <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>
+  <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Today</span></button>
+  <button data-bottom-page="clients" onclick="loadPage('clients')"><i data-lucide="users"></i><span>Clients</span></button>
+  <button data-bottom-page="search" onclick="loadPage('search')"><i data-lucide="search"></i><span>Search</span></button>
+  <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
+</nav>
+</body>
+</html>

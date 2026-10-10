@@ -1,0 +1,3870 @@
+/**
+ * Branch Manager — Payroll + Week View
+ * Gusto-style weekly timesheet with approval system
+ * Mobile-first, iPhone-optimized
+ * v1
+ */
+var PayrollPage = {
+
+  // "2026-08-18T16:17:00Z" -> "4:17 PM"
+  _ampm: function(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  },
+
+  // Tapping a day in the grid header drives the truck panel below.
+  _pickDay: function(d) {
+    PayrollPage._bDate = d;
+    if (typeof loadPage === 'function') loadPage('payroll');
+  },
+  _weekOffset: 0,
+  _expandedCells: {},
+  _selectedEmployees: {},
+  _approvals: null,
+  _approvalsLoaded: false,
+  _lastRun: null,
+
+  // ── Helpers ──
+  // v1117: parse a 'YYYY-MM-DD' at NOON local. new Date('2026-08-10') parses as
+  // UTC midnight → in the evening ET that's still Aug 9 locally, so getDate()
+  // showed the wrong day (grid read "MON 9 … THU 12" for the Aug 10–16 week).
+  _pDate: function(s) {
+    return (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)) ? new Date(s + 'T12:00:00') : new Date(s);
+  },
+  _getWeekDates: function(offset) {
+    var now = new Date();
+    now.setHours(12, 0, 0, 0);   // v1116: noon-anchor so toISOString/tz never rolls the day.
+    now.setDate(now.getDate() + (offset || 0) * 7);
+    var monday = new Date(now);
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+    var dates = [];
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      // Build the Y-M-D from LOCAL parts — NOT toISOString() (which is UTC and,
+      // in the evening ET, shifted Monday to the 11th → whole week off by one).
+      dates.push(d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()));
+    }
+    return dates;
+  },
+
+  // v743: approvals are now cloud-synced via the payroll_approvals
+  // table. localStorage is a write-through cache so the UI is instant
+  // while a background insert/upsert hits Supabase. On page open we
+  // also pull-merge cloud rows so iPhone↔desktop stays in sync.
+  _getApprovals: function() {
+    if (!PayrollPage._approvals) {
+      try { PayrollPage._approvals = JSON.parse(localStorage.getItem('bm-payroll-approvals') || '{}'); } catch(e) { PayrollPage._approvals = {}; }
+    }
+    if (!PayrollPage._approvalsLoaded) {
+      PayrollPage._approvalsLoaded = true;
+      PayrollPage._pullCloudApprovals();
+    }
+    return PayrollPage._approvals;
+  },
+
+  _saveApprovals: function() {
+    localStorage.setItem('bm-payroll-approvals', JSON.stringify(PayrollPage._approvals || {}));
+  },
+
+  _pullCloudApprovals: function() {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    // Pull last 90 days so we don't bloat memory
+    var cutoff = new Date(Date.now() - 90 * 86400000).toISOString().substring(0, 10);
+    sb.from('payroll_approvals').select('*').gte('week_start', cutoff).then(function(r) {
+      if (r.error || !r.data) return;
+      var changed = false;
+      r.data.forEach(function(row) {
+        var key = row.day
+          ? (row.employee_name + '_day_' + row.day)
+          : (row.employee_name + '_' + row.week_start);
+        var prev = PayrollPage._approvals[key];
+        if (prev !== row.status) { PayrollPage._approvals[key] = row.status; changed = true; }
+        if (row.edited_after) {
+          var ea = key + '_editedAfter';
+          if (!PayrollPage._approvals[ea]) { PayrollPage._approvals[ea] = true; changed = true; }
+        }
+      });
+      if (changed) {
+        PayrollPage._saveApprovals();
+        // Only re-render if user is still on the payroll page
+        if (window.currentPage === 'payroll') loadPage('payroll');
+      }
+    });
+  },
+
+  _pushCloudApproval: function(employeeName, weekStart, day, status, editedAfter) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!tenantId) return;
+    var approvedBy = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : null;
+    var row = {
+      tenant_id: tenantId,
+      employee_name: employeeName,
+      week_start: weekStart,
+      day: day || null,
+      status: status,
+      edited_after: !!editedAfter,
+      approved_by: approvedBy,
+      approved_at: new Date().toISOString()
+    };
+    sb.from('payroll_approvals')
+      .upsert(row, { onConflict: 'tenant_id,employee_name,week_start,day' })
+      .then(function(r) {
+        if (r.error) console.warn('payroll_approvals upsert failed:', r.error.message);
+      });
+  },
+
+  _deleteCloudApproval: function(employeeName, weekStart, day) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    var q = sb.from('payroll_approvals').delete()
+      .eq('employee_name', employeeName).eq('week_start', weekStart);
+    q = day ? q.eq('day', day) : q.is('day', null);
+    q.then(function(){});
+  },
+
+  _getEmployees: function() {
+    var team = JSON.parse(localStorage.getItem('bm-team') || '[]');
+    if (team.length === 0) {
+      team = [{ id: 'owner', name: CompanyInfo.get('ownerName') || 'Owner', role: 'owner', rate: 0, active: true }];
+    }
+    // v1086: commission roles (Michelle) are excluded from the hours grid —
+    // they're paid per-sale, not per-hour (Doug 8/6). Commission enters
+    // payroll as its own run line when a payout is recorded, never as time.
+    // v1135: subcontractors (Braxton) likewise — a sub invoices us, he is not
+    // on payroll at all (Doug 8/19). Payroll = people we cut a paycheck to.
+    var OFF_PAYROLL = ['commission', 'subcontractor'];
+    var isOff = function(t) {
+      var et = t.employmentType || t.employment_type || '';
+      return OFF_PAYROLL.indexOf(et) !== -1;
+    };
+    var list = team.filter(function(t) {
+      // v1139: the cloud column is employment_type, but the snake->camel sync
+      // hands the client employmentType — so reading only the snake_case name
+      // returned undefined and NOBODY was ever filtered. Braxton (sub) and
+      // Michelle (commission) kept showing in the hours grid. Read both.
+      return t.active !== false && !isOff(t);
+    });
+
+    // ── v1208: a stale local team cache must NEVER hide someone who has hours.
+    // This function reads localStorage['bm-team']. On Doug's laptop that cache
+    // held only Doug, so Catherine (92.29 h) and David (96.25 h) rendered
+    // NOWHERE in the week grid for Aug 3-16 — about 188 hours / ~$5,650 of
+    // payroll invisible on the screen he approves from, while the cloud had all
+    // 35 entries the whole time. Anyone with a time entry is payroll by
+    // definition, so union them in and take their rate from the team record if
+    // one exists (even an inactive duplicate), which is where the rate lives.
+    var seen = {};
+    list.forEach(function(t) { seen[String(t.name || t.id)] = true; });
+    try {
+      var rateFor = function(nm) {
+        var hit = team.filter(function(t) { return String(t.name || t.id) === nm; })
+                      .sort(function(a, b) { return Number(b.rate || b.payRate || 0) - Number(a.rate || a.payRate || 0); })[0];
+        return hit ? Number(hit.rate || hit.payRate || 0) : 0;
+      };
+      var offByName = {};
+      team.forEach(function(t) { if (isOff(t)) offByName[String(t.name || t.id)] = true; });
+      DB.timeEntries.getAll().forEach(function(e) {
+        var nm = String(e.userName || e.user_name || e.userId || e.user || '').trim();
+        if (!nm || seen[nm] || offByName[nm]) return;
+        // Require actual HOURS. If the local cache is missing a person we cannot
+        // read their employment_type, so we cannot tell a subcontractor or a
+        // commission-only salesperson from crew. Someone with logged hours is
+        // payroll regardless; someone with none is not worth guessing about.
+        if (!(Number(e.hours) > 0)) return;
+        seen[nm] = true;
+        list.push({ id: nm, name: nm, rate: rateFor(nm), active: true, _fromEntries: true });
+      });
+    } catch (err) {}
+    return list;
+  },
+
+  // v1134: callers pass emp.name, but only ~1/3 of cloud time_entries carry the
+  // name in user_id — the rest have user_id NULL and the name in user_name
+  // (→ userName after snake→camel sync). Matching on userId alone made 211 of
+  // 323 entries invisible, so every hours cell rendered 0.0.
+  _getEntriesForDate: function(userId, date) {
+    var hits = DB.timeEntries.getAll().filter(function(t) {
+      var user = t.userId || t.user || t.userName || '';
+      var entryDate = (t.date || (t.clockIn || '').substring(0, 10));
+      return user === userId && entryDate === date;
+    });
+
+    // v1139: DE-DUPE AUTO ROWS.
+    // The GPS sync deletes and re-inserts auto rows when crew attribution
+    // changes, so the replacement gets a NEW id. A device holding the old row
+    // in its local cache then showed BOTH — Doug's Wed Aug 19 rendered 7.0h
+    // twice as 14.0, and David's stale 8.0 + new 7.0 read as 15.0. The cloud
+    // table was correct the whole time; only the cached copy was stale.
+    // Auto rows are one-per-person-per-day by design (partial unique index),
+    // so more than one here is always a stale duplicate — keep the newest.
+    // Manual entries are NEVER collapsed: a real split shift is legitimate.
+    // v1141: match ANY auto-generated row, not just source==='auto-bouncie'.
+    // David's stale Wed row carried a different/blank source (older sync format)
+    // so it survived the first pass and his cell still read 15.0 (stale 8.0 +
+    // new 7.0). Manual rows are still never collapsed.
+    var autos = hits.filter(function(t) {
+      var src = String(t.source || '');
+      if (src === 'manual') return false;
+      return src.indexOf('auto') === 0 || !!t.autoMeta || !!t.auto_meta || src === '';
+    });
+    if (autos.length > 1) {
+      var newest = autos.slice().sort(function(a, b) {
+        var at = a.updatedAt || a.createdAt || a.clockIn || '';
+        var bt = b.updatedAt || b.createdAt || b.clockIn || '';
+        return String(bt).localeCompare(String(at));
+      })[0];
+      var keepIds = {};
+      keepIds[newest.id] = true;
+      hits = hits.filter(function(t) {
+        return autos.indexOf(t) === -1 || keepIds[t.id];
+      });
+      if (window.console && console.warn) {
+        console.warn('[Payroll] dropped ' + (autos.length - 1) +
+                     ' stale cached auto row(s) for ' + userId + ' ' + date);
+      }
+    }
+    return hits;
+  },
+
+  _totalHours: function(entries) {
+    return entries.reduce(function(s, e) { return s + (e.hours || 0); }, 0);
+  },
+
+  // ── v1206: CHECK FLAGS ───────────────────────────────────────────────────
+  // Doug: "anytime you are not ninety nine percent certain something is right
+  // from all of the data you have checked, put a flagger on it for me to make
+  // sure that I check."
+  //
+  // A row is CERTAIN only when Doug settled it himself (locked + manual).
+  // Everything else carries a reason it cannot be trusted. These are all
+  // computed from data already in memory so a cell can render them
+  // synchronously; the phone-coverage check is async and is added in the
+  // popover, where there is room to explain it.
+  _checkFlags: function(userId, date, entries) {
+    var out = [];
+    if (!entries || !entries.length) return out;
+    entries.forEach(function(e) {
+      if (e.locked || e.source === 'manual') return;      // you already settled this one
+      var h = Number(e.hours) || 0;
+      var note = String(e.notes || '');
+      out.push('Never reviewed — still the raw GPS guess, and the 2-hourly recompute can still change it.');
+      // the systemic flaw: one truck paying two people
+      try {
+        var twins = DB.timeEntries.getAll().filter(function(t) {
+          if (t.date !== date || t.id === e.id) return false;
+          var who = t.userName || t.user || t.userId || '';
+          return who !== userId && Math.abs((Number(t.hours) || 0) - h) < 0.01 && h > 0;
+        }).map(function(t) { return (t.userName || t.user || t.userId || '').split(' ')[0]; });
+        if (twins.length) out.push('Exactly the same hours as ' + twins.join(' and ')
+          + ' — that is one truck paying more than one person, not two independent records.');
+      } catch (er) {}
+      var truck = /Auto from GPS\s*[—-]\s*([^(]+)/.exec(note);
+      if (truck) out.push('The only evidence is the ' + truck[1].trim() + ' moving. A truck says where a TRUCK was, not who was in it.');
+      var pings = /\((\d+)\s*pings\)/.exec(note);
+      if (pings && +pings[1] < 200) out.push('Only ' + pings[1] + ' GPS pings behind it — the tracker was mostly asleep, so the span is probably short.');
+      if (h > 13) out.push(h.toFixed(1) + ' h is a very long day — worth confirming it is not a tracker artefact.');
+      if (h > 0 && h < 2) out.push('Under 2 hours. On this crew that usually means a tracker dropped out, not a short day.');
+    });
+    return out;
+  },
+  _flagMark: function(n) {
+    if (!n) return '';
+    return '<span title="' + n + ' thing' + (n > 1 ? 's' : '') + ' to check — tap the cell" '
+      + 'style="font-size:9px;color:#b45309;font-weight:700;margin-left:2px;">⚑</span>';
+  },
+  _hasIssues: function(entries, date) {
+    var issues = [];
+    if (entries.length === 0) return issues;
+    entries.forEach(function(e) {
+      // v1205 - a day you deliberately zeroed is SETTLED, not broken. Doug:
+      // "one issues, one issues, red lines. I don't know that we need all
+      // that." Answering 'Didn't work' leaves hours 0 and clock-in null, which
+      // is precisely the shape 'Missing hours' looked for — so every correctly
+      // resolved day lit up red and counted toward the week's issue tally.
+      if (e.locked || e.source === 'manual') return;
+      if (e.clockIn && !e.clockOut) issues.push('Missing clock-out');
+      if (!e.hours && !e.clockIn) issues.push('Missing hours');
+    });
+    return issues;
+  },
+
+  _approvalKey: function(userId, weekStart) {
+    return userId + '_' + weekStart;
+  },
+
+  _dayApprovalKey: function(userId, date) {
+    return userId + '_day_' + date;
+  },
+
+  // ── Main Render ──
+  // ── v1096: Bouncie payroll panel ──────────────────────────────────────
+  // Per-day, collapsible "what the truck did + suggested clock in/out",
+  // reconstructed from vehicle_positions (the F-750 work truck). Rules:
+  // hours start at the yard (commute/Ram excluded); suggest ±30 min yard
+  // buffer around truck first/last movement; per-person, Doug confirms.
+  // Lazy-loads on expand so it never queries unless opened.
+  // v1103: ONE dropdown per DAY, sitting on top of each grid day (Doug: "Monday
+  // on top of Monday") so the week grid stays visible. Each day chip shows a
+  // peek (suggested clock); tapping opens a full-width detail panel below with
+  // the truck window + suggested clock + a per-day note. Desktop chips align to
+  // the grid columns; mobile = a horizontal-scroll strip.
+  _bDayOpen: null,
+  // v1116: "Truck yard times" — tap a day to see when EACH truck left and
+  // returned to the yard (Peekskill HQ), computed server-side by the
+  // bm_yard_trips RPC (geofence crossings on Bouncie positions, jitter under
+  // 15 min hidden). Replaces the old single "suggested clock" that mixed all
+  // vehicles together. Priority per Doug: F-750 / F-550 in/out of the yard.
+  _renderBouncie: function(dates) {
+    var self = PayrollPage;
+    var p = function(x){ return (x < 10 ? '0' : '') + x; };
+    var today = (function(){ var n = new Date(); return n.getFullYear() + '-' + p(n.getMonth()+1) + '-' + p(n.getDate()); })();
+    if (!self._bDate) self._bDate = today;
+    var lbl = new Date(self._bDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    // Auto-load the current date's truck data once the panel is in the DOM.
+    self._bDayOpen = null;
+    setTimeout(function(){ try { PayrollPage._bounceToggle(PayrollPage._bDate); } catch(e) {} }, 0);
+
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">'
+      + '<div id="bounce-date-label" style="display:none;">' + lbl + '</div>'
+      + '<div id="bday-panel"></div>'
+      + '</div>';
+  },
+  // Clean short label from the (nickname-swapped) vehicle record — key off model/name, never nickname.
+  _truckLabel: function(name, model) {
+    var s = ((name || '') + ' ' + (model || ''));
+    if (/750/.test(s)) return 'F-750 Bucket';
+    if (/550/.test(s)) return 'F-550 Chip';
+    if (/ram|2500/i.test(s)) return 'Ram 2500';
+    return name || 'Truck';
+  },
+  _truckIcon: function(name, model) {
+    var s = ((name || '') + ' ' + (model || ''));
+    if (/ram|2500/i.test(s)) return '🛻';
+    return '🚚';
+  },
+  _truckRank: function(name, model) {
+    var s = ((name || '') + ' ' + (model || ''));
+    if (/750/.test(s)) return 0;
+    if (/550/.test(s)) return 1;
+    if (/ram|2500/i.test(s)) return 2;
+    return 3;
+  },
+  _fmtDur: function(mins) {
+    mins = Math.round(mins || 0);
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return h ? (h + 'h' + (m ? ' ' + m + 'm' : '')) : (m + 'm');
+  },
+  _yardTrips: function(dateStr) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !C.rpc) return Promise.resolve(null);
+    return C.rpc('bm_yard_trips', { p_day: dateStr }).then(function(res) {
+      if (res.error) { console.warn('[yard_trips]', res.error.message); return null; }
+      return res.data || [];
+    }).catch(function(){ return null; });
+  },
+
+  // v1142: Doug's OWN day, straight from his phone. Truck GPS badly undercounts
+  // him — Mon Aug 17 read 3.8h and Tue 4.3h against a real 10-12h and 8:30-8:30,
+  // because the trucks sat parked while he kept working. His phone is the
+  // PRIMARY source for his hours; the trucks are corroboration.
+  _loadPhoneDay: function(dateStr) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !C.rpc) return Promise.resolve(null);
+    return C.rpc('bm_phone_day', { p_day: dateStr }).then(function(res) {
+      if (res.error) { console.warn('[phone_day]', res.error.message); return null; }
+      return (res.data && res.data[0]) || null;
+    }).catch(function(){ return null; });
+  },
+
+  _phoneBlock: function(ph, dateStr) {
+    var t = function(iso) {
+      if (!iso) return null;
+      var d = new Date(iso);
+      return isNaN(d.getTime()) ? null : d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    };
+    if (!ph || !ph.pings) {
+      return '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;color:#7a6a1f;">'
+           + '📱 <b>Your phone:</b> no location for this day — hours below come from truck GPS only, which undercounts you.'
+           + '</div>';
+    }
+    var first = t(ph.first_ping), last = t(ph.last_ping);
+    var yin = t(ph.yard_arrive), yout = t(ph.yard_leave);
+    var bits = [];
+    bits.push('<b>' + (first || '?') + '</b> → <b>' + (last || '?') + '</b>');
+    if (ph.span_hours) bits.push('<b>' + (+ph.span_hours).toFixed(2) + 'h</b> span');
+    bits.push(yin ? ('yard ' + yin + (yout ? ' → ' + yout : '')) : 'never at yard');
+    bits.push(ph.pings + ' pings');
+    // v1147: show EVERY source, not sources-minus-the-first. The old
+    // .replace('foreground,','') stripped the dominant source and displayed the
+    // leftover, so a day with 164 foreground pings and 13 dead owntracks pings
+    // read as "owntracks" — making background tracking look alive when it was not.
+    if (ph.sources) bits.push(String(ph.sources).split(',').filter(Boolean).join(' + '));
+    return '<div style="background:#e8f5e9;border:1px solid #cfe5d6;border-left:3px solid var(--green-dark);'
+      + 'border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;color:#14321f;">'
+      + '📱 <b>Your phone</b> — ' + bits.join(' · ')
+      + '<div style="font-size:11px;color:#4a6b55;margin-top:2px;">Your day, not the truck\'s. Use this to set your hours.</div>'
+      + '</div>';
+  },
+  _bounceToggle: function(d) {
+    var panel = document.getElementById('bday-panel'); if (!panel) return;
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-bday]'), function(b) { b.style.outline = ''; });
+    if (PayrollPage._bDayOpen === d) { PayrollPage._bDayOpen = null; panel.innerHTML = ''; return; }
+    PayrollPage._bDayOpen = d;
+    var btn = document.querySelector('button[data-bday="' + d + '"]'); if (btn) btn.style.outline = '2px solid var(--green-dark)';
+    var dnFull = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+    var note = ''; try { note = localStorage.getItem('bm-payroll-note-' + d) || ''; } catch(e) {}
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    panel.innerHTML = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
+
+      + '<div class="bday-sum" style="font-size:13px;color:var(--text-light);">loading truck data…</div>'
+      + '</div>';
+    // phone first — it is the primary source for Doug's own hours
+    Promise.all([PayrollPage._yardTrips(d), PayrollPage._truckStops(d), PayrollPage._loadTeamAndDrivers(), PayrollPage._loadPhoneDay(d), PayrollPage._crewMessages(d)]).then(function(res) {
+      var trips = res[0] || [], stops = res[1] || [], phone = res[3], msgs = res[4] || [];
+      setTimeout(function(){
+        var rb = document.getElementById('recap-' + d);
+        if (rb) rb.innerHTML = PayrollPage._dayRecap(msgs);
+      }, 0);
+      var sum = panel.querySelector('.bday-sum'); if (!sum) return;
+      var byV = {};
+      trips.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).trips.push(r); });
+      stops.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || { name:r.name, model:r.model, trips:[], stops:[] }).stops.push(r); });
+      var ids = Object.keys(byV);
+      if (!ids.length && !(phone && phone.pings) && !msgs.length) { sum.textContent = 'No truck, phone or message data for this day.'; return; }
+      ids.sort(function(a,b){ return PayrollPage._truckRank(byV[a].name, byV[a].model) - PayrollPage._truckRank(byV[b].name, byV[b].model); });
+      PayrollPage._dayCache[d] = byV;
+      var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
+      // ── v1152: spreadsheet-style truck grid ────────────────────────────────
+      // Doug: "if you could kinda make it more of, like, a spreadsheet style,
+      // kinda like the payroll thing is... so the trucks would correlate to the
+      // people." One permanent row per truck — NOT collapsible — because
+      // left-yard → back-at-yard is the number he verifies hours against:
+      // "that's the metric that I'm going to use to verify hours."
+      var rows = ids.map(function(vid) {
+        var v = byV[vid];
+        var rid = 'trk-' + d + '-' + vid.slice(0, 8);
+        var merged = PayrollPage._mergeStops(v.stops);
+        v.merged = merged;
+        var siteMins = v.stops.reduce(function(a,x){ return a + (x.mins || 0); }, 0);
+        var outMins = v.trips.reduce(function(a,t){ return a + (t.mins_out || 0); }, 0);
+        var firstOut = v.trips.length ? et(v.trips[0].left_yard) : '—';
+        var lastBack = v.trips.length ? et(v.trips[v.trips.length - 1].back_yard) : '—';
+        var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;';
+        var drid = rid + '-det';
+        return '<tr onclick="PayrollPage._rowToggle(\'' + drid + '\')" style="cursor:pointer;">'
+          + '<td style="' + td + 'font-weight:700;"><span id="' + drid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</td>'
+          + '<td style="' + td + '">' + PayrollPage._driverSel(vid, v.name) + '</td>'
+          + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + firstOut + '</td>'
+          + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + lastBack + '</td>'
+          + '<td style="' + td + '">' + (outMins ? PayrollPage._fmtDur(outMins) : '—') + '</td>'
+          + '<td style="' + td + 'white-space:normal;min-width:120px;">'
+              + (merged.length
+                  ? '<span id="' + rid + '-hdaddr" style="color:var(--link,#1565c0);font-weight:600;">📍…</span>'
+                    + (merged.length > 1 ? ' <span style="color:var(--text-light);">+' + (merged.length - 1) + '</span>'
+                                         : '')
+                  : '<span style="color:var(--text-light);">—</span>')
+            + '</td>'
+          + '<td style="' + td + 'font-weight:700;color:var(--green-dark);">' + (siteMins ? PayrollPage._fmtDur(siteMins) : '—') + '</td>'
+          + '</tr>'
+          + PayrollPage._truckDetailRow(drid, v);
+      }).join('');
+      var th = 'padding:4px 7px;text-align:left;font-size:10px;font-weight:700;color:var(--text-light);border-bottom:1px solid var(--border);white-space:nowrap;';
+      sum.innerHTML = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
+        + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        + '<thead><tr>'
+          + '<th style="' + th + '">TRUCK</th>'
+          + '<th style="' + th + '">DRIVER</th>'
+          + '<th style="' + th + '">LEFT YARD</th>'
+          + '<th style="' + th + '">BACK</th>'
+          + '<th style="' + th + '">OUT</th>'
+          + '<th style="' + th + '">JOB SITE</th>'
+          + '<th style="' + th + '">ON SITE</th>'
+        + '</tr></thead><tbody>' + '<tbody id="jobrows-' + d + '"></tbody>' + PayrollPage._phoneRow(phone) + rows + PayrollPage._textRows(msgs) + '<tbody id="exprows-' + d + '"></tbody>' + '</tbody></table></div>'
+        + '<div id="recap-' + d + '"></div>'
+        + '';
+      // v1149: rows start COLLAPSED — the whole truck-day now fits on the header
+      // line, so there is nothing to open unless you want the individual stops.
+      // (This reverses v1142's auto-expand, per Doug: "Could fit on one line.
+      // Would need to be collapsible.") We still resolve the primary address so
+      // the collapsed line names the job site rather than showing coordinates.
+      setTimeout(function() {
+        Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
+          var vv = PayrollPage._dayCache[d][vid];
+          var rid = 'trk-' + d + '-' + vid.slice(0, 8);
+          var top = (vv.merged || []).slice().sort(function(a,b){ return b.mins - a.mins; })[0];
+          if (!top) return;
+          PayrollPage._revGeo(top.lat, top.lon).then(function(addr) {
+            var el = document.getElementById(rid + '-hdaddr');
+            if (!el || !addr) return;
+            var esc2 = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+            el.textContent = '📍 ' + esc2(String(addr).split(',')[0]);
+            el.title = addr;
+          }).catch(function(){});
+        });
+        // v1167: resolve the day's primary site once, then fill the job rows at
+        // the top and the expenses + GPM rows at the bottom.
+        var all2 = [];
+        Object.keys(PayrollPage._dayCache[d] || {}).forEach(function(vid) {
+          (PayrollPage._dayCache[d][vid].merged || []).forEach(function(x){ all2.push(x); });
+        });
+        all2.sort(function(a, b){ return b.mins - a.mins; });
+        var jb = document.getElementById('jobrows-' + d), xb = document.getElementById('exprows-' + d);
+        if (!all2.length) {
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, null, 1);
+          return;
+        }
+        Promise.all([
+          PayrollPage._revGeo(all2[0].lat, all2[0].lon),
+          PayrollPage._jobDayCount(all2[0].lat, all2[0].lon)
+        ]).then(function(r) {
+          var a = r[0], n = r[1] || 1;
+          if (jb) jb.innerHTML = PayrollPage._jobRows(a || null, n);
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, a || null, n);
+        }).catch(function(){
+          if (xb) xb.innerHTML = PayrollPage._expenseRows(d, null, 1);
+        });
+
+      }, 0);
+    }).catch(function() {
+      var sum = panel.querySelector('.bday-sum'); if (sum) sum.textContent = 'Could not load truck data.';
+    });
+  },
+  _dayCache: {},
+  _weekLabor: {},
+  _weekPL: {},
+  _weekExp: {},
+  _weekComm: {},
+  _weekRev: {},
+  _weekExtras: {},
+  _weekDates: [],
+  // v1170 — fill the JOB / REVENUE row across the week. One pass per day:
+  // find the day's biggest stop away from the yard, reverse-geocode it, match a
+  // job by address, then divide that job's total by the days it was worked so a
+  // three-day job reads as its daily share rather than three full totals.
+  // v1190 - Doug: "Week of Aug 17 - Aug 23, 2026 -> WEEK 35 - AUGUST 17 -
+  // 23, 2026, or whatever 35 of 52 is this week". ISO-8601 week number: week
+  // 1 is the one containing the first Thursday of the year.
+  _isoWeek: function(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));          // shift to that week's Thursday
+    var jan1 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil((((t - jan1) / 86400000) + 1) / 7);
+  },
+  // Weeks in the year: 53 when 1 Jan is a Thursday, or a Wednesday in a leap year.
+  _isoWeeksInYear: function(y) {
+    var jan1 = new Date(y, 0, 1).getDay();
+    var leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    return (jan1 === 4 || (leap && jan1 === 3)) ? 53 : 52;
+  },
+  _fillWeekJobRow: function(dates) {
+    // v1173 — REWRITTEN. The previous version re-derived an address from GPS on
+    // EVERY day, so the same job resolved as "2 Terrace Drive" on Monday,
+    // "4 Orchard Drive" on Tuesday and "4 Terrace Drive" on Wednesday — a 40 m
+    // difference in where the truck parked broke the match and two of three days
+    // showed no revenue. Doug: "all those jobs are the same."
+    //
+    // Now: collect the week's stops FIRST, cluster them into sites (250 m),
+    // geocode and job-match each site ONCE, then attribute every day that
+    // touched it. Revenue = job total / number of days that site was worked.
+    PayrollPage._weekPL = {};
+    var perDay = {};
+    Promise.all(dates.map(function(d) {
+      // v1186 - UNION both sources. bm_truck_stops is sparse everywhere in
+      // this window (0-4 stops a day), but the few it does return are good,
+      // and Aug 17-19 already matched off them. Taking the RPC whenever it
+      // was non-empty meant the GPS fallback never ran on the days that
+      // needed it most - Aug 4 had 2 stops and 55 real sites. Both feed the
+      // same 250 m clustering below, which de-dupes any overlap.
+      return Promise.all([
+        PayrollPage._truckStops(d).catch(function(){ return null; }),
+        PayrollPage._daySites(d).catch(function(){ return []; })
+      ]).then(function(r) {
+        perDay[d] = PayrollPage._mergeStops(r[0] || []).concat(r[1] || []);
+      }).catch(function(){ perDay[d] = []; });
+    })).then(function() {
+      var sites = [];
+      dates.forEach(function(d) {
+        (perDay[d] || []).forEach(function(m) {
+          for (var i = 0; i < sites.length; i++) {
+            if (PayrollPage._metres([sites[i].lat, sites[i].lon], [m.lat, m.lon]) <= 250) {
+              sites[i].days[d] = (sites[i].days[d] || 0) + m.mins;
+              if (m.mins > sites[i].best) { sites[i].best = m.mins; sites[i].lat = m.lat; sites[i].lon = m.lon; }
+              return;
+            }
+          }
+          var o = { lat: m.lat, lon: m.lon, best: m.mins, days: {} };
+          o.days[d] = m.mins; sites.push(o);
+        });
+      });
+      // biggest site wins a day when two overlap
+      // v1190 - _jobDayCount pages the whole GPS history around a site to work
+      // out how many days that job ran, so the revenue can be split across
+      // them. It used to run for EVERY site. With sites now coming from raw
+      // positions that is ~42 a week instead of the 2-3 the sparse RPC gave,
+      // and the row often never finished filling - Fri 8/7 stayed blank even
+      // though its match succeeded when called directly. It is only needed
+      // once a site has matched a record, so match FIRST and count second.
+      return Promise.all(sites.map(function(site) {
+        var day0 = Object.keys(site.days).sort()[0];
+        return PayrollPage._jobNearSite(site.lat, site.lon, day0).then(function(rev) {
+          site.rev = rev; site.n = 1;
+          if (!rev) return;
+          return PayrollPage._jobDayCount(site.lat, site.lon, day0).then(function(n) { site.n = n || 1; });
+        }).catch(function(){ site.rev = null; site.n = 1; });
+      })).then(function() {
+        var total = 0;
+        dates.forEach(function(d) {
+          // v1188 - 'biggest site wins the day' was picking the wrong site.
+          // A drive route gets sliced into 250 m clusters whose first and last
+          // ping are hours apart, so they report a BIGGER span than the job
+          // site itself: on Aug 4 the real site (David Coats, invoice #1016,
+          // matched at 138 m) reported 570 min and lost to five route slices
+          // at 572-684 min, so the day showed no client, job or revenue.
+          // A site that actually matched a job or invoice always wins; the
+          // longest-dwell site is only the fallback for labelling a day we
+          // could not match to a record.
+          // v1192 - the same work can match from two nearby clusters, one
+          // landing on the JOB and one on the INVOICE raised from it. Picking
+          // purely by dwell showed Fri 8/7 as \$800 (job #341) when the real
+          // figure is the \$1,000 actually collected on invoice #1015. An
+          // invoice is what was billed, so it wins the day; dwell only breaks
+          // ties within the same kind.
+          var best = null, bestMatched = null;
+          sites.forEach(function(st) {
+            if (!st.days[d]) return;
+            if (!best || st.days[d] > best.days[d]) best = st;
+            if (!st.rev) return;
+            if (!bestMatched) { bestMatched = st; return; }
+            var a = st.rev.kind === 'invoice', b = bestMatched.rev.kind === 'invoice';
+            if (a !== b) { if (a) bestMatched = st; return; }
+            if (st.days[d] > bestMatched.days[d]) bestMatched = st;
+          });
+          if (bestMatched) best = bestMatched;
+          var jb = document.getElementById('wkjob-' + d);
+          var rv = document.getElementById('wkrev-' + d);
+          var pl = document.getElementById('wkpl-' + d);
+          var lab = PayrollPage._weekLabor[d] || 0;
+          var comm = 0, share = 0;
+          if (best) {
+            if (jb) {
+              jb.innerHTML = PayrollPage._jobLabel(best.rev, best.addr);
+              var cl = document.getElementById('wkcli-' + d);
+              if (cl) { cl.textContent = PayrollPage._clientLabel(best.rev); cl.title = (best.rev && best.rev.client) || ''; }
+              // v1193 - Doug: "at least put the addresses in for the days if
+              // you don't know the jobs, then that can help me figure them
+              // out". A day we could not match to a record still knows WHERE
+              // the trucks sat, so look that up and show it. Only for the
+              // site that actually won the day - not all ~42 sites in a week.
+              // v1198 - a day with no match is not automatically missing
+              // revenue. Classify it first: a yard day or a run of estimates
+              // SHOULD have a blank revenue cell, and saying so is the point.
+              if (!best.rev) {
+                (function(site, day) {
+                  PayrollPage._dayKind(day).then(function(k) {
+                    var el = document.getElementById('wkjob-' + day);
+                    if (!el) return;
+                    var lab = PayrollPage._kindLabel(k);
+                    if (lab) {
+                      el.innerHTML = '<span style="font-size:10px;font-weight:700;color:var(--text-light);'
+                        + 'letter-spacing:.03em;white-space:nowrap;">' + lab.text + '</span>';
+                      el.title = lab.tip;
+                      var cl2 = document.getElementById('wkcli-' + day);
+                      if (cl2 && !cl2.textContent.trim()) cl2.textContent = '—';
+                      return;
+                    }
+                    // real work, but nothing in BM accounts for it — show where
+                    if (site.addr) return;
+                    PayrollPage._revGeo(site.lat, site.lon).then(function(label) {
+                      if (!label) return;
+                      site.addr = label;
+                      var e2 = document.getElementById('wkjob-' + day);
+                      if (!e2) return;
+                      e2.innerHTML = PayrollPage._jobLabel(null, label);
+                      e2.title = label + '\nworked here for an hour or more, but no job or invoice matches it';
+                    }).catch(function(){});
+                  }).catch(function(){});
+                })(best, d);
+              }
+              jb.title = (best.rev && best.rev.client ? best.rev.client + '\n' : '')
+                       + (best.rev && best.rev.property ? best.rev.property : (best.addr || ''))
+                       + (best.rev ? ('\njob #' + best.rev.num) : '\nno job matched');
+            }
+            if (best.rev) {
+              share = best.rev.total / best.n;
+              comm = share * PayrollPage._JOB_COMMISSION;
+              total += share; PayrollPage._weekRev[d] = share;
+              if (rv) {
+                rv.textContent = '$' + Math.round(share).toLocaleString();
+                rv.title = '$' + Math.round(best.rev.total).toLocaleString() + ' job over ' + best.n + ' day' + (best.n>1?'s':'');
+              }
+            } else if (rv) { rv.textContent = '—'; }
+          } else {
+            if (jb) jb.innerHTML = '—';
+            var cl0 = document.getElementById('wkcli-' + d); if (cl0) cl0.textContent = '—';
+            if (rv) rv.textContent = '—';
+          }
+          // v1173 — expenses now include the 10% sales commission, per Doug.
+          PayrollPage._weekComm[d] = comm;
+          var exp = lab + comm;   // provisional; the true cost lands below
+          PayrollPage._weekExp[d] = exp;
+          var ex = document.getElementById('wkexp-' + d);
+          if (ex) {
+            ex.textContent = exp ? '$' + Math.round(exp).toLocaleString() : '—';
+            ex.title = 'labour $' + Math.round(lab).toLocaleString()
+                     + (comm ? '  ·  sales commission 10% $' + Math.round(comm).toLocaleString() : '')
+                     + '   (no dump, fuel, truck or yearly costs yet)';
+          }
+          if (pl) {
+            if (share || exp) {
+              var v = share - exp;
+              PayrollPage._weekPL[d] = v;
+              pl.textContent = (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString();
+              pl.style.color = v < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+              pl.title = 'revenue $' + Math.round(share).toLocaleString() + ' − expenses $' + Math.round(exp).toLocaleString();
+            } else { pl.textContent = '—'; }
+          }
+        });
+        var t = document.getElementById('wkrev-total');
+        if (t) t.textContent = total ? '$' + Math.round(total).toLocaleString() : '';
+        // v1178 — now fold in dump, fuel, truck miles, burden and yearly overhead
+        // so the headline Expenses and P/L are the TRUE cost, not labour-only.
+        dates.forEach(function(d) {
+          var lab = PayrollPage._weekLabor[d] || 0;
+          var cm  = PayrollPage._weekComm[d] || 0;
+          if (!lab && !cm) return;
+          PayrollPage._dayExtras(d).then(function(x) {
+            PayrollPage._weekExtras[d] = x;          // v1182: reused by the breakdown
+            var full = lab + cm + lab * PayrollPage._BURDEN_PCT
+                     + x.dump + x.fuel + x.miles * PayrollPage._TRUCK_RATE_MI
+                     + PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS;
+            PayrollPage._weekExp[d] = full;
+            var ex = document.getElementById('wkexp-' + d);
+            if (ex) { ex.textContent = '$' + Math.round(full).toLocaleString(); ex.style.opacity = 1; }
+            var rev = PayrollPage._weekRev[d] || 0;
+            var pl2 = document.getElementById('wkpl-' + d);
+            if (pl2) {
+              var v2 = rev - full;
+              PayrollPage._weekPL[d] = v2;
+              pl2.textContent = (v2 < 0 ? '-$' : '$') + Math.abs(Math.round(v2)).toLocaleString();
+              pl2.style.color = v2 < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+            }
+            var xt2 = document.getElementById('wkexp-total');
+            if (xt2) { var se2 = 0; dates.forEach(function(k){ se2 += PayrollPage._weekExp[k] || 0; });
+                       xt2.textContent = '$' + Math.round(se2).toLocaleString(); }
+            var pt2 = document.getElementById('wkpl-total');
+            if (pt2) { var sp2 = 0; dates.forEach(function(k){ sp2 += PayrollPage._weekPL[k] || 0; });
+                       pt2.textContent = (sp2 < 0 ? '-$' : '$') + Math.abs(Math.round(sp2)).toLocaleString();
+                       pt2.style.color = sp2 < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)'; }
+          });
+        });
+        var xt = document.getElementById('wkexp-total');
+        if (xt) {
+          var se = 0; dates.forEach(function(d){ se += PayrollPage._weekExp[d] || 0; });
+          xt.textContent = se ? '$' + Math.round(se).toLocaleString() : '';
+        }
+        var pt = document.getElementById('wkpl-total');
+        if (pt) {
+          var sp = 0; dates.forEach(function(d){ sp += PayrollPage._weekPL[d] || 0; });
+          pt.textContent = (sp < 0 ? '-$' : '$') + Math.abs(Math.round(sp)).toLocaleString();
+          pt.style.color = sp < 0 ? 'var(--red,#dc3545)' : 'var(--green-dark)';
+        }
+      });
+    }).catch(function(){});
+
+  },
+  // ── v1167: job rows on top, ONE collapsible expenses line, then GPM ──────
+  // Doug: "I want new rows above employee... address and then client name and
+  // amount made in revenue", then "one line of expenses and then GPM... I wanna
+  // keep that really clean. So don't go crazy there. Just add the bare minimum
+  // to show the picture."
+  // v1168 — how many DAYS was this job actually worked, so revenue can be split.
+  // Doug: a 3-day \$7,500 job reads \$2,500 a day. Derived from GPS presence at
+  // the site rather than from the job record, which carries only one date.
+  // THRESHOLD = 1 hour on site. Doug: "Sometimes we do fast jobs, so you don't
+  // have to hold that two-hour thing. But under a half an hour you can generally
+  // assume it's an estimate — under an hour."
+  // 60 min still excludes the Aug 8 visit to 4 Terrace Drive (50 min, "we were
+  // just looking at the tree because it was down the road from another job"),
+  // while counting a genuinely quick job. The real work days there spanned
+  // 366-492 min, so there is still a 6x margin above the line.
+  _JOB_DAY_MIN_MINUTES: 60,
+  // v1174 — job label in Doug's own convention: "M — 4 Terrace Drive". The
+  // leading letter is the SALESPERSON (D Doug / C Catherine / M Michelle), the
+  // same D—/C—/M— prefix the commission roll-up already reads, followed by the
+  // street. Showing the raw client_name gave "Michelle Mela..." truncated to
+  // nothing useful.
+  _jobLabel: function(rev, fallbackAddr) {
+    // v1176 — ONE line, no ellipsis, clickable. Doug: "Make the job address
+    // clickable. Also, it can just be one line... and it doesn't need the three
+    // dots. Just make it fit however long there."
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var addr = String(rev && rev.property ? rev.property : (fallbackAddr || ''));
+    var street = addr.split(',')[0].trim();
+    if (!street) return rev ? ('#' + rev.num) : '—';
+    var maps = 'https://maps.google.com/?q=' + encodeURIComponent(addr);
+    return '<a href="' + maps + '" target="_blank" rel="noopener" onclick="event.stopPropagation()"'
+      + ' title="' + esc(addr) + '" style="color:var(--link,#1565c0);font-weight:600;text-decoration:none;">'
+      + esc(street) + '</a>';
+  },
+  // v1176 — "M — <client>" in Doug's convention; falls back to the literal
+  // "M — client name" when the job carries no client, per his instruction.
+  _clientLabel: function(rev) {
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    if (!rev) return '—';
+    var raw = String(rev.client || '').replace(/^\s*[DCM]\s*[—-]\s*/, '')
+                                      .replace(/\s*\(.*?\)\s*/g, ' ').split('—')[0].trim();
+    var who = rev.job ? PayrollPage._salesPerson(rev.job) : null;
+    if (!who) {
+      var lc = String(rev.client || '').toLowerCase();
+      if (lc.indexOf('cath') >= 0 || lc.indexOf('conway') >= 0) who = 'Catherine';
+      else if (lc.indexOf('doug') >= 0) who = 'Doug';
+    }
+    var ini = who ? who.charAt(0) + ' — ' : '';
+    return esc(ini + (raw || 'client name'));
+  },
+  // v1176 — forward-geocode a JOB address and cache it. Matching by
+  // reverse-geocoding the truck's position was unreliable: the Aug 17-19
+  // cluster sits 122 m from 4 Terrace Drive but reverse-geocodes to
+  // "4 Orchard Drive", so it never matched and revenue stayed blank. Going the
+  // other way — geocode the job, measure to the GPS cluster — is stable,
+  // because a job address does not move.
+  _fwdGeo: function(addr) {
+    if (!addr) return Promise.resolve(null);
+    var key = 'bm-fwdgeo-' + String(addr).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 48);
+    try {
+      var c = localStorage.getItem(key);
+      if (c) { var p = JSON.parse(c); return Promise.resolve(p && p.lat ? p : null); }
+    } catch (e) {}
+    // v1193 - Nominatim sends no Access-Control-Allow-Origin, so every call
+    // from the app died as 'Failed to fetch'. Photon (Komoot) is the same
+    // OpenStreetMap data, free and keyless, and DOES send the CORS header.
+    return fetch('https://photon.komoot.io/api/?limit=1&q=' + encodeURIComponent(addr))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var f = d && d.features && d.features[0];
+        var c = f && f.geometry && f.geometry.coordinates;
+        var out = c ? { lat: c[1], lon: c[0] } : null;                 // GeoJSON is [lon, lat]
+        try { localStorage.setItem(key, JSON.stringify(out || {})); } catch (e) {}
+        return out;
+      }).catch(function(){ return null; });
+  },
+  // Nearest job to a GPS site. Reverse-geocode once for the TOWN, shortlist jobs
+  // in that town, forward-geocode only those, take the closest inside 250 m.
+  // v1184 - REWRITTEN. Two bugs made the revenue row wrong for most of August:
+  //
+  //  1. It only ever looked at JOBS. Half the real revenue in the Aug 3-21
+  //     window exists only as an INVOICE with no job behind it - Oswald Roche
+  //     $4,909.38 (#1017) and Continental Village Park $2,600 (#1019) could
+  //     never appear no matter how good the GPS match was.
+  //  2. There was no date filter, so ANY job whose address sits near where a
+  //     truck happened to park could win - including jobs finished months ago.
+  //     Matching purely on proximity over Aug 3-21 returned 47 'matched' jobs
+  //     when the real answer was 5 jobs and 6 invoices; rural addresses like
+  //     '308 Sprout Brook Road' geocode to a road centerline the trucks drive
+  //     past every day.
+  //
+  // Now: candidates are jobs AND invoices, both restricted to +/- _REV_WINDOW_D
+  // days of the day being priced, scored on distance, and de-duped so an
+  // invoice always beats the job it was raised from (otherwise the same work
+  // is counted twice on one day).
+  _REV_WINDOW_D: 6,
+  // v1189 - the match radius was 250 m, which is tighter than the data can
+  // support. A geocoder returns a street or parcel centroid, and on these
+  // rural properties the truck parks well down a driveway. Nicholas Anthony's
+  // job (78 Andrews Road) sits 250 m from where the truck actually sat on
+  // Aug 7 - right on the boundary - so Friday showed no revenue. 400 m is
+  // still far tighter than the gap to the next property, and the +/-45 day
+  // window does the real work of keeping old jobs out.
+  _MATCH_M: 400,
+  _recDate: function(r) {
+    return String(r.completedDate || r.completed_date || r.scheduledDate || r.scheduled_date
+                  || r.issuedDate || r.issued_date || '').substring(0, 10);
+  },
+  // v1196 - candidate list is built ONCE per day and cached, then every site
+  // match against it is pure arithmetic.
+  //
+  // v1195 made matching network-free by using only stored client coordinates,
+  // and that broke the 4 Terrace job. Job #343 has client_id NULL - "Michelle
+  // Melagrano (broker)" is not a client record at all - so there is no stored
+  // point for it, and the whole current week lost its revenue. The job does
+  // carry its own address, which is what used to resolve it.
+  //
+  // So the address geocode is back, but in the right place. The expensive
+  // version called out per SITE (~42 a week). This resolves each in-window
+  // RECORD once - roughly 5 jobs and 6 invoices in an August week, and only
+  // the ones with no client coordinate need the network at all.
+  _candCache: {},
+  _revCandidates: function(day) {
+    if (PayrollPage._candCache[day]) return PayrollPage._candCache[day];
+    var jobs = [], invs = [], clients = [];
+    try { jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : []; } catch (e) {}
+    try { invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : []; } catch (e) {}
+    try { clients = (typeof DB !== 'undefined' && DB.clients && DB.clients.getAll) ? DB.clients.getAll() : []; } catch (e) {}
+    var byClient = {};
+    clients.forEach(function(c) {
+      if (!c.name) return;
+      byClient[String(c.name).toLowerCase().trim()] = {
+        lat: Number(c.lat) || null, lng: Number(c.lng) || null,
+        addr: [c.address, c.city, c.state].filter(Boolean).join(', ') || null };
+    });
+    var clientRec = function(name) {
+      var k = String(name || '').toLowerCase().trim();
+      if (byClient[k]) return byClient[k];
+      if (k.length > 3) for (var n in byClient) { if (n.indexOf(k) === 0) return byClient[n]; }
+      return null;
+    };
+    var anchor = new Date(day + 'T12:00:00').getTime(), DAY = 86400000;
+    var inWindow = function(r, kind) {
+      var d = PayrollPage._recDate(r);
+      if (!d) return false;
+      var t = new Date(d + 'T12:00:00').getTime();
+      if (kind === 'invoice') return anchor <= t + 3 * DAY && anchor >= t - 21 * DAY;
+      var sched = String(r.scheduledDate || r.scheduled_date || '').substring(0, 10);
+      var done  = String(r.completedDate || r.completed_date || '').substring(0, 10);
+      if (sched && done) {
+        var a = new Date(sched + 'T12:00:00').getTime(), b = new Date(done + 'T12:00:00').getTime();
+        return anchor >= Math.min(a, b) - DAY && anchor <= Math.max(a, b) + DAY;
+      }
+      return Math.abs(t - anchor) <= PayrollPage._REV_WINDOW_D * DAY;
+    };
+    var pool = [];
+    var add = function(rec, kind, num, cn) {
+      if (!Number(rec.total) || !inWindow(rec, kind)) return;
+      var cr = clientRec(cn);
+      pool.push({ kind:kind, rec:rec, num:num, client:cn, total:Number(rec.total),
+                  property: rec.property || (cr && cr.addr) || null,
+                  lat: (cr && cr.lat) || null, lon: (cr && cr.lng) || null });
+    };
+    jobs.forEach(function(j) { add(j, 'job', j.jobNumber || j.job_number, j.clientName || j.client_name); });
+    invs.forEach(function(v) {
+      if (String(v.status || '').toLowerCase() === 'draft') return;   // not real revenue yet
+      add(v, 'invoice', v.invoiceNumber || v.invoice_number, v.clientName || v.client_name);
+    });
+    var pr = Promise.all(pool.map(function(c) {
+      if (c.lat && c.lon) return c;                       // client already has a point
+      if (!c.property) return null;
+      return PayrollPage._fwdGeo(c.property).then(function(g) {
+        if (!g) return null;
+        c.lat = g.lat; c.lon = g.lon; return c;
+      }).catch(function(){ return null; });
+    })).then(function(rs) { return rs.filter(Boolean); }).catch(function(){ return []; });
+    PayrollPage._candCache[day] = pr;
+    return pr;
+  },
+  _jobNearSite: function(lat, lon, day) {
+    if (!day) return Promise.resolve(null);
+    return PayrollPage._revCandidates(day).then(function(cands) {
+      var hits = [];
+      cands.forEach(function(c) {
+        var dm = PayrollPage._metres([lat, lon], [c.lat, c.lon]);
+        if (dm <= PayrollPage._MATCH_M) hits.push({ c:c, d:dm });
+      });
+      if (!hits.length) return null;
+      var best = null;
+      hits.forEach(function(h) {
+        if (!best) { best = h; return; }
+        var a = String(h.c.client || '').toLowerCase(), b = String(best.c.client || '').toLowerCase();
+        var sameClient = a && b && (a.indexOf(b) >= 0 || b.indexOf(a) >= 0);
+        if (sameClient && h.c.kind !== best.c.kind) { if (h.c.kind === 'invoice') best = h; return; }
+        if (h.d < best.d) best = h;
+      });
+      return { kind:best.c.kind, num:best.c.num, client:best.c.client, total:best.c.total,
+               job:best.c.rec, property:best.c.property, metres:Math.round(best.d) };
+    }).catch(function(){ return null; });
+  },
+  // v1178 — the rest of the cost picture, per day.
+  //   DUMP  — parsed out of crew texts. It exists NOWHERE else: the transfer
+  //           station runs on a house account, so "$142 total for logss" on
+  //           19 Aug never touches the card or the books. Note the typo — the
+  //           pattern matches a 'log'/'chip' STEM, not the exact word, because
+  //           a stricter regex missed that $142 entirely.
+  //   FUEL  — Plaid transactions already categorised 6200.
+  //   TRUCK — GPS miles x $1.48/mi (fuel is inside that rate; see the doc page).
+  //   YEARLY— fixed annual overhead spread over ~250 working days.
+  _YEARLY_FIXED: 51445,      // insurance 16,359 + WC 1,001 + equip lease 23,710
+  _WORKING_DAYS: 250,        //   + office 7,330 + subscriptions 3,045  (2025 books)
+  _toggleExp: function(day) {
+    // v1182 — one breakdown for the whole week; every line keeps its own day column
+    var box = document.getElementById('wkexpd'); if (!box) return;
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    PayrollPage._expenseDetail(PayrollPage._weekDates || []);
+  },
+  _dayExtras: function(day) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve({ dump: 0, fuel: 0, miles: 0 });
+    var out = { dump: 0, fuel: 0, miles: 0 };
+    var jobs = [];
+    jobs.push(C.from('crew_messages').select('body').eq('day', day).then(function(r) {
+      if (r.error || !r.data) return;
+      var stem = /(dump|log|chip|tip|transfer station)/i;
+      r.data.forEach(function(m) {
+        var b = String(m.body || '');
+        if (!stem.test(b)) return;
+        var mm = b.match(/\$\s?([\d,]+(?:\.\d\d)?)/g) || [];
+        mm.forEach(function(x){ out.dump += parseFloat(x.replace(/[^0-9.]/g, '')) || 0; });
+      });
+    }));
+    jobs.push(C.from('bank_transactions').select('amount').eq('posted_date', day).eq('category', '6200').then(function(r) {
+      if (r.error || !r.data) return;
+      r.data.forEach(function(t){ out.fuel += Math.abs(Number(t.amount) || 0); });
+    }));
+    // PAGED — PostgREST caps at 1000 rows whatever .limit() says, and a busy
+    // day runs 3,000-4,000 pings across three trucks. An unpaged read here
+    // silently undercounts the miles, which is the same cap that made the
+    // day-count return 4 instead of 3.
+    var all = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('vehicle_id,lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59')
+        .order('ts', { ascending: true }).range(off, off + 999)
+        .then(function(r) {
+          if (r.error || !r.data || !r.data.length) return;
+          all = all.concat(r.data);
+          if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+        });
+    };
+    jobs.push(page(0).then(function() {
+      if (all.length < 2) return;
+      var byv = {};
+      all.forEach(function(x){ (byv[x.vehicle_id] = byv[x.vehicle_id] || []).push(x); });
+      Object.keys(byv).forEach(function(v) {
+        var pts = byv[v];
+        for (var i = 1; i < pts.length; i++)
+          out.miles += PayrollPage._metres([pts[i-1].lat, pts[i-1].lon], [pts[i].lat, pts[i].lon]) / 1609.34;
+      });
+    }));
+    return Promise.all(jobs).then(function(){ return out; }).catch(function(){ return out; });
+  },
+  // v1182 — Doug: "Keep the job costs per day going in the row per day, so it
+  // stays in the right column. And then the totals where they are now should be
+  // per week." The breakdown was a flat list, so every figure landed under the
+  // TOTAL column. It is now the same 9-column grid as the rest of the table:
+  // label · Mon-Sun · week total. Labels are allowed to clip, per Doug.
+  _expenseDetail: function(dates) {
+    var box = document.getElementById('wkexpd'); if (!box) return;
+    var G = 'display:grid;grid-template-columns:140px repeat(7,1fr) 70px;';
+    var m = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
+    var YR = [['Insurance',16359],['Workers comp',1001],['Equipment lease',23710],
+              ['Office / admin',7330],['Subscriptions',3045]];
+    var per = {};   // per-day figures for every line
+    dates.forEach(function(d) {
+      var w = PayrollPage._weekLabor[d] || 0;
+      var c = PayrollPage._weekComm[d] || 0;
+      var x = PayrollPage._weekExtras[d] || { dump:0, fuel:0, miles:0 };
+      var hasDay = !!(w || c || x.dump || x.fuel || x.miles);
+      per[d] = {
+        wages: w,
+        tax:   w * PayrollPage._BURDEN_PCT,
+        comm:  c,
+        dump:  x.dump,
+        fuel:  x.fuel,
+        truck: x.miles * PayrollPage._TRUCK_RATE_MI,
+        miles: x.miles,
+        yearly: hasDay ? PayrollPage._YEARLY_FIXED / PayrollPage._WORKING_DAYS : 0
+      };
+      per[d].jobCost = per[d].wages + per[d].tax + per[d].comm + per[d].dump + per[d].fuel + per[d].truck;
+      per[d].total   = per[d].jobCost + per[d].yearly;
+    });
+    var row = function(label, note, pick, bold, top) {
+      var sum = 0;
+      var cells = dates.map(function(d) {
+        var v = pick(per[d]); sum += v;
+        return '<div style="padding:3px 4px;text-align:center;' + (bold ? 'font-weight:800;' : '') + (v ? '' : 'opacity:.35;') + '">' + m(v) + '</div>';
+      }).join('');
+      return '<div style="' + G + 'font-size:11px;align-items:center;'
+        + (top ? 'border-top:1px solid var(--border);' : '') + '">'
+        + '<div style="padding:3px 12px;overflow:hidden;white-space:nowrap;' + (bold ? 'font-weight:800;' : '') + '">'
+        + label + (note ? ' <span style="color:var(--text-light);font-size:9px;">' + note + '</span>' : '') + '</div>'
+        + cells
+        + '<div style="padding:3px 4px;text-align:center;font-weight:800;">' + m(sum) + '</div></div>';
+    };
+    var head = function(t) {
+      return '<div style="' + G + 'font-size:9.5px;font-weight:700;color:var(--text-light);letter-spacing:.5px;padding-top:6px;">'
+        + '<div style="padding:3px 12px;overflow:hidden;white-space:nowrap;">' + t + '</div></div>';
+    };
+    box.innerHTML = '<div style="background:var(--bg);padding:4px 0 8px;">'
+      + head('JOB COST — per day')
+      + row('Wages', 'hours × rate', function(p){ return p.wages; })
+      + row('Payroll taxes 10%', 'employer FICA/FUTA', function(p){ return p.tax; })
+      + row('Sales commission', '10% of revenue', function(p){ return p.comm; })
+      + row('Dump fees', 'from crew texts', function(p){ return p.dump; })
+      + row('Fuel', 'Plaid 6200', function(p){ return p.fuel; })
+      + row('Truck', '$' + PayrollPage._TRUCK_RATE_MI + '/mi repair+loan', function(p){ return p.truck; })
+      + row('JOB COST', '', function(p){ return p.jobCost; }, true, true)
+      + head('YEARLY OVERHEAD — not job costs, counted once')
+      + YR.map(function(y) {
+          return row(y[0], '$' + y[1].toLocaleString() + '/yr', function(p) {
+            return p.yearly ? y[1] / PayrollPage._WORKING_DAYS : 0;
+          });
+        }).join('')
+      + row('YEARLY / DAY', '$' + PayrollPage._YEARLY_FIXED.toLocaleString() + ' ÷ ' + PayrollPage._WORKING_DAYS, function(p){ return p.yearly; }, true, true)
+      + row('TRUE COST', '', function(p){ return p.total; }, true, true)
+      + '<div style="font-size:9.5px;color:var(--text-light);padding:6px 12px 0;">'
+      + 'Workers comp and insurance sit in YEARLY only — the payroll line is employer taxes. '
+      + 'Fuel is the real charge; the truck rate is repair + loan, so fuel is not billed twice.</div>'
+      + '</div>';
+
+  },
+  _jobDayCount: function(lat, lon, anchorDay) {
+    // v1177 — TWO bugs fixed here, both of which made revenue wrong.
+    //
+    // 1. PostgREST caps a response at 1000 rows no matter what .limit() says.
+    //    The old call asked for 5000, got the OLDEST 1000, and so only saw
+    //    Aug 4/5/6/8/17 — it never reached Aug 18 or 19. Now paged in 1000s.
+    //
+    // 2. A flat 30-day window counted every day the crew were anywhere in that
+    //    neighbourhood. Aug 4, 5 and 6 were DIFFERENT work near the same spot,
+    //    which is how a 3-day job came out as 4 days and $7,500 read as $1,875.
+    //    Now: take only the CONTIGUOUS run of qualifying days containing the day
+    //    being rendered (a 1-day gap is allowed so a weekend does not split a job).
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve(1);
+    var dLat = 0.0023, dLon = 0.0028;
+    var from = new Date(Date.now() - 30 * 864e5).toISOString();
+    var rows = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('ts')
+        .gte('lat', lat - dLat).lte('lat', lat + dLat)
+        .gte('lon', lon - dLon).lte('lon', lon + dLon)
+        .gte('ts', from).order('ts', { ascending: true })
+        .range(off, off + 999)
+        .then(function(r) {
+          if (r.error || !r.data || !r.data.length) return rows;
+          rows = rows.concat(r.data);
+          if (r.data.length < 1000 || off > 12000) return rows;
+          return page(off + 1000);
+        });
+    };
+    return page(0).then(function(all) {
+      if (!all.length) return 1;
+      var by = {};
+      all.forEach(function(x) {
+        var t = new Date(x.ts);
+        var k = t.getFullYear() + '-' + ('0'+(t.getMonth()+1)).slice(-2) + '-' + ('0'+t.getDate()).slice(-2);
+        if (!by[k]) by[k] = { a: t, b: t };
+        if (t < by[k].a) by[k].a = t;
+        if (t > by[k].b) by[k].b = t;
+      });
+      var qualifying = Object.keys(by).filter(function(k) {
+        return (by[k].b - by[k].a) / 60000 >= PayrollPage._JOB_DAY_MIN_MINUTES;
+      }).sort();
+      if (!qualifying.length) return 1;
+      if (!anchorDay || qualifying.indexOf(anchorDay) < 0) return qualifying.length;
+      var idx = qualifying.indexOf(anchorDay);
+      var dayNum = function(k){ var p = k.split('-'); return Date.UTC(+p[0], +p[1]-1, +p[2]) / 864e5; };
+      var lo = idx, hi = idx;
+      while (lo > 0 && dayNum(qualifying[lo]) - dayNum(qualifying[lo-1]) <= 2) lo--;
+      while (hi < qualifying.length - 1 && dayNum(qualifying[hi+1]) - dayNum(qualifying[hi]) <= 2) hi++;
+      return (hi - lo + 1) || 1;
+    }).catch(function(){ return 1; });
+
+  },
+  _jobRows: function(addr, dayCount) {
+    if (!addr) return '';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var rev = PayrollPage._findRevenue(addr);
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:#f4f8ff;';
+    var n = dayCount && dayCount > 1 ? dayCount : 1;
+    var share = rev ? rev.total / n : 0;
+    var money = function(x){ return '$' + Math.round(x).toLocaleString(); };
+    var h = '<tr><td style="' + td + 'font-weight:700;">📍 Address</td>'
+      + '<td colspan="6" style="' + td + 'white-space:normal;font-weight:600;">' + esc(addr) + '</td></tr>';
+    h += '<tr><td style="' + td + 'font-weight:700;">👤 Client</td>'
+      + '<td colspan="6" style="' + td + 'white-space:normal;font-weight:600;">'
+      + (rev ? ('#' + esc(String(rev.num || '')) + ' ' + esc(rev.client || ''))
+             : '<span style="color:var(--text-light);font-weight:400;">no job matched this address</span>') + '</td></tr>';
+    if (rev) {
+      h += '<tr><td style="' + td + 'font-weight:700;">💵 Revenue</td>'
+        + '<td colspan="6" style="' + td + 'white-space:normal;">'
+        + '<b style="color:var(--green-dark);font-size:13px;">' + money(share) + '</b>'
+        + (n > 1 ? ' <span style="color:var(--text-light);font-size:11px;">1 of ' + n + ' days · ' + money(rev.total) + ' job</span>' : '')
+        + '</td></tr>';
+    }
+    return h;
+  },
+  _expenseRows: function(d, addr, dayCount) {
+    // v1209: was iterating DB.team.getAll() — the RAW list, which holds
+    // DUPLICATE rows per person (David Beers has an active row at $30 and an
+    // inactive one at rate null). Each row summed his entries again, so Mon
+    // Aug 17 rendered "Employees (35.08h)" against a true 27.88h — his 7.20h
+    // counted twice. The dollars stayed right only because the duplicate row
+    // carries rate 0. Doug: "seems like expenses counted twice on lower."
+    // _getEmployees() drops inactive rows and off-payroll people; the name
+    // guard below also protects against two ACTIVE rows for one person.
+    var team = PayrollPage._getEmployees();
+    var totH = 0, wages = 0, counted = {};
+    team.forEach(function(t) {
+      var nm = String(t.name || t.id);
+      if (counted[nm]) return;
+      counted[nm] = true;
+      var h = 0;
+      PayrollPage._getEntriesForDate(nm, d).forEach(function(e){ h += (e.hours || 0); });
+      if (!h) return;
+      totH += h; wages += h * Number(t.rate || t.payRate || 0);
+    });
+    var rev = PayrollPage._findRevenue(addr);
+    var n = dayCount && dayCount > 1 ? dayCount : 1;
+    var share = rev ? rev.total / n : 0;
+    var burden = wages * PayrollPage._BURDEN_PCT;
+    var sales  = share * PayrollPage._JOB_COMMISSION;
+    var total  = wages + burden + sales;
+    if (!total && !share) return '';
+    var money = function(x){ return '$' + Math.round(x).toLocaleString(); };
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;';
+    var rid = 'exp-' + d;
+    var lines = [['Employees (' + totH.toFixed(2) + 'h)', wages],
+                 ['Payroll costs (' + Math.round(PayrollPage._BURDEN_PCT*100) + '%)', burden],
+                 ['Sales (' + Math.round(PayrollPage._JOB_COMMISSION*100) + '%)', sales]];
+    var detail = '<div style="padding:8px 10px;background:var(--bg);font-size:12px;line-height:1.7;">'
+      + lines.map(function(l){
+          return '<div style="display:flex;justify-content:space-between;"><span>' + l[0] + '</span><span>-' + money(l[1]) + '</span></div>';
+        }).join('')
+      + '<div style="color:var(--text-light);font-size:10.5px;margin-top:4px;">Other expenses and amortized yearly costs not in yet.</div></div>';
+    var h = '<tr onclick="PayrollPage._rowToggle(\'' + rid + '\')" style="cursor:pointer;">'
+      + '<td style="' + td + 'font-weight:700;"><span id="' + rid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>💸 Expenses</td>'
+      + '<td colspan="5" style="' + td + 'color:var(--text-light);white-space:normal;">employees · payroll costs · sales</td>'
+      + '<td style="' + td + 'font-weight:700;text-align:right;">-' + money(total) + '</td></tr>'
+      + '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + detail + '</td></tr>';
+    if (share) {
+      var gp = share - total;
+      h += '<tr><td style="' + td + 'font-weight:800;background:#f4f8ff;">GPM</td>'
+        + '<td colspan="5" style="' + td + 'background:#f4f8ff;"></td>'
+        + '<td style="' + td + 'background:#f4f8ff;font-weight:800;text-align:right;color:' + (gp>=0?'var(--green-dark)':'var(--red,#dc3545)') + ';">'
+        + money(gp) + ' <span style="font-size:11px;color:var(--text-light);">' + Math.round(gp/share*100) + '%</span></td></tr>';
+    }
+    return h;
+  },
+  // ── v1166: crew TEXTS as rows in the same grid ───────────────────────────
+  // Doug: "add in relevant text messages as one of the trucks." A person's
+  // messages bracket their day exactly the way a truck's yard times bracket
+  // its day — and on days the tracker is dark (the Ram, repeatedly) the texts
+  // are the ONLY evidence of when someone started and stopped.
+  // Source is crew_messages: four verified crew numbers, synced from chat.db.
+  _crewMessages: function(day) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve([]);
+    return C.from('crew_messages').select('person,direction,ts,body')
+      .eq('day', day).order('ts', { ascending: true })
+      .then(function(r){ return (r.error || !r.data) ? [] : r.data; })
+      .catch(function(){ return []; });
+  },
+  // What the day looked like, in their own words. No summarising engine here —
+  // it picks the longest inbound message per two-hour window, which in practice
+  // is the status update ("200 back together and tuned") rather than the "ok".
+  _daySummary: function(msgs) {
+    var picks = {}, esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    msgs.forEach(function(m) {
+      var b = String(m.body || '').trim();
+      if (b.length < 12) return;
+      if (/^(ok|yes|no|thanks|great|perfect|love|lol|got it)\b/i.test(b)) return;
+      if (/^https?:/i.test(b)) return;
+      var slot = new Date(m.ts).getHours() >> 1;
+      if (!picks[slot] || b.length > picks[slot].body.length) picks[slot] = { ts: m.ts, body: b, who: m.person };
+    });
+    var keys = Object.keys(picks).sort(function(a,b){ return a-b; });
+    if (!keys.length) return '';
+    var et = function(ts){ return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    return '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:3px;">WHAT HAPPENED</div>'
+      + keys.map(function(k){
+          var p = picks[k];
+          return '<div style="font-size:12px;padding:1px 0;"><span style="color:var(--text-light);">' + et(p.ts) + '</span> '
+               + esc(p.body.slice(0, 120)) + (p.body.length > 120 ? '…' : '') + '</div>';
+        }).join('');
+  },
+  // v1209 — a plain-English recap of the day under the truck box. Doug: "I have
+  // a recap of the day, like, a little paragraph explanation of what happened
+  // that day underneath the truck box."
+  // Built from the crew texts, not generated: it takes the substantive message
+  // from each ~90-minute window and strings them together with times, so what
+  // you read is what someone actually wrote. Acknowledgements, bare links and
+  // one-word replies are dropped.
+  // ── v1210: HOW THESE HOURS WERE DERIVED ─────────────────────────────────
+  // Doug: "a recap above weekly review that says why you got to the hours for
+  // each day... It can be fairly long. Let it be expandable."
+  // Per person per day: the hours, where they came from, and the independent
+  // evidence (truck window, crew texts). Its real job is catching the case that
+  // keeps costing money — someone plainly working with NO hours recorded,
+  // because their truck's tracker was dark. Catherine on Fri Aug 21 texted
+  // 12:09p-8:50p with a silent F-550 and got zero hours.
+  _hoursRecapData: function(dates) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !dates.length) return Promise.resolve({});
+    return C.from('crew_messages').select('person,ts,day')
+      .gte('day', dates[0]).lte('day', dates[dates.length - 1])
+      .order('ts', { ascending: true })
+      .then(function(r) {
+        var by = {};
+        (r.data || []).forEach(function(m) {
+          var k = m.day + '|' + m.person;
+          if (!by[k]) by[k] = { first: m.ts, last: m.ts, n: 0 };
+          by[k].last = m.ts; by[k].n++;
+        });
+        return by;
+      }).catch(function(){ return {}; });
+  },
+  _hoursRecap: function(dates, msgIndex) {
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var people = PayrollPage._getEmployees();
+    var out = '', flags = 0;
+    dates.forEach(function(d) {
+      var dn = new Date(d + 'T12:00:00').toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'});
+      var rows = '';
+      var seen = {};
+      people.forEach(function(t) {
+        var nm = String(t.name || t.id);
+        if (seen[nm]) return; seen[nm] = true;
+        var ents = PayrollPage._getEntriesForDate(nm, d);
+        var h = 0, src = '', locked = false;
+        ents.forEach(function(e){ h += (e.hours || 0); src = e.source || src; if (e.locked) locked = true; });
+        var tx = msgIndex[d + '|' + nm];
+        if (!h && !tx) return;                       // nothing to say
+        var ev = [];
+        if (tx) ev.push('texts ' + et(tx.first) + '–' + et(tx.last) + ' (' + tx.n + ')');
+        var warn = '';
+        if (!h && tx) {
+          flags++;
+          warn = '<span style="color:#b45309;font-weight:700;">⚠ no hours recorded</span> — ';
+        }
+        rows += '<div style="padding:2px 0;font-size:12px;">'
+             + '<b>' + esc(nm.split(' ')[0]) + '</b> '
+             + (h ? '<b style="color:var(--green-dark);">' + h.toFixed(2) + 'h</b>' : '')
+             + ' ' + warn
+             + '<span style="color:var(--text-light);">'
+             + (src ? src + (locked ? ', locked' : '') + '. ' : '')
+             + esc(ev.join(' · '))
+             + '</span></div>';
+      });
+      if (rows) out += '<div style="margin-top:7px;"><div style="font-size:10.5px;font-weight:700;color:var(--text-light);">' + dn + '</div>' + rows + '</div>';
+    });
+    if (!out) return '';
+    var rid = 'hrecap';
+    return '<div style="margin:10px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">'
+      + '<div onclick="PayrollPage._rowToggle(\'' + rid + '\')" style="cursor:pointer;padding:8px 11px;background:var(--bg);display:flex;align-items:center;gap:7px;">'
+        + '<span id="' + rid + '-c" style="color:var(--text-light);font-size:10px;">▸</span>'
+        + '<b style="font-size:12px;">HOW THESE HOURS WERE DERIVED</b>'
+        + (flags ? '<span style="margin-left:auto;font-size:11px;color:#b45309;font-weight:700;">' + flags + ' to check</span>'
+                 : '<span style="margin-left:auto;font-size:11px;color:var(--text-light);">all accounted for</span>')
+      + '</div>'
+      + '<div id="' + rid + '" style="display:none;padding:8px 11px;border-top:1px solid var(--border);">' + out
+      + '<div style="font-size:10px;color:var(--text-light);margin-top:8px;">Texts are independent of the trucks — a person with messages and no hours usually means their truck\'s tracker was dark, not that they were off.</div>'
+      + '</div></div>';
+  },
+  _dayRecap: function(msgs) {
+    if (!msgs || !msgs.length) return '';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    var picks = {};
+    msgs.forEach(function(m) {
+      var b = String(m.body || '').trim().replace(/\s+/g, ' ');
+      if (b.length < 15) return;
+      if (/^(ok|yes|no|thanks|thank you|great|perfect|love|lol|got it|sounds good|will do|copy)\b/i.test(b)) return;
+      if (/^https?:/i.test(b)) return;
+      var t = new Date(m.ts);
+      var slot = Math.floor((t.getHours() * 60 + t.getMinutes()) / 90);
+      if (!picks[slot] || b.length > picks[slot].b.length) picks[slot] = { ts: m.ts, b: b, who: m.person };
+    });
+    var keys = Object.keys(picks).sort(function(a, b){ return a - b; });
+    if (!keys.length) return '';
+    var first = msgs[0], last = msgs[msgs.length - 1];
+    var people = {};
+    msgs.forEach(function(m){ people[String(m.person).split(' ')[0]] = 1; });
+    var head = Object.keys(people).join(', ') + ' · ' + et(first.ts) + ' – ' + et(last.ts);
+    var body = keys.map(function(k) {
+      var p = picks[k];
+      return '<b style="color:var(--text-light);font-weight:600;">' + et(p.ts) + '</b> '
+           + esc(p.b.slice(0, 150)) + (p.b.length > 150 ? '…' : '');
+    }).join(' <span style="color:var(--border);">•</span> ');
+    return '<div style="margin-top:8px;background:#fffdf2;border:1px solid #f0e6c8;border-radius:8px;padding:9px 11px;">'
+      + '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:4px;">RECAP — ' + esc(head) + '</div>'
+      + '<div style="font-size:12.5px;line-height:1.65;">' + body + '</div>'
+      + '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">From the crew texts for this day — their words, not a summary.</div>'
+      + '</div>';
+  },
+  _textRows: function(msgs) {
+    if (!msgs || !msgs.length) return '';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+    var by = {};
+    msgs.forEach(function(m){ (by[m.person] = by[m.person] || []).push(m); });
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:#fffdf2;';
+    return Object.keys(by).sort(function(a,b){ return by[b].length - by[a].length; }).map(function(person) {
+      var v = by[person];
+      var rid = 'txt-' + person.replace(/[^a-z0-9]/gi,'').slice(0,10);
+      var mins = (new Date(v[v.length-1].ts) - new Date(v[0].ts)) / 60000;
+      var body = '<div style="padding:8px 10px;background:#fffdf2;font-size:12px;line-height:1.6;">'
+        + PayrollPage._daySummary(v)
+        + '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin:7px 0 3px;">ALL ' + v.length + ' MESSAGES</div>'
+        + v.map(function(m){
+            return '<div style="padding:1px 0;"><span style="color:var(--text-light);">' + et(m.ts) + '</span> '
+                 + '<b style="color:' + (m.direction === 'out' ? 'var(--green-dark)' : 'var(--text)') + ';">'
+                 + (m.direction === 'out' ? 'You' : esc(person.split(' ')[0])) + '</b> '
+                 + esc(String(m.body).slice(0, 220)) + '</div>';
+          }).join('')
+        + '</div>';
+      return '<tr onclick="PayrollPage._rowToggle(\'' + rid + '\')" style="cursor:pointer;">'
+        + '<td style="' + td + 'font-weight:700;"><span id="' + rid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>💬 Texts</td>'
+        + '<td style="' + td + 'font-weight:600;">' + esc(person.split(' ')[0]) + '</td>'
+        + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(v[0].ts) + '</td>'
+        + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(v[v.length-1].ts) + '</td>'
+        + '<td style="' + td + '">' + PayrollPage._fmtDur(mins) + '</td>'
+        + '<td style="' + td + 'white-space:normal;min-width:120px;color:var(--text-light);">' + v.length + ' messages — tap to read</td>'
+        + '<td style="' + td + 'color:var(--text-light);">—</td>'
+        + '</tr>'
+        + '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + body + '</td></tr>';
+    }).join('');
+  },
+  // ── v1161: JOB COSTING right in the day panel ────────────────────────────
+  // Doug: "Build the job costing right into the calendar here. Have the revenue
+  // and the job on top as two lines, and then have lines below for the total
+  // payroll cost for everyone." Dump fees and fuel deliberately left out for
+  // now, at his call.
+  //
+  // Revenue is matched by ADDRESS: the day's primary work site is already
+  // reverse-geocoded for the grid, so we normalise its house-number + street
+  // and look for a job or invoice at the same address. No geocoding of the
+  // whole job list, and no guessing — an unmatched day says so rather than
+  // inventing a number.
+  // v1162 — employer burden on top of wages: payroll taxes + workers' comp +
+  // the insurance allocation. 28% is the CONSERVATIVE end of the range derived
+  // from the 2025 books (10% employer payroll tax, plus WC at a real tree-class
+  // rate). It is a PLACEHOLDER until the Erie declaration page settles what that
+  // policy actually covers — the booked NYSIF premium is only 1.7% of payroll,
+  // which is implausible for tree work. Erring high keeps jobs from looking
+  // more profitable than they are. Belongs in Settings once there is a store
+  // for it.
+  // v1179 — DOUBLE-COUNT FIXED. Doug: "make sure to not count things twice…
+  // the yearly cost should be the admin, the insurance that's separate from
+  // job costs."
+  //   was: 28% = payroll taxes + workers comp + insurance
+  //   but WC ($1,001) and insurance ($16,359) are ALSO in the yearly line.
+  // So the per-job burden is EMPLOYER PAYROLL TAXES ONLY (~10% of gross:
+  // FICA 7.65% + FUTA/SUTA). WC and insurance are carried once, in yearly.
+  _BURDEN_PCT: 0.10,
+  // v1164 — COMMISSION and the TRUCK RATE.
+  // Doug confirmed 10% ("Keep commission at ten percent. That's fine.").
+  // NOTE: PayrollPage._COMMISSION_RATE elsewhere in this file is 0.08 and drives
+  // the separate sales-commission roll-up; this is the job-costing figure.
+  _JOB_COMMISSION: 0.10,
+  // Truck cost per mile, derived from the 2025 books against ~31,000 est.
+  // annual fleet miles:
+  //     fuel            $7,972  = $0.26/mi
+  //     repair + DMV   $31,844  = $1.03/mi   <- 4x the fuel
+  //     truck loan      $6,065  = $0.20/mi
+  //                              = $1.48/mi
+  // Doug's call: fuel belongs INSIDE this rate rather than as per-transaction
+  // line items, because a tank fill spans jobs — on Aug 17 a single day carried
+  // $469 of fuel that was mostly consumed later. A blended rate also carries the
+  // repair burden of ageing trucks, which is the cost he flagged as needing to
+  // land somewhere. $1.48 sits mid-range for medium-duty (F-550/F-750 typically
+  // $1.20-2.00/mi). Revisit yearly, or when odometer data starts accruing.
+  // v1179 — was $1.48 = fuel $0.26 + repair $1.03 + loan $0.20. Actual fuel is
+  // now charged separately from Plaid 6200, so keeping $0.26 in here billed it
+  // twice. Repair + loan only.
+  _TRUCK_RATE_MI: 1.23,
+  _normAddr: function(a) {
+    var t = String(a || '').toLowerCase().split(',')[0];   // house number + street only
+    // Expand abbreviations to a canonical full word so "4 Terrace Dr" and
+    // "4 Terrace Drive" match. An earlier version collapsed them to a single
+    // letter, which turned "4 Terrace Drive" into "4td" — short enough that the
+    // min-length guard then threw the match away.
+    var MAP = { rd:'road', st:'street', dr:'drive', ln:'lane', ave:'avenue', av:'avenue',
+                ct:'court', pl:'place', ter:'terrace', trl:'trail', hwy:'highway',
+                blvd:'boulevard', cir:'circle', pkwy:'parkway', n:'north', s:'south',
+                e:'east', w:'west' };
+    t = t.replace(/[^a-z0-9\s]/g, ' ')
+         .split(/\s+/)
+         .filter(Boolean)
+         .map(function(w){ return MAP[w] || w; })
+         .join('');
+    return t;
+  },
+  _findRevenue: function(addr) {
+    if (!addr) return null;
+    var key = PayrollPage._normAddr(addr);
+    if (key.length < 4) return null;
+    var best = null;
+    try {
+      var jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : [];
+      jobs.forEach(function(j) {
+        if (!j.property) return;
+        if (PayrollPage._normAddr(j.property) !== key) return;
+        var t = Number(j.total || 0);
+        if (!best || t > best.total) best = { kind:'job', num:j.jobNumber || j.job_number, client:j.clientName || j.client_name, total:t, job:j, property:j.property };
+      });
+      if (!best) {
+        var invs = (typeof DB !== 'undefined' && DB.invoices && DB.invoices.getAll) ? DB.invoices.getAll() : [];
+        invs.forEach(function(v) {
+          if (!v.property) return;
+          if (PayrollPage._normAddr(v.property) !== key) return;
+          var t = Number(v.total || 0);
+          if (!best || t > best.total) best = { kind:'invoice', num:v.invoiceNumber || v.invoice_number, client:v.clientName || v.client_name, total:t, property:v.property };
+        });
+      }
+    } catch (e) {}
+    return best;
+  },
+  _renderDayCost: function(d, addr) {
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var rev = PayrollPage._findRevenue(addr);
+    // v1209: same duplicate-row double-count that hit _expenseRows. Dormant
+    // (not rendered since v1165) but fixed so it cannot return wrong.
+    var team = PayrollPage._getEmployees();
+    var lines = [], totH = 0, totPay = 0, seenWho = {};
+    team.forEach(function(t) {
+      var who = t.name || t.id;
+      if (seenWho[who]) return;
+      seenWho[who] = true;
+      var h = 0;
+      PayrollPage._getEntriesForDate(who, d).forEach(function(e){ h += (e.hours || 0); });
+      if (!h) return;
+      var rate = Number(t.rate || t.payRate || 0);
+      var pay = h * rate;
+      totH += h; totPay += pay;
+      lines.push({ who: who, h: h, pay: pay, rate: rate });
+    });
+    if (!lines.length && !rev) return '';
+    var money = function(n){ return '$' + Math.round(n).toLocaleString(); };
+    var row = 'display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-size:12.5px;';
+    var h = '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:9px;">'
+      + '<div style="font-size:10.5px;font-weight:700;color:var(--text-light);margin-bottom:5px;">JOB COSTING</div>';
+    // two lines on top: the job, then the revenue
+    h += '<div style="' + row + '"><span style="color:var(--text-light);">JOB</span>'
+       + '<span style="font-weight:600;text-align:right;min-width:0;">'
+       + (rev ? ('#' + esc(String(rev.num || '')) + ' ' + esc(rev.client || ''))
+              : (addr ? esc(addr) + ' <span style="color:var(--text-light);font-weight:400;">(no job matched)</span>'
+                      : '<span style="color:var(--text-light);font-weight:400;">no work site this day</span>'))
+       + '</span></div>';
+    h += '<div style="' + row + '"><span style="color:var(--text-light);">REVENUE</span>'
+       + '<b style="color:var(--green-dark);">' + (rev ? money(rev.total) : '—') + '</b></div>';
+    // payroll, one line per person
+    // v1163: NO per-person repeat here. Every person's hours are already on the
+    // grid directly above — Doug: "At no point in this bill do I want you to
+    // duplicate things... You don't need to repeat the person's name as an
+    // hours. Just keep it clean and just give me the total."
+    if (lines.length) {
+      h += '<div style="border-top:1px dashed var(--border);margin-top:6px;padding-top:5px;"></div>';
+      h += '<div style="' + row + 'font-weight:700;">'
+         + '<span>WAGES <span style="color:var(--text-light);font-weight:400;">' + totH.toFixed(2) + 'h</span></span>'
+         + '<span>-' + money(totPay) + '</span></div>';
+    }
+    // v1162: the lines above are WHAT DOUG OWES THEM — flat hourly, no burden
+    // baked in. Doug: "That should be what I owe them, what I'm paying them...
+    // That should be thirty an hour set, and then payroll costs can go on this
+    // line here as a separate line below dump fees."
+    // Everything the employer pays ON TOP — payroll taxes, workers' comp, the
+    // insurance allocation — is this one line.
+    var burden = totPay * PayrollPage._BURDEN_PCT;
+    if (totPay) {
+      h += '<div style="' + row + 'margin-top:5px;"><span style="color:var(--text-light);">PAYROLL COSTS '
+         + '<span style="font-size:10px;">taxes · WC · ins · ' + Math.round(PayrollPage._BURDEN_PCT * 100) + '%</span></span>'
+         + '<span>-' + money(burden) + '</span></div>';
+    }
+    var comm = rev ? rev.total * PayrollPage._JOB_COMMISSION : 0;
+    if (comm) {
+      h += '<div style="' + row + '"><span style="color:var(--text-light);">COMMISSION '
+         + '<span style="font-size:10px;">' + Math.round(PayrollPage._JOB_COMMISSION * 100) + '%</span></span>'
+         + '<span>-' + money(comm) + '</span></div>';
+    }
+    if (rev) {
+      var net = rev.total - totPay - burden - comm;
+      h += '<div style="' + row + 'border-top:2px solid var(--border);margin-top:5px;padding-top:5px;font-weight:800;font-size:14px;">'
+         + '<span>GROSS PROFIT</span><span style="color:' + (net >= 0 ? 'var(--green-dark)' : 'var(--red,#dc3545)') + ';">' + money(net)
+         + ' <span style="font-size:11px;font-weight:600;color:var(--text-light);">' + Math.round(net / rev.total * 100) + '%</span></span></div>';
+    }
+    h += '<div style="font-size:10px;color:var(--text-light);margin-top:5px;">Gross profit — before yearly overhead. Wages = what you owe them; payroll costs = taxes/WC/insurance on top (placeholder %). Truck miles and dump fees not in this yet.</div>';
+    return h + '</div>';
+  },
+  // v1160 — tap a truck (or the phone) row to expand the full day for it.
+  // Doug: "If I click on a truck or the phone below the hours there, it should
+  // expand to give me all of the information for that day for that truck."
+  _rowToggle: function(rid) {
+    var el = document.getElementById(rid); if (!el) return;
+    var open = el.style.display !== 'none';
+    el.style.display = open ? 'none' : '';
+    var c = document.getElementById(rid + '-c'); if (c) c.textContent = open ? '▸' : '▾';
+    if (!open && el.getAttribute('data-geo') !== '1') {
+      el.setAttribute('data-geo', '1');
+      var slots = el.querySelectorAll('[data-lat]');
+      Array.prototype.forEach.call(slots, function(sp) {
+        PayrollPage._revGeo(parseFloat(sp.getAttribute('data-lat')), parseFloat(sp.getAttribute('data-lon')))
+          .then(function(a){ if (a) sp.textContent = '📍 ' + a; }).catch(function(){});
+      });
+    }
+  },
+  _truckDetailRow: function(rid, v) {
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var fd = PayrollPage._fmtDur;
+    var m = v.merged || PayrollPage._mergeStops(v.stops);
+    var h = '<div style="padding:8px 10px;background:var(--bg);font-size:12px;line-height:1.6;">';
+    h += '<div style="font-weight:700;font-size:10.5px;color:var(--text-light);">YARD TRIPS</div>';
+    if (v.trips.length) {
+      v.trips.forEach(function(t){
+        h += '<div>left <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + fd(t.mins_out) + ')</span></div>';
+      });
+    } else h += '<div style="color:var(--text-light);">never crossed the yard line</div>';
+    h += '<div style="font-weight:700;font-size:10.5px;color:var(--text-light);margin-top:6px;">SITES</div>';
+    if (m.length) {
+      m.forEach(function(x, i){
+        var maps = 'https://maps.google.com/?q=' + x.lat + ',' + x.lon;
+        h += '<div><a href="' + maps + '" target="_blank" rel="noopener" data-lat="' + x.lat + '" data-lon="' + x.lon + '" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a> '
+           + '<span style="color:var(--text-light);">' + et(x.arrive_ts) + '–' + et(x.depart_ts) + '</span> '
+           + '<b style="color:var(--green-dark);">' + fd(x.mins) + '</b>'
+           + (x.visits > 1 ? ' <span style="color:var(--text-light);">(' + x.visits + ' visits)</span>' : '') + '</div>';
+      });
+    } else h += '<div style="color:var(--text-light);">no stops away from the yard</div>';
+    var raw = v.stops.length;
+    if (raw > m.length) h += '<div style="color:var(--text-light);font-size:10.5px;margin-top:4px;">' + raw + ' raw stops merged into ' + m.length + ' site' + (m.length>1?'s':'') + ' (neighbouring addresses)</div>';
+    h += '</div>';
+    return '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + h + '</td></tr>';
+  },
+  _phoneDetailRow: function(rid, ph) {
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var fd = PayrollPage._fmtDur;
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var h = '<div style="padding:8px 10px;background:#f2faf4;font-size:12px;line-height:1.6;">';
+    h += '<div>first ping <b>' + et(ph.first_ping) + '</b> · last ping <b>' + et(ph.last_ping) + '</b>'
+       + (ph.span_hours ? ' · span <b>' + (+ph.span_hours).toFixed(2) + 'h</b>' : '') + '</div>';
+    h += '<div>' + (ph.yard_arrive ? 'at yard <b>' + et(ph.yard_arrive) + '</b>' + (ph.yard_leave ? ' → left <b>' + et(ph.yard_leave) + '</b>' : '') : 'never at the yard') + '</div>';
+    if (ph.yard_hours != null && ph.yard_hours !== '') h += '<div>yard time <b>' + fd(Math.round(+ph.yard_hours * 60)) + '</b></div>';
+    if (ph.commute_out_min) h += '<div>commute out <b>' + fd(ph.commute_out_min) + '</b>' + (ph.commute_back_min ? ' · back <b>' + fd(ph.commute_back_min) + '</b>' : '') + '</div>';
+    h += '<div style="color:var(--text-light);">' + ph.pings + ' pings' + (ph.sources ? ' · ' + esc(String(ph.sources).split(',').filter(Boolean).join(' + ')) : '') + '</div>';
+    h += '<div style="color:#4b6b4f;font-size:10.5px;margin-top:3px;">Doug\'s phone, not a truck. Covers time away from any tracked vehicle.</div>';
+    h += '</div>';
+    return '<tr id="' + rid + '" style="display:none;"><td colspan="7" style="padding:0;border-bottom:1px solid var(--border);">' + h + '</td></tr>';
+  },
+  // v1158 — what this person actually earned on this day, shown beside Details.
+  // Doug: "instead of saying the hours seven point five... it can just say
+  // details, and then to the right of that, it can say the amount of money that
+  // employee made that day." Rate comes from team_members.rate, the same source
+  // the weekly totals use.
+  _dayPay: function(userId, date, emp) {
+    var hrs = 0;
+    PayrollPage._getEntriesForDate(userId, date).forEach(function(e){ hrs += (e.hours || 0); });
+    if (!hrs) return '';
+    // prefer the employee record the caller already has; fall back to a lookup
+    var rate = Number((emp && (emp.rate || emp.payRate)) || 0);
+    if (!rate) {
+      try {
+        var team = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
+        // v1209: was taking the FIRST matching row. People have duplicate team
+        // rows — an active one carrying the rate and an inactive one with rate
+        // null — and the null row can come first, which silently rendered NO
+        // pay for that person. Take the highest rate on file.
+        var m = team.filter(function(t){ return (t.name || t.id) === userId; })
+                    .sort(function(a, b){ return Number(b.rate || b.payRate || 0) - Number(a.rate || a.payRate || 0); })[0];
+        rate = Number((m && (m.rate || m.payRate)) || 0);
+      } catch (e) {}
+    }
+    if (!rate) return '';
+    // v1159: no cents — Doug: "take out the cent dot zero zero in the dollar
+    // fields, so it's shorter."
+    return '$' + Math.round(hrs * rate).toLocaleString();
+  },
+  // v1153 — Doug's phone as a ROW IN THE SAME TABLE as the trucks, with him as
+  // the driver. Doug: "just list my phone same as you list the trucks, cleaner
+  // this way. List me as the driver." Putting it on the same grid is what lets
+  // him read his day-start against each truck's yard time on one line — the
+  // gap between "phone on at 7:39" and "truck left yard at 11:07" is the yard
+  // time the truck cannot see.
+  _phoneRow: function(ph) {
+    if (!ph || !ph.pings) return '';
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var td = 'padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:#f2faf4;';
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var src = ph.sources ? String(ph.sources).split(',').filter(Boolean).join(' + ') : '';
+    var span = ph.span_hours ? PayrollPage._fmtDur(Math.round(+ph.span_hours * 60)) : '—';
+    var yard = (ph.yard_hours != null && ph.yard_hours !== '') ? PayrollPage._fmtDur(Math.round(+ph.yard_hours * 60)) : '—';
+    var prid = 'phone-det-' + (ph.first_ping || '').replace(/[^0-9]/g, '').slice(0, 12);
+    return '<tr onclick="PayrollPage._rowToggle(\'' + prid + '\')" style="cursor:pointer;">'
+      + '<td style="' + td + 'font-weight:700;"><span id="' + prid + '-c" style="color:var(--text-light);font-size:10px;margin-right:3px;">▸</span>📱 My Phone</td>'
+      + '<td style="' + td + 'color:var(--green-dark);font-weight:600;">Doug</td>'
+      + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(ph.first_ping) + '</td>'
+      + '<td style="' + td + 'color:var(--green-dark);font-weight:700;">' + et(ph.last_ping) + '</td>'
+      + '<td style="' + td + '">' + span + '</td>'
+      + '<td style="' + td + 'white-space:normal;min-width:120px;color:var(--text-light);">'
+          + (ph.yard_arrive ? 'at yard ' + et(ph.yard_arrive) : 'never at yard')
+          + ' · ' + ph.pings + ' pings' + (src ? ' · ' + esc(src) : '')
+        + '</td>'
+      + '<td style="' + td + 'font-weight:700;color:var(--green-dark);">' + yard + '</td>'
+      + '</tr>'
+      + PayrollPage._phoneDetailRow(prid, ph);
+  },
+  // v1150 — keep GPS boilerplate OUT of the hours cells. Doug: "no gps data in
+  // hours fields." The auto writer stamps every row with
+  // "Auto from GPS — <truck> (N pings)", which buried the cell you actually
+  // type in. That detail still lives in the truck panel below and in Details;
+  // here we strip it and show only what a human would have written (e.g.
+  // "overridden by Doug Aug 20"). Returns '' when nothing human remains.
+  _cellNote: function(notes) {
+    var n = String(notes || '');
+    if (!n) return '';
+    n = n.replace(/Auto from GPS\s*[—-][^·|]*/i, '');
+    n = n.replace(/^[\s·|,-]+/, '').replace(/[\s·|,-]+$/, '');
+    return n;
+  },
+  // ── v1149: merge neighbouring stops into ONE work address ─────────────────
+  // Doug: "I don't need the neighbor's address. It's the same address. Open the
+  // geofence wider or just if their neighbors lump it into the work address."
+  // Reverse-geocoding two stops 40 m apart on the same property returned
+  // "4 Terrace Drive" and "2 Terrace Drive" — one job, shown as two. Anything
+  // within MERGE_M of an existing cluster folds into it: minutes add up, the
+  // visit count is kept, and the address shown is the cluster's longest stop.
+  _MERGE_M: 180,
+  _metres: function(a, b) {
+    var R = 6371000, r = Math.PI / 180;
+    var dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+    var h = Math.sin(dLat/2) * Math.sin(dLat/2)
+          + Math.cos(a[0]*r) * Math.cos(b[0]*r) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  },
+  // v1184 - bm_truck_stops is far too sparse to drive the revenue row: over
+  // Aug 3-21 it returned 18 stops for 19 days, and Aug 19 (a confirmed work
+  // day at 4 Terrace) was missing entirely. Bouncie SLEEPS when parked, so a
+  // job site often never registers as a 'stop'. This rebuilds the day's work
+  // sites from raw positions instead, and is used whenever the RPC is empty.
+  //
+  // Two rules keep a DRIVING ROUTE from masquerading as a job site:
+  //   * >= 20 pings in the 250 m cluster (a drive-through leaves a handful)
+  //   * >= 60 min between first and last ping in it
+  // Yard and Doug's house are excluded - neither is billable work.
+  _YARD: [41.30483, -73.92349],
+  _HOME: [41.36112, -73.88646],
+  // v1196 - optional vehicleId so ONE truck's sites can be rebuilt. The truck
+  // expand panel read bm_truck_stops, which on Tue 8/18 reported 'no stops away
+  // from the yard' for the F-550 even though it sat at 4 Terrace all day.
+  _daySites: function(day, vehicleId) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve([]);
+    var all = [];
+    var page = function(off) {
+      var q = C.from('vehicle_positions').select('lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59');
+      if (vehicleId) q = q.eq('vehicle_id', vehicleId);
+      return q
+        .order('ts', { ascending: true }).range(off, off + 999)
+        .then(function(r) {
+          if (r.error || !r.data || !r.data.length) return;
+          all = all.concat(r.data);
+          if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+        });
+    };
+    return page(0).then(function() {
+      var cl = [];
+      all.forEach(function(r) {
+        if (PayrollPage._metres(PayrollPage._YARD, [r.lat, r.lon]) <= 250) return;
+        if (PayrollPage._metres(PayrollPage._HOME, [r.lat, r.lon]) <= 250) return;
+        for (var i = 0; i < cl.length; i++) {
+          if (PayrollPage._metres([cl[i].lat, cl[i].lon], [r.lat, r.lon]) <= 250) {
+            cl[i].n += 1; cl[i].last = r.ts; return;
+          }
+        }
+        cl.push({ lat: r.lat, lon: r.lon, n: 1, first: r.ts, last: r.ts });
+      });
+      // v1186 - a long drive day slices the ROUTE into dozens of 250 m
+      // clusters that all clear the ping/dwell test (Aug 4 produced 55).
+      // Every extra site costs a Nominatim geocode, so keep only the
+      // strongest few by ping count - a real job site always dominates.
+      return cl.filter(function(c) {
+        if (c.n < 20) return false;
+        c.mins = (new Date(c.last) - new Date(c.first)) / 60000;
+        return c.mins >= 60;
+      }).sort(function(a,b){ return b.n - a.n; }).slice(0, 6).map(function(c) {
+        return { lat:c.lat, lon:c.lon, mins:c.mins, visits:1,
+                 arrive_ts:c.first, depart_ts:c.last, bestMins:c.mins };
+      }).sort(function(a,b){ return new Date(a.arrive_ts) - new Date(b.arrive_ts); });
+    }).catch(function(){ return []; });
+  },
+  // v1198 - classify a day that matched no job or invoice, instead of leaving
+  // it looking like missing revenue. Doug: "if you think the day might have
+  // been yard or estimates, write that."
+  //
+  // Thu 8/13 is the case that prompted it. The trucks ran 7:57am-6:31pm, but
+  // the day was: pick the bucket truck up in Yorktown, three short stops, and
+  // 3h26m at the yard. Nothing billable happened, so a blank revenue cell is
+  // CORRECT there - it just needs to say why.
+  //
+  // Built on a time-ordered itinerary rather than spatial clustering. Walking
+  // the track in time order and calling a stop 'consecutive pings that stay
+  // inside 200 m for 10+ min' is the only method that has held up here - plain
+  // clustering slices a drive route into dozens of fake sites whose first and
+  // last ping are hours apart, which is what made Aug 4 report 55 of them.
+  _dayItinerary: function(day, vehicleId) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve([]);
+    var all = [];
+    var page = function(off) {
+      var q = C.from('vehicle_positions').select('lat,lon,ts')
+        .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59');
+      if (vehicleId) q = q.eq('vehicle_id', vehicleId);
+      return q.order('ts', { ascending: true }).range(off, off + 999).then(function(r) {
+        if (r.error || !r.data || !r.data.length) return;
+        all = all.concat(r.data);
+        if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+      });
+    };
+    return page(0).then(function() {
+      var out = [], i = 0;
+      while (i < all.length) {
+        var a = all[i], j = i + 1;
+        while (j < all.length && PayrollPage._metres([a.lat, a.lon], [all[j].lat, all[j].lon]) <= 200) j++;
+        var mins = (new Date(all[j-1].ts) - new Date(a.ts)) / 60000;
+        if (mins >= 10) {
+          var la = 0, lo = 0;
+          for (var k = i; k < j; k++) { la += all[k].lat; lo += all[k].lon; }
+          la /= (j - i); lo /= (j - i);
+          out.push({ from: a.ts, to: all[j-1].ts, mins: mins, lat: la, lon: lo,
+                     atYard: PayrollPage._metres(PayrollPage._YARD, [la, lo]) <= 300,
+                     atHome: PayrollPage._metres(PayrollPage._HOME, [la, lo]) <= 300 });
+        }
+        i = (j > i) ? j : i + 1;
+      }
+      return out;
+    }).catch(function(){ return []; });
+  },
+  // What KIND of day was this? Uses Doug's own threshold: a stop under an hour
+  // is an estimate, not a job.
+  _dayKind: function(day) {
+    return PayrollPage._dayItinerary(day).then(function(st) {
+      if (!st.length) return { kind: 'none' };
+      var yard = 0, away = [];
+      st.forEach(function(x) {
+        if (x.atYard) { yard += x.mins; return; }
+        if (x.atHome) return;
+        away.push(x);
+      });
+      var worked = away.filter(function(x) { return x.mins >= PayrollPage._JOB_DAY_MIN_MINUTES; });
+      if (worked.length) return { kind: 'work', stops: worked, yard: yard };
+      if (away.length) return { kind: 'estimates', stops: away, yard: yard };
+      if (yard > 0) return { kind: 'yard', stops: [], yard: yard };
+      return { kind: 'none' };
+    }).catch(function(){ return { kind: 'none' }; });
+  },
+  _kindLabel: function(k) {
+    var hrs = function(m) { return (m / 60).toFixed(1) + 'h'; };
+    if (k.kind === 'yard')
+      return { text: 'YARD DAY', tip: 'No stop away from the yard — ' + hrs(k.yard) + ' at the yard. Nothing billable.' };
+    if (k.kind === 'estimates')
+      return { text: k.stops.length + ' ESTIMATE' + (k.stops.length > 1 ? 'S' : '')
+                     + (k.yard >= 60 ? ' + YARD' : ''),
+               tip: 'No stop reached an hour, so none of these are jobs:\n'
+                    + k.stops.map(function(x){ return '  ' + Math.round(x.mins) + ' min'; }).join('\n')
+                    + (k.yard >= 60 ? ('\nplus ' + hrs(k.yard) + ' at the yard') : '') };
+    if (k.kind === 'none') return { text: 'no truck movement', tip: 'No GPS for this day.' };
+    return null;
+  },
+  _mergeStops: function(stops) {
+    var out = [];
+    (stops || []).forEach(function(s) {
+      for (var i = 0; i < out.length; i++) {
+        if (PayrollPage._metres([out[i].lat, out[i].lon], [s.stop_lat, s.stop_lon]) <= PayrollPage._MERGE_M) {
+          var c = out[i];
+          c.mins += (s.mins || 0);
+          c.visits += 1;
+          if (new Date(s.arrive_ts) < new Date(c.arrive_ts)) c.arrive_ts = s.arrive_ts;
+          if (new Date(s.depart_ts) > new Date(c.depart_ts)) c.depart_ts = s.depart_ts;
+          if ((s.mins || 0) > c.bestMins) { c.bestMins = s.mins || 0; c.lat = s.stop_lat; c.lon = s.stop_lon; }
+          return;
+        }
+      }
+      out.push({ lat:s.stop_lat, lon:s.stop_lon, mins:s.mins || 0, visits:1,
+                 arrive_ts:s.arrive_ts, depart_ts:s.depart_ts, bestMins:s.mins || 0 });
+    });
+    out.sort(function(a,b){ return new Date(a.arrive_ts) - new Date(b.arrive_ts); });
+    return out;
+  },
+  // ── v1146: assumed driver per truck ──────────────────────────────────────
+  // vehicles.default_driver_name is the "assumed to be driving" value. Doug
+  // changes it from the dropdown right on the truck row; it saves immediately
+  // and is what job-costing will attribute the labour hours to.
+  _team: null,
+  _drivers: {},
+  _loadTeamAndDrivers: function() {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve(null);
+    var jobs = [
+      C.from('team_members').select('name,active,role,employment_type').then(function(r){
+        if (r.error || !r.data) return;
+        // v1149 — only people who actually drive a company truck belong in this
+        // dropdown. Doug: "Only Doug, David, or Catherine driving. Don't need
+        // Braxton or [Michelle] or anyone else in there as an option."
+        // Filtered by employment type rather than by name, so a future hourly
+        // hire shows up on its own but a subcontractor or commission-only
+        // salesperson never does.
+        var seen = {}, out = [];
+        r.data.forEach(function(t){
+          if (t.active === false || !t.name || seen[t.name]) return;
+          var et = String(t.employment_type || '').toLowerCase();
+          var role = String(t.role || '').toLowerCase();
+          if (et === 'subcontractor' || et === 'commission' || role === 'sales') return;
+          seen[t.name] = 1; out.push(t.name);
+        });
+        out.sort(); PayrollPage._team = out;
+      }),
+      C.from('vehicles').select('id,default_driver_name').then(function(r){
+        if (r.error || !r.data) return;
+        r.data.forEach(function(v){ PayrollPage._drivers[v.id] = v.default_driver_name || ''; });
+      })
+    ];
+    return Promise.all(jobs).catch(function(){ return null; });
+  },
+  _driverSel: function(vid, vname) {
+    var cur = PayrollPage._drivers[vid] || '';
+    var names = PayrollPage._team || [];
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var opts = '<option value="">— driver —</option>';
+    names.forEach(function(n){
+      opts += '<option value="' + esc(n) + '"' + (n === cur ? ' selected' : '') + '>' + esc(n.split(' ')[0]) + '</option>';
+    });
+    return '<select onclick="event.stopPropagation()" onchange="event.stopPropagation();PayrollPage._setDriver(\'' + vid + '\',this.value)" '
+      + 'title="Assumed driver — change it here" '
+      + 'style="font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:5px;background:#fff;color:'
+      + (cur ? 'var(--green-dark)' : 'var(--text-light)') + ';max-width:110px;">' + opts + '</select>';
+  },
+  _setDriver: function(vid, name) {
+    PayrollPage._drivers[vid] = name;
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return;
+    C.from('vehicles').update({ default_driver_name: name || null }).eq('id', vid).then(function(r){
+      if (r.error) { console.warn('[setDriver]', r.error.message); if (typeof UI !== 'undefined') UI.toast('Could not save driver'); return; }
+      if (typeof UI !== 'undefined') UI.toast(name ? ('Driver set to ' + name) : 'Driver cleared');
+    });
+  },
+  _truckStops: function(dateStr) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || !C.rpc) return Promise.resolve(null);
+    return C.rpc('bm_truck_stops', { p_day: dateStr }).then(function(res) {
+      if (res.error) { console.warn('[truck_stops]', res.error.message); return null; }
+      return res.data || [];
+    }).catch(function(){ return null; });
+  },
+  // Reverse-geocode a stop to a street address (= the client's address). Cached
+  // in localStorage so we hit Nominatim at most once per location.
+  _revGeo: function(lat, lon) {
+    // v1193 - same CORS problem as _fwdGeo, and this one mattered just as
+    // much: with it failing, a day whose site matched no job or invoice had
+    // NOTHING to show, so the JOB row read '—' on every unaccounted day.
+    // Doug: "at least put the addresses in for the days if you don't know
+    // the jobs". Photon returns the same OSM data with CORS allowed.
+    var key = 'bm-revgeo2-' + lat.toFixed(4) + ',' + lon.toFixed(4);
+    try { var c = localStorage.getItem(key); if (c) return Promise.resolve(c); } catch(e) {}
+    return fetch('https://photon.komoot.io/reverse?lat=' + lat + '&lon=' + lon)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var f = (d && d.features && d.features[0] && d.features[0].properties) || {};
+        var road = ((f.housenumber ? f.housenumber + ' ' : '') + (f.street || f.name || '')).trim();
+        var town = f.city || f.district || f.locality || f.county || '';
+        var label = [road, town].filter(Boolean).join(', ') || (lat.toFixed(4) + ',' + lon.toFixed(4));
+        try { localStorage.setItem(key, label); } catch(e) {}
+        return label;
+      }).catch(function(){ return null; });
+  },
+  _truckExpand: function(d, vid, rid) {
+    var box = document.getElementById(rid); if (!box) return;
+    var caret = document.getElementById(rid + '-caret');
+    if (box.style.display !== 'none') { box.style.display = 'none'; if (caret) caret.textContent = '▸'; return; }
+    box.style.display = 'block'; if (caret) caret.textContent = '▾';
+    PayrollPage._truckFill(d, vid, rid);
+  },
+
+  // v1142: population split out of _truckExpand so rows can render already
+  // expanded — the stops and time-on-site are the reason you open a day.
+  // v1197 - did this truck actually touch the yard on this day? Doug asked
+  // "is 9:37 where it left the yard?" for the F-550 on Tue 8/18. It was not:
+  // that first ping sat 114 m from 4 Terrace and 30 KM from the yard, and the
+  // truck never pinged within 500 m of the yard all day. The dongle was
+  // asleep for the entire drive out, woke on site, then went silent again for
+  // 458 minutes. Reporting first/last ping as 'LEFT YARD / BACK' turns a gap
+  // in the data into a fact, so say plainly when there was no yard crossing.
+  _yardTouched: function(day, vehicleId) {
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C) return Promise.resolve(true);          // unknown - don't cry wolf
+    var Y = PayrollPage._YARD, R = 0.0035;         // ~380 m box around the yard
+    var q = C.from('vehicle_positions').select('ts')
+      .gte('ts', day + 'T04:00:00').lt('ts', day + 'T23:59:59')
+      .gte('lat', Y[0] - R).lte('lat', Y[0] + R)
+      .gte('lon', Y[1] - R).lte('lon', Y[1] + R).limit(1);
+    if (vehicleId) q = q.eq('vehicle_id', vehicleId);
+    return q.then(function(r) { return !!(r && r.data && r.data.length); })
+            .catch(function(){ return true; });
+  },
+  _truckFill: function(d, vid, rid) {
+    var box = document.getElementById(rid); if (!box) return;
+    var v = (PayrollPage._dayCache[d] || {})[vid]; if (!v) { box.textContent = '—'; return; }
+    if (box.getAttribute('data-loaded') === '1') return; // already rendered
+    box.setAttribute('data-loaded', '1');
+    var et = function(ts) { return ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '—'; };
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    // v1146: tightened + laid out ACROSS the page; the ADDRESS leads each site
+    // line instead of an "ON SITE" label. Two flex columns on desktop, stacks
+    // at phone width.
+    var tripsHtml = v.trips.length
+      ? v.trips.map(function(t){
+          return '<div style="white-space:nowrap;">left yard <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + PayrollPage._fmtDur(t.mins_out) + ')</span></div>';
+        }).join('')
+      : '<div style="color:var(--text-light);">no yard trips</div>';
+    // v1149: expanded view lists MERGED sites (neighbouring stops folded into
+    // one work address), with a visit count when a site was returned to.
+    var mstops = v.merged || PayrollPage._mergeStops(v.stops);
+    var stopsHtml = mstops.length
+      ? mstops.map(function(s, i){
+          var sid = rid + '-s' + i;
+          var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
+          return '<div style="padding:1px 0;">'
+            + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a></span>'
+            + ' <span style="white-space:nowrap;"><span style="color:var(--text-light);">' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</span>'
+            + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(s.mins) + '</b>'
+            + (s.visits > 1 ? ' <span style="color:var(--text-light);">(' + s.visits + ' visits)</span>' : '')
+            + '</span></div>';
+        }).join('')
+      : '<div id="' + rid + '-gps" style="color:var(--text-light);">rebuilding sites from GPS…</div>';
+    box.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:2px 18px;font-size:12px;line-height:1.5;">'
+      + '<div style="flex:1 1 185px;min-width:0;">' + tripsHtml + '<div id="' + rid + '-yw"></div></div>'
+      + '<div style="flex:1.7 1 235px;min-width:0;">' + stopsHtml + '</div>'
+      + '</div>';
+    // v1197 - warn when these times are NOT a yard crossing
+    PayrollPage._yardTouched(d, vid).then(function(touched) {
+      if (touched) return;
+      var w = document.getElementById(rid + '-yw');
+      if (!w) return;
+      w.innerHTML = '<div style="color:#b45309;font-size:11px;line-height:1.35;margin-top:3px;">'
+        + '⚠ never pinged at the yard today — these are the first and last GPS pings, '
+        + 'not a yard departure. The tracker was asleep for the drive out.</div>';
+    }).catch(function(){});
+    // v1196 - the stops RPC is sparse (Bouncie sleeps when parked), so when it
+    // returns nothing rebuild this truck's sites from raw positions. Doug:
+    // "it says no stops away from the yard, yet it clearly was at the job
+    // that Tuesday the eighteenth".
+    if (!mstops.length) {
+      PayrollPage._daySites(d, vid).then(function(gs) {
+        var el = document.getElementById(rid + '-gps');
+        if (!el) return;
+        if (!gs || !gs.length) { el.textContent = 'No stops away from the yard.'; return; }
+        el.innerHTML = gs.map(function(s, i) {
+          var sid = rid + '-g' + i;
+          var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
+          return '<div style="padding:1px 0;">'
+            + '<span id="' + sid + '"><a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</a></span>'
+            + ' <span style="white-space:nowrap;"><span style="color:var(--text-light);">' + et(s.arrive_ts) + '–' + et(s.depart_ts) + '</span>'
+            + ' <b style="color:var(--green-dark);">' + PayrollPage._fmtDur(s.mins) + '</b>'
+            + ' <span style="color:var(--text-light);font-size:11px;">from GPS</span></span></div>';
+        }).join('');
+        gs.forEach(function(s, i) {
+          PayrollPage._revGeo(s.lat, s.lon).then(function(addr) {
+            var e2 = document.getElementById(rid + '-g' + i); if (!e2 || !addr) return;
+            var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
+            e2.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 ' + esc(addr) + '</a>';
+          }).catch(function(){});
+        });
+      }).catch(function() {
+        var el = document.getElementById(rid + '-gps');
+        if (el) el.textContent = 'No stops away from the yard.';
+      });
+    }
+    mstops.forEach(function(s, i){
+      var sid = rid + '-s' + i;
+      PayrollPage._revGeo(s.lat, s.lon).then(function(addr){
+        var el = document.getElementById(sid); if (!el || !addr) return;
+        var maps = 'https://maps.google.com/?q=' + s.lat + ',' + s.lon;
+        el.innerHTML = '<a href="' + maps + '" target="_blank" rel="noopener" style="color:var(--link,#1565c0);font-weight:600;">📍 ' + esc(addr) + '</a>';
+      }).catch(function(){});
+    });
+  },
+  _saveBouncieNote: function(d, v) { try { localStorage.setItem('bm-payroll-note-' + d, v); if (typeof UI !== 'undefined') UI.toast('Note saved'); } catch(e) {} },
+
+  // ── v1122: inline quick-edit of clock in/out right in the calendar cell ──
+  // Saves straight to the day's time entry (creates one if none). Recomputes
+  // hours when both ends are set; keeps the cell expanded across the reload.
+  _hm: function(ts) { if (!ts) return ''; var x = new Date(ts); return ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2); },
+  // v1199 - Doug: "should be able to edit hours here". The popover explained
+  // WHY a time was chosen but you had to leave it to change anything: the Edit
+  // button closed the popover and _saveInline always finished with a full
+  // loadPage('payroll'). Now IN, OUT and the hours total are editable in place
+  // and the popover re-renders itself without tearing the page down.
+  _hhmmLocal: function(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  },
+  // Set the TOTAL directly and keep clock-in, moving clock-out to match. Doug
+  // often knows the hours ('that was an eight hour day') without wanting to
+  // work out the two clock times.
+  _saveWhyHours: function(user, date, entryId, val) {
+    var h = parseFloat(val);
+    if (isNaN(h) || h < 0 || h > 24) { if (typeof UI !== 'undefined') UI.toast('Enter hours between 0 and 24', 'error'); return; }
+    var e = DB.timeEntries.getAll().filter(function(t){ return t.id === entryId; })[0];
+    var upd = { hours: Math.round(h * 100) / 100, locked: true, source: 'manual' };
+    if (e && e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + h * 3600000).toISOString();
+    if (e) DB.timeEntries.update(e.id, upd, { force: true });
+    // v1200 - the SERVER column is user_name. A row created with only
+    // userId/user syncs with user_name NULL and effectively disappears, so set
+    // userName too. _getEntriesForDate tolerates all three, which is why this
+    // looked fine locally.
+    else DB.timeEntries.create({ userId:user, user:user, userName:user, date:date, hours:upd.hours, locked:true, source:'manual' });
+    PayrollPage._afterWhyEdit(user, date);
+  },
+  _afterWhyEdit: function(user, date) {
+    var dk = PayrollPage._dayApprovalKey(user, date);
+    if (PayrollPage._getApprovals()[dk] === 'approved') {
+      PayrollPage._approvals[dk + '_editedAfter'] = true; PayrollPage._saveApprovals();
+    }
+    if (typeof UI !== 'undefined') UI.toast('Saved — locked so the cron cannot overwrite it');
+    PayrollPage._fillWhy('whypop-body', user, date);          // redraw the popover in place
+    var cell = document.getElementById('hcell-' + user + '-' + date);
+    if (cell) cell.setAttribute('data-stale', '1');
+  },
+  _saveInline: function(user, date, entryId, field, hhmm, mode) {
+    if (!hhmm) return;
+    var iso = date + 'T' + hhmm + ':00';
+    var col = field === 'in' ? 'clockIn' : 'clockOut';
+    var e = entryId ? DB.timeEntries.getAll().find(function(t) { return t.id === entryId; }) : null;
+    if (e) {
+      var upd = {}; upd[col] = iso;
+      var ci = field === 'in' ? iso : e.clockIn, co = field === 'out' ? iso : e.clockOut;
+      if (ci && co) upd.hours = Math.round((new Date(co) - new Date(ci)) / 3600000 * 100) / 100;
+      // v1172 — LOCK a hand-edited row. compute_auto_timesheets runs on cron
+      // every 2 hours over the last 4 days and rewrites any row still marked
+      // 'auto-bouncie'. Without this, a correction typed into a cell is silently
+      // recomputed away within two hours. The function skips rows that are
+      // locked OR source='manual', on insert, update AND prune — so set both.
+      upd.locked = true; upd.source = 'manual';
+      DB.timeEntries.update(e.id, upd, { force: true });
+    } else {
+      var ne = { userId: user, user: user, userName: user, date: date, locked: true, source: 'manual' }; ne[col] = iso;   // v1200 - user_name is the server column
+      DB.timeEntries.create(ne);
+    }
+    var dk = PayrollPage._dayApprovalKey(user, date);
+    if (PayrollPage._getApprovals()[dk] === 'approved') { PayrollPage._approvals[dk + '_editedAfter'] = true; PayrollPage._saveApprovals(); }
+    PayrollPage._expandedCells[user + '_' + date] = true; // keep the cell open after re-render
+    if (typeof UI !== 'undefined') UI.toast('Saved');
+    if (mode === 'why') { PayrollPage._afterWhyEdit(user, date); return; }   // v1199 - stay put
+    if (mode === 'detail') {
+      // v1181: no modal to reopen — the popover is closed by the edit flow
+      if (typeof loadPage === 'function') loadPage('payroll');
+      return;
+    }
+    if (typeof loadPage === 'function') loadPage('payroll');
+  },
+  // Inline in/out editor markup for one entry (or a blank creator row when e is null)
+  // v1182 — Doug: "On the bottom of the green line, have it in smaller font…
+  // have the time in and time out. And then if we click into the cell, it will
+  // give us some details on why specifically you chose that time in and that
+  // time out." So the grid cell shows the times as small text, not inputs, and
+  // the whole cell opens the reasoning popover. Editing lives in that popover.
+  // v1183 - Doug: "under green line have the time in as 9:00a - 5:00pm and on
+  // the top have the total. 8 - $240". Earliest clock-in, latest clock-out.
+  _dayInOut: function(userId, date) {
+    var t = function(ms) {
+      var d = new Date(ms);
+      if (isNaN(d.getTime())) return '';
+      var h = d.getHours(), mn = d.getMinutes();
+      var ap = h < 12 ? 'a' : 'p'; h = h % 12 || 12;
+      return h + ':' + ('0' + mn).slice(-2) + ap;
+    };
+    var ins = [], outs = [];
+    PayrollPage._getEntriesForDate(userId, date).forEach(function(e) {
+      if (e.clockIn)  { var a = new Date(e.clockIn).getTime();  if (!isNaN(a)) ins.push(a); }
+      if (e.clockOut) { var b = new Date(e.clockOut).getTime(); if (!isNaN(b)) outs.push(b); }
+    });
+    if (!ins.length && !outs.length) return '';
+    var a = ins.length ? t(Math.min.apply(null, ins)) : '';
+    var b = outs.length ? t(Math.max.apply(null, outs)) : '';
+    if (!a && !b) return '';
+    return '<div style="font-size:9px;color:var(--text-light);line-height:1.2;margin-top:3px;white-space:nowrap;overflow:hidden;">'
+      + (a || '?') + ' - ' + (b || '?') + '</div>';
+  },
+  _cellTimes: function(user, date, e) {
+    var t = function(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '—';
+      var h = d.getHours(), mn = d.getMinutes();
+      var ap = h < 12 ? 'a' : 'p'; h = h % 12 || 12;
+      return h + ':' + ('0' + mn).slice(-2) + ap;
+    };
+    if (!e || (!e.clockIn && !e.clockOut)) return '';
+    return '<div style="font-size:9px;color:var(--text-light);line-height:1.25;margin-top:2px;white-space:nowrap;">'
+      + t(e.clockIn) + '–' + t(e.clockOut) + '</div>';
+  },
+  _inlineTimeRow: function(user, date, e, mode) {
+    var self = PayrollPage; e = e || {};
+    // v1157: `mode` lets the SAME editor run inside the Details modal. Without
+    // it the save ends in loadPage('payroll'), which tears the modal down
+    // mid-edit. In 'detail' mode we re-open Details instead.
+    var m = mode === 'detail' ? 'detail' : '';
+    var mk = function(field, val) {
+      return '<input type="time" value="' + val + '" onclick="event.stopPropagation()" onchange="PayrollPage._saveInline(\'' + user + '\',\'' + date + '\',\'' + (e.id || '') + '\',\'' + field + '\',this.value,\'' + m + '\')" style="font-size:' + (m ? '13' : '11') + 'px;border:1px solid var(--border);border-radius:4px;padding:' + (m ? '4px 6px' : '2px 2px') + ';width:100%;min-width:0;max-width:' + (m ? '120' : '104') + 'px;box-sizing:border-box;">';
+    };
+    // v1158: no dash between the fields and no hours restatement — Doug: "You
+    // don't need a dash there... You can just have the in and out so it's
+    // tighter." The day total is already at the top of the cell and the day's
+    // pay now sits beside Details, so the per-entry hours had nothing to add.
+    return '<div style="margin-top:3px;display:flex;align-items:center;gap:3px;flex-wrap:wrap;justify-content:center;min-width:0;">'
+      + mk('in', self._hm(e.clockIn)) + mk('out', self._hm(e.clockOut))
+      + '</div>';
+    // v1155: the AM/PM restatement under the inputs is gone. It was added in
+    // v1140 because the narrow time inputs clipped the meridiem; they no longer
+    // do (they render "11:07 AM" in full), so the line only repeated what was
+    // directly above it. Doug: "just details and 7.5 h. does not need to repeat
+    // what is written above."
+  },
+
+  // ── v1122: Bouncie truck panel = single date + ‹ › arrows (was a 7-day strip) ──
+  _bDate: null,
+  _bounceDateShift: function(delta) {
+    var base = PayrollPage._bDate || new Date().toISOString().slice(0, 10);
+    var nd = new Date(base + 'T12:00:00'); nd.setDate(nd.getDate() + delta);
+    var p = function(x) { return (x < 10 ? '0' : '') + x; };
+    PayrollPage._bDate = nd.getFullYear() + '-' + p(nd.getMonth() + 1) + '-' + p(nd.getDate());
+    var lbl = document.getElementById('bounce-date-label');
+    if (lbl) lbl.textContent = nd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    PayrollPage._bDayOpen = null;           // force _bounceToggle to open (not toggle off)
+    PayrollPage._bounceToggle(PayrollPage._bDate);
+  },
+
+  // ── v1097: Sales commissions (separate from hourly payroll) ──
+  // 8% of the job total for work SOLD by each salesperson. Attribution:
+  // a job.salesperson field if present, else the legacy "D —/C —/M —" name
+  // prefix. Doug + Catherine ONLY. Michelle Melagrano removed 2026-08-28
+  // (Doug: "she doesn't get commissions, remove her from the code") - she no
+  // longer appears in the roll-up and M-prefixed jobs attribute to nobody.
+  // Computed live from jobs; no
+  // new table (it's a read-only roll-up).
+  _COMMISSION_RATE: 0.08,
+  _salesPerson: function(job) {
+    var s = (job.salesperson || job.sales_person || '').toString().toLowerCase();
+    if (s) {
+      if (s.indexOf('doug') >= 0) return 'Doug';
+      if (s.indexOf('cath') >= 0 || s.indexOf('conway') >= 0) return 'Catherine';
+      if (s === 'd') return 'Doug'; if (s === 'c') return 'Catherine';
+    }
+    var m = /^\s*([DC])\s*[—\-]/.exec(job.clientName || job.client_name || '');
+    return m ? { D:'Doug', C:'Catherine' }[m[1]] : null;
+  },
+  _renderCommissions: function() {
+    var jobs = (typeof DB !== 'undefined' && DB.jobs) ? DB.jobs.getAll() : [];
+    var agg = { Doug:{n:0,t:0}, Catherine:{n:0,t:0} };
+    var tagged = 0;
+    jobs.forEach(function(j) {
+      var w = PayrollPage._salesPerson(j);
+      if (w && agg[w]) { agg[w].n++; agg[w].t += (parseFloat(j.total) || 0); tagged++; }
+    });
+    var money = (typeof UI !== 'undefined' && UI.money) ? UI.money : function(n){ return '$' + (n||0).toFixed(0); };
+    var rows = ['Doug','Catherine'].map(function(p) {
+      var a = agg[p], comm = a.t * PayrollPage._COMMISSION_RATE;
+      return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:10px 14px;border-top:1px solid var(--border);align-items:baseline;">'
+        + '<div style="font-weight:600;font-size:13px;">' + p + ' <span style="font-size:11px;color:var(--text-light);font-weight:400;">(' + a.n + ' sale' + (a.n === 1 ? '' : 's') + ')</span></div>'
+        + '<div style="font-size:12px;color:var(--text-light);text-align:right;white-space:nowrap;">' + money(a.t) + '</div>'
+        + '<div style="font-size:14px;font-weight:800;color:var(--green-dark);text-align:right;white-space:nowrap;">' + money(comm) + '</div>'
+        + '</div>';
+    }).join('');
+    var lowTag = tagged < jobs.length * 0.5;
+    return '<details style="margin-top:20px;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+      + '<summary style="padding:12px 16px;cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center;">'
+      +   '<span>🏷 Sales Commissions <span style="font-weight:500;color:var(--text-light);font-size:12px;">8% · separate from hourly pay</span></span><span style="font-size:11px;color:var(--text-light);font-weight:500;">tap ▾</span>'
+      + '</summary>'
+      + '<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:8px 14px 2px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-light);letter-spacing:.4px;"><div>Salesperson</div><div style="text-align:right;">Sales $</div><div style="text-align:right;">8% comm</div></div>'
+      + rows
+      + '<div style="padding:10px 16px;font-size:11px;color:' + (lowTag ? '#b45309' : 'var(--text-light)') + ';line-height:1.5;border-top:1px solid var(--border);">'
+      +   (lowTag ? '⚠ ' : '') + 'Counts jobs tagged to a salesperson (' + tagged + ' of ' + jobs.length + ' tagged). Untagged jobs are not counted — set a job\'s salesperson (or prefix its name &ldquo;M — …&rdquo;) to include it. Commission is 8% of job total; separate from hourly payroll.'
+      + '</div>'
+      + '</details>';
+  },
+
+  render: function() {
+    var self = PayrollPage;
+    self._bDayOpen = null;
+    var dates = self._getWeekDates(self._weekOffset);
+    var employees = self._getEmployees();
+    var weekStart = dates[0];
+    var weekEnd = dates[6];
+    var dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var today = new Date().toISOString().split('T')[0];
+    var approvals = self._getApprovals();
+
+    var html = '<div style="max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+
+    // ── Week Navigator ──
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
+      + '<button onclick="PayrollPage._weekOffset--;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">← Prev</button>'
+      + '<div style="text-align:center;">'
+      + (function() {
+          var ws = PayrollPage._pDate(weekStart), we = PayrollPage._pDate(weekEnd);
+          var wk = PayrollPage._isoWeek(ws), of = PayrollPage._isoWeeksInYear(ws.getFullYear());
+          var mon = ws.toLocaleDateString('en-US', { month:'long' }).toUpperCase();
+          var endMon = we.toLocaleDateString('en-US', { month:'long' }).toUpperCase();
+          var span = (mon === endMon)
+            ? mon + ' ' + ws.getDate() + ' – ' + we.getDate()
+            : mon + ' ' + ws.getDate() + ' – ' + endMon + ' ' + we.getDate();
+          return '<div style="font-size:18px;font-weight:800;letter-spacing:.02em;">'
+            + 'WEEK ' + wk + '<span style="font-weight:600;color:var(--text-light);">/' + of + '</span>'
+            + ' · ' + span + ', ' + we.getFullYear() + '</div>';
+        })()
+      + (self._weekOffset === 0 ? '<span style="font-size:11px;color:var(--green-dark);font-weight:600;">Current Week</span>' : '<button onclick="PayrollPage._weekOffset=0;loadPage(\'payroll\')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline;">Go to current week</button>')
+      + '</div>'
+      + '<button onclick="PayrollPage._weekOffset++;loadPage(\'payroll\')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;">Next →</button>'
+      + '</div>';
+
+    // ── Bulk Actions ──
+    // v1142: built here but rendered BELOW the grid. On a phone this row of six
+    // buttons pushed the actual hours off-screen — the numbers are the point of
+    // the page, the actions are what you do after reading them.
+    var bulkActionsHtml = '<div style="display:flex;gap:8px;margin-top:14px;margin-bottom:12px;flex-wrap:wrap;">'
+      + '<button onclick="PayrollPage.approveAll(\'' + weekStart + '\')" class="btn btn-primary" style="font-size:12px;">✓ Approve All</button>'
+      + '<button onclick="PayrollPage.showPayrollSummary(\'' + weekStart + '\')" class="btn btn-outline" style="font-size:12px;">📊 Payroll Summary</button>'
+      + '<button onclick="PayrollPage.exportWeek(\'' + weekStart + '\')" class="btn btn-outline" style="font-size:12px;">📥 Export CSV</button>'
+      + '<button onclick="TeamPage.showForm()" class="btn btn-outline" style="font-size:12px;">+ Add Crew</button>'
+      + '<button onclick="window.open(\'onboarding/\',\'_blank\')" class="btn btn-outline" style="font-size:12px;">🎓 Onboarding</button>'
+      + '<button onclick="window.open(\'payroll-quarterly-guide-3a7f.html\',\'_blank\')" class="btn btn-outline" style="font-size:12px;">📋 How to file quarterly</button>'
+      + '</div>';
+
+    // ── Week Grid ──
+    // v1089: phones get a per-crew stacked card (the 9-col grid crushed at 375px);
+    // desktop keeps the original grid untouched.
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth <= 700;
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
+
+    // ── v1170: JOB and REVENUE rows ABOVE the dates — Doug: "rev above dates and
+    // job name". Filled async: the job comes from the day's work site, revenue is
+    // that job's total split across the days it was actually worked.
+    var LBL = 'padding:6px 12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;';
+    if (!isMobile) {
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Client</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkcli-' + d + '" style="padding:5px 4px;text-align:center;font-size:10px;font-weight:600;overflow:hidden;white-space:nowrap;">·</div>';
+      });
+      html += '<div style="padding:5px 4px;"></div></div>';
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Job</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkjob-' + d + '" style="padding:5px 3px;text-align:center;font-size:9.5px;line-height:1.2;color:var(--text);overflow:hidden;white-space:nowrap;">·</div>';
+      });
+      html += '<div style="padding:6px 4px;"></div></div>';
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid var(--border);font-size:11px;align-items:center;background:var(--green-bg);">'
+        + '<div style="' + LBL + '">Revenue</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkrev-' + d + '" style="padding:6px 4px;text-align:center;font-weight:800;color:var(--green-dark);">·</div>';
+      });
+      html += '<div id="wkrev-total" style="padding:6px 4px;text-align:center;font-weight:800;color:var(--green-dark);"></div></div>';
+      setTimeout(function(){ PayrollPage._fillWeekJobRow(dates); }, 0);
+    }
+
+    // Header row
+    if (!isMobile)
+    html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">'
+      + '<div style="padding:10px 12px;">Employee</div>';
+    dates.forEach(function(d, i) {
+      var isToday = d === today;
+      // v1140: tapping a day header drives the truck panel below — the panel's
+      // own < > date selector is gone, so there is ONE date in play, not two
+      // that could disagree.
+      var isSel = (PayrollPage._bDate === d);
+      var bg = isSel ? 'background:var(--green-dark);color:#fff;'
+                     : (isToday ? 'background:var(--green-bg);color:var(--green-dark);' : '');
+      html += '<div onclick="PayrollPage._pickDay(\'' + d + '\')" title="Show this day\'s truck times below"'
+        + ' style="padding:10px 6px;text-align:center;cursor:pointer;border-radius:6px 6px 0 0;' + bg + '">'
+        + dayNames[i] + '<br><span style="font-weight:400;font-size:10px;">' + PayrollPage._pDate(d).getDate() + '</span></div>';
+    });
+    html += '<div style="padding:10px 6px;text-align:center;">Total</div>';
+    html += '</div>';
+
+    // Employee rows
+    employees.forEach(function(emp) {
+      if (isMobile) { html += self._mobileEmpCard(emp, dates, approvals, today, weekStart); return; }
+      var weekTotal = 0;
+      var weekIssues = 0;
+      var empKey = self._approvalKey(emp.name || emp.id, weekStart);
+      // v745: week-level approval = explicit week-approval OR every
+      // working-day cell individually approved (computed below as we
+      // walk the date cells).
+      var weekExplicit = approvals[empKey] === 'approved';
+      var workingDaysCount = 0;
+      var daysApprovedCount = 0;
+
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:1px solid #f0f0f0;align-items:stretch;">';
+
+      // Employee name cell — click opens the crew profile (TeamPage.showDetail).
+      // v743: avatar shows photo_url if present, falls back to first-letter monogram.
+      var avatar;
+      if (emp.photo_url) {
+        avatar = '<img src="' + UI.esc(emp.photo_url) + '" alt="" '
+          + 'style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#f3f4f6;">';
+      } else {
+        avatar = '<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">'
+          + (emp.name || '?').charAt(0).toUpperCase() + '</div>';
+      }
+      html += '<div onclick="if(typeof TeamPage!==\'undefined\')TeamPage.showDetail(\'' + UI.esc(emp.id) + '\')" '
+        + 'title="View crew profile" '
+        + 'style="padding:10px 12px;display:flex;align-items:center;gap:8px;border-right:1px solid #f0f0f0;cursor:pointer;">'
+        + avatar
+        + '<div style="min-width:0;"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent);">' + UI.esc(emp.name || '') + '</div></div>'
+        + '</div>';
+
+      // Day cells
+      dates.forEach(function(date) {
+        var entries = self._getEntriesForDate(emp.name || emp.id, date);
+        var dayHours = self._totalHours(entries);
+        weekTotal += dayHours;
+        var issues = self._hasIssues(entries, date);
+        if (issues.length) weekIssues++;
+        var isToday = date === today;
+        var cellKey = (emp.name || emp.id) + '_' + date;
+        var expanded = self._expandedCells[cellKey];
+        var dayKey = self._dayApprovalKey(emp.name || emp.id, date);
+        var dayApproved = approvals[dayKey] === 'approved';
+        var barColor = issues.length > 0 ? '#ef4444' : (dayHours > 0 ? '#22c55e' : '#e5e7eb');   // v1205: settled zero days fall through to grey
+        var editedAfterApproval = dayApproved && approvals[dayKey + '_editedAfter'];
+        // v745: track per-day rollup. Only days with hours OR entries count.
+        if (dayHours > 0 || entries.length > 0) {
+          workingDaysCount++;
+          if (dayApproved && !editedAfterApproval) daysApprovedCount++;
+        }
+
+        if (editedAfterApproval) barColor = '#f59e0b';
+
+        // v1182 — clicking the cell opens the WHY popover for that person/day.
+        // Doug: "if we click into the cell, it will give us some details on why
+        // specifically you chose that time in and that time out."
+        html += '<div onclick="PayrollPage._toggleWhy(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\',event)"'
+          + ' title="why these times?"'
+          + ' style="padding:6px 4px;text-align:center;cursor:pointer;border-right:1px solid #f8f8f8;' + (isToday ? 'background:#f0fdf4;' : '') + 'position:relative;min-height:50px;">';
+
+        // Hours + pay on ONE line (v1183): "8 - $240"
+        var _cellPay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+        var _flags = PayrollPage._checkFlags(emp.name || emp.id, date, entries);   // v1206
+        html += '<div style="font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#ccc') + ';white-space:nowrap;">'
+          + (dayHours > 0 ? dayHours.toFixed(1) : '—')
+          + PayrollPage._flagMark(_flags.length)
+          + (dayHours > 0 && _cellPay ? '<span style="font-size:12px;font-weight:600;color:var(--green-dark);"> - ' + _cellPay + '</span>' : '')
+          + '</div>';
+
+        // Status bar (collapsed)
+        html += '<div style="height:' + (expanded ? '0' : '4') + 'px;background:' + barColor + ';border-radius:2px;margin:4px 2px 0;transition:height .2s;"></div>';
+
+        // v1183 - in/out under the green line (collapsed view only)
+        if (!expanded) html += PayrollPage._dayInOut(emp.name || emp.id, date);
+
+        // Icons
+        if (entries.some(function(e) { return PayrollPage._cellNote(e.notes); })) html += '<span style="font-size:9px;position:absolute;top:2px;right:3px;">📝</span>';
+
+        // Expanded content
+        if (expanded) {
+          html += '<div style="margin-top:6px;text-align:left;font-size:11px;" onclick="event.stopPropagation()">';
+          // Status bar expanded
+          html += '<div style="height:6px;background:' + barColor + ';border-radius:3px;margin-bottom:6px;"></div>';
+          if (issues.length) {
+            issues.forEach(function(iss) {
+              html += '<div style="color:#ef4444;font-size:10px;">⚠ ' + iss + '</div>';
+            });
+          }
+          // v1156: the clock in/out inputs STAY — Doug only wanted the line that
+          // REPEATED them underneath removed, not the entries themselves.
+          entries.forEach(function(e) {
+            html += PayrollPage._cellTimes(emp.name || emp.id, date, e);
+            var cn1 = PayrollPage._cellNote(e.notes);
+            if (cn1) html += '<div style="font-size:9px;color:var(--text-light);font-style:italic;overflow:hidden;white-space:nowrap;">' + UI.esc(cn1) + '</div>';
+          });
+          // Day detail button
+          var _pay = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+          html += '<div style="margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">'
+            + '<button onclick="PayrollPage._toggleWhy(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\',event)" style="font-size:10px;background:var(--accent);color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;">Details</button>'
+            + (_pay ? '<span style="font-size:12px;font-weight:700;color:var(--green-dark);">' + _pay + '</span>' : '')
+            + '</div>';
+          // Approval indicator
+          if (dayApproved && !editedAfterApproval) html += '<div style="font-size:9px;color:#22c55e;margin-top:2px;">✓ Approved</div>';
+          if (editedAfterApproval) html += '<div style="font-size:9px;color:#f59e0b;margin-top:2px;">⚠ Re-approval needed</div>';
+          html += '</div>';
+        }
+
+        html += '</div>';
+      });
+
+      // Weekly total (v745: derived approval — week tile shows ✓ if the
+      // week is explicitly approved OR every working day is approved.
+      // Partial day approvals show ✓ N/M).
+      var overtime = Math.max(0, weekTotal - 40);
+      var allDaysOk = workingDaysCount > 0 && daysApprovedCount === workingDaysCount;
+      var weekApproved = weekExplicit || allDaysOk;
+      var partialBadge = (!weekApproved && daysApprovedCount > 0)
+        ? '<div style="font-size:9px;color:#16a34a;">✓ ' + daysApprovedCount + '/' + workingDaysCount + '</div>'
+        : '';
+      // v1159: week PAY under the week hours; OT line gone — Doug: "No
+      // overtime. Yeah. There is no overtime."
+      var _wRate = Number((emp.rate || emp.payRate) || 0);
+      html += '<div style="padding:10px 6px;text-align:center;font-weight:800;font-size:15px;background:' + (weekApproved ? '#f0fdf4' : 'var(--bg)') + ';border-left:2px solid var(--border);">'
+        + weekTotal.toFixed(1)
+        + (_wRate ? '<div style="font-size:12px;color:var(--green-dark);font-weight:800;">$' + Math.round(weekTotal * _wRate).toLocaleString() + '</div>' : '')
+        + (weekApproved ? '<div style="font-size:9px;color:#22c55e;">✓</div>' : partialBadge)
+        + (weekIssues > 0 ? '<div style="font-size:9px;color:#ef4444;">' + weekIssues + ' issue' + (weekIssues > 1 ? 's' : '') + '</div>' : '')
+        + '</div>';
+
+      html += '</div>'; // end employee row
+    });
+
+    // ── v1170: LABOR and EXPENSES below the employees, totals to the right —
+    // Doug: "total labor and expenses below and to right". ──
+    if (!isMobile) {
+      var labD = {}, labWk = 0;
+      PayrollPage._weekDates = dates;
+      PayrollPage._weekLabor = {}; PayrollPage._weekPL = {}; PayrollPage._weekComm = {}; PayrollPage._weekRev = {}; PayrollPage._weekExtras = {};
+      dates.forEach(function(d){
+        var t = 0;
+        employees.forEach(function(emp){
+          var rate = Number(emp.rate || emp.payRate || 0);
+          PayrollPage._getEntriesForDate(emp.name || emp.id, d).forEach(function(e){ t += (e.hours || 0) * rate; });
+        });
+        labD[d] = t; labWk += t;
+        PayrollPage._weekLabor[d] = t;
+      });
+      var mny = function(n){ return n ? '$' + Math.round(n).toLocaleString() : '—'; };
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:2px solid var(--border);font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '" title="tap a day to see the full breakdown">Expenses</div>';
+      dates.forEach(function(d){
+        html += '<div id="wkexp-' + d + '" onclick="PayrollPage._toggleExp(\'' + d + '\')"'
+          + ' title="tap for the full breakdown"'
+          + ' style="padding:8px 4px;text-align:center;font-weight:700;cursor:pointer;">·</div>';
+      });
+      html += '<div id="wkexp-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
+      html += '<div id="wkexpd" style="display:none;border-bottom:1px solid var(--border);"></div>';
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-top:1px solid #f0f0f0;font-size:11px;align-items:center;">'
+        + '<div style="' + LBL + '">Profit / Loss</div>';
+      dates.forEach(function(d){ html += '<div id="wkpl-' + d + '" style="padding:8px 4px;text-align:center;font-weight:700;color:var(--text-light);">·</div>'; });
+      html += '<div id="wkpl-total" style="padding:8px 4px;text-align:center;font-weight:800;"></div></div>';
+    }
+
+    html += '</div>'; // end grid
+
+    // ── Phone + truck data (v1149) — ABOVE the weekly review, per Doug:
+    // "The data from the trucks and my phone should go above weekly review."
+    // (v1147 had moved it below; this puts it back.) Order inside the block is
+    // phone first, then the trucks under it. Action buttons still come last —
+    // the v1143 rule: read the hours, then the detail, then approve. ──
+    html += self._renderBouncie(dates);
+
+    // ── Weekly Review Panel ──
+    // v1210: derivation recap sits directly above the weekly review
+    html += '<div id="hours-recap-slot"></div>';
+    setTimeout(function() {
+      PayrollPage._hoursRecapData(dates).then(function(idx) {
+        var el = document.getElementById('hours-recap-slot');
+        if (el) el.innerHTML = PayrollPage._hoursRecap(dates, idx);
+      });
+    }, 0);
+    html += PayrollPage._renderWeeklyReview(dates, employees, weekStart);
+
+    // v1143: action buttons sit BELOW the weekly review, per Doug. You read the
+    // hours, then the truck/phone detail, then the review — and only then do you
+    // approve or export. Actions come last because they are what you do after
+    // you have checked the numbers, not before.
+    html += bulkActionsHtml;
+
+    // ── Earnings Ledger (v1082) — earned vs paid per member ──
+    html += '<div id="pay-ledger" style="margin-top:20px;"><div style="font-size:12px;color:var(--text-light);">Loading earnings ledger…</div></div>';
+    setTimeout(PayrollPage._loadLedger, 0);
+
+    // ── Sales Commissions — DORMANT until spec settles (Catherine 10%/hourly
+    // election + per-person rates). Methods kept below; not rendered yet.
+    // html += self._renderCommissions();
+
+    // v383: My Pay (employeecenter) folded under Payroll. Link at bottom for now;
+    // will pull out to its own page once Crew View ships and crew-vs-admin nav splits.
+    html += '<div style="margin-top:24px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
+      +   '<div><strong style="font-size:13px;">My Pay & Hours</strong><div style="font-size:11px;color:var(--text-light);margin-top:2px;">Personal view: paystubs, hours worked, time off.</div></div>'
+      +   '<button onclick="loadPage(\'employeecenter\')" class="btn btn-outline" style="font-size:12px;">Open My Pay &rarr;</button>'
+      + '</div>';
+
+    html += '</div>';
+    return html;
+  },
+
+  // v1089: phone layout — one card per crew member, days stacked vertically.
+  // Reuses the exact same data + approval logic as the desktop grid.
+  _mobileEmpCard: function(emp, dates, approvals, today, weekStart) {
+    var self = PayrollPage;
+    var dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var empKey = self._approvalKey(emp.name || emp.id, weekStart);
+    var weekExplicit = approvals[empKey] === 'approved';
+    var weekTotal = 0, weekIssues = 0, workingDaysCount = 0, daysApprovedCount = 0;
+    var weekFlagDays = 0;                                   // v1206
+    var rows = '';
+    dates.forEach(function(date, i) {
+      var entries = self._getEntriesForDate(emp.name || emp.id, date);
+      var dayHours = self._totalHours(entries);
+      weekTotal += dayHours;
+      var issues = self._hasIssues(entries, date);
+      if (issues.length) weekIssues++;
+      if (self._checkFlags(emp.name || emp.id, date, entries).length) weekFlagDays++;   // v1206
+      var cellKey = (emp.name || emp.id) + '_' + date;
+      var expanded = self._expandedCells[cellKey];
+      var dayKey = self._dayApprovalKey(emp.name || emp.id, date);
+      var dayApproved = approvals[dayKey] === 'approved';
+      var editedAfterApproval = dayApproved && approvals[dayKey + '_editedAfter'];
+      var barColor = issues.length > 0 ? '#ef4444' : (dayHours > 0 ? '#22c55e' : '#e5e7eb');
+      if (editedAfterApproval) barColor = '#f59e0b';
+      if (dayHours > 0 || entries.length > 0) {
+        workingDaysCount++;
+        if (dayApproved && !editedAfterApproval) daysApprovedCount++;
+      }
+      var isToday = date === today;
+      rows += '<div onclick="PayrollPage._toggleCell(\'' + cellKey + '\')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid #f4f4f4;cursor:pointer;' + (isToday ? 'background:#f0fdf4;' : '') + '">'
+        + '<div style="width:52px;font-size:12px;font-weight:700;color:var(--text-light);">' + dayNames[i] + ' ' + PayrollPage._pDate(date).getDate() + '</div>'
+        + '<div style="width:6px;align-self:stretch;border-radius:3px;background:' + barColor + ';"></div>'
+        + '<div style="flex:1;font-size:14px;font-weight:' + (dayHours > 0 ? '700' : '400') + ';color:' + (dayHours > 0 ? 'var(--text)' : '#bbb') + ';">' + (dayHours > 0 ? dayHours.toFixed(1) + ' h' : '—')
+          + PayrollPage._flagMark(self._checkFlags(emp.name || emp.id, date, entries).length) + '</div>'
+        + (entries.some(function(e) { return PayrollPage._cellNote(e.notes); }) ? '<span style="font-size:11px;">📝</span>' : '')
+        + (dayApproved && !editedAfterApproval ? '<span style="font-size:11px;color:#22c55e;">✓</span>' : '')
+        + (editedAfterApproval ? '<span style="font-size:11px;color:#f59e0b;">⚠</span>' : '')
+        + '<span style="color:#ccc;font-size:12px;">' + (expanded ? '▾' : '▸') + '</span>'
+        + '</div>';
+      if (expanded) {
+        rows += '<div style="padding:4px 12px 10px 68px;font-size:12px;" onclick="event.stopPropagation()">';
+        issues.forEach(function(iss) { rows += '<div style="color:#ef4444;font-size:11px;">⚠ ' + iss + '</div>'; });
+        // v1206 - on a phone the popover is a reach; put the reasons right here too
+        var _mf = self._checkFlags(emp.name || emp.id, date, entries);
+        if (_mf.length) {
+          rows += '<div style="background:#fff5e6;border:1px solid #f0d9b0;border-radius:6px;padding:6px 8px;margin:4px 0;font-size:11px;color:#7a4f12;">'
+            + '<b>⚑ check this</b><br>' + _mf.map(function(x){ return '• ' + UI.esc(x); }).join('<br>') + '</div>';
+        }
+        entries.forEach(function(e) {
+          rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, e);
+          var cn2 = PayrollPage._cellNote(e.notes);
+          if (cn2) rows += '<div style="color:var(--text-light);font-style:italic;">' + UI.esc(cn2) + '</div>';
+        });
+        if (!entries.length) rows += PayrollPage._inlineTimeRow(emp.name || emp.id, date, null);
+        var _payM = PayrollPage._dayPay(emp.name || emp.id, date, emp);
+        rows += '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+          + '<button onclick="PayrollPage._toggleWhy(\'' + UI.esc(emp.name || emp.id) + '\',\'' + date + '\',event)" style="font-size:12px;background:var(--accent);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">Details</button>'
+          + (_payM ? '<span style="font-size:13px;font-weight:700;color:var(--green-dark);">' + _payM + '</span>' : '')
+          + '</div>';
+        if (dayApproved && !editedAfterApproval) rows += '<div style="font-size:10px;color:#22c55e;margin-top:3px;">✓ Approved</div>';
+        if (editedAfterApproval) rows += '<div style="font-size:10px;color:#f59e0b;margin-top:3px;">⚠ Re-approval needed</div>';
+        rows += '</div>';
+      }
+    });
+    var overtime = Math.max(0, weekTotal - 40);
+    var allDaysOk = workingDaysCount > 0 && daysApprovedCount === workingDaysCount;
+    var weekApproved = weekExplicit || allDaysOk;
+    var avatar = emp.photo_url
+      ? '<img src="' + UI.esc(emp.photo_url) + '" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;background:#f3f4f6;">'
+      : '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">' + (emp.name || '?').charAt(0).toUpperCase() + '</div>';
+    return '<div style="border-bottom:8px solid var(--bg);">'
+      + '<div onclick="if(typeof TeamPage!==\'undefined\')TeamPage.showDetail(\'' + UI.esc(emp.id) + '\')" style="display:flex;align-items:center;gap:10px;padding:12px;background:' + (weekApproved ? '#f0fdf4' : 'var(--bg)') + ';cursor:pointer;">'
+      + avatar
+      + '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(emp.name || '') + '</div>'
+      + (weekIssues > 0 ? '<div style="font-size:11px;color:#ef4444;">' + weekIssues + ' issue' + (weekIssues > 1 ? 's' : '') + '</div>' : '')
+      + (weekFlagDays > 0 ? '<div style="font-size:11px;color:#b45309;font-weight:600;">⚑ ' + weekFlagDays + ' to check</div>' : '')
+      + '</div>'
+      + '<div style="text-align:right;"><div style="font-weight:800;font-size:17px;">' + weekTotal.toFixed(1) + '<span style="font-size:11px;font-weight:600;color:var(--text-light);"> h</span></div>'
+      + ((Number((emp.rate || emp.payRate) || 0)) ? '<div style="font-size:13px;color:var(--green-dark);font-weight:800;">$' + Math.round(weekTotal * Number(emp.rate || emp.payRate)).toLocaleString() + '</div>' : '')
+      + (weekApproved ? '<div style="font-size:10px;color:#22c55e;">✓ approved</div>' : (daysApprovedCount > 0 ? '<div style="font-size:10px;color:#16a34a;">✓ ' + daysApprovedCount + '/' + workingDaysCount + '</div>' : ''))
+      + '</div></div>'
+      + rows
+      + '</div>';
+  },
+
+  // ── Weekly Review Panel ──
+  _renderWeeklyReview: function(dates, employees, weekStart) {
+    var approvals = PayrollPage._getApprovals();
+    var totalHours = 0, totalOT = 0, totalPTO = 0;
+    var warnings = [];
+    var approved = 0, pending = 0;
+
+    employees.forEach(function(emp) {
+      var empWeek = 0;
+      var workingDays = 0;
+      var daysApproved = 0;
+      dates.forEach(function(d) {
+        var entries = PayrollPage._getEntriesForDate(emp.name || emp.id, d);
+        var dayHrs = PayrollPage._totalHours(entries);
+        empWeek += dayHrs;
+        var issues = PayrollPage._hasIssues(entries, d);
+        issues.forEach(function(iss) { warnings.push(emp.name + ' (' + d + '): ' + iss); });
+        // v745: track per-day approvals so they can roll up to the week.
+        // A day "needs approval" only if it has hours OR notes; days with
+        // nothing don't count against the rollup.
+        if (dayHrs > 0 || entries.length > 0) {
+          workingDays++;
+          var dayKey = PayrollPage._dayApprovalKey(emp.name || emp.id, d);
+          if (approvals[dayKey] === 'approved' && !approvals[dayKey + '_editedAfter']) daysApproved++;
+        }
+      });
+      totalHours += empWeek;
+      var ot = Math.max(0, empWeek - 40);
+      totalOT += ot;
+
+      // Roll up: employee is "approved" if their week is explicitly approved
+      // OR every one of their working days is individually approved.
+      var empKey = PayrollPage._approvalKey(emp.name || emp.id, weekStart);
+      var weekExplicit = approvals[empKey] === 'approved';
+      var allDaysApproved = workingDays > 0 && daysApproved === workingDays;
+      if (weekExplicit || allDaysApproved) approved++;
+      else pending++;
+    });
+
+    var allApproved = pending === 0 && approved > 0;
+    var payrollReady = allApproved && warnings.length === 0;
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;">';
+    html += '<h3 style="font-size:16px;margin:0 0 16px;">Weekly Review</h3>';
+
+    // Stats
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">';
+    html += '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;"><div style="font-size:22px;font-weight:800;">' + totalHours.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">Total Hours</div></div>';
+    html += '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;"><div style="font-size:22px;font-weight:800;">' + totalPTO.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">PTO</div></div>';
+    html += '<div style="text-align:center;padding:12px;background:' + (warnings.length > 0 ? '#fef2f2' : 'var(--bg)') + ';border-radius:10px;"><div style="font-size:22px;font-weight:800;color:' + (warnings.length > 0 ? '#dc2626' : 'var(--text)') + ';">' + warnings.length + '</div><div style="font-size:11px;color:var(--text-light);">Warnings</div></div>';
+    html += '<div style="text-align:center;padding:12px;background:' + (allApproved ? '#f0fdf4' : '#fef3c7') + ';border-radius:10px;"><div style="font-size:22px;font-weight:800;color:' + (allApproved ? '#16a34a' : '#d97706') + ';">' + approved + '/' + (approved + pending) + '</div><div style="font-size:11px;color:var(--text-light);">Approved</div></div>';
+    html += '</div>';
+
+    // Payroll readiness
+    html += '<div style="padding:14px;border-radius:10px;background:' + (payrollReady ? '#f0fdf4;border:2px solid #22c55e' : '#fef3c7;border:2px solid #f59e0b') + ';display:flex;align-items:center;gap:12px;">'
+      + '<div style="font-size:28px;">' + (payrollReady ? '✅' : '⏳') + '</div>'
+      + '<div><div style="font-weight:700;font-size:14px;color:' + (payrollReady ? '#166534' : '#92400e') + ';">' + (payrollReady ? 'Payroll Ready' : 'Payroll Not Ready') + '</div>'
+      + '<div style="font-size:12px;color:' + (payrollReady ? '#166534' : '#92400e') + ';">'
+      + (payrollReady ? 'All hours approved, no warnings. Open the Payroll Summary to review hours and run payroll.' : (pending > 0 ? pending + ' employee(s) pending approval. ' : '') + (warnings.length > 0 ? warnings.length + ' warning(s) to resolve.' : ''))
+      + '</div></div>'
+      + (payrollReady ? '<button onclick="PayrollPage.showPayrollSummary(\'' + weekStart + '\')" class="btn btn-primary" style="margin-left:auto;white-space:nowrap;">💰 Run Payroll</button>' : '')
+      + '</div>';
+
+    // Warnings list
+    if (warnings.length > 0) {
+      html += '<div style="margin-top:12px;">';
+      warnings.slice(0, 10).forEach(function(w) {
+        html += '<div style="font-size:12px;color:#dc2626;padding:4px 0;border-bottom:1px solid #fef2f2;">⚠ ' + UI.esc(w) + '</div>';
+      });
+      if (warnings.length > 10) html += '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">+ ' + (warnings.length - 10) + ' more</div>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  },
+
+  // ── Cell Toggle ──
+  _toggleCell: function(key) {
+    PayrollPage._expandedCells[key] = !PayrollPage._expandedCells[key];
+    loadPage('payroll');
+  },
+
+  // ── Day Detail Modal ──
+  showDayDetail: function(userId, date) {
+    var entries = PayrollPage._getEntriesForDate(userId, date);
+    var dayName = PayrollPage._pDate(date).toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+
+    var html = '<div style="margin-bottom:16px;font-size:14px;color:var(--text-light);">' + dayName + '</div>';
+
+    // Hours list
+    if (entries.length === 0) {
+      html += '<div style="text-align:center;padding:20px;color:var(--text-light);">No hours recorded</div>';
+    } else {
+      entries.forEach(function(e, i) {
+        html += '<div style="padding:12px;background:var(--bg);border-radius:8px;margin-bottom:8px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+          + '<div><strong>' + (e.hours ? e.hours.toFixed(1) + ' hrs' : '—') + '</strong>'
+          + (e.clockOut ? '' : '<span style="font-size:12px;color:var(--text-light);margin-left:8px;">(no clock-out)</span>')
+          + '</div>'
+          + '<div style="display:flex;gap:4px;">'
+          + '<button onclick="PayrollPage.editHours(\'' + e.id + '\')" class="btn btn-outline" style="font-size:11px;padding:3px 8px;">Edit</button>'
+          + '<button onclick="PayrollPage.deleteHours(\'' + e.id + '\',\'' + userId + '\',\'' + date + '\')" class="btn btn-outline" style="font-size:11px;padding:3px 8px;color:var(--red);">×</button>'
+          + '</div></div>'
+          // v1157: in/out editable right here, per Doug: "In and out time should
+          // be editable on the details page also."
+          + '<div style="display:flex;justify-content:flex-start;">' + PayrollPage._inlineTimeRow(userId, date, e, 'detail') + '</div>';
+        if (e.jobId) {
+          var job = DB.jobs.getById(e.jobId);
+          html += '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">Job: ' + (job ? '#' + job.jobNumber + ' ' + (job.clientName || '') : e.jobId) + '</div>';
+        }
+        if (e.notes) html += '<div style="font-size:12px;color:var(--text-light);margin-top:4px;font-style:italic;">📝 ' + UI.esc(e.notes) + '</div>';
+        html += '</div>';
+      });
+    }
+
+    // ── v1151: EVIDENCE panel ────────────────────────────────────────────────
+    // Doug: "The details page should be much more detailed. Have a lot of this
+    // stuff. So in case there was a harder time figuring it out, all the info is
+    // more laid out there." Everything we know about this person on this day,
+    // in one place: the truck's yard in/out, each site with its address, the
+    // yard / job / travel split, the phone span, and any reason to distrust the
+    // number. Filled async — the RPCs are the same ones the day panel uses.
+    var evId = 'dayev-' + Math.random().toString(36).slice(2, 9);
+    html += '<div id="' + evId + '" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px;">WHY THESE TIMES</div>'
+      + '<div id="' + evId + '-why"></div></div>';
+    setTimeout(function(){ PayrollPage._fillWhy(evId + '-why', userId, date); }, 0);
+
+    // Actions
+    html += '<div style="display:flex;gap:8px;margin-top:12px;">'
+      + '<button onclick="PayrollPage.addHours(\'' + userId + '\',\'' + date + '\')" class="btn btn-primary" style="flex:1;">+ Add Hours</button>'
+      + '<button onclick="PayrollPage.addNote(\'' + userId + '\',\'' + date + '\')" class="btn btn-outline" style="flex:1;">📝 Add Note</button>'
+      + '</div>';
+
+    // Approval
+    var dayKey = PayrollPage._dayApprovalKey(userId, date);
+    var dayApproved = PayrollPage._getApprovals()[dayKey] === 'approved';
+    html += '<div style="margin-top:12px;text-align:center;">'
+      + (dayApproved
+        ? '<span style="color:#22c55e;font-weight:700;">✓ Day Approved</span>'
+        : '<button onclick="PayrollPage.approveDay(\'' + userId + '\',\'' + date + '\')" class="btn btn-primary" style="width:100%;">✓ Approve Day</button>')
+      + '</div>';
+
+    UI.showModal(UI.esc(userId) + ' — ' + dayName, html);
+  },
+
+  // ── v1151: day evidence for the Details modal ─────────────────────────────
+  // v1180 — Doug: "have details just open up the explanation of why you set the
+  // in or out time when you did… the details should be just the reasoning why
+  // you chose that time." The truck/phone/text grid stays below the calendar as
+  // the evidence; this panel now explains the DECISION rather than repeating it.
+  _RULE_TEXT: {
+    'David Beers':      ['first arrival at the job site', 'last ping at the job site',
+                         'David rides to the job, so his clock is the SITE — the yard never starts or ends his day.'],
+    'Catherine Conway': ['her truck leaving the yard', 'her truck back at the yard',
+                         'Catherine takes a truck out and brings it back, so the yard line brackets her day.'],
+    'Doug Brown':       ['the Ram arriving at the yard', 'the Ram leaving the yard for home',
+                         'Doug drives the Ram home, so his paid day starts when he REACHES the yard — the commute is excluded.']
+  },
+  // v1181 — Doug: "I don't wanna have the details pop up under the time
+  // automatically… I want it when you click details for them to pop up, not go
+  // to another page." So Details is a POPOVER anchored to the button, not a
+  // modal and not always-on. A grid cell is ~130px, far too narrow for prose,
+  // so it is positioned absolutely at a readable width.
+  _whyPop: null,
+  _closeWhy: function() {
+    if (PayrollPage._whyPop && PayrollPage._whyPop.parentNode) PayrollPage._whyPop.parentNode.removeChild(PayrollPage._whyPop);
+    PayrollPage._whyPop = null;
+    document.removeEventListener('click', PayrollPage._whyOutside, true);
+  },
+  _whyOutside: function(ev) {
+    var p = PayrollPage._whyPop;
+    if (p && !p.contains(ev.target)) PayrollPage._closeWhy();
+  },
+  _toggleWhy: function(user, date, ev) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    var btn = ev && (ev.currentTarget || ev.target);
+    var already = PayrollPage._whyPop && PayrollPage._whyPop.getAttribute('data-key') === user + '|' + date;
+    PayrollPage._closeWhy();
+    if (already) return;                       // second click closes
+    var pop = document.createElement('div');
+    pop.setAttribute('data-key', user + '|' + date);
+    pop.id = 'whypop';
+    // v1219 — Doug: "this dialogue box does not allow me to scroll down and
+    // click 'worked that day'. Need to fix the format."
+    // The old rule set top to min(anchor.bottom+6, innerHeight-120) with a flat
+    // max-height:60vh. Anchored low, that put a 60vh box starting 120px off the
+    // bottom, so its lower half — including the buttons — sat below the fold and
+    // the internal scrollbar never engaged (content never exceeded 60vh).
+    // Now: height is clamped to the space actually available, the popover flips
+    // above the anchor when below is tight, and on a phone it becomes a bottom
+    // sheet, which is the only comfortable shape at 375px.
+    var r = btn ? btn.getBoundingClientRect() : { left: 20, top: 80, bottom: 80 };
+    var GAP = 6, M = 12, MINH = 180;
+    var narrow = window.innerWidth < 520;
+    if (narrow) {
+      pop.style.cssText = 'position:fixed;z-index:9999;left:' + M + 'px;right:' + M + 'px;bottom:' + M + 'px;'
+        + 'max-height:78vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;'
+        + 'background:var(--white,#fff);border:1px solid var(--border);border-radius:12px;'
+        + 'box-shadow:0 -6px 28px rgba(0,0,0,.22);padding:10px 12px;text-align:left;';
+    } else {
+      var W = Math.min(320, window.innerWidth - 24);
+      var left = Math.max(M, Math.min(r.left, window.innerWidth - W - M));
+      var below = window.innerHeight - r.bottom - GAP - M;
+      var above = r.top - GAP - M;
+      var flip = below < MINH && above > below;
+      var maxH = Math.max(MINH, Math.min(Math.round(window.innerHeight * 0.7), flip ? above : below));
+      var top = flip ? Math.max(M, r.top - GAP - maxH)
+                     : Math.min(r.bottom + GAP, window.innerHeight - maxH - M);
+      pop.style.cssText = 'position:fixed;z-index:9999;width:' + W + 'px;left:' + left + 'px;top:' + top + 'px;'
+        + 'max-height:' + maxH + 'px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;'
+        + 'background:var(--white,#fff);border:1px solid var(--border);border-radius:10px;'
+        + 'box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px 12px;text-align:left;';
+    }
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    pop.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      + '<b style="font-size:12px;">' + esc(user) + ' · ' + esc(PayrollPage._pDate(date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})) + '</b>'
+      + '<span onclick="PayrollPage._closeWhy()" style="cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;">&times;</span></div>'
+      + '<div id="whypop-body" style="font-size:12px;"></div>';
+    document.body.appendChild(pop);
+    PayrollPage._whyPop = pop;
+    PayrollPage._fillWhy('whypop-body', user, date);
+    setTimeout(function(){ document.addEventListener('click', PayrollPage._whyOutside, true); }, 0);
+  },
+  // v1201 - Doug: "doesn't say which truck". The popover said 'her truck
+  // leaving the yard' and never named it, which is the one fact that makes the
+  // explanation checkable. Worse, on a hand-set row there was nothing at all
+  // tying the time to a vehicle.
+  //
+  // This finds which truck actually produced a time: pull the day's positions,
+  // and for each vehicle find its ping nearest clock-in and nearest clock-out.
+  // The vehicle with the smallest combined gap is the one those times came
+  // from. It also reports whether that ping was AT THE YARD, so the panel can
+  // say 'left the yard' honestly instead of assuming it (see v1197 - the F-550
+  // on Aug 18 never touched the yard at all).
+  _truckCache: {},
+  _truckForEntry: function(date, clockIn, clockOut) {
+    var key = date + '|' + (clockIn || '') + '|' + (clockOut || '');
+    if (PayrollPage._truckCache[key]) return PayrollPage._truckCache[key];
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!C || (!clockIn && !clockOut)) return Promise.resolve(null);
+    var all = [];
+    var page = function(off) {
+      return C.from('vehicle_positions').select('vehicle_id,lat,lon,ts')
+        .gte('ts', date + 'T04:00:00').lt('ts', date + 'T23:59:59')
+        .order('ts', { ascending: true }).range(off, off + 999).then(function(r) {
+          if (r.error || !r.data || !r.data.length) return;
+          all = all.concat(r.data);
+          if (r.data.length === 1000 && off < 8000) return page(off + 1000);
+        });
+    };
+    var pr = page(0).then(function() {
+      if (!all.length) return null;
+      var tIn = clockIn ? new Date(clockIn).getTime() : null;
+      var tOut = clockOut ? new Date(clockOut).getTime() : null;
+      var byV = {};
+      all.forEach(function(r) { (byV[r.vehicle_id] = byV[r.vehicle_id] || []).push(r); });
+      var best = null;
+      Object.keys(byV).forEach(function(vid) {
+        var pts = byV[vid], nIn = null, nOut = null;
+        pts.forEach(function(r) {
+          var t = new Date(r.ts).getTime();
+          if (tIn !== null && (!nIn || Math.abs(t - tIn) < Math.abs(new Date(nIn.ts).getTime() - tIn))) nIn = r;
+          if (tOut !== null && (!nOut || Math.abs(t - tOut) < Math.abs(new Date(nOut.ts).getTime() - tOut))) nOut = r;
+        });
+        var dIn = nIn ? Math.abs(new Date(nIn.ts).getTime() - tIn) / 60000 : 9999;
+        var dOut = nOut ? Math.abs(new Date(nOut.ts).getTime() - tOut) / 60000 : 9999;
+        var score = (tIn !== null ? dIn : 0) + (tOut !== null ? dOut : 0);
+        if (!best || score < best.score)
+          best = { vid: vid, score: score, dIn: dIn, dOut: dOut, pings: pts.length,
+                   inAtYard:  nIn  ? PayrollPage._metres(PayrollPage._YARD, [nIn.lat,  nIn.lon])  <= 300 : false,
+                   outAtYard: nOut ? PayrollPage._metres(PayrollPage._YARD, [nOut.lat, nOut.lon]) <= 300 : false };
+      });
+      if (!best) return null;
+      return C.from('vehicles').select('id,name,model').then(function(r) {
+        var v = (r.data || []).filter(function(x){ return x.id === best.vid; })[0];
+        best.label = v ? PayrollPage._truckLabel(v.name, v.model) : 'a truck';
+        return best;
+      }).catch(function(){ best.label = 'a truck'; return best; });
+    }).catch(function(){ return null; });
+    PayrollPage._truckCache[key] = pr;
+    return pr;
+  },
+  _truckLine: function(b) {
+    if (!b) return 'No truck movement matches these times.';
+    var near = function(d) { return d <= 20; };
+    if (!near(b.dIn) && !near(b.dOut))
+      return 'Closest truck was the <b>' + b.label + '</b>, but its pings are '
+           + Math.round(Math.min(b.dIn, b.dOut)) + '+ min away — these times were set by hand.';
+    var bits = [];
+    if (near(b.dIn))  bits.push('IN matches the ' + b.label + (b.inAtYard  ? ' at the yard'  : ' away from the yard'));
+    if (near(b.dOut)) bits.push('OUT matches it ' + (b.outAtYard ? 'back at the yard' : 'away from the yard'));
+    return '<b>' + b.label + '</b> — ' + bits.join('; ') + '.';
+  },
+  // ── v1202: the PHONE, and the question it raises ────────────────────────
+  // Doug: "you should be able to tell whether or not I am driving the trucks
+  // as you also have my phone… I just want pop up questions on the day for me
+  // to answer in the app."
+  //
+  // Truck GPS says where a TRUCK was. The phone says where the PERSON was, and
+  // that is what hours are actually owed on. Fri 8/21 is the proof: the Ram
+  // moved 1:51-5:41pm so the system paid Doug AND David 3.8 h each, while
+  // Doug's phone had him at home 6h32m, at the yard 1.1h, and away 0.8h. He
+  // did not work. David has no phone at all, so his 3.8 h rested on nothing.
+  //
+  // location_pings.user_id is an AUTH id, so the phone belongs to whoever is
+  // signed in; team_members.email maps that back to a name (Doug =
+  // info@peekskilltree.com, Catherine = cat.conway@gmail.com), which means
+  // this lights up for her too once she signs in on her own phone.
+  _phoneOwner: null,
+  _phoneOwnerName: function() {
+    if (PayrollPage._phoneOwner !== null) return PayrollPage._phoneOwner;
+    var email = '';
+    try { email = (typeof Auth !== 'undefined' && Auth.user && Auth.user.email) ? String(Auth.user.email).toLowerCase() : ''; } catch (e) {}
+    var name = '';
+    if (email) {
+      try {
+        var tm = (typeof DB !== 'undefined' && DB.team && DB.team.getAll) ? DB.team.getAll() : [];
+        tm.forEach(function(t) { if (t.email && String(t.email).toLowerCase() === email) name = t.name || ''; });
+      } catch (e) {}
+    }
+    PayrollPage._phoneOwner = name;
+    return name;
+  },
+  _phoneCache: {},
+  _phoneDay: function(date) {
+    if (PayrollPage._phoneCache[date]) return PayrollPage._phoneCache[date];
+    var C = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var uid = null;
+    try { uid = (typeof Auth !== 'undefined' && Auth.user) ? Auth.user.id : null; } catch (e) {}
+    if (!C || !uid) return Promise.resolve(null);
+    var pr = C.from('location_pings').select('client_ts,lat,lng,source')
+      .eq('user_id', uid)
+      .gte('client_ts', date + 'T04:00:00').lt('client_ts', date + 'T23:59:59')
+      .order('client_ts', { ascending: true }).limit(2000)
+      .then(function(r) {
+        var all = (r && r.data) ? r.data : [];
+        if (!all.length) return null;
+        var stops = [], i = 0;
+        while (i < all.length) {
+          var a = all[i], j = i + 1;
+          while (j < all.length && PayrollPage._metres([a.lat, a.lng], [all[j].lat, all[j].lng]) <= 200) j++;
+          var mins = (new Date(all[j-1].client_ts) - new Date(a.client_ts)) / 60000;
+          if (mins >= 10) {
+            var la = 0, lo = 0;
+            for (var k = i; k < j; k++) { la += all[k].lat; lo += all[k].lng; }
+            la /= (j - i); lo /= (j - i);
+            stops.push({ from: all[i].client_ts, to: all[j-1].client_ts, mins: mins,
+                         where: PayrollPage._metres(PayrollPage._HOME, [la, lo]) <= 300 ? 'home'
+                              : (PayrollPage._metres(PayrollPage._YARD, [la, lo]) <= 300 ? 'yard' : 'out') });
+          }
+          i = (j > i) ? j : i + 1;
+        }
+        var sum = { home: 0, yard: 0, out: 0 };
+        stops.forEach(function(x) { sum[x.where] += x.mins; });
+        return { pings: all.length, stops: stops, home: sum.home, yard: sum.yard, out: sum.out,
+                 first: all[0].client_ts, last: all[all.length-1].client_ts,
+                 owntracks: all.filter(function(x){ return x.source === 'owntracks'; }).length };
+      }).catch(function(){ return null; });
+    PayrollPage._phoneCache[date] = pr;
+    return pr;
+  },
+  _phoneLine: function(ph) {
+    if (!ph) return '';
+    var t = function(iso) {
+      var d = new Date(iso), h = d.getHours(), mn = d.getMinutes();
+      return (h % 12 || 12) + ':' + ('0' + mn).slice(-2) + (h < 12 ? 'a' : 'p');
+    };
+    var hh = function(m) { return (m / 60).toFixed(1) + 'h'; };
+    var bits = ph.stops.slice(0, 5).map(function(x) {
+      return (x.where === 'home' ? 'home' : x.where === 'yard' ? 'the yard' : 'out') + ' ' + t(x.from) + '–' + t(x.to);
+    });
+    return '<div style="background:#f4f8ff;border:1px solid #d7e4f7;border-radius:6px;padding:7px 9px;margin-top:8px;font-size:11.5px;color:#24405e;">'
+      + '<b>📱 Your phone that day</b> (' + ph.pings + ' pings' + (ph.owntracks ? ', ' + ph.owntracks + ' OwnTracks' : '') + ')<br>'
+      + bits.join(' · ')
+      + '<br><b>home ' + hh(ph.home) + ' · yard ' + hh(ph.yard) + ' · out ' + hh(ph.out) + '</b></div>';
+  },
+  // Turn a contradiction into a question with one-tap answers.
+  _dayQuestion: function(userId, date, e, ph) {
+    var booked = Number(e.hours) || 0;
+    if (!booked || e.locked) return '';                 // already settled by hand
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var uid = String(userId).replace(/'/g, '');
+    var q = '', suggest = null;
+    if (ph) {
+      var workedH = (ph.yard + ph.out) / 60;
+      if (booked - workedH > 1.5) {
+        suggest = Math.round(workedH * 100) / 100;
+        q = 'Your phone puts you at the yard or out for only <b>' + workedH.toFixed(1) + ' h</b>'
+          + (ph.home > 120 ? ' — and at home for ' + (ph.home / 60).toFixed(1) + ' h' : '')
+          + ', but <b>' + booked.toFixed(1) + ' h</b> is booked. Did you work this day?';
+      }
+    } else if (/Auto from GPS/.test(String(e.notes || ''))) {     // truck-only, no phone to check it against
+      q = 'The only thing behind these hours is a truck moving — no phone, no texts. Was ' + esc(userId) + ' actually on the clock?';
+    }
+    if (!q) return '';
+    var btn = function(label, ans, val, bg) {
+      return '<button onclick="event.stopPropagation();PayrollPage._answerDay(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',\'' + ans + '\',' + (val === null ? 'null' : val) + ')" '
+        + 'style="font-size:11px;font-weight:600;padding:5px 9px;border:1px solid var(--border);background:' + bg + ';border-radius:6px;cursor:pointer;margin:3px 4px 0 0;">' + label + '</button>';
+    };
+    return '<div style="background:#fffbea;border:1px solid #f0dfa0;border-radius:7px;padding:8px 10px;margin-top:8px;font-size:12px;color:#6b5a12;">'
+      + '<div style="margin-bottom:4px;">❓ ' + q + '</div>'
+      + btn('Yes — keep ' + booked.toFixed(1) + 'h', 'yes', null, '#fff')
+      + (suggest !== null ? btn('No — make it ' + suggest.toFixed(1) + 'h', 'set', suggest, '#fff') : '')
+      + btn('Didn\'t work', 'zero', null, '#ffecec')
+      + '</div>';
+  },
+  _answerDay: function(user, date, entryId, ans, val) {
+    var e = DB.timeEntries.getAll().filter(function(t){ return t.id === entryId; })[0];
+    if (!e) return;
+    var stamp = new Date().toISOString().substring(0, 16).replace('T', ' ');
+    var upd = { locked: true, source: 'manual' };
+    if (ans === 'zero') { upd.hours = 0; upd.clockIn = null; upd.clockOut = null;
+      upd.notes = 'Answered in the app ' + stamp + ': did NOT work this day. The hours came from a truck moving, not from this person.'; }
+    else if (ans === 'set') { upd.hours = Number(val) || 0;
+      if (e.clockIn) upd.clockOut = new Date(new Date(e.clockIn).getTime() + (Number(val) || 0) * 3600000).toISOString();
+      upd.notes = 'Answered in the app ' + stamp + ': corrected to ' + val + ' h to match the phone (yard + out).'; }
+    else { upd.notes = 'Answered in the app ' + stamp + ': confirmed ' + (e.hours || 0) + ' h as worked.'; }
+      // v1203 - {force:true}. DB.update PATCHes with an updated_at<=local
+      // precondition, and the 2-hourly recompute keeps bumping updated_at on
+      // these very rows - so a hand correction matched ZERO rows and silently
+      // never left the device. The cell said 0 h while the server still held
+      // 3.75 h auto-bouncie, ready to be recomputed straight back.
+    DB.timeEntries.update(e.id, upd, { force: true });
+    PayrollPage._afterWhyEdit(user, date);
+  },
+  _fillWhy: function(elId, userId, date) {
+    var box = document.getElementById(elId); if (!box) return;
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var entries = PayrollPage._getEntriesForDate(userId, date);
+    if (!entries.length) { box.innerHTML = '<div style="color:var(--text-light);font-size:13px;">No hours recorded for this day.</div>'; return; }
+    var rule = PayrollPage._RULE_TEXT[userId] || ['the first movement recorded', 'the last movement recorded', ''];
+    var uid = String(userId).replace(/'/g, '');      // handlers are built into an attribute
+    var out = '';
+    entries.forEach(function(e) {
+      var manual = (e.source === 'manual') || e.locked;
+      var note = String(e.notes || '');
+      var hrs = e.hours ? e.hours.toFixed(2) : '—';
+      var pill = manual
+        ? '<span style="background:#e8f5e9;color:var(--green-dark);font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;">SET BY HAND · LOCKED</span>'
+        : '<span style="background:#fff8e1;color:#7a6a1f;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;">AUTO FROM GPS</span>';
+      var pings = /\((\d+)\s*pings\)/.exec(note);
+      var truck = /Auto from GPS\s*[—-]\s*([^(]+)/.exec(note);
+      out += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px;">'
+        + '<span style="display:flex;align-items:center;gap:3px;">'
+        + '<input type="number" step="0.01" min="0" max="24" value="' + (e.hours || '') + '" '
+        + 'onclick="event.stopPropagation()" '
+        + 'onchange="PayrollPage._saveWhyHours(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',this.value)" '
+        + 'style="font-size:15px;font-weight:700;width:62px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;">'
+        + '<b style="font-size:13px;">h</b></span>'
+        + '<span style="display:flex;align-items:center;gap:5px;">' + pill
+        + '<button onclick="PayrollPage._closeWhy();PayrollPage.deleteHours(\'' + e.id + '\',\'' + String(userId).replace(/'/g,"") + '\',\'' + date + '\')" '
+        + 'style="font-size:10px;padding:2px 7px;border:1px solid var(--border);background:#fff;color:var(--red,#dc3545);border-radius:5px;cursor:pointer;">&times;</button>'
+        + '</span></div>'
+        + '<div style="font-size:13px;margin-bottom:6px;">'
+        + '<span style="display:flex;align-items:center;gap:6px;"><b style="color:var(--green-dark);">IN</b>'
+        + '<input type="time" value="' + PayrollPage._hhmmLocal(e.clockIn) + '" onclick="event.stopPropagation()" '
+        + 'onchange="PayrollPage._saveInline(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',\'in\',this.value,\'why\')" '
+        + 'style="font-size:13px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;"></span>'
+        + '<div style="color:var(--text-light);">' + esc(rule[0]) + '.</div></div>'
+        + '<div style="font-size:13px;margin-bottom:8px;">'
+        + '<span style="display:flex;align-items:center;gap:6px;"><b style="color:var(--green-dark);">OUT</b>'
+        + '<input type="time" value="' + PayrollPage._hhmmLocal(e.clockOut) + '" onclick="event.stopPropagation()" '
+        + 'onchange="PayrollPage._saveInline(\'' + uid + '\',\'' + date + '\',\'' + e.id + '\',\'out\',this.value,\'why\')" '
+        + 'style="font-size:13px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;"></span>'
+        + '<div style="color:var(--text-light);">' + esc(rule[1]) + '.</div></div>'
+        + '<div style="font-size:12px;color:var(--text-light);border-top:1px solid var(--border);padding-top:7px;">'
+        + '<div id="whytruck-' + e.id + '" style="color:var(--text);margin-bottom:5px;">which truck… </div>'
+        + (function() {
+            // v1206 - say plainly what stops this being certain
+            var fl = PayrollPage._checkFlags(userId, date, [e]);
+            if (!fl.length) return '<div style="background:#eef8ee;border:1px solid #cfe6cf;border-radius:6px;padding:6px 9px;margin:6px 0;font-size:11.5px;color:#245c24;">'
+              + '✓ You settled this one by hand — treated as correct.</div>';
+            return '<div style="background:#fff5e6;border:1px solid #f0d9b0;border-radius:6px;padding:7px 9px;margin:6px 0;font-size:11.5px;color:#7a4f12;">'
+              + '<b>⚑ ' + fl.length + ' reason' + (fl.length > 1 ? 's' : '') + ' to check this</b><br>'
+              + fl.map(function(x){ return '• ' + esc(x); }).join('<br>') + '</div>';
+          })()
+        + '<div id="whyphone-' + e.id + '"></div>'
+        + esc(rule[2])
+        + (truck ? '<br>Source: <b>' + esc(truck[1].trim()) + '</b>' + (pings ? ' — ' + pings[1] + ' GPS pings' : '') : '')
+        + (manual && note ? '<br><span style="color:var(--text);">' + esc(note) + '</span>' : '')
+        + '</div>';
+      // why you might not trust it
+      var warn = [];
+      if (pings && +pings[1] < 200) warn.push('Only ' + pings[1] + ' pings behind this — the tracker was mostly asleep, so the span is probably short.');
+      if (!manual && e.hours && e.hours < 2) warn.push('Under 2 hours. On this crew that usually means a tracker dropped out, not a short day.');
+      if (!manual) warn.push('Not locked — the 2-hourly recompute can still overwrite this. Editing it locks it.');
+      if (warn.length) {
+        out += '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:6px;padding:7px 9px;margin-top:8px;font-size:11.5px;color:#7a6a1f;">'
+             + warn.map(function(w){ return '• ' + esc(w); }).join('<br>') + '</div>';
+      }
+      out += '</div>';
+    });
+    box.innerHTML = out;
+    // v1202 - the phone, and any question it raises. Only for the person whose
+    // phone it is: location_pings carries the AUTH id of whoever is signed in.
+    if (PayrollPage._phoneOwnerName() === userId) {
+      PayrollPage._phoneDay(date).then(function(ph) {
+        entries.forEach(function(e) {
+          var el = document.getElementById('whyphone-' + e.id);
+          if (!el) return;
+          el.innerHTML = PayrollPage._phoneLine(ph) + PayrollPage._dayQuestion(userId, date, e, ph);
+        });
+      }).catch(function(){});
+    } else {
+      entries.forEach(function(e) {
+        var el = document.getElementById('whyphone-' + e.id);
+        if (el) el.innerHTML = PayrollPage._dayQuestion(userId, date, e, null);
+      });
+    }
+    // v1201 - name the truck behind each row
+    entries.forEach(function(e) {
+      PayrollPage._truckForEntry(date, e.clockIn, e.clockOut).then(function(b) {
+        var el = document.getElementById('whytruck-' + e.id);
+        if (el) el.innerHTML = PayrollPage._truckLine(b);
+      }).catch(function() {
+        var el = document.getElementById('whytruck-' + e.id);
+        if (el) el.textContent = '';
+      });
+    });
+  },
+  _fillDayEvidence: function(elId, userId, date) {
+    var box = document.getElementById(elId); if (!box) return;
+    var esc = (typeof UI !== 'undefined' && UI.esc) ? UI.esc : function(x){return x;};
+    var et = function(ts){ return ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—'; };
+    var fd = PayrollPage._fmtDur;
+    Promise.all([
+      PayrollPage._yardTrips(date),
+      PayrollPage._truckStops(date),
+      PayrollPage._loadPhoneDay(date),
+      PayrollPage._loadTeamAndDrivers()
+    ]).then(function(res) {
+      var trips = res[0] || [], stops = res[1] || [], ph = res[2];
+      // which trucks is THIS person the assumed driver of?
+      var mine = {};
+      Object.keys(PayrollPage._drivers || {}).forEach(function(vid) {
+        if ((PayrollPage._drivers[vid] || '') === userId) mine[vid] = true;
+      });
+      var anyMine = Object.keys(mine).length > 0;
+      var byV = {};
+      trips.forEach(function(r){ (byV[r.vehicle_id] = byV[r.vehicle_id] || {name:r.name, model:r.model, trips:[], stops:[]}).trips.push(r); });
+      stops.forEach(function(r){ (byV[r.vehicle_id] = byV[r.vehicle_id] || {name:r.name, model:r.model, trips:[], stops:[]}).stops.push(r); });
+      var ids = Object.keys(byV).filter(function(vid){ return !anyMine || mine[vid]; });
+
+      var h = '<div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px;">EVIDENCE FOR THIS DAY</div>';
+
+      // ── the yard / job / travel split ──
+      var jobMin = 0, siteMin = 0;
+      ids.forEach(function(vid){
+        byV[vid].trips.forEach(function(t){ jobMin += (t.mins_out || 0); });
+        byV[vid].stops.forEach(function(x){ siteMin += (x.mins || 0); });
+      });
+      var travelMin = Math.max(0, jobMin - siteMin);
+      var paidMin = 0;
+      PayrollPage._getEntriesForDate(userId, date).forEach(function(e){ paidMin += (e.hours || 0) * 60; });
+      var yardMin = Math.max(0, paidMin - jobMin);
+      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
+        + '<div style="flex:1 1 96px;background:var(--bg);border-radius:8px;padding:7px 9px;">'
+          + '<div style="font-size:10px;color:var(--text-light);">JOB TIME</div>'
+          + '<div style="font-size:15px;font-weight:700;color:var(--green-dark);">' + fd(jobMin) + '</div>'
+          + '<div style="font-size:10px;color:var(--text-light);">on site ' + fd(siteMin) + ' + travel ' + fd(travelMin) + '</div>'
+        + '</div>'
+        + '<div style="flex:1 1 96px;background:var(--bg);border-radius:8px;padding:7px 9px;">'
+          + '<div style="font-size:10px;color:var(--text-light);">YARD TIME</div>'
+          + '<div style="font-size:15px;font-weight:700;">' + fd(yardMin) + '</div>'
+          + '<div style="font-size:10px;color:var(--text-light);">paid ' + fd(paidMin) + ' − job</div>'
+        + '</div></div>';
+
+      // ── per truck ──
+      if (!ids.length) {
+        h += '<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">No truck movement recorded for '
+          + esc(userId) + ' this day' + (anyMine ? '' : ' (no truck assigned to them)') + '.</div>';
+      }
+      ids.forEach(function(vid) {
+        var v = byV[vid];
+        var m = PayrollPage._mergeStops(v.stops);
+        h += '<div style="border:1px solid var(--border);border-radius:8px;padding:7px 9px;margin-bottom:6px;">'
+          + '<div style="font-weight:700;font-size:12.5px;margin-bottom:3px;">' + PayrollPage._truckIcon(v.name, v.model) + ' ' + PayrollPage._truckLabel(v.name, v.model) + '</div>';
+        v.trips.forEach(function(t){
+          h += '<div style="font-size:12px;">left yard <b style="color:var(--green-dark);">' + et(t.left_yard) + '</b> → back <b style="color:var(--green-dark);">' + et(t.back_yard) + '</b> <span style="color:var(--text-light);">(' + fd(t.mins_out) + ')</span></div>';
+        });
+        if (!v.trips.length) h += '<div style="font-size:12px;color:var(--text-light);">never crossed the yard line</div>';
+        m.forEach(function(x, i) {
+          var sid = elId + '-ev' + vid.slice(0,4) + i;
+          h += '<div style="font-size:12px;padding:1px 0;"><span id="' + sid + '" style="color:var(--link,#1565c0);font-weight:600;">📍 locating…</span> '
+            + '<span style="color:var(--text-light);">' + et(x.arrive_ts) + '–' + et(x.depart_ts) + '</span> <b style="color:var(--green-dark);">' + fd(x.mins) + '</b>'
+            + (x.visits > 1 ? ' <span style="color:var(--text-light);">(' + x.visits + ' visits)</span>' : '') + '</div>';
+        });
+        h += '</div>';
+        setTimeout(function(){
+          m.forEach(function(x, i) {
+            var sid = elId + '-ev' + vid.slice(0,4) + i;
+            PayrollPage._revGeo(x.lat, x.lon).then(function(a){
+              var el = document.getElementById(sid); if (el && a) el.textContent = '📍 ' + a;
+            }).catch(function(){});
+          });
+        }, 0);
+      });
+
+      // ── phone ──
+      if (ph && ph.pings) {
+        h += '<div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:7px 9px;font-size:12px;margin-bottom:6px;">'
+          + '📱 <b>' + et(ph.first_ping) + '</b> → <b>' + et(ph.last_ping) + '</b>'
+          + (ph.span_hours ? ' · <b>' + (+ph.span_hours).toFixed(2) + 'h</b> span' : '')
+          + ' · ' + ph.pings + ' pings'
+          + (ph.sources ? ' · ' + esc(String(ph.sources).split(',').filter(Boolean).join(' + ')) : '')
+          + '<div style="font-size:10.5px;color:#4b6b4f;">Doug\'s phone, not the truck\'s. Covers time away from any tracked vehicle.</div>'
+          + '</div>';
+      }
+
+      // ── why the number might be wrong ──
+      var warn = [];
+      var totalPings = ids.reduce(function(a,vid){
+        return a + byV[vid].trips.length; }, 0);
+      PayrollPage._getEntriesForDate(userId, date).forEach(function(e){
+        if (e.confidence === 'low') warn.push('An entry is flagged <b>low confidence</b> by the auto writer.');
+        var mm = /\((\d+) pings\)/.exec(e.notes || '');
+        if (mm && +mm[1] < 200) warn.push('Only <b>' + mm[1] + ' GPS pings</b> behind this entry — the tracker was mostly silent, so the span is probably short.');
+      });
+      if (!ids.length && paidMin > 0) warn.push('Hours are recorded but <b>no truck data</b> backs them up.');
+      if (jobMin > 0 && siteMin === 0) warn.push('The truck left the yard but <b>logged no stop</b> — either a short visit under the stop threshold, or it never parked.');
+      if (jobMin > 60 && siteMin > 0 && siteMin < jobMin * 0.25) warn.push('The truck was out <b>' + fd(jobMin) + '</b> but logged only <b>' + fd(siteMin) + '</b> of stops — most of the day reads as travel.');
+      if (ph && ph.pings && paidMin > 0) {
+        var phMin = (+ph.span_hours || 0) * 60;
+        if (phMin > paidMin + 60) warn.push('The phone shows a <b>' + fd(phMin) + '</b> day — <b>' + fd(phMin - paidMin) + '</b> longer than the hours recorded. Work off the truck is not counted.');
+      }
+      if (warn.length) {
+        h += '<div style="background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:7px 9px;font-size:11.5px;color:#7a6a1f;">'
+          + '<b>⚠ Reasons to check this number</b>'
+          + warn.map(function(w){ return '<div style="margin-top:3px;">• ' + w + '</div>'; }).join('')
+          + '</div>';
+      }
+      box.innerHTML = h;
+    }).catch(function(){
+      box.innerHTML = '<div style="font-size:12px;color:var(--text-light);">Could not load GPS/phone evidence.</div>';
+    });
+  },
+
+  // ── Add Hours Modal ──
+  addHours: function(userId, date) {
+    var jobs = DB.jobs.getAll().filter(function(j) { return j.status === 'scheduled' || j.status === 'in_progress' || j.status === 'active'; });
+    var opts = '<option value="">— No job —</option>';
+    jobs.forEach(function(j) { opts += '<option value="' + j.id + '">#' + (j.jobNumber || '') + ' ' + UI.esc(j.clientName || '') + '</option>'; });
+
+    var html = UI.field('Hours', '<input type="number" id="ph-hours" step="0.25" min="0" max="24" placeholder="8.0">')
+      + UI.field('Job', '<select id="ph-job">' + opts + '</select>')
+      + UI.field('Clock In', '<input type="time" id="ph-in">')
+      + UI.field('Clock Out', '<input type="time" id="ph-out">')
+      + '<div id="ph-suggest-hint" style="font-size:11px;color:var(--text-light);margin:-6px 0 10px;"></div>'
+      + UI.field('Notes', '<textarea id="ph-notes" placeholder="Optional notes..."></textarea>');
+
+    UI.showModal('Add Hours — ' + UI.esc(userId), html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="PayrollPage._saveHours(\'' + userId + '\',\'' + date + '\')">Save</button>'
+    });
+    // v1119: pre-fill Clock In/Out with the Bouncie work-truck yard times for
+    // this date (editable). Hours start at the yard, so ±30 min buffer around
+    // the truck's first-out / last-back; Ram (commute) excluded.
+    PayrollPage._prefillSuggested(date);
+  },
+
+  // Pre-fill the Add-Hours time inputs from the work truck's yard crossings.
+  // Only fills blank inputs; the user can override. Non-blocking (async RPC).
+  _prefillSuggested: function(date) {
+    var hint = function(t) { var el = document.getElementById('ph-suggest-hint'); if (el) el.innerHTML = t; };
+    PayrollPage._yardTrips(date).then(function(trips) {
+      if (!trips || !trips.length) { hint('No Bouncie truck movement for this day — enter times manually.'); return; }
+      // Prefer the F-550 chip truck (Doug's rule: the 550 leaving/entering the
+      // yard IS the time on jobs). Fall back to F-750, then any non-Ram work
+      // truck. The out-of-yard window (first left → last back) = job time and
+      // is what pre-fills the clock; no buffer (yard prep is separate).
+      var byRank = function(r) { return trips.filter(function(t) { return PayrollPage._truckRank(t.name, t.model) === r && t.left_yard; }); };
+      var f550 = byRank(1), f750 = byRank(0);
+      var use = f550.length ? f550 : (f750.length ? f750 : trips.filter(function(t) { return PayrollPage._truckRank(t.name, t.model) <= 1 && t.left_yard; }));
+      if (!use.length) { hint('No work-truck yard trips — enter times manually.'); return; }
+      var label = f550.length ? 'F-550 chip truck' : (f750.length ? 'F-750' : 'work truck');
+      var lefts = use.map(function(t) { return new Date(t.left_yard); }).sort(function(a, b) { return a - b; });
+      var backs = use.filter(function(t) { return t.back_yard; }).map(function(t) { return new Date(t.back_yard); }).sort(function(a, b) { return a - b; });
+      var pad = function(x) { return (x < 10 ? '0' : '') + x; };
+      var hhmm = function(dt) { return pad(dt.getHours()) + ':' + pad(dt.getMinutes()); };
+      var et = function(dt) { return dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }); };
+      // Job time = total minutes the truck is OUT of the yard across all trips.
+      var jobMins = use.reduce(function(s, t) { return s + (t.back_yard ? (new Date(t.back_yard) - new Date(t.left_yard)) / 60000 : 0); }, 0);
+      var inDt = lefts[0];
+      var inEl = document.getElementById('ph-in'); if (inEl && !inEl.value) inEl.value = hhmm(inDt);
+      var outStr = '';
+      if (backs.length) {
+        var outDt = backs[backs.length - 1];
+        var outEl = document.getElementById('ph-out'); if (outEl && !outEl.value) outEl.value = hhmm(outDt);
+        outStr = '–' + et(outDt);
+      }
+      hint('🛰 ' + label + ' out of yard ' + et(inDt) + outStr + ' = ~' + PayrollPage._fmtDur(jobMins) + ' on jobs. Pre-filled as the clock — add yard time if you paid it. Edit if off.');
+    }).catch(function() { hint(''); });
+  },
+
+  _saveHours: function(userId, date) {
+    var hours = parseFloat(document.getElementById('ph-hours').value) || 0;
+    var clockIn = document.getElementById('ph-in').value;
+    var clockOut = document.getElementById('ph-out').value;
+    if (!hours && !clockIn) { UI.toast('Enter hours or clock in time', 'error'); return; }
+
+    var entry = {
+      userId: userId, user: userId, date: date,
+      hours: hours,
+      jobId: document.getElementById('ph-job').value || null,
+      notes: document.getElementById('ph-notes').value || ''
+    };
+
+    if (clockIn) {
+      entry.clockIn = date + 'T' + clockIn + ':00';
+      if (clockOut) {
+        entry.clockOut = date + 'T' + clockOut + ':00';
+        if (!hours) entry.hours = Math.round(((new Date(entry.clockOut) - new Date(entry.clockIn)) / 3600000) * 100) / 100;
+      }
+    }
+
+    entry.locked = true; entry.source = 'manual';   // v1172: hand-entered, cron must not touch it
+    DB.timeEntries.create(entry);
+
+    // Mark as edited after approval if day was approved
+    var dayKey = PayrollPage._dayApprovalKey(userId, date);
+    if (PayrollPage._getApprovals()[dayKey] === 'approved') {
+      PayrollPage._approvals[dayKey + '_editedAfter'] = true;
+      PayrollPage._saveApprovals();
+    }
+
+    UI.closeModal();
+    UI.toast('Hours added');
+    loadPage('payroll');
+  },
+
+  editHours: function(entryId) {
+    var e = DB.timeEntries.getAll().find(function(t) { return t.id === entryId; });
+    if (!e) return;
+    var html = UI.field('Hours', '<input type="number" id="eh-hours" step="0.25" value="' + (e.hours || '') + '">')
+      + UI.field('Notes', '<textarea id="eh-notes">' + UI.esc(e.notes || '') + '</textarea>');
+    UI.showModal('Edit Hours', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="PayrollPage._updateHours(\'' + entryId + '\')">Save</button>'
+    });
+  },
+
+  _updateHours: function(entryId) {
+    DB.timeEntries.update(entryId, {
+      hours: parseFloat(document.getElementById('eh-hours').value) || 0,
+      notes: document.getElementById('eh-notes').value,
+      locked: true, source: 'manual'      // v1172: keep the cron off a hand-edit
+    }, { force: true });                  // v1203: and make sure it actually reaches the server
+    UI.closeModal();
+    UI.toast('Hours updated');
+    loadPage('payroll');
+  },
+
+  deleteHours: function(entryId, userId, date) {
+    if (!confirm('Delete these hours?')) return;
+    var all = DB.timeEntries.getAll().filter(function(t) { return t.id !== entryId; });
+    localStorage.setItem('bm-time-entries', JSON.stringify(all));
+    UI.toast('Hours deleted');
+    // v1181: Details is a popover now, not a modal — just refresh the page
+    if (typeof loadPage === 'function') loadPage('payroll');
+  },
+
+  addNote: function(userId, date) {
+    var html = UI.field('Note', '<textarea id="pn-note" placeholder="Add a note for this day..." style="min-height:80px;"></textarea>');
+    UI.showModal('Add Note', html, {
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Cancel</button>'
+        + ' <button class="btn btn-primary" onclick="PayrollPage._saveNote(\'' + userId + '\',\'' + date + '\')">Save</button>'
+    });
+  },
+
+  _saveNote: function(userId, date) {
+    var note = document.getElementById('pn-note').value;
+    if (!note.trim()) return;
+    DB.timeEntries.create({ userId: userId, user: userId, date: date, hours: 0, notes: note, type: 'note' });
+    UI.closeModal();
+    UI.toast('Note added');
+    loadPage('payroll');
+  },
+
+  // ── Approvals (cloud-synced v743) ──
+  approveDay: function(userId, date) {
+    var dayKey = PayrollPage._dayApprovalKey(userId, date);
+    PayrollPage._getApprovals();
+    PayrollPage._approvals[dayKey] = 'approved';
+    delete PayrollPage._approvals[dayKey + '_editedAfter'];
+    PayrollPage._saveApprovals();
+    // Derive week_start for cloud row (TZ-safe — was new Date(str)+toISOString,
+    // which in the evening ET filed the approval under the wrong week).
+    var d = PayrollPage._pDate(date);
+    var monday = new Date(d);
+    monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    var _p2 = function(n) { return (n < 10 ? '0' : '') + n; };
+    var weekStart = monday.getFullYear() + '-' + _p2(monday.getMonth() + 1) + '-' + _p2(monday.getDate());
+    PayrollPage._pushCloudApproval(userId, weekStart, date, 'approved', false);
+    UI.closeModal();
+    UI.toast('Day approved ✓');
+    loadPage('payroll');
+  },
+
+  approveEmployee: function(userId, weekStart) {
+    var empKey = PayrollPage._approvalKey(userId, weekStart);
+    PayrollPage._getApprovals();
+    PayrollPage._approvals[empKey] = 'approved';
+    PayrollPage._saveApprovals();
+    PayrollPage._pushCloudApproval(userId, weekStart, null, 'approved', false);
+    UI.toast(userId + ' approved for the week ✓');
+    loadPage('payroll');
+  },
+
+  approveAll: function(weekStart) {
+    var employees = PayrollPage._getEmployees();
+    PayrollPage._getApprovals();
+    employees.forEach(function(emp) {
+      var name = emp.name || emp.id;
+      var empKey = PayrollPage._approvalKey(name, weekStart);
+      PayrollPage._approvals[empKey] = 'approved';
+      PayrollPage._pushCloudApproval(name, weekStart, null, 'approved', false);
+    });
+    PayrollPage._saveApprovals();
+    UI.toast('All employees approved ✓');
+    loadPage('payroll');
+  },
+
+  // ── Payroll Summary Modal ──
+  // v743: rates are editable inline (✏️ next to each rate); export
+  // generates an ACH-ready CSV (employee name, hours, gross, blank
+  // routing/account for the bank's batch importer to fill); "Mark Paid"
+  // records the run in payroll_runs.
+  showPayrollSummary: function(weekStart) {
+    var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
+    var employees = PayrollPage._getEmployees();
+    var html = '<table class="data-table" style="width:100%;font-size:13px;"><thead><tr><th>Employee</th><th>Regular</th><th>OT</th><th>Total Hrs</th><th>Rate</th><th>Gross Pay</th><th>Status</th></tr></thead><tbody>';
+
+    var grandTotal = 0;
+    var totalHours = 0;
+    var totalOT = 0;
+    employees.forEach(function(emp) {
+      var weekHours = 0;
+      dates.forEach(function(d) {
+        weekHours += PayrollPage._totalHours(PayrollPage._getEntriesForDate(emp.name || emp.id, d));
+      });
+      var regular = Math.min(weekHours, 40);
+      var ot = Math.max(0, weekHours - 40);
+      var rate = Number(emp.rate || emp.payRate || 0);
+      var gross = (regular * rate) + (ot * rate * 1.5);
+      grandTotal += gross;
+      totalHours += weekHours;
+      totalOT += ot;
+      // v745: same rollup as the Payroll grid — week tile shows ✓ if
+      // explicit week-approval OR every working day is individually approved.
+      var apx = PayrollPage._getApprovals();
+      var empKey = PayrollPage._approvalKey(emp.name || emp.id, weekStart);
+      var weekExp = apx[empKey] === 'approved';
+      var wDays = 0, wDaysOk = 0;
+      dates.forEach(function(d) {
+        var ents = PayrollPage._getEntriesForDate(emp.name || emp.id, d);
+        var dh = PayrollPage._totalHours(ents);
+        if (dh > 0 || ents.length > 0) {
+          wDays++;
+          var dk = PayrollPage._dayApprovalKey(emp.name || emp.id, d);
+          if (apx[dk] === 'approved' && !apx[dk + '_editedAfter']) wDaysOk++;
+        }
+      });
+      var approved = weekExp || (wDays > 0 && wDays === wDaysOk);
+      var partialNote = (!approved && wDaysOk > 0) ? ' <span style="color:var(--text-light);font-weight:400;">(' + wDaysOk + '/' + wDays + ')</span>' : '';
+
+      html += '<tr>'
+        + '<td style="font-weight:600;">' + UI.esc(emp.name || '') + '</td>'
+        + '<td>' + regular.toFixed(1) + '</td>'
+        + '<td style="color:' + (ot > 0 ? '#d97706' : 'var(--text)') + ';">' + ot.toFixed(1) + '</td>'
+        + '<td style="font-weight:700;">' + weekHours.toFixed(1) + '</td>'
+        + '<td>' + (rate ? '$' + rate.toFixed(2) + '/hr' : '<span style="color:var(--text-light);">— set —</span>')
+        +   ' <button onclick="PayrollPage.editRate(\'' + UI.esc(emp.id) + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-light);padding:0 4px;" title="Edit rate">✏️</button></td>'
+        + '<td style="font-weight:700;">' + (rate ? '$' + gross.toFixed(2) : '—') + '</td>'
+        + '<td>' + (approved ? '<span style="color:#22c55e;font-weight:600;">✓ Approved</span>' : '<span style="color:#d97706;">Pending' + partialNote + '</span>') + '</td>'
+        + '</tr>';
+    });
+
+    html += '<tr style="font-weight:800;border-top:2px solid var(--border);background:var(--bg);">'
+      + '<td>TOTAL</td><td>' + Math.min(totalHours, totalHours - totalOT + 40 * employees.length).toFixed(1) + '</td>'
+      + '<td>' + totalOT.toFixed(1) + '</td><td>' + totalHours.toFixed(1) + '</td><td></td>'
+      + '<td>$' + grandTotal.toFixed(2) + '</td><td></td></tr>';
+    html += '</tbody></table>';
+
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-light);line-height:1.5;">'
+      + '💡 <strong>To run payroll:</strong> enter each employee\'s <strong>Regular</strong> and <strong>OT</strong> hours above into your payroll provider (e.g. Gusto) — it calculates taxes and pays your team. '
+      + 'The <strong>ACH-Ready CSV</strong> is a separate option: a bank batch file to pay employees directly <em>without</em> a payroll provider. <strong>Mark Paid</strong> records the run here once payment is sent.'
+      + '</div>';
+
+    // Last run banner if any payroll_run exists for this week
+    html += '<div id="last-run-banner" style="margin-top:12px;"></div>';
+
+    UI.showModal('Payroll Summary — Week of ' + PayrollPage._pDate(weekStart).toLocaleDateString(), html, { wide: true,
+      footer: '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>'
+        + ' <button class="btn btn-outline" onclick="PayrollPage.exportACH(\'' + weekStart + '\')">📥 ACH-Ready CSV</button>'
+        + ' <button class="btn btn-primary" onclick="PayrollPage.markPaid(\'' + weekStart + '\')">💰 Mark Paid</button>'
+    });
+
+    // Async: show "last run" banner if this week was already paid
+    PayrollPage._loadLastRunBanner(weekStart);
+  },
+
+  // v743: edit an employee's hourly rate. Lives in team_members.rate
+  // (cloud-synced via DB.team). Also updates the local cache so the
+  // modal re-renders with the new number.
+  editRate: function(empId) {
+    var emp = PayrollPage._getEmployees().find(function(e) { return e.id === empId; });
+    if (!emp) { UI.toast('Employee not found', 'error'); return; }
+    var cur = (emp.rate || emp.payRate || 0);
+    var val = prompt('Hourly rate for ' + (emp.name || '') + ' ($/hr):', cur.toString());
+    if (val === null) return;
+    var n = parseFloat(val);
+    if (isNaN(n) || n < 0) { UI.toast('Invalid rate', 'error'); return; }
+    // Update team_members via DB.team if available, else localStorage.
+    if (typeof DB !== 'undefined' && DB.team && DB.team.update) {
+      DB.team.update(empId, { rate: n });
+    } else {
+      var members = [];
+      try { members = JSON.parse(localStorage.getItem('bm-team') || '[]'); } catch(e){}
+      var idx = members.findIndex(function(m) { return m.id === empId; });
+      if (idx >= 0) { members[idx].rate = n; localStorage.setItem('bm-team', JSON.stringify(members)); }
+    }
+    UI.toast('Rate set: $' + n.toFixed(2) + '/hr');
+    // Re-render summary modal with new rate
+    UI.closeModal();
+    setTimeout(function() { PayrollPage.showPayrollSummary(PayrollPage._getWeekDates(PayrollPage._weekOffset)[0]); }, 60);
+  },
+
+  // v743: ACH-ready CSV export. Bank-friendly column order: employee
+  // name, gross pay, hours, OT hours, plus blank routing/account so
+  // Doug can paste the bank's saved values OR the bank can map them
+  // from the file's header row.
+  exportACH: function(weekStart) {
+    var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
+    var employees = PayrollPage._getEmployees();
+    var rows = ['Employee Name,Routing Number,Account Number,Hours,Overtime Hours,Rate,Gross Pay,Pay Period Start,Pay Period End,Memo'];
+    var weekEnd = dates[6];
+    var grandTotal = 0;
+    var employeeCount = 0;
+    var totalHours = 0;
+    var totalOT = 0;
+    var batch = [];
+    employees.forEach(function(emp) {
+      var weekHours = 0;
+      dates.forEach(function(d) {
+        weekHours += PayrollPage._totalHours(PayrollPage._getEntriesForDate(emp.name || emp.id, d));
+      });
+      if (weekHours <= 0) return;
+      var ot = Math.max(0, weekHours - 40);
+      var reg = Math.min(weekHours, 40);
+      var rate = Number(emp.rate || emp.payRate || 0);
+      var gross = (reg * rate) + (ot * rate * 1.5);
+      grandTotal += gross;
+      employeeCount++;
+      totalHours += weekHours;
+      totalOT += ot;
+      var memo = 'BM Payroll ' + weekStart + ' to ' + weekEnd;
+      // Escape commas inside name
+      var csvName = (emp.name || '').indexOf(',') >= 0 ? '"' + emp.name.replace(/"/g, '""') + '"' : (emp.name || '');
+      rows.push([csvName, '', '', weekHours.toFixed(2), ot.toFixed(2), rate.toFixed(2), gross.toFixed(2), weekStart, weekEnd, memo].join(','));
+      batch.push({ name: emp.name, hours: weekHours, ot: ot, rate: rate, gross: gross });
+    });
+    if (!employeeCount) { UI.toast('No hours to export', 'error'); return; }
+
+    var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'payroll-ach-' + weekStart + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+    // Record the export as a payroll_run with status='exported'
+    PayrollPage._recordRun(weekStart, weekEnd, batch, {
+      totalHours: totalHours, totalOT: totalOT, totalGross: grandTotal,
+      employeeCount: employeeCount, method: 'ach_csv', status: 'exported'
+    });
+    UI.toast('ACH CSV exported — $' + grandTotal.toFixed(2) + ' across ' + employeeCount + ' employee(s)');
+  },
+
+  // v743: Mark Paid records a payroll_run row. Doug confirms before
+  // committing because reversing a paid run is manual.
+  markPaid: function(weekStart) {
+    var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
+    var employees = PayrollPage._getEmployees();
+    var weekEnd = dates[6];
+    var totalHours = 0, totalOT = 0, totalGross = 0, employeeCount = 0;
+    var batch = [];
+    employees.forEach(function(emp) {
+      var weekHours = 0;
+      dates.forEach(function(d) {
+        weekHours += PayrollPage._totalHours(PayrollPage._getEntriesForDate(emp.name || emp.id, d));
+      });
+      if (weekHours <= 0) return;
+      var ot = Math.max(0, weekHours - 40);
+      var reg = Math.min(weekHours, 40);
+      var rate = Number(emp.rate || emp.payRate || 0);
+      var gross = (reg * rate) + (ot * rate * 1.5);
+      employeeCount++;
+      totalHours += weekHours;
+      totalOT += ot;
+      totalGross += gross;
+      batch.push({ name: emp.name, hours: weekHours, ot: ot, rate: rate, gross: gross });
+    });
+    if (!employeeCount) { UI.toast('No hours to pay', 'error'); return; }
+
+    if (!confirm('Mark week of ' + weekStart + ' as PAID?\n\n'
+      + employeeCount + ' employee(s) · ' + totalHours.toFixed(1) + ' hrs · $' + totalGross.toFixed(2)
+      + '\n\nThis records a payroll run. Reverse only if needed.')) return;
+
+    PayrollPage._recordRun(weekStart, weekEnd, batch, {
+      totalHours: totalHours, totalOT: totalOT, totalGross: totalGross,
+      employeeCount: employeeCount, method: 'manual', status: 'paid'
+    });
+    UI.toast('Marked paid: $' + totalGross.toFixed(2));
+    UI.closeModal();
+  },
+
+  _recordRun: function(weekStart, weekEnd, batch, meta) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var tenantId = (typeof window !== 'undefined' && window.resolveTenantId) ? window.resolveTenantId() : null;
+    if (!sb || !tenantId) {
+      // Fallback: localStorage cache only
+      try {
+        var local = JSON.parse(localStorage.getItem('bm-payroll-runs') || '[]');
+        local.unshift({ weekStart: weekStart, weekEnd: weekEnd, batch: batch, meta: meta, at: new Date().toISOString() });
+        localStorage.setItem('bm-payroll-runs', JSON.stringify(local.slice(0, 60)));
+      } catch(e){}
+      return;
+    }
+    var paidBy = (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : null;
+    var row = {
+      tenant_id: tenantId,
+      week_start: weekStart,
+      week_end: weekEnd,
+      status: meta.status,
+      total_hours: meta.totalHours,
+      total_ot: meta.totalOT,
+      total_gross: meta.totalGross,
+      employee_count: meta.employeeCount,
+      method: meta.method,
+      batch_payload: batch,
+      paid_by: paidBy
+    };
+    if (meta.status === 'paid') row.paid_at = new Date().toISOString();
+    if (meta.status === 'exported') row.exported_at = new Date().toISOString();
+    sb.from('payroll_runs').insert(row).then(function(r) {
+      if (r.error) console.warn('payroll_runs insert failed:', r.error.message);
+    });
+  },
+
+  _loadLastRunBanner: function(weekStart) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) return;
+    sb.from('payroll_runs').select('*').eq('week_start', weekStart).order('created_at', { ascending: false }).limit(1).maybeSingle().then(function(r) {
+      var el = document.getElementById('last-run-banner');
+      if (!el || !r.data) return;
+      var run = r.data;
+      var label = run.status === 'paid' ? '💰 Marked paid' : '📥 Exported';
+      var when = new Date(run.paid_at || run.exported_at || run.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+      el.innerHTML = '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:12px;">'
+        + label + ' ' + when + ' · $' + Number(run.total_gross || 0).toFixed(2)
+        + ' across ' + (run.employee_count || 0) + ' employee(s) via ' + UI.esc(run.method || '?')
+        + '</div>';
+    });
+  },
+
+  // ── Export CSV ──
+  exportWeek: function(weekStart) {
+    var dates = PayrollPage._getWeekDates(PayrollPage._weekOffset);
+    var employees = PayrollPage._getEmployees();
+    var rows = ['Employee,Mon,Tue,Wed,Thu,Fri,Sat,Sun,Total,OT,Rate,Gross'];
+
+    employees.forEach(function(emp) {
+      var cols = [emp.name];
+      var total = 0;
+      dates.forEach(function(d) {
+        var h = PayrollPage._totalHours(PayrollPage._getEntriesForDate(emp.name || emp.id, d));
+        cols.push(h.toFixed(1));
+        total += h;
+      });
+      var ot = Math.max(0, total - 40);
+      var rate = emp.rate || emp.payRate || 0;
+      var gross = (Math.min(total, 40) * rate) + (ot * rate * 1.5);
+      cols.push(total.toFixed(1), ot.toFixed(1), rate.toFixed(2), gross.toFixed(2));
+      rows.push(cols.join(','));
+    });
+
+    var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'payroll-' + weekStart + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    UI.toast('Payroll exported');
+  },
+
+  // v743: triggerGusto kept as a thin shim so anything still wired to
+  // the old button just opens the new Payroll Summary modal. Delete
+  // once nothing in the codebase calls it.
+  triggerGusto: function(weekStart) {
+    PayrollPage.showPayrollSummary(weekStart);
+  },
+
+  // ── EARNINGS LEDGER (v1082) ─────────────────────────────
+  // Server fn earnings-sync builds earned rows from time_entries nightly;
+  // payments/adjustments are recorded here. Balance = earned − paid.
+  // Until payments are recorded, balances are "earned on record", NOT owed —
+  // the Settle-up button zeroes history so accrual starts clean.
+  _ledgerRows: null,
+  _loadLedger: function() {
+    var el = document.getElementById('pay-ledger');
+    if (!el || typeof SupabaseDB === 'undefined' || !SupabaseDB.client) return;
+    SupabaseDB.client.from('earnings_ledger')
+      .select('member_name, kind, amount, entry_date')
+      .then(function(res) {
+        if (!document.getElementById('pay-ledger')) return;
+        if (res.error) {
+          document.getElementById('pay-ledger').innerHTML =
+            '<div style="font-size:12px;color:var(--red);">Ledger unavailable: ' + UI.esc(res.error.message) + '</div>';
+          return;
+        }
+        PayrollPage._ledgerRows = res.data || [];
+        PayrollPage._renderLedger();
+      });
+  },
+  _renderLedger: function() {
+    var el = document.getElementById('pay-ledger');
+    if (!el) return;
+    var rows = PayrollPage._ledgerRows || [];
+    var agg = {};
+    rows.forEach(function(r) {
+      var a = agg[r.member_name] = agg[r.member_name] || { earned: 0, paid: 0, adj: 0 };
+      var amt = +r.amount || 0;
+      if (r.kind === 'earned') a.earned += amt;
+      else if (r.kind === 'payment') a.paid += -amt;
+      else a.adj += amt;
+    });
+    var names = Object.keys(agg).sort();
+    var anyPayments = rows.some(function(r) { return r.kind === 'payment'; });
+    var fmt = function(n) { return '$' + (+n).toLocaleString('en-US', { minimumFractionDigits: 2 }); };
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">'
+      + '<strong style="font-size:14px;">💰 Earnings ledger</strong>'
+      + '<span style="font-size:11px;color:var(--text-light);">earned from logged hours · payments count once recorded</span></div>';
+    if (!anyPayments) {
+      html += '<div style="font-size:12px;background:#fff8e6;border:1px solid #f0d97a;border-radius:8px;padding:8px 10px;margin-bottom:10px;">'
+        + '⚠️ No payments recorded yet, so these are <b>earned-on-record totals since Jan 2024</b>, not amounts owed. '
+        + 'Tap <b>Settle up</b> on anyone you\'re square with — the ledger starts counting fresh from today.</div>';
+    }
+    html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:430px;">'
+      + '<tr style="text-align:left;color:var(--text-light);font-size:11px;"><th style="padding:6px 8px;">Member</th><th style="padding:6px 8px;text-align:right;">Earned</th><th style="padding:6px 8px;text-align:right;">Paid</th><th style="padding:6px 8px;text-align:right;">Balance</th><th style="padding:6px 8px;"></th></tr>';
+    names.forEach(function(n) {
+      var a = agg[n];
+      var bal = Math.round((a.earned + a.adj - a.paid) * 100) / 100;
+      var esc = n.replace(/'/g, "\\'");
+      html += '<tr style="border-top:1px solid var(--border);">'
+        + '<td style="padding:8px;font-weight:600;">' + UI.esc(n) + '</td>'
+        + '<td style="padding:8px;text-align:right;">' + fmt(a.earned + a.adj) + '</td>'
+        + '<td style="padding:8px;text-align:right;">' + fmt(a.paid) + '</td>'
+        + '<td style="padding:8px;text-align:right;font-weight:700;color:' + (bal > 0.009 ? 'var(--red)' : 'var(--green-dark)') + ';">' + fmt(bal) + '</td>'
+        + '<td style="padding:8px;white-space:nowrap;">'
+        + '<button onclick="PayrollPage.recordPayment(\'' + esc + '\')" class="btn btn-outline" style="font-size:11px;padding:4px 8px;">Record payment</button> '
+        + (bal > 0.009 ? '<button onclick="PayrollPage.settleUp(\'' + esc + '\',' + bal + ')" class="btn btn-outline" style="font-size:11px;padding:4px 8px;">Settle up</button>' : '')
+        + '</td></tr>';
+    });
+    html += '</table></div></div>';
+    el.innerHTML = html;
+  },
+  _insertLedgerRow: function(row, doneMsg) {
+    row.tenant_id = DB.getTenantId();
+    row.source = 'manual';
+    row.source_key = 'man-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    SupabaseDB.client.from('earnings_ledger').insert(row).then(function(res) {
+      if (res.error) { UI.toast('Save failed: ' + res.error.message, 'error'); return; }
+      UI.toast(doneMsg);
+      PayrollPage._loadLedger();
+    });
+  },
+  recordPayment: function(name) {
+    var amt = parseFloat(prompt('Amount paid to ' + name + ' (e.g. 600):') || '');
+    if (!amt || amt <= 0) return;
+    var note = prompt('Note (how/when — e.g. "Zelle 8/4"):') || '';
+    PayrollPage._insertLedgerRow({
+      member_name: name, entry_date: new Date().toISOString().slice(0, 10),
+      kind: 'payment', amount: -Math.abs(amt), notes: note.slice(0, 200) || null
+    }, 'Payment recorded — ' + name);
+  },
+  settleUp: function(name, bal) {
+    if (!confirm('Mark ' + name + ' as fully settled through today? Records a payment of $' + bal.toFixed(2) + ' so the ledger starts fresh. (Does not move any money.)')) return;
+    PayrollPage._insertLedgerRow({
+      member_name: name, entry_date: new Date().toISOString().slice(0, 10),
+      kind: 'payment', amount: -Math.abs(bal), notes: 'Settled up through today (opening-balance zero-out)'
+    }, name + ' marked settled');
+  }
+};

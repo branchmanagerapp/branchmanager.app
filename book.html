@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request a Free Estimate</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f5f6f8; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .form-card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.08); max-width:480px; width:100%; padding:32px; }
+  .logo { text-align:center; margin-bottom:24px; }
+  .logo h1 { font-size:20px; color:#1a3c12; margin-top:8px; }
+  .logo p { font-size:13px; color:#666; }
+  .logo .tree { font-size:36px; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:12px; font-weight:600; color:#555; margin-bottom:4px; }
+  .field input, .field select, .field textarea {
+    width:100%; padding:12px 14px; border:2px solid #e0e0e0; border-radius:10px;
+    font-size:15px; font-family:inherit; transition:border-color .2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline:none; border-color:#4a8a10; }
+  .field textarea { resize:vertical; min-height:80px; }
+  .required::after { content:' *'; color:#c0392b; }
+  .submit-btn {
+    width:100%; padding:14px; background:#1a3c12; color:#fff; border:none;
+    border-radius:10px; font-size:16px; font-weight:700; cursor:pointer;
+    transition:background .2s;
+  }
+  .submit-btn:hover { background:#2d5a27; }
+  .submit-btn:disabled { background:#999; cursor:not-allowed; }
+  .success { display:none; text-align:center; padding:40px 20px; }
+  .success .check { font-size:48px; margin-bottom:12px; }
+  .success h2 { color:#1a3c12; margin-bottom:8px; }
+  .success p { color:#666; font-size:14px; line-height:1.6; }
+  .info { text-align:center; margin-top:16px; font-size:12px; color:#999; }
+  .info a { color:#4a8a10; }
+  .stars { color:#f9a825; font-size:14px; margin-top:8px; }
+</style>
+  <script src="branding.js"></script>
+</head>
+<body>
+
+<div class="form-card">
+  <div id="form-view">
+    <div class="logo">
+      <div class="tree">🌳</div>
+      <h1 id="cfg-title"></h1>
+      <p id="cfg-subtitle"></p>
+      <div class="stars">★★★★★ 5.0 — 100+ Reviews</div>
+    </div>
+
+    <form id="booking-form" onsubmit="submitRequest(event)">
+      <div id="form-fields">
+        <!-- Fields rendered dynamically by loadConfig() -->
+        <!-- Fallback static fields shown until config loads -->
+        <div class="field">
+          <label class="required">Your Name</label>
+          <input type="text" id="b-name" required placeholder="First and last name">
+        </div>
+        <div class="field">
+          <label class="required">Phone Number</label>
+          <input type="tel" id="b-phone" required placeholder="(914) 555-1234">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="b-email" placeholder="you@email.com">
+        </div>
+        <div class="field">
+          <label class="required">Property Address</label>
+          <input type="text" id="b-address" required placeholder="123 Main St, {{address_short}}">
+        </div>
+        <div class="field">
+          <label class="required">Service Needed</label>
+          <select id="b-service" required>
+            <option value="">Select a service...</option>
+            <option>Tree Removal</option>
+            <option>Tree Pruning / Trimming</option>
+            <option>Stump Removal</option>
+            <option>Storm Damage / Emergency</option>
+            <option>Land Clearing</option>
+            <option>Bucket Truck Work</option>
+            <option>Cabling &amp; Bracing</option>
+            <option>Tree Health Assessment</option>
+            <option>Gutter Clean Out</option>
+            <option>Firewood</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Describe the Work</label>
+          <textarea id="b-details" placeholder="Tell us about the trees, the situation, any concerns..."></textarea>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Add Photos <span style="font-weight:400;color:#888;">(optional)</span></label>
+        <input type="file" id="b-photos" accept="image/*" multiple>
+        <div style="font-size:12px;color:#888;margin-top:4px;">Attach photos of the trees or the area — helps us quote faster.</div>
+      </div>
+      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer;">
+        <input type="checkbox" id="b-sms-consent" required style="width:18px;height:18px;flex-shrink:0;margin-top:2px;">
+        <span id="sms-consent-text" style="font-size:11px;color:#888;line-height:1.6;"></span>
+      </label>
+      <!-- Honeypot — hidden from real users, bots fill it in -->
+      <div style="position:absolute;left:-9999px;"><input type="text" id="website_url" name="website_url" tabindex="-1" autocomplete="off"></div>
+      <button type="submit" class="submit-btn" id="submit-btn">Request Free Estimate</button>
+    </form>
+    <script>window._bookFormLoadTime = Date.now();</script>
+
+    <div class="info" id="cfg-info"></div>
+  </div>
+
+  <div id="success-view" class="success">
+    <div class="check">✅</div>
+    <h2 id="cfg-success-title">Request Received!</h2>
+    <p id="cfg-success-msg">Thanks! We'll review your request and get back to you within 2 hours during business hours.</p>
+    <p style="margin-top:16px;font-weight:600;" id="cfg-sign-off"></p>
+    <p style="margin-top:16px;" id="cfg-call-link"></p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="tenant-slug-bootstrap.js"></script>
+<script>
+(function() {
+  // White-label: book.html is a NEW lead form — no record, so the only
+  // tenant context is ?tenant_slug (resolved by tenant-slug-bootstrap).
+  // NEVER paint BM_CONFIG (= Second Nature Tree). Stay generic until/
+  // unless a slug resolves a real tenant, then paint that company.
+  function g(id){ return document.getElementById(id); }
+  function paint() {
+    var resolved = !!window.bmResolvedTenant;
+    var C = (resolved && window.BM_CONFIG) ? window.BM_CONFIG : null;
+    var nm = C && C.companyName ? C.companyName : '';
+    document.title = 'Request a Free Estimate' + (nm ? ' — ' + nm : '');
+    if (g('cfg-title')) g('cfg-title').textContent = nm || 'Request a Free Estimate';
+    if (g('cfg-subtitle')) g('cfg-subtitle').textContent = C ? [C.city, C.tagline].filter(Boolean).join(' — ') : 'Fast, friendly, no-obligation quotes';
+    if (g('cfg-sign-off')) g('cfg-sign-off').textContent = nm ? ('— ' + nm) : '';
+    if (g('cfg-call-link')) g('cfg-call-link').innerHTML = (C && C.phoneDigits) ? '<a href="tel:' + C.phoneDigits + '" style="color:#1a3c12;font-weight:600;">📞 Call ' + C.phone + '</a>' : '';
+    if (g('cfg-info')) g('cfg-info').innerHTML = 'We typically respond within 2 hours during business hours.' + (C && (C.phoneDigits || C.website) ? '<br>' : '') + (C && C.phoneDigits ? '<a href="tel:' + C.phoneDigits + '">' + C.phone + '</a>' : '') + (C && C.phoneDigits && C.website ? ' · ' : '') + (C && C.website ? '<a href="' + C.websiteUrl + '">' + C.website + '</a>' : '');
+    if (g('sms-consent-text')) g('sms-consent-text').innerHTML = 'By checking this box, I agree to receive account notifications, appointment reminders, and customer care messages via text message' + (nm ? ' from ' + nm : '') + '. You may opt out by replying STOP or request more information by replying HELP. Message frequency varies. Message and data rates may apply. You can review our <a href="privacy.html" target="_blank" style="color:#1a3c12;">Privacy Policy</a> and <a href="terms.html" target="_blank" style="color:#1a3c12;">Terms</a> to see how your data is used.';
+  }
+  Promise.resolve(window.bmTenantSlugBootstrap).then(paint, paint);
+})();
+</script>
+<script>
+var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+var NOTIFY_URL = SUPABASE_URL + '/functions/v1/request-notify';
+
+// Active config — starts as null (static fallback in HTML), replaced if Supabase has one
+var _activeConfig = null;
+
+function _escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _buildFieldHtml(f) {
+  var label = '<label class="' + (f.required ? 'required' : '') + '">' + _escHtml(f.label) + '</label>';
+  var input = '';
+  if (f.type === 'select') {
+    var opts = '<option value="">Select a service...</option>';
+    (f.options || []).forEach(function(o) { opts += '<option>' + _escHtml(o) + '</option>'; });
+    input = '<select id="field-' + _escHtml(f.id) + '" ' + (f.required ? 'required' : '') + '>' + opts + '</select>';
+  } else if (f.type === 'textarea') {
+    input = '<textarea id="field-' + _escHtml(f.id) + '" placeholder="' + _escHtml(f.placeholder||'') + '" ' + (f.required ? 'required' : '') + '></textarea>';
+  } else {
+    input = '<input type="' + _escHtml(f.type||'text') + '" id="field-' + _escHtml(f.id) + '" placeholder="' + _escHtml(f.placeholder||'') + '" ' + (f.required ? 'required' : '') + '>';
+  }
+  return '<div class="field">' + label + input + '</div>';
+}
+
+function _applyConfig(cfg) {
+  _activeConfig = cfg;
+
+  // Update header text
+  if (cfg.title) document.getElementById('cfg-title').textContent = cfg.title;
+  if (cfg.subtitle) document.getElementById('cfg-subtitle').textContent = cfg.subtitle;
+  if (cfg.buttonText) document.getElementById('submit-btn').textContent = cfg.buttonText;
+  if (cfg.successTitle) document.getElementById('cfg-success-title').textContent = cfg.successTitle;
+  if (cfg.successMessage) document.getElementById('cfg-success-msg').textContent = cfg.successMessage;
+
+  // Replace form fields
+  if (cfg.fields && cfg.fields.length) {
+    var html = '';
+    cfg.fields.forEach(function(f) { html += _buildFieldHtml(f); });
+    document.getElementById('form-fields').innerHTML = html;
+  }
+}
+
+function _loadConfig() {
+  // Try Supabase settings table
+  fetch(SUPABASE_URL + '/rest/v1/settings?key=eq.form_config&select=value', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(rows) {
+    if (rows && rows.length && rows[0].value) {
+      var cfg = JSON.parse(rows[0].value);
+      _applyConfig(cfg);
+    }
+    // else: keep static HTML as-is
+  })
+  .catch(function() {
+    // Supabase unreachable or table missing — keep static HTML
+  });
+}
+
+function _getFieldValues() {
+  if (!_activeConfig) {
+    // Static fallback — read hardcoded IDs
+    return {
+      name: (document.getElementById('b-name') || {}).value || '',
+      phone: (document.getElementById('b-phone') || {}).value || '',
+      email: (document.getElementById('b-email') || {}).value || '',
+      address: (document.getElementById('b-address') || {}).value || '',
+      service: (document.getElementById('b-service') || {}).value || '',
+      details: (document.getElementById('b-details') || {}).value || ''
+    };
+  }
+  // Dynamic config — walk fields and use semantic field labels to map values
+  var vals = { name:'', phone:'', email:'', address:'', service:'', details:'' };
+  _activeConfig.fields.forEach(function(f) {
+    var el = document.getElementById('field-' + f.id);
+    if (!el) return;
+    var v = el.value || '';
+    var lbl = (f.label || '').toLowerCase();
+    if (lbl.includes('name')) vals.name = v;
+    else if (lbl.includes('phone')) vals.phone = v;
+    else if (lbl.includes('email')) vals.email = v;
+    else if (lbl.includes('address') || lbl.includes('property')) vals.address = v;
+    else if (lbl.includes('service') || f.type === 'select') vals.service = v;
+    else if (lbl.includes('describe') || lbl.includes('detail') || lbl.includes('note') || f.type === 'textarea') vals.details = v;
+    // Any extra fields append to notes
+    else { vals.details += (vals.details ? '\n' : '') + f.label + ': ' + v; }
+  });
+  return vals;
+}
+
+function submitRequest(e) {
+  e.preventDefault();
+
+  // Bot protection: honeypot field + timing check
+  var hp = document.getElementById('website_url');
+  if (hp && hp.value) { console.warn('Bot detected (honeypot)'); return; }
+  var loadTime = window._bookFormLoadTime || Date.now();
+  if (Date.now() - loadTime < 3000) { alert('Please wait a moment before submitting.'); return; }
+
+  // Rate limit: max 1 submission per 30 seconds
+  var lastSubmit = parseInt(sessionStorage.getItem('bm-last-book-submit') || '0');
+  if (Date.now() - lastSubmit < 30000) { alert('Please wait before submitting again.'); return; }
+  sessionStorage.setItem('bm-last-book-submit', Date.now().toString());
+
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  var data = _getFieldValues();
+  data.source = 'online_booking';
+  data.submitted = new Date().toISOString();
+
+  // Lead source — parse UTM params + referrer. Falls back to "Website form".
+  data.source = (function() {
+    try {
+      var p = new URLSearchParams(location.search);
+      var u = p.get('utm_source');
+      if (u) {
+        var c = p.get('utm_campaign');
+        var m = p.get('utm_medium');
+        return 'utm:' + u + (c ? '/' + c : '') + (m ? ' (' + m + ')' : '');
+      }
+      var ref = document.referrer || '';
+      if (ref) {
+        var host = '';
+        try { host = new URL(ref).hostname; } catch(e) {}
+        var ownHost = '';
+        try { if (window.BRANDING && window.BRANDING.website) ownHost = new URL(window.BRANDING.website).hostname; } catch(e) {}
+        if (host && (!ownHost || host.indexOf(ownHost) < 0)) {
+          if (/google/.test(host))   return 'Google (organic)';
+          if (/facebook|fb\./i.test(host)) return 'Facebook';
+          if (/instagram/.test(host)) return 'Instagram';
+          if (/yelp/.test(host))     return 'Yelp';
+          if (/bing/.test(host))     return 'Bing';
+          if (/duck|ddg/.test(host)) return 'DuckDuckGo';
+          return 'Referrer: ' + host;
+        }
+      }
+      return 'Website form';
+    } catch(e) { return 'Website form'; }
+  })();
+
+  // Single path: the edge function handles DB insert (service-role, bypasses RLS),
+  // SMS to Doug, email to team, and confirmation to customer.
+  // Prior direct /rest/v1/requests POST was silently failing on RLS + schema mismatch
+  // (see v366 fix — columns were wrong AND anon key couldn't INSERT).
+  function _post() {
+    Promise.all([
+      fetch(NOTIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(function(err) { console.warn('Notify call:', err); })
+    ]).then(function() {
+      document.getElementById('form-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+    }).catch(function() {
+      document.getElementById('form-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+    });
+  }
+  // Attach up to 10 customer photos (base64) if any were added, then post.
+  var pf = document.getElementById('b-photos');
+  var files = pf && pf.files ? Array.prototype.slice.call(pf.files, 0, 10) : [];
+  if (!files.length) { _post(); return; }
+  if (btn) btn.textContent = 'Uploading photos...';
+  var imgs = [], done = 0;
+  files.forEach(function(file) {
+    var fr = new FileReader();
+    fr.onload = function(ev) { imgs.push({ name: file.name, dataUrl: ev.target.result }); if (++done === files.length) { data.images = imgs; _post(); } };
+    fr.onerror = function() { if (++done === files.length) { data.images = imgs; _post(); } };
+    fr.readAsDataURL(file);
+  });
+}
+
+// Load config on page load
+_loadConfig();
+</script>
+</body>
+</html>

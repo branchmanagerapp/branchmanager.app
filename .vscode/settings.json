@@ -1,0 +1,26 @@
+{
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.formatOnSave": false,
+  "editor.wordWrap": "off",
+  "editor.minimap.enabled": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.linkedEditing": true,
+  "files.exclude": {
+    "node_modules": true,
+    "dist": false,
+    ".git": false
+  },
+  "search.exclude": {
+    "node_modules": true,
+    "dist/bundle.js": true
+  },
+  "javascript.suggest.autoImports": false,
+  "javascript.updateImportsOnFileMove.enabled": "never",
+  "emmet.includeLanguages": { "javascript": "javascriptreact" },
+  "files.associations": {
+    "*.js": "javascript"
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.cwd": "${workspaceFolder}"
+}

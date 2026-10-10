@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Vehicle Inspection — {{business_short_name}}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:system-ui,sans-serif; background:#fff; color:#1a1a1a; max-width:600px; margin:0 auto; padding:16px; }
+  h1 { font-size:17px; text-align:center; margin-bottom:2px; }
+  .sub { font-size:11px; text-align:center; color:#666; margin-bottom:16px; }
+  .top-row { display:flex; gap:10px; margin-bottom:16px; }
+  .top-row > div { flex:1; }
+  .top-row label { font-size:11px; font-weight:600; color:#888; }
+  .top-row input { width:100%; padding:6px; border:none; border-bottom:1px solid #ccc; font-size:14px; }
+  .section { margin-bottom:14px; }
+  .section h3 { font-size:13px; font-weight:700; color:#1b5e20; padding:6px 0; border-bottom:1px solid #eee; margin-bottom:6px; }
+  .check { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; border-bottom:1px solid #f5f5f5; }
+  .check:last-child { border-bottom:none; }
+  .check input { width:16px; height:16px; accent-color:#1b5e20; }
+  .check .fail { margin-left:auto; font-size:11px; color:#dc2626; display:none; }
+  .notes { margin-top:10px; }
+  .notes textarea { width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; min-height:50px; font-family:inherit; }
+  .sig { margin-top:16px; font-size:13px; line-height:2; }
+  .sig-line { border-bottom:1px solid #000; display:inline-block; width:180px; margin:0 6px; }
+  .btn { display:block; width:100%; padding:12px; background:#1b5e20; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; margin-top:12px; }
+  .pass { display:none; background:#e8f5e9; border-radius:8px; padding:14px; text-align:center; font-weight:700; color:#166534; margin-top:12px; }
+  .footer { text-align:center; font-size:10px; color:#999; margin-top:16px; }
+  @media print { .btn { display:none; } }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<h1>Daily Vehicle & Equipment Pre-Trip Inspection</h1>
+<div class="sub">FMCSA / DOT · Complete before first trip each day</div>
+
+<div class="top-row">
+  <div><label>Date</label><input type="date"></div>
+  <div><label>Driver</label><input type="text" placeholder="Name"></div>
+</div>
+<div class="top-row">
+  <div><label>Vehicle</label><input type="text" placeholder="Truck #, plate"></div>
+  <div><label>Odometer</label><input type="number" placeholder="Miles"></div>
+</div>
+
+<div class="section">
+  <h3>🚛 Truck</h3>
+  <div class="check"><input type="checkbox" onchange="count()"> Engine oil level OK</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Coolant level OK</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Tires — pressure, tread, no damage (all axles)</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Lights — headlights, brake, turn, hazard all working</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Brakes — pedal firm, no pull, parking brake holds</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Mirrors — adjusted, clean, no cracks</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Horn working</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Windshield — no cracks, wipers working</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Seatbelts working</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Fire extinguisher present & charged</div>
+  <div class="check"><input type="checkbox" onchange="count()"> First aid kit present</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Registration & insurance card in vehicle</div>
+</div>
+
+<div class="section">
+  <h3>🪵 Trailer (if applicable)</h3>
+  <div class="check"><input type="checkbox" onchange="count()"> Hitch & safety chains secure</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Trailer lights working</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Tires OK</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Load secured with straps/chains</div>
+</div>
+
+<div class="section">
+  <h3>⚙️ Equipment</h3>
+  <div class="check"><input type="checkbox" onchange="count()"> Chipper — blades, feed tray, safety bar, oil</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Chainsaws — chain tension, bar oil, fuel, chain brake</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Stump grinder — teeth, hydraulics (if on truck)</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Ropes & rigging — no damage, properly stored</div>
+  <div class="check"><input type="checkbox" onchange="count()"> PPE on truck — hard hats, chaps, glasses, ear pro</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Cones & signs on truck</div>
+</div>
+
+<div class="section">
+  <h3>🏗️ Bucket Truck (if applicable)</h3>
+  <div class="check"><input type="checkbox" onchange="count()"> Boom operates smoothly — up, down, rotate</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Bucket controls responsive</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Outriggers extend & retract</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Hydraulic fluid level OK, no leaks</div>
+  <div class="check"><input type="checkbox" onchange="count()"> Harness anchor point in bucket intact</div>
+</div>
+
+<div class="notes">
+  <label style="font-size:12px;font-weight:600;color:#888;">Defects / Notes:</label>
+  <textarea placeholder="List any issues found..."></textarea>
+</div>
+
+<div id="sig-vi-driver"></div>
+
+<div class="pass" id="pass">✅ Vehicle passed inspection — cleared for service</div>
+<button class="btn" onclick="window.print()">🖨 Print Inspection</button>
+
+<div class="footer">
+  {{legal_name}} · {{address_short}} · {{phone}}<br>
+  Retain vehicle inspection records for 1 year per FMCSA 396.13
+</div>
+
+<script src="onboarding-sig.js"></script>
+<script>
+function count() {
+  var checks = document.querySelectorAll('.check input');
+  var done = Array.from(checks).filter(function(c){return c.checked;}).length;
+  document.getElementById('pass').style.display = done === checks.length ? 'block' : 'none';
+}
+// Auto-fill driver + date
+var _emp = OnboardingSig.getEmployee();
+if (_emp && _emp.fullName) {
+  var driverEl = document.querySelector('.top-row input[type="text"]');
+  if (driverEl && !driverEl.value) driverEl.value = _emp.fullName;
+  var dateEl = document.querySelector('.top-row input[type="date"]');
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+}
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-vi-driver', {
+    docKey: 'vehicle-inspection', id: 'driver', label: 'Driver Signature',
+    prefillName: _emp ? _emp.fullName : ''
+  });
+});
+</script>
+</body>
+</html>

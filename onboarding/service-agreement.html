@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Agreement — {{business_name}}</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f0; color: #1a1a1a; min-height: 100vh; }
+  .page { max-width: 720px; margin: 0 auto; padding: 20px; }
+  .header { background: #1a3c12; color: #fff; padding: 20px 28px; border-radius: 12px 12px 0 0; }
+  .header-logo { font-size: 13px; opacity: .75; margin-bottom: 6px; }
+  .header h1 { font-size: 22px; font-weight: 800; }
+  .header-sub { font-size: 13px; opacity: .7; margin-top: 6px; }
+  .card { background: #fff; border-radius: 0 0 12px 12px; padding: 28px 32px; box-shadow: 0 2px 20px rgba(0,0,0,.08); margin-bottom: 16px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; padding: 16px; background: #f8faf8; border-radius: 8px; border: 1px solid #e0eee0; }
+  .meta-item label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .08em; display: block; margin-bottom: 3px; }
+  .meta-item .val { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+  h2 { font-size: 13px; font-weight: 800; color: #1a3c12; text-transform: uppercase; letter-spacing: .05em; margin: 20px 0 8px; padding-bottom: 5px; border-bottom: 2px solid #e0eee0; }
+  p, li { font-size: 13px; color: #374151; line-height: 1.65; }
+  ul { padding-left: 18px; margin: 6px 0; }
+  li { margin-bottom: 5px; }
+  .sig-area { margin-top: 28px; padding-top: 20px; border-top: 2px solid #e5e7eb; }
+  .sig-area h2 { margin-top: 0; }
+  canvas.sig-canvas { width: 100%; height: 160px; border: 2px solid #1a3c12; border-radius: 8px; background: #fff; touch-action: none; cursor: crosshair; display: block; }
+  .sig-name-input { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; font-family: inherit; margin-top: 10px; }
+  .sig-name-input:focus { outline: none; border-color: #1a3c12; }
+  .consent-label { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; cursor: pointer; }
+  .consent-label input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; accent-color: #1a3c12; }
+  .consent-label span { font-size: 12px; color: #666; line-height: 1.5; }
+  .btn-sign { display: block; width: 100%; padding: 14px; background: #1a3c12; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 14px; }
+  .btn-sign:hover { background: #245219; }
+  .btn-clear { margin-top: 6px; padding: 4px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; color: #64748b; cursor: pointer; }
+  .signed-badge { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 16px; text-align: center; }
+  .signed-badge h3 { color: #166534; font-size: 17px; margin-bottom: 4px; }
+  .signed-badge p { color: #4b7c59; font-size: 13px; }
+  .footer { text-align: center; font-size: 11px; color: #aaa; padding: 12px 0 24px; }
+  .loader { text-align: center; padding: 80px 20px; }
+  .loader-icon { font-size: 48px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  @media (max-width: 600px) { .meta-grid { grid-template-columns: 1fr; } .card { padding: 20px 18px; } }
+  @media print { body { background: #fff; } .page { padding: 0; } .card { box-shadow: none; border-radius: 0; } .sig-area { page-break-inside: avoid; } }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+<div class="page">
+  <div id="app">
+    <div class="loader">
+      <div class="loader-icon">🌳</div>
+      <div style="font-size:16px;color:#666;">Loading your service agreement…</div>
+    </div>
+  </div>
+  <div class="footer">{{legal_name}} &nbsp;·&nbsp; {{phone}} &nbsp;·&nbsp; Licensed &amp; Fully Insured</div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var params  = new URLSearchParams(window.location.search);
+var quoteId = params.get('id');
+var token   = params.get('token');
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function money(n) { return '$' + (+(n||0)).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function today() { var d = new Date(); return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+(async function() {
+  var app = document.getElementById('app');
+
+  // No quote params → show blank printable version
+  if (!quoteId) { renderStatic(app); return; }
+
+  try {
+    var result = await sb.from('quotes').select('*').eq('id', quoteId).single();
+    if (result.error) throw result.error;
+    var q = result.data;
+    if (q.approval_token && token !== q.approval_token) {
+      app.innerHTML = '<div class="header" style="border-radius:12px;"><h1>Link Expired</h1></div>'
+        + '<div class="card card-standalone" style="border-radius:0 0 12px 12px;text-align:center;padding:40px 24px;">'
+        + '<p>This link has expired. Please ask us to resend your service agreement.</p></div>';
+      return;
+    }
+    renderAgreement(app, q);
+  } catch(e) {
+    renderStatic(app);
+  }
+})();
+
+// ── Render live (quote-linked) agreement ──────────────────────────────────────
+function renderAgreement(app, q) {
+  var clientName = q.client_name || '—';
+  var property   = q.property    || '—';
+  var quoteNum   = q.quote_number ? '#' + q.quote_number : '—';
+  var amount     = money(q.total || 0);
+  var dateStr    = today();
+
+  // Already signed?
+  var alreadySigned = !!(q.service_agreement_signed_at);
+
+  app.innerHTML =
+    '<div class="header">'
+    + '<div class="header-logo">🌳 {{legal_name}}</div>'
+    + '<h1>Tree Service Agreement</h1>'
+    + '<div class="header-sub">{{legal_name}} · {{city}}, {{state}} {{zip}}</div>'
+    + '</div>'
+    + '<div class="card">'
+
+    // ── Meta ──
+    + '<div class="meta-grid">'
+    + '<div class="meta-item"><label>Client</label><div class="val">' + esc(clientName) + '</div></div>'
+    + '<div class="meta-item"><label>Date</label><div class="val">' + esc(dateStr) + '</div></div>'
+    + '<div class="meta-item"><label>Property Address</label><div class="val">' + esc(property) + '</div></div>'
+    + '<div class="meta-item"><label>' + (q.quote_number ? 'Quote #' : 'Reference') + ' &nbsp;·&nbsp; Amount</label><div class="val">' + esc(quoteNum) + ' &nbsp;·&nbsp; ' + esc(amount) + '</div></div>'
+    + '</div>'
+
+    + agreementBody()
+
+    // ── Signature ──
+    + '<div class="sig-area" id="sig-area">'
+    + (alreadySigned ? signedBadge(q) : signaturePad())
+    + '</div>'
+
+    + '</div>'; // card
+
+  if (!alreadySigned) initCanvas();
+}
+
+// ── Signature pad HTML ────────────────────────────────────────────────────────
+function signaturePad() {
+  return '<h2>Client Signature</h2>'
+    + '<canvas id="sig-canvas" class="sig-canvas" width="700" height="200"></canvas>'
+    + '<button class="btn-clear" onclick="clearSig()">✕ Clear</button>'
+    + '<input id="sig-name" class="sig-name-input" type="text" placeholder="Type your full legal name">'
+    + '<label class="consent-label">'
+    + '<input type="checkbox" id="sig-consent">'
+    + '<span>I consent to signing this agreement electronically. My electronic signature has the same legal effect as a handwritten signature under the federal ESIGN Act and NY ESRA. I have read and agree to all terms described in this Service Agreement.</span>'
+    + '</label>'
+    + '<button class="btn-sign" onclick="submitSig()">✅ Sign Service Agreement</button>'
+    + '<p style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">Contractor: {{owner_name}}, Owner — {{legal_name}}</p>';
+}
+
+// ── Already-signed badge ──────────────────────────────────────────────────────
+function signedBadge(q) {
+  var dt = q.service_agreement_signed_at ? new Date(q.service_agreement_signed_at).toLocaleString() : '';
+  return '<div class="signed-badge">'
+    + '<h3>✅ Agreement Signed</h3>'
+    + (q.service_agreement_signed_name ? '<p>Signed by <strong>' + esc(q.service_agreement_signed_name) + '</strong>' + (dt ? ' on ' + dt : '') + '</p>' : '')
+    + '<p style="margin-top:8px;">Thank you — a copy of this agreement is on file.</p>'
+    + '</div>';
+}
+
+// ── Submit signature to Supabase ──────────────────────────────────────────────
+async function submitSig() {
+  var name = (document.getElementById('sig-name') || {}).value || '';
+  name = name.trim();
+  if (!name) { alert('Please type your full name.'); return; }
+
+  var canvas = document.getElementById('sig-canvas');
+  var empty = true;
+  if (canvas) {
+    var data = canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    for (var i = 3; i < data.length; i += 4) { if (data[i] > 0) { empty = false; break; } }
+  }
+  if (empty) { alert('Please draw your signature above.'); return; }
+
+  var consent = document.getElementById('sig-consent');
+  if (consent && !consent.checked) { alert('Please check the consent box to proceed.'); return; }
+
+  var btn = document.querySelector('.btn-sign');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  var sigData = canvas ? canvas.toDataURL('image/png') : '';
+  var now = new Date().toISOString();
+  var ip = '';
+  try { var r = await fetch('https://api.ipify.org?format=json'); var d = await r.json(); ip = d.ip||''; } catch(e){}
+
+  try {
+    var update = {
+      service_agreement_signed_at:    now,
+      service_agreement_signed_name:  name,
+      service_agreement_signature:    sigData,
+      service_agreement_signed_ip:    ip,
+      service_agreement_signed_ua:    navigator.userAgent || ''
+    };
+    var res = await sb.from('quotes').update(update).eq('id', quoteId);
+    if (res.error) throw res.error;
+
+    document.getElementById('sig-area').innerHTML = signedBadge({
+      service_agreement_signed_at: now,
+      service_agreement_signed_name: name
+    });
+
+    // Scroll to confirmation
+    document.getElementById('sig-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  } catch(e) {
+    alert('Could not save signature — please call ' + (window.BRANDING ? window.BRANDING.phone : 'us') + '.');
+    if (btn) { btn.textContent = '✅ Sign Service Agreement'; btn.disabled = false; }
+  }
+}
+
+function clearSig() {
+  var c = document.getElementById('sig-canvas');
+  if (c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+// ── Canvas drawing init ───────────────────────────────────────────────────────
+function initCanvas() {
+  setTimeout(function() {
+    var canvas = document.getElementById('sig-canvas');
+    if (!canvas || canvas._inited) return;
+    canvas._inited = true;
+    var ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1a3c12'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    var drawing = false;
+    function pos(e) {
+      var r = canvas.getBoundingClientRect(), sx = canvas.width/r.width, sy = canvas.height/r.height;
+      var cx = e.touches?e.touches[0].clientX:e.clientX, cy = e.touches?e.touches[0].clientY:e.clientY;
+      return { x:(cx-r.left)*sx, y:(cy-r.top)*sy };
+    }
+    canvas.addEventListener('mousedown',  function(e){ drawing=true; ctx.beginPath(); var p=pos(e); ctx.moveTo(p.x,p.y); });
+    canvas.addEventListener('mousemove',  function(e){ if(!drawing)return; var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
+    canvas.addEventListener('mouseup',    function(){ drawing=false; });
+    canvas.addEventListener('mouseleave', function(){ drawing=false; });
+    canvas.addEventListener('touchstart', function(e){ e.preventDefault(); drawing=true; ctx.beginPath(); var p=pos(e); ctx.moveTo(p.x,p.y); },{passive:false});
+    canvas.addEventListener('touchmove',  function(e){ e.preventDefault(); if(!drawing)return; var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); },{passive:false});
+    canvas.addEventListener('touchend',   function(){ drawing=false; });
+  }, 50);
+}
+
+// ── Static (no quote ID) printable version ────────────────────────────────────
+function renderStatic(app) {
+  app.innerHTML =
+    '<div class="header">'
+    + '<div class="header-logo">🌳 {{legal_name}}</div>'
+    + '<h1>Tree Service Agreement</h1>'
+    + '<div class="header-sub">{{legal_name}} · {{city}}, {{state}} {{zip}}</div>'
+    + '</div>'
+    + '<div class="card">'
+    + '<div class="meta-grid">'
+    + '<div class="meta-item"><label>Client</label><div class="val" style="min-height:22px;border-bottom:1px solid #ccc;">&nbsp;</div></div>'
+    + '<div class="meta-item"><label>Date</label><div class="val" style="min-height:22px;border-bottom:1px solid #ccc;">&nbsp;</div></div>'
+    + '<div class="meta-item"><label>Property Address</label><div class="val" style="min-height:22px;border-bottom:1px solid #ccc;">&nbsp;</div></div>'
+    + '<div class="meta-item"><label>Quote # &nbsp;·&nbsp; Amount</label><div class="val" style="min-height:22px;border-bottom:1px solid #ccc;">&nbsp;</div></div>'
+    + '</div>'
+    + agreementBody()
+    + '<div class="sig-area" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px;">'
+    + '<div>'
+    + '<div style="font-size:12px;font-weight:700;color:#666;margin-bottom:24px;">CLIENT SIGNATURE</div>'
+    + '<div style="border-bottom:1px solid #000;margin-bottom:8px;">&nbsp;</div>'
+    + '<div style="font-size:11px;color:#999;">Signature &nbsp;·&nbsp; Date: ___________</div>'
+    + '<div style="border-bottom:1px solid #999;margin:14px 0 4px;">&nbsp;</div>'
+    + '<div style="font-size:11px;color:#999;">Print Name</div>'
+    + '</div>'
+    + '<div>'
+    + '<div style="font-size:12px;font-weight:700;color:#666;margin-bottom:24px;">CONTRACTOR</div>'
+    + '<div style="border-bottom:1px solid #000;margin-bottom:8px;">&nbsp;</div>'
+    + '<div style="font-size:11px;color:#999;">Signature &nbsp;·&nbsp; Date: ___________</div>'
+    + '<div style="font-size:11px;color:#555;margin-top:8px;">{{owner_name}}, Owner<br>{{legal_name}}</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+// ── Agreement body (shared) ───────────────────────────────────────────────────
+function agreementBody() {
+  return ''
+    + '<h2>1. Scope of Work</h2>'
+    + '<p>{{legal_name}} ("Contractor") agrees to perform the tree work described in the attached quote at the property listed above. Work includes only what is explicitly listed in the quote — any additional work requires a separate written agreement and additional charges.</p>'
+
+    + '<h2>2. Payment Terms</h2>'
+    + '<ul>'
+    + '<li>A deposit of <strong>50%</strong> is due upon signing to schedule the work.</li>'
+    + '<li>Remaining balance is due upon completion of work, before the crew departs.</li>'
+    + '<li>Payment accepted: cash, check, credit card, or online via the secure payment link provided.</li>'
+    + '<li>Invoices unpaid after 30 days are subject to a <strong>1.5% monthly late fee</strong>.</li>'
+    + '</ul>'
+
+    + '<h2>3. Scheduling</h2>'
+    + '<p>Work will be scheduled within 2–4 weeks of deposit receipt, weather permitting. Contractor will provide 24–48 hours advance notice of the scheduled date. Rain, high winds, or unsafe conditions may require rescheduling at no additional cost to the client.</p>'
+
+    + '<h2>4. Access &amp; Preparation</h2>'
+    + '<ul>'
+    + '<li>Client will provide clear access to the work area for trucks and equipment.</li>'
+    + '<li>Client will remove vehicles, outdoor furniture, and fragile items from the work zone.</li>'
+    + '<li>Client will confine pets during work hours.</li>'
+    + '<li>If access is blocked on the scheduled date, a trip/rescheduling charge may apply.</li>'
+    + '</ul>'
+
+    + '<h2>5. Cleanup</h2>'
+    + '<p>All debris from the contracted work will be removed from the property unless otherwise noted in the quote. The site will be raked clean. Firewood may be left on-site for the client if requested and noted in the quote.</p>'
+
+    + '<h2>6. Stump Grinding</h2>'
+    + '<p>If stump grinding is included in the quote, the stump will be ground to approximately 6–8 inches below grade. Grindings will be used to fill the void unless removal is separately specified. Contractor is not responsible for damage to underground utilities, irrigation lines, or septic systems unless their location is disclosed to Contractor in advance.</p>'
+
+    + '<h2>7. Liability &amp; Insurance</h2>'
+    + '<ul>'
+    + '<li>Contractor carries General Liability insurance and Workers\' Compensation coverage. Certificates of Insurance are available upon request.</li>'
+    + '<li>Contractor is not liable for pre-existing property conditions, underground utilities not disclosed by the client, or damage caused by weather events beyond Contractor\'s control.</li>'
+    + '<li>Contractor\'s total liability shall not exceed the total contract amount.</li>'
+    + '</ul>'
+
+    + '<h2>8. Cancellation</h2>'
+    + '<ul>'
+    + '<li>Client may cancel with <strong>48 hours notice</strong> for a full deposit refund.</li>'
+    + '<li>Cancellations within 48 hours of the scheduled start: deposit is forfeited.</li>'
+    + '<li>If work has begun, client owes for all work completed to the point of cancellation.</li>'
+    + '</ul>'
+
+    + '<h2>9. Permits</h2>'
+    + '<p>Client is responsible for obtaining any required tree removal permits from the municipality before work begins. Contractor can assist with permit applications if needed; an additional administrative fee may apply. Work will not proceed without required permits in place.</p>'
+
+    + '<h2>10. Warranty</h2>'
+    + '<p>Contractor warrants workmanship for <strong>30 days</strong> from the date of service completion. This warranty does not cover damage from natural events (storms, disease, insect infestation) or conditions beyond Contractor\'s control that were not reasonably foreseeable at the time of the work.</p>'
+
+    + '<h2>11. Entire Agreement</h2>'
+    + '<p>This Service Agreement and the attached quote constitute the entire agreement between the parties regarding the described work. Any modifications must be in writing and signed by both parties. This Agreement shall be governed by the laws of the State of New York.</p>'
+
+    + '<div style="margin-top:16px;padding:12px 16px;background:#f8faf8;border-radius:8px;border-left:3px solid #1a3c12;">'
+    + '<p style="font-size:12px;color:#555;"><strong>{{legal_name}}</strong> &nbsp;·&nbsp; {{address_full}}<br>'
+    + '{{phone}} &nbsp;·&nbsp; {{email}} &nbsp;·&nbsp; Licensed &amp; Fully Insured<br>'
+    + 'WC-32079 (Westchester) &nbsp;·&nbsp; PC-50644 (Putnam)</p>'
+    + '</div>';
+}
+</script>
+</body>
+</html>

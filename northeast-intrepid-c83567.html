@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Northeast Intrepid — Dealer Plan</title>
+<style>
+  :root{ --ink:#16241c; --green:#2e7d32; --green2:#1f3b2c; --amber:#a04400; --red:#c62828; --line:#e3e8e3; --muted:#5b6b60; --bg:#f6f8f6; }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c2620; background:var(--bg); line-height:1.55; }
+  .wrap{ max-width:780px; margin:0 auto; padding:0 18px 70px; }
+  header{ background:linear-gradient(135deg,#2e7d32,#16241c); color:#fff; padding:34px 18px 28px; }
+  header .wrap{ padding-bottom:0; }
+  .kicker{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.85; font-weight:700; }
+  h1{ font-size:30px; margin:6px 0 6px; font-weight:800; letter-spacing:-.02em; }
+  .sub{ font-size:14.5px; opacity:.92; max-width:560px; }
+  .pill{ display:inline-block; margin-top:14px; font-size:12px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28); color:#fff; padding:5px 11px; border-radius:30px; }
+  h2{ font-size:13px; color:var(--green); margin:34px 0 10px; text-transform:uppercase; letter-spacing:.07em; font-weight:800; }
+  .lead{ font-size:16px; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:10px 0; }
+  p{ margin:8px 0; } ul{ margin:8px 0; padding-left:20px; } li{ margin:6px 0; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media(max-width:560px){ .grid{ grid-template-columns:1fr; } h1{font-size:25px;} }
+  .feat{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:15px 16px; }
+  .feat .ic{ font-size:22px; }
+  .feat h3{ margin:8px 0 3px; font-size:15px; color:var(--ink); }
+  .feat p{ margin:0; font-size:13.5px; color:var(--muted); }
+  table{ width:100%; border-collapse:collapse; margin:10px 0; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  th,td{ text-align:left; padding:11px 13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#eef4ee; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+  tr:last-child td{ border-bottom:none; }
+  td.r,th.r{ text-align:right; }
+  .ask{ background:#eef7ef; border:1px solid #cfe6d2; border-radius:14px; padding:18px 20px; }
+  .ask ol{ padding-left:20px; margin:8px 0; } .ask li{ margin:9px 0; }
+  .ask b{ color:var(--green2); }
+  .assume{ display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--amber); background:#fff8f1; border:1px solid #f0d9c4; border-radius:5px; padding:1px 6px; vertical-align:middle; }
+  .real{ display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--green); background:#eef7ef; border:1px solid #cfe6d2; border-radius:5px; padding:1px 6px; vertical-align:middle; }
+  .src{ display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#1565c0; background:#eaf2fb; border:1px solid #c4d8ef; border-radius:5px; padding:1px 6px; vertical-align:middle; }
+  .note{ font-size:12.5px; color:var(--muted); }
+  .stat{ display:flex; gap:10px; flex-wrap:wrap; margin:10px 0; }
+  .stat .b{ flex:1; min-width:120px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 14px; text-align:center; }
+  .stat .b .v{ font-size:24px; font-weight:800; color:var(--green2); }
+  .stat .b .l{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .foot{ font-size:11.5px; color:var(--muted); text-align:center; margin-top:36px; }
+  .legend{ font-size:12px; color:var(--muted); margin:6px 0 0; }
+  hr{ border:none; border-top:1px solid var(--line); margin:26px 0; }
+  a{ color:var(--green); }
+  .who{ display:flex; gap:14px; align-items:flex-start; }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  #loc-map,#space-map,#region-map{ height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--line); margin:10px 0; }
+  #region-map{ height:380px; }
+  .loc-pin{ font-size:11px; font-weight:800; padding:4px 8px; border-radius:8px; white-space:nowrap; box-shadow:0 1px 4px rgba(0,0,0,.3); border:2px solid #fff; }
+  .loc-leg{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin:6px 0 0; }
+  .loc-leg span{ display:inline-flex; align-items:center; gap:6px; }
+  .loc-leg i{ width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .leaflet-container{ font:inherit; }
+  .leaflet-tooltip.region-tip{ background:#2e7d32; color:#fff; border:none; box-shadow:0 1px 5px rgba(0,0,0,.35); font-weight:800; font-size:11px; padding:4px 9px; border-radius:8px; }
+  .leaflet-tooltip.region-tip::before{ border-top-color:#2e7d32; }
+  /* refined feature grid — no emojis */
+  .feat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0; }
+  @media(max-width:640px){ .feat-grid{ grid-template-columns:1fr; } }
+  .feat2{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--green); border-radius:12px; padding:14px 16px; }
+  .feat2 h3{ margin:0 0 5px; font-size:15px; color:var(--green2); }
+  .feat2 p{ margin:0; font-size:13.5px; color:var(--muted); }
+  /* Calendly-style booking mockup */
+  .bk-wrap{ margin:18px 0 6px; }
+  .bk-label{ font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .bk-steps{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+  .bk-step{ font-size:11.5px; font-weight:700; color:var(--muted); background:#f1f5f2; border-radius:20px; padding:5px 11px; }
+  .bk-step.done{ background:#eef7ef; color:var(--green2); }
+  .bk-card{ display:flex; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 8px 28px rgba(20,40,28,.10); }
+  @media(max-width:600px){ .bk-card{ flex-direction:column; } }
+  .bk-left{ flex:1; padding:20px; border-right:1px solid var(--line); min-width:0; }
+  @media(max-width:600px){ .bk-left{ border-right:none; border-bottom:1px solid var(--line); } }
+  .bk-brand{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--green); }
+  .bk-h{ font-size:22px; font-weight:800; margin:6px 0 12px; color:var(--ink); }
+  .bk-row{ font-size:13px; color:var(--muted); padding:4px 0 4px 16px; position:relative; }
+  .bk-row::before{ content:''; position:absolute; left:0; top:10px; width:7px; height:7px; border-radius:50%; background:var(--green); }
+  .bk-desc{ font-size:13px; color:#3a463f; margin:12px 0; }
+  .bk-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .bk-chip{ font-size:12px; font-weight:600; padding:5px 11px; border-radius:20px; border:1px solid var(--line); color:var(--muted); background:#fafcfa; }
+  .bk-chip.on{ background:var(--green); color:#fff; border-color:var(--green); }
+  .bk-right{ flex:1.1; padding:20px; min-width:0; }
+  .bk-cal-head{ display:flex; align-items:center; justify-content:space-between; font-size:15px; color:var(--ink); margin-bottom:10px; }
+  .bk-nav{ color:var(--green); font-weight:800; font-size:18px; }
+  .bk-dow{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; font-size:11px; color:var(--muted); text-align:center; margin-bottom:4px; }
+  .bk-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .bk-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:13px; border-radius:50%; color:#c2cbc4; }
+  .bk-day.avail{ color:var(--green2); background:#eef7ef; font-weight:700; }
+  .bk-day.sel{ background:var(--green); color:#fff; font-weight:800; }
+  .bk-slots{ margin-top:12px; }
+  .bk-slots-h{ font-size:12px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+  .bk-slot{ display:inline-block; font-size:12.5px; font-weight:600; padding:7px 12px; margin:0 6px 6px 0; border:1px solid #cfe6d2; border-radius:8px; color:var(--green2); }
+  .bk-slot.on{ background:var(--green); color:#fff; border-color:var(--green); }
+  .bk-cta{ margin-top:10px; background:var(--green2); color:#fff; text-align:center; font-weight:700; font-size:13.5px; padding:11px; border-radius:9px; }
+  .bk-note{ font-size:12px; color:var(--muted); margin-top:8px; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="kicker">Dealer & Distribution Proposal</div>
+  <h1>Northeast Intrepid</h1>
+  <div class="sub">A dedicated regional home for Intrepid loaders in the Northeast — demo center, demos, delivery, and real service behind every machine.</div>
+</div></header>
+
+<img src="https://miniloaders.com/wp-content/uploads/2025/03/PXL_20230731_161023604-scaled.jpg" alt="Intrepid compact loader at work" style="width:100%; max-height:320px; object-fit:cover; display:block;">
+
+<div class="wrap">
+
+  <p class="lead" style="margin-top:22px;">The Intrepid line sells itself once a contractor sees it work — but most of the Northeast has no one to demo it, deliver it, or fix it. <b>Northeast Intrepid</b> fills that gap: a single, accountable regional partner that gets machines in front of buyers, into their hands for a real demo, and keeps them running after the sale.</p>
+
+  <h2>The opportunity</h2>
+  <div class="stat">
+    <div class="b"><div class="v">~150</div><div class="l">units placed to date <span class="src">per Chris</span></div></div>
+    <div class="b"><div class="v">20–30</div><div class="l">sales / year <span class="src">per Chris</span></div></div>
+    <div class="b"><div class="v">2018</div><div class="l">in the U.S. market since <span class="real">actual</span></div></div>
+  </div>
+
+  <h2>What that realistically means for the Northeast</h2>
+  <div class="card">
+    <p style="margin-top:0;">I&rsquo;m not going to pitch national numbers as if they&rsquo;re mine. The Northeast is one region, and I&rsquo;m a brand-new dealer &mdash; so here&rsquo;s the honest, conservative version:</p>
+    <div class="stat">
+      <div class="b"><div class="v">20&ndash;30</div><div class="l">national / yr <span class="src">per Chris</span></div></div>
+      <div class="b"><div class="v">~6&ndash;8</div><div class="l">Northeast slice <span class="assume">under &frac13;</span></div></div>
+      <div class="b"><div class="v">~2</div><div class="l">my year 1 <span class="assume">&frac14; &mdash; first year</span></div></div>
+    </div>
+    <p>Take the national run-rate, give the Northeast <b>less than a third of it</b> (~6&ndash;8 a year), then start at just <b>a quarter of that in year one</b> &mdash; call it <b>~2 machines</b> while I stand up the demo program and the name &mdash; and ramp from there: <b>~4 in year two</b> (half), building toward the full regional slice by years four to five.</p>
+    <p class="note">At <b>$9,000 profit a machine</b> (a conservative 15% on a ~$60k KM100), even <b>2 machines = ~$18,000</b> in year-one gross profit &mdash; and the <b>first sale still covers the year&rsquo;s two-show circuit.</b> That&rsquo;s the floor, not the ceiling: a full <b>5-year ramp</b> (&frac14; &rarr; &frac12; &rarr; full regional) is modeled separately, building toward <b>~$66k of annual net by year five</b> &mdash; and that&rsquo;s before any of the upside if the margin runs above 15%.</p>
+  </div>
+
+  <h2>What Northeast Intrepid does</h2>
+  <p style="margin-top:0;">Six things, all run off one simple <b>by-appointment</b> site — a buyer picks what they need and a time, and we take it from there.</p>
+  <div class="feat-grid">
+    <div class="feat2"><h3>Delivery</h3><p>We bring the machine to the jobsite or yard — no buyer has to arrange freight or pickup.</p></div>
+    <div class="feat2"><h3>Working demos</h3><p>On-site demos on real work — loading logs, moving material, tight-space maneuvering. Not a parking-lot walkaround.</p></div>
+    <div class="feat2"><h3>Demo center</h3><p>A real place to see, sit in, and compare machines, attachments, and options.</p></div>
+    <div class="feat2"><h3>Rentals</h3><p>Rent a unit by the day or week — try it on a real job before buying, or just get the work done.</p></div>
+    <div class="feat2"><h3>Service &amp; parts</h3><p>Local mechanics for setup, warranty work, and repairs — the piece that's been missing in the region.</p></div>
+    <div class="feat2"><h3>Trade &amp; advice</h3><p>Trade-ins, financing guidance, and honest fit advice from someone who runs this equipment daily.</p></div>
+  </div>
+
+
+  <h2>Who's behind it</h2>
+  <div class="card who">
+    <div>
+      <p style="margin-top:0;"><b>Doug Brown — Second Nature Tree Service (Peekskill, NY).</b> I run a full tree service operation in the Hudson Valley — so I'm not a salesman who learned the product, I'm the customer who'll sell it. And it's not a one-man show — there's a real operation and team behind it:</p>
+      <ul>
+        <li><b>A demo yard built for it</b> — we run a small firewood yard, so there are <b>always logs on-site to load</b>, plus a <b>mulch, dirt, and gravel demo area</b> and a <b>whole hillside</b> a buyer can dig into when they want to really lean on the machine. I can put an Intrepid to work on the actual job, in front of the exact buyers who'd want one — tree, landscape, and farm operators across the Tri-State area (New York, New Jersey, and Connecticut).</li>
+        <li><b>An existing network</b> of contractors and the back-office systems to run scheduling, invoicing, and a fleet — the bones of a dealership are already in place.</li>
+        <li><b>Credibility with buyers</b> — they trust a recommendation from someone who owns and depends on the machine — more than a sales rep.</li>
+        <li><b>Parts fulfillment &amp; shipping — through Second Nature Skatepark.</b> My skate shop already runs a real retail shipping operation — packing and shipping product every week, with the packing station, scale, and carrier accounts that come with it. That same muscle handles <b>Intrepid parts</b>: I stock common wear items and ship them out fast, so a buyer down a hydraulic fitting or a filter isn't waiting on a cross-country order — the parts-logistics layer is already built.</li>
+        <li><b>Catherine Conway — sales &amp; demos.</b> Catherine runs the field and the office at Second Nature Tree and is a second set of hands who can <b>cover sales and run demos</b> when I'm out on a job — so the demo center doesn't go dark while I'm working, and we can move on two leads at once instead of one.</li>
+      </ul>
+      <p class="note">Between the demo yard, the back-office systems, the skate shop's shipping bench for parts, and Catherine on sales and demos, the coverage that usually takes a dealer years to build is already running inside my operation today.</p>
+    </div>
+  </div>
+
+
+  <h2>Service partners — the missing piece, solved</h2>
+  <div class="card">
+    <ul>
+      <li><b>Ron Kopyscianski — <a href="rons-rescue-repair-ed2dcd.html" target="_blank" rel="noopener">Ron's Rescue Repair</a></b> (Lake Peekskill). The front line: a <b>mobile mechanic who comes to the machine</b> — setup, engine, hydraulic, and routine service. Certified small-engine, powersports &amp; equipment.</li>
+      <li><b>Kevin Christiana — Kevin's Heavy Trucking.</b> The <b>backup and the full shop</b> behind Ron — a local heavy-repair shop with the lift for the bigger jobs, plus <b>hauling and transport</b> (machine delivery and the heavy iron). Kevin already does a lot of <b>Jim Reed's truck upfits</b> next door, so we sit right in the middle of that network, with good relationships on both sides.</li>
+    </ul>
+    <p>Together they cover <b>pre-delivery setup &amp; inspection</b>, <b>warranty and repair handled locally</b> instead of shipping a machine across the country, and <b>parts &amp; routine maintenance</b> to keep buyers running and loyal — <b>mobile for the everyday, a full shop for the heavy stuff.</b></p>
+    <p class="note">Service Partner Agreements drafted; final structure (independent contractor vs. shop vs. revenue-share) being finalized with each.</p>
+  </div>
+
+
+  <h2>Territory</h2>
+  <div class="card">
+    <p style="margin-top:0;">Reach: the <b>Northeast</b> — anchored at the Hudson Valley base, with the <b>Tri-State (New York, New Jersey, and Connecticut)</b> as the dense core I cover daily and reach extending up through New England. A market full of tree, landscape, and farm operators with no nearby Intrepid presence — delivery and demos radiating out from the base.</p>
+    <p>I'm ready to take the <b>whole Northeast</b> and build it right — starting from the Tri-State core where I can deliver and demo on short notice, then growing the network outward through New England as demand builds.</p>
+    <div id="region-map"></div>
+    <p class="note">Where we sit in the Northeast — Hudson Valley base, an hour from NYC, with the whole NY / New England / NJ / PA market within reach.</p>
+  </div>
+
+  <h2>The show circuit — where I'll demo &amp; sell</h2>
+  <div class="card">
+    <p style="margin-top:0;">The machine sells on a demo, so the plan is to get an Intrepid in front of buyers at the Northeast's tree-care and equipment shows — plus the few national ones worth the trip. The shows with an <b>outdoor demo yard</b> (where a buyer can actually run it) are the ones that close deals; the indoor/resort shows are for leads, brochures, and relationships.</p>
+    <table>
+      <tr><th>Show</th><th>Where</th><th>Next date</th><th>Demo?</th></tr>
+      <tr><td><b>ArborEXPO</b><br><span class="note">NE arborists — in-region &#9733;</span></td><td>West Springfield, MA <span class="note">(The Big E)</span></td><td>Mar 26&ndash;27, 2026 <span class="src">sourced</span></td><td><b>Outdoor demos</b></td></tr>
+      <tr><td><b>NJ Contractors Showcase</b><br><span class="note">best pure outdoor demo nearby</span></td><td>Lambertville, NJ</td><td>Aug 5, 2026 <span class="src">sourced</span></td><td><b>Outdoor test-drive</b></td></tr>
+      <tr><td><b>TCI EXPO</b> (TCIA)<br><span class="note">THE tree-care show &mdash; national</span></td><td>Ft. Lauderdale, FL <span class="note">(rotates; FL in &rsquo;26)</span></td><td>Nov 12&ndash;14, 2026 <span class="src">sourced</span></td><td><b>Demo Dome + Work Zone</b> &mdash; drive loaders</td></tr>
+      <tr><td><b>Loggers&rsquo; Expo</b><br><span class="note">logging-leaning</span></td><td>Essex Junction, VT</td><td>May 1&ndash;2, 2026 <span class="src">sourced</span></td><td><b>Outdoor live demos</b></td></tr>
+      <tr><td><b>Equip Exposition</b><br><span class="note">national, big booth $</span></td><td>Louisville, KY</td><td>Oct 20&ndash;23, 2026 <span class="src">sourced</span></td><td><b>30-acre demo yard</b></td></tr>
+      <tr><td><b>NYS Arborists ISA</b> Conf &amp; Expo<br><span class="note">NY arborists</span></td><td>Monticello, NY</td><td>Jan 25&ndash;26, 2026 <span class="src">sourced</span></td><td>Indoor booth</td></tr>
+      <tr><td><b>Garden State Tree Conf</b> (NJ ISA)<br><span class="note">NJ / tri-state arborists</span></td><td>Atlantic City, NJ</td><td>Feb 26&ndash;27, 2026 <span class="src">sourced</span></td><td>Indoor booth</td></tr>
+      <tr><td><b>Total Pro Expo</b><br><span class="note">has a tree-care segment</span></td><td>Edison, NJ</td><td>Feb 18, 2026 <span class="src">sourced</span></td><td>Indoor booth</td></tr>
+      <tr><td><b>Paul Bunyan Show</b><br><span class="note">logging &mdash; OH, draws PA/NE</span></td><td>Old Washington, OH</td><td>Oct 4&ndash;6, 2026 <span class="src">sourced</span></td><td><b>Outdoor demos</b></td></tr>
+    </table>
+    <p class="note"><b>The play:</b> anchor the year on the in-region demo shows &mdash; <b>ArborEXPO (MA)</b> and the <b>NJ Contractors Showcase (NJ)</b>, where buyers can run the machine &mdash; and add <b>TCI EXPO</b> for the national tree-care crowd. The indoor arborist conferences (NYS, NJ) put me in front of the right buyers for leads even without a demo yard.</p>
+    <p class="note"><span class="assume">to confirm</span> <b>Booth/exhibitor costs aren&rsquo;t published</b> for any of these &mdash; I&rsquo;ll request rate sheets directly for the 4&ndash;5 I commit to (that&rsquo;s the show budget to pull next). 2027 dates aren&rsquo;t posted yet &mdash; treat each as annual, same month. <b>Penn-Del ISA</b> (PA/DE) runs summer field days with outdoor demos &mdash; calling for dates. (Skipped: New England GROWS, discontinued 2018; the old &ldquo;Empire State Green Industry Show,&rdquo; now folded into NYS Arborists.)</p>
+  </div>
+
+  <h2>The numbers behind it</h2>
+  <div class="card">
+    <p style="margin-top:0;">I&rsquo;ve modeled the whole thing &mdash; conservatively, with every figure editable:</p>
+    <ul>
+      <li><b><a href="intrepid-show-budget-ea07eb.html" target="_blank" rel="noopener">Show-circuit budget</a></b> &mdash; what the two demo shows cost to run, drive-out from Peekskill in the Ram 2500.</li>
+      <li><b><a href="intrepid-5yr-448e0b.html" target="_blank" rel="noopener">5-year plan &amp; P&amp;L</a></b> &mdash; the unit ramp (&frac14; &rarr; &frac12; &rarr; full regional) and year-by-year net profit, built on Intrepid simply continuing to sell as well as it does today.</li>
+    </ul>
+  </div>
+
+  <h2>The location &amp; the space</h2>
+  <div class="card">
+    <p style="margin-top:0;">The demo center base sits in the <b>Route 9 / Albany Post Road corridor in Cortlandt / Peekskill</b> — and it's <b>a third of a mile from Jim Reed's</b> (Jim Reed Truck Sales / Bobcat of Westchester, 5742 Albany Post Rd). That matters:</p>
+    <ul>
+      <li><b>Jim Reed's is already where tree guys and contractors go</b> — they sell <b>Bandit chippers, Bobcat equipment, and Freightliner / Fuso / UD trucks</b>, plus full service. Our exact buyers are <i>already driving to this corridor.</i></li>
+      <li><b>We slot in alongside that traffic, not against it</b> — Intrepid loaders aren't what Jim Reed sells; we add the compact-loader piece the same crowd needs.</li>
+      <li><b>It's a proven equipment destination</b> — putting the Northeast's first Intrepid demo center here means buyers don't have to be taught where to go.</li>
+      <li><b>And we're already inside that network</b> — Kevin (our service partner) does a lot of Jim Reed's truck upfits. We sit right in the middle of it, with good relationships on both sides.</li>
+    </ul>
+    <div id="loc-map"></div>
+    <div class="loc-leg">
+      <span><i style="background:#2e7d32;"></i> Demo area</span>
+      <span><i style="background:#7e57c2;"></i> Future showroom</span>
+      <span><i style="background:#1565c0;"></i> Skatepark</span>
+      <span><i style="background:#a04400;"></i> Kevin's yard</span>
+      <span><i style="background:#455a64;"></i> Jim Reed's</span>
+    </div>
+    <p class="note" style="margin-top:8px;">On the map: our <b>demo area and future showroom</b> sit at the southwest end of the building; the <b>skate park</b> keeps running with <b>Kevin's yard right beside it</b>; and <b>Jim Reed's is across the street</b> — a one-minute drive. (Site positions approximate.)</p>
+    <p style="margin-top:16px;">How the space works on the ground:</p>
+    <ul>
+      <li><b>Outdoor space to start</b> — park demo machines outside and put them to work in the demo area (firewood yard, mulch/dirt/gravel, and the hillside). <i>The 8,000 sq ft skate park keeps running as a skate park — the loaders live and demo outside, not in it.</i></li>
+      <li><b>A 3,300 sq ft unit right next door</b> — an antique-ladder shop whose owner is near retirement and happy to hand it over <i>gradually</i>: the natural <b>indoor showroom</b>, realistically a year-one-to-two move as the volume can carry the rent.</li>
+      <li><b>Kevin's yard alongside</b> — Kevin's Heavy Trucking space for transport staging and the heavier service work.</li>
+    </ul>
+    <p class="note"><b>The growth path is phased and honest:</b> start with outdoor demos and parking, then take the 3,300 sf indoor showroom next door in year 1–2 as the budget allows. (My service partner could also base his shop here and share the rent — upside, not something the plan leans on.)</p>
+  </div>
+
+  <h2>If something happens to me</h2>
+  <div class="card">
+    <p style="margin-top:0;">Fair question about any owner-run dealership: what if the owner's out? Honest answer &mdash; this isn't built to live or die on me.</p>
+    <ul>
+      <li><b>Catherine Conway runs the operation with me</b> &mdash; field, equipment, and office. If I'm out sick or worse, she keeps sales, scheduling, and the books moving without missing a beat. She already does it every day.</li>
+      <li><b>Service doesn't depend on me at all</b> &mdash; Ron (mobile) and Kevin (shop) are the service arm; machines stay running whether I'm there or not.</li>
+      <li><b>Parts keep shipping</b> &mdash; if I'm down for a week, the skate-shop shipping bench and Catherine keep orders going out same/next day. A buyer waiting on a part never knows I was out.</li>
+      <li><b>It runs on systems, not in my head</b> &mdash; scheduling, invoicing, and the fleet all live in Branch Manager, so the operation doesn't walk out the door with me.</li>
+    </ul>
+    <p class="note">Realistically, <b>within a year or two this should run without me</b> &mdash; Catherine and Ron carrying it, the recurring parts/service base, and the systems already in place. If something happened to me tomorrow, the dealership keeps going. That protects you, and every buyer who bought a machine expecting the support to still be there.</p>
+  </div>
+
+  <h2>Straight talk</h2>
+  <div class="card" style="border-color:#cfe6d2;">
+    <p style="margin-top:0;">On paper, a <b>bigger multi-brand dealer</b> — someone already carrying Giant, New Holland, or Kubota — might make more sense than one tree guy putting a few pieces together. I get that, and I'm not going to pretend otherwise.</p>
+    <p>But here's where I think I more than make up for it — and move machines you wouldn't otherwise:</p>
+    <ul>
+      <li><b>I'll sell these because I genuinely like them.</b> The interest is real — and guys can tell the difference between a sales pitch and someone who actually wants the machine. That's most of selling right there.</li>
+      <li><b>The location.</b> Being a third of a mile from Jim Reed's and Bobcat puts us right where the contractors already are — that's the piece a bigger dealer three hours away just doesn't have.</li>
+      <li><b>A small independent fits this brand.</b> Intrepid is simple, workable iron for people who actually run it — an owner's brand, a tree guy's brand, a worker's brand. That's better served by a local guy who <i>helps owners keep their machines running</i> than by a big, locked-down dealer network (the John Deere model, where you practically can't fix your own machine). Me being small isn't a weakness here — it's the same ethos as the product.</li>
+    </ul>
+    <p class="note">I think the mix of real interest, the right location, and being the kind of small, owner-run outfit this brand actually fits is worth betting on.</p>
+  </div>
+
+  <h2>What I'm really asking for</h2>
+  <div class="ask">
+    <ol>
+      <li><b>Consignment inventory — the core of the ask.</b> Put units here on <i>your</i> terms: you decide what to place, how many, and you can pull a machine back or move it somewhere else whenever you want. I demo and sell them; whatever doesn't move, you take back.</li>
+      <li><b>I pay you out of sales, not out of pocket.</b> Concretely: <b>100% of the profit from the first sale goes straight into buying in the next floor model</b> — then <b>half the profit of every sale after that goes to floor-model capital</b> until the demo fleet is bought in. The business bootstraps its own inventory instead of needing capital I don't have up front. <span class="assume">exact split open — your floor-plan terms still welcome where they fit</span></li>
+      <li><b>A Northeast dealer / distribution relationship</b> — Northeast Intrepid as the region's demo center, delivery, and service partner for the Intrepid line.</li>
+      <li><b>Dealer pricing / margin and parts access</b> — the per-unit economics and a parts pipeline to back the service operation.</li>
+    </ol>
+    <p style="margin:10px 0 0;" class="note">In short: you've already proven the machine sells in the Northeast on word of mouth alone. Front me consignment inventory on terms <i>you</i> control — return or move anything that isn't working — and let me pay you back out of what sells. Low risk on your side, real presence and service on mine, and we both move more machines to buyers who stay buyers. I know it's a big ask. I'm asking it straight.</p>
+  </div>
+
+  <h2>The starting inventory I'd want</h2>
+  <div class="card">
+    <p style="margin-top:0;">Here's the spread I'd want on the ground — a small-to-big range so a buyer can see and feel the right size for their work, anchored by my own machine:</p>
+    <table>
+      <tr><th>Unit</th><th>Role</th><th>Priority</th></tr>
+      <tr><td><b>KM100 Tele</b></td><td>Anchor demo + the tree-care sweet spot.</td><td>Mine — bought</td></tr>
+      <tr><td><b>KM130 Tele</b></td><td>The step up for farms, estates, and heavier material — the one I want most. I can <b>demo it right away with Todd Hill's 130</b>, then consign or order a sellable one as buyers commit.</td><td>Demo now · sell per deal</td></tr>
+      <tr><td><b>KM85</b></td><td>The nimble small one for tight tree jobs and backyards — rounds out the low end.</td><td>Ideal</td></tr>
+      <tr><td><b>KM180 / KM250</b></td><td>A bigger TELE for the farm and estate buyers who need real capacity.</td><td>As volume supports</td></tr>
+      <tr><td>Key attachments</td><td>Pallet forks, grapple, bucket — the demo-and-sell essentials.</td><td>Confirm catalog</td></tr>
+    </table>
+    <p class="note">At minimum: my <b>KM100</b> (bought) to anchor, and <b>Todd Hill's KM130 to demo the bigger machine right away</b> — so I can show both ends of the range on day one. Sellable units consigned or ordered as deals come, which keeps my exposure near zero.</p>
+  </div>
+
+  <h2>Next steps</h2>
+  <div class="card">
+    <ul style="margin:0;">
+      <li>Confirm interest and the floor-plan / consignment terms in principle.</li>
+      <li>Lock dealer pricing and parts access so I can finalize the numbers.</li>
+      <li>Finalize service agreements with Kevin (Kevin's Heavy Trucking) and Ron — drafted, ready to sign.</li>
+    </ul>
+  </div>
+
+  <hr>
+  <p class="legend"><span class="real">actual</span> = independently verifiable (Intrepid list price; in the U.S. market since 2018, sold nationwide). <span class="src">per Chris</span> = figures Chris / Intrepid reports (units to date, sales per year) — not independently published. <span class="assume">assumption</span> = placeholder to be replaced with real terms. No invented numbers are presented as fact.</p>
+
+  <div class="foot">Northeast Intrepid — concept proposal · prepared by Doug Brown, Second Nature Tree Service · June 2026 · private, not indexed.</div>
+</div>
+<script>
+(function(){
+  function initLocMap(){
+    if (typeof L === 'undefined') { return setTimeout(initLocMap, 300); }
+    var el = document.getElementById('loc-map');
+    if (!el || el._init) return;
+    el._init = true;
+    var reed     = [41.3075110, -73.9282503];    // 5742 Albany Post Rd, Cortlandt Manor (Jim Reed's)
+    var showroom = [41.30515, -73.92330];        // star — future showroom (approx, per Doug's sketch)
+    var demo     = [41.30452, -73.92315];        // oval — Intrepid demo area
+    var skate    = [41.30525, -73.92460];        // skate park (NW end of building)
+    var kevin    = [41.30528, -73.92410];        // Kevin's yard — right of the skate park (approx)
+    var map = L.map('loc-map', { scrollWheelZoom:false, attributionControl:true })
+      .fitBounds([reed, showroom, demo, skate, kevin], { padding:[55,55] });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, attribution: '© OpenStreetMap © CARTO'
+    }).addTo(map);
+    function pin(latlng, color, label){
+      L.marker(latlng, { icon: L.divIcon({
+        className:'', iconSize:null,
+        html:'<div style="display:flex;flex-direction:column;align-items:center;">'
+           + '<div class="loc-pin" style="background:'+color+';color:#fff;">'+label+'</div>'
+           + '<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);margin-top:-1px;"></div>'
+           + '</div>'
+      }) }).addTo(map);
+    }
+    L.polyline([showroom, reed], { color:'#1f3b2c', weight:3, dashArray:'6,6', opacity:.7 }).addTo(map);
+    pin(reed,     '#455a64', "Jim Reed's");
+    pin(skate,    '#1565c0', 'Skatepark');
+    pin(kevin,    '#a04400', "Kevin's yard");
+    pin(demo,     '#2e7d32', 'Demo area');
+    pin(showroom, '#7e57c2', 'Future showroom');
+    setTimeout(function(){ map.invalidateSize(); }, 250);
+  }
+  function labelIcon(color, label){
+    return L.divIcon({ className:'', iconSize:null,
+      html:'<div style="display:flex;flex-direction:column;align-items:center;">'
+        + '<div class="loc-pin" style="background:'+color+';color:#fff;">'+label+'</div>'
+        + '<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);margin-top:-1px;"></div>'
+        + '</div>' });
+  }
+
+  // Satellite view of the site footprint — skate park (exact) + draggable
+  // expansion / Kevin's-yard pins Doug can position to the real spots.
+  function initSpaceMap(){
+    if (typeof L === 'undefined') return setTimeout(initSpaceMap, 300);
+    var el = document.getElementById('space-map');
+    if (!el || el._init) return; el._init = true;
+    var pts = {
+      skate:     { ll:[41.3050214,-73.9227667], color:'#2e7d32', label:'Our site · outdoor demo & parking', drag:false },
+      expansion: { ll:[41.30472,-73.92235],     color:'#1565c0', label:'3,300 sf next-door unit (approx)', drag:true },
+      kevin:     { ll:[41.30560,-73.92090],     color:'#a04400', label:"Kevin's yard (approx)",     drag:true }
+    };
+    var map = L.map('space-map', { scrollWheelZoom:false }).setView([41.30525,-73.92205], 17);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom:19, attribution:'Imagery © Esri' }).addTo(map);
+    var readout = document.createElement('div');
+    readout.className = 'note'; readout.style.marginTop = '6px';
+    el.parentNode.insertBefore(readout, el.nextSibling);
+    function upd(){
+      readout.innerHTML = 'Next-door unit ≈ ' + pts.expansion.ll[0].toFixed(5) + ', ' + pts.expansion.ll[1].toFixed(5)
+        + '  ·  Kevin\'s ≈ ' + pts.kevin.ll[0].toFixed(5) + ', ' + pts.kevin.ll[1].toFixed(5)
+        + '  — drag the blue &amp; orange pins to their real spots.';
+    }
+    Object.keys(pts).forEach(function(k){
+      var p = pts[k];
+      var m = L.marker(p.ll, { draggable:p.drag, icon:labelIcon(p.color, p.label) }).addTo(map);
+      if (p.drag) m.on('dragend', function(){ var ll = m.getLatLng(); pts[k].ll = [ll.lat, ll.lng]; upd(); });
+    });
+    upd();
+    setTimeout(function(){ map.invalidateSize(); }, 250);
+  }
+
+  // Wide Northeast view — where Northeast Intrepid sits in the region.
+  function initRegionMap(){
+    if (typeof L === 'undefined') return setTimeout(initRegionMap, 300);
+    var el = document.getElementById('region-map');
+    if (!el || el._init) return; el._init = true;
+    var base = [41.3050214,-73.9227667];
+    var map = L.map('region-map', { scrollWheelZoom:false }).setView([42.3,-73.7], 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      { maxZoom:19, attribution:'© OpenStreetMap © CARTO' }).addTo(map);
+    L.circleMarker(base, { radius:7, color:'#fff', weight:2, fillColor:'#2e7d32', fillOpacity:1 }).addTo(map)
+      .bindTooltip('Northeast Intrepid · Hudson Valley, NY', { permanent:true, direction:'top', offset:[0,-8], className:'region-tip' });
+    setTimeout(function(){ map.invalidateSize(); }, 250);
+  }
+
+  function boot(){ initLocMap(); initSpaceMap(); initRegionMap(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+<script src="nav-snt.js?v=5" defer></script>
+</body>
+</html>

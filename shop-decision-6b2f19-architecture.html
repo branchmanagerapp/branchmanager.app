@@ -1,0 +1,333 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>skateOS architecture — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+
+.dg{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:15px;margin:0 0 8px;overflow-x:auto}
+.dg .lane{min-width:290px}
+.node{border:1.5px solid var(--line-strong);border-radius:11px;padding:9px 11px;background:var(--bg-soft);margin:0 0 6px}
+.node .nt{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+.node .nn{font-weight:700;font-size:14px;margin-top:1px}
+.node .nd{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+.node.live{border-color:var(--green);background:#f2faf7}
+.node.dead{border-color:var(--red);background:#fef6f7;border-style:dashed}
+.node.new{border-color:var(--blue);background:#f2f6fc;border-style:dashed}
+.node.sq{border-color:var(--ink);background:#fff}
+.arw{text-align:center;color:var(--ink-mute);font-size:11px;font-weight:600;margin:0 0 6px;line-height:1.35}
+.arw b{color:var(--ink);font-family:'SF Mono',Menlo,monospace;font-size:11px;font-weight:600}
+.brk{border:1.5px dashed var(--red);border-radius:11px;padding:10px 11px;background:#fef6f7;margin:0 0 6px;
+ text-align:center;color:var(--red-dark);font-weight:700;font-size:13px}
+.cls{border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;margin:0 0 9px;background:var(--bg)}
+.cls .ch{background:var(--ink);color:#fff;padding:7px 11px;font-weight:700;font-size:13.5px;
+ display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cls .ch span{font-size:10px;font-weight:600;color:#9a9da4;font-family:'SF Mono',Menlo,monospace}
+.cls .cb{padding:8px 11px;font-family:'SF Mono',Menlo,monospace;font-size:11.5px;line-height:1.85;color:var(--ink-soft)}
+.cls .cb i{color:var(--ink-mute);font-style:normal}
+.cls .cb b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:11.5px;color:var(--ink-soft)}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
+.sw.l{border-color:var(--green);background:#f2faf7} .sw.d{border-color:var(--red);background:#fef6f7}
+.sw.n{border-color:var(--blue);background:#f2f6fc}
+
+.code{background:#14161a;color:#e6e7ea;border-radius:10px;padding:11px 13px;margin:0 0 11px;
+ font-family:'SF Mono',Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;
+ -webkit-overflow-scrolling:touch;white-space:pre}
+.code .c{color:#7a7e85} .code .k{color:#7ee2b8} .code .s{color:#f5b971}
+.code.bad{border-left:3px solid var(--red)} .code.ok{border-left:3px solid var(--green)}
+.lyr{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px;background:var(--bg)}
+.lyr .row{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line);align-items:flex-start}
+.lyr .row:last-child{border-bottom:none}
+.lyr .row.off{background:var(--bg-soft)}
+.lyr .lb{flex:0 0 74px;font-weight:700;font-size:13px}
+.lyr .lv{flex:1;font-size:13px;color:var(--ink-soft);line-height:1.45}
+.lyr .lv b{color:var(--ink)}
+
+/* --- shop-page styling, tokens lifted from skateos.com/2ntr/shop/ --- */
+.announce{background:#0e0e10;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.09em;
+ text-transform:uppercase;text-align:center;padding:8px 14px;line-height:1.5}
+.announce b{color:#ff5a68;font-weight:800}
+.hero{position:relative;border-radius:20px;overflow:hidden;padding:26px 20px 24px;margin:0 0 16px;
+ background:linear-gradient(150deg,#1c1f26 0%,#0e0e10 55%,#2a1114 100%);color:#fff}
+.hero::after{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+ background:radial-gradient(120% 80% at 85% 10%,rgba(209,26,42,.32),transparent 60%)}
+.hero-text{position:relative;z-index:2;max-width:540px}
+.tag{display:inline-block;background:var(--red);color:#fff;padding:5px 12px;border-radius:12px;
+ font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.hero h1{font-size:clamp(1.55rem,5.2vw,2.4rem);font-weight:900;line-height:1.05;
+ letter-spacing:-.02em;margin:0 0 10px;color:#fff}
+.hero p{color:#c9ccd2;font-size:14.5px;margin:0 0 16px}
+.hero p .num{color:#7ee2b8;font-weight:700}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:12px 20px;border-radius:8px;font-weight:700;font-size:14.5px;border:2px solid transparent;
+ display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:transform .1s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-prim{background:var(--red);color:#fff}
+.btn-ghost-dark{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
+.statstrip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+ border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 18px}
+.statstrip div{background:var(--bg);padding:13px 12px}
+.statstrip .v{font-size:19px;font-weight:900;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.statstrip .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.findgrid{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 18px}
+.find{display:block;text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--line);
+ border-radius:14px;padding:14px 15px;transition:border-color .15s}
+.find:active{border-color:var(--line-strong)}
+.find .n{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--red)}
+.find h3{margin:4px 0 4px;font-size:15.5px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.find p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+@media(min-width:600px){
+ .hero{padding:44px 40px 40px} .statstrip{grid-template-columns:repeat(4,1fr)}
+ .findgrid{grid-template-columns:1fr 1fr}
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<div class="announce">Verified from live Square data &middot; 365 days &middot; <b>$328,025</b> &middot; 10,694 payments</div>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>skateOS architecture</h1><div class="sub">UML of skateOS as it actually runs today, how it would attach to Square, and the database schema behind it.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html" class="on">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html">Processor</a><a href="shop-decision-6b2f19-stack.html">How it works</a></nav></div></header>
+<main><div class="wrap">
+<div class="note bad"><div class="t">Correction to what I told you earlier</div>
+<p>I said Supabase was a synced copy of Square. <strong>That is not true.</strong> I compared them directly:
+of 400 active Supabase products, only <strong>121 (30.2%)</strong> exist in your Square catalog by name.
+Supabase holds things Square does not (Orbit gum, Red Bull, youth sweatshirts) and Square holds
+roughly a thousand items the website has never seen.</p>
+<p>The local script I assumed was the sync &mdash; <em>square_sync.py</em> &mdash; runs the <strong>other
+direction</strong>: it pushes invoice line items <em>into</em> Square. <strong>There is no Square &rarr; website
+sync at all.</strong> These are two unrelated product databases that happen to share a third of their names.</p></div>
+
+<div class="legend">
+<span><i class="sw l"></i> verified working</span>
+<span><i class="sw d"></i> broken / missing</span>
+<span><i class="sw n"></i> proposed, not built</span>
+</div>
+
+<h2>Diagram 1 &mdash; skateOS as it exists today</h2>
+<p>UML deployment view. Every box here I confirmed by hitting it directly.</p>
+<div class="dg"><div class="lane">
+<div class="node"><div class="nt">&laquo;actor&raquo;</div><div class="nn">Customer browser</div>
+<div class="nd">Phone or desktop</div></div>
+<div class="arw">&darr; <b>HTTPS GET /2ntr/shop/</b></div>
+<div class="node live"><div class="nt">&laquo;device&raquo; Cloudflare edge</div><div class="nn">Worker &mdash; skateos.com</div>
+<div class="nd">Path &rarr; file. No server-side rendering. Byte-identical for every visitor (verified: same hash across user agents).</div></div>
+<div class="arw">&darr; returns <b>63 KB static HTML</b></div>
+<div class="node live"><div class="nt">&laquo;artifact&raquo;</div><div class="nn">shop page (1 file)</div>
+<div class="nd">Plain JS. No React, no framework, no build step. Contains the Supabase anon key in clear text.</div></div>
+<div class="arw">&darr; browser JS calls <b>fetch()</b> directly &mdash; no back end of yours involved</div>
+<div class="node live"><div class="nt">&laquo;service&raquo; auto-generated</div><div class="nn">PostgREST</div>
+<div class="nd">/rest/v1/products?select=&hellip;&amp;status=eq.active&amp;order=created_at.desc<br>Supabase generates this from the schema. Nobody wrote it.</div></div>
+<div class="arw">&darr;</div>
+<div class="node live"><div class="nt">&laquo;database&raquo;</div><div class="nn">Supabase &mdash; zecurmlenxyxanqucrga</div>
+<div class="nd">1,409 active products. <strong>12 tables</strong> reachable with the public key.</div></div>
+<div class="arw">&darr; customer taps Buy</div>
+<div class="node dead"><div class="nt">&laquo;form&raquo;</div><div class="nn">&ldquo;Reserve for pickup&rdquo;</div>
+<div class="nd">Writes one row to form_submissions. <strong>No payment code exists on this page</strong> &mdash; no Stripe, no PayPal, no Square. Money is collected by hand at pickup or over the phone.</div></div>
+<div class="brk">&#10007; &nbsp;NO CONNECTION&nbsp; &#10007;</div>
+<div class="node sq"><div class="nt">&laquo;external system&raquo;</div><div class="nn">Square</div>
+<div class="nd">The real POS. 1,102 items, 1,557 variations, 6,838 in-person sales last year. <strong>The website cannot see any of it, and Square cannot see the website.</strong></div></div>
+</div></div>
+<p class="scroll-hint">Scroll the panel sideways on a phone if it clips.</p>
+
+<h2>Diagram 2 &mdash; with Square as the back end</h2>
+<p>The same front end. The database island is removed and Square becomes the single source of truth.</p>
+<div class="dg"><div class="lane">
+<div class="node"><div class="nt">&laquo;actor&raquo;</div><div class="nn">Customer browser</div></div>
+<div class="arw">&darr; <b>GET /shop</b></div>
+<div class="node live"><div class="nt">&laquo;device&raquo; Cloudflare edge</div><div class="nn">Worker &mdash; unchanged role</div>
+<div class="nd">Still serves the same static HTML you already have. Filters and layout survive as-is.</div></div>
+<div class="arw">&darr; page loads, then calls <b>your</b> API instead of the database</div>
+<div class="node new"><div class="nt">&laquo;service&raquo; to build</div><div class="nn">Worker API routes</div>
+<div class="nd">/api/catalog &middot; /api/stock &middot; /api/checkout<br><strong>Holds the Square token server-side.</strong> This is the one new component.</div></div>
+<div class="arw">&darr; server-to-server, token never reaches the browser</div>
+<div class="node sq"><div class="nt">&laquo;external system&raquo; verified live</div><div class="nn">Square Connect API</div>
+<div class="nd">Catalog &middot; Inventory &middot; Orders &middot; Payment Links &mdash; all responding on your account today.</div></div>
+<div class="arw">&darr; customer pays</div>
+<div class="node new"><div class="nt">&laquo;hosted page&raquo;</div><div class="nn">Square Checkout</div>
+<div class="nd">Square-branded and not styleable. PCI handled &mdash; no card data touches your code. This is the one real compromise.</div></div>
+<div class="arw">&darr;</div>
+<div class="node live"><div class="nt">&laquo;system of record&raquo;</div><div class="nn">Square</div>
+<div class="nd">Online order lands beside the in-person ones. Same inventory, same payouts, same reports. <strong>Nothing changes at the register.</strong></div></div>
+</div></div>
+
+<h2>Diagram 3 &mdash; UML class diagram, current data model</h2>
+<p>Only <em>products</em> is fully enumerated below &mdash; see the honesty note under the schema.</p>
+<div class="dg"><div class="lane">
+<div class="cls"><div class="ch">products <span>1,409 active</span></div><div class="cb">
+<b>id</b> <i>: uuid &laquo;PK&raquo;</i><br>
+<b>name</b> <i>: text</i><br>
+<b>price</b> <i>: numeric</i><br>
+<b>brand</b> <i>: text</i><br>
+<b>category_id</b> <i>: uuid &laquo;FK &rarr; categories&raquo;</i><br>
+<b>quantity</b> <i>: int</i><br>
+<b>low_stock_threshold</b> <i>: int</i><br>
+<b>status</b> <i>: text &mdash; filtered eq.active</i><br>
+<b>image_url</b> <i>: text</i><br>
+<b>image_thumb_url</b> <i>: text</i><br>
+<b>created_at</b> <i>: timestamptz</i></div></div>
+<div class="arw">&uarr; <b>category_id</b> &nbsp;many-to-one</div>
+<div class="cls"><div class="ch">categories <span>columns not enumerated</span></div>
+<div class="cb"><i>Exists, readable. Drives the ALL / DECKS / COMPLETES / TRUCKS filter bar.</i></div></div>
+<div class="cls"><div class="ch">form_submissions <span>columns not enumerated</span></div>
+<div class="cb"><i>The only table the website writes to. One row per &ldquo;Reserve for pickup&rdquo;.</i></div></div>
+<div class="cls"><div class="ch">customers <span>columns not enumerated</span></div>
+<div class="cb"><i>Readable with the public key. See the security note.</i></div></div>
+<div class="cls"><div class="ch">orders <span>columns not enumerated</span></div>
+<div class="cb"><i>Present but unused by the shop page &mdash; it has no checkout to create orders with.</i></div></div>
+<div class="cls"><div class="ch">sales <span>columns not enumerated</span></div>
+<div class="cb"><i>Readable with the public key. See the security note.</i></div></div>
+</div></div>
+
+
+<h2>Full schema &mdash; complete, 1 Sept 2026</h2>
+<p>Pulled with the project secret key via PostgREST&rsquo;s OpenAPI spec &mdash; column definitions only,
+<strong>zero customer rows read</strong>. This replaces the &ldquo;columns not enumerated&rdquo; gaps.</p>
+<div class="kpis">
+<div class="kpi"><div class="v">63</div><div class="k">Tables in the schema</div></div>
+<div class="kpi"><div class="v">842</div><div class="k">Columns total</div></div>
+<div class="kpi"><div class="v">12</div><div class="k">Were publicly readable</div></div>
+<div class="kpi"><div class="v">41</div><div class="k">Columns on <em>customers</em></div></div>
+</div>
+
+<div class="note bad"><div class="t">What was actually exposed &mdash; read this part</div>
+<p>The <em>customers</em> table carries <strong>parent_name, parent_phone, parent_email</strong> alongside
+<strong>dob</strong>, home <strong>address / city / state / zip</strong>, phone and email. This is a
+skatepark: those are <strong>children&rsquo;s records</strong> &mdash; 27,639 of them &mdash; and they were
+readable by anyone who viewed source on the shop page.</p>
+<p>It also exposed <strong>brivo_user_id</strong> and <strong>brivo_credential_state</strong>: the
+door-access credential state for each member.</p>
+<p>Closed and verified 1 Sept 2026. Whether minors&rsquo; PII triggers a notification obligation is a
+question for your insurer or attorney &mdash; not a call I can make.</p></div>
+
+<h3>customers &mdash; 41 columns</h3>
+<p class="src">Highlighted rows are the personal fields that were public.</p>
+<div class="tblwrap"><table><tr><th>Column</th><th>Type</th><th>References</th></tr><tr><td><b>id</b> <span class="pill p-info">PK</span></td><td>uuid</td><td></td></tr><tr class="hi"><td><b>email</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>phone</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>parent_name</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>parent_phone</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>parent_email</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>dob</b></td><td>date</td><td></td></tr><tr><td><b>waiver_id</b></td><td>text</td><td></td></tr><tr><td><b>waiver_signed_at</b></td><td>timestamp with time zone</td><td></td></tr><tr class="hi"><td><b>waiver_pdf_url</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>address</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>city</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>state</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>zip</b></td><td>text</td><td></td></tr><tr><td><b>notes</b></td><td>text</td><td></td></tr><tr><td><b>tags</b></td><td>text[]</td><td></td></tr><tr><td><b>total_spent</b></td><td>numeric</td><td></td></tr><tr><td><b>total_visits</b></td><td>integer</td><td></td></tr><tr><td><b>last_visit_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>square_customer_id</b></td><td>text</td><td></td></tr><tr><td><b>created_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>updated_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>first_name</b></td><td>text</td><td></td></tr><tr><td><b>last_name</b></td><td>text</td><td></td></tr><tr><td><b>name</b></td><td>text</td><td></td></tr><tr><td><b>loyalty_points</b></td><td>integer</td><td></td></tr><tr><td><b>tenant_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; tenants.id</td></tr><tr><td><b>auth_user_id</b></td><td>uuid</td><td></td></tr><tr><td><b>photo_url</b></td><td>text</td><td></td></tr><tr><td><b>waiver_expires_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>last_birthday_email_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>email_opt_out_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>affiliate_code_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; affiliate_codes.id</td></tr><tr><td><b>affiliate_attributed_at</b></td><td>timestamp with time zone</td><td></td></tr><tr class="hi"><td><b>brivo_user_id</b></td><td>text</td><td></td></tr><tr class="hi"><td><b>brivo_credential_state</b></td><td>text</td><td></td></tr><tr><td><b>brivo_credential_sent_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>brivo_last_synced_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>brivo_sync_needed_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>brivo_sync_error</b></td><td>text</td><td></td></tr><tr><td><b>brivo_welcome_sent_at</b></td><td>timestamp with time zone</td><td></td></tr></table></div>
+
+<h3>sales &mdash; 37 columns</h3>
+<div class="tblwrap"><table><tr><th>Column</th><th>Type</th><th>References</th></tr><tr><td><b>id</b> <span class="pill p-info">PK</span></td><td>uuid</td><td></td></tr><tr><td><b>receipt_number</b></td><td>text</td><td></td></tr><tr><td><b>customer_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; customers.id</td></tr><tr><td><b>subtotal</b></td><td>numeric</td><td></td></tr><tr><td><b>tax</b></td><td>numeric</td><td></td></tr><tr><td><b>discount</b></td><td>numeric</td><td></td></tr><tr><td><b>total</b></td><td>numeric</td><td></td></tr><tr><td><b>payment_provider</b></td><td>text</td><td></td></tr><tr><td><b>payment_id</b></td><td>text</td><td></td></tr><tr><td><b>payment_method</b></td><td>text</td><td></td></tr><tr><td><b>status</b></td><td>text</td><td></td></tr><tr><td><b>refunded_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>refund_reason</b></td><td>text</td><td></td></tr><tr><td><b>actor_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; staff.id</td></tr><tr><td><b>created_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>tenant_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; tenants.id</td></tr><tr><td><b>mobile_run_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; mobile_runs.id</td></tr><tr><td><b>promo_code_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; promo_codes.id</td></tr><tr><td><b>tip</b></td><td>numeric</td><td></td></tr><tr><td><b>tip_for_staff_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; staff.id</td></tr><tr><td><b>notes</b></td><td>text</td><td></td></tr><tr><td><b>customer_name</b></td><td>text</td><td></td></tr><tr><td><b>product_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; products.id</td></tr><tr><td><b>product_name</b></td><td>text</td><td></td></tr><tr><td><b>quantity</b></td><td>integer</td><td></td></tr><tr><td><b>unit_price</b></td><td>numeric</td><td></td></tr><tr><td><b>updated_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>refunded_amount</b></td><td>numeric</td><td></td></tr><tr><td><b>refunded_by</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; staff.id</td></tr><tr><td><b>payments</b></td><td>jsonb</td><td></td></tr><tr><td><b>square_order_id</b></td><td>text</td><td></td></tr><tr><td><b>age_verification</b></td><td>jsonb</td><td></td></tr><tr><td><b>location_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; inventory_locations.id</td></tr><tr><td><b>stripe_checkout_session_id</b></td><td>text</td><td></td></tr><tr><td><b>stripe_payment_intent_id</b></td><td>text</td><td></td></tr><tr><td><b>stripe_payment_url</b></td><td>text</td><td></td></tr><tr><td><b>stripe_paid_at</b></td><td>timestamp with time zone</td><td></td></tr></table></div>
+
+<h3>orders &mdash; 21 columns</h3>
+<div class="tblwrap"><table><tr><th>Column</th><th>Type</th><th>References</th></tr><tr><td><b>id</b> <span class="pill p-info">PK</span></td><td>uuid</td><td></td></tr><tr><td><b>order_number</b></td><td>text</td><td></td></tr><tr><td><b>customer_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; customers.id</td></tr><tr><td><b>customer_name</b></td><td>text</td><td></td></tr><tr><td><b>customer_email</b></td><td>text</td><td></td></tr><tr><td><b>customer_phone</b></td><td>text</td><td></td></tr><tr><td><b>shipping_address</b></td><td>text</td><td></td></tr><tr><td><b>source</b></td><td>text</td><td></td></tr><tr><td><b>status</b></td><td>text</td><td></td></tr><tr><td><b>subtotal</b></td><td>numeric</td><td></td></tr><tr><td><b>tax</b></td><td>numeric</td><td></td></tr><tr><td><b>shipping</b></td><td>numeric</td><td></td></tr><tr><td><b>discount</b></td><td>numeric</td><td></td></tr><tr><td><b>total</b></td><td>numeric</td><td></td></tr><tr><td><b>payment_provider</b></td><td>text</td><td></td></tr><tr><td><b>payment_id</b></td><td>text</td><td></td></tr><tr><td><b>payment_status</b></td><td>text</td><td></td></tr><tr><td><b>notes</b></td><td>text</td><td></td></tr><tr><td><b>created_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>updated_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>tenant_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; tenants.id</td></tr></table></div>
+
+<h3>form_submissions &mdash; 10 columns</h3>
+<div class="tblwrap"><table><tr><th>Column</th><th>Type</th><th>References</th></tr><tr><td><b>id</b> <span class="pill p-info">PK</span></td><td>uuid</td><td></td></tr><tr><td><b>form_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; forms.id</td></tr><tr><td><b>customer_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; customers.id</td></tr><tr><td><b>data</b></td><td>jsonb</td><td></td></tr><tr><td><b>status</b></td><td>text</td><td></td></tr><tr><td><b>reviewed_by</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; staff.id</td></tr><tr><td><b>reviewed_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>ip_address</b></td><td>inet</td><td></td></tr><tr><td><b>created_at</b></td><td>timestamp with time zone</td><td></td></tr><tr><td><b>tenant_id</b> <span class="pill p-info">FK</span></td><td>uuid</td><td>&rarr; tenants.id</td></tr></table></div>
+
+<h3>All 63 tables</h3>
+<div class="tblwrap"><table><tr><th>Table</th><th>Cols</th><th>Table</th><th>Cols</th></tr><tr><td>affiliate_codes</td><td class="n">16</td><td>affiliate_earnings</td><td class="n">16</td></tr><tr><td>affiliate_programs</td><td class="n">14</td><td>affiliate_redemptions</td><td class="n">8</td></tr><tr><td>agreements</td><td class="n">18</td><td>app_settings</td><td class="n">5</td></tr><tr><td>audit_log</td><td class="n">10</td><td>brivo_access_log</td><td class="n">11</td></tr><tr><td>brivo_event_passes</td><td class="n">12</td><td>brivo_member_desired</td><td class="n">11</td></tr><tr><td>bus_inventory</td><td class="n">6</td><td>categories</td><td class="n">5</td></tr><tr><td>checkins</td><td class="n">10</td><td>customers</td><td class="n">41</td></tr><tr><td>daily_reconciliations</td><td class="n">22</td><td>deck_pilot_sales</td><td class="n">11</td></tr><tr><td>equipment</td><td class="n">12</td><td>equipment_loans</td><td class="n">16</td></tr><tr><td>form_submissions</td><td class="n">10</td><td>forms</td><td class="n">10</td></tr><tr><td>frigate_cameras</td><td class="n">10</td><td>frigate_events</td><td class="n">19</td></tr><tr><td>frigate_recent_park_count</td><td class="n">5</td><td>gift_card_transactions</td><td class="n">10</td></tr><tr><td>gift_cards</td><td class="n">19</td><td>incidents</td><td class="n">37</td></tr><tr><td>instructor_profitability</td><td class="n">13</td><td>inventory_locations</td><td class="n">9</td></tr><tr><td>inventory_log</td><td class="n">7</td><td>inventory_transfers</td><td class="n">11</td></tr><tr><td>invoice_items</td><td class="n">9</td><td>invoices</td><td class="n">20</td></tr><tr><td>lesson_attendees</td><td class="n">10</td><td>lessons</td><td class="n">22</td></tr><tr><td>lessons_with_attendance</td><td class="n">19</td><td>loyalty_config</td><td class="n">8</td></tr><tr><td>loyalty_transactions</td><td class="n">10</td><td>mixture_submissions</td><td class="n">5</td></tr><tr><td>mobile_run_inventory</td><td class="n">9</td><td>mobile_runs</td><td class="n">17</td></tr><tr><td>order_items</td><td class="n">9</td><td>orders</td><td class="n">21</td></tr><tr><td>preorder_products</td><td class="n">15</td><td>products</td><td class="n">22</td></tr><tr><td>promo_codes</td><td class="n">17</td><td>reviewer_notes</td><td class="n">9</td></tr><tr><td>sale_items</td><td class="n">10</td><td>sales</td><td class="n">37</td></tr><tr><td>serial_numbers</td><td class="n">6</td><td>square_import_state</td><td class="n">9</td></tr><tr><td>staff</td><td class="n">16</td><td>staff_clock_tokens</td><td class="n">7</td></tr><tr><td>staff_job_assignments</td><td class="n">9</td><td>subscriptions</td><td class="n">19</td></tr><tr><td>subscriptions_due_to_resume</td><td class="n">18</td><td>team_messages</td><td class="n">16</td></tr><tr><td>tenant_brivo_config</td><td class="n">15</td><td>tenants</td><td class="n">7</td></tr><tr><td>time_entries</td><td class="n">16</td><td>timesheet_approvals</td><td class="n">9</td></tr><tr><td>user_tenants</td><td class="n">4</td><td>v_stock_by_location</td><td class="n">6</td></tr><tr><td>webhook_log</td><td class="n">12</td><td></td><td></td></tr></table></div>
+<p>Beyond the storefront: affiliate programs, e-signed agreements, Brivo door access, Frigate cameras,
+loyalty, promo codes, mobile runs and bus inventory, staff time entries and timesheet approvals,
+serial-number tracking, and a Square import state table. <strong>The public key saw 12 of these 63.</strong></p>
+<h2>Square-side schema, for comparison</h2>
+<p>All verified live against merchant <em>2nd Nature Skateboarding</em> (ML3DFVQZ88EVK).</p>
+<div class="tblwrap"><table>
+<tr><th>Square object</th><th>Count</th><th>Notes</th></tr>
+<tr><td>CatalogItem</td><td class="n">1,102</td><td>1,048 with photos, 857 with descriptions</td></tr>
+<tr><td>CatalogItemVariation</td><td class="n">1,557</td><td>1,128 stock-tracked, 429 not</td></tr>
+<tr><td>CatalogCategory</td><td class="n">88</td><td>Enough to drive the filters</td></tr>
+<tr><td>Location</td><td class="n">1</td><td>Indoor Skate Park &amp; Shop</td></tr>
+<tr><td>Payment</td><td class="n">10,694</td><td>Last 365 days, $328,025</td></tr>
+<tr><td>PaymentLink</td><td class="n">11</td><td>Checkout API already in use</td></tr>
+<tr><td>Site</td><td class="n">1</td><td>www.2ntr.com, published</td></tr>
+</table></div>
+
+<div class="note bad"><div class="t">Security &mdash; found, then fixed</div>
+<p class="src" style="margin-bottom:10px"><span class="pill p-ok">resolved 1 Sept 2026</span></p><p>My first read said three tables. A full sweep found <strong>twelve</strong> &mdash; every one returning real rows to the anon key in your public shop page:</p>
+<div class="tblwrap"><table><tr><th>Table</th><th>Rows exposed</th></tr><tr class="hi"><td>customers</td><td class="n">27,639</td></tr><tr class="hi"><td>sales</td><td class="n">10,751</td></tr><tr><td>products</td><td class="n">1,409</td></tr><tr><td>lessons</td><td class="n">141</td></tr><tr><td>categories</td><td class="n">74</td></tr><tr><td>checkins</td><td class="n">3</td></tr><tr><td>subscriptions</td><td class="n">2</td></tr><tr><td>orders, order_items, invoices, gift_cards, form_submissions</td><td class="n">0 today &mdash; open, and exposed the moment they fill</td></tr></table></div>
+<p>This is the same failure class as the Branch Manager RLS breach in my notes. The key being public is
+normal and fine &mdash; <em>that is what an anon key is for</em>. What is not fine is that it can read
+customer and sales tables. The fix is RLS policies on the database, not hiding the key.</p>
+<p>Writes were open too &mdash; <em>customers</em>, <em>sales</em> and <em>products</em> all accepted a write probe rather than refusing it.</p><div class="note good" style="margin-top:12px"><div class="t">Closed, and verified from the outside</div><p>Nine tables now return nothing to the public key. <em>products</em> (1,409) and <em>categories</em> (74) still serve the storefront by design. Public INSERT / UPDATE / DELETE all return <strong>401 permission denied</strong>. The reservation form still submits. The shop page renders at 375px with zero console errors.</p><p><strong>The first attempt silently failed</strong>, and the lesson is worth keeping: RLS policies are <em>permissive-OR</em>. Enabling RLS and adding policies does not close a table while a pre-existing open policy is still there. Existing policies must be dropped first &mdash; and a security migration should end with a query that reports its own final state. &ldquo;Success. No rows returned&rdquo; was not evidence of anything.</p></div></div>
+
+<h2>What this means for the migration question</h2>
+<p>The 30% overlap changes the answer materially. There is no sync to repair &mdash; there is no sync.
+Pointing the site at Square is not a fix to a broken pipe, it is <strong>replacing a duplicate product
+database with the real one</strong>, and it makes the roughly 1,000 Square-only items sellable online
+for the first time.</p>
+<p>The reverse also becomes a question you have to answer: the Supabase-only items &mdash; gum, soda,
+youth sweatshirts &mdash; either get created in Square or they stop appearing on the site. I would not
+guess which. That is a real inventory decision, not a technical one.</p>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>

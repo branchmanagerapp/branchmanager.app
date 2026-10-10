@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equipment Checkout Log — {{business_name}}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:system-ui,sans-serif; background:#f8fafc; color:#1a1a1a; }
+  .top { background:#1b5e20; color:#fff; padding:16px 20px; }
+  .top h1 { font-size:18px; }
+  .wrap { max-width:600px; margin:0 auto; padding:16px; }
+  .card { background:#fff; border-radius:10px; padding:16px; margin-bottom:12px; border:1px solid #e2e8f0; }
+  .card h3 { font-size:14px; margin-bottom:12px; }
+  .field { margin-bottom:10px; }
+  .field label { display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:3px; }
+  .field input, .field select { width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; }
+  .btn { width:100%; padding:12px; background:#1b5e20; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#f1f5f9; padding:8px; text-align:left; font-weight:600; font-size:11px; text-transform:uppercase; color:#64748b; }
+  td { padding:8px; border-bottom:1px solid #f1f5f9; }
+  .checked-out { color:#dc2626; font-weight:600; }
+  .returned { color:#16a34a; }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<div class="top"><h1>Equipment Checkout Log</h1></div>
+
+<div class="wrap">
+  <div class="card">
+    <h3>Check Out Equipment</h3>
+    <div class="field"><label>Equipment</label>
+      <select id="eq-item">
+        <option>Stihl MS 462 Chainsaw #1</option>
+        <option>Stihl MS 462 Chainsaw #2</option>
+        <option>Stihl MS 261 Chainsaw</option>
+        <option>Stihl MS 201 TC Top-Handle</option>
+        <option>Husqvarna 572 XP</option>
+        <option>Echo CS-590 Timber Wolf</option>
+        <option>Vermeer SC252 Stump Grinder</option>
+        <option>Climbing Kit #1</option>
+        <option>Climbing Kit #2</option>
+        <option>Rigging Kit</option>
+        <option>Port-a-Wrap</option>
+        <option>Speed Line Kit</option>
+        <option>Pole Saw — Silky Hayauchi 21ft</option>
+        <option>Blower — Stihl BR 800</option>
+        <option>Ladder — 28ft Extension</option>
+        <option>First Aid Kit</option>
+      </select>
+    </div>
+    <div class="field"><label>Checked Out By</label><input type="text" id="eq-who" placeholder="Your name"></div>
+    <div class="field"><label>Job / Reason</label><input type="text" id="eq-job" placeholder="Job # or reason"></div>
+    <div class="field"><label>Condition</label>
+      <select id="eq-condition">
+        <option>Good</option>
+        <option>Needs sharpening</option>
+        <option>Minor damage — note below</option>
+        <option>Needs repair</option>
+      </select>
+    </div>
+    <div class="field"><label>Notes</label><input type="text" id="eq-notes" placeholder="Any issues?"></div>
+    <button class="btn" onclick="checkout()">Check Out</button>
+  </div>
+
+  <div class="card">
+    <h3>Currently Checked Out</h3>
+    <table>
+      <thead><tr><th>Equipment</th><th>Who</th><th>Since</th><th></th></tr></thead>
+      <tbody id="active-list"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Recent History</h3>
+    <table>
+      <thead><tr><th>Equipment</th><th>Who</th><th>Out</th><th>Returned</th></tr></thead>
+      <tbody id="history-list"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var LOG_KEY = 'bm-equipment-log';
+function getLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch(e) { return []; } }
+function saveLog(log) { localStorage.setItem(LOG_KEY, JSON.stringify(log)); }
+
+function checkout() {
+  var item = document.getElementById('eq-item').value;
+  var who = document.getElementById('eq-who').value.trim();
+  if (!who) { alert('Enter your name.'); return; }
+  var log = getLog();
+  log.unshift({
+    id: Date.now(),
+    item: item,
+    who: who,
+    job: document.getElementById('eq-job').value.trim(),
+    condition: document.getElementById('eq-condition').value,
+    notes: document.getElementById('eq-notes').value.trim(),
+    outAt: new Date().toISOString(),
+    returnedAt: null
+  });
+  saveLog(log);
+  document.getElementById('eq-who').value = '';
+  document.getElementById('eq-job').value = '';
+  document.getElementById('eq-notes').value = '';
+  render();
+}
+
+function returnItem(id) {
+  var log = getLog();
+  var item = log.find(function(l) { return l.id === id; });
+  if (item) item.returnedAt = new Date().toISOString();
+  saveLog(log);
+  render();
+}
+
+function render() {
+  var log = getLog();
+  var active = log.filter(function(l) { return !l.returnedAt; });
+  var history = log.filter(function(l) { return l.returnedAt; }).slice(0, 20);
+
+  var aHtml = '';
+  active.forEach(function(l) {
+    var since = new Date(l.outAt).toLocaleDateString();
+    aHtml += '<tr><td><strong>' + l.item + '</strong>' + (l.notes ? '<br><span style="font-size:11px;color:#94a3b8;">' + l.notes + '</span>' : '') + '</td>'
+      + '<td>' + l.who + '</td><td>' + since + '</td>'
+      + '<td><button onclick="returnItem(' + l.id + ')" style="background:#16a34a;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Return</button></td></tr>';
+  });
+  if (!active.length) aHtml = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">All equipment returned</td></tr>';
+  document.getElementById('active-list').innerHTML = aHtml;
+
+  var hHtml = '';
+  history.forEach(function(l) {
+    hHtml += '<tr><td>' + l.item + '</td><td>' + l.who + '</td>'
+      + '<td>' + new Date(l.outAt).toLocaleDateString() + '</td>'
+      + '<td class="returned">' + new Date(l.returnedAt).toLocaleDateString() + '</td></tr>';
+  });
+  if (!history.length) hHtml = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">No history yet</td></tr>';
+  document.getElementById('history-list').innerHTML = hHtml;
+}
+
+render();
+</script>
+<script src="onboarding-sig.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function(){ if (typeof OnboardingSig !== "undefined") OnboardingSig.autoFillAll(); });</script>
+</body>
+</html>

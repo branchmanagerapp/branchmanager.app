@@ -1,0 +1,100 @@
+{
+  "topic": "ny-subcontractor-vs-employee",
+  "title": "New York: subcontractor or employee",
+  "summary": "How the state decides. The facts of the relationship control, not the label.",
+  "facts": [
+    {
+      "id": "dol-control-test",
+      "kind": "fact",
+      "claim": "The NY Department of Labor looks at the degree of supervision, direction and control. No single factor decides it. Being told when, where and how to work and being paid hourly points to employee; being in business for yourself and serving the public points to independent contractor.",
+      "source": {
+        "name": "NYS Department of Labor — Independent Contractors",
+        "url": "https://dol.ny.gov/independent-contractors",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "agreement-not-decisive",
+      "kind": "fact",
+      "claim": "Per NY DOL, designating a worker an independent contractor, even with the worker's agreement and a written contract, does not make it so. The facts of the relationship are still examined.",
+      "source": {
+        "name": "NYS Department of Labor — Independent Contractors",
+        "url": "https://dol.ny.gov/independent-contractors",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "wcb-factors",
+      "kind": "fact",
+      "claim": "For most industries the Workers' Compensation Board weighs about ten factors, including control, a separately established business, carrying liability insurance, providing your own equipment, and signs of an independent business such as advertising, an FEIN and permits.",
+      "source": {
+        "name": "NYS Workers' Compensation Board — Identifying an Independent Contractor",
+        "url": "https://www.wcb.ny.gov/content/main/Employers/identifying-independent-contractor.jsp",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "Page is undated. Working with the other company's equipment weighs toward employee.",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "fair-play-act-tests",
+      "kind": "fact",
+      "claim": "Under the Construction Industry Fair Play Act (effective October 26, 2010) an individual is an independent contractor only if all three conditions are met, and a separate business entity must meet all twelve criteria.",
+      "source": {
+        "name": "NYS Workers' Compensation Board — Identifying an Independent Contractor",
+        "url": "https://www.wcb.ny.gov/content/main/Employers/identifying-independent-contractor.jsp",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "",
+      "review_by": "2027-03-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    },
+    {
+      "id": "gap-tree-work-construction",
+      "kind": "gap",
+      "claim": "We have not determined whether tree work counts as 'construction' under the Fair Play Act. The DOL web page does not define the term; fact sheet P738 may.",
+      "searched": [
+        "dol.ny.gov/construction-industry-fair-play-act"
+      ],
+      "source": {
+        "name": "NYS Department of Labor — Construction Industry Fair Play Act",
+        "url": "https://dol.ny.gov/construction-industry-fair-play-act",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "low",
+      "caveat": "Question for an accountant or attorney.",
+      "review_by": "2026-12-18",
+      "used_on": [
+        "/jimmy/partnership"
+      ]
+    }
+  ]
+}

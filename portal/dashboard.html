@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>My Account — Branch Manager</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7f6; color: #1a3c12; }
+  .topbar {
+    background: linear-gradient(135deg, #1a3c12, #2e7d32);
+    color: #fff;
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  }
+  .brand { font-size: 17px; font-weight: 800; }
+  .brand-sub { font-size: 11px; opacity: .8; }
+  .signout {
+    background: rgba(255,255,255,.18);
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .container { max-width: 760px; margin: 0 auto; padding: 22px 18px 80px; }
+  .greeting { margin-bottom: 18px; }
+  .greeting h2 { font-size: 21px; margin-bottom: 4px; }
+  .greeting p { color: #6b7280; font-size: 13px; }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .card-h {
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafbfa;
+  }
+  .card-h h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; }
+  .card-h .count { font-size: 12px; color: #9ca3af; }
+  .card-body { padding: 0; }
+  .row {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .left { flex: 1; min-width: 0; }
+  .row .title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .row .meta { font-size: 12px; color: #6b7280; }
+  .row .amt { font-weight: 800; font-size: 16px; color: #1a3c12; white-space: nowrap; }
+  .row .amt.due { color: #dc2626; }
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-left: 6px;
+  }
+  .pill.past { background: #fee2e2; color: #b91c1c; }
+  .pill.paid { background: #dcfce7; color: #166534; }
+  .pill.draft { background: #f3f4f6; color: #6b7280; }
+  .pill.sent { background: #fef3c7; color: #92400e; }
+  .pill.appr { background: #dcfce7; color: #166534; }
+  .btn {
+    background: #2e7d32;
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn.outline { background: #fff; color: #1a3c12; border: 1px solid #1a3c12; }
+  .empty { padding: 28px 18px; text-align: center; color: #9ca3af; font-size: 13px; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 4px; }
+  .stat-val { font-size: 18px; font-weight: 800; color: #1a3c12; }
+  .stat-val.due { color: #dc2626; }
+  .loading { text-align: center; padding: 60px 20px; color: #9ca3af; }
+  .footer { text-align: center; padding: 24px 16px 40px; font-size: 11px; color: #9ca3af; line-height: 1.6; }
+  .footer a { color: #1a3c12; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <div class="brand">🌳 Branch Manager</div>
+      <div class="brand-sub" id="signed-as">Loading…</div>
+    </div>
+    <button class="signout" onclick="signOut()">Sign out</button>
+  </div>
+
+  <div class="container">
+    <div id="content" class="loading">Loading your account…</div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPA_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+  const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  function fmt(n) { return '$' + (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function dateShort(d) { if (!d) return '—'; const x = new Date(d); return x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  function esc(s) { return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    location.href = 'index.html';
+  }
+
+  async function load() {
+    const { data: sessData } = await sb.auth.getSession();
+    if (!sessData || !sessData.session) {
+      location.href = 'index.html';
+      return;
+    }
+    const email = sessData.session.user.email;
+    document.getElementById('signed-as').textContent = email;
+
+    // Fetch the matched client row (RLS gates by email match)
+    const { data: clients } = await sb.from('clients').select('*').limit(1);
+    const client = clients && clients[0];
+
+    // White-label: resolve THIS customer's tree-service company branding
+    // from their own client.tenant_id (never hardcoded SNT). If RLS
+    // doesn't return it, co stays generic — a customer is never shown
+    // "Second Nature Tree" for a different business.
+    let co = { name: '', phone: '', email: '', loc: '', digits: '' };
+    try {
+      const tid = client && client.tenant_id;
+      if (tid) {
+        const { data: trows } = await sb.from('tenants').select('name,config').eq('id', tid);
+        const t = trows && trows[0];
+        if (t) {
+          const c = t.config || {};
+          co.name = c.company_name || t.name || '';
+          co.phone = c.company_phone || '';
+          co.digits = String(co.phone).replace(/\D/g, '');
+          co.email = c.company_email || c.from_email || '';
+          co.loc = [c.city, c.state].filter(Boolean).join(', ');
+        }
+      }
+    } catch (e) { /* generic fallback */ }
+    const coName = co.name || 'your tree-service company';
+    if (co.name) {
+      const sub = document.getElementById('signed-as');
+      // keep the signed-in email line; surface the company in the brand row
+      const brandEl = document.querySelector('.brand');
+      if (brandEl) brandEl.textContent = '🌳 ' + co.name;
+    }
+
+    if (!client) {
+      document.getElementById('content').innerHTML =
+        '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:24px 20px;text-align:center;">'
+        + '<div style="font-size:36px;margin-bottom:10px;">📭</div>'
+        + '<h3 style="font-size:16px;margin-bottom:8px;">We don&rsquo;t have an account on file</h3>'
+        + '<p style="color:#6b7280;font-size:13px;line-height:1.6;">The email <strong>' + esc(email) + '</strong> isn&rsquo;t linked to any customer records yet. If you&rsquo;ve worked with this company before, reach out to them so they can connect your account.</p>'
+        + '</div>';
+      return;
+    }
+
+    // Fetch all client-scoped data (RLS gates)
+    const [invRes, qRes, jobRes, photoRes] = await Promise.all([
+      sb.from('invoices').select('*').order('created_at', { ascending: false }),
+      sb.from('quotes').select('*').order('created_at', { ascending: false }),
+      sb.from('jobs').select('*').order('scheduled_date', { ascending: false }).limit(20),
+      sb.from('photos').select('*').eq('record_type', 'job').order('created_at', { ascending: false }).limit(120)
+    ]);
+    const invoices = invRes.data || [];
+    const quotes = qRes.data || [];
+    const jobs = jobRes.data || [];
+    const photos = photoRes.data || [];
+
+    const unpaid = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'archived');
+    const balance = unpaid.reduce((s,i) => s + (parseFloat(i.balance) || parseFloat(i.total) || 0), 0);
+    const paidCount = invoices.filter(i => i.status === 'paid').length;
+    const pendingQuotes = quotes.filter(q => q.status === 'sent' || q.status === 'awaiting');
+
+    let html = '';
+
+    // Greeting + stats
+    const firstName = (client.name || '').split(' ')[0] || 'there';
+    html += '<div class="greeting">'
+      + '<h2>Hi ' + esc(firstName) + ' 🌳</h2>'
+      + '<p>Welcome to your ' + esc(coName) + ' account.</p>'
+      + '</div>'
+      + '<div class="stats">'
+      +   '<div class="stat"><div class="stat-label">Open Balance</div><div class="stat-val' + (balance > 0 ? ' due' : '') + '">' + fmt(balance) + '</div></div>'
+      +   '<div class="stat"><div class="stat-label">Paid Invoices</div><div class="stat-val">' + paidCount + '</div></div>'
+      +   '<div class="stat"><div class="stat-label">Pending Quotes</div><div class="stat-val">' + pendingQuotes.length + '</div></div>'
+      + '</div>';
+
+    // Outstanding invoices
+    html += '<div class="card"><div class="card-h"><h3>Open Invoices</h3><span class="count">' + unpaid.length + '</span></div><div class="card-body">';
+    if (unpaid.length === 0) {
+      html += '<div class="empty">All paid up — nothing outstanding 🎉</div>';
+    } else {
+      unpaid.forEach(inv => {
+        const isPastDue = inv.due_date && new Date(inv.due_date) < new Date();
+        const bal = parseFloat(inv.balance) || parseFloat(inv.total) || 0;
+        html += '<div class="row">'
+          +   '<div class="left">'
+          +     '<div class="title">Invoice #' + esc(inv.invoice_number || '—') + (isPastDue ? '<span class="pill past">Past due</span>' : '<span class="pill sent">' + esc(inv.status||'sent') + '</span>') + '</div>'
+          +     '<div class="meta">' + esc(inv.subject || 'Tree service') + (inv.due_date ? ' &middot; Due ' + dateShort(inv.due_date) : '') + '</div>'
+          +     '<div style="margin-top:4px;"><a href="invoice-print.html?id=' + encodeURIComponent(inv.id) + '" style="font-size:11px;color:#6b7280;text-decoration:underline;">📄 View / save PDF</a></div>'
+          +   '</div>'
+          +   '<div style="text-align:right;">'
+          +     '<div class="amt due">' + fmt(bal) + '</div>'
+          +     '<a href="../pay.html?id=' + encodeURIComponent(inv.id) + '" class="btn" style="margin-top:6px;">Pay Now</a>'
+          +   '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div></div>';
+
+    // Pending quotes
+    html += '<div class="card"><div class="card-h"><h3>Quotes</h3><span class="count">' + quotes.length + '</span></div><div class="card-body">';
+    if (quotes.length === 0) {
+      html += '<div class="empty">No quotes yet.</div>';
+    } else {
+      quotes.slice(0, 8).forEach(q => {
+        const isPending = q.status === 'sent' || q.status === 'awaiting';
+        const isApproved = q.status === 'approved' || q.status === 'converted';
+        html += '<div class="row">'
+          +   '<div class="left">'
+          +     '<div class="title">Quote #' + esc(q.quote_number || '—')
+          +       (isApproved ? '<span class="pill appr">Approved</span>' : (isPending ? '<span class="pill sent">Awaiting your review</span>' : '<span class="pill draft">' + esc(q.status||'draft') + '</span>'))
+          +     '</div>'
+          +     '<div class="meta">' + esc(q.subject || q.description || 'Tree work') + ' &middot; ' + dateShort(q.created_at) + '</div>'
+          +   '</div>'
+          +   '<div style="text-align:right;">'
+          +     '<div class="amt">' + fmt(q.total) + '</div>'
+          +     (isPending ? '<a href="../approve.html?id=' + encodeURIComponent(q.id) + '" class="btn" style="margin-top:6px;">Review</a>' : '<a href="../approve.html?id=' + encodeURIComponent(q.id) + '" class="btn outline" style="margin-top:6px;">View</a>')
+          +   '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div></div>';
+
+    // Recent jobs
+    html += '<div class="card"><div class="card-h"><h3>Recent Jobs</h3><span class="count">' + jobs.length + '</span></div><div class="card-body">';
+    if (jobs.length === 0) {
+      html += '<div class="empty">No jobs scheduled or completed yet.</div>';
+    } else {
+      jobs.slice(0, 10).forEach(j => {
+        let statusPill = '';
+        if (j.status === 'completed') statusPill = '<span class="pill paid">Completed</span>';
+        else if (j.status === 'scheduled') statusPill = '<span class="pill sent">Scheduled</span>';
+        else statusPill = '<span class="pill draft">' + esc(j.status||'') + '</span>';
+        html += '<div class="row">'
+          +   '<div class="left">'
+          +     '<div class="title">Job #' + esc(j.job_number || '—') + statusPill + '</div>'
+          +     '<div class="meta">' + esc(j.description || j.property || 'Tree work') + (j.scheduled_date ? ' &middot; ' + dateShort(j.scheduled_date) : '') + '</div>'
+          +   '</div>'
+          +   '<div style="text-align:right;"><div class="amt" style="font-size:14px;">' + fmt(j.total) + '</div></div>'
+          + '</div>';
+      });
+    }
+    html += '</div></div>';
+
+    // Photo galleries — grouped by job
+    if (photos.length) {
+      const byJob = {};
+      photos.forEach(p => { if (!byJob[p.record_id]) byJob[p.record_id] = []; byJob[p.record_id].push(p); });
+      const jobMap = {};
+      jobs.forEach(j => { jobMap[j.id] = j; });
+      const groupedJobs = Object.keys(byJob)
+        .map(jid => ({ job: jobMap[jid], photos: byJob[jid] }))
+        .filter(g => g.job)
+        .sort((a, b) => (b.job.scheduled_date || b.job.created_at || '').localeCompare(a.job.scheduled_date || a.job.created_at || ''));
+
+      html += '<div class="card"><div class="card-h"><h3>Photos from your jobs</h3><span class="count">' + photos.length + '</span></div><div class="card-body" style="padding:14px 18px;">';
+      groupedJobs.forEach(g => {
+        const jLabel = (g.job.description || g.job.property || 'Job') + (g.job.scheduled_date ? ' · ' + dateShort(g.job.scheduled_date) : '');
+        html += '<div style="margin-bottom:18px;">'
+          +   '<div style="font-size:13px;font-weight:700;color:#1a3c12;margin-bottom:8px;">' + esc(jLabel) + '</div>'
+          +   '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">'
+          +     g.photos.map(p =>
+                  '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" style="display:block;aspect-ratio:1;background:#eef2ee url(\'' + esc(p.url) + '\') center/cover no-repeat;border-radius:8px;overflow:hidden;text-decoration:none;border:1px solid #e5e7eb;"></a>'
+                ).join('')
+          +   '</div>'
+          + '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    var _ftBits = [];
+    if (co.name) _ftBits.push(esc(co.name) + (co.loc ? ' &middot; ' + esc(co.loc) : ''));
+    var _ftContact = [];
+    if (co.digits) _ftContact.push('<a href="tel:' + esc(co.digits) + '">📞 ' + esc(co.phone) + '</a>');
+    if (co.email) _ftContact.push('<a href="mailto:' + esc(co.email) + '">✉ ' + esc(co.email) + '</a>');
+    html += '<div class="footer">'
+      +   (_ftBits.length ? _ftBits.join('') + (_ftContact.length ? '<br>' : '') : '')
+      +   _ftContact.join(' &middot; ')
+      + '</div>';
+
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('content').className = '';
+  }
+
+  load().catch(e => {
+    console.error(e);
+    document.getElementById('content').innerHTML = '<div class="loading">Could not load your account: ' + esc(e.message || e) + '</div>';
+  });
+</script>
+</body>
+</html>

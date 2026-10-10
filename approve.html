@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote / Estimate Approval</title>
+  <style>
+    /* v635: clean customer approve page —
+       cleaner whitespace, subtle top accent (no heavy header bar),
+       2-card meta layout, sticky bottom CTAs, generous padding.
+       JS untouched — every element id and class name preserved. */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f6f7f9; color: #0f172a; min-height: 100vh; padding-bottom: 24px; }
+    .page { max-width: 760px; margin: 0 auto; padding: 22px 18px; }
+
+    /* ── Document card — subtle colored top accent (standard pattern) ── */
+    .doc-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,.05); overflow: hidden; margin-bottom: 18px; }
+    .doc-accent { height: 4px; background: #1a3c12; }
+    .doc-pad { padding: 28px 28px 22px; }
+
+    /* ── Header — status pill + brand ── */
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .header-brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #1a3c12; }
+    .header h1 { font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-top: 6px; color: #0f172a; }
+    .header-status { display: flex; align-items: center; gap: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+    .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .badge-sent { background: #fff8e6; color: #b45309; }
+    .badge-approved { background: #e8f5e9; color: #166534; }
+    .badge-declined { background: #fef2f2; color: #b91c1c; }
+
+    /* ── 2-card meta row — client info / quote meta ── */
+    .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0 24px; }
+    .meta-card { background: #fafbfc; border: 1px solid #eef0f3; border-radius: 12px; padding: 16px 18px; }
+    .meta-row-rows { display: flex; flex-direction: column; gap: 10px; }
+    .meta-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+    .meta-val { font-size: 14px; font-weight: 500; color: #0f172a; margin-top: 2px; }
+    .meta-val-big { font-size: 22px; font-weight: 800; color: #1a3c12; letter-spacing: -.4px; }
+
+    /* legacy alias kept for old code paths */
+    .card { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,.05); margin-bottom: 16px; }
+    .card-standalone { border-radius: 14px; }
+
+    .section-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-bottom: 8px; }
+    .desc-box { background: #f8faf8; border-left: 3px solid #1a3c12; border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 22px; font-size: 14px; line-height: 1.65; color: #1f2937; }
+
+    /* ── Line items table ── */
+    .line-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; }
+    .line-table th { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; padding: 10px 0; border-bottom: 1px solid #eef0f3; text-align: left; letter-spacing: .04em; }
+    .line-table th:last-child, .line-table th:nth-child(3), .line-table th:nth-child(4) { text-align: right; }
+    .line-table td { padding: 14px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; vertical-align: top; }
+    .line-table td:last-child, .line-table td:nth-child(3), .line-table td:nth-child(4) { text-align: right; }
+    .line-table tfoot td { padding: 8px 0; border: none; }
+    .line-table .total-row td { font-weight: 800; font-size: 18px; border-top: 1px solid #eef0f3; padding-top: 14px; color: #0f172a; }
+
+    /* ── v1098: line-item cards — details LEFT, photo RIGHT (fits desktop + phone) ── */
+    .li-list { margin-top: 4px; }
+    .li-card { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid #eef0f3; }
+    .li-pick-col { flex: none; padding-top: 2px; }
+    .li-body { flex: 1; min-width: 0; }
+    .li-name { font-weight: 700; font-size: 15px; color: #0f172a; line-height: 1.3; }
+    .li-desc { font-size: 13px; color: #64748b; margin-top: 3px; line-height: 1.45; }
+    .li-metarow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 7px; }
+    .li-qtytxt { font-size: 12px; color: #94a3b8; white-space: nowrap; }
+    .li-metarow .li-amt { font-weight: 800; font-size: 15px; color: #0f172a; white-space: nowrap; }
+    .li-badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; vertical-align: middle; letter-spacing: .03em; margin-left: 4px; }
+    .li-photo-col { flex: none; position: relative; }
+    .li-photo-col img { width: 92px; height: 92px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; display: block; }
+    .li-photo-more { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,.62); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 9px; }
+    @media (min-width: 600px) { .li-photo-col img { width: 128px; height: 128px; } }
+    .li-totals { margin-top: 12px; border-top: 2px solid #eef0f3; padding-top: 12px; }
+    .li-trow { display: flex; justify-content: space-between; font-size: 14px; color: #475569; padding: 3px 0; }
+    .li-trow span:last-child { font-weight: 600; color: #0f172a; }
+    .li-total-row { font-size: 18px; font-weight: 800; color: #0f172a; border-top: 1px solid #eef0f3; margin-top: 6px; padding-top: 10px; }
+    .li-total-row span { font-weight: 800; }
+
+    /* ── Buttons ── */
+    .actions { margin-top: 26px; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px 24px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; margin-bottom: 12px; transition: all .15s; line-height: 1; }
+    .btn:active { transform: scale(.99); }
+    .btn-approve { background: #1a3c12; color: #fff; }
+    .btn-approve:hover { background: #245219; }
+    .btn-changes { background: #fff; color: #1a3c12; border: 1px solid #d1d5db; }
+    .btn-changes:hover { background: #f5f7f3; border-color: #1a3c12; }
+    .btn-disabled { background: #e5e7eb; color: #94a3b8; cursor: default; }
+    .btn-decline { background: #fff; color: #b32d2d; border: 1px solid #fca5a5; }
+    .btn-decline:hover { background: #fef2f2; }
+
+    /* ── Sticky bottom CTA bar (mobile + desktop, always visible) ── */
+    .sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.95); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-top: 1px solid #e5e7eb; box-shadow: 0 -4px 16px rgba(0,0,0,.04); padding: 12px 16px; z-index: 50; }
+    .sticky-cta-inner { max-width: 760px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
+    .sticky-cta .btn { margin-bottom: 0; padding: 14px 22px; }
+    .sticky-cta-primary { flex: 1; }
+    .sticky-cta-secondary { flex: 0 0 auto; padding: 14px 18px !important; }
+
+    /* Forms / textareas */
+    .changes-form { display: none; margin-top: 8px; padding: 16px; background: #f6f7f9; border-radius: 10px; }
+    textarea { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; line-height: 1.5; }
+    textarea:focus { outline: none; border-color: #1a3c12; box-shadow: 0 0 0 3px rgba(26,60,18,.1); }
+
+    /* Success / loader / error */
+    .success-card { text-align: center; padding: 48px 24px; }
+    .success-icon { font-size: 56px; margin-bottom: 16px; }
+    .success-card h2 { font-size: 26px; color: #1a3c12; margin-bottom: 10px; font-weight: 800; }
+    .success-card p { color: #475569; font-size: 15px; line-height: 1.7; max-width: 380px; margin: 0 auto; }
+    .footer { text-align: center; font-size: 12px; color: #94a3b8; padding: 14px 0 28px; }
+    .footer a { color: #1a3c12; text-decoration: none; font-weight: 600; }
+    .loader { text-align: center; padding: 100px 20px; }
+    .loader .icon { font-size: 48px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .error-card { text-align: center; padding: 48px 20px; }
+    .already-approved { background: #e8f5e9; border-radius: 12px; padding: 20px; text-align: center; margin-top: 20px; border: 1px solid #a5d6a7; }
+
+    /* Signature pad */
+    .sig-canvas {
+      width: 100%; height: 150px; border: 1px solid #d1d5db; border-radius: 10px;
+      background: #fff; touch-action: none; cursor: crosshair; display: block;
+    }
+    .sig-section { display: none; margin-top: 18px; border-top: 1px solid #eef0f3; padding-top: 18px; }
+    .sig-clear { background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; margin-top: 4px; text-decoration: underline; }
+    .sig-legal { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.5; }
+    .sig-toggle { background: none; border: none; color: #1a3c12; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 4px 0; margin-bottom: 6px; font-weight: 600; }
+    .sig-typed-input {
+      width: 100%; height: 80px; border: 1px solid #d1d5db; border-radius: 10px;
+      background: #fff; padding: 12px 16px; font-size: 38px; line-height: 1.2;
+      font-family: 'Brush Script MT', 'Lucida Handwriting', cursive; color: #1a3c12;
+      display: block;
+    }
+    .sig-typed-input:focus { outline: none; border-color: #1a3c12; box-shadow: 0 0 0 3px rgba(26,60,18,.1); }
+
+    /* HIC legal disclosures */
+    .hic-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 22px; font-size: 11px; line-height: 1.6; color: #475569; }
+    .hic-box p { margin: 0 0 8px; }
+    .hic-box p:last-child { margin-bottom: 0; }
+    .hic-box strong { color: #0f172a; }
+
+    /* Photos */
+    .li-photos { display: grid; grid-template-columns: repeat(auto-fill, 64px); gap: 6px; margin-top: 8px; }
+    .li-photos a { display: block; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; }
+    .li-photos img { width: 64px; height: 64px; object-fit: cover; display: block; border: 1px solid #e5e7eb; border-radius: 10px; }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .page { padding: 14px 12px; }
+      .doc-pad { padding: 20px 18px 18px; }
+      .header h1 { font-size: 22px; }
+    }
+
+    /* Download / Print buttons (screen only) */
+    .pdf-row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 4px; }
+    .pdf-btn { display:inline-flex; align-items:center; gap:6px; background:#1a3c12; color:#fff; border:none; border-radius:980px; padding:10px 16px; font-size:13.5px; font-weight:700; cursor:pointer; }
+    .pdf-btn:hover { background:#245219; }
+    .pdf-btn-alt { background:#fff; color:#1a3c12; border:1.5px solid #1a3c12; }
+    .pdf-btn-alt:hover { background:#f0f7ed; }
+
+    /* ── PRINT / SAVE-AS-PDF: clean one-page estimate, no photos, no buttons ── */
+    @media print {
+      @page { size: letter; margin: 14mm; }
+      html, body { background: #fff !important; font-size: 11px !important; }
+      body * { visibility: visible; }
+      .no-print, .pdf-row, .actions, .already-approved, .footer,
+      .sig-pad, .sig-typed-input, .sig-toggle, #err-msg,
+      button, input, textarea, canvas { display: none !important; }
+      /* COMPACT (default print): no photos at all → clean 1-pager */
+      .q-gallery, .li-photos { display: none !important; }
+      /* FULL PDF mode (data-print="full"): bring photos back, one per line, sized right */
+      body[data-print="full"] .li-photos { display: block !important; float: right; margin: 0 0 6px 10px; }
+      body[data-print="full"] .li-photos a { width: 96px !important; height: 96px !important; }
+      body[data-print="full"] .li-photos a:not(:first-child) { display: none !important; }  /* one photo per line item */
+      body[data-print="full"] .li-photos img { width: 96px !important; height: 96px !important; }
+      body[data-print="full"] .q-gallery { display: block !important; }
+      body[data-print="full"] .q-gallery img { height: 92px !important; }
+      .doc-card { box-shadow: none !important; border: 1px solid #ccc !important; border-radius: 0 !important; margin: 0 !important; page-break-inside: avoid; }
+      .doc-pad { padding: 0 !important; }
+      .doc-accent { display: none !important; }
+      .header h1 { font-size: 20px !important; }
+      table { page-break-inside: avoid; font-size: 11px !important; }
+      td, th { padding: 5px 6px !important; }
+      .hic-box { font-size: 8.5px !important; line-height: 1.4 !important; margin-top: 10px !important; }
+      a { color: #111 !important; text-decoration: none !important; }
+      .meta-row { grid-template-columns: 1fr; gap: 10px; }
+      .line-table th:nth-child(3), .line-table td:nth-child(3) { display: none; }
+      .sticky-cta { padding: 10px 12px; }
+      .sticky-cta .btn { padding: 14px 14px; font-size: 14px; }
+    }
+  </style>
+  <script src="branding.js"></script>
+</head>
+<body>
+  <div class="page">
+    <div id="app">
+      <div class="loader">
+        <div class="icon">🌳</div>
+        <div style="color:#666;font-size:15px;">Loading your quote...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+<script src="tenant-slug-bootstrap.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
+  <script>
+    var SUPABASE_URL = 'https://ltpivkqahvplapyagljt.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
+    var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    var params = new URLSearchParams(window.location.search);
+    var quoteId  = params.get('id');
+    var urlToken = params.get('token');
+    var noSig    = params.get('nosig') === '1';          // signature not required
+    var tcUrl    = params.get('tc') || '';               // T&C URL
+    var docTerm  = params.get('term') === 'estimate' ? 'Estimate' : 'Quote';  // "Quote" or "Estimate"
+
+    function el(id) { return document.getElementById(id); }
+    function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function money(n) { return '$' + (+(n||0)).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+    function dateShort(d) { if (!d) return '—'; var dt = new Date(d); return (dt.getMonth()+1) + '/' + dt.getDate() + '/' + dt.getFullYear(); }
+
+    // RLS gateway — was: direct anon SELECT exposed every quote in the DB to any
+    // anon-key holder. Now: POST {id, token} to quote-fetch edge fn which does
+    // service-role lookup + token compare + strips the token from the response.
+    var FN_BASE = SUPABASE_URL + '/functions/v1';
+    async function loadQuote() {
+      if (!quoteId || !urlToken) { showError('Invalid link — please check your email for the correct link.'); return; }
+      try {
+        var r = await fetch(FN_BASE + '/quote-fetch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: quoteId, token: urlToken })
+        });
+        var data = await r.json();
+        if (!r.ok || !data || !data.ok || !data.quote) {
+          showError(((data && data.error) || 'Quote not found') + '. The link may be expired or incorrect.<br><br>Please reply to your quote email and we\'ll resend it.');
+          return;
+        }
+        // White-label: rebrand to THIS quote's tenant before rendering the
+        // document, so a friend's customer never sees Second Nature Tree.
+        // v1072 preferred path: whitelisted tenant branding rides with the quote
+        // (anon tenants reads are RLS-blocked). Fallback keeps the old resolver.
+        try {
+          if (data.tenant && window.bmApplyBranding) window.bmApplyBranding(data.tenant);
+          else if (window.bmApplyTenantBranding) await window.bmApplyTenantBranding(data.quote.tenant_id);
+        } catch(e) {}
+        try { if (window.bmApplyLineBrand) window.bmApplyLineBrand(data.quote); } catch(e) {}
+        renderQuote(data.quote);
+      } catch(e) {
+        showError('Network error loading quote. Please contact us if this persists.');
+      }
+    }
+
+    function renderQuote(q) {
+      var isApproved = q.status === 'approved' || q.status === 'converted';
+      var isDeclined = q.status === 'declined';
+
+      var statusBadge = isApproved
+        ? '<span class="badge badge-approved">✓ Approved</span>'
+        : isDeclined
+          ? '<span class="badge badge-declined">Declined</span>'
+          : '<span class="badge badge-sent">Awaiting Your Response</span>';
+
+      // Line items — v588+ each row gets a checkbox so the customer can
+      // opt-in/opt-out of individual services. Total recalculates live.
+      // If quote has only 1 line item, hide the checkbox (no-op for them).
+      var items = q.line_items || [];
+      var lineRows = '';
+      var hasOptional = items.some(function(it){ return it && it.optional === true; });
+      var allowSelection = (items.length > 1 || hasOptional) && !isApproved && !isDeclined;
+      if (items.length) {
+        items.forEach(function(item, idx) {
+          var amt = item.amount || ((item.qty || 1) * (item.rate || 0));
+          // v1098: photo goes in a fixed-width column on the RIGHT (big),
+          // details clean on the LEFT — fits both desktop and phone.
+          var photoRight = '';
+          var _ph = Array.isArray(item.photos) ? item.photos.filter(Boolean) : [];
+          if (_ph.length) {
+            var first = esc(_ph[0]);
+            photoRight = '<div class="li-photo-col"><a href="' + first + '" target="_blank" rel="noopener"><img src="' + first + '" alt="line item photo" loading="lazy"></a>'
+              + (_ph.length > 1 ? '<div class="li-photo-more">+' + (_ph.length - 1) + '</div>' : '')
+              + '</div>';
+          }
+          var isOptional = item.optional === true;
+          var amtStr = Number(amt).toFixed(2);
+          // v1097: stacked card layout (was a 6-col table that crushed on phones).
+          var pick = '';
+          if (allowSelection) {
+            if (hasOptional && !isOptional) {
+              pick = '<input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" data-required="1" checked disabled title="Included" style="width:20px;height:20px;accent-color:#1a3c12;opacity:.45;">';
+            } else {
+              var defChecked = hasOptional ? '' : 'checked';
+              pick = '<input type="checkbox" class="li-pick" data-idx="' + idx + '" data-amt="' + amtStr + '" ' + defChecked + ' onchange="recalcSelected()" style="width:20px;height:20px;cursor:pointer;accent-color:#1a3c12;">';
+            }
+          }
+          var optBadge = isOptional ? ' <span class="li-badge">OPTIONAL</span>' : '';
+          lineRows += '<div class="li-card" data-li-row="' + idx + '"' + (isOptional ? ' style="background:#fffdf5;"' : '') + '>'
+            + (pick ? '<div class="li-pick-col">' + pick + '</div>' : '')
+            + '<div class="li-body">'
+            +   '<div class="li-name">' + esc(item.service || 'Service') + optBadge + '</div>'
+            +   (item.description ? '<div class="li-desc">' + esc(item.description) + '</div>' : '')
+            +   '<div class="li-metarow"><span class="li-qtytxt">' + (item.qty || 1) + ' × ' + money(item.rate) + '</span><span class="li-amt">' + money(amt) + '</span></div>'
+            + '</div>'
+            + photoRight
+            + '</div>';
+        });
+      } else {
+        lineRows = '<div style="color:#999;font-size:13px;padding:16px 0;">See description above for scope of work.</div>';
+      }
+      // ── Full photo gallery: flatten ALL line-item photos, dedupe, show every one at the bottom ──
+      var _seen = {}, _allPhotos = [];
+      items.forEach(function(it){ (it.photos||[]).forEach(function(u){ if(u && !_seen[u]){ _seen[u]=1; _allPhotos.push(u); } }); if(it.photo && !_seen[it.photo]){ _seen[it.photo]=1; _allPhotos.push(it.photo); } });
+      var galleryHtml = '';
+      if (_allPhotos.length) {
+        galleryHtml = '<div class="q-gallery" style="margin-top:26px;padding-top:18px;border-top:1px solid #e2e8f0;">'
+          + '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1a3c12;margin-bottom:10px;">📸 Site &amp; Damage Photos (' + _allPhotos.length + ')</div>'
+          + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">'
+          + _allPhotos.map(function(u){ var s=esc(u); return '<a href="'+s+'" target="_blank" rel="noopener" style="display:block;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;"><img src="'+s+'" loading="lazy" alt="site photo" style="width:100%;height:110px;object-fit:cover;display:block;"></a>'; }).join('')
+          + '</div></div>';
+      }
+      window._allowSelection = allowSelection;
+      // Banner above table when selection is enabled
+      if (allowSelection) {
+        var pickMsg = hasOptional
+          ? '➕ Check any <b>optional</b> add-ons you\'d like — the total updates as you select. Items without a checkbox are already included.'
+          : '☑️ Tap to opt out of any line item you don\'t want — the total below updates as you select.';
+        window._pickHelpHtml = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#92400e;">' + pickMsg + '</div>';
+      } else {
+        window._pickHelpHtml = '';
+      }
+
+      // Expiry
+      var expiryHtml = '';
+      if (q.expires_at) {
+        var expDate = new Date(q.expires_at);
+        var daysLeft = Math.ceil((expDate - new Date()) / 86400000);
+        if (daysLeft < 0) {
+          expiryHtml = '<div style="background:#ffebee;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#c62828;font-weight:600;">⚠️ This quote expired on ' + dateShort(q.expires_at) + '. Please contact us for a fresh quote.</div>';
+          isDeclined = true; // prevent approval of expired quotes
+        } else if (daysLeft <= 7) {
+          expiryHtml = '<div style="background:#fff3e0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#e07c24;font-weight:600;">⏳ This quote expires in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + ' (' + dateShort(q.expires_at) + ')</div>';
+        }
+      }
+
+      // Deposit notice
+      var depositHtml = '';
+      if (q.deposit_required && !q.deposit_paid) {
+        var depDue = q.deposit_due || 0;
+        depositHtml = '<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:14px;margin-top:16px;">'
+          + '<div style="font-weight:700;font-size:14px;color:#1a3c12;margin-bottom:4px;">💳 Deposit Required</div>'
+          + '<div style="font-size:13px;color:#333;margin-bottom:10px;">A deposit of <strong>' + money(depDue) + '</strong> is required to confirm this quote and schedule your service.</div>'
+          + '<a href="pay.html?type=deposit&id=' + esc(q.id) + '" class="btn btn-approve" style="text-decoration:none;display:flex;justify-content:center;">Pay Deposit ' + money(depDue) + ' to Approve</a>'
+          + '</div>';
+      }
+
+      // Action buttons
+      var actionHtml = '';
+      if (isApproved) {
+        actionHtml = '<div class="already-approved">'
+          + '<div style="font-size:24px;margin-bottom:6px;">✅</div>'
+          + '<div style="font-weight:700;color:#2e7d32;font-size:16px;">' + docTerm + ' Approved</div>'
+          + '<div style="font-size:13px;color:#666;margin-top:4px;">We\'ll be in touch to schedule your service.</div>'
+          + '</div>'
+          + '<div id="portal-cta" style="margin-top:16px;padding:18px;background:#f0f7ff;border:1px solid #cfe2ff;border-radius:12px;">'
+          + '<div style="font-size:14px;font-weight:700;color:#1e3a8a;margin-bottom:6px;">📁 Track everything in your portal</div>'
+          + '<div style="font-size:13px;color:#475569;line-height:1.5;margin-bottom:10px;">Get a portal link to view this quote, future quotes, invoices, job history, and photos any time.</div>'
+          + '<div id="portal-form" style="display:flex;gap:6px;flex-wrap:wrap;">'
+          + '<input id="portal-email" type="email" inputmode="email" placeholder="your@email.com" value="' + esc(q.client_email || '') + '" style="flex:1;min-width:180px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;">'
+          + '<button onclick="sendPortalLink()" id="portal-btn" style="background:#1e3a8a;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Send link</button>'
+          + '</div>'
+          + '<div id="portal-msg" style="font-size:13px;margin-top:8px;display:none;"></div>'
+          + '</div>';
+      } else if (!isDeclined && !q.deposit_required) {
+        var tcConsentText = 'I have reviewed and agree to the scope of work, pricing, and terms described in this ' + docTerm.toLowerCase() + '.'
+          + (tcUrl ? ' <a href="' + esc(tcUrl) + '" target="_blank" style="color:#1a3c12;">View Terms &amp; Conditions</a>' : '');
+        actionHtml = '<div class="actions">'
+          + (noSig
+              // ── No-signature mode: direct approve button ──────────────────
+              ? '<button class="btn btn-approve" id="btn-approve-main" onclick="confirmApproveNoSig()">✅ Approve This ' + docTerm + '</button>'
+              // ── Signature mode (default): signature pad ───────────────────
+              : '<button class="btn btn-approve" id="btn-approve-main" onclick="showSignaturePad()">✅ Approve This ' + docTerm + '</button>'
+            )
+          + '<div class="sig-section" id="sig-section">'
+          + '<div class="section-label" style="margin-bottom:8px;">Sign to Approve</div>'
+          + '<button type="button" class="sig-toggle" id="sig-toggle-btn" onclick="toggleSigMode()">⌨ Type signature instead</button>'
+          + '<div id="sig-draw-wrap">'
+          + '<canvas id="sig-canvas" class="sig-canvas" width="700" height="200"></canvas>'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">'
+          + '<div style="font-size:12px;color:#aaa;">Draw your signature above</div>'
+          + '<button class="sig-clear" onclick="clearSignature()">✕ Clear</button>'
+          + '</div>'
+          + '</div>'
+          + '<div id="sig-typed-wrap" style="display:none;">'
+          + '<input type="text" id="sig-typed" class="sig-typed-input" placeholder="Type your signature" autocomplete="off" aria-label="Type your signature">'
+          + '<div style="font-size:12px;color:#aaa;margin-top:4px;">Type your full legal name as your signature</div>'
+          + '</div>'
+          + '<div style="margin-top:14px;">'
+          + '<div class="section-label">Full Name</div>'
+          + '<input type="text" id="sig-name" placeholder="Type your full name" style="width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;font-family:inherit;margin-top:4px;">'
+          + '</div>'
+          + '<label style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer;">'
+          + '<input type="checkbox" id="sig-consent" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;">'
+          + '<span style="font-size:12px;color:#666;line-height:1.5;">I consent to signing this document electronically. I acknowledge that my electronic signature has the same legal effect as a handwritten signature under the federal ESIGN Act and ' + esc(BM_CONFIG.state) + ' ESRA. ' + tcConsentText + '</span>'
+          + '</label>'
+          + '<div style="display:flex;gap:8px;margin-top:12px;">'
+          + '<button class="btn btn-approve" style="flex:1;" onclick="confirmApprove()">✅ Confirm &amp; Approve</button>'
+          + '<button class="btn" style="padding:10px 16px;background:#f5f5f5;color:#333;border:1px solid #ddd;" onclick="cancelSignature()">Cancel</button>'
+          + '</div>'
+          + '</div>'
+          + '<a href="https://branchmanager.app/onboarding/service-agreement.html?id=' + esc(window._quoteId||quoteId) + '&token=' + esc(urlToken||'') + '" target="_blank" class="btn btn-changes" style="text-decoration:none;display:flex;justify-content:center;">📄 Review &amp; Sign Service Agreement</a>'
+          + '<button class="btn btn-changes" onclick="toggleChanges()">💬 Request Changes</button>'
+          + '<div class="changes-form" id="changes-form">'
+          + '<div class="section-label" style="margin-bottom:8px;">What would you like changed?</div>'
+          + '<textarea id="changes-text" rows="4" placeholder="e.g. Please also quote removing the oak in the backyard, and can you include stump grinding?"></textarea>'
+          + '<button class="btn btn-approve" style="margin-top:10px;" onclick="submitChanges()">Send Request</button>'
+          + '</div>'
+          + '<button class="btn btn-decline" onclick="toggleDecline()">❌ Decline This ' + docTerm + '</button>'
+          + '<div class="changes-form" id="decline-form">'
+          + '<div class="section-label" style="margin-bottom:8px;">Reason — optional</div>'
+          + '<textarea id="decline-text" rows="3" placeholder="Let us know why (optional). This helps us improve."></textarea>'
+          + '<button class="btn btn-decline" style="margin-top:10px;" onclick="submitDecline()">Confirm Decline</button>'
+          + '</div>'
+          + '</div>'
+          + depositHtml
+          + HIC_HTML;
+      } else if (!isDeclined) {
+        actionHtml = depositHtml
+          + '<div style="margin-top:8px;">'
+          + '<button class="btn btn-changes" onclick="toggleChanges()">💬 Request Changes Instead</button>'
+          + '<div class="changes-form" id="changes-form">'
+          + '<div class="section-label" style="margin-bottom:8px;">What would you like changed?</div>'
+          + '<textarea id="changes-text" rows="4" placeholder="Describe what you\'d like us to change..."></textarea>'
+          + '<button class="btn btn-approve" style="margin-top:10px;" onclick="submitChanges()">Send Request</button>'
+          + '</div>'
+          + '<button class="btn btn-decline" onclick="toggleDecline()">❌ Decline This ' + docTerm + '</button>'
+          + '<div class="changes-form" id="decline-form">'
+          + '<div class="section-label" style="margin-bottom:8px;">Reason — optional</div>'
+          + '<textarea id="decline-text" rows="3" placeholder="Let us know why (optional). This helps us improve."></textarea>'
+          + '<button class="btn btn-decline" style="margin-top:10px;" onclick="submitDecline()">Confirm Decline</button>'
+          + '</div></div>'
+          + HIC_HTML;
+      } else {
+        actionHtml = HIC_HTML;
+      }
+      if (isApproved) actionHtml = actionHtml + HIC_HTML;
+
+      // Expiry info for meta grid
+      var expiryMeta = q.expires_at
+        ? (function() { var d = Math.ceil((new Date(q.expires_at) - new Date()) / 86400000); return d > 0 ? d + ' days left' : 'Expired'; })()
+        : '30 days';
+
+      // v635: clean 2-card meta + sticky CTA layout. Every element id
+      // is preserved (sig-section, btn-approve-main, ft-subtotal, ft-tax,
+      // ft-total, changes-form, decline-form, etc.) so existing JS keeps working.
+      var clientLine = esc(q.client_name || '');
+      var phoneLine  = esc(q.client_phone || '');
+      var emailLine  = esc(q.client_email || '');
+
+      el('app').innerHTML = ''
+        + '<div class="doc-card">'
+        +   '<div class="doc-accent"></div>'
+        +   '<div class="doc-pad">'
+        +     '<div class="header">'
+        +       '<div class="header-brand">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
+        +       '<div class="header-status">' + statusBadge + '</div>'
+        +     '</div>'
+        +     '<h1>' + docTerm + ' #' + esc(q.quote_number || '') + '</h1>'
+        +     '<div class="pdf-row no-print">'
+        +       '<button class="pdf-btn" onclick="var b=document.body;b.removeAttribute(\'data-print\');window.print();" title="Clean 1-page estimate, no photos — for insurance or printing">🖨️ Print <span style="opacity:.75;font-weight:500;">1-page, no photos</span></button>'
+        +       '<button class="pdf-btn pdf-btn-alt" onclick="var b=document.body;b.setAttribute(\'data-print\',\'full\');window.print();b.removeAttribute(\'data-print\');" title="Full estimate with photos — for emailing or records">⬇️ Save PDF <span style="opacity:.75;font-weight:500;">with photos</span></button>'
+        +     '</div>'
+        +     expiryHtml
+
+        // 2-card meta — client info left, quote meta right
+        +     '<div class="meta-row">'
+        +       '<div class="meta-card"><div class="meta-row-rows">'
+        +         (clientLine ? '<div><div class="meta-label">Prepared for</div><div class="meta-val" style="font-size:16px;font-weight:700;">' + clientLine + '</div></div>' : '')
+        +         '<div><div class="meta-label">Property</div><div class="meta-val">' + esc(q.property || '—') + '</div></div>'
+        +         (phoneLine ? '<div><div class="meta-label">Phone</div><div class="meta-val">' + phoneLine + '</div></div>' : '')
+        +         (emailLine ? '<div><div class="meta-label">Email</div><div class="meta-val">' + emailLine + '</div></div>' : '')
+        +       '</div></div>'
+        +       '<div class="meta-card"><div class="meta-row-rows">'
+        +         '<div><div class="meta-label">' + docTerm + ' date</div><div class="meta-val">' + dateShort(q.created_at) + '</div></div>'
+        +         '<div><div class="meta-label">Valid until</div><div class="meta-val">' + expiryMeta + '</div></div>'
+        +         '<div><div class="meta-label">Total</div><div class="meta-val meta-val-big" id="meta-total">' + money(q.total) + '</div></div>'
+        +       '</div></div>'
+        +     '</div>'
+
+        +     (q.description ? '<div class="desc-box">' + esc(q.description).replace(/\n/g,'<br>') + '</div>' : '')
+        +     (function() {
+                var vUrl = q.videoUrl || q.video_url;
+                if (!vUrl) return '';
+                var safeUrl = vUrl.replace('watch?v=','embed/').replace('youtu.be/','youtube.com/embed/');
+                if (!safeUrl.match(/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//)) return '';
+                return '<div style="margin-bottom:22px;"><div class="section-label">Property walkthrough</div><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;"><iframe src="' + esc(safeUrl) + '" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div></div>';
+              })()
+
+        +     '<div class="section-label" style="margin-top:6px;">Services</div>'
+        +     (window._pickHelpHtml || '')
+        +     '<div class="li-list">' + lineRows + '</div>'
+        +     (items.length ? '<div class="li-totals">'
+              + (q.subtotal && q.tax_rate ? '<div class="li-trow"><span>Subtotal</span><span id="ft-subtotal">' + money(q.subtotal) + '</span></div>' : '')
+              + (q.tax_rate ? '<div class="li-trow"><span>Tax (' + q.tax_rate + '%)</span><span id="ft-tax">' + money(q.tax_amount || 0) + '</span></div>' : '')
+              + '<div class="li-trow li-total-row"><span>Total</span><span id="ft-total">' + money(q.total) + '</span></div>'
+              + '</div>' : '')
+        +     galleryHtml
+        +     actionHtml
+        +   '</div>' // .doc-pad
+        + '</div>' // .doc-card
+        + '<div class="footer">Questions? <a href="tel:' + BM_CONFIG.phoneDigits + '">📞 ' + esc(BM_CONFIG.phone) + '</a> &middot; <a href="mailto:' + esc(BM_CONFIG.email) + '">' + esc(BM_CONFIG.email) + '</a></div>';
+
+      // Store quote data for button handlers
+      window._quoteId = q.id;
+      window._quoteData = q;
+      // v1095: reflect required-only total on load when optional add-ons start unchecked.
+      if (window._allowSelection) { setTimeout(function(){ try { recalcSelected(); } catch(e){} }, 0); }
+    }
+
+    var QUOTE_NOTIFY_URL = 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1/quote-notify';
+
+    // ── NY Westchester/Putnam HIC required disclosures (≥$500 jobs) ─────
+    var HIC_HTML = '<div class="hic-box" role="region" aria-label="Required legal disclosures">'
+      + '<p><strong>Right to Cancel.</strong> You, the buyer, may cancel this transaction at any time prior to midnight of the third business day after the date of this contract. To cancel, deliver a signed and dated written notice of cancellation to {{business_name}}, {{address_full}}, or email {{email}}. Cancellation must be received within three business days.</p>'
+      + '<p><strong>Mechanic\'s Lien Notice.</strong> Under New York law, this contractor or any subcontractor who performs work or supplies materials for your home may have a lien against your real property if not paid. You have the right to require that the contractor post a payment bond or maintain a separate bank account for your funds.</p>'
+      + '<p><strong>Licensed &amp; Insured.</strong> Westchester County HIC #WC-32079 · Putnam County HIC #PC-50644</p>'
+      + '</div>';
+
+    // ── Signature pad ──────────────────────────────────────────
+    var _sigDrawing = false;
+    var _sigMode = 'draw'; // 'draw' | 'typed'
+
+    // Toggle between drawn and typed signature
+    function toggleSigMode() {
+      var drawWrap = el('sig-draw-wrap');
+      var typedWrap = el('sig-typed-wrap');
+      var btn = el('sig-toggle-btn');
+      if (!drawWrap || !typedWrap) return;
+      if (_sigMode === 'draw') {
+        _sigMode = 'typed';
+        drawWrap.style.display = 'none';
+        typedWrap.style.display = 'block';
+        if (btn) btn.textContent = '✎ Draw signature instead';
+        var inp = el('sig-typed');
+        if (inp) inp.focus();
+      } else {
+        _sigMode = 'draw';
+        drawWrap.style.display = 'block';
+        typedWrap.style.display = 'none';
+        if (btn) btn.textContent = '⌨ Type signature instead';
+      }
+    }
+
+    // Render typed signature to a canvas data URL so storage path is unchanged
+    function _typedSigToDataURL(text) {
+      var c = document.createElement('canvas');
+      c.width = 700; c.height = 200;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.fillStyle = '#1a3c12';
+      ctx.font = "italic 96px 'Brush Script MT', 'Lucida Handwriting', cursive";
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, c.width / 2, c.height / 2);
+      return c.toDataURL('image/png');
+    }
+
+    function showSignaturePad() {
+      var sec = el('sig-section');
+      var mainBtn = el('btn-approve-main');
+      if (!sec) return;
+      sec.style.display = 'block';
+      if (mainBtn) mainBtn.style.display = 'none';
+      // Init canvas after it's visible
+      setTimeout(function() {
+        var canvas = el('sig-canvas');
+        if (!canvas || canvas._inited) return;
+        canvas._inited = true;
+        var ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#1a3c12';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        function pos(e) {
+          var r = canvas.getBoundingClientRect();
+          var sx = canvas.width / r.width, sy = canvas.height / r.height;
+          var cx = e.touches ? e.touches[0].clientX : e.clientX;
+          var cy = e.touches ? e.touches[0].clientY : e.clientY;
+          return { x: (cx - r.left) * sx, y: (cy - r.top) * sy };
+        }
+        canvas.addEventListener('mousedown', function(e) { _sigDrawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); });
+        canvas.addEventListener('mousemove', function(e) { if (!_sigDrawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+        canvas.addEventListener('mouseup', function() { _sigDrawing = false; });
+        canvas.addEventListener('mouseleave', function() { _sigDrawing = false; });
+        canvas.addEventListener('touchstart', function(e) { e.preventDefault(); _sigDrawing = true; ctx.beginPath(); var p = pos(e); ctx.moveTo(p.x, p.y); }, { passive: false });
+        canvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!_sigDrawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+        canvas.addEventListener('touchend', function() { _sigDrawing = false; });
+      }, 50);
+    }
+
+    function clearSignature() {
+      var canvas = el('sig-canvas');
+      if (!canvas) return;
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function cancelSignature() {
+      // Hide the signature pad, show the main Approve button again
+      var sec = el('sig-section');
+      if (sec) sec.style.display = 'none';
+      var mainBtn = el('btn-approve-main');
+      if (mainBtn) mainBtn.style.display = '';
+      // Clear any drawing
+      clearSignature();
+      var nameInput = el('sig-name');
+      if (nameInput) nameInput.value = '';
+      var consent = el('sig-consent');
+      if (consent) consent.checked = false;
+    }
+
+    function _sigIsEmpty() {
+      var canvas = el('sig-canvas');
+      if (!canvas) return true;
+      var data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      for (var i = 3; i < data.length; i += 4) { if (data[i] > 0) return false; }
+      return true;
+    }
+
+    // v588: line-item selection — customer can opt out of individual rows.
+    // recalcSelected runs on every checkbox toggle; gatherSelected returns
+    // the picked-items + computed totals for the approve POST.
+    function recalcSelected() {
+      var q = window._quoteData || {};
+      var picks = document.querySelectorAll('.li-pick');
+      var subtotal = 0;
+      picks.forEach(function(cb) {
+        var amt = parseFloat(cb.getAttribute('data-amt') || '0');
+        var row = document.querySelector('[data-li-row="' + cb.getAttribute('data-idx') + '"]');
+        if (cb.checked) {
+          subtotal += amt;
+          if (row) row.style.opacity = '1';
+        } else {
+          if (row) row.style.opacity = '0.4';
+        }
+      });
+      var taxRate = Number(q.tax_rate || 0);
+      var tax = subtotal * (taxRate / 100);
+      var total = subtotal + tax;
+      var sub = document.getElementById('ft-subtotal');
+      var taxEl = document.getElementById('ft-tax');
+      var totEl = document.getElementById('ft-total');
+      if (sub) sub.textContent = money(subtotal);
+      if (taxEl) taxEl.textContent = money(tax);
+      if (totEl) totEl.textContent = money(total);
+      var metaTot = document.getElementById('meta-total');
+      if (metaTot) metaTot.textContent = money(total);
+      // Disable approve if zero items selected
+      var allUnchecked = Array.from(picks).every(function(cb){ return !cb.checked; });
+      var approveBtn = document.getElementById('btn-approve-main');
+      if (approveBtn) {
+        approveBtn.disabled = allUnchecked;
+        approveBtn.style.opacity = allUnchecked ? '0.5' : '1';
+        approveBtn.style.cursor = allUnchecked ? 'not-allowed' : 'pointer';
+      }
+    }
+    function gatherSelected() {
+      if (!window._allowSelection) return null; // single-item or already-approved
+      var q = window._quoteData || {};
+      var allItems = q.line_items || [];
+      var selected = [];
+      var subtotal = 0;
+      document.querySelectorAll('.li-pick').forEach(function(cb) {
+        if (!cb.checked) return;
+        var idx = parseInt(cb.getAttribute('data-idx'), 10);
+        var item = allItems[idx];
+        if (item) {
+          selected.push(item);
+          subtotal += parseFloat(cb.getAttribute('data-amt') || '0');
+        }
+      });
+      var taxRate = Number(q.tax_rate || 0);
+      var tax = subtotal * (taxRate / 100);
+      return {
+        line_items: selected,
+        subtotal: Number(subtotal.toFixed(2)),
+        tax_amount: Number(tax.toFixed(2)),
+        total: Number((subtotal + tax).toFixed(2)),
+        original_count: allItems.length,
+        selected_count: selected.length
+      };
+    }
+    window.recalcSelected = recalcSelected;
+    window.gatherSelected = gatherSelected;
+
+    async function confirmApprove() {
+      var name = (el('sig-name') ? el('sig-name').value.trim() : '');
+      if (!name) { alert('Please type your full name to confirm.'); return; }
+      var sigData = '';
+      if (_sigMode === 'typed') {
+        var typed = el('sig-typed') ? el('sig-typed').value.trim() : '';
+        if (!typed) { alert('Please type your signature above.'); return; }
+        sigData = _typedSigToDataURL(typed);
+      } else {
+        if (_sigIsEmpty()) { alert('Please draw your signature above.'); return; }
+        var canvas = el('sig-canvas');
+        sigData = canvas ? canvas.toDataURL('image/png') : '';
+      }
+      var consentBox = document.getElementById('sig-consent');
+      if (consentBox && !consentBox.checked) { alert('Please check the consent box to proceed.'); return; }
+      var btn = document.querySelector('#sig-section .btn-approve');
+      if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; btn.className = 'btn btn-disabled'; }
+
+      // Audit trail: IP, user agent, document hash, quote snapshot
+      var signedIP = '';
+      try { var ipRes = await fetch('https://api.ipify.org?format=json'); var ipData = await ipRes.json(); signedIP = ipData.ip || ''; } catch(e) {}
+      var signedUA = navigator.userAgent || '';
+      var q = window._quoteData || {};
+      var quoteSnapshot = JSON.stringify({ description: q.description, line_items: q.line_items, total: q.total, tax_rate: q.tax_rate, terms: 'standard', property: q.property });
+      var hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(quoteSnapshot));
+      var hashArray = Array.from(new Uint8Array(hashBuffer));
+      var quoteHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+
+      try {
+        // If multiple line items shown with checkboxes, send the customer's
+        // selection so the server can recompute accepted_total. v604.
+        var picked = (typeof gatherSelected === 'function') ? gatherSelected() : null;
+        // Token-gated update via quote-update edge fn (replaces direct PATCH).
+        var ur = await fetch(FN_BASE + '/quote-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: window._quoteId, token: urlToken, action: 'approve',
+            signed_name: name,
+            client_signature: sigData,
+            signed_ip: signedIP,
+            signed_user_agent: signedUA,
+            signed_quote_hash: quoteHash,
+            signed_quote_snapshot: quoteSnapshot,
+            selected_items_payload: picked
+          })
+        });
+        var ud = await ur.json();
+        if (!ur.ok || !ud || !ud.ok) throw new Error((ud && ud.error) || 'update failed');
+
+        var q = window._quoteData || {};
+        fetch(QUOTE_NOTIFY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'approved',
+            quoteId: window._quoteId,
+            quoteNumber: q.quote_number || '',
+            clientName: name,
+            total: q.total || 0,
+            property: q.property || '',
+            clientEmail: q.client_email || ''
+          })
+        }).catch(function(){});
+
+        el('app').innerHTML = ''
+          + '<div class="header" style="border-radius:12px;">'
+          + '<div class="header-logo">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
+          + '<h1>' + docTerm + ' Approved!</h1>'
+          + '</div>'
+          + '<div class="card card-standalone" style="border-radius:0 0 12px 12px;">'
+          + '<div class="success-card">'
+          + '<div class="success-icon">🌳</div>'
+          + '<h2>Thank You, ' + esc(name.split(' ')[0]) + '!</h2>'
+          + '<p>Your ' + docTerm.toLowerCase() + ' has been approved and your signature has been saved. We\'ll reach out shortly to confirm your scheduled date.</p>'
+          + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneDigits + '" style="color:#1a3c12;font-weight:700;text-decoration:none;font-size:16px;">📞 ' + esc(BM_CONFIG.phone) + '</a></p>'
+          + '</div>'
+          + '</div>'
+          + '<div class="footer"><a href="' + esc(BM_CONFIG.websiteUrl) + '">' + esc(BM_CONFIG.website) + '</a></div>';
+      } catch(e) {
+        alert('Could not save approval. Please call ' + BM_CONFIG.phone + ' or email ' + BM_CONFIG.email + '.');
+        if (btn) { btn.textContent = '✅ Confirm & Approve'; btn.disabled = false; btn.className = 'btn btn-approve'; }
+      }
+    }
+
+    // No-signature fast-approve path (when bm-require-quote-sig=false in BM Settings)
+    async function confirmApproveNoSig() {
+      var btn = el('btn-approve-main');
+      if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; btn.className = 'btn btn-disabled'; }
+      try {
+        var ur = await fetch(FN_BASE + '/quote-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: window._quoteId, token: urlToken, action: 'approve',
+            signed_user_agent: navigator.userAgent || ''
+          })
+        });
+        var ud = await ur.json();
+        if (!ur.ok || !ud || !ud.ok) throw new Error((ud && ud.error) || 'update failed');
+        var q = window._quoteData || {};
+        fetch(QUOTE_NOTIFY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: 'approved', quoteId: window._quoteId, quoteNumber: q.quote_number || '', clientName: q.client_name || '', total: q.total || 0, property: q.property || '', clientEmail: q.client_email || '' })
+        }).catch(function(){});
+        el('app').innerHTML = ''
+          + '<div class="header" style="border-radius:12px;">'
+          + '<div class="header-logo">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
+          + '<h1>' + docTerm + ' Approved!</h1>'
+          + '</div>'
+          + '<div class="card card-standalone" style="border-radius:0 0 12px 12px;">'
+          + '<div class="success-card">'
+          + '<div class="success-icon">🌳</div>'
+          + '<h2>Thank You!</h2>'
+          + '<p>Your ' + docTerm.toLowerCase() + ' has been approved. We\'ll reach out shortly to confirm your scheduled date.</p>'
+          + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneDigits + '" style="color:#1a3c12;font-weight:700;text-decoration:none;font-size:16px;">📞 ' + esc(BM_CONFIG.phone) + '</a></p>'
+          + '</div>'
+          + '</div>'
+          + '<div class="footer"><a href="' + esc(BM_CONFIG.websiteUrl) + '">' + esc(BM_CONFIG.website) + '</a></div>';
+      } catch(e) {
+        alert('Could not save approval. Please call ' + BM_CONFIG.phone + '.');
+        if (btn) { btn.textContent = '✅ Approve This ' + docTerm; btn.disabled = false; btn.className = 'btn btn-approve'; }
+      }
+    }
+
+    function toggleChanges() {
+      var form = el('changes-form');
+      if (!form) return;
+      form.style.display = form.style.display === 'none' || !form.style.display ? 'block' : 'none';
+    }
+
+    async function submitChanges() {
+      var notes = el('changes-text') ? el('changes-text').value.trim() : '';
+      if (!notes) { alert('Please describe what you\'d like changed.'); return; }
+
+      var btn = document.querySelector('#changes-form .btn-approve');
+      if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+
+      try {
+        var ur = await fetch(FN_BASE + '/quote-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: window._quoteId, token: urlToken, action: 'request_changes', changes: notes
+          })
+        });
+        var ud = await ur.json();
+        if (!ur.ok || !ud || !ud.ok) throw new Error((ud && ud.error) || 'update failed');
+
+        fetch(QUOTE_NOTIFY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'changes_requested',
+            quoteId: window._quoteId,
+            quoteNumber: (window._quoteData || {}).quote_number || '',
+            clientName: (window._quoteData || {}).client_name || '',
+            total: (window._quoteData || {}).total || 0,
+            property: (window._quoteData || {}).property || '',
+            changeNotes: notes,
+            clientEmail: (window._quoteData || {}).client_email || ''
+          })
+        }).catch(function(){});
+
+        el('app').innerHTML = ''
+          + '<div class="header" style="border-radius:12px;">'
+          + '<div class="header-logo">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
+          + '<h1>Changes Requested</h1>'
+          + '</div>'
+          + '<div class="card card-standalone" style="border-radius:0 0 12px 12px;">'
+          + '<div class="success-card">'
+          + '<div class="success-icon">💬</div>'
+          + '<h2>Got It!</h2>'
+          + '<p>We\'ll update the quote and send you a revised version. If you need to speak with us directly:</p>'
+          + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneDigits + '" style="color:#1a3c12;font-weight:700;text-decoration:none;font-size:16px;">📞 ' + esc(BM_CONFIG.phone) + '</a></p>'
+          + '</div>'
+          + '</div>'
+          + '<div class="footer"><a href="' + esc(BM_CONFIG.websiteUrl) + '">' + esc(BM_CONFIG.website) + '</a></div>';
+      } catch(e) {
+        alert('Could not send request. Please call ' + BM_CONFIG.phone + '.');
+        if (btn) { btn.textContent = 'Send Request'; btn.disabled = false; }
+      }
+    }
+
+    function toggleDecline() {
+      var form = el('decline-form');
+      if (!form) return;
+      form.style.display = form.style.display === 'none' || !form.style.display ? 'block' : 'none';
+    }
+
+    async function submitDecline() {
+      var reason = el('decline-text') ? el('decline-text').value.trim() : '';
+      var btn = document.querySelector('#decline-form .btn-decline');
+      if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+      try {
+        var ur = await fetch(FN_BASE + '/quote-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: window._quoteId, token: urlToken, action: 'decline', reason: reason
+          })
+        });
+        var ud = await ur.json();
+        if (!ur.ok || !ud || !ud.ok) throw new Error((ud && ud.error) || 'update failed');
+
+        var q = window._quoteData || {};
+        // quote-notify currently rejects 'declined' — fire-and-forget so failure is silent
+        fetch(QUOTE_NOTIFY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'declined',
+            quoteId: window._quoteId,
+            quoteNumber: q.quote_number || '',
+            clientName: q.client_name || '',
+            total: q.total || 0,
+            property: q.property || '',
+            declineReason: reason,
+            clientEmail: q.client_email || ''
+          })
+        }).catch(function(){});
+
+        el('app').innerHTML = ''
+          + '<div class="header" style="border-radius:12px;">'
+          + '<div class="header-logo">🌳 ' + esc(BM_CONFIG.companyName) + '</div>'
+          + '<h1>Decision Recorded</h1>'
+          + '</div>'
+          + '<div class="card card-standalone" style="border-radius:0 0 12px 12px;">'
+          + '<div class="success-card">'
+          + '<div class="success-icon">📝</div>'
+          + '<h2>Got it — we\'ve recorded your decision</h2>'
+          + '<p>Thanks for letting us know. If anything changes or you\'d like to revisit, just give us a call.</p>'
+          + '<p style="margin-top:20px;"><a href="tel:' + BM_CONFIG.phoneDigits + '" style="color:#1a3c12;font-weight:700;text-decoration:none;font-size:16px;">📞 ' + esc(BM_CONFIG.phone) + '</a></p>'
+          + '</div>'
+          + '</div>'
+          + '<div class="footer"><a href="' + esc(BM_CONFIG.websiteUrl) + '">' + esc(BM_CONFIG.website) + '</a></div>';
+      } catch(e) {
+        alert('Could not record decline. Please call ' + BM_CONFIG.phone + '.');
+        if (btn) { btn.textContent = 'Confirm Decline'; btn.disabled = false; }
+      }
+    }
+
+    function showError(msg) {
+      el('app').innerHTML = '<div class="card card-standalone" style="border-radius:12px;margin-top:20px;">'
+        + '<div class="error-card">'
+        + '<div style="font-size:40px;margin-bottom:16px;">🌳</div>'
+        + '<h2 style="margin-bottom:8px;">This quote link isn&rsquo;t ready yet</h2>'
+        + '<p style="color:#666;" id="err-msg">Your quote from Second Nature Tree is still being finalized, or this link has expired. It&rsquo;ll be ready shortly.</p>'
+        + '<p style="margin-top:18px;color:#374151;font-size:14px;">Call or text us at <a href="tel:+19143915233" style="color:#2f7a3a;font-weight:600;">(914) 391-5233</a> and we&rsquo;ll send you the current link right away.</p>'
+        + '</div></div>';
+    }
+
+    document.title = 'Quote Approval';
+    window.addEventListener('load', loadQuote);
+
+    function sendPortalLink() {
+      var emailInput = document.getElementById('portal-email');
+      var btn = document.getElementById('portal-btn');
+      var msg = document.getElementById('portal-msg');
+      var email = (emailInput.value || '').trim().toLowerCase();
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        msg.style.display = 'block';
+        msg.style.color = '#b91c1c';
+        msg.textContent = 'Please enter a valid email.';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      msg.style.display = 'none';
+      fetch(FN_BASE + '/portal-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+        .then(function(res) {
+          btn.disabled = false;
+          btn.textContent = 'Send link';
+          msg.style.display = 'block';
+          if (res.ok && res.body.ok) {
+            msg.style.color = '#166534';
+            msg.textContent = 'If your email is on file with us, you\'ll receive a portal link within a minute. (Check spam if it doesn\'t arrive.)';
+            document.getElementById('portal-form').style.display = 'none';
+          } else {
+            msg.style.color = '#b91c1c';
+            msg.textContent = (res.body && res.body.error) || 'Something went wrong. Please try again.';
+          }
+        })
+        .catch(function() {
+          btn.disabled = false;
+          btn.textContent = 'Send link';
+          msg.style.display = 'block';
+          msg.style.color = '#b91c1c';
+          msg.textContent = 'Network error — please try again.';
+        });
+    }
+    window.sendPortalLink = sendPortalLink;
+  </script>
+</body>
+</html>

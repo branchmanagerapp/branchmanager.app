@@ -1,0 +1,198 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#0a2e18">
+<title>Ground Control — Second Nature</title>
+<link rel="stylesheet" href="assets/site.css">
+<style>
+:root{--green:#1f7a43;--green-d:#0d3a20;--green-l:#eaf6ee;--ink:#16201a;--muted:#5b6660;--faint:#8a94a0;--line:#e6ebe6;--bg:#f6f7f6;--card:#fff;--gold:#e0a63a;--goldbg:#fff6e6;--red:#b3452f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto;padding:0 14px 60px}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 0 18px;text-align:center}
+.kick{letter-spacing:2px;font-size:10.5px;font-weight:800;text-transform:uppercase;opacity:.82}
+header h1{margin:5px 0 2px;font-size:23px;font-weight:800;letter-spacing:-.01em}
+header .sub{font-size:13px;opacity:.9}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 12px rgba(20,50,30,.06);padding:14px;margin:16px 0}
+
+/* calendar */
+.calhd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.calhd .mo{font-size:18px;font-weight:800;color:var(--green-d)}
+.nav{display:flex;gap:6px}
+.nav button,.seg button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;height:38px;min-width:38px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px}
+.nav button:active,.seg button:active{background:var(--green-l)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:none;border-radius:0;height:34px;font-size:13px;font-weight:800;color:var(--muted);background:#fff;padding:0 14px}
+.seg button.on{background:var(--green);color:#fff}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.dow span{text-align:center;font-size:10.5px;font-weight:800;color:var(--faint);text-transform:uppercase}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;touch-action:pan-y}
+.cell{aspect-ratio:1/1;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:5px 4px 4px;position:relative;cursor:pointer;display:flex;flex-direction:column;overflow:hidden}
+.cell:active{background:var(--green-l)}
+.cell.oth{opacity:.35}
+.cell .n{font-size:13px;font-weight:700;line-height:1}
+.cell.today{border-color:var(--ink);border-width:2px}
+.cell.today .n{color:var(--ink)}
+.cell.morrow{background:var(--goldbg);border-color:var(--gold);border-width:2px}
+.cell.sel{box-shadow:0 0 0 2px var(--green) inset}
+.cell.has{background:#eaf4ee;border-color:#bfe0cc}
+.dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.dot.big{background:var(--gold)}.dot.done{background:var(--faint)}.dot.task{background:var(--green)}.dot.sug{background:#fff;border:1.5px solid #c9a227}
+.lbl{display:none}
+/* photo thumbnails in day panel + agenda */
+.ephotos{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.ephotos img{width:80px;height:60px;object-fit:cover;border-radius:8px;background:#ddd}
+.ev.sug{opacity:.92}.ev.sug .ic{background:#fbf3d6}
+.ev.sug b{font-weight:700}.ev.sug b::after{content:" · suggested";font-weight:600;color:var(--muted);font-size:12px}
+@media(min-width:620px){
+  .cell{aspect-ratio:auto;min-height:86px}
+  .dots{display:none}
+  .lbl{display:block;font-size:10px;line-height:1.2;margin-top:3px;background:var(--green-l);color:var(--green-d);border-radius:5px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lbl.big{background:#f6c667;color:#5b4413;font-weight:800}
+  .lbl.done{background:#eef1f2;color:#69727a}
+  .lbl.sug{background:#fbf3d6;color:#7a5f12}
+}
+
+.evtm{color:#e8b64c;font-weight:800;font-size:12px}
+/* day agenda panel */
+.day-panel{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.day-panel h3{margin:0 0 8px;font-size:14px;color:var(--green-d)}
+.ev{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.ev:last-child{border-bottom:none}
+.ev .ic{flex:0 0 26px;height:26px;border-radius:8px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:14px}
+.ev.big .ic{background:#f6c667}.ev.done .ic{background:#eef1f2}
+.ev b{font-size:14.5px;font-weight:700}
+.ev small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+.ev .go{margin-left:auto;color:var(--green);font-weight:800;font-size:18px;align-self:center}
+.empty{color:var(--faint);font-size:13px;padding:10px 0}
+
+/* agenda list view */
+.agenda .agday{font-size:12px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px}
+
+/* section + tiles */
+h2{color:var(--green-d);font-size:13px;margin:24px 4px 8px;text-transform:uppercase;letter-spacing:.06em}
+.grid{display:grid;grid-template-columns:1fr;gap:9px}
+@media(min-width:620px){.grid{grid-template-columns:1fr 1fr}}
+a.tile{display:flex;gap:11px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 15px;text-decoration:none;color:var(--ink)}
+a.tile:active{background:var(--green-l)}
+@media(hover:hover){a.tile:hover{border-color:var(--green)}}
+a.tile .em{font-size:20px;flex:0 0 24px;text-align:center}
+a.tile .t{font-weight:700;font-size:15px}
+a.tile .d{color:var(--muted);font-size:12.5px;margin-top:1px}
+a.tile.hot{border-color:var(--green);background:var(--green-l)}
+a.tile.lock{opacity:.9}
+.tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:1px 6px;border-radius:20px;margin-left:5px;vertical-align:1px;background:#fde9c8;color:#8a5512}
+.tag.due{background:#f7dcd4;color:#9a3115}.tag.lk{background:#13251a;color:#cfe9d9}
+/* open list */
+.open .o{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.open .o:last-child{border:none}
+.open .bx{flex:0 0 18px;height:18px;border:2px solid var(--ink);border-radius:5px;margin-top:1px}
+.open b{font-size:14.5px}.open small{display:block;color:var(--muted);font-size:12.5px}
+.who{flex:0 0 58px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--faint);padding-top:3px}
+footer{text-align:center;color:var(--faint);font-size:11.5px;padding:22px 0}
+footer a{color:var(--green)}
+</style></head>
+<body>
+<header>
+  <div class="kick">Second Nature Tree Service · Operations</div>
+  <h1>🛰️ Ground Control</h1>
+  <div class="sub" id="today-str">—</div>
+  <a href="https://branchmanager.app/#schedule" style="display:inline-block;margin-top:10px;background:rgba(255,255,255,.14);color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.25);">📅 Calendar &amp; past days — in Branch Manager</a>
+</header>
+<div class="wrap">
+
+  <!-- CALENDAR → lives in Branch Manager (Sept 19 2026). Past days + photos = the Schedule's past cells; tap a day. -->
+  <div class="grid">
+    <a class="tile hot" href="https://branchmanager.app/#schedule"><span class="em">📅</span><span><span class="t">Calendar — past days &amp; photos <span class="tag">in the app</span></span><span class="d">One calendar now. Past days show a 📸 chip with the client name; tap it for the photos. Nothing loads until you tap.</span></span></a>
+    <a class="tile" href="https://branchmanager.app/#estimates"><span class="em">📋</span><span><span class="t">Estimate board <span class="tag">in the app</span></span><span class="d">Live mirror of Jobber: drafts to finish, quotes out, booked, money waiting.</span></span></a>
+  </div>
+
+  <!-- ESTIMATES & INVOICES — the tree business (refreshed Aug 3) -->
+  <h2>📨 Estimates &amp; invoices — send these <small style="font-weight:400;opacity:.7">live from Jobber · Fri 9/18</small></h2>
+  <div class="grid">
+    <a class="tile hot" href="https://secure.getjobber.com/quotes/65649225"><span class="em">🧾</span><span><span class="t">Jen Zawolski — crane oaks #568 <span class="tag">review + send</span></span><span class="d">$11,800 draft from your 9/10 notes: front oak $4,800 · rear oak $5,800 · milling est. · transport. Tax applies at send.</span></span></a>
+    <a class="tile hot" href="https://secure.getjobber.com/quotes"><span class="em">🧾</span><span><span class="t">Mike Badia — #565 <span class="tag">price it</span></span><span class="d">287 Daisy Ln, Carmel. $0 draft since 9/11 with photos. White-oak lead prune + locust over the roof.</span></span></a>
+    <a class="tile hot" href="https://secure.getjobber.com/quotes"><span class="em">🧾</span><span><span class="t">Michael Spector #561 · Roshan James #548 <span class="tag">finish drafts</span></span><span class="d">$1,626 and $2,168 drafts. Max #571 is a duplicate — archive it.</span></span></a>
+    <a class="tile" href="https://secure.getjobber.com/quotes"><span class="em">📞</span><span><span class="t">Jean Mortimer — #552 $14,522 <span class="tag">follow up</span></span><span class="d">Biggest open quote, sent 8/25, silent since. Also Joe Ariano #567 $11,271 (9/13) and Jeff Schwartz #563 $8,562 (9/11).</span></span></a>
+    <a class="tile hot" href="https://secure.getjobber.com/quotes"><span class="em">🧾</span><span><span class="t">Dawn (Brewster) — no quote exists <span class="tag">create</span></span><span class="d">$1,000 agreed by phone 9/11. Text me her last name + address and I draft it in Jobber.</span></span></a>
+    <a class="tile" href="https://secure.getjobber.com/quotes"><span class="em">📋</span><span><span class="t">Catherine Scott's husband — needs a fresh copy of the estimate <span class="tag">resend</span></span><span class="d">(516) 232-5298, per Catherine 9/16.</span></span></a>
+    <a class="tile hot" href="https://secure.getjobber.com/invoices"><span class="em">💵</span><span><span class="t">Jessica Bernadello — Jobber invoice #378 <span class="tag">send</span></span><span class="d">$5,093.63 DRAFT since April 27. Job done 4/22.</span></span></a>
+    <a class="tile hot" href="https://branchmanager.app/#invoices"><span class="em">💵</span><span><span class="t">New Rochelle — 66 Laron Dr — BM #1011 <span class="tag">send</span></span><span class="d">$1,899 draft, due date was 8/25.</span></span></a>
+    <a class="tile" href="https://branchmanager.app/#invoices"><span class="em">💰</span><span><span class="t">Collect: Oswald $700 (overdue 9/11) · Sarah M-A $1,159 (past due since May) · CVPD $2,600 (due 9/19)</span><span class="d">Jobber #382 + BM #1017 / #1019. Everything else in Jobber is paid.</span></span></a>
+    <a class="tile" href="https://branchmanager.app/#requests"><span class="em">📞</span><span><span class="t">Website leads never called <span class="tag">5</span></span><span class="d">Andrew Kaplan (322 Sprout Brook) · Mark Cassidy · Roger Phillips (161 Tanglewylde) · Jordan Visser · Jeff Monohan. Shawn Grant #554 + Alex Duran #549 sit at $0 — need prices.</span></span></a>
+    <a class="tile" href="estimates-map-3f9c21.html"><span class="em">🗺️</span><span><span class="t">Estimates &amp; jobs — map</span><span class="d">Every quote &amp; job plotted, color-coded by status</span></span></a>
+    <a class="tile" href="estimates-snt-4b8e2f.html"><span class="em">📝</span><span><span class="t">Estimate board</span><span class="d">Every open quote, freshest first</span></span></a>
+  </div>
+
+  <!-- WHAT NEEDS DOING (refreshed Sept 18) -->
+  <h2>🔴 What needs doing</h2>
+  <div class="card open">
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>🔴 GL policy expires TODAY</b><small>Confirm with Maria Trombetta that the renewal is bound. Re-rate + KM100 add still pending.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Send Zawolski #568 · price Badia #565</b><small>Both in Jobber. Zawolski link above.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Dawn (Brewster): last name + address</b><small>One text to me → quote drafted in Jobber the same hour.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Price BM job #339 (Julie Melagrano) before Monday 9/21</b><small>Michelle will be on site. No number on it yet.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">Catherine</span><span><b>Name the Mohegan Lake beech client (9/22–24) + get it into Jobber</b><small>"On the dash" is not a record. Nothing for those 3 days exists in Jobber or BM.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Answer Jimmy Cottrell — chipper + bucket 9/26–27</b><small>Asked 9/16.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Approve the 15 photo drafts in SocialBranch</b><small>Wilton 9/14 + 14 August days. Approving updates the public map; posting needs the connections below.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Connect Facebook / Instagram / Google</b><small>Still null. The Wed 4pm series (9/16, 9/23, 9/30…) is drafted and not firing.</small></span></div>
+    <div class="o"><span class="bx"></span><span class="who">OWNER</span><span><b>Tell Catherine the Nextdoor blast is paste-and-send</b><small>The 9/12 email said it was going out via Jobber Campaigns. It is not — the copy is on the kit page.</small></span></div>
+    <div class="o" style="opacity:.6"><span class="bx" style="border-style:dashed"></span><span class="who">Done ✅</span><span><b>Mary Stark #566 sent · CVPD + Bohannon-Sacci scheduled · Zawolski 9/10 paid · Chaz paid</b><small>Cleared Sept 13–16.</small></span></div>
+  </div>
+
+  <!-- DAILY -->
+  <h2>🗓️ Daily</h2>
+  <div class="grid">
+    <a class="tile" href="today-snt-9d4b1e.html"><span class="em">🌳</span><span><span class="t">Today sheet</span><span class="d">Done · waiting on you · new leads</span></span></a>
+    <a class="tile" href="plan-snt-8c31d7.html"><span class="em">🗺️</span><span><span class="t">The Plan</span><span class="d">Right-now → this-week → this-month</span></span></a>
+    <a class="tile" href="https://branchmanager.app/#socialbranch"><span class="em">📣</span><span><span class="t">Social posts <span class="tag">42 drafts</span></span><span class="d">Approve in SocialBranch. Nothing fires until Facebook / Instagram / Google are connected.</span></span></a>
+  </div>
+
+  <!-- SOCIAL (added Sept 18) -->
+  <h2>📣 Social — one tap each</h2>
+  <div class="grid">
+    <a class="tile hot" href="https://branchmanager.app/#socialbranch"><span class="em">✅</span><span><span class="t">Approve photo drafts <span class="tag">15 days</span></span><span class="d">Wilton 9/14 + 14 August days from your camera roll. Approve = public map; post = needs connections.</span></span></a>
+    <a class="tile hot" href="https://branchmanager.app/#socialbranch"><span class="em">🔌</span><span><span class="t">Connect Facebook · Instagram · Google <span class="tag">not connected</span></span><span class="d">The Connect cards are in SocialBranch. Until this is done every post stays a draft.</span></span></a>
+    <a class="tile" href="social-hq-4b2c7e/"><span class="em">🏠</span><span><span class="t">Social HQ — Catherine</span><span class="d">Nextdoor kit + the 10-week Wednesday series on one link.</span></span></a>
+    <a class="tile" href="social-hq-4b2c7e/posts.html"><span class="em">👀</span><span><span class="t">Preview the Wednesday posts</span><span class="d">Sept 16 → Nov 18, 4pm, exactly as they will look on IG / FB / Google.</span></span></a>
+    <a class="tile" href="nextdoor-fave-9d4c2e.html"><span class="em">🗳</span><span><span class="t">Nextdoor Fave kit <span class="tag">closes 9/30</span></span><span class="d">Email copy for a Jobber campaign, captions, QR graphics. Paste and send — nothing sends itself.</span></span></a>
+    <a class="tile" href="https://peekskilltree.com/recent-work.html"><span class="em">🗺️</span><span><span class="t">Recent Work — public feed</span><span class="d">Approved days appear here on peekskilltree.com. Empty until the first approve.</span></span></a>
+    <a class="tile" href="socialbranch-guide-4e7b21.html"><span class="em">📖</span><span><span class="t">SocialBranch in 5 minutes</span><span class="d">How approving works, for Catherine.</span></span></a>
+  </div>
+
+  <!-- BIG MOVES -->
+  <h2>🚜 Big moves</h2>
+  <div class="grid">
+    <a class="tile" href="intrepid-financing-6b2e.html"><span class="em">🚜</span><span><span class="t">Intrepid KM100 <span class="tag">delivered 9/4</span></span><span class="d">$1,100/mo · 60 mo · Geneva, drafts the 5th. Delivery DocuSign signed 9/10.</span></span></a>
+    <a class="tile" href="lucente.html"><span class="em">🌱</span><span><span class="t">SmartLawn — Lucente</span><span class="d">Fleet invoices #388 + #390 paid. Next: the backordered X450s once CADCO ships.</span></span></a>
+  </div>
+
+  <!-- LATER / RESEARCH -->
+  <h2>🔎 Later — projects &amp; research</h2>
+  <div class="grid">
+    <a class="tile" href="line-clearance-9f3a72.html"><span class="em">⚡</span><span><span class="t">Line clearance — the big primes <span class="tag">research</span></span><span class="d">Clearway, Lewis, Asplundh, Davey · crew bill rates · prevailing wage · how to get in</span></span></a>
+    <a class="tile" href="dialpad-alternatives-4c81a2.html"><span class="em">📞</span><span><span class="t">Get off Dialpad <span class="tag">research</span></span><span class="d">OpenPhone wins — when you're ready to switch</span></span></a>
+    <a class="tile" href="cpa2025-1aefb4.html"><span class="em">📊</span><span><span class="t">CPA 2025 package</span><span class="d">Books for Kevin Fay (locked)</span></span></a>
+    <a class="tile" href="https://branchmanager.app"><span class="em">💻</span><span><span class="t">Branch Manager — the app</span><span class="d">My software side-project. The daily driver, still building.</span></span></a>
+    <a class="tile" href="word-tracker-9f2a1c.html"><span class="em">🎙️</span><span><span class="t">Tracking my words <span class="tag">to review</span></span><span class="d">24/7 word-count + my share vs others — the real options</span></span></a>
+  </div>
+
+  <!-- MORE -->
+  <h2>🗂️ More</h2>
+  <div class="grid">
+    <a class="tile" href="recap-2wk-8b3d1a.html"><span class="em">📸</span><span><span class="t">2-week recap <span class="tag">to share</span></span><span class="d">Photo update for the crew</span></span></a>
+    <a class="tile" href="bids-snt-4e7b2c.html"><span class="em">🏛</span><span><span class="t">Gov Bids</span><span class="d">BPCA push · deadlines · arborist bench</span></span></a>
+    <a class="tile" href="hub-570301.html"><span class="em">📚</span><span><span class="t">Full index</span><span class="d">Every page we've built</span></span></a>
+    <a class="tile lock" href="vault-0e5a3f.html"><span class="em">🔒</span><span><span class="t">Private Vault <span class="tag lk">locked</span></span><span class="d">Owner only</span></span></a>
+  </div>
+
+  <footer>🛰️ Ground Control · Second Nature Tree Service · <a href="hub-570301.html">full index</a></footer>
+</div>
+
+<script>
+  (function(){var d=new Date();var el=document.getElementById('today-str');if(el)el.textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});})();
+</script>
+<script src="nav-snt.js?v=5" defer></script>
+</body></html>

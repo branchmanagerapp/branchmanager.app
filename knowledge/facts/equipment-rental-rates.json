@@ -1,0 +1,150 @@
+{
+  "topic": "equipment-rental-rates",
+  "title": "Equipment rental rates",
+  "summary": "What rental companies publish for chippers, bucket trucks and lifts. Thin on trucks: most forestry-truck renters quote by phone.",
+  "facts": [
+    {
+      "id": "sunbelt-chipper-12in-spring-valley",
+      "kind": "fact",
+      "claim": "Sunbelt Rentals' Spring Valley NY branch (12.5 miles from Peekskill) rents a 12-inch, 85 HP diesel chipper for $430 a day, $1,450 a week and $3,525 for four weeks, pickup.",
+      "values": {
+        "day": 430,
+        "week": 1450,
+        "four_week": 3525
+      },
+      "source": {
+        "name": "Sunbelt Rentals — 12 Inch Wood Chipper (live rate card, Spring Valley NY branch #785, pickup)",
+        "url": "https://www.sunbeltrentals.com/equipment-rental/lawn-landscape-and-tree/12-inch-wood-chipper/0390060/",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "Online rate for the dates 9/21–9/22/2026. Rates vary by branch and date.",
+      "review_by": "2026-12-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "sunbelt-booms-spring-valley",
+      "kind": "fact",
+      "claim": "Same branch, same day: 34-ft towable boom $435 / $1,230 / $3,090; 50-ft towable boom $590 / $1,520 / $3,600; 65-ft telescopic boom lift $715 / $1,575 / $3,570 (day / week / four weeks).",
+      "values": {
+        "towable_34": [
+          435,
+          1230,
+          3090
+        ],
+        "towable_50": [
+          590,
+          1520,
+          3600
+        ],
+        "boom_65": [
+          715,
+          1575,
+          3570
+        ]
+      },
+      "source": {
+        "name": "Sunbelt Rentals — site search results priced for Spring Valley NY branch #785",
+        "url": "https://www.sunbeltrentals.com/search/?q=bucket%20truck",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "high",
+      "caveat": "Boom lifts, not bucket trucks. Useful for pricing structure, not as a truck comparison.",
+      "review_by": "2026-12-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "allpoints-60ft-forestry-bucket",
+      "kind": "fact",
+      "claim": "All Points Equipment (Palmetto FL, rents nationwide) lists a 60-ft forestry bucket truck with an 11-ft debris body, under-CDL, at $750 a day and $3,500 a week; monthly is 'call'.",
+      "values": {
+        "day": 750,
+        "week": 3500
+      },
+      "source": {
+        "name": "All Points Equipment — 2025 60FT Forestry Bucket Truck For Rent UNDER CDL",
+        "url": "https://www.allpointsequipmentsales.com/trucks/2025-60ft-forestry-bucket-truck-for-rent-under-cdl",
+        "tier": 1,
+        "published": "2024-05-20",
+        "read": "2026-09-18"
+      },
+      "confidence": "medium",
+      "caveat": "Listing dated May 2024 and not local to New York.",
+      "review_by": "2026-12-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "forestryrentals-55ft-bucket",
+      "kind": "fact",
+      "claim": "Forestry Rentals (Brownstown IL) lists a 55-ft forestry bucket truck at $2,500 a week and $6,900 a month, with no daily rate. Class B CDL required (33,000 lb truck).",
+      "values": {
+        "week": 2500,
+        "month": 6900
+      },
+      "source": {
+        "name": "Forestry Rentals — Forestry Bucket Truck Rental",
+        "url": "https://forestryrentals.com/bucket-truck/",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "medium",
+      "caveat": "Page carries no date. Not local.",
+      "review_by": "2026-12-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "gap-chip-truck-rate",
+      "kind": "gap",
+      "claim": "We found no rental company that publishes a chip truck rate. Custom Truck One Source, TRL Rents and Tree Trucks rent forestry trucks but are quote-only. Sunbelt's search near Peekskill returned boom lifts, not bucket or chip trucks.",
+      "searched": [
+        "bucket truck rental rates daily weekly monthly 2026",
+        "forestry chip truck rental rate per day week month",
+        "forestry bucket truck rental monthly rate Altec chip dump",
+        "chip truck rental per day per week per month",
+        "sunbeltrentals.com site search: bucket truck"
+      ],
+      "source": {
+        "name": "Custom Truck One Source — Forestry rentals (no prices shown)",
+        "url": "https://www.customtruck.com/rental/forestry",
+        "tier": 1,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "medium",
+      "caveat": "A phone quote from Custom Truck (833-305-7368) or a local dealer would close this gap.",
+      "review_by": "2026-12-18",
+      "used_on": [
+        "/jimmy/rates"
+      ]
+    },
+    {
+      "id": "listicle-ranges-untrusted",
+      "kind": "note",
+      "claim": "Aggregator sites quote bucket trucks at $300–$770 a day and 42–60 ft trucks around $3,250 a month. These are Tier 4 sources with no primary data behind them and are not relied on.",
+      "source": {
+        "name": "CostOwl — bucket truck rental cost (aggregator)",
+        "url": "https://www.costowl.com/b2b/aerial-lifts/aerial-lift-bucket-truck-rental-cost/",
+        "tier": 4,
+        "published": null,
+        "read": "2026-09-18"
+      },
+      "confidence": "low",
+      "caveat": "Recorded so nobody re-discovers these and treats them as fact.",
+      "review_by": "2027-03-18",
+      "used_on": []
+    }
+  ]
+}

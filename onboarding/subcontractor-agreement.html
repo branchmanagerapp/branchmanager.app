@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subcontractor Agreement — {{business_name}}</title>
+<style>
+  body { font-family:system-ui,sans-serif; max-width:700px; margin:0 auto; padding:20px; color:#1a1a1a; line-height:1.7; font-size:13px; }
+  h1 { font-size:20px; text-align:center; margin-bottom:2px; }
+  .sub { text-align:center; color:#666; margin-bottom:20px; font-size:12px; }
+  h2 { font-size:14px; margin-top:20px; color:#1b5e20; }
+  .fill { border-bottom:1px solid #999; display:inline-block; min-width:180px; margin:0 4px; }
+  .sig { margin-top:30px; line-height:2.4; }
+  .sig-line { border-bottom:1px solid #000; display:inline-block; width:180px; margin:0 6px; }
+  @media print { body { padding:10px; } }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<h1>Independent Contractor / Subcontractor Agreement</h1>
+<div class="sub">{{legal_name}}</div>
+
+<p><strong>This Agreement</strong> is between {{legal_name}} ("Company") and <span class="fill"></span> ("Subcontractor"), effective <span class="fill" style="min-width:120px;"></span>.</p>
+
+<h2>1. Relationship</h2>
+<p>Subcontractor is an independent contractor, not an employee. Subcontractor is responsible for their own taxes, insurance, and equipment unless otherwise specified. No employment benefits (health insurance, PTO, workers' comp) are provided by the Company.</p>
+
+<h2>2. Scope of Work</h2>
+<p>Subcontractor will perform tree care services as directed by the Company on a per-job basis. Specific tasks will be communicated before each assignment. Subcontractor has the right to decline any assignment.</p>
+
+<h2>3. Compensation</h2>
+<ul>
+  <li>Rate: $ <span class="fill" style="min-width:60px;"></span> per <span class="fill" style="min-width:60px;"></span> (hour / day / job)</li>
+  <li>Payment within 14 days of invoice submission.</li>
+  <li>Subcontractor will submit a W-9 before first payment.</li>
+  <li>Company will issue 1099-NEC for annual payments exceeding $600.</li>
+</ul>
+
+<h2>4. Insurance Requirements</h2>
+<p><strong>Subcontractor MUST carry the following insurance:</strong></p>
+<ul>
+  <li>General Liability: minimum $1,000,000 per occurrence</li>
+  <li>Workers' Compensation: as required by NY law (or exemption certificate)</li>
+  <li>Auto Liability: if using own vehicle on company business</li>
+</ul>
+<p>Subcontractor must provide Certificates of Insurance before starting work. Company must be listed as Additional Insured on the GL policy.</p>
+
+<h2>5. Safety</h2>
+<ul>
+  <li>Subcontractor must comply with all OSHA safety standards.</li>
+  <li>Subcontractor must provide their own PPE or use Company-provided PPE.</li>
+  <li>Subcontractor must follow all Company safety protocols while on Company job sites.</li>
+  <li>Subcontractor may not operate Company equipment without written authorization.</li>
+</ul>
+
+<h2>6. Non-Solicitation</h2>
+<p>During the term of this agreement and for 12 months after, Subcontractor will not directly solicit or perform work for Company's clients that were introduced through Company assignments.</p>
+
+<h2>7. Liability</h2>
+<p>Subcontractor is solely responsible for their own actions, injuries, and any damage caused by their work. Subcontractor agrees to indemnify and hold harmless the Company from any claims arising from Subcontractor's work.</p>
+
+<h2>8. Termination</h2>
+<p>Either party may terminate this agreement at any time with 24 hours written notice. Outstanding invoices remain payable per the payment terms above.</p>
+
+<h2>9. Governing Law</h2>
+<p>This agreement is governed by the laws of the State of New York.</p>
+
+<div id="sig-sub-company"></div>
+<div id="sig-sub-contractor" style="margin-top:8px;"></div>
+
+<div style="text-align:center;margin-top:24px;font-size:10px;color:#999;">
+  {{legal_name}} · {{city}}, {{state}} {{zip}} · {{phone}}
+</div>
+
+<script src="onboarding-sig.js"></script>
+<script>
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-sub-company', {
+    docKey: 'subcontractor', id: 'company', label: 'Company Signature',
+    prefillName: (window.BRANDING && window.BRANDING.owner_name) || ''
+  });
+});
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-sub-contractor', {
+    docKey: 'subcontractor', id: 'contractor', label: 'Subcontractor Signature'
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Square vs Shopify — 2nd Nature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#ffffff; --bg-soft:#f6f7f9; --ink:#0e0e10; --ink-soft:#4a4d55; --ink-mute:#7a7e85;
+ --line:#e6e7ea; --line-strong:#d0d2d6; --red:#d11a2a; --red-dark:#9c0e1c;
+ --green:#007a52; --gold:#c97b00; --blue:#1f5fa9;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 64px}
+header.top{background:var(--ink);color:#fff;padding:22px 0 0}
+header.top .wrap{padding-bottom:0}
+.brand{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9da4;font-weight:600}
+h1{font-size:26px;line-height:1.2;letter-spacing:-.02em;margin:8px 0 6px;font-weight:700}
+.sub{color:#b9bcc2;font-size:14px;margin-bottom:18px;max-width:60ch}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:0 0 auto;padding:11px 15px;font-size:13.5px;font-weight:600;color:#b9bcc2;
+ text-decoration:none;border-radius:10px 10px 0 0;white-space:nowrap}
+nav.tabs a.on{background:var(--bg-soft);color:var(--ink)}
+main{padding-top:22px}
+h2{font-size:19px;letter-spacing:-.01em;margin:30px 0 10px;font-weight:700}
+h2:first-child{margin-top:0}
+h3{font-size:15px;margin:20px 0 7px;font-weight:700}
+p{margin:0 0 11px;font-size:15px;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink)}
+ul,ol{margin:0 0 12px 19px}
+li{font-size:15px;color:var(--ink-soft);margin-bottom:6px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.verdict{background:var(--ink);color:#fff;border-radius:16px;padding:19px;margin:0 0 18px}
+.verdict .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e9198;font-weight:700;margin-bottom:9px}
+.verdict h2{color:#fff;font-size:21px;margin:0 0 9px}
+.verdict p{color:#c9ccd2;margin-bottom:0;font-size:14.5px}
+.verdict .num{color:#7ee2b8;font-weight:700}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+ padding:3px 8px;border-radius:20px;vertical-align:middle}
+.p-ok{background:#e2f5ee;color:var(--green)} .p-no{background:#fde8ea;color:var(--red-dark)}
+.p-warn{background:#fdf0dd;color:var(--gold)} .p-info{background:#e7eefa;color:var(--blue)}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+ border-radius:12px;background:var(--bg);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;min-width:530px;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg-soft);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--ink-mute);font-weight:700}
+td.n{text-align:right;font-family:'SF Mono',Menlo,monospace;font-size:12.5px}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:#fffbf2;font-weight:600;color:var(--ink)}
+tr.win td{background:#f0faf6}
+.scroll-hint{font-size:11.5px;color:var(--ink-mute);margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 16px}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.kpi .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:5px;margin:0 0 15px}
+.toggle button{flex:1;padding:11px 8px;font-size:13.5px;font-weight:700;font-family:inherit;
+ border:none;background:transparent;color:var(--ink-mute);border-radius:9px;cursor:pointer}
+.toggle button.on{background:var(--ink);color:#fff}
+.note{border-left:3px solid var(--gold);background:#fffbf2;padding:12px 14px;border-radius:0 10px 10px 0;margin:0 0 14px}
+.note.bad{border-color:var(--red);background:#fef6f7}
+.note.good{border-color:var(--green);background:#f2faf7}
+.note p:last-child{margin-bottom:0}
+.note .t{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:4px}
+.flow{counter-reset:s;margin:0 0 14px;padding:0;list-style:none}
+.flow li{counter-increment:s;position:relative;padding:0 0 14px 38px;margin:0;
+ border-left:2px solid var(--line);margin-left:13px}
+.flow li:last-child{border-left-color:transparent;padding-bottom:0}
+.flow li::before{content:counter(s);position:absolute;left:-13px;top:-2px;width:26px;height:26px;
+ background:var(--ink);color:#fff;border-radius:50%;display:flex;align-items:center;
+ justify-content:center;font-size:12.5px;font-weight:700}
+.flow .ft{font-weight:700;color:var(--ink);font-size:14.5px;display:block;margin-bottom:2px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line-strong);
+ font-size:12px;color:var(--ink-mute)}
+footer a{color:var(--ink-soft)}
+a{color:var(--blue)}
+.src{font-size:11.5px;color:var(--ink-mute);margin-top:5px}
+
+.dg{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:15px;margin:0 0 8px;overflow-x:auto}
+.dg .lane{min-width:290px}
+.node{border:1.5px solid var(--line-strong);border-radius:11px;padding:9px 11px;background:var(--bg-soft);margin:0 0 6px}
+.node .nt{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
+.node .nn{font-weight:700;font-size:14px;margin-top:1px}
+.node .nd{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+.node.live{border-color:var(--green);background:#f2faf7}
+.node.dead{border-color:var(--red);background:#fef6f7;border-style:dashed}
+.node.new{border-color:var(--blue);background:#f2f6fc;border-style:dashed}
+.node.sq{border-color:var(--ink);background:#fff}
+.arw{text-align:center;color:var(--ink-mute);font-size:11px;font-weight:600;margin:0 0 6px;line-height:1.35}
+.arw b{color:var(--ink);font-family:'SF Mono',Menlo,monospace;font-size:11px;font-weight:600}
+.brk{border:1.5px dashed var(--red);border-radius:11px;padding:10px 11px;background:#fef6f7;margin:0 0 6px;
+ text-align:center;color:var(--red-dark);font-weight:700;font-size:13px}
+.cls{border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;margin:0 0 9px;background:var(--bg)}
+.cls .ch{background:var(--ink);color:#fff;padding:7px 11px;font-weight:700;font-size:13.5px;
+ display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cls .ch span{font-size:10px;font-weight:600;color:#9a9da4;font-family:'SF Mono',Menlo,monospace}
+.cls .cb{padding:8px 11px;font-family:'SF Mono',Menlo,monospace;font-size:11.5px;line-height:1.85;color:var(--ink-soft)}
+.cls .cb i{color:var(--ink-mute);font-style:normal}
+.cls .cb b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:11.5px;color:var(--ink-soft)}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;border:1.5px solid}
+.sw.l{border-color:var(--green);background:#f2faf7} .sw.d{border-color:var(--red);background:#fef6f7}
+.sw.n{border-color:var(--blue);background:#f2f6fc}
+
+.code{background:#14161a;color:#e6e7ea;border-radius:10px;padding:11px 13px;margin:0 0 11px;
+ font-family:'SF Mono',Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;
+ -webkit-overflow-scrolling:touch;white-space:pre}
+.code .c{color:#7a7e85} .code .k{color:#7ee2b8} .code .s{color:#f5b971}
+.code.bad{border-left:3px solid var(--red)} .code.ok{border-left:3px solid var(--green)}
+.lyr{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 14px;background:var(--bg)}
+.lyr .row{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid var(--line);align-items:flex-start}
+.lyr .row:last-child{border-bottom:none}
+.lyr .row.off{background:var(--bg-soft)}
+.lyr .lb{flex:0 0 74px;font-weight:700;font-size:13px}
+.lyr .lv{flex:1;font-size:13px;color:var(--ink-soft);line-height:1.45}
+.lyr .lv b{color:var(--ink)}
+
+/* --- shop-page styling, tokens lifted from skateos.com/2ntr/shop/ --- */
+.announce{background:#0e0e10;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.09em;
+ text-transform:uppercase;text-align:center;padding:8px 14px;line-height:1.5}
+.announce b{color:#ff5a68;font-weight:800}
+.hero{position:relative;border-radius:20px;overflow:hidden;padding:26px 20px 24px;margin:0 0 16px;
+ background:linear-gradient(150deg,#1c1f26 0%,#0e0e10 55%,#2a1114 100%);color:#fff}
+.hero::after{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+ background:radial-gradient(120% 80% at 85% 10%,rgba(209,26,42,.32),transparent 60%)}
+.hero-text{position:relative;z-index:2;max-width:540px}
+.tag{display:inline-block;background:var(--red);color:#fff;padding:5px 12px;border-radius:12px;
+ font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.hero h1{font-size:clamp(1.55rem,5.2vw,2.4rem);font-weight:900;line-height:1.05;
+ letter-spacing:-.02em;margin:0 0 10px;color:#fff}
+.hero p{color:#c9ccd2;font-size:14.5px;margin:0 0 16px}
+.hero p .num{color:#7ee2b8;font-weight:700}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:12px 20px;border-radius:8px;font-weight:700;font-size:14.5px;border:2px solid transparent;
+ display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:transform .1s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-prim{background:var(--red);color:#fff}
+.btn-ghost-dark{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
+.statstrip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+ border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 18px}
+.statstrip div{background:var(--bg);padding:13px 12px}
+.statstrip .v{font-size:19px;font-weight:900;letter-spacing:-.02em;font-family:'SF Mono',Menlo,monospace}
+.statstrip .k{font-size:11px;color:var(--ink-mute);margin-top:3px;line-height:1.35}
+.findgrid{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 18px}
+.find{display:block;text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--line);
+ border-radius:14px;padding:14px 15px;transition:border-color .15s}
+.find:active{border-color:var(--line-strong)}
+.find .n{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--red)}
+.find h3{margin:4px 0 4px;font-size:15.5px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.find p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+@media(min-width:600px){
+ .hero{padding:44px 40px 40px} .statstrip{grid-template-columns:repeat(4,1fr)}
+ .findgrid{grid-template-columns:1fr 1fr}
+ h1{font-size:33px} .wrap{padding:0 22px 72px} .kpis{grid-template-columns:repeat(4,1fr)}
+ table{min-width:0}
+}
+</style></head><body>
+<div class="announce">Verified from live Square data &middot; 365 days &middot; <b>$328,025</b> &middot; 10,694 payments</div>
+<header class="top"><div class="wrap">
+<div class="brand">2nd Nature Skateboarding &middot; Decision Brief</div>
+<h1>Square vs Shopify</h1><div class="sub">Should the shop live on Square or Shopify? Built from your real numbers, not a brochure.</div>
+<nav class="tabs"><a href="shop-decision-6b2f19.html" class="on">Overview</a><a href="shop-decision-6b2f19-pricing.html">Pricing</a><a href="shop-decision-6b2f19-migration.html">Migration</a><a href="shop-decision-6b2f19-architecture.html">Architecture</a><a href="shop-decision-6b2f19-audit.html">skateOS audit</a><a href="shop-decision-6b2f19-processor.html">Processor</a><a href="shop-decision-6b2f19-stack.html">How it works</a></nav></div></header>
+<main><div class="wrap">
+<div class="note good" style="margin-bottom:16px"><div class="t">&#10004; Fixed &mdash; 1 Sept 2026</div>
+<p><strong>27,639 customer records and 10,751 sales records were publicly readable.</strong> Now closed &mdash; nine tables return nothing to the public key, public writes return 401, and the shop page still serves 1,409 products with zero errors. Verified end to end. <a href="shop-decision-6b2f19-audit.html">See the audit &rarr;</a></p></div>
+
+<div class="hero"><div class="hero-text">
+<span class="tag">Bottom line</span>
+<h1>Stay on Square. Drop&nbsp;Premium. Build the shop on Square&rsquo;s APIs.</h1>
+<p>Shopify does not save money once you staff the counter &mdash; at 7 employees it costs
+<span class="num">$803/yr more</span>. The real money is elsewhere: you appear to be paying for a Square
+plan that never pays for itself, which is <span class="num">$1,040/yr</span> you can take back this week
+without changing a thing.</p>
+<div class="btn-row">
+<a class="btn btn-prim" href="shop-decision-6b2f19-pricing.html">See the numbers &rarr;</a>
+<a class="btn btn-ghost-dark" href="shop-decision-6b2f19-audit.html">Is skateOS ready?</a>
+</div></div></div>
+
+<div class="statstrip">
+<div><div class="v">$328,025</div><div class="k">Processed through Square, 365 days</div></div>
+<div><div class="v">$8,348</div><div class="k">Processing fees paid &middot; 2.55% blended</div></div>
+<div><div class="v">10,694</div><div class="k">Payments &middot; avg ticket $30.67</div></div>
+<div><div class="v">1,102</div><div class="k">Catalog items &middot; 95% have photos</div></div>
+</div>
+
+<div class="findgrid">
+<a class="find" href="shop-decision-6b2f19-pricing.html"><div class="n">Finding 01</div>
+<h3>You are on a plan that costs more than it saves</h3>
+<p>Your measured rate is 2.40% + 15&cent; &mdash; that is Square Premium, $149/mo. It saves $748/yr and
+costs $1,788. Break-even is about $660k in card volume. You did $276,185.</p></a>
+<a class="find" href="shop-decision-6b2f19-pricing.html"><div class="n">Finding 02</div>
+<h3>Processing fees are a wash</h3>
+<p>On your real mix every scenario lands within ~$750/yr on fees. Shopify Basic would cost $15/yr more
+than Square does today. Stop weighing the platforms on rate.</p></a>
+<a class="find" href="shop-decision-6b2f19-pricing.html"><div class="n">Finding 03</div>
+<h3>Shopify&rsquo;s cheap tier cannot run your shop</h3>
+<p>Staff caps by plan: Basic 2, Grow 5. Unlimited register PINs need POS Pro at $89/mo. With seven people
+the floor is $128/mo &mdash; and there Square wins.</p></a>
+<a class="find" href="shop-decision-6b2f19-migration.html"><div class="n">Finding 04</div>
+<h3>Square&rsquo;s commerce APIs are wide open</h3>
+<p>Tested live on your account: Catalog, Inventory, Orders and Payment Links all respond. Only the
+website builder is closed. Square will not let you rebuild its site &mdash; but it will sit behind yours.</p></a>
+<a class="find" href="shop-decision-6b2f19-audit.html"><div class="n">Finding 05</div>
+<h3>skateOS is built, but has never sold anything</h3>
+<p>A real 2.9 MB app with Helcim payments, door access and waivers &mdash; and <strong>0 orders</strong>,
+0 gift cards, 3 check-ins. Not unfinished. Unproven.</p></a>
+<a class="find" href="shop-decision-6b2f19-processor.html"><div class="n">Finding 06</div>
+<h3>Helcim would save $1,757/yr</h3>
+<p>Modelled on your volume, and it still wins even at 2.50%. Your $26 average ticket makes the
+15&cent;&rarr;8&cent; fixed-fee drop worth $479/yr on its own.</p></a>
+</div>
+
+<h2>The detail behind these</h2>
+
+<div class="card"><h3>1. You are on a Square plan that costs more than it saves <span class="pill p-warn">verify</span></h3>
+<p>Your measured rate is <strong>2.40% + 15&cent;</strong> in person and <strong>2.90% + 30&cent;</strong> card-on-file.
+That is not Square's free-plan pricing &mdash; it matches <strong>Square Premium ($149/mo)</strong> exactly.</p>
+<p>Premium's discount saves you <strong>$748/yr</strong> in fees at your volume. It costs <strong>$1,788/yr</strong>.
+You would need roughly <strong>$660,000/yr</strong> in card volume for it to break even. You did $276,185.</p>
+<p class="src">I confirmed the rate from per-transaction fee data. I could <em>not</em> confirm the plan
+through the API &mdash; Square exposes no merchant-plan endpoint. Check your Square dashboard before acting.</p></div>
+
+<div class="card"><h3>2. Processing fees are a wash <span class="pill p-info">not the lever</span></h3>
+<p>Applied to your real mix, every scenario lands within about $750/yr of the others on fees alone.
+Shopify Basic would cost you <strong>$15/yr more</strong> than what you pay Square today. That is noise.
+Stop weighing the platforms on processing rate &mdash; it does not move.</p></div>
+
+<div class="card"><h3>3. Shopify's cheap tier cannot run your shop <span class="pill p-no">7 staff</span></h3>
+<p>Shopify caps staff by plan: Basic gives <strong>2 seats</strong> (0 for stores opened after 2024), Grow 5, Advanced 15.
+POS Lite inherits that cap. Unlimited register PINs only arrive with <strong>POS Pro at $89/mo</strong>.</p>
+<p>So the honest comparison is not "Shopify is $39." With seven people ringing sales it is
+<strong>$128/mo minimum</strong> &mdash; and at that price Square wins.</p></div>
+
+<div class="card"><h3>4. Square's commerce APIs are wide open <span class="pill p-ok">verified live</span></h3>
+<p>I tested this against your account today. Catalog, Inventory, Orders and
+<strong>Payment Links all respond</strong> &mdash; you already have 11 payment links created.
+Only Square's <em>website builder</em> is closed; there is no pages or content API.</p>
+<p>That distinction is the whole answer to your original question: <strong>Square will not let you
+rebuild its website, but it will happily sit behind yours.</strong></p></div>
+
+<div class="card"><h3>5. Your Square readers do not work on Shopify <span class="pill p-no">one-time cost</span></h3>
+<p>Shopify POS does not talk to Square hardware. Moving means buying Shopify's readers,
+re-training the counter, and re-keying a 1,102-item catalog &mdash; during a season you are
+already running at $33k/month.</p>
+<p class="src">Hardware cost not verified &mdash; depends on how many stations you run. Budget it as a real
+one-time number before deciding, not as zero.</p></div>
+
+<h2>Head to head</h2>
+<div class="tblwrap"><table>
+<tr><th>&nbsp;</th><th>Square</th><th>Shopify</th></tr>
+<tr><td>Cost, 1 employee</td><td class="n">$9,126</td><td class="n">$8,861</td></tr>
+<tr class="win"><td>Cost, 7 employees</td><td class="n">$9,126</td><td class="n">$9,929</td></tr>
+<tr><td>Staff cost model</td><td>No per-staff fee</td><td>Capped by plan tier</td></tr>
+<tr><td>Custom storefront</td><td>Via API, self-hosted</td><td>Native themes</td></tr>
+<tr><td>Custom checkout</td><td>No &mdash; Square-branded</td><td>Yes</td></tr>
+<tr><td>Keep current hardware</td><td>Yes</td><td>No</td></tr>
+<tr><td>Keep 4 yrs of history</td><td>Yes</td><td>Migrate</td></tr>
+<tr><td>Register risk</td><td>None</td><td>Untested at the counter</td></tr>
+</table></div>
+<p class="scroll-hint">Annual totals. Full breakdown on the <a href="shop-decision-6b2f19-pricing.html">Pricing</a> page.</p>
+
+<div class="note bad"><div class="t">The one thing Shopify genuinely does better</div>
+<p>Shopify lets you style the checkout page. On Square, the customer browses your site and then
+hands off to a Square-branded payment screen you cannot restyle. For 782 card-not-present
+transactions a year, that is a cosmetic cost &mdash; not $1,000/yr and a register migration.</p></div>
+
+<div class="note good"><div class="t">What I would do, in order</div>
+<p><strong>1.</strong> Confirm the Square plan on your dashboard and downgrade if it is Premium &mdash; $1,040/yr, no downside at your volume.<br>
+<strong>2.</strong> Wire the shop page we already built to Square's Catalog and Payment Links APIs.<br>
+<strong>3.</strong> Revisit Shopify only if you cross roughly $660k in card volume or genuinely need a branded checkout.</p></div>
+
+<footer>Every dollar figure on this site was pulled from the <strong>live Square API</strong> for merchant
+<em>2nd Nature Skateboarding</em> on 1 Sept 2026 &mdash; 365-day window, 10,694 completed payments.
+Competitor subscription and rate figures are <strong>published list prices</strong>, applied to your real
+transaction mix. Anything I could not verify is labelled on the page.</footer>
+</div></main></body></html>

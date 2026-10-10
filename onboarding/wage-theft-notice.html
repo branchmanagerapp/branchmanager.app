@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NY Wage Theft Prevention Act Notice — {{business_name}}</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,sans-serif; background:#fff; color:#1a1a1a; max-width:700px; margin:0 auto; padding:20px; }
+  h1 { font-size:20px; text-align:center; margin-bottom:4px; }
+  h2 { font-size:14px; text-align:center; color:#666; margin-bottom:20px; }
+  .notice { font-size:11px; text-align:center; color:#999; margin-bottom:20px; }
+  table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+  th, td { border:1px solid #ccc; padding:10px; text-align:left; font-size:14px; }
+  th { background:#f5f5f5; font-weight:600; width:40%; }
+  .sig-line { border-bottom:1px solid #000; display:inline-block; width:250px; margin:0 8px; }
+  .sig-section { margin-top:30px; font-size:13px; line-height:2; }
+  .legal { font-size:11px; color:#666; margin-top:20px; line-height:1.6; }
+  @media print { body { padding:0; font-size:12px; } }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<h1>Notice and Acknowledgment of Pay Rate and Payday</h1>
+<h2>New York State — Wage Theft Prevention Act (Labor Law §195(1))</h2>
+<p class="notice">This notice must be provided to each employee at time of hire. Retain signed copy for 6 years.</p>
+
+<table>
+  <tr><th>Employer Name</th><td>{{legal_name}}<br>d/b/a {{business_short_name}}</td></tr>
+  <tr><th>DBA (Doing Business As)</th><td>{{business_name}}</td></tr>
+  <tr><th>Employer Address</th><td>{{address_line1}}<br>{{city}}, {{state}} {{zip}}</td></tr>
+  <tr><th>Employer Phone</th><td>{{phone}}</td></tr>
+  <tr><th>Employer EIN</th><td>83-2374535</td></tr>
+</table>
+
+<table>
+  <tr><th>Employee Name</th><td>__________________________</td></tr>
+  <tr><th>Rate of Pay</th><td>$ __________ per hour</td></tr>
+  <tr><th>Overtime Rate</th><td>$ __________ per hour (1.5x regular rate for hours over 40/week)</td></tr>
+  <tr><th>Allowances Taken</th><td>☐ None &nbsp; ☐ Tips &nbsp; ☐ Meals &nbsp; ☐ Lodging</td></tr>
+  <tr><th>Regular Payday</th><td>Every other Friday (bi-weekly)</td></tr>
+  <tr><th>Pay Method</th><td>☐ Direct Deposit &nbsp; ☐ Check</td></tr>
+</table>
+
+<table>
+  <tr><th>Effective Date of Hire</th><td>__________________________</td></tr>
+  <tr><th>Job Title / Duties</th><td>☐ Groundsperson &nbsp; ☐ Climber &nbsp; ☐ Crew Lead &nbsp; ☐ Operator<br>Tree removal, pruning, chipping, stump grinding, cleanup, equipment operation</td></tr>
+  <tr><th>Regular Work Schedule</th><td>Monday – Friday, 7:00 AM – 3:30 PM (may vary by season)</td></tr>
+  <tr><th>Workers' Comp Carrier</th><td>NYSIF (New York State Insurance Fund)<br>WC-32079 (Westchester) · PC-50644 (Putnam)</td></tr>
+</table>
+
+<div style="margin-top:30px;">
+  <p style="font-size:13px;line-height:1.6;margin-bottom:4px;"><strong>Employee Acknowledgment:</strong> I acknowledge that I received this notice on or before my first day of work. I have been informed of my rate of pay, overtime rate, payday, and employer information as required under NY Labor Law §195(1).</p>
+  <div id="sig-wt-employee"></div>
+  <div id="sig-wt-employer" style="margin-top:8px;"></div>
+</div>
+
+<div class="legal">
+  <strong>NY Wage Theft Prevention Act Requirements:</strong><br>
+  • Employer must provide this notice at time of hire in English and employee's primary language.<br>
+  • Employee must sign and receive a copy. Employer retains signed original for 6 years.<br>
+  • If pay rate changes, employer must provide 7 days advance written notice (or with next paycheck for increases).<br>
+  • Employer must also provide a wage statement (pay stub) with each payment showing hours, rates, deductions, and dates.<br>
+  • Failure to comply: $50/day penalty per employee (up to $5,000) plus potential civil liability.<br><br>
+  <strong>At-Will Employment:</strong> Employment with {{legal_name}} is "at-will." Either party may end the employment relationship at any time, for any lawful reason, with or without cause or notice.
+</div>
+
+<div style="text-align:center;margin-top:30px;font-size:11px;color:#999;">
+  {{legal_name}} · {{address_full}} · {{phone}}
+</div>
+
+<script src="onboarding-sig.js"></script>
+<script>
+// Auto-fill from intake form if data exists
+(function() {
+  try {
+    var emp = JSON.parse(localStorage.getItem('new-hire-data') || '{}');
+    if (!emp.fullName) return;
+    // Fill in the blanks in the tables
+    var cells = document.querySelectorAll('td');
+    cells.forEach(function(td) {
+      var text = td.textContent;
+      if (text.includes('__') && td.querySelector('input')) return; // skip if already has input
+      // Employee name
+      if (text.match(/^_+$/) && td.closest('tr') && td.closest('tr').querySelector('th') && td.closest('tr').querySelector('th').textContent.includes('Employee Name')) {
+        td.textContent = emp.fullName;
+      }
+      // Rate of pay
+      if (text.includes('$ __') && td.closest('tr').querySelector('th').textContent.includes('Rate of Pay')) {
+        td.textContent = '$ ' + emp.payRate + ' per hour';
+      }
+      // Overtime rate
+      if (text.includes('$ __') && td.closest('tr').querySelector('th').textContent.includes('Overtime')) {
+        td.textContent = '$ ' + emp.overtimeRate + ' per hour (1.5x regular rate for hours over 40/week)';
+      }
+      // Effective date
+      if (text.match(/^_+$/) && td.closest('tr').querySelector('th').textContent.includes('Effective Date')) {
+        td.textContent = emp.startDate;
+      }
+      // Job title
+      if (td.closest('tr') && td.closest('tr').querySelector('th') && td.closest('tr').querySelector('th').textContent.includes('Job Title')) {
+        var roleMap = { groundsperson: 'Groundsperson', climber: 'Climber', crew_lead: 'Crew Lead', operator: 'Operator' };
+        td.innerHTML = '☑ ' + (roleMap[emp.role] || emp.role) + '<br>Tree removal, pruning, chipping, stump grinding, cleanup, equipment operation';
+      }
+      // Allowances — render checked/unchecked from intake selection
+      if (td.closest('tr') && td.closest('tr').querySelector('th') && td.closest('tr').querySelector('th').textContent.includes('Allowances')) {
+        var taken = emp.allowances || ['none'];
+        var has = function(k) { return taken.indexOf(k) >= 0 ? '☑' : '☐'; };
+        td.innerHTML = has('none') + ' None &nbsp; ' + has('tips') + ' Tips &nbsp; ' + has('meals') + ' Meals &nbsp; ' + has('lodging') + ' Lodging';
+      }
+      // Pay method — render based on auto-derived intake value
+      if (td.closest('tr') && td.closest('tr').querySelector('th') && td.closest('tr').querySelector('th').textContent.includes('Pay Method')) {
+        var dd = emp.payMethod === 'direct_deposit';
+        td.innerHTML = (dd ? '☑' : '☐') + ' Direct Deposit &nbsp; ' + (dd ? '☐' : '☑') + ' Check';
+      }
+    });
+    // Add a banner
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:#e8f5e9;border:1px solid #22c55e;border-radius:8px;padding:10px;text-align:center;margin-bottom:16px;font-size:13px;color:#166534;font-weight:600;';
+    banner.textContent = '✅ Pre-filled for ' + emp.fullName + ' from intake form. Review and sign below.';
+    document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+  } catch(e) {}
+})();
+
+// Signature pads
+var _emp = OnboardingSig.getEmployee();
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-wt-employee', {
+    docKey: 'wage-theft', id: 'employee', label: 'Employee Signature',
+    prefillName: _emp ? _emp.fullName : ''
+  });
+});
+document.addEventListener("bm-branding-ready", function() {
+  OnboardingSig.createPad('sig-wt-employer', {
+    docKey: 'wage-theft', id: 'employer', label: 'Employer Signature',
+    prefillName: (window.BRANDING && window.BRANDING.owner_name) || ''
+  });
+});
+</script>
+</body>
+</html>

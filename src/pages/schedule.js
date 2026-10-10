@@ -1,0 +1,2522 @@
+/**
+ * Branch Manager — Schedule / Calendar Page
+ * legacy system-style with Today agenda, Week, and Month views
+ */
+var SchedulePage = {
+  view: 'month', // v388: default to month view (was week)
+  currentDate: new Date(),
+
+  // Returns YYYY-MM-DD in LOCAL time (toISOString returns UTC, off-by-one after ~8pm ET)
+  _localDateStr: function(d) {
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  },
+
+  // ── v1130: Day recaps (photos/video per past day, lazy-loaded) ──
+  RECAP_BASE: 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/day-recaps/',
+  _recapRetries: 0,
+  loadRecapManifest: function() {
+    if (window._bmRecaps || window._bmRecapsLoading) return;
+    // v1239: on a cold load the Schedule renders before the Supabase client exists → the work_days half was silently
+    // skipped and never retried (only the legacy manifest showed). Wait for the client (up to ~20 s) before loading.
+    if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.client && SupabaseDB.ready) && SchedulePage._recapRetries < 40) {
+      SchedulePage._recapRetries++;
+      setTimeout(function() { SchedulePage.loadRecapManifest(); }, 500);
+      return;
+    }
+    window._bmRecapsLoading = true;
+    // v1225: two sources, merged per date, both lazy and tiny (no image bytes until a chip is tapped):
+    //  (a) legacy staged manifest (Jul 1 – Aug 7 2026, strings = filenames under RECAP_BASE/<date>/)
+    //  (b) work_days rows from the nightly camera-roll ingest (Aug 2 → today), objects {url, kind, label, status}
+    //      approved → public job-photos/work/<id>/…; draft → 1-hour signed URL from the private work-drafts bucket
+    //      (storage policy auth_read_own_tenant_work_drafts scopes it to the caller's tenant).
+    var merged = {};
+    function done() {
+      window._bmRecapsLoading = false;
+      window._bmRecaps = merged;
+      if (window._currentPage === 'schedule') { try { loadPage('schedule'); } catch (e) {} }
+    }
+    var pManifest = fetch(SchedulePage.RECAP_BASE + 'manifest.json', { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(m) { if (m) Object.keys(m).forEach(function(d) { merged[d] = (merged[d] || []).concat(m[d]); }); })
+      .catch(function() {});
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    var pWork = !sb ? Promise.resolve() : sb.from('work_days').select('id,client_id,client_name,town,work_date,photos,hidden,status,review_requested_at,job_number,service,reel_stale,clips_reviewed_at').neq('status', 'skipped').order('work_date', { ascending: false }).limit(400)
+      .then(function(r) {
+        var rows = (r && r.data) || [];
+        var PUB = 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/work/';
+        var toSign = [], pending = [];
+        rows.forEach(function(w) {
+          SchedulePage._wdRows[w.id] = w;
+          (w.photos || []).forEach(function(p) {
+            if (!p || !p.path) return;
+            var item = { kind: p.kind || 'photo', path: p.path, taken: p.taken_at || null, label: (w.client_name || w.town || ''), status: w.status, wid: w.id, cid: w.client_id || null, reviewAt: w.review_requested_at || null, url: null };
+            if (w.status === 'approved') item.url = PUB + w.id + '/' + p.path.split('/').pop();
+            else { toSign.push(p.path); pending.push(item); }
+            (merged[w.work_date] = merged[w.work_date] || []).push(item);
+          });
+          // v1252: dropped items stay in work_days.hidden (grayed out, "Bring back"). Their files only
+          // live in the private drafts bucket, so they're always signed from there.
+          (w.hidden || []).forEach(function(p) {
+            if (!p || !p.path) return;
+            var item = { kind: p.kind || 'photo', path: p.path, taken: p.taken_at || null, label: (w.client_name || w.town || ''), status: w.status, wid: w.id, cid: w.client_id || null, reviewAt: w.review_requested_at || null, url: null, hidden: true };
+            toSign.push(p.path); pending.push(item);
+            (merged[w.work_date] = merged[w.work_date] || []).push(item);
+          });
+        });
+        if (!toSign.length) return;
+        return sb.storage.from('work-drafts').createSignedUrls(toSign, 7 * 86400).then(function(res) {
+          var arr = (res && res.data) || [];
+          arr.forEach(function(x, i) { if (pending[i] && x && x.signedUrl) pending[i].url = x.signedUrl; });
+        }).catch(function() {});
+      }).catch(function() {});
+    Promise.all([pManifest, pWork]).then(done, done);
+  },
+  // v1225: label for the month chip — first work-day client/town for that date (falls back to the caller's job name)
+  _recapLabel: function(dateStr) {
+    var list = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
+    for (var i = 0; i < list.length; i++) if (list[i] && typeof list[i] === 'object' && list[i].label) return list[i].label;
+    return null;
+  },
+  _wdRows: {},
+  _dayPostChecked: {},
+  // v1238 DAY PAGE (Doug, Sept 20 2026: "I'm in the schedule, I go to the past jobs, they open up, I go through them and make
+  // a post easily; you make it easy, I make the decisions"). Full screen: reel → clips → photos, each with Drop; add from the
+  // phone's camera roll; caption + networks inline; Put on the map / Post. Nothing leaves without a tap.
+  openDay: function(dateStr) {
+    if (window._currentPage !== 'schedule') loadPage('schedule');
+    SchedulePage.loadRecapManifest();
+    var tries = 0;
+    (function wait() { if (window._bmRecaps) SchedulePage.showDayRecap(dateStr); else if (tries++ < 40) setTimeout(wait, 250); })();
+  },
+  showDayRecap: function(dateStr) {
+    if (typeof SocialBranch !== 'undefined' && SocialBranch._reconcileFromCloud) { try { SocialBranch._reconcileFromCloud(); } catch (e) {} }   // v1241: pull cloud posts before any save
+    if (!window._bmRecaps && window._bmRecapsLoading) {
+      UI.toast('Loading photos…');
+      setTimeout(function() { if (window._bmRecaps) SchedulePage.showDayRecap(dateStr); }, 1500);
+      return;
+    }
+    var files = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
+    var d = new Date(dateStr + 'T12:00:00');
+    var title = '📸 ' + SchedulePage._formatDate(d, 'full');
+    var wdItems = files.filter(function(f) { return f && typeof f === 'object' && f.wid; });
+    var wid = wdItems.length ? wdItems[0].wid : null;
+    var w = wid ? SchedulePage._wdRows[wid] : null;
+    var html = '';
+    // Jobs on the calendar that day (tap → job)
+    var jobs = DB.jobs.getAll().filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0, 10) === dateStr && j.status !== 'archived'; });
+    // ── header ──
+    if (w) {
+      var status = w.status === 'approved' ? '<span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;">On the public map</span>'
+                                          : '<span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;">Draft — not public yet</span>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'
+        + '<div><div style="font-size:15px;font-weight:800;">' + UI.esc(w.town || '') + (w.client_name ? ' · ' + UI.esc(w.client_name) : '') + '</div>'
+        + '<div style="font-size:12px;color:var(--text-light);">' + (w.job_number ? 'Job #' + UI.esc(String(w.job_number)) : 'No job record') + (w.service ? ' · ' + UI.esc(w.service) : '') + '</div></div>'
+        + status + '</div>';
+      if (w.reel_stale) html += '<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:10px;">⏳ Reel rebuilding from what you kept — usually under 30 min. You can keep editing.</div>';
+    }
+    jobs.forEach(function(j) {
+      html += '<div onclick="UI.closeModal();JobsPage.showDetail(\'' + j.id + '\')" style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:13px;">'
+        + '<span>' + UI.esc(j.clientName || ('#' + j.jobNumber)) + '</span><span style="font-weight:700;color:var(--green-dark);">' + UI.moneyInt(j.total) + '</span></div>';
+    });
+    // ── media ──
+    var isDraft = !!(w && w.status !== 'approved');
+    var reel = wdItems.filter(function(f) { return f.kind === 'reel' && f.url && !f.hidden; });
+    var clips = wdItems.filter(function(f) { return f.kind === 'video' && f.url && !f.hidden; });
+    var photos = wdItems.filter(function(f) { return f.kind === 'photo' && f.url && !f.hidden; });
+    var legacy = files.filter(function(f) { return typeof f === 'string'; });
+    var dropBtn = function(f) {
+      return isDraft ? '<button onclick="event.stopPropagation();SchedulePage._dayDrop(\'' + wid + '\',\'' + UI.esc(f.path) + '\',\'' + f.kind + '\',\'' + dateStr + '\')" title="Drop" style="position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">✕</button>' : '';
+    };
+    if (reel.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">Reel · all the day’s clips</div>'
+        + '<video controls playsinline preload="metadata" src="' + reel[0].url + '#t=0.1" style="width:100%;max-height:60vh;background:#000;border-radius:12px;"></video>';
+    }
+    if (clips.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;">Clips (' + clips.length + ')' + (isDraft ? ' · tap ✕ to drop one' : '') + '</div>'
+        + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
+      clips.forEach(function(f) {
+        html += '<div style="position:relative;flex:none;width:112px;height:150px;border-radius:10px;overflow:hidden;background:#000;">'
+          + '<video src="' + f.url + '#t=0.1" controls playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>' + dropBtn(f) + '</div>';
+      });
+      html += '</div>';
+    }
+    if (photos.length || legacy.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;">Photos (' + (photos.length + legacy.length) + ')' + (isDraft ? ' · tap ✕ to drop one' : '') + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">';
+      photos.forEach(function(f) {
+        html += '<div style="position:relative;"><img loading="lazy" src="' + f.url + '" onclick="window.open(\'' + f.url + '\',\'_blank\')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;background:var(--bg);">' + dropBtn(f) + '</div>';
+      });
+      legacy.forEach(function(name) {
+        var url = SchedulePage.RECAP_BASE + dateStr + '/' + name, isVid = /\.(mp4|mov|webm)$/i.test(name);
+        html += isVid ? '<video controls playsinline preload="metadata" src="' + url + '#t=0.1" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#000;"></video>'
+                      : '<img loading="lazy" src="' + url + '" onclick="window.open(\'' + url + '\',\'_blank\')" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;">';
+      });
+      html += '</div>';
+    }
+    // v1252: hidden (dropped) items stay visible, grayed out, one tap to bring back
+    var hiddenItems = wdItems.filter(function(f) { return f.hidden && f.url; });
+    if (hiddenItems.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px;">Hidden (' + hiddenItems.length + ') · tap ↩ to bring one back</div>'
+        + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
+      hiddenItems.forEach(function(f) {
+        var isV = f.kind !== 'photo';
+        html += '<div style="position:relative;flex:none;width:96px;height:96px;border-radius:10px;overflow:hidden;background:#e5e7eb;border:1px dashed #9ca3af;">'
+          + (isV ? '<video src="' + f.url + '#t=0.1" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:.6;pointer-events:none;"></video>'
+                 : '<img loading="lazy" src="' + f.url + '" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1);opacity:.6;">')
+          + (f.kind === 'reel' ? '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;">REEL</span>' : '')
+          + '<button onclick="event.stopPropagation();SchedulePage._dayRestore(\'' + wid + '\',\'' + UI.esc(f.path) + '\',\'' + dateStr + '\')" style="position:absolute;left:6px;right:6px;bottom:6px;padding:6px 0;border:none;border-radius:8px;background:rgba(255,255,255,.95);color:var(--green-dark);font-size:12px;font-weight:800;cursor:pointer;">↩ Bring back</button></div>';
+      });
+      html += '</div>';
+    }
+    if (w && isDraft) {
+      html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:10px 14px;border:1px dashed var(--border);border-radius:10px;font-size:13px;cursor:pointer;">'
+        + '<input type="file" accept="image/*,video/*" multiple style="display:none" onchange="SchedulePage._dayAddFiles(\'' + wid + '\',\'' + dateStr + '\',this)">📷 Add from camera roll</label>'
+        + '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">On your phone this opens Photos, iCloud included. Videos get cut to their best 12 seconds and the reel rebuilds.</div>';
+    }
+    if (!w && !legacy.length) html += '<div style="padding:24px;text-align:center;color:var(--text-light);">No photos for this day.</div>';
+    // ── the post ──
+    var post = null;
+    if (w && typeof SocialBranch !== 'undefined') {
+      post = SocialBranch._getPosts().find(function(p) { return p.workDayId === wid; }) || null;
+      if (!post && !SchedulePage._dayPostChecked[wid]) {
+        // v1240: the device cache may not have the day's post yet (it's created by the nightly run in the cloud) —
+        // pull it once before ever creating a new one, so a day never ends up with two posts.
+        SchedulePage._dayPostChecked[wid] = true;
+        SupabaseDB.client.from('social_posts').select('*').eq('work_day_id', wid).limit(1).then(function(r) {
+          var row = r && r.data && r.data[0];
+          var posts = SocialBranch._getPosts();
+          if (row && !posts.some(function(p) { return String(p.id) === String(row.id); })) {
+            posts.push({ id: row.id, caption: row.caption || '', media: row.media_urls || [], networks: row.networks || [], scheduledAt: row.scheduled_at, status: row.status, postedAt: row.posted_at, results: row.results, workDayId: row.work_day_id, createdAt: row.created_at, updatedAt: row.updated_at });
+            localStorage.setItem('bm-social-posts', JSON.stringify(posts));
+          } else if (!row) {
+            SocialBranch._upsertPost({ id: 'sbp_wd_' + wid.slice(0, 8), caption: '', networks: ['facebook', 'instagram', 'gmb'], media: wdItems.filter(function(f){ return f.url && !f.hidden; }).map(function(f){ return f.url; }), status: 'draft', workDayId: wid, createdAt: new Date().toISOString() });
+          }
+          SchedulePage._dayRerender(dateStr);
+        });
+        html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--text-light);">Loading the post\u2026</div>';
+      }
+      if (post) {
+      var nets = [{ id: 'facebook', name: 'Facebook' }, { id: 'instagram', name: 'Instagram' }, { id: 'gmb', name: 'Google' }];
+      html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">The post' + (post.status === 'posted' ? ' · posted ' + (post.postedAt ? SchedulePage._formatDate(new Date(post.postedAt), 'short') : '') : (post.status === 'scheduled' ? ' · queued' : '')) + '</div>'
+        + '<textarea id="day-caption" rows="6" ' + (post.status === 'posted' ? 'readonly' : '') + ' onchange="SchedulePage._daySaveCaption(\'' + wid + '\',this.value)" style="width:100%;padding:12px;font-size:15px;line-height:1.45;border:1px solid var(--border);border-radius:10px;box-sizing:border-box;">' + UI.esc(post.caption || '') + '</textarea>'
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">';
+      nets.forEach(function(n) {
+        var on = (post.networks || []).indexOf(n.id) >= 0;
+        html += '<button onclick="SchedulePage._dayToggleNet(\'' + wid + '\',\'' + n.id + '\',\'' + dateStr + '\')" style="padding:7px 12px;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' + (on ? 'var(--green-dark)' : 'var(--border)') + ';background:' + (on ? 'var(--green-dark)' : 'var(--white)') + ';color:' + (on ? '#fff' : 'var(--text-light)') + ';">' + (on ? '✓ ' : '') + n.name + '</button>';
+      });
+      html += '</div></div>';
+      }
+    }
+    // ── footer ──
+    var footer = '';
+    if (w) {
+      var cl = w.client_id ? DB.clients.getAll().find(function(c) { return c.id === w.client_id; }) : null;
+      if (w.review_requested_at) footer += '<span style="font-size:12px;color:var(--text-light);margin-right:auto;align-self:center;">Review asked ' + SchedulePage._formatDate(new Date(w.review_requested_at), 'short') + '</span>';
+      else if (cl && (cl.phone || cl.email)) footer += '<button class="btn btn-outline" style="margin-right:auto;" onclick="SchedulePage._askReview(\'' + wid + '\',\'' + dateStr + '\')">⭐ Ask for a review</button>';
+      if (post && post.status !== 'posted') {
+        if (isDraft) footer += '<button class="btn btn-primary" ' + (w.reel_stale ? 'disabled title="Wait for the reel"' : '') + ' onclick="SchedulePage._dayApprove(\'' + wid + '\',\'' + dateStr + '\')">🗺 Put on the map' + (w.reel_stale ? ' (after the reel)' : '') + '</button>';
+        else {
+          footer += '<input type="datetime-local" id="day-when" style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;">'
+            + '<button class="btn btn-outline" onclick="SchedulePage._daySchedule(\'' + wid + '\',\'' + dateStr + '\')">📅 Schedule</button>'
+            + '<button class="btn btn-primary" onclick="SchedulePage._dayPost(\'' + wid + '\',\'' + dateStr + '\')">📤 Post now</button>';
+        }
+      }
+    }
+    footer += '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>';
+    UI.showModal(title, html, { footer: footer });
+  },
+  _dayRerender: function(dateStr) { try { UI.closeModal(); } catch (e) {} setTimeout(function() { SchedulePage.showDayRecap(dateStr); }, 60); },
+  _dayPost_: function(wid) { return (typeof SocialBranch !== 'undefined') ? SocialBranch._getPosts().find(function(p) { return p.workDayId === wid; }) : null; },
+  _daySaveCaption: function(wid, val) {
+    var post = SchedulePage._dayPost_(wid); if (!post) return;
+    post.caption = val; SocialBranch._upsertPost(post); UI.toast('Caption saved');
+  },
+  _dayToggleNet: function(wid, net, dateStr) {
+    var post = SchedulePage._dayPost_(wid); if (!post) return;
+    var i = (post.networks || []).indexOf(net);
+    if (i >= 0) post.networks.splice(i, 1); else (post.networks = post.networks || []).push(net);
+    SocialBranch._upsertPost(post); SchedulePage._dayRerender(dateStr);
+  },
+  _dayDrop: function(wid, path, kind, dateStr) {
+    var w = SchedulePage._wdRows[wid]; if (!w) return;
+    // v1252: nothing is thrown away any more — the item moves to work_days.hidden (grayed out on the
+    // day page with "Bring back"). Dropping a clip also sets the old reel aside, as before.
+    var now = new Date().toISOString();
+    var out = (w.photos || []).filter(function(p) { return p.path === path || (kind === 'video' && p.kind === 'reel'); });
+    var photos = (w.photos || []).filter(function(p) { return out.indexOf(p) < 0; });
+    var hidden = (w.hidden || []).concat(out.map(function(p) { return Object.assign({}, p, { hidden_at: now }); }));
+    var stale = kind === 'video' ? photos.filter(function(p) { return p.kind === 'video'; }).length >= 2 : !!w.reel_stale;
+    SupabaseDB.client.from('work_days').update({ photos: photos, hidden: hidden, photo_count: photos.length, reel_stale: stale }).eq('id', wid).then(function(r) {
+      if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
+      w.photos = photos; w.hidden = hidden; w.reel_stale = stale;
+      (window._bmRecaps[dateStr] || []).forEach(function(f) { if (f && f.wid === wid && (f.path === path || (kind === 'video' && f.kind === 'reel'))) f.hidden = true; });
+      UI.toast((kind === 'video' ? 'Clip' : 'Photo') + ' hidden — tap ↩ Bring back below to undo');
+      var post = SchedulePage._dayPost_(wid);
+      if (post) { post.media = (post.media || []).filter(function(u) { var m = /work-drafts\/([^?]+)|job-photos\/work\/[^/]+\/([^?]+)/.exec(u); var pth = m ? decodeURIComponent(m[1] || m[2]) : ''; if (kind === 'video' && /reel\.mp4/.test(u)) return false; return pth !== path && pth !== path.split('/').pop(); }); SocialBranch._upsertPost(post); }
+      SchedulePage._dayRerender(dateStr);
+    });
+  },
+  // v1252: undo a drop — move the item from work_days.hidden back into the day (and its draft post).
+  _dayRestore: function(wid, path, dateStr) {
+    var w = SchedulePage._wdRows[wid]; if (!w) return;
+    var back = (w.hidden || []).filter(function(p) { return p.path === path; });
+    if (!back.length) return;
+    var hidden = (w.hidden || []).filter(function(p) { return p.path !== path; });
+    var photos = (w.photos || []).concat(back.map(function(p) { var c = Object.assign({}, p); delete c.hidden_at; return c; }))
+      .sort(function(a, b) { var o = { reel: 0, photo: 1, video: 2 }; return (o[a.kind] - o[b.kind]) || String(a.taken_at || '~').localeCompare(String(b.taken_at || '~')) || String(a.path).localeCompare(String(b.path)); });
+    var kind = back[0].kind;
+    var hasReel = photos.some(function(p) { return p.kind === 'reel'; });
+    var stale = kind === 'video' ? (!hasReel && photos.filter(function(p) { return p.kind === 'video'; }).length >= 2) : !!w.reel_stale;
+    SupabaseDB.client.from('work_days').update({ photos: photos, hidden: hidden, photo_count: photos.length, reel_stale: stale }).eq('id', wid).then(function(r) {
+      if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
+      w.photos = photos; w.hidden = hidden; w.reel_stale = stale;
+      var item = (window._bmRecaps[dateStr] || []).find(function(f) { return f && f.wid === wid && f.path === path; });
+      if (item) item.hidden = false;
+      var post = SchedulePage._dayPost_(wid);
+      if (post && post.status !== 'posted' && item && item.url && (post.media || []).indexOf(item.url) < 0) { post.media = (post.media || []).concat([item.url]); SocialBranch._upsertPost(post); }
+      UI.toast('Brought back ✓');
+      SchedulePage._dayRerender(dateStr);
+    });
+  },
+  _dayAddFiles: function(wid, dateStr, input) {
+    var w = SchedulePage._wdRows[wid]; var list = Array.prototype.slice.call(input.files || []);
+    if (!w || !list.length) return;
+    UI.toast('Uploading ' + list.length + ' file' + (list.length === 1 ? '' : 's') + '…');
+    var added = [], chain = Promise.resolve(), stamp = Date.now();
+    list.forEach(function(file, i) {
+      chain = chain.then(function() {
+        var isVid = /^video\//.test(file.type) || /\.(mov|mp4|m4v)$/i.test(file.name);
+        var ext = isVid ? (file.name.split('.').pop() || 'mov').toLowerCase() : 'jpeg';
+        var path = wid + '/add-' + stamp + '-' + i + '.' + ext;
+        return SupabaseDB.client.storage.from('work-drafts').upload(path, file, { contentType: file.type || (isVid ? 'video/quicktime' : 'image/jpeg'), upsert: true }).then(function(r) {
+          if (r.error) { UI.toast('Upload failed: ' + r.error.message, 'error'); return; }
+          added.push({ path: path, kind: isVid ? 'video' : 'photo', taken_at: new Date().toISOString(), added: true, needs_cut: isVid });
+        });
+      });
+    });
+    chain.then(function() {
+      if (!added.length) return;
+      var photos = (w.photos || []).concat(added);
+      var anyVid = added.some(function(p) { return p.kind === 'video'; });
+      if (anyVid) photos = photos.filter(function(p) { return p.kind !== 'reel'; });
+      var stale = anyVid && photos.filter(function(p) { return p.kind === 'video'; }).length >= 2;
+      return SupabaseDB.client.from('work_days').update({ photos: photos, photo_count: photos.length, reel_stale: stale || anyVid }).eq('id', wid).then(function(r) {
+        if (r.error) { UI.toast('Could not save: ' + r.error.message, 'error'); return; }
+        w.photos = photos; w.reel_stale = stale || anyVid;
+        return SupabaseDB.client.storage.from('work-drafts').createSignedUrls(added.map(function(p) { return p.path; }), 7 * 86400).then(function(res) {
+          var arr = (res && res.data) || [];
+          added.forEach(function(p, i) {
+            var url = arr[i] && arr[i].signedUrl;
+            (window._bmRecaps[dateStr] = window._bmRecaps[dateStr] || []).push({ kind: p.kind, path: p.path, taken: p.taken_at, label: w.client_name || w.town, status: w.status, wid: wid, cid: w.client_id || null, reviewAt: w.review_requested_at || null, url: url });
+            var post = SchedulePage._dayPost_(wid); if (post && url) { post.media = (post.media || []).concat([url]); SocialBranch._upsertPost(post); }
+          });
+          UI.toast('✅ Added ' + added.length + (anyVid ? ' — videos get cut and the reel rebuilds in the background' : ''), 'success');
+          SchedulePage._dayRerender(dateStr);
+        });
+      });
+    });
+  },
+  _dayApprove: function(wid, dateStr) {
+    var post = SchedulePage._dayPost_(wid); if (!post) return;
+    SocialBranch._approvePost(post.id, true);
+    var w = SchedulePage._wdRows[wid]; if (w) w.status = 'approved';
+    // flip the day's recap items to their public URLs once the copy lands (poll a few times)
+    var tries = 0;
+    (function poll() {
+      tries++;
+      SupabaseDB.client.from('work_days').select('status,photos').eq('id', wid).maybeSingle().then(function(r) {
+        if (r.data && r.data.status === 'approved') {
+          var PUB = 'https://ltpivkqahvplapyagljt.supabase.co/storage/v1/object/public/job-photos/work/';
+          (window._bmRecaps[dateStr] || []).forEach(function(f) { if (f && f.wid === wid && f.path && !f.hidden) { f.status = 'approved'; f.url = PUB + wid + '/' + f.path.split('/').pop(); } });
+          SchedulePage._wdRows[wid].status = 'approved';
+          if (window._currentPage === 'schedule') SchedulePage._dayRerender(dateStr);
+        } else if (tries < 8) setTimeout(poll, 3000);
+      });
+    })();
+  },
+  _dayPost: function(wid, dateStr) {
+    var post = SchedulePage._dayPost_(wid); if (!post) return;
+    if (!(post.networks || []).length) { UI.toast('Pick at least one network', 'error'); return; }
+    if (!confirm('Post this now to ' + post.networks.join(', ') + '? It goes out on the next hourly tick.')) return;
+    post.status = 'scheduled'; post.scheduledAt = new Date().toISOString(); SocialBranch._upsertPost(post);
+    UI.toast('✅ Queued — goes out on the next hourly tick', 'success'); SchedulePage._dayRerender(dateStr);
+  },
+  _daySchedule: function(wid, dateStr) {
+    var post = SchedulePage._dayPost_(wid); if (!post) return;
+    var v = (document.getElementById('day-when') || {}).value; var d = v ? new Date(v) : null;
+    if (!d || isNaN(d.getTime())) { UI.toast('Pick a date and time first', 'error'); return; }
+    post.status = 'scheduled'; post.scheduledAt = d.toISOString(); SocialBranch._upsertPost(post);
+    UI.toast('📅 Scheduled for ' + d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }), 'success'); SchedulePage._dayRerender(dateStr);
+  },
+  // v1230: open a prefilled text (or email) to the client with the Google review link. Doug taps Send himself — nothing auto-sends.
+  _askReview: function(wid, dateStr) {
+    var files = (window._bmRecaps && window._bmRecaps[dateStr]) || [];
+    var wd = files.find(function(f) { return f && f.wid === wid; }); if (!wd) return;
+    var cl = DB.clients.getAll().find(function(c) { return c.id === wd.cid; }); if (!cl) return;
+    var link = '';
+    try { link = (typeof CompanyInfo !== 'undefined' && CompanyInfo.own('googleReviewUrl')) || ''; } catch (e) {}
+    if (!link) { UI.toast('Add your Google review link in Settings first', 'error'); return; }
+    var first = String(cl.name || '').split(' ')[0];
+    var when = SchedulePage._formatDate(new Date(dateStr + 'T12:00:00'), 'short');
+    var body = 'Hi ' + first + ', thanks for having Second Nature Tree out on ' + when + '. If you have a minute, a quick Google review helps us a lot: ' + link + ' \u2014 Doug';
+    var phone = String(cl.phone || '').replace(/[^\d+]/g, '');
+    var href = phone ? ('sms:' + phone + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? '&' : '?') + 'body=' + encodeURIComponent(body))
+                     : ('mailto:' + encodeURIComponent(cl.email || '') + '?subject=' + encodeURIComponent('A quick review?') + '&body=' + encodeURIComponent(body));
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (sb) sb.from('work_days').update({ review_requested_at: new Date().toISOString() }).eq('id', wid).then(function() { files.forEach(function(f) { if (f && f.wid === wid) f.reviewAt = new Date().toISOString(); }); });
+    UI.closeModal(); window.location.href = href;
+  },
+
+  // v677: Reminders inline on the calendar (matches Jobber pattern)
+  // - Quote follow-ups: 5d + 10d after sentAt for status=sent (skip if already sent)
+  // - Invoice follow-ups: 1d + 4d after dueDate for status=sent/overdue (skip if paid/draft)
+  // Cached per-render via window._bmRemindersCache.
+  _getReminderIndex: function() {
+    if (window._bmRemindersCacheKey === SchedulePage._cacheKey()) return window._bmRemindersCache;
+    var idx = {}; // dateStr → [{kind, label, short, id, stage}]
+    function push(dateStr, item) { (idx[dateStr] = idx[dateStr] || []).push(item); }
+    function add5d(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return SchedulePage._localDateStr(x); }
+    function lastName(n) {
+      if (!n) return 'client';
+      var parts = String(n).trim().split(/\s+/);
+      return parts[parts.length - 1];
+    }
+    function snoozedOr(snoozed, fallback) {
+      return (snoozed && typeof snoozed === 'string') ? snoozed.substring(0,10) : fallback;
+    }
+    function prefDays(key, fallback) {
+      var v = parseInt(localStorage.getItem(key), 10);
+      return isNaN(v) ? fallback : v;
+    }
+    var qFu1 = prefDays('bm-sched-q-fu1-days', 5);
+    var qFu2 = prefDays('bm-sched-q-fu2-days', 10);
+    var iFu1 = prefDays('bm-sched-i-fu1-days', 1);
+    var iFu2 = prefDays('bm-sched-i-fu2-days', 4);
+    // Statuses that mean the quote is resolved → no follow-up needed
+    var QUOTE_RESOLVED = {
+      converted:1, approved:1, accepted:1, won:1, archived:1, draft:1,
+      changes_requested:1, declined:1, lost:1, rejected:1, cancelled:1
+    };
+    function clientOptedOut(clientId, key) {
+      if (!clientId) return false;
+      var cl = (typeof DB !== 'undefined' && DB.clients && DB.clients.getById) ? DB.clients.getById(clientId) : null;
+      if (!cl || !cl.commSettings) return false;
+      return cl.commSettings[key] === false;
+    }
+    var qs = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll() : [];
+    qs.forEach(function(q) {
+      if (!q.sentAt) return;
+      var s = (q.status || '').toLowerCase();
+      if (QUOTE_RESOLVED[s]) return;
+      // Also drop if any resolution timestamp is set or a job was spawned
+      if (q.acceptedAt || q.approvedAt || q.declinedAt || q.convertedAt || q.jobId) return;
+      // Per-client opt-out for outstanding quote follow-ups
+      if (clientOptedOut(q.clientId, 'quoteFollowUps')) return;
+      var sent = new Date(q.sentAt);
+      if (isNaN(sent)) return;
+      var num = q.quoteNumber || q.id;
+      var ln = lastName(q.clientName);
+      var label = 'Quote follow-up #' + num + ' · ' + (q.clientName || 'client');
+      var short = 'F:' + ln;
+      if (!q.followupSentAt) push(snoozedOr(q.followupSnoozedTo, add5d(sent, qFu1)),
+        { kind:'quote', stage:1, id:q.id, label:label, short:short });
+      if (!q.followup2SentAt) push(snoozedOr(q.followup2SnoozedTo, add5d(sent, qFu2)),
+        { kind:'quote', stage:2, id:q.id, label:label + ' (2nd)', short:short + '²' });
+    });
+    // Statuses that mean the invoice is resolved → no nudge needed
+    var INVOICE_RESOLVED = {
+      paid:1, archived:1, draft:1, void:1, voided:1, cancelled:1,
+      refunded:1, written_off:1, writeoff:1
+    };
+    var ivs = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll() : [];
+    ivs.forEach(function(inv) {
+      if (!inv.dueDate) return;
+      var s = (inv.status || '').toLowerCase();
+      if (INVOICE_RESOLVED[s]) return;
+      // Also drop if a resolution timestamp is set or balance is zero
+      if (inv.paidAt || inv.voidedAt || inv.cancelledAt) return;
+      if (typeof inv.balance === 'number' && inv.balance <= 0) return;
+      // Per-client opt-out for overdue invoice follow-ups
+      if (clientOptedOut(inv.clientId, 'invoiceFollowUps')) return;
+      var due = new Date(inv.dueDate);
+      if (isNaN(due)) return;
+      var num = inv.invoiceNumber || inv.id;
+      var ln = lastName(inv.clientName);
+      var label = 'Invoice overdue #' + num + ' · ' + (inv.clientName || 'client');
+      var short = 'O:' + ln;
+      if (!inv.followupSentAt) push(snoozedOr(inv.followupSnoozedTo, add5d(due, iFu1)),
+        { kind:'invoice', stage:1, id:inv.id, label:label, short:short });
+      push(snoozedOr(inv.followup2SnoozedTo, add5d(due, iFu2)),
+        { kind:'invoice', stage:2, id:inv.id, label:label + ' (' + iFu2 + 'd overdue)', short:short + '⚠' });
+    });
+    window._bmRemindersCache = idx;
+    window._bmRemindersCacheKey = SchedulePage._cacheKey();
+    return idx;
+  },
+  _cacheKey: function() {
+    // Cache invalidates when quotes/invoices counts change. Cheap key.
+    var qn = (typeof DB !== 'undefined' && DB.quotes) ? DB.quotes.getAll().length : 0;
+    var iv = (typeof DB !== 'undefined' && DB.invoices) ? DB.invoices.getAll().length : 0;
+    return qn + ':' + iv + ':' + (Date.now() / 60000 | 0); // refresh every minute
+  },
+  _getRemindersForDate: function(dateStr) {
+    return SchedulePage._getReminderIndex()[dateStr] || [];
+  },
+
+  // ── Calendar events: time off / personal / notes (cloud-backed, RLS) ──────
+  // These are NON-job calendar items (e.g. "Catherine — Prague", "Braxton —
+  // day-rate job"). Stored in the calendar_events table; loaded once per session
+  // into a date→[events] index and re-rendered when they arrive.
+  _eventsEnabled: function() {
+    return localStorage.getItem('bm-cal-events') !== 'false'; // default ON
+  },
+  _toggleEvents: function() {
+    localStorage.setItem('bm-cal-events', SchedulePage._eventsEnabled() ? 'false' : 'true');
+    loadPage('schedule');
+  },
+  _loadCalEvents: function() {
+    if (window._bmCalEventsLoaded) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) return; // not ready yet — will load on a later render
+    window._bmCalEventsLoaded = true;
+    sb.from('calendar_events').select('*').then(function(res) {
+      var idx = {};
+      (res && res.data ? res.data : []).forEach(function(ev) {
+        var s = (ev.start_date || '').substring(0, 10);
+        if (!s) return;
+        var e = (ev.end_date || s).substring(0, 10);
+        var cur = new Date(s + 'T12:00:00'), end = new Date(e + 'T12:00:00');
+        var guard = 0;
+        while (cur <= end && guard < 400) {
+          var ds = SchedulePage._localDateStr(cur);
+          (idx[ds] = idx[ds] || []).push(ev);
+          cur.setDate(cur.getDate() + 1); guard++;
+        }
+      });
+      window._bmCalEventsIndex = idx;
+      if (typeof loadPage === 'function') loadPage('schedule'); // re-render with events
+    }).catch(function() { /* table may not exist yet — ignore */ });
+  },
+  _getCalEventsForDate: function(dateStr) {
+    return (window._bmCalEventsIndex || {})[dateStr] || [];
+  },
+  _eventColor: function(ev) {
+    if (ev.color) return ev.color;
+    return ev.type === 'time_off' ? '#8e44ad' : ev.type === 'personal' ? '#e07c24' : ev.type === 'bill' ? '#c62828' : '#1565c0';
+  },
+  _renderEventPill: function(ev) {
+    var color = SchedulePage._eventColor(ev);
+    var icon = ev.type === 'time_off' ? '🌴' : ev.type === 'personal' ? '👤' : ev.type === 'bill' ? '💸' : '📌';
+    var label = (ev.person ? ev.person + ' — ' : '') + (ev.title || 'Event');
+    return '<div onclick="event.stopPropagation();SchedulePage.editEvent(\'' + ev.id + '\')" title="' + UI.esc(label) + '" '
+      + 'style="background:' + color + '22;border-left:3px solid ' + color + ';border-radius:4px;padding:1px 4px;margin-bottom:2px;font-size:9px;color:' + color + ';font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+      + icon + ' ' + UI.esc(label) + '</div>';
+  },
+  // Lightweight add/edit modal for a calendar event.
+  addEvent: function(dateStr, type) {
+    SchedulePage._openEventModal(null, dateStr, type);
+  },
+  // v1105: the per-day "+" now asks what to add instead of jumping to New Job.
+  _addChooser: function(dateStr) {
+    var d = dateStr || SchedulePage._localDateStr(SchedulePage.currentDate);
+    var pretty = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    var ov = document.createElement('div'); ov.id = 'bm-add-chooser';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    function row(emoji, label, call) {
+      return '<button onclick="document.getElementById(\'bm-add-chooser\').remove();' + call + '" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:15px;font-weight:600;cursor:pointer;color:var(--text);"><span style="font-size:20px;flex:none;">' + emoji + '</span>' + label + '</button>';
+    }
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:18px;width:100%;max-width:340px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
+      + '<div style="font-weight:800;font-size:16px;margin-bottom:12px;">Add to ' + pretty + '</div>'
+      + row('🔨', 'New Job', "JobsPage.showForm(null,{date:'" + d + "'})")
+      + row('🌴', 'Time off', "SchedulePage.addEvent('" + d + "','time_off')")
+      + row('👤', 'Personal / day-rate', "SchedulePage.addEvent('" + d + "','personal')")
+      + row('💸', 'Bill / payment due', "SchedulePage.addEvent('" + d + "','bill')")
+      + row('📌', 'Note', "SchedulePage.addEvent('" + d + "','note')")
+      + '<button onclick="document.getElementById(\'bm-add-chooser\').remove()" style="width:100%;background:#eee;border:none;padding:10px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:2px;">Cancel</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+  },
+  editEvent: function(id) {
+    var ev = null, idx = window._bmCalEventsIndex || {};
+    Object.keys(idx).some(function(k) { return idx[k].some(function(e) { if (e.id === id) { ev = e; return true; } }); });
+    SchedulePage._openEventModal(ev, ev ? ev.start_date : null);
+  },
+  _openEventModal: function(ev, dateStr, presetType) {
+    var d = (ev && ev.start_date) ? ev.start_date.substring(0,10) : (dateStr || SchedulePage._localDateStr(SchedulePage.currentDate));
+    var end = (ev && ev.end_date) ? ev.end_date.substring(0,10) : d;
+    var type = ev ? ev.type : (presetType || 'time_off');
+    function opt(v, l) { return '<option value="' + v + '"' + (type === v ? ' selected' : '') + '>' + l + '</option>'; }
+    var ov = document.createElement('div');
+    ov.id = 'bm-event-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,.3);">'
+      + '<div style="font-weight:800;font-size:16px;margin-bottom:14px;">' + (ev ? 'Edit' : 'Add') + ' calendar item</div>'
+      + '<label style="font-size:12px;font-weight:600;color:#555;">Type</label>'
+      + '<select id="ev-type" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">' + opt('time_off', '🌴 Time off') + opt('personal', '👤 Personal / day-rate') + opt('bill', '💸 Bill / payment due') + opt('note', '📌 Note') + '</select>'
+      + '<label style="font-size:12px;font-weight:600;color:#555;">Who (optional)</label>'
+      + '<input id="ev-person" placeholder="Catherine, Braxton, Doug…" value="' + (ev && ev.person ? UI.esc(ev.person) : '') + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">'
+      + '<label style="font-size:12px;font-weight:600;color:#555;">Title</label>'
+      + '<input id="ev-title" placeholder="e.g. Prague trip" value="' + (ev && ev.title ? UI.esc(ev.title) : '') + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin:4px 0 10px;">'
+      + '<div style="display:flex;gap:10px;">'
+      +   '<div style="flex:1;"><label style="font-size:12px;font-weight:600;color:#555;">Start</label><input id="ev-start" type="date" value="' + d + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin-top:4px;"></div>'
+      +   '<div style="flex:1;"><label style="font-size:12px;font-weight:600;color:#555;">End</label><input id="ev-end" type="date" value="' + end + '" style="width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;margin-top:4px;"></div>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">'
+      +   (ev ? '<button onclick="SchedulePage.deleteEvent(\'' + ev.id + '\')" style="background:none;border:none;color:#c62828;font-weight:700;cursor:pointer;">Delete</button>' : '<span></span>')
+      +   '<div><button onclick="document.getElementById(\'bm-event-modal\').remove()" style="background:#eee;border:none;padding:9px 16px;border-radius:8px;font-weight:600;cursor:pointer;margin-right:8px;">Cancel</button>'
+      +   '<button onclick="SchedulePage.saveEvent(' + (ev ? '\'' + ev.id + '\'' : 'null') + ')" style="background:var(--green-dark);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;">Save</button></div>'
+      + '</div></div>';
+    document.body.appendChild(ov);
+  },
+  saveEvent: function(id) {
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) { UI.toast && UI.toast('Not connected'); return; }
+    var row = {
+      type: document.getElementById('ev-type').value,
+      person: document.getElementById('ev-person').value.trim() || null,
+      title: document.getElementById('ev-title').value.trim() || 'Event',
+      start_date: document.getElementById('ev-start').value,
+      end_date: document.getElementById('ev-end').value || document.getElementById('ev-start').value
+    };
+    if (typeof window.resolveTenantId === 'function') row.tenant_id = window.resolveTenantId();
+    var q = id ? sb.from('calendar_events').update(row).eq('id', id) : sb.from('calendar_events').insert(row);
+    q.then(function(res) {
+      var m = document.getElementById('bm-event-modal'); if (m) m.remove();
+      if (res && res.error) { UI.toast && UI.toast('Save failed: ' + res.error.message); return; }
+      window._bmCalEventsLoaded = false; // force reload
+      SchedulePage._loadCalEvents();
+      UI.toast && UI.toast('Saved');
+    });
+  },
+  deleteEvent: function(id) {
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb || !id) return;
+    sb.from('calendar_events').delete().eq('id', id).then(function() {
+      var m = document.getElementById('bm-event-modal'); if (m) m.remove();
+      window._bmCalEventsLoaded = false;
+      SchedulePage._loadCalEvents();
+      UI.toast && UI.toast('Deleted');
+    });
+  },
+
+  // Paint recurring-job projected occurrences on the calendar.
+  // Reads from RecurringJobs.getAll() and walks the cadence forward from
+  // startDate within a +/-90 day window.
+  _getRecurringIndex: function() {
+    if (typeof RecurringJobs === 'undefined') return {};
+    if (window._bmRecurringCacheKey === SchedulePage._recurringCacheKey()) return window._bmRecurringCache;
+    var idx = {};
+    var intervals = { weekly:7, biweekly:14, monthly:30, quarterly:91, biannual:182, annual:365 };
+    var rangeStart = new Date(); rangeStart.setDate(rangeStart.getDate() - 30);
+    var rangeEnd = new Date(); rangeEnd.setDate(rangeEnd.getDate() + 120);
+    RecurringJobs.getAll().forEach(function(rec) {
+      if (!rec.active || !rec.startDate) return;
+      var step = intervals[rec.frequency] || 30;
+      var d = new Date(rec.startDate);
+      if (isNaN(d)) return;
+      // Walk forward to rangeStart
+      while (d < rangeStart) d.setDate(d.getDate() + step);
+      while (d <= rangeEnd) {
+        var ds = SchedulePage._localDateStr(d);
+        (idx[ds] = idx[ds] || []).push({
+          id: rec.id,
+          clientName: rec.clientName || 'client',
+          service: rec.service || '',
+          frequency: rec.frequency,
+          price: rec.price || 0
+        });
+        d.setDate(d.getDate() + step);
+      }
+    });
+    window._bmRecurringCache = idx;
+    window._bmRecurringCacheKey = SchedulePage._recurringCacheKey();
+    return idx;
+  },
+  _recurringCacheKey: function() {
+    var n = (typeof RecurringJobs !== 'undefined') ? RecurringJobs.getAll().length : 0;
+    return n + ':' + (Date.now() / 60000 | 0);
+  },
+  _getRecurringForDate: function(dateStr) {
+    return SchedulePage._getRecurringIndex()[dateStr] || [];
+  },
+  _renderRecurringPill: function(r, compact) {
+    function lastName(n) {
+      if (!n) return 'client';
+      var p = String(n).trim().split(/\s+/);
+      return p[p.length - 1];
+    }
+    var openCall = "loadPage('recurring')";
+    var displayText = compact ? ('R:' + lastName(r.clientName)) : ('🔁 ' + r.clientName + ' · ' + r.frequency);
+    var titleText = UI.esc((r.clientName || 'client') + ' · ' + r.frequency + (r.service ? ' · ' + r.service : '') + (r.price ? ' · $' + r.price : '') + ' — recurring');
+    if (compact) {
+      return '<div onclick="event.stopPropagation();' + openCall + '" '
+        + 'title="' + titleText + '" '
+        + 'style="background:#ede7f6;color:#5e35b1;border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+        + '🔁 ' + UI.esc(displayText) + '</div>';
+    }
+    return '<div onclick="event.stopPropagation();' + openCall + '" '
+      + 'title="' + titleText + '" '
+      + 'style="background:#ede7f6;border-left:3px solid #7b1fa2;color:#5e35b1;border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;cursor:pointer;">'
+      + UI.esc(displayText) + '</div>';
+  },
+  _recurringEnabled: function() {
+    return localStorage.getItem('bm-cal-recurring') !== 'false';
+  },
+  _toggleRecurring: function() {
+    var current = SchedulePage._recurringEnabled();
+    localStorage.setItem('bm-cal-recurring', current ? 'false' : 'true');
+    window._bmRecurringCacheKey = null;
+    loadPage('schedule');
+  },
+  _renderReminderPill: function(r, compact) {
+    var bg = r.kind === 'quote' ? '#fef3c7' : '#fee2e2';
+    var bd = r.kind === 'quote' ? '#f59e0b' : '#dc2626';
+    var fg = r.kind === 'quote' ? '#92400e' : '#991b1b';
+    var openCall = "SchedulePage._openReminder('" + r.kind + "','" + r.id + "'," + r.stage + ")";
+    var dismissCall = "event.stopPropagation();SchedulePage._markReminderSent('" + r.kind + "','" + r.id + "'," + r.stage + ")";
+    var dragStart = "event.stopPropagation();SchedulePage._dragReminderStart(event,'" + r.kind + "','" + r.id + "'," + r.stage + ")";
+    var displayText = compact ? (r.short || r.label) : r.label;
+    var titleText = UI.esc(r.label) + ' — click to mark sent / open · drag to move · × to dismiss';
+    if (compact) {
+      return '<div draggable="true" '
+        + 'ondragstart="' + dragStart + '" '
+        + 'ondragend="SchedulePage._dragEnd(event)" '
+        + 'onclick="event.stopPropagation();' + openCall + '" '
+        + 'title="' + titleText + '" '
+        + 'style="background:' + bg + ';color:' + fg + ';border-radius:3px;padding:1px 4px;margin-bottom:1px;font-size:9px;line-height:1.3;display:flex;align-items:center;gap:2px;cursor:grab;">'
+        +   '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">⏰ ' + UI.esc(displayText) + '</span>'
+        +   '<span onclick="' + dismissCall + '" title="Dismiss" style="cursor:pointer;opacity:.55;font-size:11px;line-height:1;padding:0 2px;flex-shrink:0;">×</span>'
+        + '</div>';
+    }
+    return '<div draggable="true" '
+      + 'ondragstart="' + dragStart + '" '
+      + 'ondragend="SchedulePage._dragEnd(event)" '
+      + 'onclick="event.stopPropagation();' + openCall + '" '
+      + 'title="' + titleText + '" '
+      + 'style="background:' + bg + ';border-left:3px solid ' + bd + ';color:' + fg + ';border-radius:4px;padding:4px 6px;margin-bottom:3px;font-size:11px;line-height:1.3;display:flex;align-items:center;gap:6px;cursor:grab;">'
+      +   '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">⏰ ' + UI.esc(displayText) + '</span>'
+      +   '<span onclick="' + dismissCall + '" title="Dismiss" style="cursor:pointer;opacity:.55;font-size:14px;line-height:1;padding:0 4px;flex-shrink:0;">×</span>'
+      + '</div>';
+  },
+
+  _openReminder: function(kind, id, stage) {
+    var item = (kind === 'quote') ? DB.quotes.getById(id) : DB.invoices.getById(id);
+    if (!item) { UI.toast('Item not found'); return; }
+    var num = (kind === 'quote' ? item.quoteNumber : item.invoiceNumber) || item.id;
+    var noun = kind === 'quote' ? 'Quote' : 'Invoice';
+    var stageName = stage === 2 ? '2nd follow-up' : '1st follow-up';
+    var dollars = UI.moneyInt(item.total || 0);
+
+    var body = '<div style="font-size:13px;line-height:1.5;">'
+      + '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + noun + ' #' + num + ' · ' + UI.esc(item.clientName || 'client') + '</div>'
+      + '<div style="color:var(--text-light);font-size:12px;margin-bottom:14px;">' + dollars + ' · ' + stageName + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);">Mark this follow-up as already sent (so it disappears from your calendar), or open the ' + noun.toLowerCase() + ' to send it now.</div>'
+      + '</div>';
+
+    UI.modal(
+      '⏰ Reminder',
+      body,
+      [
+        { label: 'Mark Sent', fn: "SchedulePage._markReminderSent('" + kind + "','" + id + "'," + stage + ")" },
+        { label: 'Open ' + noun, fn: "UI.closeModal();" + (kind === 'quote' ? 'QuotesPage' : 'InvoicesPage') + ".showDetail('" + id + "')", primary: true }
+      ]
+    );
+  },
+
+  _markReminderSent: function(kind, id, stage) {
+    var key = stage === 2 ? 'followup2SentAt' : 'followupSentAt';
+    var patch = {};
+    patch[key] = new Date().toISOString();
+    if (kind === 'quote') DB.quotes.update(id, patch);
+    else DB.invoices.update(id, patch);
+    window._bmRemindersCacheKey = null;
+    UI.closeModal();
+    UI.toast('Reminder dismissed');
+    loadPage('schedule');
+  },
+
+  render: function() {
+    SchedulePage.loadRecapManifest();  // v1226: month/week/day all show past-day 📸 chips (was Day-only → month never loaded them)
+    var self = SchedulePage;
+    var html = '';
+    // v378: AdminTasks.seedDefaults() removed — was auto-injecting a recurring
+    // "Review media uploads & schedule social posts" task that became stale once
+    // Media Center moved into SocialBranch. If you want recurring admin reminders
+    // back, build them with explicit user opt-in instead of seeding on every render.
+    var today = SchedulePage._localDateStr(new Date());
+    // v587: archived jobs hidden from calendar by default; toggle reveals them
+    // for cases like scheduling social-media posts about completed past jobs.
+    var showArchived = localStorage.getItem('bm-cal-show-archived') === 'true';
+    var allJobs = DB.jobs.getAll();
+    if (!showArchived) allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    var todayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === today; });
+
+    // Today summary (compact — just count, no big card)
+
+
+    // v384: Weather + Photos toggles moved inline with the Day/Week/Month
+    // toggle group instead of taking their own row above. Reclaims one row
+    // of vertical space without losing functionality.
+    var wEnabled = typeof Weather !== 'undefined' && Weather.isEnabled();
+    var pEnabled = localStorage.getItem('bm-cal-photos') !== 'false';
+    if (wEnabled) setTimeout(function() { Weather.fetch(); }, 100);
+
+    function toggleSwitch(label, on, onclick) {
+      return '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-light);font-weight:500;">'
+        + label
+        + '<button onclick="' + onclick + '" style="position:relative;width:32px;height:18px;border-radius:9px;border:none;cursor:pointer;background:' + (on ? 'var(--accent)' : '#ccc') + ';transition:background .2s;">'
+        +   '<span style="position:absolute;top:2px;' + (on ? 'left:16px' : 'left:2px') + ';width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>'
+        + '</button>'
+        + '</label>';
+    }
+
+    // v1026: row variant for the ⚙ Options dropdown — label left, switch right
+    function optRow(label, on, onclick) {
+      return '<label style="display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;font-size:13px;color:var(--text);font-weight:500;">'
+        + '<span>' + label + '</span>'
+        + '<button onclick="' + onclick + '" style="position:relative;width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;background:' + (on ? 'var(--accent)' : '#ccc') + ';transition:background .2s;flex-shrink:0;">'
+        +   '<span style="position:absolute;top:2px;' + (on ? 'left:18px' : 'left:2px') + ';width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></span>'
+        + '</button>'
+        + '</label>';
+    }
+
+    // v647: Jobber-pattern mobile schedule — Day / List / Map pills
+    // primary, Week / Month under "More". Week scroller strip below the
+    // controls (S/M/T/W/T/F/S with date numbers, today highlighted) so
+    // jumping days is one tap.
+    function _viewPill(viewKey, label) {
+      var active = self.view === viewKey;
+      return '<button class="btn ' + (active ? 'btn-primary' : '') + '" onclick="SchedulePage.setView(\'' + viewKey + '\')" style="font-size:12px;padding:5px 12px;border-radius:6px;' + (!active ? 'background:none;border:none;color:var(--text-light);' : '') + '">' + label + '</button>';
+    }
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">'
+      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+      +   '<button class="btn btn-outline" onclick="SchedulePage.prev()" style="padding:4px 10px;">&larr;</button>'
+      +   '<h3 id="cal-title" onclick="SchedulePage._openMonthPicker(event)" title="Jump to month" style="font-size:16px;font-weight:700;white-space:nowrap;margin:0 4px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:4px;">' + self._getTitle() + '<span style="font-size:10px;color:var(--text-light);">&#9662;</span></h3>'
+      +   '<input type="month" id="cal-month-picker" value="' + self.currentDate.getFullYear() + '-' + String(self.currentDate.getMonth()+1).padStart(2,'0') + '" onchange="SchedulePage._jumpToMonth(this.value)" style="position:absolute;width:0;height:0;opacity:0;border:none;padding:0;">'
+      +   '<button class="btn btn-outline" onclick="SchedulePage.next()" style="padding:4px 10px;">&rarr;</button>'
+      +   '<button class="btn btn-outline" onclick="SchedulePage.goToday()" style="font-size:12px;padding:4px 10px;">Today</button>'
+      +   '<button onclick="JobsPage.showForm()" style="font-size:12px;padding:5px 12px;background:var(--green-dark);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ New Job</button>'
+      +   '<button onclick="SchedulePage.addEvent()" title="Add time off / personal item" style="font-size:12px;padding:5px 12px;background:#8e44ad;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Time off</button>'
+      + '</div>'
+      // v1026: collapse the busy toggle row into a small ⚙ Options dropdown (Doug: too busy)
+      + '<div style="position:relative;">'
+      +   '<button onclick="var d=this.nextElementSibling;var wasOpen=d.style.display===\'block\';document.querySelectorAll(\'.cal-opts-dd\').forEach(function(x){x.style.display=\'none\'});d.style.display=wasOpen?\'none\':\'block\';event.stopPropagation();" class="btn btn-outline" style="font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;" title="Calendar &amp; View Options"><span style="font-size:14px;line-height:1;">⚙</span> Options</button>'
+      +   '<div class="cal-opts-dd" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;z-index:400;min-width:200px;box-shadow:0 8px 30px rgba(0,0,0,.16);">'
+      +     '<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;">Calendar &amp; View Options</div>'
+      +     '<div style="display:flex;flex-direction:column;gap:14px;">'
+      +       (typeof Weather !== 'undefined' ? optRow('Weather', wEnabled, 'Weather.toggle()') : '')
+      +       optRow('Photos', pEnabled, 'SchedulePage._togglePhotos()')
+      +       optRow('Reminders', SchedulePage._remindersEnabled(), 'SchedulePage._toggleReminders()')
+      +       optRow('Recurring', SchedulePage._recurringEnabled(), 'SchedulePage._toggleRecurring()')
+      +       optRow('Time Off', SchedulePage._eventsEnabled(), 'SchedulePage._toggleEvents()')
+      +       (self.view === 'month' ? optRow('Profit / Loss', SchedulePage._pnlEnabled(), 'SchedulePage._togglePnl()') : '')
+      +       ((self.view === 'week' || self.view === 'month') ? optRow('Side panel', SchedulePage._dockedMapEnabled(), 'SchedulePage._toggleDockedMap()') : '')
+      +       optRow('Archived', showArchived, 'SchedulePage._toggleArchived()')
+      +     '</div>'
+      +   '</div>'
+      + '</div>'
+      + '</div>'
+      // v709: View pills moved to a 2nd row directly under the toggles.
+      // Order: Day · Week · Month · List · Map (primary calendar views first).
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">'
+      +   ((self.view === 'week' || self.view === 'month') ? self._renderStatStrip(allJobs) : '<span></span>')
+      +   '<div style="display:flex;gap:2px;background:var(--bg);border-radius:8px;padding:2px;flex-shrink:0;">'
+      +     _viewPill('day', 'Day')
+      +     _viewPill('week', 'Week')
+      +     _viewPill('month', 'Month')
+      +     _viewPill('year', 'Year')
+      +     _viewPill('list', 'List')
+      +     _viewPill('map', 'Map')
+      +   '</div>'
+      +   '<a href="https://branchmanager.app/ground-control-7c3f9a.html" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px;padding:5px 12px;border-radius:6px;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;" title="Links, estimates, what needs doing (past days + photos live here in the calendar now)">🛰 Ground Control</a>'
+      + '</div>';
+
+    // Load cloud calendar events (time off / personal) once; re-renders on arrival.
+    self._loadCalEvents();
+
+    // v647: Week scroller strip (S/M/T/W/T/F/S) — visible in Day/List/Map
+    // views since those are single-day-focused. Hidden in Week/Month
+    // (those views already show week context).
+    if (self.view === 'day' || self.view === 'list' || self.view === 'map') {
+      html += self._renderWeekScroller(self.currentDate);
+    }
+
+    if (self.view === 'day') {
+      // v767: today's truck plan strip — surfaces vehicle_day_assignments
+      // for the current day so Doug sees who's driving what at a glance.
+      html += self._renderTruckStrip();
+      html += self._renderDay();
+    } else if (self.view === 'list') {
+      html += self._renderList();
+    } else if (self.view === 'map') {
+      html += self._renderMap();
+    } else if (self.view === 'week' || self.view === 'month') {
+      var showRail = self._dockedMapEnabled() && window.innerWidth >= 900;
+      var calBody = (self.view === 'week') ? self._renderWeek(showRail) : self._renderMonth(showRail);
+      if (showRail) {
+        html += '<div style="display:flex;gap:12px;align-items:flex-start;">'
+          + '<div style="flex:1;min-width:0;">' + calBody + '</div>'
+          + '<div style="width:320px;flex-shrink:0;position:sticky;top:8px;">' + self._renderRightRail() + '</div>'
+          + '</div>';
+      } else {
+        html += calBody;
+      }
+    } else if (self.view === 'year') {
+      html += self._renderYear();
+    } else {
+      html += self._renderMonth();
+    }
+
+    // Upcoming jobs (next 7 days)
+    var next7 = [];
+    for (var d = 1; d <= 7; d++) {
+      var futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + d);
+      var fStr = SchedulePage._localDateStr(futureDate);
+      var fJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === fStr; });
+      if (fJobs.length > 0) {
+        next7.push({ date: futureDate, dateStr: fStr, jobs: fJobs });
+      }
+    }
+
+    if (next7.length > 0) {
+      html += '<div style="margin-top:20px;">'
+        + '<h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Upcoming This Week</h3>';
+      next7.forEach(function(day) {
+        var isTomorrow = (function() { var t = new Date(); t.setDate(t.getDate()+1); return SchedulePage._localDateStr(t) === day.dateStr; })();
+        html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+          + '<div style="font-weight:700;font-size:13px;">' + SchedulePage._formatDate(day.date, 'short') + (isTomorrow ? ' <span style="font-size:11px;font-weight:700;color:var(--green-dark);background:var(--green-bg);padding:2px 6px;border-radius:8px;">TOMORROW</span>' : '') + '</div>'
+          + '<div style="display:flex;align-items:center;gap:6px;">'
+          + (isTomorrow ? '<button onclick="if(typeof AutomationsPage!==\'undefined\'){AutomationsPage.runVisitReminders();}else{UI.toast(\'Sending reminders...\');}" style="font-size:11px;padding:3px 10px;background:var(--green-dark);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;">📧 Send Reminders</button>' : '')
+          + '<span style="background:var(--green-bg);color:var(--green-dark);font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;">' + day.jobs.length + ' job' + (day.jobs.length !== 1 ? 's' : '') + '</span>'
+          + '</div>'
+          + '</div>';
+        day.jobs.forEach(function(j) {
+          html += '<div onclick="JobsPage.showDetail(\'' + j.id + '\')" style="display:flex;justify-content:space-between;padding:6px 0;cursor:pointer;font-size:13px;">'
+            + '<span>' + UI.esc(j.clientName || '#' + j.jobNumber) + '</span>'
+            + '<span style="font-weight:700;color:var(--green-dark);">' + UI.moneyInt(j.total) + '</span></div>';
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    return html;
+  },
+
+  _formatDate: function(d, format) {
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (format === 'full') return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    if (format === 'short') return days[d.getDay()] + ', ' + sm[d.getMonth()] + ' ' + d.getDate();
+    return sm[d.getMonth()] + ' ' + d.getDate();
+  },
+
+  _formatTime: function(t) {
+    if (!t) return '';
+    var parts = t.split(':');
+    var h = parseInt(parts[0]);
+    var m = parts[1] || '00';
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    if (h > 12) h -= 12;
+    if (h === 0) h = 12;
+    return h + ':' + m + ' ' + ampm;
+  },
+
+  // Compact form for cramped calendar pills: "9a", "3p", "2:30p"
+  _formatTimeShort: function(t) {
+    if (!t) return '';
+    var parts = t.split(':');
+    var h = parseInt(parts[0]);
+    if (isNaN(h)) return '';
+    var m = parts[1] || '00';
+    var suffix = h >= 12 ? 'p' : 'a';
+    if (h > 12) h -= 12;
+    if (h === 0) h = 12;
+    return (m === '00' ? String(h) : h + ':' + m) + suffix;
+  },
+
+  _getTitle: function() {
+    var d = SchedulePage.currentDate;
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    // v647: list + map are day-focused too — single-day title.
+    if (SchedulePage.view === 'day' || SchedulePage.view === 'list' || SchedulePage.view === 'map') {
+      return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+    if (SchedulePage.view === 'month') {
+      return months[d.getMonth()] + ' ' + d.getFullYear();
+    }
+    if (SchedulePage.view === 'year') {
+      return String(d.getFullYear());
+    }
+    var start = new Date(d);
+    start.setDate(start.getDate() - start.getDay());
+    var end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return sm[start.getMonth()] + ' ' + start.getDate() + ' - ' + (end.getMonth() !== start.getMonth() ? sm[end.getMonth()] + ' ' : '') + end.getDate() + ', ' + end.getFullYear();
+  },
+
+  // v767: Today's truck plan — compact strip above the day view that
+  // surfaces vehicle_day_assignments for the day in focus. Lazy-loaded
+  // and cached on first render. Each pill shows truck + driver and
+  // links to its Fleet detail.
+  _renderTruckStrip: function() {
+    var dateStr = SchedulePage._localDateStr(SchedulePage.currentDate);
+    var cache = window._bmTruckStripCache || {};
+    var entry = cache[dateStr];
+    if (!entry) {
+      SchedulePage._loadTruckStrip(dateStr);
+      return '<div id="truck-strip-' + dateStr + '" style="margin-bottom:10px;"></div>';
+    }
+    if (!entry.length) {
+      return '<div id="truck-strip-' + dateStr + '" style="margin-bottom:10px;padding:8px 12px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;font-size:12px;color:var(--text-light);">🚛 No truck assignments for ' + dateStr + '. <a href="#" onclick="event.preventDefault();loadPage(\'timesheet\');" style="color:var(--accent);">Assign on the Truck Hours tab →</a></div>';
+    }
+    var pills = entry.map(function(t) {
+      var label = '🚛 ' + (t.vehicle_nickname || t.vehicle_name || 'Truck');
+      if (t.driver_name) label += ' · 👤 ' + t.driver_name;
+      return '<button onclick="FleetPage.showDetail(\'' + t.vehicle_id + '\')" '
+        + 'style="background:var(--green-bg);border:1px solid var(--green-dark);color:var(--green-dark);border-radius:18px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;">'
+        + label + '</button>';
+    }).join('');
+
+    // v778: crew availability mini-pills — who's clocked in today vs.
+    // who's assigned to a scheduled job. "On clock" pill is green;
+    // "Idle" (no active clock-in, no assignment) is grey; "Booked"
+    // (assigned to today's job) is blue.
+    var crewHtml = SchedulePage._renderCrewMini(dateStr);
+
+    return '<div id="truck-strip-' + dateStr + '" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">'
+      + '<span style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-right:6px;">Today\'s Trucks</span>'
+      + pills
+      + crewHtml
+      + '</div>';
+  },
+
+  // v778: compact crew-status row alongside the truck pills. Pulls
+  // bm-team for the roster, time_entries for "clocked in," and
+  // today's jobs for assignment.
+  _renderCrewMini: function(dateStr) {
+    var team = [];
+    try { team = JSON.parse(localStorage.getItem('bm-team') || '[]'); } catch(e) {}
+    if (!team.length) return '';
+    var todayDate = dateStr;
+    // Time entries — anyone with clockIn today AND no clockOut = on-clock
+    var entries = [];
+    try {
+      entries = (typeof DB !== 'undefined' && DB.timeEntries && DB.timeEntries.getAll)
+        ? DB.timeEntries.getAll()
+        : JSON.parse(localStorage.getItem('bm-time-entries') || '[]');
+    } catch(e) {}
+    var onClock = {};
+    entries.forEach(function(t) {
+      var when = (t.clockIn || t.date || '').substring(0, 10);
+      if (when !== todayDate) return;
+      var user = t.user || t.userId || '';
+      if (!user) return;
+      if (t.clockIn && !t.clockOut) onClock[user] = true;
+    });
+    // Jobs on this date — assigned crew = booked
+    var booked = {};
+    try {
+      var jobs = (typeof DB !== 'undefined' && DB.jobs && DB.jobs.getAll) ? DB.jobs.getAll() : [];
+      jobs.forEach(function(j) {
+        if (!j.scheduledDate || j.scheduledDate.substring(0, 10) !== todayDate) return;
+        if (j.status === 'cancelled' || j.status === 'archived') return;
+        (j.crew || []).forEach(function(name) { if (name) booked[name] = true; });
+      });
+    } catch(e) {}
+
+    var members = team.filter(function(m) { return m && m.name && (m.active !== false); });
+    if (!members.length) return '';
+    var pills = members.map(function(m) {
+      var clock = !!onClock[m.name];
+      var book = !!booked[m.name];
+      var label, bg, border, color, icon;
+      if (clock) { icon = '🟢'; label = m.name + ' · clocked in'; bg = '#dcfce7'; border = '#86efac'; color = '#065f46'; }
+      else if (book) { icon = '📅'; label = m.name + ' · booked'; bg = '#dbeafe'; border = '#93c5fd'; color = '#1e40af'; }
+      else { icon = '⚪'; label = m.name + ' · idle'; bg = 'var(--white)'; border = 'var(--border)'; color = 'var(--text-light)'; }
+      return '<span title="' + label + '" style="background:' + bg + ';border:1px solid ' + border + ';color:' + color + ';border-radius:18px;padding:4px 10px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">'
+        + icon + ' ' + (m.name || '').split(' ')[0]
+        + '</span>';
+    }).join('');
+    return '<span style="font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-left:10px;margin-right:6px;">Crew</span>' + pills;
+  },
+
+  _loadTruckStrip: function(dateStr) {
+    var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
+    if (!sb) {
+      window._bmTruckStripCache = window._bmTruckStripCache || {};
+      window._bmTruckStripCache[dateStr] = [];
+      return;
+    }
+    // Pull from vehicle_daily_hours (the view that already joins vehicles +
+    // assignments) so each row has vehicle_name, vehicle_nickname, driver_name.
+    sb.from('vehicle_daily_hours').select('vehicle_id,vehicle_name,vehicle_nickname,driver_name').eq('day', dateStr).then(function(r) {
+      window._bmTruckStripCache = window._bmTruckStripCache || {};
+      window._bmTruckStripCache[dateStr] = (r && r.data) ? r.data : [];
+      // Re-render only if we're still on the schedule + the same date is shown
+      if (window._currentPage === 'schedule' && SchedulePage._localDateStr(SchedulePage.currentDate) === dateStr) {
+        var el = document.getElementById('truck-strip-' + dateStr);
+        if (el) {
+          // Replace just our strip — avoid full page re-render
+          var temp = document.createElement('div');
+          temp.innerHTML = SchedulePage._renderTruckStrip();
+          if (temp.firstChild) el.replaceWith(temp.firstChild);
+        }
+      }
+    });
+  },
+
+  _renderDay: function() {
+    var self = SchedulePage;
+    var d = SchedulePage.currentDate;
+    var dateStr = SchedulePage._localDateStr(d);
+    SchedulePage.loadRecapManifest();  // v1130: no-op after first fetch
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
+    var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
+
+    var html = '';
+
+    // Unscheduled jobs panel for day view
+    var globalUnscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
+    if (globalUnscheduled.length > 0) {
+      html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;">'
+        + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">' + String.fromCharCode(128203) + ' Unscheduled Jobs (' + globalUnscheduled.length + ') — <span style="font-size:12px;font-weight:400;color:var(--text-light);">drag to a time slot</span></div>'
+        + '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
+      globalUnscheduled.slice(0, 10).forEach(function(j) {
+        html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:0 0 170px;overflow:hidden;">'
+          + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
+          + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
+          + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    // v804: Crew double-booking detector — flag any crew member assigned
+    // to 2+ jobs whose startTime + estimatedHours windows overlap.
+    var conflicts = SchedulePage._detectCrewConflicts(dayJobs);
+    if (conflicts.length) {
+      html += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;">'
+        + '<div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:4px;">⚠ ' + conflicts.length + ' crew double-booking' + (conflicts.length === 1 ? '' : 's') + '</div>';
+      conflicts.slice(0, 5).forEach(function(c) {
+        html += '<div style="font-size:12px;color:#7f1d1d;padding:3px 0;">'
+          + '<b>' + UI.esc(c.crew) + '</b> assigned to: '
+          + c.jobs.map(function(j){ return UI.esc(j.clientName || '#' + j.jobNumber) + ' (' + (j.startTime || '?') + ')'; }).join(' · ')
+          + '</div>';
+      });
+      if (conflicts.length > 5) html += '<div style="font-size:11px;color:#7f1d1d;margin-top:4px;">...and ' + (conflicts.length - 5) + ' more.</div>';
+      html += '</div>';
+    }
+
+    // v788: Route optimization button — surfaces only when 2+ jobs that day
+    // have lat/lng and at least one is already time-scheduled. Lets Doug
+    // re-sequence the day by nearest-neighbor with a single tap.
+    var routableJobs = dayJobs.filter(function(j){
+      return (j.lat || j.latitude) && (j.lng || j.longitude || j.lon)
+        && j.status !== 'completed' && j.status !== 'cancelled';
+    });
+    if (routableJobs.length >= 2) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;">'
+        + '<div style="font-size:12px;color:#075985;">🧭 ' + routableJobs.length + ' geocoded jobs today · optimize for least driving?</div>'
+        + '<button onclick="SchedulePage._optimizeRoute(\'' + dateStr + '\')" style="font-size:12px;font-weight:700;padding:6px 12px;background:#075985;color:#fff;border:none;border-radius:6px;cursor:pointer;">Optimize route</button>'
+        + '</div>';
+    }
+
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
+
+    for (var h = 6; h <= 19; h++) {
+      var hour = h > 12 ? h - 12 : h;
+      var ampm = h >= 12 ? 'PM' : 'AM';
+      var hPad = (h < 10 ? '0' : '') + h;
+      var slotJobs = dayJobs.filter(function(j) { return j.startTime && j.startTime.substring(0,2) === hPad; });
+
+      var hourlyWx = (typeof Weather !== 'undefined' && Weather.getHourly) ? Weather.getHourly(dateStr, h) : '';
+      html += '<div style="display:flex;border-bottom:1px solid var(--border);min-height:52px;">'
+        + '<div style="width:88px;padding:8px 10px;font-size:12px;font-weight:600;color:var(--text-light);border-right:1px solid var(--border);flex-shrink:0;text-align:right;">'
+        + hour + ':00 ' + ampm
+        + hourlyWx
+        + '</div>'
+        + '<div data-date="' + dateStr + '" data-hour="' + h + '" '
+        + 'ondragover="event.preventDefault();this.style.background=\'#e8f5e9\';this.style.border=\'2px dashed #4caf50\'" '
+        + 'ondragleave="this.style.background=\'\';this.style.border=\'none\'" '
+        + 'ondrop="SchedulePage._dropOnSlot(event,\'' + dateStr + '\',' + h + ')" '
+        + 'style="flex:1;padding:4px 8px;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;transition:background .15s;">';
+
+      slotJobs.forEach(function(j) {
+        var bgColor = j.status === 'completed' ? '#e6f6ee' : j.status === 'late' ? '#fde8e8' : j.status === 'in_progress' ? '#fefcbf' : '#ebf4ff';
+        var borderColor = j.status === 'completed' ? '#1a8a5c' : j.status === 'late' ? '#e53e3e' : j.status === 'in_progress' ? '#ed8936' : '#4299e1';
+        html += '<div draggable="true" ondragstart="event.stopPropagation();SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" style="background:' + bgColor + ';border-left:3px solid ' + borderColor + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:1;min-width:200px;">'
+          + '<div style="font-weight:700;font-size:13px;">' + (j.clientName || '') + '</div>'
+          + '<div style="font-size:12px;color:var(--text-light);">' + (j.description || '#' + j.jobNumber) + '</div>'
+          + '<div style="display:flex;gap:8px;margin-top:4px;font-size:11px;">'
+          + '<span style="font-weight:700;color:var(--accent);">' + UI.moneyInt(j.total) + '</span>'
+          + (j.crew ? '<span style="color:var(--text-light);">' + String.fromCharCode(128119) + ' ' + j.crew.join(', ') + '</span>' : '')
+          + '</div></div>';
+      });
+
+      html += '</div></div>';
+    }
+
+    // Unscheduled for this day (have date but no time)
+    var unscheduled = dayJobs.filter(function(j) { return !j.startTime; });
+    if (unscheduled.length) {
+      html += '<div style="display:flex;border-top:2px solid var(--accent);">'
+        + '<div style="width:88px;padding:8px 10px;font-size:11px;font-weight:700;color:var(--accent);border-right:1px solid var(--border);text-align:right;">Any<br>time</div>'
+        + '<div style="flex:1;padding:6px 8px;display:flex;gap:6px;flex-wrap:wrap;">';
+      unscheduled.forEach(function(j) {
+        html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" style="background:var(--green-bg);border-left:3px solid var(--accent);border-radius:6px;padding:8px 12px;cursor:grab;flex:1;min-width:200px;">'
+          + '<div style="font-weight:700;font-size:13px;">' + (j.clientName || '') + '</div>'
+          + '<div style="font-size:12px;color:var(--text-light);">' + (j.description || '#' + j.jobNumber) + '</div>'
+          + '<div style="font-weight:700;font-size:11px;color:var(--accent);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    html += '</div>';
+
+    // Day summary
+    if (dayJobs.length) {
+      var dayTotal = dayJobs.reduce(function(s,j) { return s + (j.total||0); }, 0);
+      html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px;background:var(--white);">'
+        + '<div style="padding:14px;text-align:center;border-right:1px solid var(--border);"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600;">Jobs</div><div style="font-size:24px;font-weight:800;">' + dayJobs.length + '</div></div>'
+        + '<div style="padding:14px;text-align:center;border-right:1px solid var(--border);"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600;">Revenue</div><div style="font-size:24px;font-weight:800;color:var(--accent);">' + UI.moneyInt(dayTotal) + '</div></div>'
+        + '<div style="padding:14px;text-align:center;"><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600;">Crew</div><div style="font-size:24px;font-weight:800;">' + dayJobs.reduce(function(s,j){return s+(j.crew?j.crew.length:0);},0) + '</div></div>'
+        + '</div>';
+    } else {
+      html += '<div style="margin-top:16px;text-align:center;padding:24px;color:var(--text-light);font-size:14px;">No jobs scheduled for this day. <button class="btn btn-primary" style="margin-left:8px;" onclick="JobsPage.showForm(null,{date:\'' + SchedulePage._localDateStr(SchedulePage.currentDate) + '\'})">+ Schedule Job</button></div>';
+    }
+
+    // Admin Tasks section for this day
+    var dayAdminTasks = (typeof AdminTasks !== 'undefined') ? AdminTasks.getForDate(dateStr) : [];
+    if (dayAdminTasks.length > 0) {
+      html += '<div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:10px 14px;margin-top:8px;">'
+        + '<div style="font-size:12px;font-weight:700;color:#6a1b9a;margin-bottom:6px;">&#x1F4CB; Admin Tasks</div>';
+      dayAdminTasks.forEach(function(t) {
+        html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #e1bee7;">'
+          + '<div onclick="AdminTasks.toggleComplete(\'' + t.id + '\')" style="width:18px;height:18px;border-radius:50%;border:2px solid #7b1fa2;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;" onmouseover="this.style.background=\'#ce93d8\'" onmouseout="this.style.background=\'transparent\'">&#x2713;</div>'
+          + '<div style="flex:1;">'
+          + '<div style="font-size:13px;font-weight:600;color:#4a148c;">' + UI.esc(t.title) + '</div>'
+          + (t.recurrence && t.recurrence !== 'none' ? '<div style="font-size:11px;color:#7b1fa2;margin-top:2px;">&#x1F501; ' + t.recurrence.charAt(0).toUpperCase() + t.recurrence.slice(1) + '</div>' : '')
+          + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+
+    return html;
+  },
+
+  _dragJobId: null,
+  _dragReminder: null,
+
+  _dragStart: function(e, jobId) {
+    SchedulePage._dragJobId = jobId;
+    SchedulePage._dragReminder = null;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', jobId);
+    e.target.style.opacity = '0.5';
+  },
+
+  _dragReminderStart: function(e, kind, id, stage) {
+    SchedulePage._dragReminder = { kind: kind, id: id, stage: stage };
+    SchedulePage._dragJobId = null;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'reminder:' + kind + ':' + id + ':' + stage);
+    e.target.style.opacity = '0.5';
+  },
+
+  _dragEnd: function(e) {
+    e.target.style.opacity = '1';
+  },
+
+  _snoozeReminder: function(r, toDateStr) {
+    var key = r.stage === 2 ? 'followup2SnoozedTo' : 'followupSnoozedTo';
+    var patch = {};
+    patch[key] = toDateStr + 'T12:00:00.000Z';
+    if (r.kind === 'quote') DB.quotes.update(r.id, patch, { force: true });
+    else DB.invoices.update(r.id, patch, { force: true });
+    window._bmRemindersCacheKey = null;
+    UI.toast('Reminder moved to ' + toDateStr);
+    setTimeout(function() { loadPage('schedule'); }, 250);
+  },
+
+  _flashDrop: function(el) {
+    el.style.background = '#c8e6c9';
+    el.style.border = 'none';
+    setTimeout(function() {
+      el.style.background = '';
+    }, 400);
+  },
+
+  _togglePhotos: function() {
+    var current = localStorage.getItem('bm-cal-photos') !== 'false';
+    localStorage.setItem('bm-cal-photos', current ? 'false' : 'true');
+    loadPage('schedule');
+  },
+  // v1028: month P&L — OFF by default (=== 'true'); shows one consolidated figure below the grid.
+  _pnlEnabled: function() {
+    return localStorage.getItem('bm-cal-pnl') === 'true';
+  },
+  _togglePnl: function() {
+    localStorage.setItem('bm-cal-pnl', SchedulePage._pnlEnabled() ? 'false' : 'true');
+    loadPage('schedule');
+  },
+
+  _toggleArchived: function() {
+    var current = localStorage.getItem('bm-cal-show-archived') === 'true';
+    localStorage.setItem('bm-cal-show-archived', current ? 'false' : 'true');
+    loadPage('schedule');
+  },
+
+  _remindersEnabled: function() {
+    return localStorage.getItem('bm-cal-reminders') === 'true';
+  },
+  _toggleReminders: function() {
+    var current = SchedulePage._remindersEnabled();
+    localStorage.setItem('bm-cal-reminders', current ? 'false' : 'true');
+    window._bmRemindersCacheKey = null;
+    loadPage('schedule');
+  },
+
+  // Color the left-border stripe of unscheduled job cards by age.
+  // 0–4 days: normal green. 5–9 days: amber. 10+ days: red.
+  _unscheduledStripe: function(j) {
+    var ts = j.createdAt || j.created_at || j.quoteApprovedAt || j.updatedAt;
+    if (!ts) return 'var(--accent)';
+    var ms = new Date(ts).getTime();
+    if (isNaN(ms)) return 'var(--accent)';
+    var ageDays = (Date.now() - ms) / 86400000;
+    if (ageDays >= 10) return '#dc2626';
+    if (ageDays >= 5) return '#f59e0b';
+    return 'var(--accent)';
+  },
+
+  _dockedMapEnabled: function() {
+    return localStorage.getItem('bm-cal-map') !== 'false';
+  },
+  _toggleDockedMap: function() {
+    var current = SchedulePage._dockedMapEnabled();
+    localStorage.setItem('bm-cal-map', current ? 'false' : 'true');
+    if (SchedulePage._dockedMapInstance) {
+      try { SchedulePage._dockedMapInstance.remove(); } catch(e){}
+      SchedulePage._dockedMapInstance = null;
+    }
+    loadPage('schedule');
+  },
+
+  _photosEnabled: function() {
+    return localStorage.getItem('bm-cal-photos') !== 'false';
+  },
+
+  _dropOnDay: function(e, dateStr) {
+    e.preventDefault();
+    var el = e.currentTarget;
+    if (SchedulePage._dragReminder) {
+      SchedulePage._flashDrop(el);
+      var r = SchedulePage._dragReminder;
+      SchedulePage._dragReminder = null;
+      SchedulePage._snoozeReminder(r, dateStr);
+      return;
+    }
+    var jobId = SchedulePage._dragJobId;
+    if (!jobId) return;
+    SchedulePage._flashDrop(el);
+    DB.jobs.update(jobId, { scheduledDate: dateStr }, { force: true });
+    UI.toast('Job scheduled to ' + dateStr);
+    SchedulePage._dragJobId = null;
+    setTimeout(function() { loadPage('schedule'); }, 300);
+  },
+
+  _dropOnUnscheduled: function(e) {
+    e.preventDefault();
+    var el = e.currentTarget;
+    if (el) { el.style.background = 'var(--white)'; el.style.boxShadow = 'none'; }
+    if (SchedulePage._dragReminder) {
+      SchedulePage._flashDrop(el);
+      var r = SchedulePage._dragReminder;
+      SchedulePage._dragReminder = null;
+      SchedulePage._markReminderSent(r.kind, r.id, r.stage);
+      return;
+    }
+    var jobId = SchedulePage._dragJobId;
+    if (!jobId) return;
+    SchedulePage._flashDrop(el);
+    DB.jobs.update(jobId, { scheduledDate: null, startTime: null }, { force: true });
+    UI.toast('Job unscheduled ✓');
+    SchedulePage._dragJobId = null;
+    setTimeout(function() { loadPage('schedule'); }, 300);
+  },
+
+  _dropOnSlot: function(e, dateStr, hour) {
+    e.preventDefault();
+    var el = e.currentTarget;
+    var jobId = SchedulePage._dragJobId;
+    if (!jobId) return;
+    SchedulePage._flashDrop(el);
+    var startTime = (hour < 10 ? '0' : '') + hour + ':00';
+    var displayHour = hour > 12 ? hour - 12 : hour;
+    var ampm = hour >= 12 ? 'PM' : 'AM';
+    DB.jobs.update(jobId, { scheduledDate: dateStr, startTime: startTime }, { force: true });
+    UI.toast('Job scheduled to ' + dateStr + ' at ' + displayHour + ':00 ' + ampm);
+    SchedulePage._dragJobId = null;
+    setTimeout(function() { loadPage('schedule'); }, 300);
+  },
+
+  _renderWeek: function(skipUnscheduledBanner) {
+    var d = new Date(SchedulePage.currentDate);
+    d.setDate(d.getDate() - d.getDay());
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var today = SchedulePage._localDateStr(new Date());
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
+    var html = '';
+
+    // Unscheduled jobs panel — suppressed when right-rail Unscheduled tab takes over
+    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
+    if (skipUnscheduledBanner) {
+      // Right rail handles this — skip duplicate.
+    } else {
+    // Always render the unscheduled panel (even when empty) so it accepts drops
+    html += '<div id="sched-unscheduled" '
+      + 'ondragover="event.preventDefault();this.style.background=\'#fff3e0\';this.style.boxShadow=\'inset 0 0 0 2px #e07c24\'" '
+      + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
+      + 'ondrop="SchedulePage._dropOnUnscheduled(event)" '
+      + 'style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;transition:background .15s;">'
+      + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">📋 Unscheduled Jobs (' + unscheduled.length + ') — <span style="font-size:12px;font-weight:400;color:var(--text-light);">drag jobs here to unschedule, or to calendar to schedule</span></div>';
+    if (unscheduled.length > 0) {
+      html += '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
+      unscheduled.slice(0, 10).forEach(function(j) {
+        html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:0 0 170px;overflow:hidden;">'
+          + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
+          + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
+          + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:var(--text-light);padding:6px 0;">None — drop a scheduled job here to unschedule it.</div>';
+    }
+    html += '</div>';
+    } // end skipUnscheduledBanner else
+
+    html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
+
+    // Header
+    for (var i = 0; i < 7; i++) {
+      var dd = new Date(d);
+      dd.setDate(dd.getDate() + i);
+      var dateStr = SchedulePage._localDateStr(dd);
+      var isToday = dateStr === today;
+      html += '<div style="background:var(--bg);color:var(--text);padding:6px 8px 8px;text-align:center;font-size:12px;font-weight:700;">'
+        + (typeof Weather !== 'undefined' ? '<div style="margin-bottom:2px;min-height:16px;">' + Weather.getInline(dateStr) + '</div>' : '')
+        + days[i] + '<br>'
+        + (isToday
+          ? '<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:15px;font-weight:800;">' + dd.getDate() + '</span>'
+          : '<span style="font-size:18px;font-weight:800;">' + dd.getDate() + '</span>')
+        + '</div>';
+    }
+
+    // Cells
+    for (var i = 0; i < 7; i++) {
+      var dd = new Date(d);
+      dd.setDate(dd.getDate() + i);
+      var dateStr = SchedulePage._localDateStr(dd);
+      var isToday = dateStr === today;
+      var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
+
+      html += '<div data-date="' + dateStr + '" '
+        + 'ondragover="event.preventDefault();this.style.background=\'#e8f5e9\';this.style.boxShadow=\'inset 0 0 0 2px #4caf50\'" '
+        + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
+        + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
+        + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
+        + 'style="background:var(--white);min-height:120px;padding:6px;cursor:pointer;transition:background .15s,box-shadow .15s;position:relative;"'
+        + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();SchedulePage._addChooser(\'' + dateStr + '\')" title="Add on ' + dateStr + '" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:15px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;z-index:2;">+</button>';
+      dayJobs.forEach(function(j) {
+        var bgColor = j.status === 'completed' ? '#e8f5e9' : j.status === 'late' ? '#ffebee' : j.status === 'in_progress' ? '#fff3e0' : '#e3f2fd';
+        var borderColor = j.status === 'completed' ? '#4caf50' : j.status === 'late' ? '#f44336' : j.status === 'in_progress' ? '#ff9800' : '#2196f3';
+        // Photos from job + linked quote (past = content for SocialPilot, future = assessment photos)
+        var jobPhotos = [];
+        if (typeof Photos !== 'undefined' && SchedulePage._photosEnabled()) {
+          jobPhotos = Photos.getAll('job', j.id);
+          if (j.quoteId) jobPhotos = jobPhotos.concat(Photos.getAll('quote', j.quoteId));
+          if (j.requestId) jobPhotos = jobPhotos.concat(Photos.getAll('request', j.requestId));
+        }
+        var wkTime = SchedulePage._formatTimeShort(j.startTime);
+        html += '<div draggable="true" ondragstart="event.stopPropagation();SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" onclick="event.stopPropagation();JobsPage.showDetail(\'' + j.id + '\')" style="background:' + bgColor + ';border-left:3px solid ' + borderColor + ';border-radius:6px;padding:6px 8px;margin-bottom:4px;cursor:grab;font-size:12px;">'
+          + '<div style="font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (wkTime ? '<span style="color:var(--green-dark);">' + wkTime + '</span> ' : '') + UI.esc(j.clientName || '') + '</div>'
+          + '<div style="color:var(--text-light);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '#' + j.jobNumber) + '</div>'
+          + '<div style="font-weight:700;font-size:11px;color:var(--green-dark);margin-top:2px;">' + UI.moneyInt(j.total) + '</div>'
+          + (jobPhotos.length > 0 ? '<div style="display:flex;gap:2px;margin-top:4px;overflow:hidden;">' + jobPhotos.slice(0, 3).map(function(p) { return '<img src="' + (p.url || p.dataUrl || '') + '" style="width:24px;height:24px;border-radius:3px;object-fit:cover;">'; }).join('') + (jobPhotos.length > 3 ? '<span style="font-size:9px;color:var(--text-light);align-self:center;">+' + (jobPhotos.length - 3) + '</span>' : '') + '</div>' : '')
+          + '</div>';
+      });
+      // Admin task pills for this day
+      var weekAdminTasks = (typeof AdminTasks !== 'undefined') ? AdminTasks.getForDate(dateStr) : [];
+      weekAdminTasks.forEach(function(t) {
+        html += '<div style="background:#f3e5f5;border-left:3px solid #7b1fa2;border-radius:4px;padding:3px 6px;font-size:11px;color:#6a1b9a;cursor:pointer;margin-top:2px;" onclick="event.stopPropagation();AdminTasks.toggleComplete(\'' + t.id + '\')">&#x1F4CB; ' + UI.esc(t.title) + '</div>';
+      });
+      // v677: Quote/invoice reminder pills (Jobber-style)
+      if (SchedulePage._remindersEnabled()) {
+        var weekReminders = SchedulePage._getRemindersForDate(dateStr);
+        weekReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, false); });
+      }
+      if (SchedulePage._recurringEnabled()) {
+        var weekRec = SchedulePage._getRecurringForDate(dateStr);
+        weekRec.forEach(function(r) { html += SchedulePage._renderRecurringPill(r, false); });
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    return html;
+  },
+
+  _renderMonth: function(skipUnscheduledBanner) {
+    var d = SchedulePage.currentDate;
+    var year = d.getFullYear();
+    var month = d.getMonth();
+    var firstDay = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var today = SchedulePage._localDateStr(new Date());
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') allJobs = allJobs.filter(function(_j){ return _j.status !== 'archived'; });
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    var html = '';
+
+    // Unscheduled jobs panel — suppressed when right-rail Unscheduled tab takes over
+    var unscheduled = allJobs.filter(function(j) { return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived'; });
+    if (skipUnscheduledBanner) {
+      // Right rail handles this — skip duplicate.
+    } else {
+    html += '<div id="sched-unscheduled-m" '
+      + 'ondragover="event.preventDefault();this.style.background=\'#fff3e0\';this.style.boxShadow=\'inset 0 0 0 2px #e07c24\'" '
+      + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
+      + 'ondrop="SchedulePage._dropOnUnscheduled(event)" '
+      + 'style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;transition:background .15s;">'
+      + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">' + String.fromCharCode(128203) + ' Unscheduled Jobs (' + unscheduled.length + ') — <span style="font-size:12px;font-weight:400;color:var(--text-light);">drag here to unschedule, or to a day to schedule</span></div>';
+    if (unscheduled.length > 0) {
+      html += '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">';
+      unscheduled.slice(0, 10).forEach(function(j) {
+        html += '<div draggable="true" ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 12px;cursor:grab;flex:0 0 170px;overflow:hidden;">'
+          + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
+          + '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description || '') + '</div>'
+          + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:4px;">' + UI.moneyInt(j.total) + '</div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:var(--text-light);padding:6px 0;">None — drop a scheduled job here to unschedule it.</div>';
+    }
+    html += '</div>';
+    } // end skipUnscheduledBanner else
+
+    // v947: per-week P&L strip wired into each calendar row (Rev/Exp/Net),
+    // computed from that row's own Sun–Sat dates so it lines up with the grid.
+    // Replaces the separate right-rail Budget tab as the primary view.
+    SchedulePage._loadCalEvents();
+    var _billsIdx = window._bmCalEventsIndex || {};
+    var _cellN = 0, _wkDates = [];
+    // v1028: P&L is now ONE consolidated month figure below the grid (not a strip
+    // dividing every week) and OFF by default — toggled on via Calendar & View Options.
+    var _pnlOn = SchedulePage._pnlEnabled();
+    var _mRev = 0, _mExp = 0, _mJobN = 0;
+    function _accWeek(dates) {
+      var ds = dates.filter(Boolean);
+      if (!ds.length) return;
+      var rev = 0, exp = 0;
+      allJobs.forEach(function(j) {
+        if (!j.scheduledDate) return;
+        var dd = j.scheduledDate.substring(0, 10);
+        if (ds.indexOf(dd) >= 0 && j.status !== 'archived' && j.status !== 'cancelled') { rev += Number(j.total) || 0; _mJobN++; }
+      });
+      ds.forEach(function(dStr) {
+        (_billsIdx[dStr] || []).forEach(function(ev) {
+          if (ev.type === 'bill') { var m = String(ev.title || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); if (m) exp += parseFloat(m[1]); }
+        });
+      });
+      _mRev += rev; _mExp += exp;
+    }
+    function _tick(dateOrNull) { _wkDates.push(dateOrNull); _cellN++; if (_cellN % 7 === 0) { _accWeek(_wkDates); _wkDates = []; } }
+
+    html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border);">';
+
+    days.forEach(function(day) {
+      html += '<div style="background:var(--bg);padding:8px;text-align:center;font-size:11px;font-weight:700;color:var(--text-light);">' + day + '</div>';
+    });
+
+    for (var i = 0; i < firstDay; i++) {
+      html += '<div style="background:#fafafa;min-height:80px;padding:4px;"></div>';
+      _tick(null);
+    }
+
+    for (var day = 1; day <= daysInMonth; day++) {
+      var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      var isToday = dateStr === today;
+      var wkday = (firstDay + day - 1) % 7;
+      var isWeekend = (wkday === 0 || wkday === 6);
+      var cellBg = isWeekend ? '#f7f8fa' : 'var(--white)';
+      var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
+
+      html += '<div data-date="' + dateStr + '" '
+        + 'ondragover="event.preventDefault();this.style.background=\'#e8f5e9\';this.style.boxShadow=\'inset 0 0 0 2px #4caf50\'" '
+        + 'ondragleave="this.style.background=\'' + cellBg + '\';this.style.boxShadow=\'none\'" '
+        + 'ondrop="SchedulePage._dropOnDay(event,\'' + dateStr + '\')" '
+        + 'onclick="SchedulePage.currentDate=new Date(\'' + dateStr + 'T12:00:00\');SchedulePage.setView(\'day\')" '
+        + 'style="background:' + cellBg + ';min-height:80px;padding:4px;cursor:pointer;transition:background .15s;position:relative;"'
+        + ' onmouseover="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=1" onmouseout="var b=this.querySelector(\'.bm-cell-add\');if(b)b.style.opacity=0">'
+        + '<button class="bm-cell-add" onclick="event.stopPropagation();SchedulePage._addChooser(\'' + dateStr + '\')" title="Add on ' + dateStr + '" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:var(--green-dark);color:#fff;font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;padding:0;font-weight:700;">+</button>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'
+        + (isToday
+            ? '<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green-dark);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + day + '</span>'
+            : '<span style="font-size:12px;font-weight:600;color:var(--text);">' + day + '</span>')
+        + (typeof Weather !== 'undefined' ? Weather.getInline(dateStr) : '')
+        + '</div>';
+
+      dayJobs.forEach(function(j) {
+        var bgColor = j.status === 'completed' ? '#e8f5e9' : j.status === 'late' ? '#ffebee' : '#e3f2fd';
+        var mPhotos = [];
+        if (typeof Photos !== 'undefined' && SchedulePage._photosEnabled()) {
+          mPhotos = Photos.getAll('job', j.id);
+          if (j.quoteId) mPhotos = mPhotos.concat(Photos.getAll('quote', j.quoteId));
+          if (j.requestId) mPhotos = mPhotos.concat(Photos.getAll('request', j.requestId));
+        }
+        var moTime = SchedulePage._formatTimeShort(j.startTime);
+        html += '<div draggable="true" ondragstart="event.stopPropagation();SchedulePage._dragStart(event,\'' + j.id + '\')" ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="event.stopPropagation();JobsPage.showDetail(\'' + j.id + '\')" '
+          + 'style="background:' + bgColor + ';border-radius:4px;padding:2px 4px;margin-bottom:2px;cursor:grab;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+          + (moTime ? '<b style="color:var(--green-dark);">' + moTime + '</b> ' : '')
+          + (j.clientName || '#' + j.jobNumber)
+          + (mPhotos.length > 0 ? ' 📷' + mPhotos.length : '')
+          + '</div>';
+      });
+      // Admin task dots for this day
+      var monthAdminTasks = (typeof AdminTasks !== 'undefined') ? AdminTasks.getForDate(dateStr) : [];
+      monthAdminTasks.forEach(function(t) {
+        html += '<div style="font-size:9px;color:#7b1fa2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" onclick="event.stopPropagation();AdminTasks.toggleComplete(\'' + t.id + '\')">&#x25CF; ' + UI.esc(t.title) + '</div>';
+      });
+      // v677: Quote/invoice reminder pills (Jobber-style, click → detail)
+      if (SchedulePage._remindersEnabled()) {
+        var monthReminders = SchedulePage._getRemindersForDate(dateStr);
+        monthReminders.forEach(function(r) { html += SchedulePage._renderReminderPill(r, true); });
+      }
+      if (SchedulePage._recurringEnabled()) {
+        var monthRec = SchedulePage._getRecurringForDate(dateStr);
+        monthRec.forEach(function(r) { html += SchedulePage._renderRecurringPill(r, true); });
+      }
+      if (SchedulePage._eventsEnabled()) {
+        SchedulePage._getCalEventsForDate(dateStr).forEach(function(ev) { html += SchedulePage._renderEventPill(ev); });
+      }
+      // v1130: day-recap chip — past days with staged recap photos (Ground
+      // Control history migrated to the schedule). Manifest is a one-time ~2KB
+      // fetch; NO image loads until the chip is tapped (field-bandwidth rule).
+      if (dateStr < today && window._bmRecaps && window._bmRecaps[dateStr]) {
+        // v1132: chip carries the day's job name(s), not a generic "recap" (Doug, Aug 15)
+        var _rLabel = SchedulePage._recapLabel(dateStr) ? String(SchedulePage._recapLabel(dateStr)).slice(0, 16) : 'recap';
+        if (dayJobs.length) {
+          _rLabel = String(dayJobs[0].clientName || ('#' + dayJobs[0].jobNumber)).slice(0, 16);
+          if (dayJobs.length > 1) _rLabel += ' +' + (dayJobs.length - 1);
+        }
+        html += '<div onclick="event.stopPropagation();SchedulePage.showDayRecap(\'' + dateStr + '\')" '
+          + 'style="font-size:9.5px;font-weight:700;color:#6a4b16;background:#fdf3dc;border-radius:8px;padding:1px 5px;margin-top:2px;display:inline-block;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+          + '\ud83d\udcf8 ' + UI.esc(_rLabel) + ' \u00b7 ' + window._bmRecaps[dateStr].filter(function(f) { return !(f && f.hidden); }).length + '</div>';
+      }
+      html += '</div>';
+      _tick(dateStr);
+    }
+
+    var totalCells = firstDay + daysInMonth;
+    var remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (var i = 0; i < remaining; i++) {
+      html += '<div style="background:#fafafa;min-height:80px;padding:4px;"></div>';
+      _tick(null);
+    }
+
+    html += '</div>';
+    // v1028: single consolidated month P&L below the grid (toggle on via Options).
+    if (_pnlOn) {
+      var _mNet = _mRev - _mExp;
+      var _pm = function(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); };
+      var _netC = _mNet >= 0 ? 'var(--green-dark)' : '#c62828';
+      html += '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:12px;font-size:13px;font-weight:600;">'
+        + '<span style="color:var(--text-light);font-weight:800;letter-spacing:.03em;margin-right:auto;">' + SchedulePage._getTitle() + ' P&amp;L</span>'
+        + '<span style="color:var(--green-dark);">Revenue ' + _pm(_mRev) + (_mJobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + _mJobN + ' jobs)</span>' : '') + '</span>'
+        + '<span style="color:#c62828;">Expenses ' + (_mExp > 0 ? _pm(-_mExp) : '$0') + '</span>'
+        + '<span style="color:' + _netC + ';font-weight:900;font-size:15px;">Net ' + _pm(_mNet) + '</span>'
+        + '</div>';
+    }
+    return html;
+  },
+
+  setView: function(view) {
+    SchedulePage.view = view;
+    loadPage('schedule');
+  },
+
+  prev: function() {
+    var d = SchedulePage.currentDate;
+    var v = SchedulePage.view;
+    if (v === 'day' || v === 'list' || v === 'map') { d.setDate(d.getDate() - 1); }
+    else if (v === 'week') { d.setDate(d.getDate() - 7); }
+    else if (v === 'year') { d.setFullYear(d.getFullYear() - 1); }
+    else { d.setMonth(d.getMonth() - 1); }
+    loadPage('schedule');
+  },
+
+  next: function() {
+    var d = SchedulePage.currentDate;
+    var v = SchedulePage.view;
+    if (v === 'day' || v === 'list' || v === 'map') { d.setDate(d.getDate() + 1); }
+    else if (v === 'week') { d.setDate(d.getDate() + 7); }
+    else if (v === 'year') { d.setFullYear(d.getFullYear() + 1); }
+    else { d.setMonth(d.getMonth() + 1); }
+    loadPage('schedule');
+  },
+
+  goToday: function() {
+    SchedulePage.currentDate = new Date();
+    loadPage('schedule');
+  },
+
+  _openMonthPicker: function(event) {
+    var picker = document.getElementById('cal-month-picker');
+    if (!picker) return;
+    if (event && event.target) {
+      var rect = event.target.getBoundingClientRect();
+      picker.style.left = (rect.left + window.scrollX) + 'px';
+      picker.style.top = (rect.bottom + window.scrollY) + 'px';
+    }
+    if (typeof picker.showPicker === 'function') {
+      try { picker.showPicker(); return; } catch(e) {}
+    }
+    picker.focus();
+    picker.click();
+  },
+  _jumpToMonth: function(val) {
+    if (!val) return;
+    var parts = val.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10) - 1;
+    if (isNaN(y) || isNaN(m)) return;
+    SchedulePage.currentDate = new Date(y, m, 1, 12, 0, 0);
+    loadPage('schedule');
+  },
+
+  // v647: Jobber-style week scroller strip — S M T W T F S with date numbers,
+  // today highlighted in green circle. Tap any day → jump Day view to that date.
+  _renderWeekScroller: function(currentDate) {
+    var today = SchedulePage._localDateStr(new Date());
+    var selected = SchedulePage._localDateStr(currentDate);
+    // Compute Sunday of the current week
+    var d = new Date(currentDate);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay());
+    var dayLetters = ['S','M','T','W','T','F','S'];
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:8px 6px;margin-bottom:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+    for (var i = 0; i < 7; i++) {
+      var dt = new Date(d);
+      dt.setDate(d.getDate() + i);
+      var dStr = SchedulePage._localDateStr(dt);
+      var isToday = dStr === today;
+      var isSelected = dStr === selected;
+      var dayJobCount = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dStr; }).length;
+
+      var bg = isToday ? 'var(--green-dark)' : isSelected ? 'var(--green-bg)' : 'transparent';
+      var fg = isToday ? '#fff' : 'var(--text)';
+      var letterColor = isToday ? 'rgba(255,255,255,.85)' : 'var(--text-light)';
+
+      html += '<button onclick="SchedulePage.currentDate=new Date(\'' + dStr + 'T12:00:00\');if(SchedulePage.view===\'week\'||SchedulePage.view===\'month\')SchedulePage.view=\'day\';loadPage(\'schedule\')" '
+        + 'style="border:none;cursor:pointer;background:' + bg + ';color:' + fg + ';border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .15s;">'
+        +   '<span style="font-size:10px;font-weight:600;letter-spacing:.04em;color:' + letterColor + ';text-transform:uppercase;">' + dayLetters[i] + '</span>'
+        +   '<span style="font-size:16px;font-weight:700;line-height:1;">' + dt.getDate() + '</span>'
+        +   (dayJobCount > 0
+              ? '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:' + (isToday ? '#fff' : 'var(--accent)') + ';margin-top:2px;"></span>'
+              : '<span style="display:inline-block;width:5px;height:5px;margin-top:2px;"></span>')
+        + '</button>';
+    }
+    html += '</div>';
+    return html;
+  },
+
+  // ── Rail Budget panel (v939) — compact weekly P&L next to Map/Unscheduled ──
+  // Revenue = scheduled jobs' value that week. Expenses = bills/tax on the
+  // calendar (type='bill') whose payment date lands that week. Net = the
+  // week's projected P&L; "run" is the cumulative trajectory. Sized for the
+  // 320px right rail (same panel that holds Map + Unscheduled).
+  _renderRailBudget: function(allJobs) {
+    var self = SchedulePage;
+    self._loadCalEvents();
+    var jobs = (allJobs || DB.jobs.getAll()).filter(function(j) {
+      return j.scheduledDate && j.status !== 'archived' && j.status !== 'cancelled';
+    });
+    var billsIdx = window._bmCalEventsIndex || {};
+    function parseAmt(s) { var m = String(s || '').replace(/,/g, '').match(/\$\s?(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; }
+    function money(n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString(); }
+
+    var MS = 86400000;
+    var sm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var fullM = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var todayStr = self._localDateStr(new Date());
+
+    // Span the currently-displayed month: every week that overlaps it (4–6 weeks),
+    // so the panel lines up with the month the user is looking at.
+    var cd = self.currentDate;
+    var monthLabel = fullM[cd.getMonth()];
+    var firstOfMonth = new Date(cd.getFullYear(), cd.getMonth(), 1);
+    var lastOfMonth = new Date(cd.getFullYear(), cd.getMonth() + 1, 0);
+    var wkStart = new Date(firstOfMonth); wkStart.setHours(0, 0, 0, 0);
+    wkStart.setDate(wkStart.getDate() - ((wkStart.getDay() + 6) % 7)); // Monday of week containing the 1st
+    var weekStarts = [];
+    for (var cur = new Date(wkStart); cur <= lastOfMonth; cur.setDate(cur.getDate() + 7)) { weekStarts.push(new Date(cur)); }
+
+    var totRev = 0, totExp = 0, rowsHtml = '';
+    weekStarts.forEach(function(ws) {
+      var we = new Date(ws.getTime() + 6 * MS);
+      var wsStr = self._localDateStr(ws);
+      var weStr = self._localDateStr(we);
+      var rev = 0, jobN = 0;
+      jobs.forEach(function(j) { var d = j.scheduledDate.substring(0, 10); if (d >= wsStr && d <= weStr) { rev += Number(j.total) || 0; jobN++; } });
+      var exp = 0, bills = [];
+      for (var di = 0; di < 7; di++) {
+        var dStr = self._localDateStr(new Date(ws.getTime() + di * MS));
+        (billsIdx[dStr] || []).forEach(function(ev) { if (ev.type === 'bill') { exp += parseAmt(ev.title); bills.push(ev.title.replace(/^[^A-Za-z0-9]+/, '')); } });
+      }
+      var net = rev - exp; totRev += rev; totExp += exp;
+      var isThis = (wsStr <= todayStr && todayStr <= weStr);
+      var netC = net >= 0 ? 'var(--green-dark)' : '#c62828';
+      var endLabel = (we.getMonth() === ws.getMonth() ? '' : sm[we.getMonth()] + ' ') + we.getDate();
+      rowsHtml += '<div style="padding:8px 0;border-top:1px solid var(--border);">'
+        + '<div style="font-weight:800;font-size:12px;margin-bottom:3px;' + (isThis ? 'color:var(--green-dark);' : '') + '">' + (isThis ? '▶ ' : '') + 'Week of ' + sm[ws.getMonth()] + ' ' + ws.getDate() + '–' + endLabel + (isThis ? ' · this week' : '') + '</div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;line-height:1.7;"><span style="color:var(--text-light);">Revenue</span><span style="color:var(--green-dark);font-weight:600;">' + money(rev) + (jobN ? ' <span style="color:var(--text-light);font-weight:400;">(' + jobN + 'j)</span>' : '') + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;line-height:1.7;"><span style="color:var(--text-light);">Expenses</span><span style="color:#c62828;font-weight:600;">' + (exp > 0 ? money(-exp) : '$0') + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px dashed var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:700;">Net</span><span style="font-weight:800;color:' + netC + ';">' + money(net) + '</span></div>'
+        + (bills.length ? '<div style="font-size:9px;color:#c62828;line-height:1.3;margin-top:3px;">' + bills.join(', ') + '</div>' : '')
+        + '</div>';
+    });
+
+    var totNet = totRev - totExp;
+    return '<div style="padding:10px 12px;">'
+      + '<div style="font-size:10px;color:var(--text-light);line-height:1.4;margin-bottom:8px;">' + monthLabel + ' weekly P&L — booked job revenue − bills/tax due. Revenue = jobs scheduled in BM (Jobber work fills in as pulled).</div>'
+      + '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px;font-size:11px;">'
+      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">' + monthLabel + ' revenue</span><span style="color:var(--green-dark);font-weight:700;">' + money(totRev) + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;line-height:1.7;"><span style="color:var(--text-light);">' + monthLabel + ' expenses</span><span style="color:#c62828;font-weight:700;">' + (totExp > 0 ? money(-totExp) : '$0') + '</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px solid var(--border);margin-top:3px;padding-top:3px;"><span style="font-weight:800;">' + monthLabel + ' net</span><span style="font-weight:800;color:' + (totNet >= 0 ? 'var(--green-dark)' : '#c62828') + ';">' + money(totNet) + '</span></div>'
+      + '</div>'
+      + rowsHtml
+      + '</div>';
+  },
+
+  // Year view — 12-month overview built for the "days worked per year"
+  // planning lens. Each month shows scheduled-job count, distinct work-days,
+  // and scheduled revenue; click a month to open it. Counts come from BM
+  // scheduled jobs (future months fill in as Jobber work is pulled / scheduled).
+  _renderYear: function() {
+    var d = SchedulePage.currentDate;
+    var year = d.getFullYear();
+    var now = new Date();
+    var nowY = now.getFullYear(), nowM = now.getMonth();
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var buckets = [];
+    for (var i = 0; i < 12; i++) buckets.push({ jobs: 0, days: {}, revenue: 0 });
+    var yearDays = {}, yearJobs = 0, yearRev = 0;
+    allJobs.forEach(function(j) {
+      if (!j.scheduledDate) return;
+      var ds = j.scheduledDate.substring(0, 10);
+      if (ds.substring(0, 4) !== String(year)) return;
+      var m = parseInt(ds.substring(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      var rev = parseFloat(j.total) || 0;
+      buckets[m].jobs++; buckets[m].days[ds] = 1; buckets[m].revenue += rev;
+      yearDays[ds] = 1; yearJobs++; yearRev += rev;
+    });
+    var totalWorkDays = Object.keys(yearDays).length;
+
+    // Distinct calendar events (time off / personal) per month, from the loaded index.
+    var evIdx = window._bmCalEventsIndex || {};
+    Object.keys(evIdx).forEach(function(ds) {
+      if (ds.substring(0, 4) !== String(year)) return;
+      var m = parseInt(ds.substring(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      evIdx[ds].forEach(function(e) { (buckets[m]._ev = buckets[m]._ev || {})[e.id] = 1; });
+    });
+
+    function stat(v, l) {
+      return '<div style="flex:1;min-width:120px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">'
+        + '<div style="font-size:22px;font-weight:800;color:var(--green-dark);">' + v + '</div>'
+        + '<div style="font-size:12px;color:var(--text-light);">' + l + '</div></div>';
+    }
+
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">'
+      + stat(totalWorkDays, 'days worked in ' + year)
+      + stat(yearJobs, 'jobs scheduled')
+      + stat((typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(yearRev) : ('$' + Math.round(yearRev)), 'scheduled revenue')
+      + '</div>';
+
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">';
+    for (var mo = 0; mo < 12; mo++) {
+      var b = buckets[mo];
+      var dcount = Object.keys(b.days).length;
+      var isCur = (year === nowY && mo === nowM);
+      var bg = b.jobs === 0 ? 'var(--white)' : 'rgba(46,90,30,' + Math.min(0.08 + b.jobs * 0.05, 0.4) + ')';
+      var revStr = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt(b.revenue) : ('$' + Math.round(b.revenue));
+      html += '<div onclick="SchedulePage.currentDate=new Date(' + year + ',' + mo + ',1);SchedulePage.view=\'month\';loadPage(\'schedule\')" '
+        + 'style="cursor:pointer;background:' + bg + ';border:' + (isCur ? '2px solid var(--green-dark)' : '1px solid var(--border)') + ';border-radius:10px;padding:12px;min-height:84px;display:flex;flex-direction:column;justify-content:space-between;">'
+        + '<div style="font-weight:700;font-size:14px;">' + months[mo] + (isCur ? ' <span style="font-size:10px;color:var(--green-dark);">(now)</span>' : '')
+          + ((b._ev && Object.keys(b._ev).length) ? ' <span title="time off / events" style="font-size:11px;">🌴' + Object.keys(b._ev).length + '</span>' : '') + '</div>'
+        + (b.jobs > 0
+            ? '<div><div style="font-size:20px;font-weight:800;color:var(--green-dark);">' + b.jobs + '</div>'
+              + '<div style="font-size:11px;color:var(--text-light);">' + dcount + ' day' + (dcount === 1 ? '' : 's') + ' &middot; ' + revStr + '</div></div>'
+            : '<div style="font-size:11px;color:var(--text-light);">no jobs</div>')
+        + '</div>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--text-light);margin-top:10px;">Click a month to open it. Counts are scheduled jobs in Branch Manager — future months fill in as Jobber work is pulled in or jobs get scheduled.</div>';
+    return html;
+  },
+
+  // v647: List view — clean vertical timeline of today's jobs in time order.
+  // No hour grid; just job cards top-to-bottom with start time chip.
+  _renderList: function() {
+    var self = SchedulePage;
+    var dateStr = self._localDateStr(self.currentDate);
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var dayJobs = allJobs.filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr; });
+    dayJobs.sort(function(a, b) { return (a.startTime || '99:99').localeCompare(b.startTime || '99:99'); });
+
+    if (!dayJobs.length) {
+      return '<div style="background:var(--white);border:1px dashed var(--border);border-radius:12px;padding:32px 16px;text-align:center;color:var(--text-light);">'
+        + '<div style="font-size:32px;margin-bottom:6px;">📅</div>'
+        + '<div style="font-size:14px;font-weight:600;color:var(--text);">No jobs scheduled</div>'
+        + '<div style="font-size:12px;margin-top:4px;">Drag an unscheduled job from Day view, or add one with +.</div>'
+        + '</div>';
+    }
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
+    dayJobs.forEach(function(j, i) {
+      var statusColor = j.status === 'completed' ? '#2e7d32' : j.status === 'in_progress' ? '#e07c24' : j.status === 'late' ? '#c62828' : '#1565c0';
+      var statusBg = j.status === 'completed' ? '#e8f5e9' : j.status === 'in_progress' ? '#fff3e0' : j.status === 'late' ? '#fde8e8' : '#e3f2fd';
+      var border = i > 0 ? 'border-top:1px solid var(--border);' : '';
+      html += '<div onclick="JobsPage.showDetail(\'' + j.id + '\')" style="cursor:pointer;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;' + border + '">'
+        +   '<div style="flex-shrink:0;width:62px;text-align:center;">'
+        +     '<div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1;">' + UI.esc(j.startTime || 'Any')+ '</div>'
+        +     (j.endTime ? '<div style="font-size:11px;color:var(--text-light);">' + UI.esc(j.endTime) + '</div>' : '')
+        +   '</div>'
+        +   '<div style="width:3px;background:' + statusColor + ';border-radius:2px;align-self:stretch;flex-shrink:0;"></div>'
+        +   '<div style="flex:1;min-width:0;">'
+        +     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px;">'
+        +       '<div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(j.clientName || '—') + '</div>'
+        +       '<div style="font-size:13px;font-weight:700;color:var(--text);flex-shrink:0;">' + UI.moneyInt(j.total || 0) + '</div>'
+        +     '</div>'
+        +     (j.property ? '<div style="font-size:12px;color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + UI.esc(j.property) + '</div>' : '')
+        +     (j.description ? '<div style="font-size:12px;color:var(--text);margin-top:4px;line-height:1.4;">' + UI.esc(j.description) + '</div>' : '')
+        +     '<div style="margin-top:6px;display:flex;gap:6px;align-items:center;">'
+        +       '<span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 9px;border-radius:11px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">' + (j.status || 'scheduled').replace('_', ' ') + '</span>'
+        +       (j.crew && j.crew.length ? '<span style="font-size:11px;color:var(--text-light);">👷 ' + UI.esc(j.crew.join(', ')) + '</span>' : '')
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+
+    var totalRevenue = dayJobs.reduce(function(s, j) { return s + (j.total || 0); }, 0);
+    html += '<div style="margin-top:8px;text-align:right;font-size:13px;color:var(--text-light);">'
+      + dayJobs.length + ' job' + (dayJobs.length === 1 ? '' : 's') + ' · ' + UI.money(totalRevenue) + ' total'
+      + '</div>';
+    return html;
+  },
+
+  // v647: Map view — embed MapLibre showing today's jobs as pins. Re-uses
+  // the same MapLibre infra Dispatch already loads. Pins colored by status.
+  _renderMap: function() {
+    var self = SchedulePage;
+    var dateStr = self._localDateStr(self.currentDate);
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var dayJobs = allJobs.filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0,10) === dateStr
+        && (j.lat || j.latitude) && (j.lng || j.longitude || j.lon);
+    });
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
+    html += '<div id="schedule-map" style="height:480px;width:100%;background:#e8eef2;"></div>';
+
+    if (dayJobs.length === 0) {
+      html += '<div style="padding:14px 16px;font-size:13px;color:var(--text-light);text-align:center;background:var(--bg);border-top:1px solid var(--border);">'
+        + 'No jobs with location for this day. Add property addresses to see pins.'
+        + '</div>';
+    } else {
+      html += '<div style="padding:10px 14px;font-size:12px;color:var(--text-light);background:var(--bg);border-top:1px solid var(--border);">'
+        + dayJobs.length + ' job' + (dayJobs.length === 1 ? '' : 's') + ' shown · tap a pin for details'
+        + '</div>';
+    }
+    html += '</div>';
+
+    // Init MapLibre after DOM mount (deferred so the container exists)
+    setTimeout(function() {
+      var el = document.getElementById('schedule-map');
+      if (!el || typeof maplibregl === 'undefined') return;
+      try {
+        // Center: if we have jobs, use first; else fall back to Peekskill area.
+        var firstJob = dayJobs[0];
+        var centerLng = firstJob ? Number(firstJob.lng || firstJob.longitude || firstJob.lon) : -73.9211;
+        var centerLat = firstJob ? Number(firstJob.lat || firstJob.latitude) : 41.2901;
+        var map = new maplibregl.Map({
+          container: el,
+          style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+          center: [centerLng, centerLat],
+          zoom: dayJobs.length ? 11 : 9
+        });
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        SchedulePage._mapInstance = map;
+
+        map.on('load', function() {
+          var bounds = new maplibregl.LngLatBounds();
+          dayJobs.forEach(function(j) {
+            var lng = Number(j.lng || j.longitude || j.lon);
+            var lat = Number(j.lat || j.latitude);
+            if (!lng || !lat) return;
+            var statusColor = j.status === 'completed' ? '#2e7d32' : j.status === 'in_progress' ? '#e07c24' : j.status === 'late' ? '#c62828' : '#1565c0';
+            var pin = document.createElement('div');
+            pin.style.cssText = 'width:28px;height:28px;border-radius:50%;background:' + statusColor + ';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;';
+            pin.textContent = (j.startTime || '·').substring(0, 2);
+            pin.onclick = function() { JobsPage.showDetail(j.id); };
+            new maplibregl.Marker({ element: pin })
+              .setLngLat([lng, lat])
+              .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(
+                '<div style="font-size:13px;font-weight:700;">' + UI.esc(j.clientName || '') + '</div>'
+                + (j.startTime ? '<div style="font-size:12px;color:#666;">' + UI.esc(j.startTime) + '</div>' : '')
+                + (j.property ? '<div style="font-size:12px;margin-top:4px;">' + UI.esc(j.property) + '</div>' : '')
+              ))
+              .addTo(map);
+            bounds.extend([lng, lat]);
+          });
+          if (dayJobs.length > 1) map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        });
+      } catch (e) {
+        el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-light);font-size:13px;">Map failed to load: ' + e.message + '</div>';
+      }
+    }, 60);
+
+    return html;
+  },
+
+  _renderStatStrip: function(allJobs) {
+    var range = SchedulePage._rangeForView();
+    var rangeJobs = allJobs.filter(function(j) {
+      if (!j.scheduledDate) return false;
+      var ds = j.scheduledDate.substring(0,10);
+      return ds >= range.start && ds <= range.end;
+    });
+    var revenue = rangeJobs.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
+    var completed = rangeJobs.filter(function(j) { return j.status === 'completed'; }).length;
+    var unscheduled = allJobs.filter(function(j) {
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived';
+    });
+    var queueValue = unscheduled.reduce(function(s, j) { return s + (Number(j.total) || 0); }, 0);
+    var rangeLabel = SchedulePage.view === 'week' ? 'This Week' : 'This Month';
+
+    function pill(label, value, color) {
+      return '<div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:6px 12px;display:inline-flex;align-items:baseline;gap:6px;">'
+        + '<span style="font-size:11px;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:.3px;">' + label + '</span>'
+        + '<span style="font-size:14px;font-weight:800;color:' + (color || 'var(--text)') + ';">' + value + '</span>'
+        + '</div>';
+    }
+
+    return '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">'
+      + '<span style="font-size:11px;color:var(--text-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">' + rangeLabel + '</span>'
+      + pill('Jobs', rangeJobs.length)
+      + pill('Revenue', UI.moneyInt(revenue), 'var(--green-dark)')
+      + pill('Done', completed + '/' + rangeJobs.length)
+      + pill('Queue', unscheduled.length + (queueValue ? ' · ' + UI.moneyInt(queueValue) : ''), unscheduled.length > 0 ? '#e07c24' : 'var(--text-light)')
+      + '</div>';
+  },
+
+  _rangeForView: function() {
+    var d = SchedulePage.currentDate;
+    var start, end;
+    if (SchedulePage.view === 'week') {
+      start = new Date(d); start.setDate(start.getDate() - start.getDay());
+      end = new Date(start); end.setDate(end.getDate() + 6);
+    } else {
+      var first = new Date(d.getFullYear(), d.getMonth(), 1);
+      start = new Date(first); start.setDate(start.getDate() - first.getDay());
+      var last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      end = new Date(last); end.setDate(end.getDate() + (6 - last.getDay()));
+    }
+    return { start: SchedulePage._localDateStr(start), end: SchedulePage._localDateStr(end) };
+  },
+
+  _railTab: function() {
+    var t = localStorage.getItem('bm-cal-rail-tab');
+    return (t === 'unscheduled' || t === 'budget') ? t : 'map';
+  },
+  _setRailTab: function(tab) {
+    localStorage.setItem('bm-cal-rail-tab', tab);
+    if (SchedulePage._dockedMapInstance) {
+      try { SchedulePage._dockedMapInstance.remove(); } catch(e){}
+      SchedulePage._dockedMapInstance = null;
+    }
+    loadPage('schedule');
+  },
+
+  _renderRightRail: function() {
+    var allJobs = DB.jobs.getAll();
+    if (localStorage.getItem('bm-cal-show-archived') !== 'true') {
+      allJobs = allJobs.filter(function(j) { return j.status !== 'archived'; });
+    }
+    var unscheduled = allJobs.filter(function(j) {
+      return !j.scheduledDate && j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'archived';
+    });
+    var activeTab = SchedulePage._railTab();
+
+    function tabBtn(key, label) {
+      var active = activeTab === key;
+      return '<button onclick="SchedulePage._setRailTab(\'' + key + '\')" '
+        + 'style="flex:1;padding:8px 10px;font-size:12px;font-weight:700;border:none;cursor:pointer;'
+        + 'background:' + (active ? 'var(--white)' : 'var(--bg)') + ';'
+        + 'color:' + (active ? 'var(--text)' : 'var(--text-light)') + ';'
+        + 'border-bottom:' + (active ? '2px solid var(--green-dark)' : '2px solid transparent') + ';'
+        + 'transition:background .15s,color .15s;">'
+        + label + '</button>';
+    }
+
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
+      + '<div style="display:flex;border-bottom:1px solid var(--border);">'
+      +   tabBtn('map', 'Map')
+      +   tabBtn('unscheduled', 'Unsched' + (unscheduled.length ? ' (' + unscheduled.length + ')' : ''))
+      +   tabBtn('budget', 'Budget')
+      +   '<button onclick="SchedulePage._toggleDockedMap()" title="Hide panel" '
+      +     'style="padding:0 10px;background:var(--bg);border:none;border-bottom:2px solid transparent;font-size:18px;line-height:1;cursor:pointer;color:var(--text-light);">&times;</button>'
+      + '</div>';
+
+    if (activeTab === 'map') {
+      html += SchedulePage._renderRailMap(allJobs);
+    } else if (activeTab === 'budget') {
+      html += SchedulePage._renderRailBudget(allJobs);
+    } else {
+      html += SchedulePage._renderRailUnscheduled(unscheduled);
+    }
+
+    html += '</div>';
+    return html;
+  },
+
+  _renderRailMap: function(allJobs) {
+    var range = SchedulePage._rangeForView();
+    var rangeJobs = allJobs.filter(function(j) {
+      if (!j.scheduledDate) return false;
+      var ds = j.scheduledDate.substring(0,10);
+      return ds >= range.start && ds <= range.end && (j.lat || j.latitude) && (j.lng || j.longitude || j.lon);
+    });
+
+    var html = '<div id="schedule-map-docked" style="height:480px;width:100%;background:#e8eef2;"></div>'
+      + '<div style="padding:6px 12px;font-size:11px;color:var(--text-light);background:var(--bg);border-top:1px solid var(--border);text-align:center;">'
+      + rangeJobs.length + ' job' + (rangeJobs.length === 1 ? '' : 's') + ' in view'
+      + '</div>';
+
+    setTimeout(function() {
+      var el = document.getElementById('schedule-map-docked');
+      if (!el || typeof maplibregl === 'undefined') return;
+      if (SchedulePage._dockedMapInstance) {
+        try { SchedulePage._dockedMapInstance.remove(); } catch(e){}
+        SchedulePage._dockedMapInstance = null;
+      }
+      try {
+        var first = rangeJobs[0];
+        var centerLng = first ? Number(first.lng || first.longitude || first.lon) : -73.9211;
+        var centerLat = first ? Number(first.lat || first.latitude) : 41.2901;
+        var map = new maplibregl.Map({
+          container: el,
+          style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+          center: [centerLng, centerLat],
+          zoom: rangeJobs.length ? 10 : 9
+        });
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        SchedulePage._dockedMapInstance = map;
+        map.on('load', function() {
+          var bounds = new maplibregl.LngLatBounds();
+          var anyAdded = false;
+          rangeJobs.forEach(function(j) {
+            var lng = Number(j.lng || j.longitude || j.lon);
+            var lat = Number(j.lat || j.latitude);
+            if (!lng || !lat) return;
+            var statusColor = j.status === 'completed' ? '#2e7d32'
+              : j.status === 'in_progress' ? '#e07c24'
+              : j.status === 'late' ? '#c62828'
+              : '#1565c0';
+            var pin = document.createElement('div');
+            pin.style.cssText = 'width:22px;height:22px;border-radius:50%;background:' + statusColor + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;';
+            pin.title = (j.clientName || '') + (j.scheduledDate ? ' · ' + j.scheduledDate.substring(5,10) : '');
+            pin.onclick = function() { JobsPage.showDetail(j.id); };
+            new maplibregl.Marker({ element: pin })
+              .setLngLat([lng, lat])
+              .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(
+                '<div style="font-size:13px;font-weight:700;">' + UI.esc(j.clientName || '') + '</div>'
+                + (j.scheduledDate ? '<div style="font-size:11px;color:#666;">' + UI.esc(j.scheduledDate.substring(0,10)) + (j.startTime ? ' · ' + UI.esc(j.startTime) : '') + '</div>' : '')
+                + (j.property ? '<div style="font-size:11px;margin-top:3px;">' + UI.esc(j.property) + '</div>' : '')
+              ))
+              .addTo(map);
+            bounds.extend([lng, lat]);
+            anyAdded = true;
+          });
+          if (anyAdded && rangeJobs.length > 1) map.fitBounds(bounds, { padding: 30, maxZoom: 13 });
+        });
+      } catch(e) {
+        el.innerHTML = '<div style="padding:18px;text-align:center;color:var(--text-light);font-size:12px;">Map failed: ' + e.message + '</div>';
+      }
+    }, 80);
+
+    return html;
+  },
+
+  _renderRailUnscheduled: function(unscheduled) {
+    var html = '<div id="sched-rail-unscheduled" '
+      + 'ondragover="event.preventDefault();this.style.background=\'#fff3e0\';this.style.boxShadow=\'inset 0 0 0 2px #e07c24\'" '
+      + 'ondragleave="this.style.background=\'var(--white)\';this.style.boxShadow=\'none\'" '
+      + 'ondrop="SchedulePage._dropOnUnscheduled(event)" '
+      + 'style="background:var(--white);transition:background .15s;">'
+      + '<div style="max-height:440px;overflow-y:auto;padding:8px;">';
+
+    if (unscheduled.length === 0) {
+      html += '<div style="padding:32px 12px;text-align:center;font-size:12px;color:var(--text-light);line-height:1.5;">'
+        +   'No unscheduled jobs.<br>'
+        +   '<span style="font-size:11px;">Drag a scheduled job here to unschedule it.</span>'
+        +   '</div>';
+    } else {
+      unscheduled.forEach(function(j) {
+        html += '<div draggable="true" '
+          + 'ondragstart="SchedulePage._dragStart(event,\'' + j.id + '\')" '
+          + 'ondragend="SchedulePage._dragEnd(event)" '
+          + 'onclick="JobsPage.showDetail(\'' + j.id + '\')" '
+          + 'style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ' + SchedulePage._unscheduledStripe(j) + ';border-radius:6px;padding:8px 10px;margin-bottom:6px;cursor:grab;">'
+          + '<div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.clientName || '#' + j.jobNumber) + '</div>'
+          + (j.description ? '<div style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + UI.esc(j.description) + '</div>' : '')
+          + '<div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-top:3px;">' + UI.moneyInt(j.total) + '</div>'
+          + '</div>';
+      });
+    }
+
+    html += '</div>'  // close scrollable
+      + '<div style="padding:6px 12px;font-size:11px;color:var(--text-light);background:var(--bg);border-top:1px solid var(--border);text-align:center;">'
+      +   (unscheduled.length === 0 ? 'Empty queue' : unscheduled.length + ' awaiting schedule')
+      + '</div>'
+      + '</div>';  // close drop-target wrapper
+    return html;
+  },
+
+  // v804: detect crew double-bookings on a given day. For each crew name
+  // assigned to 2+ jobs, returns the conflicting jobs whose time windows
+  // (startTime → startTime + estimatedHours||2h) overlap. Returns array
+  // of {crew, jobs:[...]}.
+  _detectCrewConflicts: function(dayJobs) {
+    if (!dayJobs || !dayJobs.length) return [];
+    var byCrew = {}; // crewName → [jobs with startTime]
+    dayJobs.forEach(function(j) {
+      if (!j.startTime || !Array.isArray(j.crew) || !j.crew.length) return;
+      j.crew.forEach(function(name) {
+        var k = (name || '').trim().toLowerCase();
+        if (!k) return;
+        (byCrew[k] = byCrew[k] || []).push(j);
+      });
+    });
+    var conflicts = [];
+    Object.keys(byCrew).forEach(function(k) {
+      var list = byCrew[k];
+      if (list.length < 2) return;
+      // Sort by startTime ascending
+      list.sort(function(a, b) { return (a.startTime || '00:00') < (b.startTime || '00:00') ? -1 : 1; });
+      // Detect overlap of any two consecutive jobs in the list
+      function timeToMin(t) { var p = (t || '00:00').split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+      var overlapJobs = [];
+      for (var i = 0; i < list.length - 1; i++) {
+        var aStart = timeToMin(list[i].startTime);
+        var aEnd   = aStart + (parseFloat(list[i].estimatedHours) || 2) * 60;
+        var bStart = timeToMin(list[i+1].startTime);
+        if (bStart < aEnd) {
+          if (overlapJobs.indexOf(list[i]) < 0) overlapJobs.push(list[i]);
+          overlapJobs.push(list[i+1]);
+        }
+      }
+      if (overlapJobs.length) {
+        conflicts.push({ crew: list[0].crew.find(function(n){ return (n||'').toLowerCase() === k; }) || k, jobs: overlapJobs });
+      }
+    });
+    return conflicts;
+  },
+
+  // v788: nearest-neighbor route optimization for a single day. Re-orders
+  // every time-scheduled job (with lat/lng) starting from the earliest
+  // currently-scheduled job's location. Preserves the time-slot for the
+  // first job; subsequent jobs get re-stamped at original earliest+offset
+  // honoring their estimatedHours (default 2h each). Skips jobs without
+  // coordinates so manual placements aren't disturbed.
+  _optimizeRoute: function(dateStr) {
+    var allJobs = DB.jobs.getAll();
+    var dayJobs = allJobs.filter(function(j) {
+      return j.scheduledDate && j.scheduledDate.substring(0, 10) === dateStr
+        && j.status !== 'completed' && j.status !== 'cancelled'
+        && (j.lat || j.latitude) && (j.lng || j.longitude || j.lon);
+    });
+    if (dayJobs.length < 2) { UI.toast('Need 2+ geocoded jobs to optimize', 'error'); return; }
+
+    // Anchor = earliest-scheduled job (or first by jobNumber if no startTimes)
+    dayJobs.sort(function(a, b) {
+      var ta = a.startTime || '99:99';
+      var tb = b.startTime || '99:99';
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return (a.jobNumber || 0) - (b.jobNumber || 0);
+    });
+    var startJob = dayJobs[0];
+    var startTime = startJob.startTime || '08:00';
+
+    // Helper: distance in meters
+    var dist = function(a, b) {
+      var R = 6371000, toRad = function(d){ return d * Math.PI / 180; };
+      var aLat = Number(a.lat || a.latitude), aLng = Number(a.lng || a.longitude || a.lon);
+      var bLat = Number(b.lat || b.latitude), bLng = Number(b.lng || b.longitude || b.lon);
+      var dLat = toRad(bLat - aLat), dLng = toRad(bLng - aLng);
+      var lat1 = toRad(aLat), lat2 = toRad(bLat);
+      var h = Math.sin(dLat/2)*Math.sin(dLat/2) +
+              Math.sin(dLng/2)*Math.sin(dLng/2)*Math.cos(lat1)*Math.cos(lat2);
+      return 2 * R * Math.asin(Math.sqrt(h));
+    };
+
+    // Compute current order's total drive distance (between consecutive jobs)
+    var currentTotal = 0;
+    for (var i = 1; i < dayJobs.length; i++) currentTotal += dist(dayJobs[i-1], dayJobs[i]);
+
+    // Greedy nearest-neighbor starting from startJob
+    var remaining = dayJobs.slice(1);
+    var route = [startJob];
+    var cursor = startJob;
+    while (remaining.length) {
+      var best = -1, bestD = Infinity;
+      for (var k = 0; k < remaining.length; k++) {
+        var d = dist(cursor, remaining[k]);
+        if (d < bestD) { bestD = d; best = k; }
+      }
+      cursor = remaining[best];
+      route.push(cursor);
+      remaining.splice(best, 1);
+    }
+
+    // New total distance
+    var newTotal = 0;
+    for (var n = 1; n < route.length; n++) newTotal += dist(route[n-1], route[n]);
+
+    // Format savings
+    var saved = currentTotal - newTotal;
+    var savedMi = saved / 1609.34;
+    var pctSaved = currentTotal > 0 ? Math.round((saved / currentTotal) * 100) : 0;
+
+    // Compute new times: each job gets earliest+offset where offset is
+    // cumulative (estimatedHours||2) + 30min drive between sites.
+    var offsetMin = 0;
+    var baseH = parseInt(startTime.split(':')[0], 10) || 8;
+    var baseM = parseInt(startTime.split(':')[1], 10) || 0;
+    var baseTotalMin = baseH * 60 + baseM;
+    var assignments = route.map(function(j, idx) {
+      var t = baseTotalMin + offsetMin;
+      var h = Math.floor(t / 60), m = t % 60;
+      var newStart = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+      var dur = parseFloat(j.estimatedHours) || 2;
+      offsetMin += Math.round(dur * 60) + (idx < route.length - 1 ? 30 : 0); // +30min drive buffer
+      return { id: j.id, newStart: newStart, oldStart: j.startTime || '—', name: j.clientName || '#' + j.jobNumber };
+    });
+
+    var preview = assignments.slice(0, 8).map(function(a, idx) {
+      return (idx + 1) + '. ' + a.oldStart + ' → ' + a.newStart + '  ' + a.name;
+    }).join('\n');
+    if (assignments.length > 8) preview += '\n  ...and ' + (assignments.length - 8) + ' more';
+
+    var msg = '🧭 Route optimization\n\n'
+      + 'Current order: ' + (currentTotal / 1609.34).toFixed(1) + ' mi between sites\n'
+      + 'Optimized:     ' + (newTotal / 1609.34).toFixed(1) + ' mi between sites\n'
+      + (saved > 0 ? '✓ Saves ' + savedMi.toFixed(1) + ' mi (' + pctSaved + '%)' : '— No improvement, current order is already efficient')
+      + '\n\nNew sequence:\n' + preview + '\n\nApply?';
+    if (saved <= 100) {
+      // Less than 100m savings = noise; offer info but don't bother applying
+      alert(msg.replace('Apply?', 'Current order is already efficient — no changes.'));
+      return;
+    }
+    if (!confirm(msg)) return;
+
+    // Apply
+    assignments.forEach(function(a) {
+      DB.jobs.update(a.id, { startTime: a.newStart });
+    });
+    UI.toast('🧭 Route optimized — saved ' + savedMi.toFixed(1) + ' mi (' + pctSaved + '%)');
+    loadPage('schedule');
+  },
+
+  // v779: Quote → Schedule one-click booking. Opens a date+time picker
+  // for a newly-converted job so it lands on the calendar in one step
+  // instead of dumping the user on the Jobs page with no date set.
+  // Defaults: tomorrow @ 9:00 AM, 2h duration (matches the most common
+  // tree-job slot for SNT — Doug can change before saving).
+  _quickBookJob: function(jobId, opts) {
+    opts = opts || {};
+    var j = DB.jobs.getById(jobId);
+    if (!j) { UI.toast('Job not found', 'error'); return; }
+
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    var defDate = SchedulePage._localDateStr(tomorrow);
+    var defTime = '09:00';
+    var defDur  = 2;
+
+    // If we can guess a duration from line-item hours, prefer that.
+    if (j.lineItems && j.lineItems.length) {
+      var sumHours = 0;
+      j.lineItems.forEach(function(li) {
+        var h = parseFloat(li.hours || li.qty || 0);
+        if (h && h < 24) sumHours += h;
+      });
+      if (sumHours >= 0.5 && sumHours <= 16) defDur = Math.round(sumHours * 2) / 2;
+    }
+
+    var label = (j.clientName || '#' + (j.jobNumber || jobId.substring(0,6))) + (j.description ? ' · ' + j.description : '');
+    var body = '<div style="font-size:13px;line-height:1.5;">'
+      + '<div style="font-weight:700;font-size:14px;margin-bottom:2px;">📅 Book Job</div>'
+      + '<div style="color:var(--text-light);font-size:12px;margin-bottom:14px;">' + UI.esc(label) + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      +   '<label style="display:block;"><div style="font-size:11px;color:var(--text-light);font-weight:600;margin-bottom:4px;">Date</div>'
+      +     '<input type="date" id="qbj-date" value="' + defDate + '" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      +   '</label>'
+      +   '<label style="display:block;"><div style="font-size:11px;color:var(--text-light);font-weight:600;margin-bottom:4px;">Start time</div>'
+      +     '<input type="time" id="qbj-time" value="' + defTime + '" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      +   '</label>'
+      + '</div>'
+      + '<label style="display:block;margin-bottom:14px;"><div style="font-size:11px;color:var(--text-light);font-weight:600;margin-bottom:4px;">Estimated duration (hours)</div>'
+      +   '<input type="number" id="qbj-dur" value="' + defDur + '" step="0.5" min="0.5" max="16" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'
+      + '</label>'
+      + '<div style="font-size:11px;color:var(--text-light);">Skip = leaves the job in the Unscheduled queue.</div>'
+      + '</div>';
+
+    UI.showModal('📅 Book on calendar', body, {
+      footer: '<button class="btn btn-outline" onclick="SchedulePage._quickBookSkip(\'' + jobId + '\')">Skip</button>'
+        + ' <button class="btn btn-primary" onclick="SchedulePage._quickBookSave(\'' + jobId + '\')">Book it</button>'
+    });
+  },
+
+  _quickBookSkip: function(jobId) {
+    UI.closeModal();
+    UI.toast('Saved unscheduled — book later from Schedule');
+    loadPage('schedule');
+  },
+
+  _quickBookSave: function(jobId) {
+    var dateEl = document.getElementById('qbj-date');
+    var timeEl = document.getElementById('qbj-time');
+    var durEl  = document.getElementById('qbj-dur');
+    if (!dateEl || !timeEl) { UI.toast('Modal lost — try again', 'error'); return; }
+    var date = (dateEl.value || '').trim();
+    var time = (timeEl.value || '').trim();
+    var dur  = parseFloat(durEl && durEl.value || 0) || 2;
+    if (!date) { UI.toast('Pick a date', 'error'); return; }
+    DB.jobs.update(jobId, {
+      scheduledDate: date,
+      startTime: time || null,
+      estimatedHours: dur
+    });
+    UI.closeModal();
+    UI.toast('Booked ' + UI.dateShort(date) + (time ? ' at ' + time : ''));
+    // Land the user on the day view of the booked date so they can confirm.
+    try {
+      SchedulePage.currentDate = new Date(date + 'T12:00:00');
+      SchedulePage.view = 'day';
+    } catch(e) {}
+    loadPage('schedule');
+  }
+};
+
+var AdminTasks = {
+  getAll: function() {
+    try { return JSON.parse(localStorage.getItem('bm-admin-tasks') || '[]'); } catch(e) { return []; }
+  },
+  save: function(arr) {
+    localStorage.setItem('bm-admin-tasks', JSON.stringify(arr));
+  },
+  add: function(task) {
+    var all = this.getAll();
+    all.push(task);
+    this.save(all);
+  },
+  toggleComplete: function(id) {
+    var all = this.getAll();
+    var t = all.find(function(t) { return t.id === id; });
+    if (t) {
+      t.completed = !t.completed;
+      if (t.recurrence === 'weekly' && t.completed) {
+        // Spawn next occurrence 7 days later
+        var nextDate = new Date(t.dueDate + 'T12:00:00');
+        nextDate.setDate(nextDate.getDate() + 7);
+        var nextDateStr = SchedulePage._localDateStr(nextDate);
+        all.push({
+          id: 'at_' + Date.now(),
+          title: t.title,
+          dueDate: nextDateStr,
+          completed: false,
+          recurrence: 'weekly',
+          category: t.category,
+          color: t.color || '#7b1fa2'
+        });
+      } else if (t.recurrence === 'monthly' && t.completed) {
+        // Spawn next occurrence 1 month later
+        var nextDate = new Date(t.dueDate + 'T12:00:00');
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        var nextDateStr = SchedulePage._localDateStr(nextDate);
+        all.push({
+          id: 'at_' + Date.now(),
+          title: t.title,
+          dueDate: nextDateStr,
+          completed: false,
+          recurrence: 'monthly',
+          category: t.category,
+          color: t.color || '#7b1fa2'
+        });
+      }
+    }
+    this.save(all);
+    if (typeof loadPage === 'function') loadPage('schedule');
+  },
+  getForDate: function(dateStr) {
+    return this.getAll().filter(function(t) { return t.dueDate === dateStr && !t.completed; });
+  },
+  getForWeek: function(startDateStr, endDateStr) {
+    return this.getAll().filter(function(t) { return !t.completed && t.dueDate >= startDateStr && t.dueDate <= endDateStr; });
+  },
+  // v378: seedDefaults() removed — see render() for context.
+  seedDefaults: function() { /* no-op */ }
+};

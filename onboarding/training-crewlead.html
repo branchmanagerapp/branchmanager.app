@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crew Lead Training — {{business_name}}</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',system-ui,sans-serif; background:#f5f5f5; color:#1a1a1a; }
+  .header { background:#1b5e20; color:#fff; padding:20px; }
+  .header a { color:#fff; opacity:.7; text-decoration:none; font-size:14px; }
+  .header h1 { font-size:22px; margin-top:8px; }
+  .header p { font-size:14px; opacity:.8; margin-top:4px; }
+  .container { max-width:700px; margin:0 auto; padding:20px; }
+  .module { background:#fff; border-radius:12px; margin-bottom:16px; border:1px solid #e5e7eb; overflow:hidden; }
+  .module-header { padding:16px 20px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .module-header:hover { background:#fafafa; }
+  .mod-num { background:#7c3aed; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+  .mod-title { font-size:15px; font-weight:700; flex:1; }
+  .mod-time { font-size:12px; color:#999; }
+  .mod-arrow { font-size:18px; color:#ccc; transition:transform .2s; }
+  .module.open .mod-arrow { transform:rotate(90deg); }
+  .mod-body { display:none; padding:0 20px 20px; }
+  .module.open .mod-body { display:block; }
+  .steps { margin:12px 0; padding-left:20px; }
+  .steps li { font-size:14px; padding:5px 0; line-height:1.5; }
+  .key-point { background:#f3e8ff; border-left:3px solid #7c3aed; padding:10px 14px; font-size:13px; border-radius:0 6px 6px 0; margin:12px 0; }
+  .video-slot { background:#000; border-radius:8px; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; margin-bottom:16px; color:#fff; font-size:14px; text-align:center; padding:20px; }
+  .signoff { background:#f3e8ff; border-radius:8px; padding:14px; margin-top:12px; font-size:13px; }
+</style>
+  <script src="../branding.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html">← Back to Onboarding</a>
+  <h1>👷 Crew Lead Training</h1>
+  <p>6 modules · ~60 min · Leadership, planning, client communication</p>
+</div>
+
+<div class="container">
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">1</div>
+      <div class="mod-title">Morning Briefing & Job Planning</div>
+      <div class="mod-time">8 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Running a Morning Briefing</div>
+      <ol class="steps">
+        <li><strong>Check Branch Manager app</strong> — review today's jobs, addresses, client notes, special instructions.</li>
+        <li><strong>Brief the crew:</strong> At the truck before leaving the yard. What we're doing, where, hazards, who does what.</li>
+        <li><strong>Equipment check:</strong> Verify everything needed is on the truck. Chainsaw fuel, ropes, rigging gear, chipper, PPE.</li>
+        <li><strong>Assign roles:</strong> Who's climbing, who's on ground, who's feeding chipper, who's raking.</li>
+        <li><strong>Set expectations:</strong> Target finish time, break schedule, quality standards.</li>
+      </ol>
+      <div class="key-point">👷 <strong>The morning briefing sets the tone for the entire day.</strong> A 5-minute briefing prevents 2 hours of confusion. Never skip it.</div>
+      <div class="signoff"><strong>Field Demo:</strong> Run a morning briefing for a real job. Doug observes.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">2</div>
+      <div class="mod-title">Daily Safety Checklist & Compliance</div>
+      <div class="mod-time">5 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Completing the Daily Safety Checklist</div>
+      <ol class="steps">
+        <li><strong>Complete the checklist</strong> at EVERY job site before work begins. Not after — before.</li>
+        <li><strong>Walk the site</strong> — PPE check, hazard ID, drop zone, electrical, barricades.</li>
+        <li><strong>Document non-compliance.</strong> If someone doesn't have PPE, they don't work. No exceptions.</li>
+        <li><strong>Submit by end of shift</strong> for PPE voucher eligibility ($5/week).</li>
+        <li><strong>Report incidents</strong> to Doug within 1 hour. No matter how small.</li>
+      </ol>
+      <div class="key-point">📋 <strong>The checklist protects YOU.</strong> If there's an accident and no checklist was completed, the crew lead is personally liable.</div>
+      <div class="signoff"><strong>Field Demo:</strong> Complete a full daily safety checklist on a live job site.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">3</div>
+      <div class="mod-title">Client Communication on Site</div>
+      <div class="mod-time">10 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Talking to Clients</div>
+      <ol class="steps">
+        <li><strong>Introduce yourself</strong> when you arrive. "Hi, I'm [name] from {{business_short_name}}. We're here for [job]."</li>
+        <li><strong>Walk the job</strong> with the client if they're home. Confirm what's being done. Ask about access, pets, concerns.</li>
+        <li><strong>During work:</strong> Keep noise conversations short. Don't blast music. Be professional.</li>
+        <li><strong>Scope changes:</strong> If the client asks for extra work, say "Let me check with Doug on pricing for that." Never promise free add-ons.</li>
+        <li><strong>Before leaving:</strong> Walk the site with the client. "Does everything look good? Anything we missed?"</li>
+        <li><strong>Ask for a review:</strong> "If you're happy with the work, we'd really appreciate a Google review." Hand them the card.</li>
+      </ol>
+      <div class="key-point">⭐ <strong>You are the face of the company on site.</strong> How you talk to clients determines whether they call us again and refer their neighbors. We have 100 five-star reviews because of how we treat people.</div>
+      <div class="signoff"><strong>Field Demo:</strong> Handle a real client interaction on site. Doug or senior crew member observes.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">4</div>
+      <div class="mod-title">Time Tracking & Payroll</div>
+      <div class="mod-time">8 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Branch Manager Time Tracking</div>
+      <ol class="steps">
+        <li><strong>Clock in your crew</strong> in Branch Manager at the start of every shift. Make sure everyone is tracked.</li>
+        <li><strong>Log hours per job</strong> — this feeds job costing. We need to know how many hours each job took.</li>
+        <li><strong>Break tracking:</strong> NY requires a 30-min unpaid lunch for shifts over 6 hours.</li>
+        <li><strong>Overtime:</strong> Anything over 40 hours/week is 1.5x. If we're approaching 40, check with Doug first.</li>
+        <li><strong>Clock out</strong> at end of day. Review crew hours weekly for accuracy before payroll.</li>
+      </ol>
+      <div class="key-point">💰 <strong>Accurate time = accurate pay.</strong> If hours are wrong, crew doesn't get paid right. That's on you as crew lead.</div>
+      <div class="signoff"><strong>Field Demo:</strong> Track a full day of crew hours in Branch Manager. Show timesheet review.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">5</div>
+      <div class="mod-title">Job Photos & Documentation</div>
+      <div class="mod-time">5 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Photo Documentation</div>
+      <ol class="steps">
+        <li><strong>Before photos:</strong> Take 3-4 photos BEFORE starting. Wide shot, close-up of the tree, any pre-existing damage.</li>
+        <li><strong>During:</strong> Action shots for marketing (with crew consent). Interesting rigging, big removals.</li>
+        <li><strong>After photos:</strong> Same angles as before. Show the clean site. These go on Google, website, social.</li>
+        <li><strong>Upload to Branch Manager</strong> on the job detail. Tag the job number.</li>
+        <li><strong>Damage documentation:</strong> If ANY property damage occurs, photograph IMMEDIATELY from multiple angles. Call Doug.</li>
+      </ol>
+      <div class="signoff"><strong>Field Demo:</strong> Document a full job with before/during/after photos. Upload to Branch Manager.</div>
+    </div>
+  </div>
+
+  <div class="module" onclick="this.classList.toggle('open')">
+    <div class="module-header">
+      <div class="mod-num">6</div>
+      <div class="mod-title">Crew Management & Conflict</div>
+      <div class="mod-time">10 min</div>
+      <div class="mod-arrow">›</div>
+    </div>
+    <div class="mod-body">
+      <div class="video-slot">▶ Video: Leading a Crew</div>
+      <ol class="steps">
+        <li><strong>Lead by example.</strong> Wear your PPE first. Be the hardest worker on site.</li>
+        <li><strong>Teach, don't yell.</strong> If someone does something wrong, show them the right way. Yelling on a job site is unprofessional.</li>
+        <li><strong>Safety authority:</strong> You have the authority to stop ANY work if you see an unsafe condition. Use it.</li>
+        <li><strong>Conflicts:</strong> Handle crew disagreements privately, off to the side. Never in front of clients.</li>
+        <li><strong>Substance issues:</strong> If someone shows up impaired, send them home. Call Doug. Zero tolerance.</li>
+        <li><strong>End of day debrief:</strong> "What went well? What can we do better tomorrow?" 2 minutes.</li>
+      </ol>
+      <div class="key-point">🤝 <strong>A good crew lead makes everyone better.</strong> Your team should go home safe, paid correctly, and feeling like they did good work. That's the job.</div>
+      <div class="signoff"><strong>Assessment:</strong> Doug evaluates crew lead performance over first 2 weeks of supervised lead shifts.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:30px;">
+    <a href="index.html" style="padding:12px 24px;background:#1b5e20;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">← Back to Onboarding</a>
+    <p style="font-size:13px;color:#999;margin-top:16px;">{{legal_name}} · {{address_short}}</p>
+  </div>
+</div>
+<script src="onboarding-sig.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function(){ if (typeof OnboardingSig !== "undefined") OnboardingSig.autoFillAll(); });</script>
+</body>
+</html>

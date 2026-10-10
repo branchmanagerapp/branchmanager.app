@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TapCard — digital business card (demo)</title>
+<style>
+:root{--ink:#14181f;--muted:#6b7280;--line:#e6e8ec;--card:#fff;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(160deg,#1c2431,#0f1115);color:var(--ink);min-height:100vh;padding:22px 14px 60px}
+.wrap{max-width:440px;margin:0 auto}
+.demo{background:#ffd54a;color:#3a2e00;font-size:12px;font-weight:800;text-align:center;padding:7px;border-radius:10px;margin-bottom:12px}
+.top{color:#fff;text-align:center;margin-bottom:14px}
+.top .nm{font-size:26px;font-weight:800}
+.top .sub{font-size:13px;opacity:.82;margin-top:2px}
+details{background:var(--card);border-radius:16px;margin:10px 0;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;align-items:center;gap:12px;font-size:16px;font-weight:800}
+summary::-webkit-details-marker{display:none}
+summary .em{font-size:22px}summary .cv{margin-left:auto;color:var(--muted);font-size:13px}
+details[open] summary{border-bottom:1px solid var(--line)}
+.inner{padding:8px 14px 16px}
+.f{display:flex;align-items:center;gap:10px;padding:10px 8px;border:1px solid var(--line);border-radius:11px;margin:7px 0;cursor:pointer}
+.f.on{border-color:var(--acc);background:var(--accbg)}
+.f .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.f .v{font-size:14.5px;font-weight:600}.f .lbl{flex:1}
+.f .chk{width:19px;height:19px;border-radius:50%;border:2px solid #c3c8cf;flex:0 0 auto}
+.f.on .chk{background:var(--acc);border-color:var(--acc);position:relative}
+.f.on .chk:after{content:"✓";color:#fff;font-size:12px;position:absolute;top:-1px;left:3px}
+.btn{display:block;width:100%;margin-top:10px;padding:14px;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;background:var(--acc)}
+.btn.alt{background:#fff;border:2px solid var(--acc);color:var(--acc);margin-top:6px}
+.foot{color:#8b93a1;font-size:11.5px;text-align:center;margin-top:16px;line-height:1.6}
+</style></head><body><div class="wrap">
+<div class="demo">⭐ DEMO — this is a template. Your real card is built with your businesses, colors & info.</div>
+<div class="top"><div class="nm" id="owner">Alex Rivera</div><div class="sub">Tap a profile → pick what to share → add to their phone</div></div>
+<div id="app"></div>
+<p class="foot"><b>How it works:</b> the card is <b>locked</b> — whoever you send it to can only tap and save your info, never edit it. Only the owner changes the details (done at build time, then re-published). One link, works on any phone, no app to install.</p>
+</div>
+<script>
+const CARD_OWNER="Alex Rivera";
+const PROFILES=[
+ {id:"biz",name:"Rivera Landscaping",em:"🌿",color:"#1b7f3b",cbg:"#eef7f0",org:"Rivera Landscaping LLC",fields:[
+   {k:"tel",lbl:"Office",v:"+15551234567",show:"(555) 123-4567",on:true},
+   {k:"email",lbl:"Email",v:"alex@riveralandscaping.com",show:"alex@riveralandscaping.com",on:true},
+   {k:"url",lbl:"Website",v:"https://riveralandscaping.com",show:"riveralandscaping.com",on:true}]},
+ {id:"det",name:"Rivera Auto Detailing",em:"🚗",color:"#0b5c8a",cbg:"#e7f2f8",org:"Rivera Auto Detailing",fields:[
+   {k:"tel",lbl:"Text/Call",v:"+15559876543",show:"(555) 987-6543",on:true},
+   {k:"url",lbl:"Booking",v:"https://riveradetailing.com",show:"riveradetailing.com",on:true}]},
+ {id:"me",name:"Personal",em:"👤",color:"#374151",cbg:"#eef0f3",org:"",fields:[
+   {k:"tel",lbl:"Cell",v:"+15555550100",show:"(555) 555-0100",on:true},
+   {k:"email",lbl:"Email",v:"alex.rivera@gmail.com",show:"alex.rivera@gmail.com",on:true}]},
+];
+const app=document.getElementById("app"); document.getElementById("owner").textContent=CARD_OWNER;
+PROFILES.forEach(p=>{const d=document.createElement("details");
+ d.style.setProperty("--acc",p.color);d.style.setProperty("--accbg",p.cbg);
+ d.innerHTML=`<summary><span class="em">${p.em}</span> ${p.name}<span class="cv">tap</span></summary><div class="inner"></div>`;
+ const inner=d.querySelector(".inner");
+ p.fields.forEach(f=>{const row=document.createElement("div");row.className="f"+(f.on?" on":"");
+  row.innerHTML=`<span class="lbl"><span class="k">${f.lbl}</span><br><span class="v">${f.show}</span></span><span class="chk"></span>`;
+  row.addEventListener("click",()=>row.classList.toggle("on"));row._f=f;inner.appendChild(row);});
+ const add=document.createElement("button");add.className="btn";add.style.background=p.color;add.textContent="📇 Add "+p.name+" to contacts";
+ add.addEventListener("click",()=>addContact(p,inner));
+ const sh=document.createElement("button");sh.className="btn alt";sh.style.borderColor=p.color;sh.style.color=p.color;sh.textContent="Share this card";
+ sh.addEventListener("click",shareCard);inner.appendChild(add);inner.appendChild(sh);app.appendChild(d);});
+function addContact(p,inner){let v=["BEGIN:VCARD","VERSION:3.0","FN:"+CARD_OWNER];if(p.org)v.push("ORG:"+p.org);
+ inner.querySelectorAll(".f.on").forEach(r=>{const f=r._f;if(f.k==="tel")v.push("TEL;TYPE=CELL:"+f.v);if(f.k==="email")v.push("EMAIL:"+f.v);if(f.k==="url")v.push("URL:"+f.v);});
+ v.push("END:VCARD");const b=new Blob([v.join("\r\n")],{type:"text/vcard"});const u=URL.createObjectURL(b);
+ const a=document.createElement("a");a.href=u;a.download=CARD_OWNER.replace(/ /g,"-")+"-"+p.id+".vcf";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+async function shareCard(){const d={title:CARD_OWNER,url:location.href};if(navigator.share){try{await navigator.share(d);}catch(e){}}else{try{navigator.clipboard.writeText(location.href);alert("Link copied.");}catch(e){}}}
+</script></body></html>

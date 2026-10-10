@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doug Brown — Tap to Share</title>
+<style>
+:root{--ink:#14181f;--muted:#6b7280;--line:#e6e8ec;--card:#fff;--acc:#1b7f3b;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(160deg,#1c2431,#0f1115);color:var(--ink);min-height:100vh;padding:24px 14px 60px}
+.wrap{max-width:420px;margin:0 auto}
+.card{background:var(--card);border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden}
+.hd{background:linear-gradient(135deg,#2e9c4f,#146c2e);color:#fff;padding:26px 22px 22px;text-align:center}
+.hd .nm{font-size:27px;font-weight:800}
+.hd .rl{font-size:13px;opacity:.9;margin-top:4px}
+.body{padding:20px 18px 22px}
+.full{display:block;width:100%;padding:16px;border:none;border-radius:14px;background:var(--acc);color:#fff;font-size:17px;font-weight:800;cursor:pointer}
+.full .s{display:block;font-size:12px;font-weight:600;opacity:.9;margin-top:2px}
+.or{text-align:center;color:var(--muted);font-size:12.5px;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+.biz{display:flex;gap:8px;flex-wrap:wrap}
+.biz button{flex:1 1 46%;padding:12px 10px;border:1.5px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--ink);text-align:left;display:flex;align-items:center;gap:8px}
+.biz button .em{font-size:18px}
+.share{display:block;width:100%;margin-top:14px;padding:13px;border:2px solid var(--acc);border-radius:12px;background:#fff;color:var(--acc);font-size:14px;font-weight:800;cursor:pointer}
+.foot{color:#8b93a1;font-size:11.5px;text-align:center;margin-top:16px;line-height:1.55}
+</style></head><body><div class="wrap">
+<div class="card">
+  <div class="hd"><div class="nm">Doug Brown</div><div class="rl">Tree care · Robotic mowing · Skatepark · Web/software</div></div>
+  <div class="body">
+    <button class="full" onclick="save('all')">📇 Save my contact<span class="s">Everything — all my businesses in one contact card</span></button>
+    <div class="or">— or just one business —</div>
+    <div class="biz" id="biz"></div>
+    <button class="share" onclick="shareCard()">↗ Share this card with someone</button>
+    <p class="foot">You’re one contact — “Doug Brown” — with a few business hats. Tap <b>Save my contact</b> to give someone everything, or a business to share just that one. Locked: whoever gets it can only save it, never edit it.</p>
+  </div>
+</div></div>
+<script>
+const OWNER="Doug Brown";
+// white-label config
+const BIZ=[
+ {id:"tree",name:"Second Nature Tree",em:"🌳",org:"Second Nature Tree Service",tel:"+19147378522",email:"info@peekskilltree.com",url:"https://peekskilltree.com"},
+ {id:"lawn",name:"SmartLawn NY",em:"🌱",org:"SmartLawn NY",tel:"+19146477276",email:"smartlawnny@gmail.com",url:"https://smartlawnny.com"},
+ {id:"skate",name:"2nd Nature Skate",em:"🛹",org:"2nd Nature Skatepark",tel:"",email:"info@2ntr.com",url:"https://skateos.com"},
+ {id:"dev",name:"Web / Branch Manager",em:"💻",org:"Branch Manager",tel:"",email:"doug@2ntr.com",url:"https://branchmanager.app"},
+];
+const box=document.getElementById("biz");
+BIZ.forEach(b=>{const btn=document.createElement("button");btn.innerHTML=`<span class="em">${b.em}</span> ${b.name}`;btn.onclick=()=>save(b.id);box.appendChild(btn);});
+function save(which){
+  let v=["BEGIN:VCARD","VERSION:3.0","N:Brown;Doug;;;","FN:"+OWNER];
+  const list = which==="all" ? BIZ : BIZ.filter(b=>b.id===which);
+  if(which!=="all"){const b=list[0]; if(b.org) v.push("ORG:"+b.org);}
+  else { v.push("ORG:Second Nature Tree · SmartLawn NY · 2nd Nature Skate"); }
+  list.forEach(b=>{
+    if(b.tel) v.push("TEL;TYPE=CELL:"+b.tel);
+    if(b.email) v.push("EMAIL;TYPE=WORK:"+b.email);
+    if(b.url) v.push("URL:"+b.url);
+  });
+  v.push("END:VCARD");
+  const blob=new Blob([v.join("\r\n")],{type:"text/vcard"});const u=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=u;a.download=OWNER.replace(/ /g,"-")+(which==="all"?"":"-"+which)+".vcf";
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);
+}
+async function shareCard(){const d={title:OWNER,text:"Doug Brown — contact card",url:location.href};
+  if(navigator.share){try{await navigator.share(d);}catch(e){}}else{try{navigator.clipboard.writeText(location.href);alert("Link copied — paste to share.");}catch(e){}}}
+</script></body></html>
