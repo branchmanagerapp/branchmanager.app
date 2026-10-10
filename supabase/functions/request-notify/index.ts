@@ -316,7 +316,28 @@ serve(async (req: Request) => {
       await sendEmail(b, email, custSubject, custText, custHtml);
     }
 
-    return new Response(JSON.stringify({ ok: true, tenant: tenantId, inserted: insertResult }), {
+    // 4. Oct 10 2026 (Doug): every real website lead goes into JOBBER automatically (Jobber is the source of truth).
+    // Leads that look like spam or are outside NY stay in BM as needs_review (the owner still got the text above).
+    let jobber: any = null;
+    try {
+      const blob = `${name} ${email} ${address} ${service} ${details}`.toLowerCase();
+      const spamWords = /(funding|business loan|capital|merchant cash|seo|marketing agency|web ?design|website design|backlink|crypto|investor|real estate portfolio|line of credit|lead generation)/;
+      const outOfArea = !!address && !/(ny|new york)/i.test(address) && /(\d{5})/.test(address) && !/1[0-4]\d{3}/.test(address);
+      const foreignState = /(ut|ca|tx|fl|nj|ct|pa|ma|az|co|wa|or|nv|ga|nc|il|oh|mi)\s*\d{5}/i.test(address || '');
+      const reason = spamWords.test(blob) ? 'looks like a sales/finance pitch' : (outOfArea || foreignState) ? 'address outside our area' : '';
+      if (reqId && !reason) {
+        const jr = await fetch(`${SUPABASE_URL}/functions/v1/jobber-push`, { method: 'POST',
+          headers: { 'Authorization': `Bearer ${SERVICE_ROLE_KEY}`, 'apikey': SERVICE_ROLE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: reqId }) });
+        jobber = await jr.json().catch(() => ({ ok: false, status: jr.status }));
+        if (!jobber?.ok) console.error('request-notify: auto Jobber push failed', JSON.stringify(jobber).slice(0, 300));
+      } else if (reqId) {
+        await sb.from('requests').update({ review_status: 'needs_review', notes: [details, `Not sent to Jobber automatically: ${reason}. Review in Branch Manager.`].filter(Boolean).join('\n\n') }).eq('id', reqId);
+        jobber = { ok: false, held: reason };
+      }
+    } catch (e) { console.error('request-notify: auto Jobber push error', String(e)); jobber = { ok: false, error: String(e) }; }
+
+    return new Response(JSON.stringify({ ok: true, tenant: tenantId, inserted: insertResult, jobber }), {
       headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   } catch (err) {

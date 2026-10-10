@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
     const jr = ro.requestCreate.request;
 
     const when = r.created_at ? new Date(r.created_at).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" }) : "";
-    const msg = [`Website request (${when}) — sent from Branch Manager after review.`, `Service: ${service}`, address ? `Address: ${address}` : "", phone ? `Phone: ${phone}` : "", email ? `Email: ${email}` : "", (r.notes || r.description) ? `\n${String(r.notes || r.description).slice(0, 3000)}` : "", "(Internal: entered by Claude via Branch Manager — check before sending)"].filter(Boolean).join("\n");
+    const msg = [`Website request (${when}) — sent from Branch Manager ${internal ? "automatically" : "after review"}.`, `Service: ${service}`, address ? `Address: ${address}` : "", phone ? `Phone: ${phone}` : "", email ? `Email: ${email}` : "", (r.notes || r.description) ? `\n${String(r.notes || r.description).slice(0, 3000)}` : "", "(Internal: entered by Claude via Branch Manager — check before sending)"].filter(Boolean).join("\n");
     try { await gql(r.tenant_id, `mutation($id:EncodedId!,$i:RequestCreateNoteInput!){ requestCreateNote(requestId:$id, input:$i){ userErrors{ message } } }`, { id: jr.id, i: { message: msg } }); } catch (_e) { /* note is nice-to-have */ }
 
     // Doug's rule (Oct 5 2026): a new lead also goes in as a DRAFT QUOTE with a $0 placeholder (no "Claude" in names — Catherine, Oct 10),
