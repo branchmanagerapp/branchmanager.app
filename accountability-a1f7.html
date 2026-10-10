@@ -75,11 +75,11 @@
   <p class="part-sub">In order. <span class="who d">Doug</span> = you, <span class="who c">Claude</span> = me.</p>
   <ol class="acts">
     <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price. We pay more than Grow's listed price. 15 min, saves money either way.</li>
-    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning at 6:30 BM copies Jobber and emails you "matches" or "here's what's off." <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> Now covers <b>invoices, quotes and jobs</b> (370 / 531 / 272, all matching). Clients next.</li>
+    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning at 6:30 BM copies Jobber and emails you "matches" or "here's what's off." <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> Now covers <b>invoices, quotes and jobs</b> (370 / 531 / 272, all matching), plus <b>clients</b> (Jobber → BM only, 51 added) and <b>requests</b> (8 open, matching).</li>
     <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. <span class="tag amber" style="margin-left:6px;">IN PROGRESS</span> Done Oct 10: Home leads with Workflow; quote buttons match (Resend, Mark Approved, Convert to Job); optional items work like Jobber (unchecked, not in subtotal, customer can only add optional items); line-item photos show to customers; approved quotes no longer auto-create jobs.</li>
     <li><span class="who c">Claude</span><b>Fix the known list:</b> invoice-number backup picker, payroll week header, Settings price rows, stat tiles on 13 screens. <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> v1254–v1258: number picker, payroll header, Settings rows, 16 stat rows, plus 9 more bugs found by testing (below).</li>
     <li><span class="who d">Doug</span><b>3 phone checks, 10 min:</b> stays signed in, auto-updates, a test quote saves. <span class="tag amber" style="margin-left:6px;">HALF</span> iPhone now signed in to the cloud (first ever). Laptop auto-updated to v1259. Test quote save verified by Claude.</li>
-    <li><span class="who d">Doug</span><b>Texting:</b> <span class="tag green" style="margin-left:6px;">DONE</span> Twilio approved Aug 28 (the "resubmit" note was wrong). Oct 10: new-lead alert texts were never actually sending — fixed and tested, delivered to Doug and Catherine.</li>
+    <li><span class="who c">Claude</span><b>Texting (Twilio):</b> <span class="tag amber" style="margin-left:6px;">HALF</span> Tested Oct 10 on the Twilio line (914-335-3417): lead alert texts ✓ · app send-a-text path ✓ (delivered to Doug, logged in BM) · incoming texts land in BM ✓ · outgoing call ✓. <b>Not done:</b> (1) incoming calls to the Twilio line go nowhere yet; (2) BM's Text button still sends through Dialpad; (3) the main number 914-391-5233 is still on Dialpad (move it last).</li>
     <li><span class="who x">Nov 15</span><b>Go / no-go.</b> To pass it needs: 14 clean match emails in a row, all 5 screens done, texting sorted, and Catherine doing one real quote and invoice on her phone without help. Pass → switch Dec 1. Fail → stop. We keep only truck GPS, fleet records and job photos.</li>
   </ol>
 
@@ -105,6 +105,7 @@
     <li><b>Lead alerts</b>: every website lead now texts Doug + Catherine (was silently never sending).</li>
     <li><b>Website leads now go into Jobber automatically</b> (client + request + draft quote, read back to confirm). Spam / out-of-area leads stay in BM for review. Tested end to end Oct 10. Both estimate forms (branchmanager.app and peekskilltree.com) no longer force customers to accept texts.</li>
     <li><b>Final sweep Oct 10 (v1263)</b>: 963/963 buttons work · 90/90 screens open, no errors · customer flows OK (load, approve, payment) · lead texts delivered · daily sync matches (invoices 370, quotes 531, jobs 272).</li>
+    <li><b>Evening Oct 10 (v1264–v1266)</b>: fixed a bug that reset 111 jobs to "scheduled" (data restored) · version number now at the bottom of Settings · Home "requires invoicing" now matches Jobber (2: Berger #331, DeConcilio #324) · 6 BM-only $0 draft quotes archived so drafts match Jobber · Sarah Moden-Alliston #382 closed in Jobber.</li>
     <li><b>Jobber entries by Claude</b>: no "Claude" in anything customer-facing; noted in internal notes only (Catherine's request).</li>
     <li><b>Money math</b>: a blank tax rate no longer saves quotes with $0 tax when edited.</li>
   </ul>
@@ -112,7 +113,7 @@
   <h2 class="part">Your phone test list (things Claude can't do)</h2>
   <ol class="acts">
     <li>Home-screen app: does it still open <b>without asking for a code</b> tomorrow and next week?</li>
-    <li>Settings shows <b>v1259</b> (proves auto-update on the phone).</li>
+    <li>Settings shows <b>v1266</b> (proves auto-update on the phone).</li>
     <li>Open <b>Payroll</b>: week selector, then crew cards, no tall stacked rows.</li>
     <li>Open <b>Invoices</b>: 4 stat boxes show 2×2, not squeezed.</li>
     <li>Settings → <b>Services &amp; Prices</b>: Edit button fully visible.</li>
