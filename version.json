@@ -1,5 +1,5 @@
 {
-  "version": 1257,
+  "version": 1258,
   "released": "2026-10-10",
-  "notes": "Phone layout: payroll header no longer stacks; Settings price rows fit; 16 stat rows go 2x2 on phones"
+  "notes": "Receivables/past-due exclude drafts+void; void invoices never flipped to overdue"
 }

@@ -88,7 +88,8 @@ var InvoicesPage = {
 
     // legacy system-style stat cards row
     var now = new Date();
-    var pastDue = all.filter(function(i) { return i.status !== 'paid' && i.dueDate && new Date(i.dueDate) < now; });
+    // Oct 10 2026: drafts were never sent and void/cancelled/archived owe nothing — neither is "past due".
+    var pastDue = all.filter(function(i) { return ['paid', 'draft', 'void', 'cancelled', 'archived'].indexOf(i.status) === -1 && Number(i.balance || 0) > 0 && i.dueDate && new Date(i.dueDate) < now; });
     var sentNotDue = all.filter(function(i) { return i.status === 'sent' && (!i.dueDate || new Date(i.dueDate) >= now); });
     // v638: coerce to Number on every reduce — some i.total / i.balance
     // values are stored as strings (cloud round-trip), causing JS string

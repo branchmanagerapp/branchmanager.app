@@ -1160,7 +1160,7 @@ var DB = (function() {
         if (inv.status === 'past_due') {
           update(KEYS.invoices, inv.id, { status: 'overdue' }, { silent: true }); // v1054: boot sweep = silent, no panic banner
           changed++;
-        } else if (inv.status !== 'paid' && inv.status !== 'cancelled' && inv.status !== 'overdue' && inv.status !== 'draft' && inv.dueDate && inv.dueDate.substring(0, 10) < today) {
+        } else if (inv.status !== 'paid' && inv.status !== 'cancelled' && inv.status !== 'void' && inv.status !== 'archived' && inv.status !== 'overdue' && inv.status !== 'draft' && inv.dueDate && inv.dueDate.substring(0, 10) < today) {  // Oct 10 2026: never flip VOID/archived to overdue
           update(KEYS.invoices, inv.id, { status: 'overdue' }, { silent: true }); // v1054: boot sweep = silent, no panic banner
           changed++;
         }
@@ -1169,8 +1169,11 @@ var DB = (function() {
     },
     totalReceivable: function() {
       return getAll(KEYS.invoices).reduce(function(sum, inv) {
-        if (inv.status !== 'paid') return sum + (inv.balance || inv.total || 0);
-        return sum;
+        // Oct 10 2026: only money actually owed. Drafts were never sent; void/cancelled/archived owe nothing;
+        // and a $0 balance must NOT fall back to the full total (that counted every voided invoice in full).
+        if (['paid', 'draft', 'void', 'cancelled', 'archived'].indexOf(inv.status) !== -1) return sum;
+        var bal = (inv.balance === null || inv.balance === undefined || inv.balance === '') ? Number(inv.total || 0) : Number(inv.balance);
+        return sum + (bal > 0 ? bal : 0);
       }, 0);
     },
     totalRevenue: function(year, month) {
