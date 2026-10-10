@@ -98,7 +98,7 @@
         <div style="font-size:12px;color:#888;margin-top:4px;">Attach photos of the trees or the area — helps us quote faster.</div>
       </div>
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer;">
-        <input type="checkbox" id="b-sms-consent" required style="width:18px;height:18px;flex-shrink:0;margin-top:2px;">
+        <input type="checkbox" id="b-sms-consent" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;">
         <span id="sms-consent-text" style="font-size:11px;color:#888;line-height:1.6;"></span>
       </label>
       <!-- Honeypot — hidden from real users, bots fill it in -->
@@ -138,7 +138,7 @@
     if (g('cfg-sign-off')) g('cfg-sign-off').textContent = nm ? ('— ' + nm) : '';
     if (g('cfg-call-link')) g('cfg-call-link').innerHTML = (C && C.phoneDigits) ? '<a href="tel:' + C.phoneDigits + '" style="color:#1a3c12;font-weight:600;">📞 Call ' + C.phone + '</a>' : '';
     if (g('cfg-info')) g('cfg-info').innerHTML = 'We typically respond within 2 hours during business hours.' + (C && (C.phoneDigits || C.website) ? '<br>' : '') + (C && C.phoneDigits ? '<a href="tel:' + C.phoneDigits + '">' + C.phone + '</a>' : '') + (C && C.phoneDigits && C.website ? ' · ' : '') + (C && C.website ? '<a href="' + C.websiteUrl + '">' + C.website + '</a>' : '');
-    if (g('sms-consent-text')) g('sms-consent-text').innerHTML = 'By checking this box, I agree to receive account notifications, appointment reminders, and customer care messages via text message' + (nm ? ' from ' + nm : '') + '. You may opt out by replying STOP or request more information by replying HELP. Message frequency varies. Message and data rates may apply. You can review our <a href="privacy.html" target="_blank" style="color:#1a3c12;">Privacy Policy</a> and <a href="terms.html" target="_blank" style="color:#1a3c12;">Terms</a> to see how your data is used.';
+    if (g('sms-consent-text')) g('sms-consent-text').innerHTML = '<b>Optional:</b> By checking this box, I agree to receive account notifications, appointment reminders, and customer care messages via text message' + (nm ? ' from ' + nm : '') + '. You may opt out by replying STOP or request more information by replying HELP. Message frequency varies. Message and data rates may apply. You can review our <a href="privacy.html" target="_blank" style="color:#1a3c12;">Privacy Policy</a> and <a href="terms.html" target="_blank" style="color:#1a3c12;">Terms</a> to see how your data is used.';
   }
   Promise.resolve(window.bmTenantSlugBootstrap).then(paint, paint);
 })();
@@ -298,7 +298,8 @@ function submitRequest(e) {
       fetch(NOTIFY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        // Oct 10 2026: record the customer's text-message choice with the request (it was never saved).
+        body: JSON.stringify((function(d){ var c=document.getElementById('b-sms-consent'); d.details = (d.details ? d.details + '\n\n' : '') + 'Text messages OK: ' + (c && c.checked ? 'YES (checked the consent box)' : 'NO'); return d; })(data))
       }).catch(function(err) { console.warn('Notify call:', err); })
     ]).then(function() {
       document.getElementById('form-view').style.display = 'none';
