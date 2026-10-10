@@ -1,5 +1,5 @@
 {
-  "version": 1258,
+  "version": 1259,
   "released": "2026-10-10",
-  "notes": "Receivables/past-due exclude drafts+void; void invoices never flipped to overdue"
+  "notes": "Quote menu: Mark as Approved (Jobber parity)"
 }
