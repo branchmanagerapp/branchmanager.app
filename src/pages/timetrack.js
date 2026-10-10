@@ -533,7 +533,7 @@ var TimeTrackPage = {
       + '<h3 style="margin:0;font-size:15px;">Pay Period Summary</h3>'
       + '<span style="font-size:12px;color:var(--text-light);">' + fmtDate(weekStart) + ' – ' + fmtDate(weekEnd) + '</span>'
       + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
+      + '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
       + '<div style="text-align:center;background:var(--green-bg);border-radius:8px;padding:10px;">'
       +   '<div style="font-size:11px;color:var(--green-dark);margin-bottom:4px;">🔧 Labor Hrs</div>'
       +   '<div style="font-size:1.3rem;font-weight:700;color:var(--green-dark);">' + laborHours.toFixed(1) + '</div>'

@@ -1,5 +1,5 @@
 {
-  "version": 1256,
+  "version": 1257,
   "released": "2026-10-10",
-  "notes": "Quote salesperson/lead source now sync to cloud; void invoices excluded from Collect Payment"
+  "notes": "Phone layout: payroll header no longer stacks; Settings price rows fit; 16 stat rows go 2x2 on phones"
 }

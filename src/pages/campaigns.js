@@ -16,7 +16,7 @@ var Campaigns = {
     var html = '<div style="max-width:1000px;margin:0 auto;">';
 
     // Stat cards
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">';
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">';
     html += Campaigns._stat('Total Campaigns', campaigns.length, '📣');
     html += Campaigns._stat('Emails Sent', totalSent.toLocaleString(), '📧');
     html += Campaigns._stat('Avg Open Rate', avgOpen + '%', '👁️');
@@ -164,7 +164,7 @@ var Campaigns = {
   detail: function(id) {
     var c = DB.getById('bm-campaigns', id);
     if (!c) return;
-    var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">'
+    var html = '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">'
       + Campaigns._stat('Sent', (c.emailsSent || 0).toLocaleString(), '📧')
       + Campaigns._stat('Opens', c.openRate + '%', '👁️')
       + Campaigns._stat('Clicks', c.clickRate + '%', '🖱️')

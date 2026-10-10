@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1256; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1257; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -946,6 +946,11 @@ window.bmShowStaleBanner = function(version) {
     /* App stat card rows — stack 2x2 on mobile, 1 col on tiny */
     .stat-row { grid-template-columns:1fr 1fr !important; }
     @media (max-width:400px) { .stat-row { grid-template-columns:1fr !important; } }
+    /* Oct 10 2026: Settings → Services & Prices rows crushed 5 columns into ~300px (Edit cut off).
+       Phone: name · price · Edit on one line, description underneath, type hidden. */
+    .svc-row { grid-template-columns:1fr auto auto !important; row-gap:2px !important; }
+    .svc-row > :nth-child(1) { order:1; } .svc-row > :nth-child(4) { order:2; } .svc-row > :nth-child(5) { order:3; }
+    .svc-row > :nth-child(2) { order:4; grid-column:1 / -1; } .svc-row > :nth-child(3) { display:none; }
 
     /* Detail grids — stack on mobile */
     .detail-grid { grid-template-columns:1fr !important; }
@@ -1642,7 +1647,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1256.min.js"></script>
+<script defer src="dist/bm.bundle.v1257.min.js"></script>
 
 
 

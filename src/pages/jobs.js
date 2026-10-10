@@ -111,7 +111,7 @@ var JobsPage = {
     var activeTotal = activeJobs.reduce(function(s,j){return s+(j.total||0);},0);
     var upcomingTotal = upcomingVisits.reduce(function(s,j){return s+(j.total||0);},0);
 
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
       // Overview — each row filters to its category
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       + '<div style="font-size:14px;font-weight:700;margin-bottom:8px;cursor:pointer;" onclick="JobsPage._setFilter(\'all\')">Overview</div>'
@@ -517,7 +517,7 @@ var JobsPage = {
       +   '<h4 style="font-size:13px;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin:0;">💰 Profitability</h4>'
       +   '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:' + marginBg + ';color:' + marginColor + ';">' + s.margin + '% · ' + marginLabel + '</span>'
       + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">'
+      + '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">'
       +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Revenue</div><div style="font-size:18px;font-weight:800;color:var(--text);">' + UI.money(s.revenue) + '</div></div>'
       +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Labor</div><div style="font-size:18px;font-weight:800;color:var(--text);">' + UI.money(s.laborCost) + '</div><div style="font-size:11px;color:var(--text-light);">' + s.hours.toFixed(1) + 'h × $' + s.hourlyRate.toFixed(0) + '</div></div>'
       +   '<div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;">Materials + Expenses</div><div style="font-size:18px;font-weight:800;color:var(--text);">' + UI.money(s.materialsAndExpenses) + '</div></div>'

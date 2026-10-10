@@ -180,7 +180,7 @@ var RBAC = {
       + '<p style="color:var(--text-light);margin-top:4px;">Configure what each role can do. Changes apply immediately.</p></div>';
 
     // Role cards
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">';
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">';
     Object.keys(roles).forEach(function(key) {
       var r = roles[key];
       html += '<div style="background:var(--white);border:2px solid ' + r.color + '20;border-radius:10px;padding:14px;text-align:center;cursor:pointer;" onclick="RBAC.editRole(\'' + key + '\')">'

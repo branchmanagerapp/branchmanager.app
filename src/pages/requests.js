@@ -231,7 +231,7 @@ var RequestsPage = {
     // need attention (status=new or overdue) so it's all in one place.
 
     // ── Stats row (4-cell bordered grid — matches Jobs page shape) ──
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--white);" class="stat-row">'
       // Overview — clickable mini-rows that filter the list
       + '<div style="padding:14px 16px;border-right:1px solid var(--border);">'
       +   '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">Overview</div>'

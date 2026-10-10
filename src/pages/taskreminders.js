@@ -108,7 +108,7 @@ var TaskReminders = {
       { label: 'Overdue', val: overdue,          color: '#c62828', bg: '#ffebee' },
       { label: 'Done',    val: completedCount,   color: '#2e7d32', bg: '#e8f5e9' }
     ];
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">';
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">';
     stats.forEach(function(s) {
       html += '<div onclick="TaskReminders._filter=\'' + (s.label==='Open'?'all':s.label.toLowerCase()) + '\';loadPage(\'taskreminders\')" '
         + 'style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;position:relative;overflow:hidden;">'

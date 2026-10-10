@@ -427,7 +427,7 @@ var TeamPage = {
         var stats = CrewPerformance._getCrewStats(m.id, 'month', DB.jobs.getAll(), DB.timeEntries.getAll(), m.name);
         html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px;">'
           + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:10px;">📊 Performance · last 30 days</div>'
-          + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+          + '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
           +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + UI.moneyInt(stats.revenue || 0) + '</div><div style="font-size:10px;color:var(--text-light);">Revenue</div></div>'
           +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + (stats.jobsCompleted || 0) + '</div><div style="font-size:10px;color:var(--text-light);">Jobs done</div></div>'
           +   '<div style="text-align:center;padding:8px;background:var(--bg);border-radius:8px;"><div style="font-size:18px;font-weight:800;">' + (stats.hoursWorked || 0).toFixed(0) + '</div><div style="font-size:10px;color:var(--text-light);">Hours</div></div>'

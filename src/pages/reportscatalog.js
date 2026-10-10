@@ -194,7 +194,7 @@ var ReportsCatalog = {
     var html = SalesTaxCounter.renderDetail();
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:16px;">'
       + '<h4 style="margin:0 0 12px;font-size:14px;">Sales tax collected — ' + yr + '</h4>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
+      + '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">';
     ['q1','q2','q3','q4'].forEach(function(q, idx) {
       var qNames = ['Q1 (Mar–May)', 'Q2 (Jun–Aug)', 'Q3 (Sep–Nov)', 'Q4 (Dec–Feb)'];
       html += '<div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px;">'

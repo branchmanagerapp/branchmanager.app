@@ -40,7 +40,7 @@ var Referrals = {
     var html = '<div style="max-width:1000px;margin:0 auto;">';
 
     // Stat cards
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">';
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">';
     html += Referrals._stat('Total Referrals', referrals.length + referredClients.length, '🤝');
     html += Referrals._stat('Conversion Rate', convRate + '%', '📈');
     html += Referrals._stat('Revenue', '$' + revenue.toLocaleString(), '💰');

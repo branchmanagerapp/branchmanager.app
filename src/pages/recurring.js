@@ -23,7 +23,7 @@ var RecurringJobs = {
       + '</div>';
 
     // Stats header
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">'
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">'
       + '<div style="background:var(--white);border-radius:12px;padding:14px 12px;border:1px solid var(--border);text-align:center;">'
       + '<div style="font-size:22px;font-weight:800;color:var(--green-dark);">' + activeCount + '</div>'
       + '<div style="font-size:11px;color:var(--text-light);margin-top:2px;">Active Jobs</div></div>'

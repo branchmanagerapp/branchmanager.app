@@ -2359,24 +2359,26 @@ var PayrollPage = {
       setTimeout(function(){ PayrollPage._fillWeekJobRow(dates); }, 0);
     }
 
-    // Header row
-    if (!isMobile)
-    html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">'
-      + '<div style="padding:10px 12px;">Employee</div>';
-    dates.forEach(function(d, i) {
-      var isToday = d === today;
-      // v1140: tapping a day header drives the truck panel below — the panel's
-      // own < > date selector is gone, so there is ONE date in play, not two
-      // that could disagree.
-      var isSel = (PayrollPage._bDate === d);
-      var bg = isSel ? 'background:var(--green-dark);color:#fff;'
-                     : (isToday ? 'background:var(--green-bg);color:var(--green-dark);' : '');
-      html += '<div onclick="PayrollPage._pickDay(\'' + d + '\')" title="Show this day\'s truck times below"'
-        + ' style="padding:10px 6px;text-align:center;cursor:pointer;border-radius:6px 6px 0 0;' + bg + '">'
-        + dayNames[i] + '<br><span style="font-weight:400;font-size:10px;">' + PayrollPage._pDate(d).getDate() + '</span></div>';
-    });
-    html += '<div style="padding:10px 6px;text-align:center;">Total</div>';
-    html += '</div>';
+    // Header row — desktop only. Oct 10 2026: the `if` used to guard ONLY the opening <div>, so on phones the
+    // 7 day cells + Total + a stray </div> still rendered: 8 tall stacked rows, and the card closed early.
+    if (!isMobile) {
+      html += '<div style="display:grid;grid-template-columns:140px repeat(7,1fr) 70px;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;">'
+        + '<div style="padding:10px 12px;">Employee</div>';
+      dates.forEach(function(d, i) {
+        var isToday = d === today;
+        // v1140: tapping a day header drives the truck panel below — the panel's
+        // own < > date selector is gone, so there is ONE date in play, not two
+        // that could disagree.
+        var isSel = (PayrollPage._bDate === d);
+        var bg = isSel ? 'background:var(--green-dark);color:#fff;'
+                       : (isToday ? 'background:var(--green-bg);color:var(--green-dark);' : '');
+        html += '<div onclick="PayrollPage._pickDay(\'' + d + '\')" title="Show this day\'s truck times below"'
+          + ' style="padding:10px 6px;text-align:center;cursor:pointer;border-radius:6px 6px 0 0;' + bg + '">'
+          + dayNames[i] + '<br><span style="font-weight:400;font-size:10px;">' + PayrollPage._pDate(d).getDate() + '</span></div>';
+      });
+      html += '<div style="padding:10px 6px;text-align:center;">Total</div>';
+      html += '</div>';
+    }
 
     // Employee rows
     employees.forEach(function(emp) {
@@ -2718,7 +2720,7 @@ var PayrollPage = {
     html += '<h3 style="font-size:16px;margin:0 0 16px;">Weekly Review</h3>';
 
     // Stats
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">';
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">';
     html += '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;"><div style="font-size:22px;font-weight:800;">' + totalHours.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">Total Hours</div></div>';
     html += '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;"><div style="font-size:22px;font-weight:800;">' + totalPTO.toFixed(1) + '</div><div style="font-size:11px;color:var(--text-light);">PTO</div></div>';
     html += '<div style="text-align:center;padding:12px;background:' + (warnings.length > 0 ? '#fef2f2' : 'var(--bg)') + ';border-radius:10px;"><div style="font-size:22px;font-weight:800;color:' + (warnings.length > 0 ? '#dc2626' : 'var(--text)') + ';">' + warnings.length + '</div><div style="font-size:11px;color:var(--text-light);">Warnings</div></div>';

@@ -213,7 +213,7 @@ var CommsLog = {
       + '</div>';
 
     // Stat cards
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">'
+    html += '<div class="stat-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">'
       + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:20px;font-weight:800;">' + calls + '</div><div style="font-size:11px;color:var(--text-light);">📞 Calls</div></div>'
       + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:20px;font-weight:800;">' + texts + '</div><div style="font-size:11px;color:var(--text-light);">💬 Texts</div></div>'
       + '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:20px;font-weight:800;">' + emails + '</div><div style="font-size:11px;color:var(--text-light);">📧 Emails</div></div>'

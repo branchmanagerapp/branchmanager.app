@@ -1056,7 +1056,7 @@ var SettingsPage = {
       + '</div>'
       + '<div id="services-list">';
     allServices.forEach(function(svc) {
-      html += '<div style="display:grid;grid-template-columns:2fr 3fr 80px 80px 36px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">'
+      html += '<div class="svc-row" style="display:grid;grid-template-columns:2fr 3fr 80px 80px 36px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">'
         + '<div style="font-size:13px;font-weight:600;">' + UI.esc(svc.name) + '</div>'
         + '<div style="font-size:12px;color:var(--text-light);">' + UI.esc(svc.description || '') + '</div>'
         + '<div style="font-size:12px;color:var(--text-light);">' + (svc.type || 'service') + '</div>'
