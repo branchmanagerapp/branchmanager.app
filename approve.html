@@ -264,7 +264,8 @@
       var items = q.line_items || [];
       var lineRows = '';
       var hasOptional = items.some(function(it){ return it && it.optional === true; });
-      var allowSelection = (items.length > 1 || hasOptional) && !isApproved && !isDeclined;
+      // Oct 10 2026 (Jobber parity): customers may only pick OPTIONAL add-ons; required work can't be un-ticked.
+      var allowSelection = hasOptional && !isApproved && !isDeclined;
       if (items.length) {
         items.forEach(function(item, idx) {
           var amt = item.amount || ((item.qty || 1) * (item.rate || 0));
