@@ -28,9 +28,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { resolveTenantId, loadTenantBranding, TenantBranding } from '../_shared/tenant.ts';
 
 const RESEND_API_KEY    = Deno.env.get('RESEND_API_KEY')     ?? '';
-const TWILIO_SID        = Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
-const TWILIO_TOKEN      = Deno.env.get('TWILIO_AUTH_TOKEN')  ?? '';
-const TWILIO_FROM       = Deno.env.get('TWILIO_FROM')        ?? '';
+// Oct 10 2026: the secrets are stored as TWILIO_SID / TWILIO_TOKEN / TWILIO_FROM_NUMBER — reading only the
+// long names meant sendSMS() silently returned for EVERY lead (owner never got a text). Accept both.
+const TWILIO_SID        = Deno.env.get('TWILIO_SID')   ?? Deno.env.get('TWILIO_ACCOUNT_SID') ?? '';
+const TWILIO_TOKEN      = Deno.env.get('TWILIO_TOKEN') ?? Deno.env.get('TWILIO_AUTH_TOKEN')  ?? '';
+const TWILIO_FROM       = Deno.env.get('TWILIO_FROM_NUMBER') ?? Deno.env.get('TWILIO_FROM')  ?? '';
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')       ?? '';
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID' };
@@ -72,14 +74,18 @@ async function insertRequest(row: Record<string, unknown>) {
 }
 
 async function sendSMS(to: string, body: string) {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM || !to) return;
+  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM || !to) {
+    console.error('sendSMS skipped: Twilio not configured', { sid: !!TWILIO_SID, token: !!TWILIO_TOKEN, from: !!TWILIO_FROM, to: !!to });
+    return;
+  }
   const creds = btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`);
   const form = new URLSearchParams({ From: TWILIO_FROM, To: to, Body: body });
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
+  const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: form.toString()
   });
+  if (!r.ok) console.error('sendSMS failed', r.status, (await r.text()).slice(0, 300));
 }
 
 async function sendEmail(b: TenantBranding, to: string, subject: string, text: string, html?: string) {
@@ -239,7 +245,13 @@ serve(async (req: Request) => {
     // FROM_NUMBER (carriers drop same-number SMS, found 2026-05-19).
     const dialpadFromDigits = (Deno.env.get('DIALPAD_FROM_NUMBER') || '').replace(/\D/g, '');
     const envPhone = (Deno.env.get('OWNER_ALERT_PHONE') || '').trim();
-    const cfgPhones: any = (b as any).owner_alert_phones;
+    // Oct 10 2026: loadTenantBranding() never returned owner_alert_phones / owner_alert_phone, so this list
+    // only ever held sms_from_number (= the Dialpad line, filtered below) → no alert text was ever sent.
+    // Read them straight from tenants.config.
+    let alertCfg: any = {};
+    try { const { data: tr } = await sb.from('tenants').select('config').eq('id', tenantId).single(); alertCfg = (tr && tr.config) || {}; } catch (_e) { /* fall back to branding */ }
+    const cfgPhones: any = alertCfg.owner_alert_phones ?? (b as any).owner_alert_phones;
+    if (alertCfg.owner_alert_phone) (b as any).owner_alert_phone = alertCfg.owner_alert_phone;
     const phonesRaw: string[] = [];
     if (envPhone) phonesRaw.push(envPhone);
     if (Array.isArray(cfgPhones)) for (const p of cfgPhones) { if (p) phonesRaw.push(String(p)); }
