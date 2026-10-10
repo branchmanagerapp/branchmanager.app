@@ -995,7 +995,7 @@ var DB = (function() {
     remove: function(id) { remove(KEYS.requests, id); },
     search: function(q) { return search(KEYS.requests, q); },
     count: function(filterFn) { return count(KEYS.requests, filterFn); },
-    countNew: function() { return count(KEYS.requests, function(r) { return r.status === 'new'; }); }
+    countNew: function() { return count(KEYS.requests, function(r) { return r.status === 'new' && r.reviewStatus !== 'spam' && r.review_status !== 'spam'; }); }  // spam isn't a new request (Oct 10 2026)
   };
 
   // ── Quotes ──

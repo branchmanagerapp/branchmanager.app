@@ -1,5 +1,5 @@
 {
-  "version": 1264,
+  "version": 1265,
   "released": "2026-10-10",
-  "notes": "Jobs: boot sweep no longer resets archived/action_required/on_hold to scheduled"
+  "notes": "Version shown in Settings; spam not counted as new requests"
 }

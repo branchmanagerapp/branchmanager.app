@@ -189,7 +189,7 @@ var DashboardPage = {
     var moneyInt = (typeof UI !== 'undefined' && UI.moneyInt) ? UI.moneyInt : function(n){ return '$' + Math.round(n||0).toLocaleString(); };
     function sumT(arr, field){ return arr.reduce(function(s,x){ return s + (Number(x[field]) || 0); }, 0); }
     var invBal = function(i){ return (Number(i.balance) || Number(i.total)) || 0; };
-    var newReq   = requests.filter(function(r){ return r.status === 'new'; });
+    var newReq   = requests.filter(function(r){ return r.status === 'new' && r.reviewStatus !== 'spam' && r.review_status !== 'spam'; });
     var approved = quotes.filter(function(q){ return q.status === 'approved' && !q.convertedJobId && !q.jobId; });
     var changes  = quotes.filter(function(q){ return q.status === 'changes_requested'; });
     var toSched  = jobs.filter(function(j){ return !j.scheduledDate && (j.status === 'scheduled' || j.status === 'in_progress'); });
@@ -292,7 +292,7 @@ var DashboardPage = {
     // news, not alarming). Whole card is clickable → Requests page.
     try {
       var _nrs = (typeof DB !== 'undefined' && DB.requests && DB.requests.getAll)
-        ? DB.requests.getAll().filter(function(r) { return r.status === 'new'; })
+        ? DB.requests.getAll().filter(function(r) { return r.status === 'new' && r.reviewStatus !== 'spam' && r.review_status !== 'spam'; })
             .sort(function(a, b) { return String(b.createdAt || b.created_at || '').localeCompare(String(a.createdAt || a.created_at || '')); })
         : [];
       if (false && _nrs.length) { // v977: green "New requests" box removed from Home per Doug
@@ -551,7 +551,7 @@ var DashboardPage = {
           action: 'loadPage(\'schedule\');'
         });
       }
-      var bNewRequests = DB.requests.getAll().filter(function(r) { return r.status === 'new'; });
+      var bNewRequests = DB.requests.getAll().filter(function(r) { return r.status === 'new' && r.reviewStatus !== 'spam' && r.review_status !== 'spam'; });
       if (bNewRequests.length > 0) {
         briefingInsights.push({
           icon: '📥',
@@ -636,7 +636,7 @@ var DashboardPage = {
 
     // Requests card
     var allRequests = DB.requests.getAll();
-    var newRequests = allRequests.filter(function(r) { return r.status === 'new'; });
+    var newRequests = allRequests.filter(function(r) { return r.status === 'new' && r.reviewStatus !== 'spam' && r.review_status !== 'spam'; });
     var assessedRequests = allRequests.filter(function(r) { return r.status === 'assessment_complete'; });
     var overdueRequests = allRequests.filter(function(r) {
       if (r.status === 'converted' || r.status === 'quoted' || r.status === 'archived') return false;

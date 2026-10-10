@@ -1822,6 +1822,8 @@ var SettingsPage = {
       + cardClose();
 
     html += '</div>';
+    // Oct 10 2026: version visible on phones too (topbar version is hidden at phone width).
+    html += '<div style="text-align:center;color:var(--text-light);font-size:12px;padding:18px 0 28px;">Branch Manager v' + (window.BUNDLED_VERSION || '?') + '</div>';
     return html;
   },
 
