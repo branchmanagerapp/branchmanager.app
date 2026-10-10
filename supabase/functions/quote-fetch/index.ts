@@ -31,6 +31,8 @@ const VIEW_THROTTLE_MS = 4 * 60 * 60 * 1000; // one "opened" email per quote per
 async function notifyQuoteViewed(row: any, headers: Record<string, string>) {
   try {
     if (!RESEND_API_KEY) return;
+    // Smoke-test canary / test quotes never alert anyone (Oct 10: the canary texted Catherine).
+    if (+row.quote_number >= 999000 || /^zz smoke/i.test(String(row.client_name || ''))) return;
     const qid = String(row.id);
     const marker = '/quote-viewed/' + qid;
     const since = new Date(Date.now() - VIEW_THROTTLE_MS).toISOString();

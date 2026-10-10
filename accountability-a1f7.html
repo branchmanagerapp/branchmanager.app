@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Branch Manager — Failures, Rules & The Go-Live Plan</title>
+<title>Branch Manager — Go-Live Plan</title>
 <style>
   :root{--ink:#141a1f;--muted:#5b6672;--line:#e7e9ec;--red:#b3261e;--red-bg:#fdecea;--amber:#8a5a00;--amber-bg:#fef7e6;--blue:#1256a0;--blue-bg:#e8f1fb;--green:#1f7a44;--green-d:#155c33;--green-bg:#e9f6ee;--card:#fff;--bg:#f4f5f7}
   *{box-sizing:border-box}
@@ -58,33 +58,58 @@
   details.hist>summary::before{content:"▸ ";} details.hist[open]>summary::before{content:"▾ ";}
 </style>
   <header class="hd">
-    <h1>Branch Manager: decide today</h1>
-    <p>What has to happen for Branch Manager to replace Jobber, who does each step, and the date we decide for good.</p>
-    <div class="updated">Updated Oct 10, 2026. Jobber is the source of truth; Branch Manager only mirrors it.</div>
+    <h1>Branch Manager: go-live plan</h1>
+    <p>A 30-day test. We decide on Nov 15. If it passes, we switch from Jobber on Dec 1.</p>
+    <div class="updated">Updated Oct 10, 2026 (evening) · v1267</div>
   </header>
 
   <section class="dec">
-    <h2>Today's decision</h2>
-    <p>Stop Branch Manager now, or give it one last test with a hard deadline.</p>
-    <div class="rec"><b>My recommendation: a 30-day test with a hard stop on Nov 15.</b> If it fails any check below, we stop for good: no more time spent trying to replace Jobber. If it passes, switch Dec 1 in the slow season, with Jobber's cheapest plan kept 2 months as a backup.</div>
-    <p><b>Why not switch now:</b> there's no proof it stays accurate, customer texting isn't approved, and only Claude can fix it.</p>
-    <p><b>Why not quit outright:</b> the hard parts work. Customer data is locked (tested Oct 10), online payments are safe, every invoice now matches Jobber, and the Jobber look has been in place since June.</p>
+    <h2>Where things stand</h2>
+    <p><b>Jobber is the real system.</b> Branch Manager copies it every morning and emails you whether they match. Today: <b>everything matches</b> (370 invoices, 531 quotes, 272 jobs).</p>
+    <div class="rec"><b>Nov 15 test:</b> 14 clean match emails in a row · the 5 main screens work like Jobber · texting and calls work · Catherine makes one real quote and invoice on her phone without help. <b>Pass</b> → switch Dec 1, keep Jobber 2 months as backup. <b>Fail</b> → stop for good; keep only truck GPS, fleet records and job photos.</div>
   </section>
 
-  <h2 class="part">Action steps</h2>
-  <p class="part-sub">In order. <span class="who d">Doug</span> = you, <span class="who c">Claude</span> = me.</p>
+  <h2 class="part">Your steps</h2>
+  <p class="part-sub">One at a time, top first.</p>
   <ol class="acts">
-    <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price. We pay more than Grow's listed price. 15 min, saves money either way.</li>
-    <li><span class="who c">Claude</span><b>Daily match email.</b> Every morning at 6:30 BM copies Jobber and emails you "matches" or "here's what's off." <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> Now covers <b>invoices, quotes and jobs</b> (370 / 531 / 272, all matching), plus <b>clients</b> (Jobber → BM only, 51 added) and <b>requests</b> (8 open, matching).</li>
-    <li><span class="who c">Claude</span><b>Make the 5 screens you use work like Jobber:</b> Home, Clients, Quote, Job, Invoice. <span class="tag amber" style="margin-left:6px;">IN PROGRESS</span> Done Oct 10: Home leads with Workflow; quote buttons match (Resend, Mark Approved, Convert to Job); optional items work like Jobber (unchecked, not in subtotal, customer can only add optional items); line-item photos show to customers; approved quotes no longer auto-create jobs.</li>
-    <li><span class="who c">Claude</span><b>Fix the known list:</b> invoice-number backup picker, payroll week header, Settings price rows, stat tiles on 13 screens. <span class="tag green" style="margin-left:6px;">DONE Oct 10</span> v1254–v1258: number picker, payroll header, Settings rows, 16 stat rows, plus 9 more bugs found by testing (below).</li>
-    <li><span class="who d">Doug</span><b>3 phone checks, 10 min:</b> stays signed in, auto-updates, a test quote saves. <span class="tag amber" style="margin-left:6px;">HALF</span> iPhone now signed in to the cloud (first ever). Laptop auto-updated to v1259. Test quote save verified by Claude.</li>
-    <li><span class="who c">Claude</span><b>Texting + calls (Twilio):</b> <span class="tag green" style="margin-left:6px;">BUILT + TESTED Oct 10 (v1267)</span> BM's Text button now sends through Twilio (signed-in users only; it used to accept anyone). Text alerts to Doug + Catherine for: new website lead, quote <b>opened</b>, quote <b>approved</b>, <b>changes requested</b>, a customer texting the line, and voicemails (link plays on the phone). Calls to the Twilio line ring <b>Catherine (~4 rings) → Doug → voicemail</b>, with "press a number to answer" so a cell's own voicemail can't grab the call. All tested; Doug answered a live test call. <b>Still Dialpad:</b> main number 914-391-5233 (moves last). Real quotes still go out from Jobber.</li>
-    <li><span class="who x">Nov 15</span><b>Go / no-go.</b> To pass it needs: 14 clean match emails in a row, all 5 screens done, texting sorted, and Catherine doing one real quote and invoice on her phone without help. Pass → switch Dec 1. Fail → stop. We keep only truck GPS, fleet records and job photos.</li>
+    <li><span class="who d">Doug</span><b>Twilio phone test.</b> Say "ready to test Twilio." I call and text you; you answer and reply. Reminder set for Oct 11, 9am.</li>
+    <li><span class="who d">Doug</span><b>Phone check, 5 min:</b> app opens without asking for a code · Settings shows <b>v1267</b> at the bottom · make one real quote and tell me the number.</li>
+    <li><span class="who d">Doug</span><b>Crew hours:</b> where are hours tracked now? There's nothing in BM since Aug 29, and payroll must work before a switch.</li>
+    <li><span class="who d">Doug</span><b>4 quotes that exist only in BM</b> (sent, never in Jobber): Burchie Green $8,561.62 · Catherine Scott $9,320.25 · Toni Rosen $3,901.50 · Natasha $3,251.25. Keep, re-enter in Jobber, or drop?</li>
+    <li><span class="who d">Doug</span><b>Jessica Bernadello #378:</b> Jobber says draft, BM says paid. Which is right?</li>
+    <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price (we pay more than the listed price). 15 min.</li>
   </ol>
 
+  <h2 class="part">My steps</h2>
+  <ol class="acts">
+    <li><span class="who c">Claude</span><b>Finish the 5 Jobber-like screens</b> (Home, Clients, Quote, Job, Invoice), checked side by side with Jobber at phone width. <span class="tag amber" style="margin-left:6px;">IN PROGRESS</span></li>
+    <li><span class="who c">Claude</span><b>Copy Jobber's line-item photos</b> onto the 67 quotes that don't have them in BM yet.</li>
+    <li><span class="who c">Claude</span><b>Daily match email</b> runs at 6:30am. <span class="tag green" style="margin-left:6px;">RUNNING</span> Counting toward 14 clean in a row.</li>
+    <li><span class="who c">Claude</span><b>Move the main number (914-391-5233) from Dialpad to Twilio.</b> Last step, only with your OK.</li>
+  </ol>
+  <ol class="acts" start="1" style="margin-top:10px;">
+    <li style="list-style:none;margin-left:-22px;"><span class="who x">Catherine</span><b>One real quote and invoice on her phone</b>, without help, before Nov 15.</li>
+  </ol>
 
-  <h2 class="part">Tested Oct 10 by Claude</h2>
+  <h2 class="part">Working now (tested Oct 10)</h2>
+  <ul class="probs">
+    <li><b>Daily copy from Jobber:</b> invoices, quotes, jobs, clients and requests all match.</li>
+    <li><b>Website leads</b> go into Jobber automatically (client, request, draft quote) and text you and Catherine.</li>
+    <li><b>Texts by alert</b> when a customer opens a quote, approves it, asks for changes, texts the Twilio line, or leaves a voicemail.</li>
+    <li><b>Calls to the Twilio line</b> ring Catherine (~4 rings), then you, then voicemail. You press the number it reads out to answer.</li>
+    <li><b>Customer pages</b> (quote approval, pay, booking form) work at phone width. Customer data is locked: 0 records visible without a login.</li>
+    <li><b>All 963 buttons and 90 screens</b> open with no errors (full sweep, v1263).</li>
+  </ul>
+
+  <h2 class="part">Risks</h2>
+  <ul class="probs">
+    <li><b>Trust.</b> My changes have broken live data before. The guard is the daily match email, not my word.</li>
+    <li><b>No support desk.</b> When BM breaks, it's you and me.</li>
+    <li><b>Catherine's switch</b> waits for the slow season (Dec 1).</li>
+  </ul>
+
+  <details class="hist"><summary>Details, history and rules (tap to open)</summary>
+  <h3 class="sec">Tested Oct 10 by Claude</h3>
   <ul class="probs">
     <li><b>All 962 buttons</b> point to real code (2 dead ones fixed: quote ✨ AI-assist, SocialBranch Upload).</li>
     <li><b>All 90 screens</b> open on desktop with no errors (fixed: Collect Payment was blank, BranchCam crashed).</li>
@@ -98,7 +123,7 @@
   </ul>
 
 
-  <h2 class="part">Also done Oct 10 (afternoon)</h2>
+  <h3 class="sec">Also done Oct 10 (afternoon)</h3>
   <ul class="probs">
     <li><b>Quotes and jobs now match Jobber</b> — same numbers, statuses, totals, line items (optional items marked). Next new quote #591, next job #332. BM-only old records moved to #2000s; stale "open" BM-only jobs archived (reversible).</li>
     <li><b>Jobs</b>: BM now shows the same 7 open jobs and 2 needing invoices as Jobber (was dozens of phantom ones).</li>
@@ -110,27 +135,7 @@
     <li><b>Money math</b>: a blank tax rate no longer saves quotes with $0 tax when edited.</li>
   </ul>
 
-  <h2 class="part">Your phone test list (things Claude can't do)</h2>
-  <ol class="acts">
-    <li>Home-screen app: does it still open <b>without asking for a code</b> tomorrow and next week?</li>
-    <li>Settings shows <b>v1266</b> (proves auto-update on the phone).</li>
-    <li>Open <b>Payroll</b>: week selector, then crew cards, no tall stacked rows.</li>
-    <li>Open <b>Invoices</b>: 4 stat boxes show 2×2, not squeezed.</li>
-    <li>Settings → <b>Services &amp; Prices</b>: Edit button fully visible.</li>
-    <li>Make one <b>real quote</b> on the phone and tell Claude the number. Claude confirms it reached the cloud.</li>
-    <li><b>Hours:</b> no crew time in BM since Aug 29 (GPS timesheet job is off). Are hours tracked in Jobber now? BM payroll must work before a switch.</li>
-  </ol>
 
-  <h2 class="part">The real problems</h2>
-  <ul class="probs">
-    <li><b>Trust.</b> My changes to live data have broken things, as recently as today: the site was down about 11 minutes after a bad push. Fix: automatic daily checks, not my word.</li>
-    <li><b>Customer texting</b> works (Twilio approved Aug 28). Your main number is still on Dialpad until it moves over.</li>
-    <li><b>No support desk.</b> When Jobber breaks, Jobber fixes it. When BM breaks, it's you and me.</li>
-    <li><b>One point of failure.</b> Only Claude can maintain it.</li>
-    <li><b>Catherine</b> would have to switch mid-season. That's why the switch date is Dec 1.</li>
-  </ul>
-
-  <details class="hist"><summary>Finished items, rules and history (tap to open)</summary>
 <div style="background:#22303a;color:#eaf0f3;border-radius:10px;padding:14px 16px;margin:10px 0;font-size:13.5px;line-height:1.6;">
 <b style="color:#f2c46d;">Earlier Oct 10 (replaced by the Nov 15 decision above).</b> Jobber is the source of truth. Branch Manager is <b>not</b> in live use; it only mirrors Jobber. Doug decides in February whether it ever replaces Jobber.<br><br>
 <b>Done Oct 10:</b> every BM invoice synced to Jobber, invoice numbers included (backup taken first). BM-only invoices kept as #2001–2022. The next BM invoice number continues from Jobber's. Truck names fixed, and real truck mileage stored from the shop's repair invoices.<br><br>

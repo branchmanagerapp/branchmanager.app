@@ -153,6 +153,7 @@ serve(async (req: Request) => {
         const { data: q } = await sb.from('quotes').select('quote_number, client_name, total')
           .eq('id', quoteId).eq('tenant_id', tenantId).limit(1);
         if (!q || !q.length) return;
+        if (+q[0].quote_number >= 999000 || /^zz smoke/i.test(String(q[0].client_name || ''))) return; // test canary
         const { data: tr } = await sb.from('tenants').select('config').eq('id', tenantId).limit(1);
         const cfg = (tr && tr[0] && tr[0].config) || {};
         await textOwners(cfg, `${label} Quote #${q[0].quote_number} — ${q[0].client_name || 'Customer'} (${money(q[0].total)}).` + (event === 'changes_requested' && changeNotes ? ` Notes: ${changeNotes.slice(0, 300)}` : ''));
