@@ -2286,13 +2286,14 @@ var QuotesPage = {
     if (q.status === 'converted') {
       _primary = (convertedJob ? _gBtn('🗓 View Job', 'JobsPage.showDetail(\'' + (q.convertedJobId||'') + '\')') : _gBtn('✅ Convert &amp; Book', 'QuotesPage._convertAndBook(\'' + id + '\')')) + _oBtn('📄 PDF', 'PDF.generateQuote(\'' + id + '\')');
     } else if (q.status === 'approved') {
-      _primary = _gBtn('✅ Convert &amp; Book', 'QuotesPage._convertAndBook(\'' + id + '\')') + _oBtn('Resend', 'QuotesPage._sendQuote(\'' + id + '\')');
+      _primary = _gBtn('🔨 Convert to Job', 'QuotesPage._convertAndBook(\'' + id + '\')') + _oBtn('Resend', 'QuotesPage._sendQuote(\'' + id + '\')');
     } else if (q.status === 'declined') {
       _primary = _gBtn('↩︎ Re-open', 'QuotesPage.setStatus(\'' + id + '\',\'sent\')') + _oBtn('✏️ Edit', 'QuotesPage.showForm(\'' + id + '\')');
     } else if (q.status === 'draft') {
       _primary = _gBtn('📤 Send Quote', 'QuotesPage._sendQuote(\'' + id + '\')') + _oBtn('✏️ Edit', 'QuotesPage.showForm(\'' + id + '\')');
     } else {
-      _primary = _gBtn('✓ Approve<br>&amp; Schedule', 'QuotesPage._approveAndSchedule(\'' + id + '\')') + _oBtn('Resend', 'QuotesPage._sendQuote(\'' + id + '\')');
+      // Oct 10 2026 (Jobber parity): awaiting a response → main action is to resend; approving is a deliberate second step.
+      _primary = _gBtn('📤 Resend', 'QuotesPage._sendQuote(\'' + id + '\')') + _oBtn('✓ Mark Approved', 'DB.quotes.update(\'' + id + '\',{approvedAt:new Date().toISOString()});QuotesPage.setStatus(\'' + id + '\',\'approved\')');
     }
 
     var html = '<style>'
@@ -3860,7 +3861,7 @@ var QuotesPage = {
         var lineTotal = (item.qty || 0) * (item.rate || 0);
         html += '<tr id="li-row-' + idx + '">'
           + '<td>'
-          + (item.optional ? '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;"><input type="checkbox" disabled style="width:15px;height:15px;margin:0;"> Optional — customer can add</div>' : '')
+          + (item.optional ? '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;"><input type="checkbox" disabled style="width:15px;height:15px;margin:0;"> Optional</div>' : '')
           + '<strong class="li-name" onclick="QuotesPage.editLineItem(\'' + id + '\',' + idx + ')" style="cursor:pointer;" title="Click to edit">' + UI.esc(item.service || item.name || 'Custom') + '</strong>'
           + (item.description ? '<br><span style="color:var(--text-light);font-size:12px;">' + UI.esc(item.description) + '</span>' : '')
           + (function(){ var _lip = QuotesPage._itemPhotos(item); return _lip.length ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">' + _lip.map(function(p){ return '<img src="' + p + '" style="width:76px;height:76px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">'; }).join('') + '</div>' : ''; })()

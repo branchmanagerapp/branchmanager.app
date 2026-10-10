@@ -145,8 +145,9 @@ var Workflow = {
         DB.quotes.update(q.id, { status: 'converted', convertedJobId: existing.id });
         return;
       }
-      var job = Workflow.quoteToJob(q.id);
-      if (job) created.push({ quote: q, job: job });
+      // Oct 10 2026 (Jobber parity): NO automatic job creation. Jobber leaves an approved quote approved
+      // until someone taps "Convert to Job". Auto-creating here also spawned jobs for every approved
+      // quote mirrored in from Jobber (#409, #410). Approved quotes now show a Convert to Job button.
     });
     return created;
   },
