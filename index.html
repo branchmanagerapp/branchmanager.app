@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1254; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1255; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -1642,7 +1642,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1254.min.js"></script>
+<script defer src="dist/bm.bundle.v1255.min.js"></script>
 
 
 
@@ -2246,7 +2246,8 @@ var pageRenderers = {
     return html;
   },
   invoices: function() { return MoneyHub.render('invoices'); },
-  collectpayment: function() { CollectPaymentPage.render(); return ''; },
+  // Oct 10 2026: render() writes #pageContent itself, so defer it — loadPage() sets innerHTML to this return value AFTER the renderer runs, which blanked the page.
+  collectpayment: function() { setTimeout(function() { CollectPaymentPage.render(); }, 0); return '<div style="padding:40px;text-align:center;color:var(--text-light);">Loading…</div>'; },
   insights: function() { return InsightsPage.render(); },
   reviews: function() { return ReviewsPage.render(); },
   socialbranch: function() { return SocialBranch.render(); },

@@ -1080,7 +1080,7 @@ var Photos = {
     // Filter
     var clientLookup = {};
     if (typeof DB !== 'undefined' && DB.clients) {
-      DB.clients.list().forEach(function(c) { clientLookup[c.id] = c.name || ''; });
+      DB.clients.getAll().forEach(function(c) { clientLookup[c.id] = c.name || ''; });
     }
     var filtered = all.filter(function(ph) {
       if (activeTag && ph.tags.indexOf(activeTag) === -1) return false;
@@ -1185,7 +1185,7 @@ var Photos = {
     } catch (e) {}
 
     // Suggest nearest existing client by name match in address (no lat/lng on clients yet)
-    var clients = (typeof DB !== 'undefined' && DB.clients) ? DB.clients.list() : [];
+    var clients = (typeof DB !== 'undefined' && DB.clients) ? DB.clients.getAll() : [];
     var matches = clients.filter(function(c) {
       if (!c.address) return false;
       // crude match: shared street name token

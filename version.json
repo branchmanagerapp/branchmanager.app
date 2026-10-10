@@ -1,5 +1,5 @@
 {
-  "version": 1254,
+  "version": 1255,
   "released": "2026-10-10",
-  "notes": "Fix dead buttons (quote AI-assist removed, SocialBranch Upload wired); invoice numbering skips legacy #2000s"
+  "notes": "Collect Payment no longer blank; BranchCam library no longer crashes"
 }
