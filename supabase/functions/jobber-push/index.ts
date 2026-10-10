@@ -88,16 +88,24 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json(405, { ok: false, error: "POST only" });
   try {
     const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    const { data: u } = await sb.auth.getUser(jwt);
-    if (!u?.user) return json(401, { ok: false, error: "Sign in first" });
+    // Oct 10 2026: request-notify calls this with the service key so every website lead reaches Jobber
+    // automatically (Doug: "make sure those leads go into Jobber"). Humans still need a signed-in owner/admin.
+    // The gateway (verify_jwt = true) has already checked the signature, so the role claim can be trusted.
+    let role = ""; try { role = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).role || ""; } catch (_e) { /* not a JWT */ }
+    const internal = role === "service_role" || (!!SERVICE_KEY && jwt === SERVICE_KEY);
+    const { data: u } = internal ? { data: null } : await sb.auth.getUser(jwt);
+    if (!internal && !u?.user) return json(401, { ok: false, error: "Sign in first" });
     const body = await req.json().catch(() => ({}));
     const id = body.request_id; const dry = !!body.dry_run;
     if (!id) return json(400, { ok: false, error: "request_id required" });
 
     const { data: r } = await sb.from("requests").select("*").eq("id", id).maybeSingle();
     if (!r) return json(404, { ok: false, error: "Request not found" });
-    const { data: mem } = await sb.from("user_tenants").select("role,is_active").eq("user_id", u.user.id).eq("tenant_id", r.tenant_id).maybeSingle();
-    if (!mem || mem.is_active === false || !["owner", "admin"].includes(String(mem.role || "").toLowerCase())) return json(403, { ok: false, error: "Only the owner/admin can send leads to Jobber" });
+    if (!internal) {
+      const { data: mem } = await sb.from("user_tenants").select("role,is_active").eq("user_id", u!.user!.id).eq("tenant_id", r.tenant_id).maybeSingle();
+      if (!mem || mem.is_active === false || !["owner", "admin"].includes(String(mem.role || "").toLowerCase())) return json(403, { ok: false, error: "Only the owner/admin can send leads to Jobber" });
+    }
+    if (r.review_status === "spam") return json(200, { ok: false, skipped: "spam" });
     if (r.jobber_request_id) return json(200, { ok: true, already: true, jobber_url: r.jobber_url });
 
     const name = String(r.client_name || "").trim();
@@ -132,7 +140,7 @@ Deno.serve(async (req) => {
     }
 
     const RQ = `mutation($i:RequestCreateInput!){ requestCreate(input:$i){ request{ id jobberWebUri } userErrors{ message path } } }`;
-    const rin: Record<string, unknown> = { clientId, title: ("Website: " + service).slice(0, 120) };
+    const rin: Record<string, unknown> = { clientId, title: ("Website: " + service + " - Claude").slice(0, 120) };
     if (propertyId) rin.propertyId = propertyId;
     const ro = await gql(r.tenant_id, RQ, { i: rin });
     const rerr = ro?.requestCreate?.userErrors ?? [];
@@ -140,11 +148,30 @@ Deno.serve(async (req) => {
     const jr = ro.requestCreate.request;
 
     const when = r.created_at ? new Date(r.created_at).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" }) : "";
-    const msg = [`Website request (${when}) — sent from Branch Manager after review.`, `Service: ${service}`, address ? `Address: ${address}` : "", phone ? `Phone: ${phone}` : "", email ? `Email: ${email}` : "", r.description ? `\n${String(r.description).slice(0, 3000)}` : ""].filter(Boolean).join("\n");
+    const msg = [`Website request (${when}) — sent from Branch Manager after review.`, `Service: ${service}`, address ? `Address: ${address}` : "", phone ? `Phone: ${phone}` : "", email ? `Email: ${email}` : "", (r.notes || r.description) ? `\n${String(r.notes || r.description).slice(0, 3000)}` : "", "- Claude"].filter(Boolean).join("\n");
     try { await gql(r.tenant_id, `mutation($id:EncodedId!,$i:RequestCreateNoteInput!){ requestCreateNote(requestId:$id, input:$i){ userErrors{ message } } }`, { id: jr.id, i: { message: msg } }); } catch (_e) { /* note is nice-to-have */ }
 
-    await sb.from("requests").update({ review_status: "sent_to_jobber", jobber_client_id: clientId, jobber_request_id: jr.id, jobber_url: jr.jobberWebUri, jobber_pushed_at: new Date().toISOString() }).eq("id", id);
-    return json(200, { ok: true, jobber_url: jr.jobberWebUri, client_url: clientUrl, reused_client: !!existing });
+    // Doug's rule (Oct 5 2026): a new lead also goes in as a DRAFT QUOTE tagged "- Claude" with a $0 placeholder,
+    // linked to the request so it converts. Jobber requires a property; without an address only the request is made.
+    let quoteUrl = "", quoteNote = "";
+    if (propertyId) {
+      const QM = `mutation($a:QuoteCreateAttributes!){ quoteCreate(attributes:$a){ quote{ id quoteNumber jobberWebUri title amounts{ total } } userErrors{ message path } } }`;
+      const qa = { clientId, propertyId, requestId: jr.id, title: ("Website lead: " + service + " - Claude").slice(0, 120),
+        lineItems: [{ name: "Estimate needed", description: "PRICE IS $0 PLACEHOLDER - Claude. Site visit / pricing needed.", quantity: 1, unitPrice: 0, saveToProductsAndServices: false }],
+        notes: [{ message: msg }] };
+      try {
+        const qo = await gql(r.tenant_id, QM, { a: qa });
+        const qe = qo?.quoteCreate?.userErrors ?? [];
+        if (!qe.length && qo?.quoteCreate?.quote?.id) {
+          // read-back (Doug's rule: confirm what actually saved)
+          const back = await gql(r.tenant_id, `query($id:EncodedId!){ quote(id:$id){ quoteNumber title quoteStatus jobberWebUri } }`, { id: qo.quoteCreate.quote.id });
+          quoteUrl = back?.quote?.jobberWebUri || qo.quoteCreate.quote.jobberWebUri;
+          quoteNote = `Jobber draft quote #${back?.quote?.quoteNumber} (${back?.quote?.quoteStatus}) ${quoteUrl}`;
+        } else quoteNote = "Jobber quote not created: " + JSON.stringify(qe).slice(0, 200);
+      } catch (e) { quoteNote = "Jobber quote not created: " + String((e as Error)?.message ?? e).slice(0, 200); }
+    } else quoteNote = "No address on the lead, so only a Jobber request was created (Jobber needs a property for a quote).";
+    await sb.from("requests").update({ review_status: "sent_to_jobber", jobber_client_id: clientId, jobber_request_id: jr.id, jobber_url: jr.jobberWebUri, jobber_pushed_at: new Date().toISOString(), notes: [r.notes, `${new Date().toISOString().slice(0,10)} sent to Jobber${internal ? " automatically" : ""}: request ${jr.jobberWebUri}. ${quoteNote}`].filter(Boolean).join("\n\n") }).eq("id", id);
+    return json(200, { ok: true, jobber_url: jr.jobberWebUri, quote_url: quoteUrl || null, quote_note: quoteNote, client_url: clientUrl, reused_client: !!existing });
   } catch (e) {
     return json(500, { ok: false, error: String((e as Error)?.message ?? e).slice(0, 400) });
   }
