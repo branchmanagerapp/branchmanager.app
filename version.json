@@ -1,5 +1,5 @@
 {
-  "version": 1265,
+  "version": 1266,
   "released": "2026-10-10",
-  "notes": "Version shown in Settings; spam not counted as new requests"
+  "notes": "Home: requires-invoicing counts all uninvoiced completed jobs (Jobber parity)"
 }
