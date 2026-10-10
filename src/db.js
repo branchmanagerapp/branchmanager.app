@@ -273,7 +273,9 @@ var DB = (function() {
   // whole row isn't rejected ("Could not find the 'photo' column of 'quotes'").
   // Keyed by REMOTE table name. These stay in localStorage; just not synced.
   var _CLOUD_LOCAL_ONLY = {
-    'quotes': ['photo', 'salesperson', 'lead_source']
+    // Oct 10 2026: salesperson/lead_source removed — the cloud quotes table HAS these columns now,
+    // and stripping them made the cloud echo wipe them on the device (found by a live save test).
+    'quotes': ['photo']
   };
 
   // v1211: per-remote-table RENAME map, applied BEFORE the strip above.

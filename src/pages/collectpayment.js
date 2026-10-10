@@ -57,7 +57,7 @@ var CollectPaymentPage = {
   _clientPicker: function() {
     var clients = DB.clients.getAll().filter(function(c) {
       var unpaid = DB.invoices.getAll().filter(function(i) {
-        return i.clientId === c.id && i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'archived' && (i.balance || i.total || 0) > 0;
+        return i.clientId === c.id && i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'void' && i.status !== 'archived' && (i.balance || i.total || 0) > 0;
       });
       return unpaid.length > 0;
     }).sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
@@ -65,7 +65,7 @@ var CollectPaymentPage = {
     var sel = CollectPaymentPage._selectedClientId || '';
     var opts = '<option value="">— All clients with open invoices —</option>'
       + clients.map(function(c) {
-          var unpaid = DB.invoices.getAll().filter(function(i){ return i.clientId === c.id && i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'archived' && (i.balance || i.total || 0) > 0; });
+          var unpaid = DB.invoices.getAll().filter(function(i){ return i.clientId === c.id && i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'void' && i.status !== 'archived' && (i.balance || i.total || 0) > 0; });
           var sum = unpaid.reduce(function(s, i){ return s + (i.balance || i.total || 0); }, 0);
           return '<option value="' + c.id + '"' + (sel === c.id ? ' selected' : '') + '>' + UI.esc(c.name) + ' — ' + UI.money(sum) + ' across ' + unpaid.length + '</option>';
         }).join('');
@@ -85,7 +85,7 @@ var CollectPaymentPage = {
 
   _eligibleInvoices: function() {
     return DB.invoices.getAll().filter(function(i) {
-      if (i.status === 'paid' || i.status === 'cancelled' || i.status === 'archived') return false;
+      if (i.status === 'paid' || i.status === 'cancelled' || i.status === 'void' || i.status === 'archived') return false;
       if ((i.balance || i.total || 0) <= 0) return false;
       if (CollectPaymentPage._selectedClientId && i.clientId !== CollectPaymentPage._selectedClientId) return false;
       return true;

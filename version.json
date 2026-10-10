@@ -1,5 +1,5 @@
 {
-  "version": 1255,
+  "version": 1256,
   "released": "2026-10-10",
-  "notes": "Collect Payment no longer blank; BranchCam library no longer crashes"
+  "notes": "Quote salesperson/lead source now sync to cloud; void invoices excluded from Collect Payment"
 }
