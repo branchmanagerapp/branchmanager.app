@@ -212,7 +212,7 @@ var CloudSync = {
                 var n = r[numField[0]] || r[numField[1]] || 0;
                 // Oct 10 2026: invoices #2000–2999 are legacy BM-only records kept out of Jobber's
                 // numbering; skip them so new invoices continue from Jobber's sequence (DB next_invoice_number does the same).
-                if ((table === 'invoices' || table === 'quotes') && n >= 2000 && n <= 2999) return m;
+                if (n >= 2000 && n <= 2999) return m;  // invoices/quotes/jobs: 2000s = legacy BM-only, skip
                 return Math.max(m, n);
               }, 0);
               if (cmax > (window._bmCloudMax[table] || 0)) window._bmCloudMax[table] = cmax;

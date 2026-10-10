@@ -1062,9 +1062,10 @@ var DB = (function() {
   // offline two-device fix (atomic server-side numbering) is staged in
   // migrate-job-number-unique.sql — apply it WITH the two-device live test;
   // it needs the create path to await the next_job_number() RPC (see that file).
-  var nextJobNum = function() {
+      // Skip the legacy BM-only 2000-series (Oct 10 2026) so numbering continues from Jobber's.
+var nextJobNum = function() {
     var all = getAll(KEYS.jobs);
-    var max = all.reduce(function(m, j) { return Math.max(m, j.jobNumber || 0); }, 399);
+    var max = all.reduce(function(m, j) { var n = j.jobNumber || 0; return (n >= 2000 && n <= 2999) ? m : Math.max(m, n); }, 0);  // was a 399 floor; Jobber jobs are in the 300s
     try {
       var cloudHint = (typeof window !== 'undefined' && window._bmCloudMax && window._bmCloudMax.jobs) || 0;
       if (cloudHint > max) max = cloudHint;

@@ -1,5 +1,5 @@
 {
-  "version": 1262,
+  "version": 1263,
   "released": "2026-10-10",
-  "notes": "Quote/job reconcile ignores archived jobs"
+  "notes": "Job numbering skips 2000s and continues from Jobber"
 }
