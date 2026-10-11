@@ -288,6 +288,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
       <span class="pill">🐆 Pick your patterns</span>
       <span class="pill">📸 Send a photo of your room</span>
       <span class="pill">✏️ Sketch + price first</span>
+      <span class="pill">🛠️ DIY bracelet kits from $5</span>
       <span class="pill">💵 Pay cash or check</span>
     </div>
   </section>
@@ -463,6 +464,48 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
     </div>
   </section>
 
+  <!-- KITS -->
+  <section id="kits" class="wrap">
+    <div class="sec-title">
+      <h2>DIY bracelet kits 🛠️</h2>
+      <p>Make it yourself! Pick your beads and colors and we pack everything you need, plus a how-to video.</p>
+    </div>
+    <div class="builder">
+      <div class="card preview-card">
+        <svg id="kitPreview" viewBox="0 0 300 240" role="img" aria-label="Kit preview"></svg>
+        <div class="price-tag" id="kitPrice">$5.00<small>1-bracelet kit</small></div>
+        <div id="kitNote" class="hint"></div>
+      </div>
+      <div class="card">
+        <div class="step">
+          <h3><span class="n">1</span>Kit size</h3>
+          <div class="mat-grid" id="kitSizeOpts" style="grid-template-columns:1fr 1fr"></div>
+        </div>
+        <div class="step">
+          <h3><span class="n">2</span>What kind of beads?</h3>
+          <div class="mat-grid" id="kitMatOpts"></div>
+        </div>
+        <div class="step">
+          <h3><span class="n">3</span>Pick your colors</h3>
+          <div class="swatches" id="kitSwatches"></div>
+          <p class="hint">Tap as many as you like. The first 3 are included, and each extra color is +50¢.</p>
+        </div>
+        <div class="step">
+          <h3><span class="n">4</span>Wrist size</h3>
+          <div class="opts" id="kitWristOpts"></div>
+          <p class="hint">We count the beads and cut the string to fit, with a little extra for tying.</p>
+        </div>
+        <div class="step">
+          <h3><span class="n">5</span>Spare beads</h3>
+          <div class="opts" id="kitSpareOpts"></div>
+          <p class="hint">In case some roll away! 🫣</p>
+        </div>
+        <div class="paybox">🎬 Every kit comes with a how-to card. Scan its QR code to watch the designer make one, step by step.</div>
+        <button class="btn main full" id="kitAdd">Add kit to cart 🛍️</button>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer>
@@ -488,7 +531,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
         <textarea id="cAddr" autocomplete="street-address" placeholder="Name, street, town, state, ZIP" style="min-height:70px"></textarea>
         <p class="hint" id="shipWhy"></p>
       </div>
-      <div class="sum"><span>Bracelets</span><span id="subtotal">$0.00</span></div>
+      <div class="sum"><span>Items</span><span id="subtotal">$0.00</span></div>
       <div class="sum"><span>Delivery</span><span id="shipCost">Free</span></div>
       <div class="total"><span>Total</span><span id="total">$0.00</span></div>
       <label class="f" for="cName">Your first and last name</label>
@@ -570,7 +613,69 @@ const MATERIAL_PRICE = {"Regular beads":4, "Clay beads":6, "String":5};
 const FREE_COLORS = 3;
 function colorCount(s=st){ return new Set(s===st ? colors() : (s.colors||[])).size; }
 function extraColors(s=st){ return Math.max(0, colorCount(s) - FREE_COLORS); }
+// ---------- DIY kits ----------
+// $5 for a 1-bracelet kit, $8 for a 3-bracelet kit. Same color rule as bracelets
+// (3 included, +50¢ each extra). Spares: +10 free, +25 for $1.
+const KIT_SIZES = [{id:1,label:"1 bracelet",price:5},{id:3,label:"3 bracelets",price:8}];
+const KIT_WRISTS = [{id:"S",label:"Small (6\")",inches:6},{id:"M",label:"Medium (7\")",inches:7},{id:"L",label:"Large (8\")",inches:8}];
+const KIT_SPARES = [{n:0,label:"No extras",price:0},{n:10,label:"+10 spares (free)",price:0},{n:25,label:"+25 spares",price:1}];
+const kit = {type:"kit", kitSize:1, material:"Clay beads", colors:["#f4a6c0","#8fd3c4","#ffffff"], wrist:"M", spares:10, qty:1};
+// Bead counts assume 8mm round beads and ~3mm-thick clay discs, plus 1 for fit.
+function kitBeadsPerBracelet(k){
+  const mm = KIT_WRISTS.find(w=>w.id===k.wrist).inches*25.4;
+  return k.material==="String" ? 0 : Math.ceil(mm / (k.material==="Clay beads" ? 3 : 8)) + 1;
+}
+function kitPrice(k){
+  const base = KIT_SIZES.find(z=>z.id===k.kitSize).price;
+  const ex = Math.max(0, new Set(k.colors).size - FREE_COLORS) * 0.5;
+  const sp = (KIT_SPARES.find(x=>x.n===k.spares)||{price:0}).price;
+  return base + ex + sp;
+}
+function kitSVG(k){
+  const cols = k.colors.length ? k.colors : ["#ffffff"];
+  let dots = "";
+  for (let i=0;i<34;i++){ const x=96+((i*0.618034)%1)*108, y=116+((i*0.754878)%1)*80; const c=cols[i%cols.length];
+    dots += k.material==="String" ? "" : (k.material==="Clay beads" ? `<rect x="${x-6}" y="${y-2.5}" width="12" height="5" rx="2" fill="${c}" stroke="rgba(0,0,0,.12)" transform="rotate(${(i*47)%180} ${x} ${y})"/>` : `<circle cx="${x}" cy="${y}" r="5" fill="${c}" stroke="rgba(0,0,0,.12)"/>`); }
+  const floss = k.material==="String" ? cols.map((c,i)=>`<path d="M${100+i*14} 120 q8 30 -4 70" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>`).join("") : "";
+  return `<path d="M80 92 h140 l-10 120 h-120z" fill="#fff" stroke="#e6dce4" stroke-width="3"/>
+    <rect x="76" y="80" width="148" height="18" rx="6" fill="${cols[0]}" opacity=".85"/>
+    <text x="150" y="93" text-anchor="middle" font-family="Fredoka" font-size="11" font-weight="700" fill="#3a2f4a">ROOM REDESIGN &amp; STYLE · DIY</text>
+    ${dots}${floss}
+    <path d="M70 70 q30 -30 60 0" stroke="#d9cfd8" stroke-width="2" fill="none"/>
+    <rect x="200" y="40" width="64" height="44" rx="6" fill="#fff" stroke="#3a2f4a" stroke-width="2" transform="rotate(10 232 62)"/>
+    <g transform="rotate(10 232 62)"><rect x="208" y="48" width="18" height="18" fill="#3a2f4a"/><rect x="211" y="51" width="5" height="5" fill="#fff"/><rect x="218" y="58" width="5" height="5" fill="#fff"/><text x="245" y="60" text-anchor="middle" font-size="7.5" font-family="Nunito" font-weight="800" fill="#3a2f4a">HOW-TO</text><text x="245" y="75" text-anchor="middle" font-size="12">🎬</text></g>
+    <text x="150" y="232" text-anchor="middle" font-family="Fredoka" font-size="14" fill="#7a6c8c">makes ${k.kitSize} bracelet${k.kitSize>1?"s":""}</text>`;
+}
+function renderKit(){
+  $("kitSizeOpts").innerHTML = KIT_SIZES.map(z=>`<button class="opt mat${z.id===kit.kitSize?' on':''}" data-kitsize="${z.id}"><span class="e">${z.id===1?"🎁":"🎉"}</span>${z.label}<small>$${z.price}</small></button>`).join("");
+  $("kitMatOpts").innerHTML = MATERIALS.map(m=>`<button class="opt mat${m.id===kit.material?' on':''}" data-kitmat="${m.id}"><span class="e">${m.e}</span>${m.id}</button>`).join("");
+  $("kitSwatches").innerHTML = SWATCHES.map(c=>`<button class="swatch${kit.colors.includes(c)?' on':''}" data-kitsw="${c}" style="background:${c}" aria-label="${name(c)}"></button>`).join("");
+  $("kitWristOpts").innerHTML = KIT_WRISTS.map(w=>`<button class="opt${w.id===kit.wrist?' on':''}" data-kitwrist="${w.id}">${w.label}</button>`).join("");
+  $("kitSpareOpts").innerHTML = (kit.material==="String" ? KIT_SPARES.slice(0,1) : KIT_SPARES).map(x=>`<button class="opt${x.n===kit.spares?' on':''}" data-kitspare="${x.n}">${x.label}${x.price?` +$${x.price}`:""}</button>`).join("");
+  $("kitPreview").innerHTML = kitSVG(kit);
+  const n = new Set(kit.colors).size, ex = Math.max(0,n-FREE_COLORS);
+  $("kitPrice").innerHTML = money(kitPrice(kit)) + `<small>${kit.kitSize}-bracelet kit</small>`;
+  const per = kitBeadsPerBracelet(kit);
+  $("kitNote").innerHTML = (kit.material==="String" ? `Embroidery thread in ${n} color${n>1?"s":""}` : `About ${per*kit.kitSize + kit.spares} beads`) + ` · ${KIT_WRISTS.find(w=>w.id===kit.wrist).label}<br><b>${n} color${n>1?"s":""}</b> · ${ex ? `${ex} extra × 50¢ = +${money(ex*0.5)}` : "first 3 colors included"}`;
+}
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-kitsize],[data-kitmat],[data-kitsw],[data-kitwrist],[data-kitspare]"); if (!t) return;
+  if (t.dataset.kitsize) kit.kitSize = +t.dataset.kitsize;
+  if (t.dataset.kitmat){ kit.material = t.dataset.kitmat; if (kit.material==="String") kit.spares = 0; }
+  if (t.dataset.kitwrist) kit.wrist = t.dataset.kitwrist;
+  if (t.dataset.kitspare) kit.spares = +t.dataset.kitspare;
+  if (t.dataset.kitsw){ const c=t.dataset.kitsw, i=kit.colors.indexOf(c); if (i>=0) kit.colors.splice(i,1); else { kit.colors.push(c); if (kit.colors.length===FREE_COLORS+1) toast("Extra colors are +50¢ each 🎨"); } }
+  renderKit();
+});
+$("kitAdd").onclick = ()=>{
+  if (!kit.colors.length){ toast("Pick at least 1 color 🎨"); return; }
+  cart.push(JSON.parse(JSON.stringify(kit))); save(); updateCount();
+  const b=$("cartBtn"); b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
+  confetti(70, kit.colors); toast("Kit added to cart! 🛠️");
+};
+
 function unitPrice(s=st){
+  if (s.type==="kit") return kitPrice(s);
   let p = MATERIAL_PRICE[s.material] ?? 4;
   if (s.letters.trim()) p += 3;
   p += s.charms * 1;
@@ -735,7 +840,7 @@ function cartTotal(){ return cart.reduce((s,i)=>s+unitPrice(i)*i.qty,0); }
 const SHIP_LETTER = 1.50, SHIP_PACKAGE = 8.00;
 function pieces(){ return cart.reduce((n,i)=>n + i.qty*(i.pair?2:1), 0); }
 function deliveryMode(){ const r=document.querySelector('input[name=deliver]:checked'); return r ? r.value : "pickup"; }
-function mailRate(){ return cart.length && cart.every(i=>i.material==="String") && pieces()<=2 ? SHIP_LETTER : SHIP_PACKAGE; }
+function mailRate(){ return cart.length && cart.every(i=>i.type!=="kit" && i.material==="String") && pieces()<=2 ? SHIP_LETTER : SHIP_PACKAGE; }
 function shipping(){ return deliveryMode()==="mail" && cart.length ? mailRate() : 0; }
 function grandTotal(){ return cartTotal() + shipping(); }
 function updateTotals(){
@@ -756,6 +861,7 @@ function updateCount(){
   $("cartCount").textContent = n; $("cartCount").classList.toggle("on", n>0);
 }
 function describe(i){
+  if (i.type==="kit") return `DIY kit · ${i.material} · ${new Set(i.colors).size} colors · ${KIT_WRISTS.find(w=>w.id===i.wrist).label}${i.spares?` · +${i.spares} spares`:""}`;
   const bits = [i.material, i.style, i.palLabel, "size "+i.size];
   if (i.letters) bits.push(`"${i.letters}"`);
   if (i.charms) bits.push(`${i.charms} ${i.charm} charm${i.charms>1?'s':''}`);
@@ -769,8 +875,8 @@ function renderCart(){
     $("checkout").style.display="none"; return;
   }
   $("checkout").style.display="block";
-  $("lines").innerHTML = cart.map((i,k)=>`<div class="line"><svg viewBox="0 0 300 300">${braceletSVG(i,300)}</svg>
-    <div class="info"><b>${i.qty} × ${i.pair?"Friendship pair":"Bracelet"}</b><br>${describe(i)}${i.notes?`<br><i>“${esc(i.notes)}”</i>`:""}<br><button class="rm" data-rm="${k}">remove</button></div>
+  $("lines").innerHTML = cart.map((i,k)=>`<div class="line">${i.type==="kit" ? `<svg viewBox="60 30 220 210">${kitSVG(i)}</svg>` : `<svg viewBox="0 0 300 300">${braceletSVG(i,300)}</svg>`}
+    <div class="info"><b>${i.qty} × ${i.type==="kit" ? `DIY kit (${i.kitSize} bracelet${i.kitSize>1?"s":""})` : i.pair?"Friendship pair":"Bracelet"}</b><br>${describe(i)}${i.notes?`<br><i>“${esc(i.notes)}”</i>`:""}<br><button class="rm" data-rm="${k}">remove</button></div>
     <b>${money(unitPrice(i)*i.qty)}</b></div>`).join("");
   updateTotals();
 }
@@ -794,6 +900,17 @@ function orderNo(){
   return "RR-" + p(d.getMonth()+1) + p(d.getDate()) + "-" + Math.floor(1000+Math.random()*9000);
 }
 function buildSheet(i, n){
+  if (i.type==="kit"){
+    const w = KIT_WRISTS.find(x=>x.id===i.wrist), per = kitBeadsPerBracelet(i), cols = [...new Set(i.colors)];
+    return [
+      `ITEM ${n}: ${i.qty} × DIY KIT — makes ${i.kitSize} bracelet${i.kitSize>1?"s":""}  —  ${money(kitPrice(i)*i.qty)}`,
+      `Beads: ${i.material}`, `Colors: ${cols.map(name).join(", ")}`, `Wrist: ${w.label}`,
+      i.material==="String" ? `PACK: embroidery thread, 1 x 36" length of each color per bracelet (${i.kitSize} bracelet${i.kitSize>1?"s":""})`
+        : `PACK: about ${per*i.kitSize} beads (${per} per bracelet, split evenly across the colors) + ${i.spares} spares = ${per*i.kitSize+i.spares} beads`,
+      i.material==="String" ? null : `PACK: ${i.kitSize} piece${i.kitSize>1?"s":""} of stretch cord, ${w.inches+4}" each`,
+      `PACK: how-to card with the video QR code + logo tag`
+    ].filter(Boolean).join("\n");
+  }
   const beads = layout(i);
   const seq = beads.map((b,k)=> `${k+1}. ` + (b.type==="letter" ? `letter bead "${b.ch}"` : b.type==="charm" ? `${name(b.color)} + ${b.ch} charm` : name(b.color))).join("\n");
   return [
@@ -1007,7 +1124,7 @@ const LK = LOOKS[LOOK||"original"];
     <path d="M118 120 l10-22 10 22z" fill="${c}" class="lamp"/><rect x="126" y="120" width="4" height="40" fill="#8b5e3c"/>`;
 })();
 
-buildOpts(); render(true); updateCount();
+buildOpts(); render(true); renderKit(); updateCount();
 </script>
 </body>
 </html>
