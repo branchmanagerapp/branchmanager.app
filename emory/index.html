@@ -442,7 +442,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
           <h3><span class="n">7</span>Extras</h3>
           <label class="toggle"><input type="checkbox" id="pair"><span class="sw2"></span><span>👯 Make it a friendship pair<small>2 matching bracelets for $2 less than buying 2.</small></span></label>
           <div style="height:8px"></div>
-          <label class="toggle"><input type="checkbox" id="secret"><span class="sw2"></span><span>🔐 Hidden message beads<small>A secret word in color code, plus a decoder card. Free!</small></span></label>
+          <label class="toggle"><input type="checkbox" id="secret"><span class="sw2"></span><span>🔐 Hidden message beads<small>A secret word hidden in Morse code beads, plus a decoder card. Free!</small></span></label>
           <div id="secretBox" style="display:none;margin-top:8px">
             <input type="text" id="secretWord" maxlength="8" placeholder="Secret word (up to 8 letters)" autocomplete="off">
           </div>
@@ -900,6 +900,15 @@ function orderNo(){
   const d = new Date(); const p = n=>String(n).padStart(2,"0");
   return "RR-" + p(d.getMonth()+1) + p(d.getDate()) + "-" + Math.floor(1000+Math.random()*9000);
 }
+// Hidden message = Morse code in beads: dot color, dash color, spacer between letters.
+const MORSE = {A:".-",B:"-...",C:"-.-.",D:"-..",E:".",F:"..-.",G:"--.",H:"....",I:"..",J:".---",K:"-.-",L:".-..",M:"--",N:"-.",O:"---",P:".--.",Q:"--.-",R:".-.",S:"...",T:"-",U:"..-",V:"...-",W:".--",X:"-..-",Y:"-.--",Z:"--..",0:"-----",1:".----",2:"..---",3:"...--",4:"....-",5:".....",6:"-....",7:"--...",8:"---..",9:"----."};
+function morseBeads(word, cols){
+  const dot = cols[0] || "#f4a6c0", dash = cols[1] && cols[1]!==dot ? cols[1] : "#2b2b2b";
+  const spacer = cols.find(c=>c!==dot && c!==dash) || "#ffffff";
+  const letters = [...word.toUpperCase()].filter(ch=>MORSE[ch]);
+  const seq = letters.map(ch=>`${ch} = ${[...MORSE[ch]].map(m=>m==="."?"dot":"dash").join(" ")}`).join("\n  ");
+  return `  Dot bead = ${name(dot)}, dash bead = ${name(dash)}, spacer between letters = ${name(spacer)}\n  ${seq}`;
+}
 function buildSheet(i, n){
   if (i.type==="kit"){
     const w = KIT_WRISTS.find(x=>x.id===i.wrist), per = kitBeadsPerBracelet(i), cols = [...new Set(i.colors)];
@@ -922,7 +931,7 @@ function buildSheet(i, n){
     `Size: ${SIZES.find(z=>z.id===i.size).label} (${beads.length} beads)`,
     i.letters ? `Letters: ${i.letters}` : null,
     i.charms ? `Charms: ${i.charms} × ${i.charm}` : null,
-    i.secret ? `Hidden message: ${i.secretWord}  (include decoder card!)` : null,
+    i.secret ? `Hidden message: ${i.secretWord}  (include the Morse decoder card!)\n${morseBeads(i.secretWord, i.colors)}` : null,
     i.notes ? `Notes: ${i.notes}` : null,
     i.material==="String" ? `Thread colors: ${i.colors.map(name).join(", ")}` : `Bead order (start at the top, go clockwise):\n${seq}`
   ].filter(Boolean).join("\n");
