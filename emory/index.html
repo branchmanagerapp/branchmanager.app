@@ -111,6 +111,12 @@ section{padding:34px 0}
 .pp{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-weight:800;font-size:13px}
 .pp svg{width:26px;height:26px;border-radius:50%}
 .pp button{border:0;background:none;cursor:pointer;color:var(--soft);font-size:14px}
+.plan-grid{display:grid;gap:8px;margin-bottom:6px}
+.plan{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--line);border-radius:16px;padding:12px;cursor:pointer;background:#fff}
+.plan input{margin-top:4px;accent-color:var(--hot);width:18px;height:18px;flex:none}
+.plan b{display:block;font-size:16px}
+.plan small{display:block;color:var(--soft);font-weight:600;margin-top:2px}
+.plan:has(input:checked){border-color:var(--hot);background:#fff5f9}
 .photo-drop{display:block;border:2px dashed var(--mint);border-radius:16px;padding:18px;text-align:center;cursor:pointer;background:#f6fcfa;font-weight:800}
 .photo-drop input{display:none}
 .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -287,7 +293,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
       <span class="pill">🎨 16 room styles</span>
       <span class="pill">🐆 Pick your patterns</span>
       <span class="pill">📸 Send a photo of your room</span>
-      <span class="pill">✏️ Sketch + price first</span>
+      <span class="pill">📋 Room Makeover Plans $25</span>
       <span class="pill">🛠️ DIY bracelet kits from $5</span>
       <span class="pill">💵 Pay cash or check</span>
     </div>
@@ -305,9 +311,19 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
       <input type="hidden" name="_template" value="box">
       <input type="hidden" name="_next" id="dNext" value="">
       <input type="hidden" name="Request #" id="dNo" value="">
-      <input type="hidden" name="Status" value="NEEDS QUOTE (sketch it, then send a price)">
+      <input type="hidden" name="Status" id="dStatus" value="NEEDS QUOTE (sketch it, then send a price)">
       <input type="hidden" name="Vibes" id="dVibes" value="">
       <input type="hidden" name="Patterns" id="dPatterns" value="">
+      <label class="f" style="margin-top:0">What would you like?</label>
+      <div class="plan-grid">
+        <label class="plan"><input type="radio" name="Request type" value="Room Makeover Plan ($25)" checked>
+          <span><b>📋 Room Makeover Plan · $25</b>
+          <small>The designer sends you a mood board, a sketch of your room, and a shopping list to make it happen. Pay cash or check when you get it.</small></span></label>
+        <label class="plan"><input type="radio" name="Request type" value="Custom makeover / handmade decor (quote)">
+          <span><b>🛠️ Custom makeover or handmade decor</b>
+          <small>Want the designer to make things for your room, or help in person? Tell us below and we'll send a price first.</small></span></label>
+      </div>
+
       <label class="f">Pick your room style (as many as you like)</label>
       <div class="vibes" id="vibes"></div>
       <div class="sub-box" id="sportBox" style="display:none">
@@ -371,7 +387,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
     <div class="ideas">
       <div class="idea" style="background:#fde3ec"><div class="big">🎨</div><h3>1. Pick your style</h3><p>Gothic, sporty, cottagecore, Y2K… or write your own dream room.</p></div>
       <div class="idea" style="background:#e6f6f2"><div class="big">📸</div><h3>2. Show us your room</h3><p>Send a photo so the designer can see the space as it is now.</p></div>
-      <div class="idea" style="background:#efe9fb"><div class="big">✏️</div><h3>3. Get a sketch + price</h3><p>The designer sketches your room and sends a price before anything gets made.</p></div>
+      <div class="idea" style="background:#efe9fb"><div class="big">✏️</div><h3>3. Get your plan</h3><p>For $25 you get a mood board, a sketch and a shopping list. Want things made? You get a price first.</p></div>
       <div class="idea" style="background:#fdf3d7"><div class="big">🐆</div><h3>Patterns your way</h3><p>Stripes, polka dots, leopard, plaid and more, in any colors you want.</p></div>
       <div class="idea" style="background:#e3eef8"><div class="big">✨</div><h3>Before &amp; after</h3><p>Desks, shelves, walls, beds. Any corner can get a glow-up.</p></div>
       <div class="idea" style="background:#e8f4e3"><div class="big">📿</div><h3>Matching bracelet</h3><p>Add a handmade bracelet in your new room colors.</p></div>
@@ -1065,7 +1081,9 @@ $("decorForm").addEventListener("submit", e=>{
   if (!what || nm.split(/\s+/).length<2 || !ct){ e.preventDefault(); $("decorErr").textContent="Tell us a little about what you want, plus your first and last name and a phone or email."; return; }
   const no = orderNo().replace("RR","ROOM");
   $("dNo").value = no;
-  $("dSubject").value = `🪴 Room decor request ${no} — NEEDS QUOTE`;
+  const isPlan = (document.querySelector('input[name="Request type"]:checked')||{}).value?.startsWith("Room Makeover Plan");
+  $("dSubject").value = isPlan ? `📋 Room Makeover Plan ${no} — $25` : `🪴 Room decor request ${no} — NEEDS QUOTE`;
+  $("dStatus").value = isPlan ? "ROOM PLAN — $25, cash or check when delivered (mood board + sketch + shopping list)" : "NEEDS QUOTE (sketch it, then send a price)";
   $("dVibes").value = [...picked].join(", ") || "(none picked)";
   $("dNext").value = location.origin + location.pathname + "?room=sent#decor";
   e.target.action = DECOR_ACTION;
