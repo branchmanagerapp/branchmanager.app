@@ -27,59 +27,57 @@
 </style></head><body>
 <button class="printbtn" onclick="window.print()">⎙ Print</button>
 <div class="sheet">
-  <h1>🌳 How We Work — the Branch Manager workflow</h1>
-  <div class="sub">One system, three people: Doug, Catherine, Claude. Everything lives in <a href="https://branchmanager.app/">branchmanager.app</a>. Updated July 9, 2026.</div>
+  <h1>🌳 How We Work</h1>
+  <div class="sub">Doug, Catherine, Claude. Updated Oct 11, 2026.</div>
 
-  <h2>The one rule</h2>
-  <div class="rule"><b>If it happened, it goes in Branch Manager — same day, from your phone.</b> Visited a job? Update the quote. Finished work? Mark the job done. Got paid? Mark it paid. The app is only as smart as what we tell it. When the statuses are true, the Today board runs the whole business by itself.</div>
+  <h2>The one rule (right now)</h2>
+  <div class="rule"><b>Jobber is where the work happens.</b> Quotes, jobs, invoices and payments all go in Jobber, same day, from your phone. Branch Manager copies Jobber every morning and emails Doug whether they match. That's the 30-day test; the decision is <a href="accountability-a1f7.html">Nov 15</a>.</div>
 
-  <h2>What each status means (the shared language)</h2>
+  <h2>What each status means</h2>
   <table>
     <tr><th>Status</th><th>Means</th><th>Next action</th></tr>
-    <tr><td><b>Draft ($0)</b></td><td>Lead exists, estimate not written</td><td>Visit / price it → fill line items</td></tr>
-    <tr><td><b>Draft (priced)</b></td><td>Estimate done, not sent</td><td>Add photos → green <b>Send</b> button</td></tr>
-    <tr><td><b>Sent</b></td><td>Customer has it, no answer yet</td><td>Follow up after ~5 days</td></tr>
-    <tr><td><b>Changes requested</b></td><td>Customer wants edits</td><td>Respond, revise, re-send</td></tr>
-    <tr><td><b>Approved</b></td><td>They said yes</td><td>Schedule the job (pick the date)</td></tr>
-    <tr><td><b>Job scheduled</b></td><td>On the calendar</td><td>Do the work</td></tr>
-    <tr><td><b>Job completed</b></td><td>Work done</td><td>Invoice it — same day</td></tr>
+    <tr><td><b>Request</b></td><td>New lead</td><td>Visit or call, then write the quote</td></tr>
+    <tr><td><b>Draft quote</b></td><td>Not sent yet</td><td>Price it, add photos, Send</td></tr>
+    <tr><td><b>Awaiting response</b></td><td>Customer has it</td><td>Follow up after ~5 days</td></tr>
+    <tr><td><b>Changes requested</b></td><td>Customer wants edits</td><td>Revise and re-send</td></tr>
+    <tr><td><b>Approved</b></td><td>They said yes</td><td>Convert to a job and schedule it</td></tr>
+    <tr><td><b>Job</b></td><td>On the calendar</td><td>Do the work</td></tr>
+    <tr><td><b>Requires invoicing</b></td><td>Work done</td><td>Invoice it the same day</td></tr>
     <tr><td><b>Invoice sent</b></td><td>Waiting on money</td><td>Chase at 7 / 14 / 30 days</td></tr>
-    <tr><td><b>Paid</b></td><td>Money in</td><td>Nothing — done ✓</td></tr>
+    <tr><td><b>Paid</b></td><td>Money in</td><td>Done ✓</td></tr>
   </table>
 
-  <h2>Daily worksheet — morning (5 minutes, in the app)</h2>
-  <ol>
-    <li><b>Open branchmanager.app → the Today board is the homepage.</b> It lists by name: Send these · Invoices to send · Collect · Write the estimate · Waiting to hear back · Approved—schedule it · Changes requested · This week's jobs.</li>
-    <li><b>Work top to bottom.</b> Send-these and Invoices first (that's money sitting still). Tap a row — it opens the record.</li>
-    <li><b>Anything new from calls/texts overnight?</b> Create the client + a $0 draft quote right then (30 seconds). It'll show under "Write the estimate" until priced.</li>
-  </ol>
-
-  <h2>Field rules — during the day</h2>
+  <h2>What happens on its own</h2>
   <ul>
-    <li><b>Gave a price on-site?</b> Put it in the quote before you drive away. Photos: tap 📸+ in the quote → pick all photos → tap each onto its tree.</li>
-    <li><b>Finished a job?</b> Mark it completed → tap "convert to invoice." A done job that isn't invoiced is invisible money.</li>
-    <li><b>Customer said yes by text/phone?</b> Flip the quote to Approved yourself — don't wait for the link click.</li>
-    <li><b>Never share a quote link from a draft.</b> Use the green <b>Send</b> button — it makes the link live and stamps it sent.</li>
+    <li><b>Website leads</b> (peekskilltree.com and branchmanager.app booking forms) go into Jobber automatically as a client, a request and a $0 draft quote. Doug and Catherine get a text.</li>
+    <li><b>Spam and out-of-area leads</b> stay in Branch Manager for review, not Jobber.</li>
+    <li><b>Every morning</b> BM copies Jobber (invoices, quotes, jobs, clients, requests) and emails Doug the match result. Runs on GitHub, so the laptop can be off.</li>
+    <li><b>Every morning</b> a Bouncie email confirms the truck GPS is live.</li>
+  </ul>
+
+  <h2>Field rules</h2>
+  <ul>
+    <li><b>Gave a price on-site?</b> Put it in the Jobber quote before you drive away.</li>
+    <li><b>Finished a job?</b> Invoice it that day. A done job that isn't invoiced is invisible money.</li>
+    <li><b>Customer said yes by text or phone?</b> Mark the quote approved yourself.</li>
+    <li><b>Got paid by Zelle, cash or check?</b> Record the payment in Jobber the same day.</li>
   </ul>
 
   <h2>Who does what</h2>
   <table>
     <tr><th>Person</th><th>Owns</th></tr>
-    <tr><td><b>Doug</b></td><td>Pricing + sending quotes, scheduling approved work, the final Send on every customer message</td></tr>
-    <tr><td><b>Catherine</b></td><td>Same Today board, same login flow — new leads from calls, follow-ups on Sent quotes, chasing Collect, keeping statuses honest from the field</td></tr>
-    <tr><td><b>Claude</b></td><td>Everything mechanical: entering leads from Dialpad, reconciling Jobber, drafting quotes/invoices/emails, audits, fixing records, building the app. <b>Never sends anything to a customer</b> — everything lands as a draft for a human to fire.</td></tr>
+    <tr><td><b>Doug</b></td><td>Pricing, sending quotes, scheduling, the final Send on every customer message</td></tr>
+    <tr><td><b>Catherine</b></td><td>New leads from calls, follow-ups, chasing payments, keeping Jobber statuses true from the field</td></tr>
+    <tr><td><b>Claude</b></td><td>The mechanical work: drafting quotes and invoices, the daily match, audits, fixing records, building Branch Manager. <b>Never sends anything to a customer.</b> When Claude enters something in Jobber, it says so only in the internal note, never on anything the customer sees.</td></tr>
   </table>
 
-  <h2>Where Claude sits (so you can't break it from the back end)</h2>
-  <p>Claude works through the <b>same cloud API the app itself uses</b>, as the owner account — every change Claude makes shows up in the app instantly, exactly as if it was typed in. Nothing bypasses the app's rules: drafts stay drafts, tax defaults apply, customer sends stay human-only. You don't need to touch Supabase or the database — <b>if something looks wrong in the app, say it in chat and Claude fixes the record</b>; that's the supported path. The back end is Claude's job now.</p>
-  <div class="warn"><b>If a quote "reverts" or a save doesn't stick:</b> your phone is running an old cached version. Fully close and reopen the app; if it persists, delete the home-screen icon and re-add it from branchmanager.app. v984+ shows a red banner when a save fails — never ignore it.</div>
+  <h2>Phones</h2>
+  <div class="warn"><b>The main number (914-391-5233) is still on Dialpad.</b> Branch Manager's own texting and alert texts use Twilio (914-335-3417). The main number moves to Twilio last, only with Doug's OK.</div>
 
-  <h2>Weekly (Fridays, 10 minutes)</h2>
+  <h2>Weekly</h2>
   <ul>
-    <li>Claude runs the audit: stale Sent quotes → follow-up list, unpaid invoices → Collect, duplicate/orphan records → cleaned.</li>
-    <li>Anything still in Jobber gets exported → Claude reconciles → BM stays the single source of truth until cutover.</li>
+    <li>Look at the <a href="estimates-snt-4b8e2f.html">Estimate Board</a>: money owed, drafts to send, quotes to follow up.</li>
+    <li>If anything looks wrong in Jobber or BM, say it in chat and Claude fixes the record.</li>
   </ul>
-
-  <div class="rule" style="margin-top:22px;">📄 Want paper? The <a href="https://branchmanager.app/today-snt-9d4b1e.html">printable Today sheet</a> still exists — but the app's Today board is the live one. The sheet is a snapshot; the board is the truth.</div>
 </div><script src="nav-snt.js?v=5" defer></script>
 </body></html>
