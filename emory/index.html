@@ -946,8 +946,13 @@ function buildSheet(i, n){
 }
 // text/plain keeps this a "simple" request (no CORS preflight, which Apps Script
 // can't answer).
+// If the browser can't read Google's reply (some phones block it), resend in
+// no-cors mode: the order still lands, and the script ignores duplicates.
 async function send(payload){
-  const r = await fetch(ORDER_ENDPOINT, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload)});
+  const opts = {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload)};
+  let r;
+  try { r = await fetch(ORDER_ENDPOINT, opts); }
+  catch (e) { await fetch(ORDER_ENDPOINT, {...opts, mode:"no-cors"}); return {success:true, unconfirmed:true}; }
   let j = {}; try { j = await r.json(); } catch(e){}
   if (!r.ok || j.success !== true) throw new Error(j.message || ("HTTP "+r.status));
   return j;
