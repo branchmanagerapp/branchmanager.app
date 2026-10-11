@@ -347,8 +347,8 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
       <label class="f" for="dColors">Colors you love</label>
       <input type="text" id="dColors" name="Colors" placeholder="e.g. sage green and cream, or 'surprise me'">
 
-      <label class="f" for="dName">Your name</label>
-      <input type="text" id="dName" name="Customer" autocomplete="name" placeholder="First name is fine">
+      <label class="f" for="dName">Your first and last name</label>
+      <input type="text" id="dName" name="Customer" autocomplete="name" placeholder="First and last name">
       <label class="f" for="dContact">Phone or email (so we can send your sketch and price)</label>
       <input type="text" id="dContact" name="Phone or email" autocomplete="email" placeholder="555-555-5555 or you@email.com">
 
@@ -477,8 +477,8 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
     <div id="lines"></div>
     <div id="checkout">
       <div class="total"><span>Total</span><span id="total">$0.00</span></div>
-      <label class="f" for="cName">Your name</label>
-      <input type="text" id="cName" autocomplete="name" placeholder="First name is fine">
+      <label class="f" for="cName">Your first and last name</label>
+      <input type="text" id="cName" autocomplete="name" placeholder="First and last name">
       <label class="f" for="cContact">Phone or email</label>
       <input type="text" id="cContact" autocomplete="email" placeholder="So we can tell you when it's ready">
       <label class="f">How will you pay?</label>
@@ -781,7 +781,7 @@ async function send(payload){
 $("placeBtn").onclick = async ()=>{
   const nm=$("cName").value.trim(), ct=$("cContact").value.trim();
   $("orderErr").textContent="";
-  if (!nm || !ct){ $("orderErr").textContent = "Please add your name and a phone or email so we can reach you."; return; }
+  if (nm.split(/\s+/).length<2 || !ct){ $("orderErr").textContent = "Please add your first AND last name, plus a phone or email so we can reach you."; return; }
   const pay = document.querySelector('input[name=pay]:checked').value;
   const no = orderNo();
   const btn=$("placeBtn"); btn.disabled=true; btn.textContent="Sending… ✨";
@@ -791,6 +791,7 @@ $("placeBtn").onclick = async ()=>{
       _template: "box", _captcha: "false",
       "Order #": no, "Customer": nm, "Phone or email": ct, "Pays with": pay + " at handoff",
       "Total": money(cartTotal()),
+      "If you know them (10% friends discount)": money(Math.round(cartTotal()*90)/100),
       "Build sheets": cart.map((i,k)=>buildSheet(i,k+1)).join("\n\n────────────\n\n")
     });
     $("orderNo").textContent = no;
@@ -890,7 +891,7 @@ $("dPhotos").addEventListener("change", async e=>{
 $("decorForm").addEventListener("submit", e=>{
   const what=$("dWhat").value.trim() || $("dCustom").value.trim() || roomPats.length || picked.size, nm=$("dName").value.trim(), ct=$("dContact").value.trim();
   $("decorErr").textContent="";
-  if (!what || !nm || !ct){ e.preventDefault(); $("decorErr").textContent="Tell us a little about what you want, plus your name and a phone or email."; return; }
+  if (!what || nm.split(/\s+/).length<2 || !ct){ e.preventDefault(); $("decorErr").textContent="Tell us a little about what you want, plus your first and last name and a phone or email."; return; }
   const no = orderNo().replace("RR","ROOM");
   $("dNo").value = no;
   $("dSubject").value = `🪴 Room decor request ${no} — NEEDS QUOTE`;
