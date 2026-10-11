@@ -29,6 +29,8 @@ const S = [
     expect: { saysAny: /(6|six).{0,15}(12|twelve)/i, disposition: "lead" } },
   { name: "lawn-mowing", lines: ["Do you guys also mow lawns?", "Okay, what about snow plowing?", "Alright, thanks."],
     expect: {} },
+  { name: "lawn-care-site", lines: ["Do you do regular lawn care, like mowing?", "Do you take credit cards?", "Can you send a certificate of insurance to my HOA?", "Okay, thanks."],
+    expect: { saysAny: /(don't|do not|not something we|isn't something)/i, mentions: /(card|certificate)/i } },
   { name: "tree-on-house", lines: ["Hi, a big limb fell on my roof in the storm last night, it went through the gutter.", "Nobody's hurt. It's Dan Moore, 88 Lakeview Drive, Putnam Valley."],
     expect: { disposition: "transfer" } },
 ];
