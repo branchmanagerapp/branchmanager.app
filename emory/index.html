@@ -420,6 +420,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
         <div class="step">
           <h3><span class="n">4</span>Size</h3>
           <div class="opts" id="sizeOpts"></div>
+          <p class="hint">Minimum bracelet length, end to end. Not sure? Wrap a string around your wrist, measure it, and pick the next size up.</p>
         </div>
 
         <div class="step">
@@ -593,7 +594,7 @@ const STYLES = [
   {id:"Beaded", e:"📿"},{id:"Letter / name", e:"🔤"},{id:"Stretch", e:"🌀"},{id:"Braided / woven", e:"🧶"},{id:"Charm", e:"⭐"}
 ];
 const MATERIALS = [{id:"Clay beads",e:"🟣",d:"flat & colorful · $6"},{id:"Regular beads",e:"🔮",d:"round & shiny · $4"},{id:"String",e:"🧵",d:"woven thread · $5"}];
-const SIZES = [{id:"S",label:"Small (kid)",beads:20},{id:"M",label:"Medium",beads:24},{id:"L",label:"Large (adult)",beads:28}];
+const SIZES = [{id:"S",label:"Small · 6\" (15 cm)",beads:20},{id:"M",label:"Medium · 7\" (18 cm)",beads:24},{id:"L",label:"Large · 8\" (20 cm)",beads:28}];
 const CHARMS = ["⭐","💖","🌸","🦋","🌙","🍓","🐚","🍀"];
 
 const st = {material:"Regular beads", style:"Beaded", pal:"sorbet", month:0, own:["#f4a6c0","#8fd3c4","#ffffff"], size:"M", letters:"", charms:0, charm:"⭐", pair:false, secret:false, secretWord:"", notes:"", qty:1};
@@ -617,7 +618,7 @@ function extraColors(s=st){ return Math.max(0, colorCount(s) - FREE_COLORS); }
 // $5 for a 1-bracelet kit, $8 for a 3-bracelet kit. Same color rule as bracelets
 // (3 included, +50¢ each extra). Spares: +10 free, +25 for $1.
 const KIT_SIZES = [{id:1,label:"1 bracelet",price:5},{id:3,label:"3 bracelets",price:8}];
-const KIT_WRISTS = [{id:"S",label:"Small (6\")",inches:6},{id:"M",label:"Medium (7\")",inches:7},{id:"L",label:"Large (8\")",inches:8}];
+const KIT_WRISTS = [{id:"S",label:"Small · 6\" (15 cm)",inches:6},{id:"M",label:"Medium · 7\" (18 cm)",inches:7},{id:"L",label:"Large · 8\" (20 cm)",inches:8}];
 const KIT_SPARES = [{n:0,label:"No extras",price:0},{n:10,label:"+10 spares (free)",price:0},{n:25,label:"+25 spares",price:1}];
 const kit = {type:"kit", kitSize:1, material:"Clay beads", colors:["#f4a6c0","#8fd3c4","#ffffff"], wrist:"M", spares:10, qty:1};
 // Bead counts assume 8mm round beads and ~3mm-thick clay discs, plus 1 for fit.
@@ -862,7 +863,7 @@ function updateCount(){
 }
 function describe(i){
   if (i.type==="kit") return `DIY kit · ${i.material} · ${new Set(i.colors).size} colors · ${KIT_WRISTS.find(w=>w.id===i.wrist).label}${i.spares?` · +${i.spares} spares`:""}`;
-  const bits = [i.material, i.style, i.palLabel, "size "+i.size];
+  const bits = [i.material, i.style, i.palLabel, (SIZES.find(z=>z.id===i.size)||{label:"size "+i.size}).label];
   if (i.letters) bits.push(`"${i.letters}"`);
   if (i.charms) bits.push(`${i.charms} ${i.charm} charm${i.charms>1?'s':''}`);
   if (i.pair) bits.push("friendship pair");
