@@ -1,7 +1,7 @@
 # Builds hub-570301.html — the "everything" hub. Edit the CATALOG, re-run, deploy.
 import html, re, sys, datetime
 
-UPDATED = "Sept 19, 2026"
+UPDATED = "Oct 11, 2026"
 BM = "https://branchmanager.app/"
 
 # tags: L locked · X external site · T template · D older duplicate · P parked · S short link · PUB public · NEW
@@ -16,7 +16,7 @@ PANELS = [
     ("Today sheet","today-snt-9d4b1e.html","Done · waiting on you · new leads. Short link /today.",["S"]),
     ("The Plan","plan-snt-8c31d7.html","Right-now → this-week → this-month, one step at a time.",[]),
     ("Run schedule — Catherine's order","schedule-snt-c47a2e.html","Straight down Catherine's note. Short link /runsheet.",["S"]),
-    ("Estimate board — web page","estimates-snt-4b8e2f.html","Same board as a shareable page; regenerated from Jobber.",[]),
+    ("Estimate board — web page","estimates-snt-4b8e2f.html","Money owed, drafts, requests, open jobs, quotes out — rebuilt from live Jobber Oct 11 (scripts/build-estimate-board.py).",["NEW"]),
     ("Estimates & jobs map","estimates-map-3f9c21.html","Every quote & job plotted, color-coded by status. Short link /map.",["S"]),
     ("Day by Day — photo recaps","day-recap-7e31c9.html","What we were out doing — real days, real trees.",[]),
     ("Enough. — the breathe page","enough-snt-7b7e05.html","Read this instead of the feed, then come back and tap one thing.",[]),
