@@ -154,11 +154,16 @@ Deno.serve((req) => {
 
     if (m.type === "interrupt") {
       // Caller talked over us: keep only what they actually heard.
+      // A reply still streaming hasn't been saved yet (it saves when done), so
+      // record what was heard now; otherwise trim the last saved reply.
       gen++;
+      const heard = (m.utteranceUntilInterrupt || "").trim();
       const last = call.history[call.history.length - 1];
-      if (last && last.role === "assistant" && m.utteranceUntilInterrupt) {
-        last.content = m.utteranceUntilInterrupt;
-        call.transcript[call.transcript.length - 1] = `AI: ${m.utteranceUntilInterrupt} [cut off]`;
+      if (last && last.role === "assistant") {
+        if (heard) { last.content = heard; call.transcript[call.transcript.length - 1] = `AI: ${heard} [cut off]`; }
+      } else if (heard) {
+        call.history.push({ role: "assistant", content: heard });
+        call.transcript.push(`AI: ${heard} [cut off]`);
       }
       return;
     }
@@ -248,10 +253,13 @@ Deno.serve((req) => {
     finalized = true;
     const o = call.outcome;
     const input = o?.input || {};
-    const lead = input.lead || {};
-    const disposition = o?.kind === "transfer" ? "transfer" : (input.disposition || "hung_up");
-    const summary = input.summary || (call.transcript.length > 1 ? "Caller hung up before finishing." : "Caller hung up right away.");
     const transcript = call.transcript.join("\n");
+    // Always read the whole transcript at the end: covers hang-ups, interrupted
+    // turns and thin tool inputs (Oct 11 test: transfer arrived with no summary).
+    const ex = call.transcript.some((l) => l.startsWith("CALLER:")) ? await extract(transcript) : {};
+    const lead = { ...(ex.lead || {}), ...Object.fromEntries(Object.entries(input.lead || {}).filter(([, v]) => v)) };
+    const disposition = o?.kind === "transfer" ? "transfer" : (input.disposition || ex.disposition || "hung_up");
+    const summary = input.summary || ex.summary || (call.transcript.length > 1 ? "Caller hung up before saying much." : "Caller hung up right away.");
     const secs = Math.round((Date.now() - call.startedAt) / 1000);
 
     let clientId: string | null = null;
@@ -304,6 +312,41 @@ Deno.serve((req) => {
 
   return response;
 });
+
+// End-of-call read of the transcript → { summary, disposition, lead }.
+async function extract(transcript: string): Promise<any> {
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model: MODEL, max_tokens: 500,
+        system: "You read a phone transcript between a tree service's AI assistant and a caller. Extract only what the CALLER actually said. Leave out anything not said.",
+        tools: [{
+          name: "record_call",
+          description: "Record the call outcome.",
+          input_schema: {
+            type: "object",
+            properties: {
+              summary: { type: "string", description: "One or two sentences for the owner: who called, what they want, anything urgent." },
+              disposition: { type: "string", enum: ["lead", "message", "junk", "hung_up"], description: "lead = new work request with at least a name or address and what they need" },
+              lead: { type: "object", properties: LEAD_PROPS },
+            },
+            required: ["summary", "disposition"],
+          },
+        }],
+        tool_choice: { type: "tool", name: "record_call" },
+        messages: [{ role: "user", content: transcript }],
+      }),
+    });
+    if (!r.ok) throw new Error(`Claude ${r.status}`);
+    const j = await r.json();
+    return (j.content || []).find((b: any) => b.type === "tool_use")?.input || {};
+  } catch (e) {
+    console.error("extract failed", e);
+    return {};
+  }
+}
 
 async function textOwners(text: string, testOnly: boolean) {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);

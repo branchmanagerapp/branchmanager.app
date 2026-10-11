@@ -192,7 +192,8 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
     const greeting = "Thanks for calling Second Nature Tree Service. Doug and Catherine are out on a job, so you've got the virtual assistant. I can take down what you need and have Doug call you back. Who am I speaking with?";
     const wss = SUPABASE_URL.replace(/^https:/, "wss:") + "/functions/v1/bm-ai-receptionist?k=" + encodeURIComponent(relayKey);
     return `<Connect action="${at("aidone")}"><ConversationRelay url="${esc(wss)}" welcomeGreeting="${esc(greeting)}" ` +
-      `interruptible="any" hints="Peekskill,Cortlandt,Yorktown,Croton,Putnam Valley,Garrison,Cold Spring,Mohegan Lake,stump grinding,arborist,oak,maple,ash,pine">` +
+      // Oct 11 test: the AI kept getting cut off by short words/background noise.
+      `interruptible="speech" interruptSensitivity="low" ignoreBackchannel="true" hints="Peekskill,Cortlandt,Yorktown,Croton,Putnam Valley,Garrison,Cold Spring,Mohegan Lake,stump grinding,arborist,oak,maple,ash,pine">` +
       `<Parameter name="greeting" value="${esc(greeting)}"/>` +
       `<Parameter name="client" value="${esc(who)}"/>` +
       `<Parameter name="test" value="${isTestCaller && ai.mode === "test" ? "1" : "0"}"/>` +
