@@ -8,7 +8,7 @@
 <meta name="description" content="Custom handmade bracelets and room decor. Design your own bracelet and order it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Cinzel:wght@600;700&family=Baloo+2:wght@600;800&family=Playfair+Display:wght@600;700&family=Righteous&family=Bebas+Neue&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%23f4a6c0' stroke-width='16' stroke-dasharray='18 7'/></svg>">
 <style>
 :root{
@@ -31,7 +31,7 @@ a{color:var(--hot)}
 main,header,footer{position:relative;z-index:1}
 
 /* top bar */
-.top{position:sticky;top:0;z-index:20;background:rgba(255,248,251,.88);backdrop-filter:blur(10px);
+.top{position:sticky;top:0;z-index:20;background:rgba(255,248,251,.88);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
 .logo{display:flex;align-items:center;gap:8px;font-family:Fredoka;font-weight:700;font-size:18px;color:var(--ink);text-decoration:none}
@@ -186,9 +186,80 @@ label.f{display:block;font-weight:800;margin:14px 0 6px}
 
 footer{text-align:center;color:var(--soft);font-size:14px;padding:30px 16px 50px}
 .confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:70}
+/* ================= LOOKS (pick one) ================= */
+.lookbar{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:30;background:rgba(30,20,40,.92);color:#fff;border-radius:18px;padding:8px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.lookbar.on{display:block}
+.lookbar .lt{font:800 12px Nunito;opacity:.8;margin:0 4px 6px}
+.lookbar .ls{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.lookbar a{flex:none;color:#fff;text-decoration:none;font:800 13px Nunito;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.12);white-space:nowrap}
+.lookbar a.on{background:#fff;color:#2a1d36}
+body.has-lookbar{padding-bottom:90px}
+
+/* 1. Gothic Glam */
+html[data-look=gothic]{--pink:#7b2d5e;--mint:#4b3a63;--sun:#b0306b;--lav:#6c4f9c;--ink:#f0e6f6;--soft:#ad9dbd;--bg:#120d17;--card:#1c1524;--line:#33283f;--hot:#c2357a}
+html[data-look=gothic] body{background:radial-gradient(ellipse at top,#2a1836 0%,#120d17 60%)}
+html[data-look=gothic] h1,html[data-look=gothic] h2,html[data-look=gothic] h3,html[data-look=gothic] .fun,html[data-look=gothic] .logo,html[data-look=gothic] .price-tag{font-family:Cinzel,serif;letter-spacing:.5px}
+html[data-look=gothic] .hero h1 .rainbow{background-image:linear-gradient(90deg,#c2357a,#b9a4e8,#c9c9d6)}
+html[data-look=gothic] .top{background:rgba(18,13,23,.88)}
+html[data-look=gothic] .top .logo{font-size:14px}
+html[data-look=gothic] :is(.opt,.vibe,.pat,.toggle,.pill,input,textarea,select,.radio label,.stepper button,.x,.pp,.drawer){background:#221a2c;color:var(--ink)}
+html[data-look=gothic] :is(.opt.on,.radio label:has(input:checked)){background:#3a1c34}
+html[data-look=gothic] .vibe.on{background:#2a2140}
+html[data-look=gothic] .idea{background:#231a2d !important;border:1px solid #3a2c48}
+html[data-look=gothic] :is(.paybox,.photo-drop,.sub-box,.custom-btn){background:#241a2e;color:var(--ink)}
+html[data-look=gothic] .cart-btn{background:var(--hot)}
+html[data-look=gothic] .btn.main{box-shadow:0 6px 0 #6e1c45}
+html[data-look=gothic] .btn.alt{background:transparent;color:var(--ink);border-color:var(--ink)}
+html[data-look=gothic] .surprise{color:#cbb6f0}
+
+/* 2. Beach Day */
+html[data-look=beach]{--pink:#9fc6e7;--mint:#7fd8c8;--sun:#f2d59b;--lav:#9fc6e7;--ink:#173a5a;--soft:#5d7a92;--bg:#f2faff;--line:#d9ecf7;--hot:#1f7fc4}
+html[data-look=beach] body{background:linear-gradient(180deg,#e6f6ff 0%,#f7fcff 45%,#fbf3e4 100%)}
+html[data-look=beach] h1,html[data-look=beach] h2,html[data-look=beach] h3,html[data-look=beach] .fun,html[data-look=beach] .logo,html[data-look=beach] .price-tag{font-family:"Baloo 2",sans-serif}
+html[data-look=beach] .hero h1 .rainbow{background-image:linear-gradient(90deg,#1f7fc4,#3cc7c0,#e8b98a)}
+html[data-look=beach] .btn.main{box-shadow:0 6px 0 #135d92}
+html[data-look=beach] :is(.opt.on,.radio label:has(input:checked)){background:#e8f4fd}
+html[data-look=beach] .hero::after{content:"";display:block;height:28px;margin-top:26px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28'%3E%3Cpath d='M0 14 Q15 0 30 14 T60 14 T90 14 T120 14' fill='none' stroke='%239fc6e7' stroke-width='4'/%3E%3C/svg%3E") repeat-x center/120px 28px}
+
+/* 3. Cozy Cottage */
+html[data-look=cottage]{--pink:#d9b8a0;--mint:#a8c09a;--sun:#e6c88f;--lav:#c9b49a;--ink:#3b3226;--soft:#7d705f;--bg:#f8f2e7;--card:#fffcf6;--line:#eadfcd;--hot:#6f8f52;--radius:14px}
+html[data-look=cottage] body{background:#f8f2e7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='1.4' fill='%23e3d6c0'/%3E%3C/svg%3E")}
+html[data-look=cottage] h1,html[data-look=cottage] h2,html[data-look=cottage] h3,html[data-look=cottage] .fun,html[data-look=cottage] .logo,html[data-look=cottage] .price-tag{font-family:"Playfair Display",serif}
+html[data-look=cottage] .hero h1 .rainbow{background-image:linear-gradient(90deg,#6f8f52,#b07a52,#c9a14a)}
+html[data-look=cottage] .btn.main{box-shadow:0 5px 0 #4c6637}
+html[data-look=cottage] :is(.opt.on,.radio label:has(input:checked)){background:#f1f5ea}
+html[data-look=cottage] .cart-btn{background:#6f8f52}
+html[data-look=cottage] .bg-beads span{border-radius:50% 0}
+
+/* 4. Retro Y2K */
+html[data-look=y2k]{--pink:#ff9ad5;--mint:#7af0e0;--sun:#fff04d;--lav:#c49bff;--ink:#1a1033;--soft:#5a4b7a;--bg:#f7f0ff;--line:#1a1033;--hot:#ff2fa8;--radius:6px}
+html[data-look=y2k] body{background:#f7f0ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='24' height='24' fill='%23efe3ff'/%3E%3Crect x='24' y='24' width='24' height='24' fill='%23efe3ff'/%3E%3C/svg%3E")}
+html[data-look=y2k] h1,html[data-look=y2k] h2,html[data-look=y2k] h3,html[data-look=y2k] .fun,html[data-look=y2k] .logo,html[data-look=y2k] .price-tag{font-family:Righteous,sans-serif}
+html[data-look=y2k] .hero h1 .rainbow{background-image:linear-gradient(90deg,#ff2fa8,#7a5cff,#00d1c1,#ff2fa8)}
+html[data-look=y2k] .card,html[data-look=y2k] .idea{border:2px solid #1a1033;box-shadow:6px 6px 0 #1a1033}
+html[data-look=y2k] :is(.opt,.vibe,.pat,.toggle,input,textarea,select){border-color:#1a1033}
+html[data-look=y2k] .btn{border-radius:8px;border:2px solid #1a1033}
+html[data-look=y2k] .btn.main{box-shadow:4px 4px 0 #1a1033}
+html[data-look=y2k] :is(.opt.on,.vibe.on,.pat.on){box-shadow:3px 3px 0 #1a1033;background:#fff04d}
+html[data-look=y2k] .cart-btn{background:#ff2fa8;border:2px solid #1a1033;box-shadow:3px 3px 0 #1a1033}
+
+/* 5. Sporty */
+html[data-look=sporty]{--pink:#ffb48a;--mint:#7fc8f8;--sun:#ffd23f;--lav:#7fc8f8;--ink:#0f2540;--soft:#566a80;--bg:#f3f6f9;--line:#dde4ec;--hot:#ff5a1f;--radius:12px}
+html[data-look=sporty] body{background:#f3f6f9}
+html[data-look=sporty] h1,html[data-look=sporty] h2,html[data-look=sporty] h3,html[data-look=sporty] .fun,html[data-look=sporty] .logo,html[data-look=sporty] .price-tag{font-family:"Bebas Neue",sans-serif;letter-spacing:1px;text-transform:uppercase}
+html[data-look=sporty] .hero h1{font-size:clamp(46px,13vw,80px)}
+html[data-look=sporty] .hero h1 .rainbow{background-image:linear-gradient(90deg,#ff5a1f,#ffd23f)}
+html[data-look=sporty] .top{background:#0f2540;border:0}
+html[data-look=sporty] .top .logo{color:#fff}
+html[data-look=sporty] .cart-btn{background:#ff5a1f}
+html[data-look=sporty] .btn.main{box-shadow:0 5px 0 #b33a0c;text-transform:uppercase;letter-spacing:.5px}
+html[data-look=sporty] .card{border-top:6px solid #ff5a1f}
+html[data-look=sporty] .sec-title h2::after{content:"";display:block;width:60px;height:5px;background:#ff5a1f;margin:6px auto 0;border-radius:3px}
+html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#fff1ea}
 </style>
 </head>
 <body>
+<nav class="lookbar" id="lookbar" aria-label="Try a look"><div class="lt">👀 Try a look — which one do you like best?</div><div class="ls" id="lookLinks"></div></nav>
 <div class="bg-beads" id="bgBeads"></div>
 
 <header class="top">
@@ -831,12 +902,29 @@ function confetti(n=80, cols){
       x.beginPath(); if(p.round){x.arc(p.x,p.y,p.r,0,7)} else {x.save();x.translate(p.x,p.y);x.rotate(p.a);x.rect(-p.r,-p.r/2,p.r*2,p.r);x.restore()} x.fill(); x.stroke(); });
     if (++f<110) requestAnimationFrame(tick); else x.clearRect(0,0,c.width,c.height); })();
 }
+// ---------- looks ----------
+const LOOKS = {
+  original:{label:"🍧 Original", ring:["#f4a6c0","#ffffff","#8fd3c4","#f6d06f","#b9a4e8"], bg:["#f4a6c0","#8fd3c4","#f6d06f","#b9a4e8","#9fc6e7"]},
+  gothic:{label:"🦇 Gothic Glam", ring:["#2b2b2b","#5b2a86","#c9c9d6","#8b0000","#2b2b2b"], bg:["#5b2a86","#8b0000","#3a2a4a","#c2357a","#2b2b2b"]},
+  beach:{label:"🌊 Beach Day", ring:["#2f5d8a","#9fc6e7","#f2e6d0","#e8b98a","#ffffff"], bg:["#9fc6e7","#7fd8c8","#f2e6d0","#e8b98a","#ffffff"]},
+  cottage:{label:"🍄 Cozy Cottage", ring:["#6f8f52","#f0e4c8","#d9b8a0","#8b5e3c","#ffffff"], bg:["#a8c09a","#d9b8a0","#e6c88f","#c9b49a","#a8d5a2"]},
+  y2k:{label:"💿 Retro Y2K", ring:["#ff2fa8","#7af0e0","#fff04d","#c49bff","#ffffff"], bg:["#ff9ad5","#7af0e0","#fff04d","#c49bff","#ff2fa8"]},
+  sporty:{label:"⚽ Sporty", ring:["#ff5a1f","#0f2540","#ffffff","#ffd23f","#7fc8f8"], bg:["#ff5a1f","#ffd23f","#7fc8f8","#0f2540","#ffb48a"]}
+};
+const LOOK = (()=>{ const q=new URLSearchParams(location.search).get("look"); return LOOKS[q] ? q : null; })();
+if (LOOK){
+  document.documentElement.dataset.look = LOOK;
+  document.body.classList.add("has-lookbar"); $("lookbar").classList.add("on");
+  $("lookLinks").innerHTML = Object.entries(LOOKS).map(([k,v])=>`<a href="?look=${k}" class="${k===LOOK?'on':''}">${v.label}</a>`).join("");
+  const on = $("lookLinks").querySelector(".on"); if (on) on.scrollIntoView({inline:"center",block:"nearest"});
+}
+const LK = LOOKS[LOOK||"original"];
 // floating background beads + spinning hero ring
 (function(){
-  const cols=["#f4a6c0","#8fd3c4","#f6d06f","#b9a4e8","#9fc6e7"]; let h="";
+  const cols=LK.bg; let h="";
   for(let i=0;i<14;i++){ const s=10+Math.random()*22; h+=`<span style="width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:${cols[i%5]};animation-delay:${-Math.random()*14}s;animation-duration:${10+Math.random()*10}s"></span>`; }
   $("bgBeads").innerHTML=h;
-  const demo = {style:"Beaded", colors:["#f4a6c0","#ffffff","#8fd3c4","#f6d06f","#b9a4e8"], size:"L", letters:"", charms:0};
+  const demo = {style:"Beaded", colors:LK.ring, size:"L", letters:"", charms:0};
   $("heroRing").innerHTML = braceletSVG(demo,200);
 })();
 
