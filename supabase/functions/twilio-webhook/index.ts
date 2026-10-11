@@ -176,9 +176,29 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
     `<Dial timeout="${secs}" answerOnBridge="true" callerId="${esc(caller)}" action="${at("next" + (i + 1))}">` +
     `<Number url="${at("screen&p=" + encodeURIComponent(parent))}">${esc(ring[i])}</Number></Dial>`;
 
-  const voicemail = () =>
+  const record = () =>
     `<Say voice="Polly.Matthew-Neural">Thanks for calling Second Nature Tree Service. We can't get to the phone right now. Please leave your name, address, and what you need, and we'll call you back.</Say>` +
     `<Record maxLength="180" playBeep="true" action="${at("vmdone")}" recordingStatusCallback="${at("vmsaved")}" />`;
+
+  // AI receptionist (Oct 11 2026) — answers instead of voicemail when nobody picks up.
+  // tenants.config.ai_receptionist = { mode: "off" | "test" | "on", test_callers: [E.164], transfer_to: E.164 }
+  // "test": only test_callers reach the AI (and skip the ringing, so Catherine isn't rung during tests).
+  const ai = cfg.ai_receptionist || {};
+  const isTestCaller = (ai.test_callers || []).some((n: string) => last10(n) === last10(caller));
+  const aiOn = ai.mode === "on" || (ai.mode === "test" && isTestCaller);
+  const relayKey = Deno.env.get("AI_RELAY_KEY") || "";
+  const aiConnect = async () => {
+    const who = await clientName(sb, await findClient(sb, caller));
+    const greeting = "Thanks for calling Second Nature Tree Service. Doug and Catherine are out on a job, so you've got the virtual assistant. I can take down what you need and have Doug call you back. Who am I speaking with?";
+    const wss = SUPABASE_URL.replace(/^https:/, "wss:") + "/functions/v1/bm-ai-receptionist?k=" + encodeURIComponent(relayKey);
+    return `<Connect action="${at("aidone")}"><ConversationRelay url="${esc(wss)}" welcomeGreeting="${esc(greeting)}" ` +
+      `interruptible="any" hints="Peekskill,Cortlandt,Yorktown,Croton,Putnam Valley,Garrison,Cold Spring,Mohegan Lake,stump grinding,arborist,oak,maple,ash,pine">` +
+      `<Parameter name="greeting" value="${esc(greeting)}"/>` +
+      `<Parameter name="client" value="${esc(who)}"/>` +
+      `<Parameter name="test" value="${isTestCaller && ai.mode === "test" ? "1" : "0"}"/>` +
+      `</ConversationRelay></Connect>`;
+  };
+  const voicemail = async () => (aiOn && relayKey ? await aiConnect() : record());
 
   if (step === "" ) {
     const clientId = await findClient(sb, caller);
@@ -188,7 +208,33 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
       dialpad_id: p.CallSid, source: "twilio", date: new Date().toISOString(),
       metadata: { provider: "twilio" },
     }, { onConflict: "dialpad_id" });
-    return xml(ring.length ? dial(0) : voicemail());
+    if (ai.mode === "test" && isTestCaller && relayKey) return xml(await aiConnect());
+    return xml(ring.length ? dial(0) : await voicemail());
+  }
+
+  // ConversationRelay finished. HandoffData is set only when the AI ended the session itself.
+  if (step === "aidone") {
+    let h: any = {};
+    try { h = JSON.parse(p.HandoffData || "{}"); } catch { /* none */ }
+    if (h.action === "transfer") {
+      const to = ai.transfer_to || ring[ring.length - 1];
+      if (to) {
+        return xml(`<Dial timeout="${secs}" answerOnBridge="true" callerId="${esc(caller)}" action="${at("aivm")}">` +
+          `<Number url="${at("screen&p=" + encodeURIComponent(p.CallSid || ""))}">${esc(to)}</Number></Dial>`);
+      }
+    }
+    if (p.SessionStatus === "failed") {
+      console.error("ConversationRelay failed", p.ErrorCode, p.ErrorMessage);
+      return xml(record());                 // AI broke → never lose the caller; take a voicemail
+    }
+    return xml("<Hangup/>");
+  }
+
+  // After an AI transfer: Doug answered → done; no answer → regular voicemail.
+  if (step === "aivm") {
+    const { data: row } = await sb.from("communications").select("status").eq("dialpad_id", p.CallSid).limit(1);
+    if (row && row[0] && row[0].status === "answered") return xml("<Hangup/>");
+    return xml(record());
   }
 
   // Per-call answer digit (2-9). A fixed "1" got falsely triggered by a cell
@@ -218,7 +264,7 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
     const i = +m[1];
     const { data: row } = await sb.from("communications").select("status").eq("dialpad_id", p.CallSid).limit(1);
     if (row && row[0] && row[0].status === "answered") return xml("<Hangup/>");
-    return xml(i < ring.length ? dial(i) : voicemail());
+    return xml(i < ring.length ? dial(i) : await voicemail());
   }
 
   if (step === "vmdone") return xml(`<Say voice="Polly.Matthew-Neural">Thank you. Goodbye.</Say><Hangup/>`);
