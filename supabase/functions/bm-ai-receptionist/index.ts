@@ -53,11 +53,11 @@ Get these, ONE question at a time, in a natural order:
 6. Whether this number is the best one to call back. Ask for an email only if they offer one.
 
 How to talk:
-- This is a phone call. One or two short sentences per reply. No lists, no symbols, no emoji.
+- This is a phone call. One or two short sentences per reply, under 30 words. No lists, no symbols, no emoji, no brackets or notes; everything you write is read aloud.
 - Sound like a friendly, competent person from the office. Use their first name once you have it.
 - Never give prices or quotes. If asked: "Doug gives every estimate in person, and it's free. He'll call you back to set a time."
 - Never promise a specific time or date. Say Doug will call back as soon as he's off the job.
-- Don't make up facts about the company (towns served, insurance, licenses, hours). If asked, say Doug will go over that when he calls.
+- Answer company questions ONLY from the COMPANY FACTS below. If something isn't there (hours, exact availability, prices, anything else), say Doug will go over it when he calls back. Never guess.
 
 Emergencies: if a tree or large limb has fallen on a house, car, or person, is blocking a road or driveway, or is on or tangled in power lines, it is an emergency. If wires are involved, tell them to stay well away and call the utility, and 911 if anyone is in danger. Then use transfer_to_owner right away; don't finish the questions.
 
@@ -66,7 +66,20 @@ Other calls:
 - Sales pitches, robocalls, wrong numbers: be polite and brief, then end_call with disposition "junk".
 - If they ask for a person: offer to take their details so Doug calls back. If they insist or it's urgent, use transfer_to_owner.
 
+Existing customers: if CALLER RECORD below lists their quotes, jobs, or invoices, you may tell them the STATUS (for example "your quote was sent on September 13th" or "that invoice shows as paid"). Never read out dollar amounts, addresses, or anything else from the record; caller ID can be faked. For anything more, take a message.
+
 When you have at least the name, address, and what they need, confirm in one sentence, say Doug will call them back, say goodbye, and use end_call with disposition "lead". Always say your goodbye in the same reply where you use a tool.`;
+
+// From peekskilltree.com (home, services, service-areas, emergency, contact, stump-grinding pages), read Oct 11 2026.
+// Only things the website already tells customers. No prices: rates are internal (Doug's rule).
+const FACTS = `COMPANY FACTS (from our website):
+- Second Nature Tree Service, based in Peekskill, NY. Locally owned; both owners are on every job. 10+ years in business. Licensed and insured: Westchester license WC-32079, Putnam license PC-50644. Rated 5.0 on Google with 70+ reviews.
+- Free estimates, always. Main number (914) 391-5233; customers can call or text it.
+- We respond to inquiries within 2 hours during business hours. 24/7 emergency response for storm damage and fallen trees.
+- Services: tree removal (any size, residential and commercial, cleanup included); pruning and trimming (crown thinning, crown raising, deadwood removal, structural pruning, vista pruning); stump grinding (6 to 12 inches below grade; chips fill the hole, or we haul chips and backfill with topsoil on request); emergency tree service; land and lot clearing; crane-assisted removal for very large trees or tight access; tree cabling and bracing; roof soft washing (low pressure, safe for slate, tile, cedar and asphalt).
+- Near power lines we coordinate with the utility company.
+- Service area: Northern Westchester, Putnam County and Southern Dutchess County. Westchester: Peekskill, Yorktown and Yorktown Heights, Cortlandt Manor, Croton-on-Hudson, Briarcliff Manor, Chappaqua, Ossining, Buchanan, Mount Kisco, Bedford, Katonah, Somers, Pleasantville, Pound Ridge, Lewisboro, North Salem, Armonk, New Castle, Mohegan Lake, Shrub Oak, Verplanck, Mount Pleasant, Millwood, Lake Peekskill, Hawthorne, Thornwood, Scarborough, Cross River, South Salem, Waccabuc, Goldens Bridge, Croton Falls, Purdys. Putnam: Philipstown, Garrison, Cold Spring, Putnam Valley, Mahopac, Carmel, Brewster, Patterson, Nelsonville. Southern Dutchess: Beacon, Fishkill, East Fishkill, Wappingers Falls, Pawling, Dover. Anywhere else in those counties: "we likely cover you; Doug will confirm."
+- Pruning timing (from our pruning page): late winter, January to March, is ideal for most deciduous trees.`;
 
 const LEAD_PROPS = {
   name:     { type: "string" },
@@ -107,6 +120,11 @@ const TOOLS = [
   },
 ];
 
+const WIRES = /(wire|power line|electric|utility pole|sparking|live line)/i;
+const SAFETY = "Please stay well away from any wires, call the utility company, and call 911 if anyone is in danger. ";
+const CONNECTING = "Okay, one moment, I'm connecting you to Doug now.";
+const GOODBYE = "Thanks for calling Second Nature Tree Service. Doug will get back to you. Goodbye!";
+
 type Msg = { role: "user" | "assistant"; content: string };
 
 Deno.serve((req) => {
@@ -120,7 +138,7 @@ Deno.serve((req) => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const call = {
-    callSid: "", from: "", to: "", test: false, clientName: "",
+    callSid: "", from: "", to: "", test: false, harness: false, clientName: "", greeting: "", record: "",
     history: [] as Msg[],
     transcript: [] as string[],
     outcome: null as null | { kind: "end" | "transfer"; input: any },
@@ -145,10 +163,16 @@ Deno.serve((req) => {
       call.from = m.from || "";
       call.to = m.to || "";
       call.test = (m.customParameters?.test || "") === "1";
+      call.harness = (m.customParameters?.harness || "") === "1";   // automated test caller: no DB writes, no texts
       call.clientName = m.customParameters?.client || "";
-      const greet = m.customParameters?.greeting || "";
-      if (greet) call.transcript.push(`AI: ${greet}`);
-      if (greet) call.history.push({ role: "assistant", content: greet });
+      call.greeting = m.customParameters?.greeting || "";
+      if (call.greeting) call.transcript.push(`AI: ${call.greeting}`);
+      call.record = m.customParameters?.record_override ?? await callerRecord(sb, call.from);
+      return;
+    }
+
+    if (m.type === "harness_hangup" && call.harness) {   // simulate the caller hanging up
+      await finalize("hangup");
       return;
     }
 
@@ -189,8 +213,24 @@ Deno.serve((req) => {
   };
   socket.onerror = (e) => console.error("socket error", e);
 
-  async function reply(myGen: number) {
-    const ctx = call.clientName ? `\n\nCaller ID matches an existing customer: ${call.clientName}.` : "";
+  // Drop bracketed notes like "[End call: lead]" across token boundaries; they'd be read aloud.
+  let inBracket = false;
+  const spoken = (t: string) => {
+    let out = "";
+    for (const ch of t) {
+      if (ch === "[") inBracket = true;
+      else if (ch === "]") inBracket = false;
+      else if (!inBracket) out += ch;
+    }
+    return out;
+  };
+
+  async function reply(myGen: number, retry = false) {
+    inBracket = false;
+    const ctx = `\n\n${FACTS}` +
+      (call.greeting ? `\n\nYou already greeted the caller with: "${call.greeting}"` : "") +
+      `\n\nCALLER RECORD: ${call.record || "No match for this phone number. Treat as a new caller."}` +
+      `\n\nToday is ${new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", year: "numeric" })}.`;
     let text = "";
     const tools: Record<number, { name: string; json: string }> = {};
     try {
@@ -214,10 +254,20 @@ Deno.serve((req) => {
           const e = JSON.parse(line.slice(6));
           if (e.type === "content_block_start" && e.content_block?.type === "tool_use") {
             tools[e.index] = { name: e.content_block.name, json: "" };
+            // Speak the closing line as soon as the model picks a tool, instead of
+            // waiting for its JSON to finish (cut emergency silence from ~4s to ~1s).
+            if (!text.trim() && myGen === gen) {
+              const said = call.history.filter((h) => h.role === "user").map((h) => h.content).join(" ");
+              const warn = e.content_block.name === "transfer_to_owner" && WIRES.test(said) ? SAFETY : "";
+              const bye = e.content_block.name === "transfer_to_owner" ? CONNECTING : GOODBYE;
+              text = warn + bye;
+              send({ type: "text", token: text, last: false });
+            }
           } else if (e.type === "content_block_delta") {
             if (e.delta?.type === "text_delta") {
-              text += e.delta.text;
-              if (myGen === gen) send({ type: "text", token: e.delta.text, last: false });
+              const clean = spoken(e.delta.text);
+              text += clean;
+              if (clean && myGen === gen) send({ type: "text", token: clean, last: false });
             } else if (e.delta?.type === "input_json_delta" && tools[e.index]) {
               tools[e.index].json += e.delta.partial_json;
             }
@@ -230,20 +280,33 @@ Deno.serve((req) => {
       if (myGen === gen) send({ type: "text", token: text, last: false });
     }
     if (myGen !== gen) return;            // caller interrupted; a newer turn owns the line
+    const t0 = Object.values(tools)[0];
+    // Tested Oct 11: the model sometimes ends the call silently, or returns nothing at all.
+    if (!text.trim() && !t0) {
+      if (!retry) return reply(myGen, true);
+      text = "Sorry, could you say that one more time?";
+      send({ type: "text", token: text, last: false });
+    }
+    // Safety line is guaranteed, not left to the model (Oct 11 test: it once skipped it).
+    const callerSaid = call.history.filter((h) => h.role === "user").map((h) => h.content).join(" ");
+    if (t0?.name === "transfer_to_owner" && WIRES.test(callerSaid) && !/(stay|away)/i.test(text)) {
+      send({ type: "text", token: " " + SAFETY, last: false });
+      text += " " + SAFETY;
+    }
     send({ type: "text", token: "", last: true });
     if (text.trim()) {
       call.history.push({ role: "assistant", content: text.trim() });
       call.transcript.push(`AI: ${text.trim()}`);
     }
 
-    const t = Object.values(tools)[0];
+    const t = t0;
     if (!t) return;
     let input: any = {};
     try { input = JSON.parse(t.json || "{}"); } catch { /* keep {} */ }
     call.outcome = { kind: t.name === "transfer_to_owner" ? "transfer" : "end", input };
     // Let the goodbye finish playing before handing the call back (~2.6 words/sec).
     const words = text.trim().split(/\s+/).filter(Boolean).length;
-    await new Promise((r) => setTimeout(r, Math.min(12000, 800 + words * 380)));
+    if (!call.harness) await new Promise((r) => setTimeout(r, Math.min(12000, 800 + words * 380)));
     send({ type: "end", handoffData: JSON.stringify({ action: call.outcome.kind, reason: input.reason || "" }) });
     await finalize("tool");
   }
@@ -257,10 +320,15 @@ Deno.serve((req) => {
     // Always read the whole transcript at the end: covers hang-ups, interrupted
     // turns and thin tool inputs (Oct 11 test: transfer arrived with no summary).
     const ex = call.transcript.some((l) => l.startsWith("CALLER:")) ? await extract(transcript) : {};
-    const lead = { ...(ex.lead || {}), ...Object.fromEntries(Object.entries(input.lead || {}).filter(([, v]) => v)) };
+    const real = ([, v]: [string, any]) => typeof v === "string" && v.trim() && !/^<?\s*(unknown|n\/?a|none given|not (given|provided))\s*>?$/i.test(v.trim());
+    const lead = { ...Object.fromEntries(Object.entries(ex.lead || {}).filter(real)), ...Object.fromEntries(Object.entries(input.lead || {}).filter(real)) };
     const disposition = o?.kind === "transfer" ? "transfer" : (input.disposition || ex.disposition || "hung_up");
     const summary = input.summary || ex.summary || (call.transcript.length > 1 ? "Caller hung up before saying much." : "Caller hung up right away.");
     const secs = Math.round((Date.now() - call.startedAt) / 1000);
+    if (call.harness) {
+      send({ type: "harness_result", disposition, summary, lead, transcript, secs });
+      return;
+    }
 
     let clientId: string | null = null;
     const p10 = call.from.replace(/\D/g, "").slice(-10);
@@ -321,7 +389,7 @@ async function extract(transcript: string): Promise<any> {
       headers: { "content-type": "application/json", "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: MODEL, max_tokens: 500,
-        system: "You read a phone transcript between a tree service's AI assistant and a caller. Extract only what the CALLER actually said. Leave out anything not said.",
+        system: "You read a phone transcript between a tree service's AI assistant and a caller. Extract only what the CALLER actually said. If a field was not said, omit that key entirely; never write placeholders like unknown.",
         tools: [{
           name: "record_call",
           description: "Record the call outcome.",
@@ -345,6 +413,33 @@ async function extract(transcript: string): Promise<any> {
   } catch (e) {
     console.error("extract failed", e);
     return {};
+  }
+}
+
+// What the AI may say to an existing customer: statuses only, no amounts/addresses.
+async function callerRecord(sb: any, from: string): Promise<string> {
+  const p10 = (from || "").replace(/\D/g, "").slice(-10);
+  if (p10.length < 10) return "";
+  try {
+    const { data: cl } = await sb.from("clients").select("id,name,first_name").eq("tenant_id", SNT_TENANT)
+      .ilike("phone", `%${p10.slice(0, 3)}%${p10.slice(3, 6)}%${p10.slice(6)}%`).limit(2);
+    if (!cl || !cl.length) return "";
+    const c = cl[0];
+    const d = (x: string) => x ? new Date(x).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : "";
+    const [{ data: q }, { data: j }, { data: inv }] = await Promise.all([
+      sb.from("quotes").select("quote_number,status,sent_at,approved_at,created_at").eq("client_id", c.id).order("created_at", { ascending: false }).limit(3),
+      sb.from("jobs").select("job_number,status,scheduled_date,completed_date").eq("client_id", c.id).order("created_at", { ascending: false }).limit(3),
+      sb.from("invoices").select("invoice_number,status,issued_date,paid_date").eq("client_id", c.id).order("created_at", { ascending: false }).limit(3),
+    ]);
+    const lines = [`Existing customer: ${c.name}.`];
+    for (const x of q || []) lines.push(`Quote #${x.quote_number}: ${x.status}${x.sent_at ? ", sent " + d(x.sent_at) : ""}${x.approved_at ? ", approved " + d(x.approved_at) : ""}.`);
+    for (const x of j || []) lines.push(`Job #${x.job_number}: ${x.status}${x.scheduled_date ? ", scheduled " + d(x.scheduled_date) : ""}${x.completed_date ? ", completed " + d(x.completed_date) : ""}.`);
+    for (const x of inv || []) lines.push(`Invoice #${x.invoice_number}: ${x.status}${x.paid_date ? ", paid " + d(x.paid_date) : ""}.`);
+    if (cl.length > 1) lines.push("(More than one customer shares this number; confirm their name before giving any status.)");
+    return lines.join(" ");
+  } catch (e) {
+    console.error("callerRecord failed", e);
+    return "";
   }
 }
 
