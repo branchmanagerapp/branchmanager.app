@@ -35,6 +35,9 @@ jobs = {s: pull('jobs', s, JF) for s in ('requires_invoicing', 'late', 'today', 
 RF = f'title createdAt requestStatus jobberWebUri {CL}'
 reqs = {s: pull('requests', s, RF) for s in ('new', 'overdue', 'unscheduled', 'upcoming', 'assessment_completed')}
 
+def plural(n, w): return f"{n} {w}{'' if n == 1 else 's'}"
+def ago(iso):
+    d = age(iso); return 'today' if d == 0 else ('yesterday' if d == 1 else f'{d} days ago')
 def money(x): return f"${(x or 0):,.0f}"
 def age(iso): return (TODAY - datetime.date.fromisoformat(iso[:10])).days
 def addr(o):
@@ -56,11 +59,11 @@ B = []
 # 1. Money first
 owed = invoices['past_due'] + invoices['awaiting_payment']
 tot_owed = sum(i['amounts']['invoiceBalance'] for i in owed)
-B.append(f'<h2 class="send">💰 Money owed — {len(owed)} invoices, {money(tot_owed)}</h2>')
+B.append(f'<h2 class="send">💰 Money owed — {plural(len(owed), "invoice")}, {money(tot_owed)}</h2>')
 for i in sorted(owed, key=lambda i: i['issuedDate'] or ''):
     late = ' · <b style="color:var(--bad)">past due</b>' if i['invoiceStatus'] == 'past_due' else ''
     B.append(row('hot', f"#{i['invoiceNumber']}", i['jobberWebUri'], name(i), '',
-                 f"{money(i['amounts']['invoiceBalance'])} left of {money(i['amounts']['total'])} · sent {age(i['issuedDate'])} days ago{late}{ph(i)}"))
+                 f"{money(i['amounts']['invoiceBalance'])} left of {money(i['amounts']['total'])} · sent {ago(i['issuedDate'])}{late}{ph(i)}"))
 for i in invoices['draft']:
     B.append(row('hot', f"#{i['invoiceNumber']}", i['jobberWebUri'], name(i), '',
                  f"{money(i['amounts']['total'])} · DRAFT, never sent", 'Send it, or mark it paid if it already was.'))
