@@ -170,6 +170,8 @@ label.f{display:block;font-weight:800;margin:14px 0 6px}
 .line .info b{font-size:15px}
 .line .rm{border:0;background:none;color:var(--soft);font-size:13px;cursor:pointer;text-decoration:underline}
 .total{display:flex;justify-content:space-between;font:700 22px Fredoka;margin:14px 0}
+.sum{display:flex;justify-content:space-between;font-weight:700;color:var(--soft);margin-top:10px}
+.sum + .total{margin-top:4px}
 .paybox{background:#fff8e3;border-radius:16px;padding:12px 14px;font-size:14px;margin:10px 0}
 .empty{text-align:center;color:var(--soft);padding:20px 0}
 .radio{display:flex;gap:8px}
@@ -476,6 +478,18 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
     <h2 class="fun">Your cart 🛍️ <button class="x" id="closeCart" aria-label="Close">✕</button></h2>
     <div id="lines"></div>
     <div id="checkout">
+      <label class="f" style="margin-top:4px">How do you want to get it?</label>
+      <div class="radio" id="deliveryOpts">
+        <label><input type="radio" name="deliver" value="pickup" checked><span>🤝 In person<br><small style="font-weight:700">Free</small></span></label>
+        <label><input type="radio" name="deliver" value="mail"><span>📬 Mail it<br><small style="font-weight:700" id="shipLabel">+$0.00</small></span></label>
+      </div>
+      <div id="addrBox" style="display:none">
+        <label class="f" for="cAddr">Mailing address</label>
+        <textarea id="cAddr" autocomplete="street-address" placeholder="Name, street, town, state, ZIP" style="min-height:70px"></textarea>
+        <p class="hint" id="shipWhy"></p>
+      </div>
+      <div class="sum"><span>Bracelets</span><span id="subtotal">$0.00</span></div>
+      <div class="sum"><span>Delivery</span><span id="shipCost">Free</span></div>
       <div class="total"><span>Total</span><span id="total">$0.00</span></div>
       <label class="f" for="cName">Your first and last name</label>
       <input type="text" id="cName" autocomplete="name" placeholder="First and last name">
@@ -713,6 +727,29 @@ let cart = [];
 try { cart = JSON.parse(localStorage.getItem("rrs_cart")||"[]"); } catch(e){}
 const save = ()=>{ try{ localStorage.setItem("rrs_cart", JSON.stringify(cart)); }catch(e){} };
 function cartTotal(){ return cart.reduce((s,i)=>s+unitPrice(i)*i.qty,0); }
+// Shipping (USPS, prices effective 2026-10-04): a flat string bracelet fits a
+// letter envelope (Forever stamp $0.82 + $0.49 lumpy surcharge = $1.31; we
+// charge $1.50 incl. envelope). Beads, kits or 3+ pieces mail as a package
+// (Ground Advantage online label from $7.33; we charge $8.00 incl. mailer).
+const SHIP_LETTER = 1.50, SHIP_PACKAGE = 8.00;
+function pieces(){ return cart.reduce((n,i)=>n + i.qty*(i.pair?2:1), 0); }
+function deliveryMode(){ const r=document.querySelector('input[name=deliver]:checked'); return r ? r.value : "pickup"; }
+function mailRate(){ return cart.length && cart.every(i=>i.material==="String") && pieces()<=2 ? SHIP_LETTER : SHIP_PACKAGE; }
+function shipping(){ return deliveryMode()==="mail" && cart.length ? mailRate() : 0; }
+function grandTotal(){ return cartTotal() + shipping(); }
+function updateTotals(){
+  const r = mailRate();
+  $("shipLabel").textContent = "+" + money(r);
+  $("shipWhy").textContent = r===SHIP_LETTER ? "Flat string bracelets fit in a regular envelope." : "Beads and bigger orders mail as a small package.";
+  $("addrBox").style.display = deliveryMode()==="mail" ? "block" : "none";
+  $("subtotal").textContent = money(cartTotal());
+  $("shipCost").textContent = shipping() ? money(shipping()) : "Free";
+  $("total").textContent = money(grandTotal());
+  document.querySelector("#checkout .paybox").innerHTML = deliveryMode()==="mail"
+    ? "💡 No payment now. We'll message you to collect cash or a check before we mail it."
+    : "💡 No payment now. You pay when you get your order. We'll reach out to set up a handoff.";
+}
+document.addEventListener("change", e=>{ if (e.target.name==="deliver") updateTotals(); });
 function updateCount(){
   const n = cart.reduce((s,i)=>s+i.qty,0);
   $("cartCount").textContent = n; $("cartCount").classList.toggle("on", n>0);
@@ -734,7 +771,7 @@ function renderCart(){
   $("lines").innerHTML = cart.map((i,k)=>`<div class="line"><svg viewBox="0 0 300 300">${braceletSVG(i,300)}</svg>
     <div class="info"><b>${i.qty} × ${i.pair?"Friendship pair":"Bracelet"}</b><br>${describe(i)}${i.notes?`<br><i>“${esc(i.notes)}”</i>`:""}<br><button class="rm" data-rm="${k}">remove</button></div>
     <b>${money(unitPrice(i)*i.qty)}</b></div>`).join("");
-  $("total").textContent = money(cartTotal());
+  updateTotals();
 }
 const esc = s => s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 $("lines").addEventListener("click", e=>{ const b=e.target.closest("[data-rm]"); if(!b) return; cart.splice(+b.dataset.rm,1); save(); updateCount(); renderCart(); });
@@ -783,15 +820,21 @@ $("placeBtn").onclick = async ()=>{
   $("orderErr").textContent="";
   if (nm.split(/\s+/).length<2 || !ct){ $("orderErr").textContent = "Please add your first AND last name, plus a phone or email so we can reach you."; return; }
   const pay = document.querySelector('input[name=pay]:checked').value;
+  const mode = deliveryMode(), addr = $("cAddr").value.trim();
+  if (mode==="mail" && addr.length<10){ $("orderErr").textContent = "Please add the mailing address."; return; }
   const no = orderNo();
   const btn=$("placeBtn"); btn.disabled=true; btn.textContent="Sending… ✨";
   try{
     await send({
-      _subject: `🛍️ New bracelet order ${no} — ${money(cartTotal())} (${pay})`,
+      _subject: `🛍️ New bracelet order ${no} — ${money(grandTotal())} (${pay}, ${mode==="mail"?"MAIL":"in person"})`,
       _template: "box", _captcha: "false",
       "Order #": no, "Customer": nm, "Phone or email": ct, "Pays with": pay + " at handoff",
-      "Total": money(cartTotal()),
-      "If you know them (10% friends discount)": money(Math.round(cartTotal()*90)/100),
+      "Delivery": mode==="mail" ? `MAIL — ${mailRate()===SHIP_LETTER?"letter envelope":"small package"}` : "In person (free)",
+      "Mailing address": mode==="mail" ? addr : "—",
+      "Bracelets": money(cartTotal()),
+      "Shipping": money(shipping()),
+      "Total": money(grandTotal()),
+      "If you know them (10% off the bracelets)": money(Math.round(cartTotal()*90)/100 + shipping()),
       "Build sheets": cart.map((i,k)=>buildSheet(i,k+1)).join("\n\n────────────\n\n")
     });
     $("orderNo").textContent = no;
