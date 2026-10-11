@@ -92,6 +92,22 @@ section{padding:34px 0}
 .mat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;text-align:center}
 .mat .e{font-size:28px;margin:0}
 .mat small{font-weight:600;color:var(--soft);font-size:12px}
+.custom-btn{width:100%;margin:10px 0 0;border:2px dashed var(--hot);background:#fff5f9;color:var(--hot);font:800 16px Nunito;padding:14px;border-radius:16px;cursor:pointer}
+.custom-btn.on{border-style:solid}
+.sub-box{margin-top:10px;padding:12px;border-radius:16px;background:#faf6fd}
+.pat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:620px){.pat-grid{grid-template-columns:repeat(5,1fr)}}
+.pat{border:2px solid var(--line);border-radius:16px;padding:6px 6px 8px;background:#fff;cursor:pointer;font:800 13px Nunito;color:var(--ink);text-align:center}
+.pat svg{width:100%;height:58px;border-radius:10px;display:block;margin-bottom:5px}
+.pat.on{border-color:var(--hot);box-shadow:0 4px 0 var(--pink);transform:translateY(-2px)}
+.pat-preview{border-radius:18px;overflow:hidden;border:2px solid var(--line);margin:12px 0 4px}
+.pat-preview svg{width:100%;height:120px;display:block}
+.color-row{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 4px}
+.color-row .swatch{width:34px;height:34px}
+.picked-pats{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pp{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-weight:800;font-size:13px}
+.pp svg{width:26px;height:26px;border-radius:50%}
+.pp button{border:0;background:none;cursor:pointer;color:var(--soft);font-size:14px}
 .photo-drop{display:block;border:2px dashed var(--mint);border-radius:16px;padding:18px;text-align:center;cursor:pointer;background:#f6fcfa;font-weight:800}
 .photo-drop input{display:none}
 .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -312,8 +328,29 @@ footer{text-align:center;color:var(--soft);font-size:14px;padding:30px 16px 50px
       <input type="hidden" name="Request #" id="dNo" value="">
       <input type="hidden" name="Status" value="NEEDS QUOTE (sketch it, then send a price)">
       <input type="hidden" name="Vibes" id="dVibes" value="">
-      <label class="f">What's your vibe? (pick as many as you like)</label>
+      <input type="hidden" name="Patterns" id="dPatterns" value="">
+      <label class="f">Pick your room style (as many as you like)</label>
       <div class="vibes" id="vibes"></div>
+      <div class="sub-box" id="sportBox" style="display:none">
+        <label class="f" for="dSport" style="margin-top:0">⚽ What sport or team?</label>
+        <input type="text" id="dSport" name="Sport or team" placeholder="e.g. soccer, Yankees, gymnastics">
+      </div>
+      <button type="button" class="custom-btn" id="customBtn">✏️ Custom: write my own dream room</button>
+      <div class="sub-box" id="customBox" style="display:none">
+        <label class="f" for="dCustom" style="margin-top:0">Describe exactly what you want your room to look like</label>
+        <textarea id="dCustom" name="Dream room (in their own words)" placeholder="e.g. dark purple walls, fairy lights over my bed, a cozy reading corner with a bean bag, and posters of my favorite band…" style="min-height:120px"></textarea>
+      </div>
+
+      <label class="f">🎨 Patterns</label>
+      <p class="hint" style="margin-top:-2px">Tap a pattern, pick its colors, then add it to your room.</p>
+      <div class="pat-grid" id="patGrid"></div>
+      <div class="pat-preview" id="patPreview"></div>
+      <div class="hint" style="font-weight:800;color:var(--ink)">Main color</div>
+      <div class="color-row" id="patC1"></div>
+      <div class="hint" style="font-weight:800;color:var(--ink)">Second color</div>
+      <div class="color-row" id="patC2"></div>
+      <button type="button" class="btn alt full" id="addPat" style="margin-top:8px">➕ Add this pattern to my room</button>
+      <div class="picked-pats" id="pickedPats"></div>
 
       <label class="f">📸 Show us your room</label>
       <label class="photo-drop" id="photoDrop">
@@ -682,10 +719,66 @@ $("placeBtn").onclick = async ()=>{
 };
 
 // ---------- decor ----------
-const VIBES = [["🔥","Cozy & warm"],["🏖️","Beachy"],["🌿","Plants & nature"],["🌈","Bright & colorful"],["☁️","Calm & simple"],["🧁","Pastel & cute"],["🎨","Artsy & creative"],["📻","Vintage"]];
+const VIBES = [["🦇","Gothic"],["⚽","Sporty"],["🔥","Cozy & warm"],["🏖️","Beachy"],["🌿","Plants & nature"],["🌈","Bright & colorful"],["☁️","Calm & simple"],["🧁","Pastel & cute"],["🎨","Artsy & creative"],["📻","Vintage"],["🌙","Boho"],["💎","Glam"],["🍄","Cottagecore"],["💿","Y2K"],["🌌","Galaxy"],["🖤","Modern & sleek"]];
 const picked = new Set();
 $("vibes").innerHTML = VIBES.map(v=>`<button type="button" class="vibe" data-vibe="${v[1]}"><span class="e">${v[0]}</span>${v[1]}</button>`).join("");
-$("vibes").addEventListener("click", e=>{ const b=e.target.closest("[data-vibe]"); if(!b) return; const v=b.dataset.vibe; picked.has(v)?picked.delete(v):picked.add(v); b.classList.toggle("on"); });
+$("vibes").addEventListener("click", e=>{ const b=e.target.closest("[data-vibe]"); if(!b) return; const v=b.dataset.vibe; picked.has(v)?picked.delete(v):picked.add(v); b.classList.toggle("on");
+  $("sportBox").style.display = picked.has("Sporty") ? "block" : "none";
+  if (v==="Gothic" && picked.has(v)) confetti(40,["#2b2b2b","#5b2a86","#8b0000","#c9c9d6"]);
+});
+$("customBtn").onclick = ()=>{ const open = $("customBox").style.display==="none"; $("customBox").style.display = open?"block":"none"; $("customBtn").classList.toggle("on",open); if(open) $("dCustom").focus(); };
+
+// ---------- patterns ----------
+const PATTERNS = ["Stripes","Polka dots","Leopard","Zebra","Checkerboard","Plaid","Gingham","Hearts","Stars","Flowers","Zigzag","Camo","Tie-dye","Cow print","Rainbow","Solid"];
+const PAT_COLORS = ["#f4a6c0","#ff7ac8","#e5484d","#8b0000","#f59e42","#f6d06f","#a8d5a2","#3f7d4e","#8fd3c4","#40c4d6","#9fc6e7","#2f5d8a","#b9a4e8","#5b2a86","#e8b98a","#8b5e3c","#f2e6d0","#ffffff","#c9c9d6","#2b2b2b"];
+const PAT_NAMES = Object.assign({}, COLOR_NAMES, {"#8b0000":"Dark red","#5b2a86":"Deep purple"});
+const pat = {name:"Leopard", c1:"#e8b98a", c2:"#2b2b2b"};
+const roomPats = [];
+let patUid = 0;
+function patternSVG(nm, c1, c2, w=120, h=60){
+  const id = "pt"+(patUid++);
+  let tile = "", size = 20;
+  switch(nm){
+    case "Stripes": size=20; tile=`<rect width="20" height="20" fill="${c1}"/><rect width="10" height="20" fill="${c2}"/>`; return wrap(`patternTransform="rotate(45)"`);
+    case "Polka dots": size=20; tile=`<rect width="20" height="20" fill="${c1}"/><circle cx="5" cy="5" r="3.5" fill="${c2}"/><circle cx="15" cy="15" r="3.5" fill="${c2}"/>`; break;
+    case "Leopard": size=40; tile=`<rect width="40" height="40" fill="${c1}"/>`+[[9,9,6,4,20],[29,13,5,4,-30],[18,29,6,4,10],[36,33,4,3,40],[4,30,4,3,-20]].map(([x,y,rx,ry,r])=>`<g transform="rotate(${r} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${c2}" opacity=".35"/><ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="none" stroke="${c2}" stroke-width="2.4" stroke-dasharray="7 3"/></g>`).join(""); break;
+    case "Zebra": size=40; tile=`<rect width="40" height="40" fill="${c1}"/><path d="M0 6 Q10 2 20 7 T40 6 M0 18 Q12 13 22 19 T40 17 M0 30 Q9 26 19 31 T40 29" stroke="${c2}" stroke-width="5" fill="none" stroke-linecap="round"/>`; break;
+    case "Checkerboard": size=20; tile=`<rect width="20" height="20" fill="${c1}"/><rect width="10" height="10" fill="${c2}"/><rect x="10" y="10" width="10" height="10" fill="${c2}"/>`; break;
+    case "Plaid": size=30; tile=`<rect width="30" height="30" fill="${c1}"/><rect y="9" width="30" height="8" fill="${c2}" opacity=".55"/><rect x="9" width="8" height="30" fill="${c2}" opacity=".55"/><rect y="24" width="30" height="1.5" fill="${c2}"/><rect x="24" width="1.5" height="30" fill="${c2}"/>`; break;
+    case "Gingham": size=16; tile=`<rect width="16" height="16" fill="${c1}"/><rect width="8" height="16" fill="${c2}" opacity=".45"/><rect width="16" height="8" fill="${c2}" opacity=".45"/>`; break;
+    case "Hearts": size=24; tile=`<rect width="24" height="24" fill="${c1}"/><path d="M12 18 C4 12 6 6 9.5 6 C11 6 12 7.5 12 7.5 C12 7.5 13 6 14.5 6 C18 6 20 12 12 18Z" fill="${c2}"/>`; break;
+    case "Stars": size=26; tile=`<rect width="26" height="26" fill="${c1}"/><polygon points="13,4 15.5,10 22,10.5 17,14.5 18.5,21 13,17.5 7.5,21 9,14.5 4,10.5 10.5,10" fill="${c2}"/>`; break;
+    case "Flowers": size=28; tile=`<rect width="28" height="28" fill="${c1}"/>`+[0,72,144,216,288].map(a=>`<circle cx="${14+5*Math.cos(a*Math.PI/180)}" cy="${14+5*Math.sin(a*Math.PI/180)}" r="3.6" fill="${c2}"/>`).join("")+`<circle cx="14" cy="14" r="2.6" fill="#f6d06f"/>`; break;
+    case "Zigzag": size=20; tile=`<rect width="20" height="20" fill="${c1}"/><polyline points="0,8 5,3 10,8 15,3 20,8" stroke="${c2}" stroke-width="3" fill="none"/><polyline points="0,18 5,13 10,18 15,13 20,18" stroke="${c2}" stroke-width="3" fill="none"/>`; break;
+    case "Camo": size=40; tile=`<rect width="40" height="40" fill="${c1}"/><path d="M2 8 Q10 0 18 7 T30 10 Q24 18 14 16 T2 8Z" fill="${c2}"/><path d="M20 24 Q30 18 38 26 T34 38 Q24 40 20 32Z" fill="${c2}" opacity=".7"/><path d="M0 28 Q6 24 10 30 T4 38Z" fill="${c2}" opacity=".45"/>`; break;
+    case "Tie-dye": return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="${id}" cx="50%" cy="50%" r="70%" spreadMethod="repeat"><stop offset="0" stop-color="${c1}"/><stop offset=".25" stop-color="${c2}"/><stop offset=".5" stop-color="${c1}"/><stop offset=".75" stop-color="${c2}"/><stop offset="1" stop-color="${c1}"/></radialGradient></defs><rect width="${w}" height="${h}" fill="url(#${id})"/></svg>`;
+    case "Cow print": size=48; tile=`<rect width="48" height="48" fill="${c1}"/><path d="M6 6 Q16 2 20 10 Q22 18 12 20 Q2 18 6 6Z" fill="${c2}"/><path d="M30 26 Q42 22 44 32 Q42 44 32 42 Q24 36 30 26Z" fill="${c2}"/><path d="M34 4 Q40 4 40 9 Q36 13 32 9Z" fill="${c2}"/>`; break;
+    case "Rainbow": return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="${id}"><stop offset="0" stop-color="${c1}"/><stop offset=".2" stop-color="#e5484d"/><stop offset=".4" stop-color="#f6d06f"/><stop offset=".6" stop-color="#a8d5a2"/><stop offset=".8" stop-color="#9fc6e7"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#${id})"/></svg>`;
+    default: return `<svg viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="${c1}"/></svg>`;
+  }
+  return wrap("");
+  function wrap(extra){ return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice"><defs><pattern id="${id}" width="${size}" height="${size}" patternUnits="userSpaceOnUse" ${extra}>${tile}</pattern></defs><rect width="${w}" height="${h}" fill="url(#${id})"/></svg>`; }
+}
+function renderPats(){
+  $("patGrid").innerHTML = PATTERNS.map(n=>`<button type="button" class="pat${n===pat.name?' on':''}" data-pat="${n}">${patternSVG(n,pat.c1,pat.c2)}${n}</button>`).join("");
+  $("patPreview").innerHTML = patternSVG(pat.name,pat.c1,pat.c2,300,120);
+  const row = (k)=>PAT_COLORS.map(c=>`<button type="button" class="swatch${pat[k]===c?' on':''}" data-pc="${k}" data-c="${c}" style="background:${c}" aria-label="${PAT_NAMES[c]||c}"></button>`).join("");
+  $("patC1").innerHTML = row("c1"); $("patC2").innerHTML = row("c2");
+  $("pickedPats").innerHTML = roomPats.map((p,i)=>`<span class="pp">${patternSVG(p.name,p.c1,p.c2,26,26)}${p.name} · ${PAT_NAMES[p.c1]||p.c1} & ${PAT_NAMES[p.c2]||p.c2}<button type="button" data-unpat="${i}" aria-label="Remove">✕</button></span>`).join("");
+  $("dPatterns").value = roomPats.map(p=>`${p.name} in ${PAT_NAMES[p.c1]||p.c1} + ${PAT_NAMES[p.c2]||p.c2}`).join("; ");
+}
+$("decorForm").addEventListener("click", e=>{
+  const t = e.target.closest("[data-pat],[data-pc],[data-unpat]"); if (!t) return;
+  if (t.dataset.pat) pat.name = t.dataset.pat;
+  if (t.dataset.pc) pat[t.dataset.pc] = t.dataset.c;
+  if (t.dataset.unpat) roomPats.splice(+t.dataset.unpat,1);
+  renderPats();
+});
+$("addPat").onclick = ()=>{
+  if (roomPats.length>=6){ toast("6 patterns max 🎨"); return; }
+  roomPats.push({...pat}); renderPats(); confetti(40,[pat.c1,pat.c2]); toast(`${pat.name} added! 🎨`);
+};
+renderPats();
 // Photos: shrink each one in the browser so a few phone pictures stay well
 // under FormSubmit's 10MB limit, then post the form normally (FormSubmit
 // supports file uploads on regular form posts, not on AJAX).
@@ -710,9 +803,9 @@ $("dPhotos").addEventListener("change", async e=>{
   if (files.length) confetti(30,["#8fd3c4","#a8d5a2","#f6d06f"]);
 });
 $("decorForm").addEventListener("submit", e=>{
-  const what=$("dWhat").value.trim(), nm=$("dName").value.trim(), ct=$("dContact").value.trim();
+  const what=$("dWhat").value.trim() || $("dCustom").value.trim() || roomPats.length || picked.size, nm=$("dName").value.trim(), ct=$("dContact").value.trim();
   $("decorErr").textContent="";
-  if (!what || !nm || !ct){ e.preventDefault(); $("decorErr").textContent="Please fill in what you'd like, your name, and a phone or email."; return; }
+  if (!what || !nm || !ct){ e.preventDefault(); $("decorErr").textContent="Tell us a little about what you want, plus your name and a phone or email."; return; }
   const no = orderNo().replace("RR","ROOM");
   $("dNo").value = no;
   $("dSubject").value = `🪴 Room decor request ${no} — NEEDS QUOTE`;
