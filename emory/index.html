@@ -381,7 +381,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
   <section id="design" class="wrap">
     <div class="sec-title">
       <h2>Matching bracelets 📿</h2>
-      <p>Design a bracelet to match your room. Regular beads $2, clay beads $3, string $4.</p>
+      <p>Design a bracelet to match your room. Regular beads $4, string $5, clay beads $6.</p>
     </div>
     <div class="builder">
       <div class="card preview-card">
@@ -427,7 +427,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
         </div>
 
         <div class="step">
-          <h3><span class="n">6</span>Charms <span class="hint" style="margin:0">+50¢ each</span></h3>
+          <h3><span class="n">6</span>Charms <span class="hint" style="margin:0">+$1 each</span></h3>
           <div class="stepper">
             <button type="button" id="chMinus" aria-label="Fewer charms">−</button>
             <output id="chCount">0</output>
@@ -438,7 +438,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
 
         <div class="step">
           <h3><span class="n">7</span>Extras</h3>
-          <label class="toggle"><input type="checkbox" id="pair"><span class="sw2"></span><span>👯 Make it a friendship pair<small>2 matching bracelets. Adds $3 (a regular-bead pair is $5).</small></span></label>
+          <label class="toggle"><input type="checkbox" id="pair"><span class="sw2"></span><span>👯 Make it a friendship pair<small>2 matching bracelets for $2 less than buying 2.</small></span></label>
           <div style="height:8px"></div>
           <label class="toggle"><input type="checkbox" id="secret"><span class="sw2"></span><span>🔐 Hidden message beads<small>A secret word in color code, plus a decoder card. Free!</small></span></label>
           <div id="secretBox" style="display:none;margin-top:8px">
@@ -549,7 +549,7 @@ const SWATCHES = ["#f4a6c0","#ff9ad5","#ff7ac8","#ff2fa8","#e0115f","#e5484d","#
 const STYLES = [
   {id:"Beaded", e:"📿"},{id:"Letter / name", e:"🔤"},{id:"Stretch", e:"🌀"},{id:"Braided / woven", e:"🧶"},{id:"Charm", e:"⭐"}
 ];
-const MATERIALS = [{id:"Clay beads",e:"🟣",d:"flat & colorful · $3"},{id:"Regular beads",e:"🔮",d:"round & shiny · $2"},{id:"String",e:"🧵",d:"woven thread · $4"}];
+const MATERIALS = [{id:"Clay beads",e:"🟣",d:"flat & colorful · $6"},{id:"Regular beads",e:"🔮",d:"round & shiny · $4"},{id:"String",e:"🧵",d:"woven thread · $5"}];
 const SIZES = [{id:"S",label:"Small (kid)",beads:20},{id:"M",label:"Medium",beads:24},{id:"L",label:"Large (adult)",beads:28}];
 const CHARMS = ["⭐","💖","🌸","🦋","🌙","🍓","🐚","🍀"];
 
@@ -562,19 +562,20 @@ function colors(){
   if (st.pal==="bday") return [MONTHS[st.month][1],"#ffffff","#d4a72c"];
   return st.own.length ? st.own : ["#ffffff"];
 }
-// Prices: regular $2, clay $3, string $4 (stretch costs the same). A friendship
-// pair adds $3. First 3 colors included, each extra color +50¢, no limit.
-const MATERIAL_PRICE = {"Regular beads":2, "Clay beads":3, "String":4};
+// Prices set from Etsy/Amazon/Michaels listings (checked 2026-10-11), a bit under
+// typical handmade: regular $4, string $5, clay $6 (stretch costs the same).
+// Name +$3, charm +$1, first 3 colors included then +50¢ each (no limit).
+// Friendship pair = 2 bracelets minus $2.
+const MATERIAL_PRICE = {"Regular beads":4, "Clay beads":6, "String":5};
 const FREE_COLORS = 3;
 function colorCount(s=st){ return new Set(s===st ? colors() : (s.colors||[])).size; }
 function extraColors(s=st){ return Math.max(0, colorCount(s) - FREE_COLORS); }
 function unitPrice(s=st){
-  let p = MATERIAL_PRICE[s.material] ?? 2;
-  if (s.pair) p += 3;
+  let p = MATERIAL_PRICE[s.material] ?? 4;
   if (s.letters.trim()) p += 3;
-  p += s.charms * 0.5;
+  p += s.charms * 1;
   p += extraColors(s) * 0.5;
-  return p;
+  return s.pair ? p*2 - 2 : p;
 }
 const money = n => "$" + n.toFixed(2);
 
