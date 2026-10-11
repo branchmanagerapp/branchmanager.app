@@ -24,7 +24,7 @@ const S = [
   { name: "wants-person", lines: ["Can I just talk to a real person?", "No, I really need to talk to Doug right now, it's important."],
     expect: { disposition: "transfer" } },
   { name: "hours-question", lines: ["What are your hours?", "Are you open Saturdays?", "Okay, never mind, thanks."],
-    expect: { noInventedHours: true } },
+    expect: { saysAny: /8\s?(AM|a\.m\.)?.{0,12}8\s?(PM|p\.m\.)|eight.{0,12}eight/i, noWrongHours: true } },
   { name: "stump-question", lines: ["How deep do you grind the stumps?", "Do you take the chips away?", "Okay, I'm Lisa Park, 5 River Road, Garrison. Three stumps from trees we had cut last year. No rush.", "Yes, this number is good."],
     expect: { saysAny: /(6|six).{0,15}(12|twelve)/i, disposition: "lead" } },
   { name: "lawn-mowing", lines: ["Do you guys also mow lawns?", "Okay, what about snow plowing?", "Alright, thanks."],
@@ -93,7 +93,7 @@ function grade(r) {
   if (e.saysAny && !e.saysAny.test(ai)) fails.push("missing expected words " + e.saysAny);
   if (e.mentions && !e.mentions.test(ai)) fails.push("missing " + e.mentions);
   if (e.summaryNonEmpty && !(res.summary || "").trim()) fails.push("empty summary");
-  if (e.noInventedHours && /\b\d{1,2}\s?(am|pm|a\.m\.|p\.m\.)/i.test(ai)) fails.push("INVENTED HOURS");
+  if (e.noWrongHours && /\b(7|6|9|5|4)\s?(am|pm|a\.m\.|p\.m\.)/i.test(ai)) fails.push("WRONG HOURS");
   if (r.turns.some((t) => !t.ai && !t.handoff)) fails.push("a turn got no reply");
   if (r.turns.some((t) => t.ai.split(/\s+/).length > 45)) fails.push("a reply was too long (>45 words)");
   return fails;
