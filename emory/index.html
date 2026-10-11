@@ -379,7 +379,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
   <section id="design" class="wrap">
     <div class="sec-title">
       <h2>Matching bracelets 📿</h2>
-      <p>Design a bracelet to match your room. From $2.</p>
+      <p>Design a bracelet to match your room. Regular beads $2, clay beads $3, string $4.</p>
     </div>
     <div class="builder">
       <div class="card preview-card">
@@ -410,7 +410,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
           </div>
           <div id="ownBox" style="display:none">
             <div class="swatches" id="swatches"></div>
-            <p class="hint">Tap up to 5 colors. They repeat around the bracelet in the order you tap them.</p>
+            <p class="hint">Tap as many colors as you like. The first 3 are included, and each extra color is +50¢. They repeat around the bracelet in the order you tap them.</p>
           </div>
         </div>
 
@@ -436,7 +436,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
 
         <div class="step">
           <h3><span class="n">7</span>Extras</h3>
-          <label class="toggle"><input type="checkbox" id="pair"><span class="sw2"></span><span>👯 Make it a friendship pair<small>2 bracelets that match. $5 for the pair.</small></span></label>
+          <label class="toggle"><input type="checkbox" id="pair"><span class="sw2"></span><span>👯 Make it a friendship pair<small>2 matching bracelets. Adds $3 (a regular-bead pair is $5).</small></span></label>
           <div style="height:8px"></div>
           <label class="toggle"><input type="checkbox" id="secret"><span class="sw2"></span><span>🔐 Hidden message beads<small>A secret word in color code, plus a decoder card. Free!</small></span></label>
           <div id="secretBox" style="display:none;margin-top:8px">
@@ -516,7 +516,8 @@ const COLOR_NAMES = {
   "#e5484d":"Red","#f59e42":"Orange","#2b2b2b":"Black","#ff7ac8":"Hot pink","#40c4d6":"Turquoise",
   "#9b1b30":"Garnet red","#9966cc":"Amethyst purple","#7fd8c8":"Aquamarine","#dfeef5":"Clear crystal",
   "#2fa36b":"Emerald green","#f6efe2":"Pearl","#e0115f":"Ruby red","#b4c424":"Peridot green",
-  "#1f4fbf":"Sapphire blue","#f7a8c0":"Opal pink","#f5a623":"Topaz orange","#3cc7c0":"Turquoise blue"
+  "#1f4fbf":"Sapphire blue","#f7a8c0":"Opal pink","#f5a623":"Topaz orange","#3cc7c0":"Turquoise blue",
+  "#fff04d":"Neon yellow","#7af0e0":"Aqua","#ff9ad5":"Bubblegum pink","#c49bff":"Grape","#5b2a86":"Deep purple","#8b0000":"Dark red","#ff2fa8":"Neon pink","#0f2540":"Midnight blue","#7fc8f8":"Baby blue","#6f8f52":"Olive","#ffb48a":"Coral","#a0522d":"Rust","#ffe4b5":"Vanilla","#008080":"Teal","#800020":"Burgundy","#36454f":"Charcoal","#e6e6fa":"Pale lavender","#98ff98":"Neon green"
 };
 const name = c => COLOR_NAMES[c] || c;
 
@@ -530,11 +531,11 @@ const PALETTES = [
 ];
 const MONTHS = [["January","#9b1b30"],["February","#9966cc"],["March","#7fd8c8"],["April","#dfeef5"],["May","#2fa36b"],["June","#f6efe2"],
   ["July","#e0115f"],["August","#b4c424"],["September","#1f4fbf"],["October","#f7a8c0"],["November","#f5a623"],["December","#3cc7c0"]];
-const SWATCHES = ["#f4a6c0","#ff7ac8","#e5484d","#f59e42","#f6d06f","#a8d5a2","#3f7d4e","#8fd3c4","#40c4d6","#9fc6e7","#2f5d8a","#b9a4e8","#9966cc","#e8b98a","#8b5e3c","#f2e6d0","#ffffff","#c9c9d6","#d4a72c","#2b2b2b"];
+const SWATCHES = ["#f4a6c0","#ff9ad5","#ff7ac8","#ff2fa8","#e0115f","#e5484d","#8b0000","#800020","#ffb48a","#f59e42","#a0522d","#f6d06f","#fff04d","#ffe4b5","#98ff98","#a8d5a2","#6f8f52","#3f7d4e","#2fa36b","#8fd3c4","#7af0e0","#40c4d6","#008080","#7fc8f8","#9fc6e7","#1f4fbf","#2f5d8a","#0f2540","#e6e6fa","#b9a4e8","#c49bff","#9966cc","#5b2a86","#e8b98a","#8b5e3c","#f2e6d0","#ffffff","#c9c9d6","#d4a72c","#36454f","#2b2b2b"];
 const STYLES = [
   {id:"Beaded", e:"📿"},{id:"Letter / name", e:"🔤"},{id:"Stretch", e:"🌀"},{id:"Braided / woven", e:"🧶"},{id:"Charm", e:"⭐"}
 ];
-const MATERIALS = [{id:"Clay beads",e:"🟣",d:"flat & colorful"},{id:"Regular beads",e:"🔮",d:"round & shiny"},{id:"String",e:"🧵",d:"woven thread"}];
+const MATERIALS = [{id:"Clay beads",e:"🟣",d:"flat & colorful · $3"},{id:"Regular beads",e:"🔮",d:"round & shiny · $2"},{id:"String",e:"🧵",d:"woven thread · $4"}];
 const SIZES = [{id:"S",label:"Small (kid)",beads:20},{id:"M",label:"Medium",beads:24},{id:"L",label:"Large (adult)",beads:28}];
 const CHARMS = ["⭐","💖","🌸","🦋","🌙","🍓","🐚","🍀"];
 
@@ -547,10 +548,18 @@ function colors(){
   if (st.pal==="bday") return [MONTHS[st.month][1],"#ffffff","#d4a72c"];
   return st.own.length ? st.own : ["#ffffff"];
 }
+// Prices: regular $2, clay $3, string $4 (stretch costs the same). A friendship
+// pair adds $3. First 3 colors included, each extra color +50¢, no limit.
+const MATERIAL_PRICE = {"Regular beads":2, "Clay beads":3, "String":4};
+const FREE_COLORS = 3;
+function colorCount(s=st){ return new Set(s===st ? colors() : (s.colors||[])).size; }
+function extraColors(s=st){ return Math.max(0, colorCount(s) - FREE_COLORS); }
 function unitPrice(s=st){
-  let p = s.pair ? 5 : 2;
+  let p = MATERIAL_PRICE[s.material] ?? 2;
+  if (s.pair) p += 3;
   if (s.letters.trim()) p += 3;
   p += s.charms * 0.5;
+  p += extraColors(s) * 0.5;
   return p;
 }
 const money = n => "$" + n.toFixed(2);
@@ -643,14 +652,15 @@ function render(animate){
   el.classList.remove("price-pop"); void el.offsetWidth; el.classList.add("price-pop");
   const bits = [st.material, st.style, palLabel(), SIZES.find(z=>z.id===st.size).label];
   if (st.secret && st.secretWord.trim()) bits.push("🔐 secret: ••••");
-  $("previewNote").textContent = bits.join(" · ");
+  const ex = extraColors();
+  $("previewNote").innerHTML = esc(bits.join(" · ")) + `<br><b>${colorCount()} color${colorCount()>1?"s":""}</b> · ${ex ? `${ex} extra × 50¢ = +${money(ex*0.5)}` : "first 3 colors included"}`;
   $("chCount").textContent = st.charms;
   $("qty").textContent = st.qty;
 }
 
 function buildOpts(){
   $("matOpts").innerHTML = MATERIALS.map(m=>`<button class="opt mat${m.id===st.material?' on':''}" data-mat="${m.id}"><span class="e">${m.e}</span>${m.id}<small>${m.d}</small></button>`).join("");
-  $("styleOpts").innerHTML = STYLES.map(s=>`<button class="opt${s.id===st.style?' on':''}" data-style="${s.id}"><span class="e">${s.e}</span>${s.id}</button>`).join("");
+  $("styleOpts").innerHTML = STYLES.filter(s=>!(st.material==="String" && s.id==="Stretch")).map(s=>`<button class="opt${s.id===st.style?' on':''}" data-style="${s.id}"><span class="e">${s.e}</span>${s.id}</button>`).join("");
   $("palOpts").innerHTML = PALETTES.map(p=>{
     const sw = p.colors ? p.colors : (p.id==="bday" ? ["#9b1b30","#2fa36b","#1f4fbf","#f5a623"] : ["#ff7ac8","#40c4d6","#f6d06f","#2b2b2b"]);
     return `<button class="opt pal${p.id===st.pal?' on':''}" data-pal="${p.id}"><span class="sw">${sw.map(c=>`<i style="background:${c}"></i>`).join("")}</span><span><span class="e">${p.e}</span>${p.label}</span></button>`;
@@ -674,7 +684,7 @@ document.addEventListener("click", e=>{
   if (t.dataset.size) st.size=t.dataset.size;
   if (t.dataset.charm) st.charm=t.dataset.charm;
   if (t.dataset.sw){ const c=t.dataset.sw; const i=st.own.indexOf(c);
-    if (i>=0) st.own.splice(i,1); else if (st.own.length<5) st.own.push(c); else toast("5 colors max! Tap one to remove it.");
+    if (i>=0) st.own.splice(i,1); else { st.own.push(c); if (st.own.length===FREE_COLORS+1) toast("Extra colors are +50¢ each 🎨"); }
   }
   buildOpts(); render(true);
 });
