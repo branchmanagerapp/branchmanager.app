@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Room Redesign and Style</title>
-<meta name="robots" content="noindex">
 <meta name="description" content="Custom handmade bracelets and room decor. Design your own bracelet and order it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -305,14 +304,7 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
       <h2>Design your dream room 🛋️</h2>
       <p>Pick your style and patterns, send a photo, and the designer sends you a sketch and a price first.</p>
     </div>
-    <form class="card" id="decorForm" method="POST" enctype="multipart/form-data" novalidate>
-      <input type="hidden" name="_subject" id="dSubject" value="Room decor request — NEEDS QUOTE">
-      <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_template" value="box">
-      <input type="hidden" name="_next" id="dNext" value="">
-      <input type="hidden" name="Request #" id="dNo" value="">
-      <input type="hidden" name="Status" id="dStatus" value="NEEDS QUOTE (sketch it, then send a price)">
-      <input type="hidden" name="Vibes" id="dVibes" value="">
+    <form class="card" id="decorForm" novalidate>
       <input type="hidden" name="Patterns" id="dPatterns" value="">
       <label class="f" style="margin-top:0">What would you like?</label>
       <div class="plan-grid">
@@ -577,10 +569,10 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
 <canvas class="confetti" id="confetti"></canvas>
 
 <script>
-// Orders are emailed through FormSubmit (formsubmit.co). After the first order,
-// FormSubmit emails this inbox a one-time "Activate" link, then a random alias
-// to use here instead of the plain address.
-const ORDER_ENDPOINT = "https://formsubmit.co/ajax/emorybrown151@gmail.com";
+// Orders go to a Google Apps Script web app (owned by info@peekskilltree.com):
+// each one becomes a row in the "Room Redesign & Style — Orders" sheet and an
+// alert email goes to the designer. Source: apps-script/Code.gs.
+const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAdSifZjEVE54E66K-1ZJh3u_L1yOldcmL6YtzCivJfXjPvF7HEdo4pbOP1ewsI6cYHQ/exec";
 
 const COLOR_NAMES = {
   "#f4a6c0":"Pink","#ffffff":"White","#8fd3c4":"Mint","#f6d06f":"Sunshine yellow","#b9a4e8":"Lavender",
@@ -952,10 +944,12 @@ function buildSheet(i, n){
     i.material==="String" ? `Thread colors: ${i.colors.map(name).join(", ")}` : `Bead order (start at the top, go clockwise):\n${seq}`
   ].filter(Boolean).join("\n");
 }
+// text/plain keeps this a "simple" request (no CORS preflight, which Apps Script
+// can't answer).
 async function send(payload){
-  const r = await fetch(ORDER_ENDPOINT, {method:"POST", headers:{"Content-Type":"application/json","Accept":"application/json"}, body:JSON.stringify(payload)});
+  const r = await fetch(ORDER_ENDPOINT, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload)});
   let j = {}; try { j = await r.json(); } catch(e){}
-  if (!r.ok || String(j.success)==="false") throw new Error(j.message || ("HTTP "+r.status));
+  if (!r.ok || j.success !== true) throw new Error(j.message || ("HTTP "+r.status));
   return j;
 }
 
@@ -970,16 +964,13 @@ $("placeBtn").onclick = async ()=>{
   const btn=$("placeBtn"); btn.disabled=true; btn.textContent="Sending… ✨";
   try{
     await send({
-      _subject: `🛍️ New bracelet order ${no} — ${money(grandTotal())} (${pay}, ${mode==="mail"?"MAIL":"in person"})`,
-      _template: "box", _captcha: "false",
-      "Order #": no, "Customer": nm, "Phone or email": ct, "Pays with": pay + " at handoff",
-      "Delivery": mode==="mail" ? `MAIL — ${mailRate()===SHIP_LETTER?"letter envelope":"small package"}` : "In person (free)",
-      "Mailing address": mode==="mail" ? addr : "—",
-      "Bracelets": money(cartTotal()),
-      "Shipping": money(shipping()),
-      "Total": money(grandTotal()),
-      "If you know them (10% off the bracelets)": money(Math.round(cartTotal()*90)/100 + shipping()),
-      "Build sheets": cart.map((i,k)=>buildSheet(i,k+1)).join("\n\n────────────\n\n")
+      subject: `🛍️ New bracelet order ${no} — ${money(grandTotal())} (${pay}, ${mode==="mail"?"MAIL":"in person"})`,
+      orderNo: no, type: "Bracelets / kits", customer: nm, contact: ct, pay: pay + " at handoff",
+      delivery: mode==="mail" ? `MAIL — ${mailRate()===SHIP_LETTER?"letter envelope":"small package"} (shipping ${money(shipping())})` : "In person (free)",
+      address: mode==="mail" ? addr : "",
+      total: money(grandTotal()),
+      friendsPrice: money(Math.round(cartTotal()*90)/100 + shipping()),
+      details: cart.map((i,k)=>buildSheet(i,k+1)).join("\n\n────────────\n\n")
     });
     $("orderNo").textContent = no;
     cart=[]; save(); updateCount();
@@ -1052,10 +1043,7 @@ $("addPat").onclick = ()=>{
   roomPats.push({...pat}); renderPats(); confetti(40,[pat.c1,pat.c2]); toast(`${pat.name} added! 🎨`);
 };
 renderPats();
-// Photos: shrink each one in the browser so a few phone pictures stay well
-// under FormSubmit's 10MB limit, then post the form normally (FormSubmit
-// supports file uploads on regular form posts, not on AJAX).
-const DECOR_ACTION = ORDER_ENDPOINT.replace("/ajax/","/");
+// Photos: shrink each one in the browser so uploads stay small.
 async function shrink(file){
   try{
     const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(file); });
@@ -1075,19 +1063,39 @@ $("dPhotos").addEventListener("change", async e=>{
   $("photoLabel").textContent = files.length ? `📸 ${files.length} photo${files.length>1?"s":""} added — tap to change` : "Tap to add photos of your room (up to 3)";
   if (files.length) confetti(30,["#8fd3c4","#a8d5a2","#f6d06f"]);
 });
-$("decorForm").addEventListener("submit", e=>{
+const fileToDataURL = f => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
+$("decorForm").addEventListener("submit", async e=>{
+  e.preventDefault();
   const what=$("dWhat").value.trim() || $("dCustom").value.trim() || roomPats.length || picked.size, nm=$("dName").value.trim(), ct=$("dContact").value.trim();
   $("decorErr").textContent="";
-  if (!what || nm.split(/\s+/).length<2 || !ct){ e.preventDefault(); $("decorErr").textContent="Tell us a little about what you want, plus your first and last name and a phone or email."; return; }
+  if (!what || nm.split(/\s+/).length<2 || !ct){ $("decorErr").textContent="Tell us a little about what you want, plus your first and last name and a phone or email."; return; }
   const no = orderNo().replace("RR","ROOM");
-  $("dNo").value = no;
   const isPlan = (document.querySelector('input[name="Request type"]:checked')||{}).value?.startsWith("Room Makeover Plan");
-  $("dSubject").value = isPlan ? `📋 Room Makeover Plan ${no} — $25` : `🪴 Room decor request ${no} — NEEDS QUOTE`;
-  $("dStatus").value = isPlan ? "ROOM PLAN — $25, cash or check when delivered (mood board + sketch + shopping list)" : "NEEDS QUOTE (sketch it, then send a price)";
-  $("dVibes").value = [...picked].join(", ") || "(none picked)";
-  $("dNext").value = location.origin + location.pathname + "?room=sent#decor";
-  e.target.action = DECOR_ACTION;
-  const btn=$("decorBtn"); btn.textContent="Sending… ✨";
+  const btn=$("decorBtn"); btn.disabled=true; btn.textContent="Sending… ✨";
+  try{
+    const photos = await Promise.all([...$("dPhotos").files].slice(0,3).map(async f=>({type:f.type||"image/jpeg", data: await fileToDataURL(f)})));
+    const sport = $("dSport").value.trim(), custom = $("dCustom").value.trim();
+    await send({
+      subject: isPlan ? `📋 Room Makeover Plan ${no} — $25` : `🪴 Room decor request ${no} — NEEDS QUOTE`,
+      orderNo: no, type: isPlan ? "Room Makeover Plan ($25)" : "Custom room decor (needs quote)",
+      customer: nm, contact: ct, total: isPlan ? "$25.00" : "Needs quote", friendsPrice: isPlan ? "$22.50" : "",
+      pay: isPlan ? "Cash or check when delivered" : "",
+      details: [
+        isPlan ? "ROOM PLAN — make a mood board, a sketch and a shopping list." : "NEEDS QUOTE — sketch it, then send a price.",
+        "Styles: " + ([...picked].join(", ") || "(none picked)"),
+        sport ? "Sport or team: " + sport : "",
+        "Patterns: " + ($("dPatterns").value || "(none)"),
+        "Room: " + $("dRoom").value, "Colors: " + ($("dColors").value.trim() || "(not given)"),
+        $("dWhat").value.trim() ? "What they want: " + $("dWhat").value.trim() : "",
+        custom ? "Dream room (their words): " + custom : "",
+        photos.length ? photos.length + " room photo(s) attached" : "No photos"
+      ].filter(Boolean).join("\n"),
+      photos
+    });
+    $("decorForm").querySelectorAll(":scope > *:not(#decorDone)").forEach(x=>x.style.display="none");
+    $("decorDone").style.display="block"; confetti(140);
+  }catch(err){ $("decorErr").textContent="Hmm, that didn't send. Check your internet and try again. 💛"; console.error(err); }
+  finally{ btn.disabled=false; btn.textContent="Send my room idea ✨"; }
 });
 if (new URLSearchParams(location.search).get("room")==="sent"){
   $("decorForm").querySelectorAll(":scope > *:not(#decorDone)").forEach(x=>x.style.display="none");
