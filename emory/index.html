@@ -13,7 +13,7 @@
 <style>
 :root{
   --pink:#f4a6c0; --mint:#8fd3c4; --sun:#f6d06f; --lav:#b9a4e8; --navy:#2f5d8a;
-  --ink:#3a2f4a; --soft:#7a6c8c; --bg:#fff8fb; --card:#ffffff; --line:#f1e3ec;
+  --ink:#3a2f4a; --soft:#7a6c8c; --bg:#ffffff; --card:#ffffff; --line:#f1e3ec;
   --hot:#e8628f; --radius:22px;
 }
 *{box-sizing:border-box}
@@ -49,6 +49,9 @@ main,header,footer{position:relative;z-index:1}
 .hero h1 .rainbow{background:linear-gradient(90deg,var(--hot),#b07be0,#3fb3a0,#e0a72a);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{font-size:18px;color:var(--soft);margin:0 auto 22px;max-width:520px}
 .hero-ring{width:200px;height:200px;margin:0 auto 18px;animation:spin 30s linear infinite}
+.hero-room{width:min(320px,90%);height:auto;display:block;margin:0 auto 18px;filter:drop-shadow(0 12px 24px rgba(120,80,120,.15))}
+.hero-room .lamp{animation:glow 3s ease-in-out infinite}
+@keyframes glow{50%{opacity:.55}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .btn{border:0;cursor:pointer;font:800 16px Nunito;padding:15px 22px;border-radius:999px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .15s}
@@ -271,26 +274,112 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
 
 <main id="top">
   <section class="hero wrap">
-    <svg class="hero-ring" id="heroRing" viewBox="0 0 200 200" aria-hidden="true"></svg>
+    <svg class="hero-room" id="heroRoom" viewBox="0 0 320 220" aria-hidden="true"></svg>
     <h1>Room Redesign<br><span class="rainbow">&amp; Style</span></h1>
-    <p>Handmade bracelets you design yourself, plus custom room decor made just for your space. ✨</p>
+    <p>Custom room makeovers and decor, designed just for you. Gothic, sporty, cozy, beachy… any style is welcome. ✨</p>
     <div class="btns">
-      <a class="btn main" href="#design">💖 Design a bracelet</a>
-      <a class="btn alt" href="#decor">🪴 Redo my room</a>
+      <a class="btn main" href="#decor">🛋️ Design my room</a>
+      <a class="btn alt" href="#design">📿 Matching bracelets</a>
     </div>
     <div class="chips-row">
-      <span class="pill">📿 Bracelets from $2</span>
-      <span class="pill">👯 Friendship pairs $5</span>
-      <span class="pill">🏷️ Logo tag on every piece</span>
+      <span class="pill">🎨 16 room styles</span>
+      <span class="pill">🐆 Pick your patterns</span>
+      <span class="pill">📸 Send a photo of your room</span>
+      <span class="pill">✏️ Sketch + price first</span>
       <span class="pill">💵 Pay cash or check</span>
+    </div>
+  </section>
+
+  <!-- DECOR -->
+  <section id="decor" class="wrap">
+    <div class="sec-title">
+      <h2>Design your dream room 🛋️</h2>
+      <p>Pick your style and patterns, send a photo, and the designer sends you a sketch and a price first.</p>
+    </div>
+    <form class="card" id="decorForm" method="POST" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="_subject" id="dSubject" value="Room decor request — NEEDS QUOTE">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_template" value="box">
+      <input type="hidden" name="_next" id="dNext" value="">
+      <input type="hidden" name="Request #" id="dNo" value="">
+      <input type="hidden" name="Status" value="NEEDS QUOTE (sketch it, then send a price)">
+      <input type="hidden" name="Vibes" id="dVibes" value="">
+      <input type="hidden" name="Patterns" id="dPatterns" value="">
+      <label class="f">Pick your room style (as many as you like)</label>
+      <div class="vibes" id="vibes"></div>
+      <div class="sub-box" id="sportBox" style="display:none">
+        <label class="f" for="dSport" style="margin-top:0">⚽ What sport or team?</label>
+        <input type="text" id="dSport" name="Sport or team" placeholder="e.g. soccer, Yankees, gymnastics">
+      </div>
+      <button type="button" class="custom-btn" id="customBtn">✏️ Custom: write my own dream room</button>
+      <div class="sub-box" id="customBox" style="display:none">
+        <label class="f" for="dCustom" style="margin-top:0">Describe exactly what you want your room to look like</label>
+        <textarea id="dCustom" name="Dream room (in their own words)" placeholder="e.g. dark purple walls, fairy lights over my bed, a cozy reading corner with a bean bag, and posters of my favorite band…" style="min-height:120px"></textarea>
+      </div>
+
+      <label class="f">🎨 Patterns</label>
+      <p class="hint" style="margin-top:-2px">Tap a pattern, pick its colors, then add it to your room.</p>
+      <div class="pat-grid" id="patGrid"></div>
+      <div class="pat-preview" id="patPreview"></div>
+      <div class="hint" style="font-weight:800;color:var(--ink)">Main color</div>
+      <div class="color-row" id="patC1"></div>
+      <div class="hint" style="font-weight:800;color:var(--ink)">Second color</div>
+      <div class="color-row" id="patC2"></div>
+      <button type="button" class="btn alt full" id="addPat" style="margin-top:8px">➕ Add this pattern to my room</button>
+      <div class="picked-pats" id="pickedPats"></div>
+
+      <label class="f">📸 Show us your room</label>
+      <label class="photo-drop" id="photoDrop">
+        <input type="file" id="dPhotos" name="attachment" accept="image/*" multiple>
+        <span id="photoLabel">Tap to add photos of your room (up to 3)</span>
+      </label>
+      <div class="thumbs" id="thumbs"></div>
+      <p class="hint">Snap the spot you want redone so the designer can see what it looks like now.</p>
+
+      <label class="f" for="dWhat">What would you like made or redone?</label>
+      <textarea id="dWhat" name="What they want" placeholder="e.g. my desk and shelf, wall art, something for my bed area… anything goes!"></textarea>
+
+      <label class="f" for="dRoom">Which room or spot?</label>
+      <select id="dRoom" name="Room">
+        <option>Bedroom</option><option>Desk or study spot</option><option>Shelf</option><option>Playroom</option><option>Living room</option><option>Other</option>
+      </select>
+
+      <label class="f" for="dColors">Colors you love</label>
+      <input type="text" id="dColors" name="Colors" placeholder="e.g. sage green and cream, or 'surprise me'">
+
+      <label class="f" for="dName">Your name</label>
+      <input type="text" id="dName" name="Customer" autocomplete="name" placeholder="First name is fine">
+      <label class="f" for="dContact">Phone or email (so we can send your sketch and price)</label>
+      <input type="text" id="dContact" name="Phone or email" autocomplete="email" placeholder="555-555-5555 or you@email.com">
+
+      <div style="height:16px"></div>
+      <button class="btn main full" type="submit" id="decorBtn">Send my room idea ✨</button>
+      <div class="err" id="decorErr"></div>
+      <div class="done" id="decorDone" style="display:none">
+        <div class="big">🎉</div>
+        <h3 class="fun">Got it! The designer is on it.</h3>
+        <p>We'll reach out with a sketch and a price before anything is made.</p>
+      </div>
+    </form>
+  </section>
+  <!-- IDEAS -->
+  <section class="wrap">
+    <div class="sec-title"><h2>How it works 💫</h2><p>From idea to finished room.</p></div>
+    <div class="ideas">
+      <div class="idea" style="background:#fde3ec"><div class="big">🎨</div><h3>1. Pick your style</h3><p>Gothic, sporty, cottagecore, Y2K… or write your own dream room.</p></div>
+      <div class="idea" style="background:#e6f6f2"><div class="big">📸</div><h3>2. Show us your room</h3><p>Send a photo so the designer can see the space as it is now.</p></div>
+      <div class="idea" style="background:#efe9fb"><div class="big">✏️</div><h3>3. Get a sketch + price</h3><p>The designer sketches your room and sends a price before anything gets made.</p></div>
+      <div class="idea" style="background:#fdf3d7"><div class="big">🐆</div><h3>Patterns your way</h3><p>Stripes, polka dots, leopard, plaid and more, in any colors you want.</p></div>
+      <div class="idea" style="background:#e3eef8"><div class="big">✨</div><h3>Before &amp; after</h3><p>Desks, shelves, walls, beds. Any corner can get a glow-up.</p></div>
+      <div class="idea" style="background:#e8f4e3"><div class="big">📿</div><h3>Matching bracelet</h3><p>Add a handmade bracelet in your new room colors.</p></div>
     </div>
   </section>
 
   <!-- BUILDER -->
   <section id="design" class="wrap">
     <div class="sec-title">
-      <h2>Design your own bracelet 🎨</h2>
-      <p>Pick your style and colors, and watch it come to life.</p>
+      <h2>Matching bracelets 📿</h2>
+      <p>Design a bracelet to match your room. From $2.</p>
     </div>
     <div class="builder">
       <div class="card preview-card">
@@ -372,91 +461,6 @@ html[data-look=sporty] :is(.opt.on,.radio label:has(input:checked)){background:#
     </div>
   </section>
 
-  <!-- IDEAS -->
-  <section class="wrap">
-    <div class="sec-title"><h2>Fan favorites 💫</h2><p>Ideas straight from the designer.</p></div>
-    <div class="ideas">
-      <div class="idea" style="background:#fde3ec"><div class="big">🛏️</div><h3>Matches your room</h3><p>Tell us your room colors and we'll make a bracelet that goes with it.</p></div>
-      <div class="idea" style="background:#e6f6f2"><div class="big">🔐</div><h3>Secret message</h3><p>A hidden word in color code. Only someone with the decoder card can read it.</p></div>
-      <div class="idea" style="background:#efe9fb"><div class="big">👯</div><h3>Better together</h3><p>Friendship pairs that complete each other. One for you, one for your bestie.</p></div>
-      <div class="idea" style="background:#fdf3d7"><div class="big">🎂</div><h3>Birthday colors</h3><p>A set in your birthstone color. Makes a great gift.</p></div>
-      <div class="idea" style="background:#e3eef8"><div class="big">🏷️</div><h3>Logo tag</h3><p>Every piece comes with its own little tag.</p></div>
-      <div class="idea" style="background:#e8f4e3"><div class="big">🪴</div><h3>Room makeovers</h3><p>From bracelets to whole rooms. All kinds of decor, all welcome.</p></div>
-    </div>
-  </section>
-
-  <!-- DECOR -->
-  <section id="decor" class="wrap">
-    <div class="sec-title">
-      <h2>Redesign my room 🪴</h2>
-      <p>Tell us what you want. The designer sketches it, makes it, and sends you a price first.</p>
-    </div>
-    <form class="card" id="decorForm" method="POST" enctype="multipart/form-data" novalidate>
-      <input type="hidden" name="_subject" id="dSubject" value="Room decor request — NEEDS QUOTE">
-      <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_template" value="box">
-      <input type="hidden" name="_next" id="dNext" value="">
-      <input type="hidden" name="Request #" id="dNo" value="">
-      <input type="hidden" name="Status" value="NEEDS QUOTE (sketch it, then send a price)">
-      <input type="hidden" name="Vibes" id="dVibes" value="">
-      <input type="hidden" name="Patterns" id="dPatterns" value="">
-      <label class="f">Pick your room style (as many as you like)</label>
-      <div class="vibes" id="vibes"></div>
-      <div class="sub-box" id="sportBox" style="display:none">
-        <label class="f" for="dSport" style="margin-top:0">⚽ What sport or team?</label>
-        <input type="text" id="dSport" name="Sport or team" placeholder="e.g. soccer, Yankees, gymnastics">
-      </div>
-      <button type="button" class="custom-btn" id="customBtn">✏️ Custom: write my own dream room</button>
-      <div class="sub-box" id="customBox" style="display:none">
-        <label class="f" for="dCustom" style="margin-top:0">Describe exactly what you want your room to look like</label>
-        <textarea id="dCustom" name="Dream room (in their own words)" placeholder="e.g. dark purple walls, fairy lights over my bed, a cozy reading corner with a bean bag, and posters of my favorite band…" style="min-height:120px"></textarea>
-      </div>
-
-      <label class="f">🎨 Patterns</label>
-      <p class="hint" style="margin-top:-2px">Tap a pattern, pick its colors, then add it to your room.</p>
-      <div class="pat-grid" id="patGrid"></div>
-      <div class="pat-preview" id="patPreview"></div>
-      <div class="hint" style="font-weight:800;color:var(--ink)">Main color</div>
-      <div class="color-row" id="patC1"></div>
-      <div class="hint" style="font-weight:800;color:var(--ink)">Second color</div>
-      <div class="color-row" id="patC2"></div>
-      <button type="button" class="btn alt full" id="addPat" style="margin-top:8px">➕ Add this pattern to my room</button>
-      <div class="picked-pats" id="pickedPats"></div>
-
-      <label class="f">📸 Show us your room</label>
-      <label class="photo-drop" id="photoDrop">
-        <input type="file" id="dPhotos" name="attachment" accept="image/*" multiple>
-        <span id="photoLabel">Tap to add photos of your room (up to 3)</span>
-      </label>
-      <div class="thumbs" id="thumbs"></div>
-      <p class="hint">Snap the spot you want redone so the designer can see what it looks like now.</p>
-
-      <label class="f" for="dWhat">What would you like made or redone?</label>
-      <textarea id="dWhat" name="What they want" placeholder="e.g. my desk and shelf, wall art, something for my bed area… anything goes!"></textarea>
-
-      <label class="f" for="dRoom">Which room or spot?</label>
-      <select id="dRoom" name="Room">
-        <option>Bedroom</option><option>Desk or study spot</option><option>Shelf</option><option>Playroom</option><option>Living room</option><option>Other</option>
-      </select>
-
-      <label class="f" for="dColors">Colors you love</label>
-      <input type="text" id="dColors" name="Colors" placeholder="e.g. sage green and cream, or 'surprise me'">
-
-      <label class="f" for="dName">Your name</label>
-      <input type="text" id="dName" name="Customer" autocomplete="name" placeholder="First name is fine">
-      <label class="f" for="dContact">Phone or email (so we can send your sketch and price)</label>
-      <input type="text" id="dContact" name="Phone or email" autocomplete="email" placeholder="555-555-5555 or you@email.com">
-
-      <div style="height:16px"></div>
-      <button class="btn main full" type="submit" id="decorBtn">Send my room idea ✨</button>
-      <div class="err" id="decorErr"></div>
-      <div class="done" id="decorDone" style="display:none">
-        <div class="big">🎉</div>
-        <h3 class="fun">Got it! The designer is on it.</h3>
-        <p>We'll reach out with a sketch and a price before anything is made.</p>
-      </div>
-    </form>
-  </section>
 </main>
 
 <footer>
@@ -924,8 +928,28 @@ const LK = LOOKS[LOOK||"original"];
   const cols=LK.bg; let h="";
   for(let i=0;i<14;i++){ const s=10+Math.random()*22; h+=`<span style="width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:${cols[i%5]};animation-delay:${-Math.random()*14}s;animation-duration:${10+Math.random()*10}s"></span>`; }
   $("bgBeads").innerHTML=h;
-  const demo = {style:"Beaded", colors:LK.ring, size:"L", letters:"", charms:0};
-  $("heroRing").innerHTML = braceletSVG(demo,200);
+  const [a,b,c,d] = LK.ring;
+  $("heroRoom").innerHTML = `
+    <rect x="0" y="0" width="320" height="220" rx="24" fill="${b==="#ffffff"?"#f6f1f8":b}" opacity=".35"/>
+    <rect x="0" y="160" width="320" height="60" rx="0" fill="${d}" opacity=".35"/>
+    <rect x="22" y="26" width="86" height="70" rx="8" fill="#fff" stroke="${a}" stroke-width="5"/>
+    <line x1="65" y1="26" x2="65" y2="96" stroke="${a}" stroke-width="4"/><line x1="22" y1="61" x2="108" y2="61" stroke="${a}" stroke-width="4"/>
+    <circle cx="90" cy="44" r="8" fill="#f6d06f" opacity=".8"/>
+    <path d="M10 22 Q60 34 118 22" stroke="${c}" stroke-width="2" fill="none"/>
+    ${[18,36,54,72,90,108].map((x,i)=>`<circle class="lamp" cx="${x}" cy="${26+Math.sin(i)*3}" r="3.5" fill="${["#f6d06f","#f4a6c0","#8fd3c4"][i%3]}" style="animation-delay:${i*.4}s"/>`).join("")}
+    <rect x="150" y="34" width="56" height="44" rx="4" fill="${c}" opacity=".9"/><rect x="156" y="40" width="44" height="32" rx="2" fill="#fff" opacity=".6"/>
+    <path d="M160 66 l10-12 8 8 6-6 10 10z" fill="${a}" opacity=".7"/>
+    <rect x="222" y="44" width="76" height="7" rx="3" fill="#8b5e3c"/>
+    <rect x="228" y="28" width="9" height="16" rx="2" fill="${a}"/><rect x="239" y="24" width="9" height="20" rx="2" fill="${c}"/><rect x="250" y="31" width="9" height="13" rx="2" fill="${d}"/>
+    <path d="M280 44 q-6-16 4-18 q8 4 0 18z" fill="#3f7d4e"/><rect x="276" y="36" width="14" height="9" rx="2" fill="#e8b98a"/>
+    <rect x="150" y="112" width="150" height="48" rx="12" fill="${a}"/>
+    <rect x="150" y="96" width="40" height="64" rx="10" fill="${a}" opacity=".85"/>
+    <rect x="196" y="104" width="38" height="20" rx="8" fill="#fff"/><rect x="238" y="104" width="38" height="20" rx="8" fill="${c}"/>
+    <rect x="150" y="128" width="150" height="20" rx="6" fill="${d}"/>
+    <ellipse cx="90" cy="190" rx="70" ry="16" fill="${c}" opacity=".7"/><ellipse cx="90" cy="190" rx="48" ry="10" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="6 5"/>
+    <rect x="40" y="126" width="8" height="40" fill="#8b5e3c"/><path d="M44 126 q-22-10-14-30 q18 4 14 30 q4-26 22-28 q4 20-22 28z" fill="#3f7d4e"/>
+    <rect x="34" y="160" width="20" height="14" rx="3" fill="${d}"/>
+    <path d="M118 120 l10-22 10 22z" fill="${c}" class="lamp"/><rect x="126" y="120" width="4" height="40" fill="#8b5e3c"/>`;
 })();
 
 buildOpts(); render(true); updateCount();
