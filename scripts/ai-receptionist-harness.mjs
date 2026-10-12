@@ -31,6 +31,8 @@ const S = [
     expect: {} },
   { name: "lawn-care-site", lines: ["Do you do regular lawn care, like mowing?", "Do you take credit cards?", "Can you send a certificate of insurance to my HOA?", "Okay, thanks."],
     expect: { saysAny: /(don't|do not|not something we|isn't something)/i, mentions: /(card|certificate)/i } },
+  { name: "save-tree", lines: ["I have a big old oak with a split trunk, can you save it instead of cutting it down?", "Do you also clean moss off roofs?", "Okay, I'm Ann Lee, 9 Elm Street, Croton-on-Hudson. No rush.", "Yes this number."],
+    expect: { saysAny: /cabl|brac/i, mentions: /soft wash|low.pressure|roof/i, disposition: "lead" } },
   { name: "tree-on-house", lines: ["Hi, a big limb fell on my roof in the storm last night, it went through the gutter.", "Nobody's hurt. It's Dan Moore, 88 Lakeview Drive, Putnam Valley."],
     expect: { disposition: "transfer" } },
 ];
