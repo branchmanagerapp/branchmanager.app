@@ -33,6 +33,10 @@ const S = [
     expect: { saysAny: /(don't|do not|not something we|isn't something)/i, mentions: /(card|certificate)/i } },
   { name: "save-tree", lines: ["I have a big old oak with a split trunk, can you save it instead of cutting it down?", "Do you also clean moss off roofs?", "Okay, I'm Ann Lee, 9 Elm Street, Croton-on-Hudson. No rush.", "Yes this number."],
     expect: { saysAny: /cabl|brac/i, mentions: /soft wash|low.pressure|roof/i, disposition: "lead" } },
+  { name: "schedule-live", debugSchedule: true, lines: ["When could Doug come out to look at a tree?", "Could he come Thursday at 2?", "Okay. I'm Rob Diaz, 3 Pine Court, Mohegan Lake, one leaning maple. Not an emergency.", "Yes, this number."],
+    expect: { noBooking: true, disposition: "lead" } },
+  { name: "snow", lines: ["Do you guys do snow removal in the winter?", "Okay, thanks, I'll call back in November."],
+    expect: { saysAny: /yes|we do/i } },
   { name: "tree-on-house", lines: ["Hi, a big limb fell on my roof in the storm last night, it went through the gutter.", "Nobody's hurt. It's Dan Moore, 88 Lakeview Drive, Putnam Valley."],
     expect: { disposition: "transfer" } },
 ];
@@ -41,6 +45,7 @@ function run(sc) {
   return new Promise((resolve) => {
     const ws = new WebSocket(URL);
     const turns = [];   // {caller, ai, firstTokenMs, totalMs}
+    let r_schedule = null;
     let i = 0, buf = "", t0 = 0, tFirst = 0, ended = false, result = null;
     const timer = setTimeout(() => { try { ws.close(); } catch {} resolve({ sc, turns, result, error: "timeout" }); }, 120000);
     const next = () => {
@@ -57,7 +62,7 @@ function run(sc) {
     };
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: "setup", callSid: "CAharness" + Date.now(), from: "+15555550123", to: "+19143353417",
-        customParameters: { greeting: GREETING, test: "1", harness: "1", client: "", ...(sc.record !== undefined ? { record_override: sc.record } : { record_override: "" }) } }));
+        customParameters: { greeting: GREETING, test: "1", harness: "1", client: "", ...(sc.debugSchedule ? { debug_schedule: "1" } : {}), ...(sc.record !== undefined ? { record_override: sc.record } : { record_override: "" }) } }));
       setTimeout(next, 300);
     };
     ws.onmessage = (ev) => {
@@ -73,10 +78,12 @@ function run(sc) {
       } else if (m.type === "end") {
         ended = true;
         try { turns[turns.length - 1].handoff = m.handoffData; } catch {}
+      } else if (m.type === "harness_schedule") {
+        r_schedule = m.schedule;
       } else if (m.type === "harness_result") {
         result = m; clearTimeout(timer);
         try { ws.close(); } catch {}
-        resolve({ sc, turns, result });
+        resolve({ sc, turns, result, schedule: r_schedule });
       }
     };
     ws.onerror = (e) => { clearTimeout(timer); resolve({ sc, turns, result, error: String(e.message || e.type) }); };
@@ -97,6 +104,8 @@ function grade(r) {
   if (e.summaryNonEmpty && !(res.summary || "").trim()) fails.push("empty summary");
   if (e.noWrongHours && /\b(7|6|9|5|4)\s?(am|pm|a\.m\.|p\.m\.)/i.test(ai)) fails.push("WRONG HOURS");
   if (r.turns.some((t) => !t.ai && !t.handoff)) fails.push("a turn got no reply");
+  if (e.noBooking && /(you're booked|you are booked|i've booked|i have you (down )?for (thursday|monday|tuesday|wednesday|friday|saturday|sunday)|confirmed for)/i.test(ai)) fails.push("PROMISED A BOOKING");
+  if (r.sc.debugSchedule && !r.schedule) fails.push("schedule NOT read from Jobber");
   if (r.turns.some((t) => t.ai.split(/\s+/).length > 45)) fails.push("a reply was too long (>45 words)");
   return fails;
 }
@@ -110,6 +119,7 @@ for (const r of results) {
   if (!f.length) pass++;
   console.log(`\n${f.length ? "❌" : "✅"} ${r.sc.name}  ${f.join(" | ")}`);
   for (const t of r.turns) console.log(`  CALLER: ${t.caller}\n  AI (${t.firstTokenMs ?? "-"}ms first word): ${t.ai}${t.handoff ? "  [END " + t.handoff + "]" : ""}`);
+  if (r.schedule) console.log("  SCHEDULE SEEN BY AI:\n    " + r.schedule.split("\n").join("\n    "));
   console.log(`  → ${r.result?.disposition} | ${r.result?.summary} | lead=${JSON.stringify(r.result?.lead || {})}`);
 }
 const lat = results.flatMap((r) => r.turns.map((t) => t.firstTokenMs).filter(Boolean)).sort((a, b) => a - b);

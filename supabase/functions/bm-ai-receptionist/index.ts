@@ -29,6 +29,7 @@
 // Deploy: supabase functions deploy bm-ai-receptionist --no-verify-jwt
 //   (Twilio can't send a Supabase JWT; the ?k= relay key is checked instead.)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.112.4";
+import { scheduleSummary } from "../_shared/jobber-schedule.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -56,6 +57,7 @@ How to talk:
 - This is a phone call. One or two short sentences per reply, under 30 words. No lists, no symbols, no emoji, no brackets or notes; everything you write is read aloud.
 - Sound like a friendly, competent person from the office. Use their first name once you have it.
 - The caller already called our number. Never tell them to call or text us; anything that needs Doug or Catherine (insurance certificates, payment questions, paperwork) becomes a message you take for them.
+- Timing questions ("when can you come out?", "how booked are you?"): use the SCHEDULE. Speak only in general terms, like "Doug has openings for estimates later this week" or "next week is filling up". Never promise or book a day or time; say Doug will confirm when he calls. Never mention other customers or what the other jobs are. A day marked "nothing booked yet" is likely open but not guaranteed.
 - If they ask whether a tree can be saved instead of removed, say that we often can with cabling and bracing, and Doug will tell them honestly at the free estimate.
 - Never give prices or quotes. If asked: "Doug gives every estimate in person, and it's free. He'll call you back to set a time."
 - Never promise a specific time or date. Say Doug will call back as soon as he's off the job.
@@ -78,7 +80,7 @@ const FACTS = `COMPANY FACTS (from our website):
 - Second Nature Tree Service, based in Peekskill, NY. Locally owned; both owners are on every job. 10+ years in business. Licensed and insured: Westchester license WC-32079, Putnam license PC-50644. Rated 5.0 on Google with 70+ reviews.
 - Free estimates, always. Main number (914) 391-5233; customers can call or text it.
 - Business hours: 8 AM to 8 PM, seven days a week (Doug, Oct 11 2026). We respond to inquiries within 2 hours during business hours. 24/7 emergency response for storm damage and fallen trees.
-- Services: tree removal (any size, residential and commercial, cleanup included); pruning and trimming (crown thinning, crown raising, deadwood removal, structural pruning, vista pruning); stump grinding (6 to 12 inches below grade; chips fill the hole, or we haul chips and backfill with topsoil on request); emergency tree service; land and lot clearing; crane-assisted removal for very large trees or tight access; tree cabling and bracing to save structurally weak trees; roof soft washing (low pressure, safe for slate, tile, cedar and asphalt).
+- Services: tree removal (any size, residential and commercial, cleanup included); pruning and trimming (crown thinning, crown raising, deadwood removal, structural pruning, vista pruning); stump grinding (6 to 12 inches below grade; chips fill the hole, or we haul chips and backfill with topsoil on request); emergency tree service; land and lot clearing; crane-assisted removal for very large trees or tight access; tree cabling and bracing to save structurally weak trees; snow removal (Doug, Oct 12 2026); roof soft washing (low pressure, safe for slate, tile, cedar and asphalt).
 - Near power lines we coordinate with the utility company.
 - Service area: Northern Westchester, Putnam County and Southern Dutchess County. Westchester: Peekskill, Yorktown and Yorktown Heights, Cortlandt Manor, Croton-on-Hudson, Briarcliff Manor, Chappaqua, Ossining, Buchanan, Mount Kisco, Bedford, Katonah, Somers, Pleasantville, Pound Ridge, Lewisboro, North Salem, Armonk, New Castle, Mohegan Lake, Shrub Oak, Verplanck, Mount Pleasant, Millwood, Lake Peekskill, Hawthorne, Thornwood, Scarborough, Cross River, South Salem, Waccabuc, Goldens Bridge, Croton Falls, Purdys. Putnam: Philipstown, Garrison, Cold Spring, Putnam Valley, Mahopac, Carmel, Brewster, Patterson, Nelsonville. Southern Dutchess: Beacon, Fishkill, East Fishkill, Wappingers Falls, Pawling, Dover. Anywhere else in those counties: "we likely cover you; Doug will confirm."
 - Pruning timing (from our pruning page): late winter, January to March, is ideal for most deciduous trees.`;
@@ -165,7 +167,7 @@ Deno.serve((req) => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const call = {
-    callSid: "", from: "", to: "", test: false, harness: false, clientName: "", greeting: "", record: "", site: "",
+    callSid: "", from: "", to: "", test: false, harness: false, clientName: "", greeting: "", record: "", site: "", schedule: "",
     history: [] as Msg[],
     transcript: [] as string[],
     outcome: null as null | { kind: "end" | "transfer"; input: any },
@@ -194,10 +196,15 @@ Deno.serve((req) => {
       call.clientName = m.customParameters?.client || "";
       call.greeting = m.customParameters?.greeting || "";
       if (call.greeting) call.transcript.push(`AI: ${call.greeting}`);
-      [call.record, call.site] = await Promise.all([
+      [call.record, call.site, call.schedule] = await Promise.all([
         m.customParameters?.record_override ?? callerRecord(sb, call.from),
         siteFacts(),
+        m.customParameters?.schedule_override ?? scheduleSummary(SNT_TENANT).then((x) => x.text).catch(() => ""),
       ]);
+      if (call.harness && m.customParameters?.debug_schedule === "1") {
+        const sx = await scheduleSummary(SNT_TENANT).catch(() => null);
+        send({ type: "harness_schedule", schedule: call.schedule + "\nLATEST: " + JSON.stringify({ visits: sx?.raw?.latestVisit, estimates: sx?.raw?.latestEst }) });
+      }
       return;
     }
 
@@ -259,6 +266,7 @@ Deno.serve((req) => {
     inBracket = false;
     const ctx = `\n\n${call.site ? call.site + "\n\nIf the website pages and the facts below disagree, the website wins. Never read out the EIN, DOT or DOS numbers unless asked for proof of registration.\n\n" : ""}${FACTS}` +
       (call.greeting ? `\n\nYou already greeted the caller with: "${call.greeting}"` : "") +
+      `\n\n${call.schedule || "SCHEDULE: not available right now. If asked about timing, say Doug will check the calendar when he calls back."}` +
       `\n\nCALLER RECORD: ${call.record || "No match for this phone number. Treat as a new caller."}` +
       `\n\nToday is ${new Date().toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", year: "numeric" })}.`;
     let text = "";
