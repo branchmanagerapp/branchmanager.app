@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Tree Cash Flow</title>
 <style>
-:root{--green:#1f7a43;--green-d:#0d3a20;--ink:#16201a;--muted:#667;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--red:#c0392b;--amber:#b9770f;--soft-red:#fdecea;--soft-amber:#fff6e5;--soft-green:#eaf6ee}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8efe9;--muted:#9aa5a0;--line:#2a332d;--bg:#111714;--card:#1a221d;--green-d:#8fd6a8;--soft-red:#3a1f1c;--soft-amber:#3a2f18;--soft-green:#173022}}
+:root{--green:#1f7a43;--green-d:#0d3a20;--ink:#16201a;--muted:#667;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--red:#c0392b;--amber:#b9770f;--soft-red:#fdecea;--soft-amber:#fff6e5;--soft-green:#eaf6ee;--past:#f7f8f7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8efe9;--muted:#9aa5a0;--line:#2a332d;--bg:#111714;--card:#1a221d;--green-d:#8fd6a8;--green:#5cc489;--red:#ef7b6e;--soft-red:#3a1f1c;--soft-amber:#3a2f18;--soft-green:#173022;--past:#161d19}}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45;-webkit-font-smoothing:antialiased}
 .wrap{max-width:640px;margin:0 auto;padding:0 16px 40px}
@@ -16,149 +16,132 @@ header h1{margin:0;font-size:21px;font-weight:800}
 header p{margin:4px 0 0;font-size:13px;opacity:.9}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
 h2{font-size:15px;margin:20px 0 6px;color:var(--green-d)}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
-.kpi .n{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
-.kpi .l{font-size:11px;color:var(--muted)}
-.cash label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-.cash input{width:100%;font-size:20px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:none}
-.row .who{font-weight:700;font-size:15px}
-.row .sub{font-size:12px;color:var(--muted)}
-.row .amt{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
-.row .left{font-size:11.5px;font-weight:600;white-space:nowrap}
-.row.short{background:var(--soft-red);margin:0 -16px;padding:10px 16px}
-.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:4px}
-.p-today{background:var(--soft-red);color:var(--red)}.p-soon{background:var(--soft-amber);color:var(--amber)}
-.p-manual{background:var(--soft-amber);color:var(--amber)}
-.ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.kpi .n{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:10px;color:var(--muted);letter-spacing:.2px}
+.ok{color:var(--green)}.bad{color:var(--red)}
 .note{font-size:12.5px;color:var(--muted)}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-td{padding:7px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
-tr.tot td{border-top:2px solid var(--line);border-bottom:none;font-weight:800}
 .reg{padding:4px 10px}
 table.reg-t{font-size:13px;table-layout:fixed}
 table.reg-t th{font-size:10.5px;color:var(--muted);font-weight:700;text-align:left;padding:8px 4px;border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.3px}
-table.reg-t td{padding:9px 4px;vertical-align:top;font-weight:400;text-align:left}
-table.reg-t .c-date{width:52px;white-space:nowrap;font-variant-numeric:tabular-nums}
-table.reg-t .c-amt,table.reg-t .c-bal{width:78px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-table.reg-t td.c-amt{color:var(--red);font-weight:600}
+table.reg-t td{padding:9px 4px;vertical-align:top;border-bottom:1px solid var(--line)}
+table.reg-t .c-date{width:44px;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.reg-t .c-amt,table.reg-t .c-bal{width:76px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.reg-t td.c-amt.out{color:var(--red);font-weight:600}
+table.reg-t td.c-amt.in{color:var(--green);font-weight:600}
 table.reg-t td.c-bal{font-weight:800}
 table.reg-t .desc-sub{display:block;font-size:11px;color:var(--muted)}
-table.reg-t tr.start td{background:var(--soft-green);font-weight:700}
+table.reg-t tr.past td{background:var(--past);color:var(--muted)}
+table.reg-t tr.past td.c-bal{font-weight:600}
+table.reg-t tr.sep td{padding:4px;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;background:var(--bg)}
+table.reg-t tr.start td{background:var(--soft-green);font-weight:700;border-top:2px solid var(--green)}
 table.reg-t tr.neg td{background:var(--soft-red)}
 table.reg-t tr.soon td.c-date{color:var(--amber);font-weight:700}
+table.mon td{padding:7px 0;border-bottom:1px solid var(--line)}table.mon td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+table.mon tr.tot td{border-top:2px solid var(--line);border-bottom:none;font-weight:800}
 footer{text-align:center;font-size:11.5px;color:var(--muted);padding:12px 16px 30px}
 </style>
 </head>
 <body>
 <header>
   <h1>Tree Cash Flow</h1>
-  <p id="today">Second Nature Tree · what's due and when</p>
+  <p id="today">Second Nature Tree · checking 0606</p>
 </header>
 <div class="wrap">
 
-  <div class="card cash">
-    <label for="cash">Cash in checking 0606 right now ($)</label>
-    <input id="cash" type="number" inputmode="decimal" placeholder="Type today's balance">
-    <div class="note" id="cashnote" style="margin-top:6px">Type it once; this phone remembers it. The bank-feed balance isn't connected yet.</div>
-  </div>
-
   <div class="kpis">
-    <div class="kpi"><div class="n" id="k30">—</div><div class="l">DUE NEXT 30 DAYS</div></div>
-    <div class="kpi"><div class="n" id="kleft">—</div><div class="l">LEFT AFTER THOSE</div></div>
+    <div class="kpi"><div class="n" id="kbal">—</div><div class="l">IN CHECKING NOW</div></div>
+    <div class="kpi"><div class="n" id="k30">—</div><div class="l">BILLS NEXT 30 DAYS</div></div>
+    <div class="kpi"><div class="n" id="kleft">—</div><div class="l">LEFT AFTER</div></div>
   </div>
+  <p class="note" id="asof" style="margin:8px 2px 0"></p>
 
-  <h2>Checkbook — next 45 days</h2>
-  <div class="card reg"><table class="reg-t"><thead><tr><th class="c-date">Date</th><th>Description</th><th class="c-amt">Charge</th><th class="c-bal">Balance</th></tr></thead><tbody id="list"></tbody></table></div>
+  <h2>Checkbook</h2>
+  <div class="card reg"><table class="reg-t"><thead><tr><th class="c-date">Date</th><th>Description</th><th class="c-amt">Amount</th><th class="c-bal">Balance</th></tr></thead><tbody id="list"></tbody></table></div>
+  <p class="note" style="margin:0 2px">Gray rows = what already went through the bank (last 2 weeks). Below the green line = bills still coming. Only bills are counted going forward, not customer payments, so it's the worst case.</p>
 
   <h2>Every month</h2>
-  <div class="card"><table id="monthly"></table>
-    <p class="note" style="margin:10px 0 0">Card 8882 also carries Verizon ~$183 (5th), Intuit $41, State Farm $221.72 (12th), Nextdoor $99 (22nd), plus fuel and parts. Those are inside the card payment, not added twice.</p>
-  </div>
-
-  <h2>Where these numbers come from</h2>
-  <div class="card note">
-    Amounts and due days come from the M&amp;T bank history Jun–Sep 2026 (read 9/30/2026) and the AFCO and Geneva agreements.
-    <b>Less certain:</b> Geneva has been irregular in the bank ($1,787.13 on 7/10, $397.39 on 9/8), so ~$1,114 comes from the agreement. The card payment changes every month, and $4,010 is the September estimate.
-    <b>CADCO $862.47</b> is not counted because it's unconfirmed as a monthly bill.
-    Dates move forward on their own every day; amounts change only when this page is updated.
+  <div class="card"><table class="mon" id="monthly"></table>
+    <p class="note" style="margin:10px 0 0">Amounts are the last real payment from the bank, so they follow any change. The card payment changes every month. AFCO is not on autopay. Pay it by hand. CADCO $862.47 is not counted because it's unconfirmed as a monthly bill.</p>
   </div>
 </div>
 <footer id="foot">Private working page · not linked anywhere</footer>
 
 <script>
-// day = day of month due; checking = paid from checking 0606
-var BILLS = [
-  {who:"Blue Bridge — F-750 bucket truck", amt:1912.56, day:1},
-  {who:"Erie — truck & auto insurance", amt:1114.58, day:1},
-  {who:"Geneva — Intrepid KM100", amt:1114.00, day:5, approx:true},
-  {who:"NYSIF — workers comp", amt:91.00, day:6, approx:true},
-  {who:"Optimum — internet", amt:107.03, day:7},
-  {who:"M&T card 8882 — statement", amt:4010.00, day:17, approx:true},
-  {who:"AFCO — GL insurance", amt:838.66, day:18, manual:true, first:"2026-10-18", count:10},
-  {who:"Chase — Ram 2500", amt:1004.91, day:28}
-];
+var DATA = /*DATA*/{"built": "2026-10-15T15:30", "balance": 3415.98, "last_tx": "2026-10-15", "bills": [{"who": "Blue Bridge \u2014 F-750 bucket truck", "day": 1, "amt": 1912.56, "key": "BLUE BRIDG", "last_paid": "2026-10-01"}, {"who": "Erie \u2014 truck & auto insurance", "day": 1, "amt": 1114.62, "key": "ERIE INS", "last_paid": "2026-10-01"}, {"who": "Geneva \u2014 Intrepid KM100", "day": 6, "amt": 1192.13, "key": "GENEVA CAPITAL", "last_paid": "2026-10-06"}, {"who": "NYSIF \u2014 workers comp", "day": 6, "amt": 91.11, "key": "NYSIF", "last_paid": "2026-10-06"}, {"who": "Optimum \u2014 internet", "day": 8, "amt": 107.68, "key": "OPTIMUM", "last_paid": "2026-10-09"}, {"who": "M&T card 8882", "day": 17, "amt": 4068.96, "key": "8882", "approx": true, "last_paid": "2026-10-15"}, {"who": "AFCO \u2014 GL insurance", "day": 18, "amt": 838.66, "key": "AFCO", "manual": true, "first": "2026-10-18", "count": 10}, {"who": "Chase \u2014 Ram 2500", "day": 28, "amt": 1004.91, "key": "JPMORGAN CHASE", "last_paid": "2026-09-29"}], "recent": [{"d": "2026-10-01", "desc": "WEB XFER FROM CHK 00009872961652", "amt": 1000.0, "pending": false}, {"d": "2026-10-01", "desc": "BLUE BRIDG- 6994 CORP COLL LEASE 155642", "amt": -1912.56, "pending": false}, {"d": "2026-10-01", "desc": "ERIE INS GROUP ERIEXPSPAY Q115130828", "amt": -1114.62, "pending": false}, {"d": "2026-10-02", "desc": "MOBILE DEPOSIT - XXXXXXXXX3571(View)", "amt": 2600.0, "pending": false}, {"d": "2026-10-06", "desc": "GENEVA CAPITAL AUTH PAYME G-8DC796D0F4E34", "amt": -1192.13, "pending": false}, {"d": "2026-10-06", "desc": "NYSIF WEB_PAY 03624578091126", "amt": -91.11, "pending": false}, {"d": "2026-10-06", "desc": "MOBILE DEPOSIT - XXXXXXXXX4260(View)", "amt": 2275.88, "pending": false}, {"d": "2026-10-09", "desc": "OPTIMUM 7803 CABLE PMNT 27443603", "amt": -107.68, "pending": false}, {"d": "2026-10-14", "desc": "JOBBER - BY STRI TRANSFER ST-N8S7L4X2U8X2", "amt": 1747.5, "pending": false}, {"d": "2026-10-15", "desc": "DEPOSIT - DETAIL NOT YET AVAILABLE", "amt": 1999.12, "pending": true}, {"d": "2026-10-15", "desc": "WEB PMT TO XXXXXXXXXXXX8882", "amt": -4068.96, "pending": false}]}/*END*/;
+function money0(n){return (n<0?"−$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US")}
 function money(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function md(d){return (d.getMonth()+1)+"/"+d.getDate()}
-function money0(n){return (n<0?"−$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US")}
+function pd(s){return new Date(s+"T00:00:00")}
+function ord(n){var s=["th","st","nd","rd"],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0])}
+var today=new Date(); today.setHours(0,0,0,0);
+document.getElementById("today").textContent=today.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+
 function dueDates(b, from, to){
-  var out=[], d=new Date(from.getFullYear(), from.getMonth()-1, 1);
-  for(var i=0;i<4;i++){
-    var y=d.getFullYear(), m=d.getMonth()+i, last=new Date(y,m+1,0).getDate();
+  var out=[];
+  for(var i=-1;i<3;i++){
+    var y=from.getFullYear(), m=from.getMonth()+i, last=new Date(y,m+1,0).getDate();
     var dt=new Date(y,m,Math.min(b.day,last));
     if(dt<from||dt>to) continue;
     if(b.first){
-      var f=new Date(b.first+"T00:00:00"); if(dt<f) continue;
+      var f=pd(b.first); if(dt<f) continue;
       var n=(dt.getFullYear()-f.getFullYear())*12+dt.getMonth()-f.getMonth()+1;
       if(n>b.count) continue; dt.payNo=n;
     }
+    // already paid: a matching bank payment within 10 days before (or 3 after) this due date
+    if(b.last_paid){var lp=pd(b.last_paid),diff=(dt-lp)/864e5; if(diff>=-3&&diff<=10) continue;}
     out.push(dt);
   }
   return out;
 }
-var today=new Date(); today.setHours(0,0,0,0);
-document.getElementById("today").textContent=today.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
-var end45=new Date(today); end45.setDate(end45.getDate()+45);
-var end30=new Date(today); end30.setDate(end30.getDate()+30);
-var items=[];
-BILLS.forEach(function(b){dueDates(b,today,end45).forEach(function(dt){items.push({b:b,dt:dt})})});
-items.sort(function(a,c){return a.dt-c.dt});
 
-function render(){
-  var cashv=parseFloat(document.getElementById("cash").value);
-  var hasCash=!isNaN(cashv);
-  var run=hasCash?cashv:null, due30=0;
-  var html='<tr class="start"><td class="c-date">'+md(today)+'</td><td>Balance today</td><td class="c-amt"></td><td class="c-bal">'+(hasCash?money0(cashv):'—')+'</td></tr>';
+if(DATA){
+  var bal=DATA.balance, html="";
+  // past rows: walk backwards from today's balance so each row shows the balance after it
+  var rec=DATA.recent.slice(), after=bal, rows=[];
+  for(var i=rec.length-1;i>=0;i--){rows.unshift({t:rec[i],bal:after});after-=rec[i].amt}
+  if(rows.length) html+='<tr class="sep"><td colspan="4">Already went through</td></tr>';
+  rows.forEach(function(r){
+    var t=r.t;
+    html+='<tr class="past"><td class="c-date">'+md(pd(t.d))+'</td><td>'+t.desc.replace(/\s+/g," ").slice(0,40)+(t.pending?'<span class="desc-sub">pending</span>':'')+'</td><td class="c-amt '+(t.amt<0?'out':'in')+'">'+(t.amt<0?'−':'+')+money0(Math.abs(t.amt))+'</td><td class="c-bal">'+money0(r.bal)+'</td></tr>';
+  });
+  html+='<tr class="start"><td class="c-date">'+md(today)+'</td><td>Balance today</td><td class="c-amt"></td><td class="c-bal '+(bal<0?'bad':'')+'">'+money0(bal)+'</td></tr>';
+
+  var end45=new Date(today); end45.setDate(end45.getDate()+45);
+  var end30=new Date(today); end30.setDate(end30.getDate()+30);
+  var items=[];
+  DATA.bills.forEach(function(b){dueDates(b,today,end45).forEach(function(dt){items.push({b:b,dt:dt})})});
+  items.sort(function(a,c){return a.dt-c.dt});
+  var run=bal, due30=0;
   items.forEach(function(it){
     var days=Math.round((it.dt-today)/864e5);
     if(it.dt<=end30) due30+=it.b.amt;
-    if(hasCash) run-=it.b.amt;
+    run-=it.b.amt;
     var sub=[];
     if(days===0) sub.push("TODAY"); else if(days<=3) sub.push("in "+days+" days");
     if(it.b.manual) sub.push("pay by hand");
     if(it.dt.payNo) sub.push(it.dt.payNo+" of "+it.b.count);
     if(it.b.approx) sub.push("approx.");
-    html+='<tr class="'+(days<=3?'soon ':'')+(hasCash&&run<0?'neg':'')+'"><td class="c-date">'+md(it.dt)+'</td><td>'+it.b.who+(sub.length?'<span class="desc-sub">'+sub.join(" · ")+'</span>':'')+'</td><td class="c-amt">−'+money0(it.b.amt).replace("$","$")+'</td><td class="c-bal '+(hasCash?(run<0?'bad':''):'')+'">'+(hasCash?money0(run):'—')+'</td></tr>';
+    html+='<tr class="'+(days<=3?'soon ':'')+(run<0?'neg':'')+'"><td class="c-date">'+md(it.dt)+'</td><td>'+it.b.who+(sub.length?'<span class="desc-sub">'+sub.join(" · ")+'</span>':'')+'</td><td class="c-amt out">−'+money0(it.b.amt)+'</td><td class="c-bal '+(run<0?'bad':'')+'">'+money0(run)+'</td></tr>';
   });
   document.getElementById("list").innerHTML=html;
+  document.getElementById("kbal").textContent=money0(bal);
   document.getElementById("k30").textContent=money0(due30);
-  var kl=document.getElementById("kleft");
-  if(hasCash){var l=cashv-due30;kl.textContent=money0(l);kl.className="n "+(l<0?"bad":"ok")}else{kl.textContent="—";kl.className="n"}
-}
-var mt="",tot=0;
-BILLS.forEach(function(b){tot+=b.amt;mt+='<tr><td>'+b.who+'<br><span class="note">'+ordinal(b.day)+(b.approx?' · approx.':'')+'</span></td><td>'+money(b.amt)+'</td></tr>'});
-mt+='<tr class="tot"><td>Total out of checking / month</td><td>'+money(tot)+'</td></tr>';
-var early=BILLS.filter(function(b){return b.day<=8}).reduce(function(s,b){return s+b.amt},0);
-mt+='<tr><td class="note">Of that, due by the 8th</td><td>'+money(early)+'</td></tr>';
-document.getElementById("monthly").innerHTML=mt;
-function ordinal(n){var s=["th","st","nd","rd"],v=n%100;return "Due the "+n+(s[(v-20)%10]||s[v]||s[0])}
+  var kl=document.getElementById("kleft"), l=bal-due30;
+  kl.textContent=money0(l); kl.className="n "+(l<0?"bad":"ok");
+  var built=new Date(DATA.built);
+  document.getElementById("asof").textContent="Balance worked out from the M&T bank feed. Newest bank item "+md(pd(DATA.last_tx))+" · page refreshed "+built.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+".";
 
-var inp=document.getElementById("cash");
-try{var saved=localStorage.getItem("tree-cash");if(saved){var o=JSON.parse(saved);inp.value=o.v;document.getElementById("cashnote").textContent="Balance you typed on "+new Date(o.t).toLocaleDateString("en-US",{month:"short",day:"numeric"})+". Update it any time."}}catch(e){}
-inp.addEventListener("input",function(){try{localStorage.setItem("tree-cash",JSON.stringify({v:inp.value,t:Date.now()}))}catch(e){}render()});
-render();
+  var mt="",tot=0,early=0;
+  DATA.bills.forEach(function(b){tot+=b.amt;if(b.day<=8)early+=b.amt;mt+='<tr><td>'+b.who+'<br><span class="note">Due the '+ord(b.day)+(b.last_paid?' · last paid '+md(pd(b.last_paid)):'')+'</span></td><td>'+money(b.amt)+'</td></tr>'});
+  mt+='<tr class="tot"><td>Total out of checking / month</td><td>'+money(tot)+'</td></tr>';
+  mt+='<tr><td class="note">Of that, due by the 8th</td><td>'+money(early)+'</td></tr>';
+  document.getElementById("monthly").innerHTML=mt;
+} else {
+  document.getElementById("list").innerHTML='<tr><td colspan="4" class="note">No bank data yet.</td></tr>';
+}
 </script>
 </body>
 </html>
