@@ -37,6 +37,18 @@ h2{font-size:15px;margin:20px 0 6px;color:var(--green-d)}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 td{padding:7px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 tr.tot td{border-top:2px solid var(--line);border-bottom:none;font-weight:800}
+.reg{padding:4px 10px}
+table.reg-t{font-size:13px;table-layout:fixed}
+table.reg-t th{font-size:10.5px;color:var(--muted);font-weight:700;text-align:left;padding:8px 4px;border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.3px}
+table.reg-t td{padding:9px 4px;vertical-align:top;font-weight:400;text-align:left}
+table.reg-t .c-date{width:52px;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.reg-t .c-amt,table.reg-t .c-bal{width:78px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.reg-t td.c-amt{color:var(--red);font-weight:600}
+table.reg-t td.c-bal{font-weight:800}
+table.reg-t .desc-sub{display:block;font-size:11px;color:var(--muted)}
+table.reg-t tr.start td{background:var(--soft-green);font-weight:700}
+table.reg-t tr.neg td{background:var(--soft-red)}
+table.reg-t tr.soon td.c-date{color:var(--amber);font-weight:700}
 footer{text-align:center;font-size:11.5px;color:var(--muted);padding:12px 16px 30px}
 </style>
 </head>
@@ -58,8 +70,8 @@ footer{text-align:center;font-size:11.5px;color:var(--muted);padding:12px 16px 3
     <div class="kpi"><div class="n" id="kleft">—</div><div class="l">LEFT AFTER THOSE</div></div>
   </div>
 
-  <h2>Coming up — next 45 days</h2>
-  <div class="card" id="list"></div>
+  <h2>Checkbook — next 45 days</h2>
+  <div class="card reg"><table class="reg-t"><thead><tr><th class="c-date">Date</th><th>Description</th><th class="c-amt">Charge</th><th class="c-bal">Balance</th></tr></thead><tbody id="list"></tbody></table></div>
 
   <h2>Every month</h2>
   <div class="card"><table id="monthly"></table>
@@ -89,6 +101,7 @@ var BILLS = [
   {who:"Chase — Ram 2500", amt:1004.91, day:28}
 ];
 function money(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function md(d){return (d.getMonth()+1)+"/"+d.getDate()}
 function money0(n){return (n<0?"−$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US")}
 function dueDates(b, from, to){
   var out=[], d=new Date(from.getFullYear(), from.getMonth()-1, 1);
@@ -116,18 +129,20 @@ items.sort(function(a,c){return a.dt-c.dt});
 function render(){
   var cashv=parseFloat(document.getElementById("cash").value);
   var hasCash=!isNaN(cashv);
-  var run=hasCash?cashv:null, due30=0, html="";
+  var run=hasCash?cashv:null, due30=0;
+  var html='<tr class="start"><td class="c-date">'+md(today)+'</td><td>Balance today</td><td class="c-amt"></td><td class="c-bal">'+(hasCash?money0(cashv):'—')+'</td></tr>';
   items.forEach(function(it){
     var days=Math.round((it.dt-today)/864e5);
     if(it.dt<=end30) due30+=it.b.amt;
     if(hasCash) run-=it.b.amt;
-    var when=it.dt.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-    var pill=days===0?'<span class="pill p-today">TODAY</span>':days<=3?'<span class="pill p-soon">in '+days+'d</span>':'';
-    var tags=(it.b.manual?'<span class="pill p-manual">pay by hand</span>':'')+(it.dt.payNo?' · payment '+it.dt.payNo+' of '+it.b.count:'')+(it.b.approx?' · approx.':'');
-    var left=hasCash?'<div class="left '+(run<0?'bad':'ok')+'">'+money0(run)+' left</div>':'';
-    html+='<div class="row'+(hasCash&&run<0?' short':'')+'"><div><div class="who">'+it.b.who+'</div><div class="sub">'+when+pill+tags+'</div></div><div><div class="amt">'+money(it.b.amt)+'</div>'+left+'</div></div>';
+    var sub=[];
+    if(days===0) sub.push("TODAY"); else if(days<=3) sub.push("in "+days+" days");
+    if(it.b.manual) sub.push("pay by hand");
+    if(it.dt.payNo) sub.push(it.dt.payNo+" of "+it.b.count);
+    if(it.b.approx) sub.push("approx.");
+    html+='<tr class="'+(days<=3?'soon ':'')+(hasCash&&run<0?'neg':'')+'"><td class="c-date">'+md(it.dt)+'</td><td>'+it.b.who+(sub.length?'<span class="desc-sub">'+sub.join(" · ")+'</span>':'')+'</td><td class="c-amt">−'+money0(it.b.amt).replace("$","$")+'</td><td class="c-bal '+(hasCash?(run<0?'bad':''):'')+'">'+(hasCash?money0(run):'—')+'</td></tr>';
   });
-  document.getElementById("list").innerHTML=html||'<div class="note">Nothing due in the next 45 days.</div>';
+  document.getElementById("list").innerHTML=html;
   document.getElementById("k30").textContent=money0(due30);
   var kl=document.getElementById("kleft");
   if(hasCash){var l=cashv-due30;kl.textContent=money0(l);kl.className="n "+(l<0?"bad":"ok")}else{kl.textContent="—";kl.className="n"}
