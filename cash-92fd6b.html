@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Tree Cash Flow</title>
+<style>
+:root{--green:#1f7a43;--green-d:#0d3a20;--ink:#16201a;--muted:#667;--line:#e6ebe6;--bg:#f4f7f5;--card:#fff;--red:#c0392b;--amber:#b9770f;--soft-red:#fdecea;--soft-amber:#fff6e5;--soft-green:#eaf6ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#e8efe9;--muted:#9aa5a0;--line:#2a332d;--bg:#111714;--card:#1a221d;--green-d:#8fd6a8;--soft-red:#3a1f1c;--soft-amber:#3a2f18;--soft-green:#173022}}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 40px}
+header{background:linear-gradient(155deg,#0a2e18,#1f7a43);color:#fff;padding:20px 16px 18px;text-align:center}
+header h1{margin:0;font-size:21px;font-weight:800}
+header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
+h2{font-size:15px;margin:20px 0 6px;color:var(--green-d)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.kpi .n{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:11px;color:var(--muted)}
+.cash label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+.cash input{width:100%;font-size:20px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row .who{font-weight:700;font-size:15px}
+.row .sub{font-size:12px;color:var(--muted)}
+.row .amt{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.row .left{font-size:11.5px;font-weight:600;white-space:nowrap}
+.row.short{background:var(--soft-red);margin:0 -16px;padding:10px 16px}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:4px}
+.p-today{background:var(--soft-red);color:var(--red)}.p-soon{background:var(--soft-amber);color:var(--amber)}
+.p-manual{background:var(--soft-amber);color:var(--amber)}
+.ok{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}
+.note{font-size:12.5px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td{padding:7px 0;border-bottom:1px solid var(--line)}td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+tr.tot td{border-top:2px solid var(--line);border-bottom:none;font-weight:800}
+footer{text-align:center;font-size:11.5px;color:var(--muted);padding:12px 16px 30px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tree Cash Flow</h1>
+  <p id="today">Second Nature Tree · what's due and when</p>
+</header>
+<div class="wrap">
+
+  <div class="card cash">
+    <label for="cash">Cash in checking 0606 right now ($)</label>
+    <input id="cash" type="number" inputmode="decimal" placeholder="Type today's balance">
+    <div class="note" id="cashnote" style="margin-top:6px">Type it once; this phone remembers it. The bank-feed balance isn't connected yet.</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n" id="k30">—</div><div class="l">DUE NEXT 30 DAYS</div></div>
+    <div class="kpi"><div class="n" id="kleft">—</div><div class="l">LEFT AFTER THOSE</div></div>
+  </div>
+
+  <h2>Coming up — next 45 days</h2>
+  <div class="card" id="list"></div>
+
+  <h2>Every month</h2>
+  <div class="card"><table id="monthly"></table>
+    <p class="note" style="margin:10px 0 0">Card 8882 also carries Verizon ~$183 (5th), Intuit $41, State Farm $221.72 (12th), Nextdoor $99 (22nd), plus fuel and parts. Those are inside the card payment, not added twice.</p>
+  </div>
+
+  <h2>Where these numbers come from</h2>
+  <div class="card note">
+    Amounts and due days come from the M&amp;T bank history Jun–Sep 2026 (read 9/30/2026) and the AFCO and Geneva agreements.
+    <b>Less certain:</b> Geneva has been irregular in the bank ($1,787.13 on 7/10, $397.39 on 9/8), so ~$1,114 comes from the agreement. The card payment changes every month, and $4,010 is the September estimate.
+    <b>CADCO $862.47</b> is not counted because it's unconfirmed as a monthly bill.
+    Dates move forward on their own every day; amounts change only when this page is updated.
+  </div>
+</div>
+<footer id="foot">Private working page · not linked anywhere</footer>
+
+<script>
+// day = day of month due; checking = paid from checking 0606
+var BILLS = [
+  {who:"Blue Bridge — F-750 bucket truck", amt:1912.56, day:1},
+  {who:"Erie — truck & auto insurance", amt:1114.58, day:1},
+  {who:"Geneva — Intrepid KM100", amt:1114.00, day:5, approx:true},
+  {who:"NYSIF — workers comp", amt:91.00, day:6, approx:true},
+  {who:"Optimum — internet", amt:107.03, day:7},
+  {who:"M&T card 8882 — statement", amt:4010.00, day:17, approx:true},
+  {who:"AFCO — GL insurance", amt:838.66, day:18, manual:true, first:"2026-10-18", count:10},
+  {who:"Chase — Ram 2500", amt:1004.91, day:28}
+];
+function money(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function money0(n){return (n<0?"−$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US")}
+function dueDates(b, from, to){
+  var out=[], d=new Date(from.getFullYear(), from.getMonth()-1, 1);
+  for(var i=0;i<4;i++){
+    var y=d.getFullYear(), m=d.getMonth()+i, last=new Date(y,m+1,0).getDate();
+    var dt=new Date(y,m,Math.min(b.day,last));
+    if(dt<from||dt>to) continue;
+    if(b.first){
+      var f=new Date(b.first+"T00:00:00"); if(dt<f) continue;
+      var n=(dt.getFullYear()-f.getFullYear())*12+dt.getMonth()-f.getMonth()+1;
+      if(n>b.count) continue; dt.payNo=n;
+    }
+    out.push(dt);
+  }
+  return out;
+}
+var today=new Date(); today.setHours(0,0,0,0);
+document.getElementById("today").textContent=today.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+var end45=new Date(today); end45.setDate(end45.getDate()+45);
+var end30=new Date(today); end30.setDate(end30.getDate()+30);
+var items=[];
+BILLS.forEach(function(b){dueDates(b,today,end45).forEach(function(dt){items.push({b:b,dt:dt})})});
+items.sort(function(a,c){return a.dt-c.dt});
+
+function render(){
+  var cashv=parseFloat(document.getElementById("cash").value);
+  var hasCash=!isNaN(cashv);
+  var run=hasCash?cashv:null, due30=0, html="";
+  items.forEach(function(it){
+    var days=Math.round((it.dt-today)/864e5);
+    if(it.dt<=end30) due30+=it.b.amt;
+    if(hasCash) run-=it.b.amt;
+    var when=it.dt.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+    var pill=days===0?'<span class="pill p-today">TODAY</span>':days<=3?'<span class="pill p-soon">in '+days+'d</span>':'';
+    var tags=(it.b.manual?'<span class="pill p-manual">pay by hand</span>':'')+(it.dt.payNo?' · payment '+it.dt.payNo+' of '+it.b.count:'')+(it.b.approx?' · approx.':'');
+    var left=hasCash?'<div class="left '+(run<0?'bad':'ok')+'">'+money0(run)+' left</div>':'';
+    html+='<div class="row'+(hasCash&&run<0?' short':'')+'"><div><div class="who">'+it.b.who+'</div><div class="sub">'+when+pill+tags+'</div></div><div><div class="amt">'+money(it.b.amt)+'</div>'+left+'</div></div>';
+  });
+  document.getElementById("list").innerHTML=html||'<div class="note">Nothing due in the next 45 days.</div>';
+  document.getElementById("k30").textContent=money0(due30);
+  var kl=document.getElementById("kleft");
+  if(hasCash){var l=cashv-due30;kl.textContent=money0(l);kl.className="n "+(l<0?"bad":"ok")}else{kl.textContent="—";kl.className="n"}
+}
+var mt="",tot=0;
+BILLS.forEach(function(b){tot+=b.amt;mt+='<tr><td>'+b.who+'<br><span class="note">'+ordinal(b.day)+(b.approx?' · approx.':'')+'</span></td><td>'+money(b.amt)+'</td></tr>'});
+mt+='<tr class="tot"><td>Total out of checking / month</td><td>'+money(tot)+'</td></tr>';
+var early=BILLS.filter(function(b){return b.day<=8}).reduce(function(s,b){return s+b.amt},0);
+mt+='<tr><td class="note">Of that, due by the 8th</td><td>'+money(early)+'</td></tr>';
+document.getElementById("monthly").innerHTML=mt;
+function ordinal(n){var s=["th","st","nd","rd"],v=n%100;return "Due the "+n+(s[(v-20)%10]||s[v]||s[0])}
+
+var inp=document.getElementById("cash");
+try{var saved=localStorage.getItem("tree-cash");if(saved){var o=JSON.parse(saved);inp.value=o.v;document.getElementById("cashnote").textContent="Balance you typed on "+new Date(o.t).toLocaleDateString("en-US",{month:"short",day:"numeric"})+". Update it any time."}}catch(e){}
+inp.addEventListener("input",function(){try{localStorage.setItem("tree-cash",JSON.stringify({v:inp.value,t:Date.now()}))}catch(e){}render()});
+render();
+</script>
+</body>
+</html>
