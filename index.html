@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1268; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1269; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -752,6 +752,32 @@ window.bmShowStaleBanner = function(version) {
   #bottom-nav i { width: 22px; height: 22px; }
 
   html.bm-bottom-nav #bottom-nav { display: grid !important; }
+  /* v1269 Jobber phone New Quote: Service for → Overview → Product/Service; full-width Review and Send + Save link */
+  .q-jb-sec, .q-ft-short { display:none; }
+  @media (max-width:640px) {
+    .q-jb-head { display:flex; flex-direction:column; }
+    .q-jb-head .q-jobber-top { display:contents !important; }
+    .q-jb-accent { order:0; }
+    .q-jb-sec { display:block; font-size:18px; font-weight:600; color:#49646f; margin:6px 0 12px; }
+    .q-jb-sec-client { order:1; }
+    .q-jb-clientcol { order:2; flex:none !important; width:100%; }
+    .q-jb-sec-overview { order:3; margin-top:18px; padding-top:18px; border-top:8px solid #edece8; margin-left:-16px; margin-right:-16px; padding-left:16px; }
+    .q-jb-head #q-title { order:4; }
+    .q-jb-rail { order:5; flex:none !important; width:100%; min-width:0 !important; border:none !important; background:transparent !important; display:flex; flex-direction:column; gap:12px; margin-bottom:6px; }
+    .q-jb-rail .q-jb-rrow { flex-direction:column; align-items:flex-start !important; gap:2px !important; border:1px solid #dadfe2 !important; border-radius:8px; padding:10px 14px !important; background:#fff; }
+    .q-jb-rail .q-jb-rrow > div { text-align:left !important; width:100%; }
+    .q-jb-rail .q-jb-rrow input, .q-jb-rail .q-jb-rrow select { text-align:left !important; width:100% !important; max-width:none !important; font-size:16px !important; font-weight:400 !important; padding:0 !important; }
+    .q-jb-sec-items { margin-top:0; padding-top:18px; border-top:8px solid #edece8; margin-left:-16px; margin-right:-16px; padding-left:16px; }
+    .q-jb-totalrow { background:#edece8 !important; border-top:none !important; }
+    .q-ft-bar { flex-direction:column !important; align-items:stretch !important; gap:6px !important; padding:10px 16px max(10px, env(safe-area-inset-bottom)) !important; }
+    .q-ft-bar .q-ft-cancel { display:none !important; }
+    .q-ft-bar .q-ft-send { order:1; width:100%; min-width:0 !important; padding:14px !important; font-size:17px !important; border-radius:8px !important; }
+    .q-ft-bar .q-ft-draft { order:2; border:none !important; background:none !important; color:#388523 !important; font-size:17px !important; font-weight:700 !important; padding:6px !important; }
+    .q-ft-bar .q-ft-send, .q-ft-bar .q-ft-draft { justify-content:center !important; text-align:center !important; }
+    .q-jb-rail .q-jb-rrow select { height:auto !important; min-height:0 !important; line-height:1.4 !important; -webkit-appearance:none; appearance:none; }
+    .q-ft-bar .q-ft-long { display:none; }
+    .q-ft-bar .q-ft-short { display:inline; }
+  }
   /* v1268 Jobber phone tab bar: flat, light top rule, dark-navy labels, active = dark + top marker */
   html.bm-phone-nav #bottom-nav { box-shadow:none; border-top:1px solid #e1e1dc; background:#fafaf8; padding-top:0; }
   html.bm-phone-nav #bottom-nav button { font-size:12px; font-weight:600; color:#2a3d45; padding:10px 2px 8px; position:relative; }
@@ -1659,7 +1685,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1268.min.js"></script>
+<script defer src="dist/bm.bundle.v1269.min.js"></script>
 
 
 

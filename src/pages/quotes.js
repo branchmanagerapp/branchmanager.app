@@ -658,10 +658,14 @@ var QuotesPage = {
       try { _ownerName = (window.CompanyInfo && CompanyInfo.get && (CompanyInfo.get('ownerName') || CompanyInfo.get('owner') || CompanyInfo.get('companyName'))) || ''; } catch(_e){}
       var _qLead = (q && q.leadSource) || '';
       var _leadOpts = ['','Referral','Google','Repeat customer','Website','Facebook','Instagram','Drive-by','Yard sign','Other'];
-      html += '<div style="height:4px;background:#8b2252;border-radius:8px 8px 0 0;margin-bottom:16px;"></div>'
+      // v1268 phone: Jobber order = Service for (client) → Overview (title, salesperson, lead source). CSS reorders via .q-jb-head.
+      html += '<div class="q-jb-head">'
+        + '<div class="q-jb-accent" style="height:4px;background:#8b2252;border-radius:8px 8px 0 0;margin-bottom:16px;"></div>'
+        + '<div class="q-jb-sec q-jb-sec-client">Service for</div>'
+        + '<div class="q-jb-sec q-jb-sec-overview">Overview</div>'
         + '<input type="text" id="q-title" value="' + UI.esc(q.subject || q.title || '') + '" placeholder="Title" autocomplete="off" style="width:100%;padding:14px 16px;border:1px solid #DADFE2;border-radius:8px;font-size:16px;font-weight:600;margin-bottom:14px;box-sizing:border-box;">'
         + '<div class="q-jobber-top" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:10px;">'
-        + '<div style="flex:1 1 320px;min-width:0;">';
+        + '<div class="q-jb-clientcol" style="flex:1 1 320px;min-width:0;">';
     }
     html += '<div class="q-client-box" style="' + _cardCss + 'margin-bottom:14px;overflow:hidden;">'
       // Summary header (always visible)
@@ -711,17 +715,18 @@ var QuotesPage = {
     // v975: close left column + Jobber meta rail (Quote # / Salesperson / Lead Source), then close the two-column row.
     if (_jb) {
       var _rrow = function(label, control, last) {
-        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;' + (last ? '' : 'border-bottom:1px solid #EEF1F3;') + '">'
+        return '<div class="q-jb-rrow" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;' + (last ? '' : 'border-bottom:1px solid #EEF1F3;') + '">'
           + '<span style="font-size:13px;color:#49646F;flex-shrink:0;">' + label + '</span>'
           + '<div style="text-align:right;min-width:0;">' + control + '</div></div>';
       };
       html += '</div>' // close left column
-        + '<div style="flex:0 1 300px;min-width:240px;align-self:stretch;background:#fff;border:1px solid #DADFE2;border-radius:8px;overflow:hidden;">'
+        + '<div class="q-jb-rail" style="flex:0 1 300px;min-width:240px;align-self:stretch;background:#fff;border:1px solid #DADFE2;border-radius:8px;overflow:hidden;">'
         +   _rrow('Quote&nbsp;#', '<span style="font-weight:700;color:#032B3A;">' + _qnumDisp + '</span>')
         +   _rrow('Salesperson', '<input type="text" id="q-salesperson" value="' + UI.esc((q && q.salesperson) || _ownerName) + '" placeholder="—" style="width:140px;max-width:140px;border:none;background:transparent;font-size:14px;font-weight:600;text-align:right;color:#032B3A;">')
         +   _rrow('Lead&nbsp;Source', '<select id="q-lead-source" style="border:none;background:transparent;font-size:14px;font-weight:600;text-align:right;color:#032B3A;max-width:150px;">' + _leadOpts.map(function(o){ return '<option value="' + UI.esc(o) + '"' + (o === _qLead ? ' selected' : '') + '>' + (o || '—') + '</option>'; }).join('') + '</select>', true)
         + '</div>'
-      + '</div>'; // close q-jobber-top
+      + '</div>' // close q-jobber-top
+      + '</div>'; // close q-jb-head
     }
 
     // ═══ STEP 1: Per Tree/Task ═══
@@ -743,6 +748,7 @@ var QuotesPage = {
       + '<option value="__custom__">… or custom (manual entry)</option>';
 
     html += '<div id="q-items-section" style="margin:24px 0;display:' + gateDisplay + ';">'
+      + (_jb ? '<div class="q-jb-sec q-jb-sec-items">Product / Service</div>' : '')
       + '<div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
       +   '<div style="font-size:17px;font-weight:700;">Line items</div>'
       // v878: walkthrough-upload button on existing quotes — appends AI-extracted
@@ -865,7 +871,7 @@ var QuotesPage = {
       + '</span>'
       + '<span id="q-tax-display" style="font-weight:600;">' + UI.money(_qTaxAmt) + '</span>'
       + '</div>'
-      + '<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;' + (_jb ? 'background:#fff;color:#032B3A;border-top:1px solid #DADFE2;' : 'background:var(--green-dark);color:var(--white);') + '">'
+      + '<div class="q-jb-totalrow" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;' + (_jb ? 'background:#fff;color:#032B3A;border-top:1px solid #DADFE2;' : 'background:var(--green-dark);color:var(--white);') + '">'
       + '<span style="font-weight:700;' + (_jb ? 'font-size:16px;' : '') + '">Total</span>'
       + '<span id="q-total-display" style="font-size:' + (_jb ? '22px' : '1.5rem') + ';font-weight:' + (_jb ? '700' : '800') + ';">' + UI.money(_qGrandTotal) + '</span>'
       + '</div>'
@@ -965,10 +971,10 @@ var QuotesPage = {
       + '<div id="q-save-status" style="font-size:11px;color:var(--text-light);margin-bottom:14px;font-style:italic;text-align:center;">Not saved yet — start typing to auto-save.</div>'
       + html
       // STICKY BOTTOM ACTION BAR — fixed at viewport bottom, full-width, white bg
-      + '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,.06);padding:10px 14px;display:flex;gap:8px;justify-content:flex-end;align-items:center;z-index:50;">'
-      +   '<button class="btn btn-outline" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="font-size:13px;">Cancel</button>'
-      +   '<button class="btn btn-outline" onclick="QuotesPage.saveAs(\'draft\')" style="font-size:13px;">Save Draft</button>'
-      +   '<button class="btn btn-primary" onclick="QuotesPage.saveAs(\'sent\')" style="flex:0 1 auto;min-width:140px;">Save &amp; Send</button>'
+      + '<div class="q-ft-bar" style="position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,.06);padding:10px 14px;display:flex;gap:8px;justify-content:flex-end;align-items:center;z-index:50;">'
+      +   '<button class="btn btn-outline q-ft-cancel" onclick="QuotesPage._clearAutoSave();loadPage(\'quotes\')" style="font-size:13px;">Cancel</button>'
+      +   '<button class="btn btn-outline q-ft-draft" onclick="QuotesPage.saveAs(\'draft\')" style="font-size:13px;"><span class="q-ft-long">Save Draft</span><span class="q-ft-short">Save</span></button>'
+      +   '<button class="btn btn-primary q-ft-send" onclick="QuotesPage.saveAs(\'sent\')" style="flex:0 1 auto;min-width:140px;"><span class="q-ft-long">Save &amp; Send</span><span class="q-ft-short">Review and Send</span></button>'
       + '</div>'
       + '</div>';
 

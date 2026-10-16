@@ -1,5 +1,5 @@
 {
-  "version": 1268,
+  "version": 1269,
   "released": "2026-10-15",
-  "notes": "Phones: Jobber-style bottom tab bar (Home, Schedule, Timesheet, Search, More) + round + button"
+  "notes": "Phones: New Quote laid out like Jobber (Service for, Overview, Product/Service; Review and Send + Save)"
 }
