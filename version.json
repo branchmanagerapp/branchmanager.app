@@ -1,5 +1,5 @@
 {
-  "version": 1269,
+  "version": 1270,
   "released": "2026-10-15",
-  "notes": "Phones: New Quote laid out like Jobber (Service for, Overview, Product/Service; Review and Send + Save)"
+  "notes": "Day page: Post to Google (caption copied, photos saved to phone, opens Google) until Google approves API access"
 }

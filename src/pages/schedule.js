@@ -217,6 +217,8 @@ var SchedulePage = {
       var cl = w.client_id ? DB.clients.getAll().find(function(c) { return c.id === w.client_id; }) : null;
       if (w.review_requested_at) footer += '<span style="font-size:12px;color:var(--text-light);margin-right:auto;align-self:center;">Review asked ' + SchedulePage._formatDate(new Date(w.review_requested_at), 'short') + '</span>';
       else if (cl && (cl.phone || cl.email)) footer += '<button class="btn btn-outline" style="margin-right:auto;" onclick="SchedulePage._askReview(\'' + wid + '\',\'' + dateStr + '\')">⭐ Ask for a review</button>';
+      // v1270: Google posts go out by hand until Google approves API access (case 0-0106000041686, Oct 15 2026).
+      if (post && (post.networks || []).indexOf('gmb') >= 0) footer += '<button class="btn btn-outline" onclick="SchedulePage._dayGoogle(\'' + wid + '\',\'' + dateStr + '\')">' + ((post.results && post.results.gmb && post.results.gmb.ok) ? '✓ On Google · again' : 'G Post to Google') + '</button>';
       if (post && post.status !== 'posted') {
         if (isDraft) footer += '<button class="btn btn-primary" ' + (w.reel_stale ? 'disabled title="Wait for the reel"' : '') + ' onclick="SchedulePage._dayApprove(\'' + wid + '\',\'' + dateStr + '\')">🗺 Put on the map' + (w.reel_stale ? ' (after the reel)' : '') + '</button>';
         else {
@@ -341,9 +343,48 @@ var SchedulePage = {
   _dayPost: function(wid, dateStr) {
     var post = SchedulePage._dayPost_(wid); if (!post) return;
     if (!(post.networks || []).length) { UI.toast('Pick at least one network', 'error'); return; }
+    if ((post.networks || []).indexOf('gmb') >= 0 && !SchedulePage._gmbAuto) {
+      if ((post.networks || []).length === 1) { UI.toast('Google can\'t auto-post yet — use "Post to Google"', 'error'); return; }
+      post.networks = post.networks.filter(function(n) { return n !== 'gmb'; });
+      UI.toast('Google left out of the auto-post — use "Post to Google" for it');
+    }
     if (!confirm('Post this now to ' + post.networks.join(', ') + '? It goes out on the next hourly tick.')) return;
     post.status = 'scheduled'; post.scheduledAt = new Date().toISOString(); SocialBranch._upsertPost(post);
     UI.toast('✅ Queued — goes out on the next hourly tick', 'success'); SchedulePage._dayRerender(dateStr);
+  },
+  // v1270: Google post kit — Google-ready caption copied, photos shared to the phone (Save Images), then Google's post screen opens.
+  // Doug picks the photos and taps Post. Nothing posts by itself. Becomes automatic once Google approves API access.
+  _gmbAuto: false,
+  _googleCaption: function(raw, town) {
+    var t = String(raw || '').replace(/(^|\s)#[\w-]+/g, '').replace(/[ \t]+\n/g, '\n').trim();
+    var phone = ''; try { phone = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('phone')) || ''; } catch (e) {}
+    if (!t) t = 'Tree work done today' + (town ? ' in ' + town : '') + ' by the Second Nature Tree crew.';
+    else if (town && t.toLowerCase().indexOf(String(town).toLowerCase()) < 0) t += '\n\nIn ' + town + '.';
+    var digits = phone.replace(/\D/g, '');
+    if (digits && t.replace(/\D/g, '').indexOf(digits.slice(-7)) < 0) t += '\n\nFree estimates: ' + phone + ' · peekskilltree.com';
+    return t.slice(0, 1500);
+  },
+  _dayGoogle: function(wid, dateStr) {
+    var post = SchedulePage._dayPost_(wid); if (!post) return;
+    var files = ((window._bmRecaps && window._bmRecaps[dateStr]) || []).filter(function(f) { return f && f.wid === wid && !f.hidden && f.url && f.kind === 'photo'; });
+    var town = ((SchedulePage._wdRows || {})[wid] || {}).town || '';
+    var capEl = document.getElementById('day-caption');
+    var caption = SchedulePage._googleCaption(capEl ? capEl.value : post.caption, town);
+    var done = function() {
+      post.results = Object.assign({}, post.results || {}, { gmb: { ok: true, manual: true, at: new Date().toISOString() } }); SocialBranch._upsertPost(post);
+      window.open('https://business.google.com/', '_blank');
+    };
+    var copy = (navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(caption) : Promise.reject();
+    copy.then(function() { UI.toast('Caption copied — paste it into Google'); }, function() { window.prompt('Copy this caption for Google:', caption); });
+    var urls = files.slice(0, 10).map(function(f) { return f.url; });
+    if (!urls.length || !navigator.canShare) { done(); return; }
+    Promise.all(urls.map(function(u, i) {
+      return fetch(u).then(function(r) { return r.blob(); }).then(function(b) { return new File([b], 'job-' + dateStr + '-' + (i + 1) + '.jpg', { type: b.type || 'image/jpeg' }); });
+    })).then(function(fs) {
+      if (!navigator.canShare({ files: fs })) { done(); return; }
+      UI.toast('Tap "Save ' + fs.length + ' Images", then post them on Google');
+      return navigator.share({ files: fs }).then(done, done);
+    }).catch(function() { done(); });
   },
   _daySchedule: function(wid, dateStr) {
     var post = SchedulePage._dayPost_(wid); if (!post) return;
