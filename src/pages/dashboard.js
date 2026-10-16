@@ -430,11 +430,20 @@ var DashboardPage = {
     var _monthPct = _goalData.monthly > 0 ? Math.min(Math.round((_monthRevenue / _goalData.monthly) * 100), 100) : 0;
 
     // v689: weather moved to topbar chip (above the line). Doug ask.
+    // v1268: phone header like Jobber — date left, bell + AI pill right (topbar is hidden on phones).
+    var _nb = document.getElementById('notif-badge');
+    var _nbN = _nb && _nb.classList.contains('active') ? (_nb.textContent || '').trim() : '';
     html += '<div style="margin-bottom:16px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
       + '<div style="font-size:13px;color:var(--text-light);">'
       + dayNames[now.getDay()] + ', ' + monthFull[now.getMonth()] + ' ' + now.getDate()
       + '</div>'
-      + '<h2 style="' + ((window.BMUI && BMUI.isClassic && BMUI.isClassic()) ? 'font-size:28px;font-weight:700;' : 'font-size:34px;font-weight:900;font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;letter-spacing:-.01em;') + 'margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
+      + '<div class="dash-jb-phone dash-jb-pill">'
+      +   '<button onclick="loadPage(\'inbox\')" aria-label="Inbox and alerts"><i data-lucide="bell" style="width:22px;height:22px;"></i>' + (_nbN ? '<span class="dash-jb-badge">' + UI.esc(_nbN) + '</span>' : '') + '</button>'
+      +   '<button onclick="if(window.AI&&AI.toggle)AI.toggle()" aria-label="AI assistant"><i data-lucide="sparkles" style="width:22px;height:22px;"></i></button>'
+      + '</div>'
+      + '</div>'
+      + '<h2 class="dash-greet" style="' + ((window.BMUI && BMUI.isClassic && BMUI.isClassic()) ? 'font-size:28px;font-weight:700;' : 'font-size:34px;font-weight:900;font-family:\'Poppins\',\'Inter\',sans-serif;color:#032B3A;letter-spacing:-.01em;') + 'margin-top:2px;">' + greeting + (userName === 'there' ? '' : ', ' + userName.split(' ')[0]) + '</h2>'
       + '</div>';
 
     // v645: Mobile-focused Home — Jobber-style "Let's get started / Clock In"
@@ -452,6 +461,20 @@ var DashboardPage = {
       + '@media (min-width: 769px) {'
       + '  .dash-mobile-focus { display: none !important; }'
       + '}'
+      + '.dash-jb-phone { display:none !important; }'
+      + '@media (max-width: 640px) {'
+      + '  .dash-jb-phone { display:block !important; }'
+      + '  .dash-jb-pill.dash-jb-phone { display:flex !important; }'
+      + '  .dash-jb-desk { display:none !important; }'
+      + '  .dash-greet { font-size:30px !important; line-height:1.15 !important; letter-spacing:-.02em !important; }'
+      + '}'
+      + '.dash-jb-pill { gap:4px; background:#fff; border-radius:24px; padding:4px 6px; box-shadow:0 2px 10px rgba(0,0,0,.08); }'
+      + '.dash-jb-pill button { position:relative; background:none; border:none; padding:6px 8px; color:#032b3a; cursor:pointer; display:flex; }'
+      + '.dash-jb-badge { position:absolute; top:0; right:0; background:#d64545; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:1px 5px; line-height:1.3; }'
+      + '.dash-jb-todo-row { display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid #e1e1dc; cursor:pointer; }'
+      + '.dash-jb-todo-row:active { background:#f4f4f1; }'
+      + '.dash-jb-todo-row .t { font-size:17px; font-weight:700; color:#032b3a; line-height:1.25; }'
+      + '.dash-jb-todo-row .w { font-size:16px; color:#2a3d45; margin-top:2px; }'
       + '.dash-clock-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); display:flex; align-items:center; justify-content:space-between; gap:12px; }'
       + '.dash-clock-card.live { background:var(--green-bg); border-color:var(--green-light); }'
       + '.dash-clock-btn { background:var(--green-dark); color:#fff; border:none; padding:12px 22px; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }'
@@ -687,7 +710,30 @@ var DashboardPage = {
     _wfHtml += '</div>';
 
 
-    if (!_bmClassic) html += _wfHtml;
+    // v1268: Jobber phone Home "To do" list (rows with count + worth + arrow). Desktop keeps the Workflow grid.
+    var _k = function(n) { n = Number(n) || 0; return n >= 1000 ? '$' + (Math.round(n / 100) / 10).toString().replace(/\.0$/, '') + 'k' : '$' + Math.round(n); };
+    var _sum = function(a, f) { return a.reduce(function(s, x) { return s + Number(x[f] || 0); }, 0); };
+    var _row = function(n, label, worth, icon, color, page) {
+      if (!n) return '';
+      return '<div class="dash-jb-todo-row" onclick="loadPage(\'' + page + '\')">'
+        + '<i data-lucide="' + icon + '" style="width:26px;height:26px;color:' + color + ';flex-shrink:0;"></i>'
+        + '<div style="flex:1;min-width:0;"><div class="t">' + n + ' ' + label + '</div>' + (worth != null ? '<div class="w">Worth ' + _k(worth) + '</div>' : '') + '</div>'
+        + '<i data-lucide="arrow-right" style="width:24px;height:24px;color:#388523;flex-shrink:0;"></i></div>';
+    };
+    var _todoRows = _row(newRequests.length, newRequests.length === 1 ? 'new request' : 'new requests', null, 'inbox', '#c77c1e', 'requests')
+      + _row(approvedQuotes.length, approvedQuotes.length === 1 ? 'approved quote' : 'approved quotes', reqTotal, 'file-text', '#8b2252', 'quotes')
+      + _row(changesQuotes.length, changesQuotes.length === 1 ? 'changes requested quote' : 'changes requested quotes', _sum(changesQuotes, 'total'), 'file-text', '#8b2252', 'quotes')
+      + _row(draftQuotes.length, draftQuotes.length === 1 ? 'draft quote' : 'draft quotes', _sum(draftQuotes, 'total'), 'file-text', '#8b2252', 'quotes')
+      + _row(actionJobs.length + lateJobs.length, (actionJobs.length + lateJobs.length) === 1 ? 'action required job' : 'action required jobs', _sum(actionJobs.concat(lateJobs), 'total'), 'hammer', '#388523', 'jobs')
+      + _row(needsInvoicing.length, needsInvoicing.length === 1 ? 'job requires invoicing' : 'require invoicing jobs', _sum(needsInvoicing, 'total'), 'hammer', '#388523', 'jobs')
+      + _row(unpaidInvoices.length, unpaidInvoices.length === 1 ? 'awaiting payment invoice' : 'awaiting payment invoices', _sum(unpaidInvoices, 'balance'), 'receipt', '#1565c0', 'invoices')
+      + _row(overdueInvoices.length, overdueInvoices.length === 1 ? 'past due invoice' : 'past due invoices', overdueTotal, 'receipt', '#c62828', 'invoices');
+    var _todoJb = '<div class="dash-jb-phone" style="margin:8px 0 22px;">'
+      + '<h3 style="font-family:\'Poppins\',\'Inter\',sans-serif;font-size:26px;font-weight:800;color:#032B3A;margin:0 0 4px;">To do</h3>'
+      + (_todoRows || '<div style="padding:16px 0;color:var(--text-light);">Nothing waiting. Nice.</div>')
+      + '</div>';
+
+    if (!_bmClassic) html += _todoJb + '<div class="dash-jb-desk">' + _wfHtml + '</div>';
 
     html += '<div class="dash-desktop-only">';
 

@@ -1,5 +1,5 @@
 {
-  "version": 1267,
-  "released": "2026-10-10",
-  "notes": "Texting switched to Twilio (signed-in only)"
+  "version": 1268,
+  "released": "2026-10-15",
+  "notes": "Phones: Jobber-style bottom tab bar (Home, Schedule, Timesheet, Search, More) + round + button"
 }

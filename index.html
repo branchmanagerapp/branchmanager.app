@@ -8,7 +8,7 @@
 // what's bundled here, we unregister all SWs, blow away all caches, and reload.
 // This breaks the iOS "stale SW holds cached SW" deadlock permanently.
 (function() {
-  var BUNDLED_VERSION = 1267; // bump with every deploy (must match version.json)
+  var BUNDLED_VERSION = 1268; // bump with every deploy (must match version.json)
   window.BUNDLED_VERSION = BUNDLED_VERSION;
   try { localStorage.setItem('bm-last-bundled-version', String(BUNDLED_VERSION)); } catch(e){}
 
@@ -200,7 +200,13 @@ window.bmShowStaleBanner = function(version) {
 
     var navKey = isCapacitorApp ? 'bm-app-nav' : 'bm-pwa-nav';
     var mode = localStorage.getItem(navKey) || 'top';
-    if (isStandalone) {
+    // v1268: phones get Jobber's bottom tab bar by default (browser OR installed),
+    // unless this phone opted out (bm-phone-nav='top', device-local, never cloud-synced).
+    var isPhone = Math.min(window.innerWidth || 9999, (window.screen && window.screen.width) || 9999) <= 640;
+    if (isPhone && localStorage.getItem('bm-phone-nav') !== 'top') {
+      document.documentElement.classList.add('bm-bottom-nav');
+      document.documentElement.classList.add('bm-phone-nav');
+    } else if (isStandalone) {
       if (mode === 'bottom') {
         document.documentElement.classList.add('bm-bottom-nav');
       } else if (mode === 'both') {
@@ -746,6 +752,12 @@ window.bmShowStaleBanner = function(version) {
   #bottom-nav i { width: 22px; height: 22px; }
 
   html.bm-bottom-nav #bottom-nav { display: grid !important; }
+  /* v1268 Jobber phone tab bar: flat, light top rule, dark-navy labels, active = dark + top marker */
+  html.bm-phone-nav #bottom-nav { box-shadow:none; border-top:1px solid #e1e1dc; background:#fafaf8; padding-top:0; }
+  html.bm-phone-nav #bottom-nav button { font-size:12px; font-weight:600; color:#2a3d45; padding:10px 2px 8px; position:relative; }
+  html.bm-phone-nav #bottom-nav button.active { color:#032b3a; }
+  html.bm-phone-nav #bottom-nav button.active::before { content:''; position:absolute; top:0; left:22%; right:22%; height:4px; border-radius:0 0 3px 3px; background:#032b3a; }
+  html.bm-phone-nav #bm-fab { background:#253c47; width:60px; height:60px; font-size:32px; right:16px; box-shadow:0 4px 14px rgba(0,0,0,.22); }
 
   /* Floating "+" FAB — legacy system-style, only in bottom-nav mode */
   #bm-fab {
@@ -1647,7 +1659,7 @@ window.BMUI = {
   } catch(e){}
 })();
 </script>
-<script defer src="dist/bm.bundle.v1267.min.js"></script>
+<script defer src="dist/bm.bundle.v1268.min.js"></script>
 
 
 
@@ -4156,8 +4168,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <nav id="bottom-nav">
   <button data-bottom-page="dashboard" onclick="loadPage('dashboard')"><i data-lucide="home"></i><span>Home</span></button>
   <button data-bottom-page="schedule" onclick="loadPage('schedule')"><i data-lucide="calendar"></i><span>Schedule</span></button>
-  <button data-bottom-page="work" onclick="loadPage('work')"><i data-lucide="briefcase"></i><span>Work</span></button>
-  <button data-bottom-page="inbox" onclick="loadPage('inbox')"><i data-lucide="message-circle"></i><span>Inbox</span></button>
+  <button data-bottom-page="timesheet" onclick="loadPage('timesheet')"><i data-lucide="clock"></i><span>Timesheet</span></button>
+  <button data-bottom-page="search" onclick="loadPage('search')"><i data-lucide="search"></i><span>Search</span></button>
   <button data-bottom-page="_more" onclick="toggleSidebar()"><i data-lucide="menu"></i><span>More</span></button>
 </nav>
 
