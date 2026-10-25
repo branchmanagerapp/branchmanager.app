@@ -102,11 +102,23 @@ var SchedulePage = {
     var d = new Date(dateStr + 'T12:00:00');
     var title = '📸 ' + SchedulePage._formatDate(d, 'full');
     var wdItems = files.filter(function(f) { return f && typeof f === 'object' && f.wid; });
-    var wid = wdItems.length ? wdItems[0].wid : null;
+    // v1271: several jobs on one day each have their own work day — show ONE at a time (was mixing all photos under the first client).
+    var _wids = []; wdItems.forEach(function(f) { if (_wids.indexOf(f.wid) < 0) _wids.push(f.wid); });
+    SchedulePage._dayWid = SchedulePage._dayWid || {};
+    var wid = (SchedulePage._dayWid[dateStr] && _wids.indexOf(SchedulePage._dayWid[dateStr]) >= 0) ? SchedulePage._dayWid[dateStr] : (_wids[0] || null);
+    wdItems = wdItems.filter(function(f) { return f.wid === wid; });
     var w = wid ? SchedulePage._wdRows[wid] : null;
     var html = '';
     // Jobs on the calendar that day (tap → job)
     var jobs = DB.jobs.getAll().filter(function(j) { return j.scheduledDate && j.scheduledDate.substring(0, 10) === dateStr && j.status !== 'archived'; });
+    if (_wids.length > 1) {
+      html += '<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;">';
+      _wids.forEach(function(x) {
+        var r = SchedulePage._wdRows[x] || {}; var on = x === wid;
+        html += '<button onclick="SchedulePage._dayPick(\'' + dateStr + '\',\'' + x + '\')" style="flex-shrink:0;padding:8px 12px;border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid ' + (on ? 'var(--green-dark)' : 'var(--border)') + ';background:' + (on ? 'var(--green-dark)' : '#fff') + ';color:' + (on ? '#fff' : 'var(--text)') + ';">' + UI.esc(String(r.client_name || r.town || 'Job').replace(/\s+—\s+client TBD$/, ' (?)')) + '</button>';
+      });
+      html += '</div>';
+    }
     // ── header ──
     if (w) {
       var status = w.status === 'approved' ? '<span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;">On the public map</span>'
@@ -231,6 +243,7 @@ var SchedulePage = {
     footer += '<button class="btn btn-outline" onclick="UI.closeModal()">Close</button>';
     UI.showModal(title, html, { footer: footer });
   },
+  _dayPick: function(dateStr, wid) { SchedulePage._dayWid = SchedulePage._dayWid || {}; SchedulePage._dayWid[dateStr] = wid; SchedulePage._dayRerender(dateStr); },
   _dayRerender: function(dateStr) { try { UI.closeModal(); } catch (e) {} setTimeout(function() { SchedulePage.showDayRecap(dateStr); }, 60); },
   _dayPost_: function(wid) { return (typeof SocialBranch !== 'undefined') ? SocialBranch._getPosts().find(function(p) { return p.workDayId === wid; }) : null; },
   _daySaveCaption: function(wid, val) {
@@ -354,12 +367,13 @@ var SchedulePage = {
   },
   // v1270: Google post kit — Google-ready caption copied, photos shared to the phone (Save Images), then Google's post screen opens.
   // Doug picks the photos and taps Post. Nothing posts by itself. Becomes automatic once Google approves API access.
-  _gmbAuto: false,
+  _gmbAuto: true, // Oct 25: Google already auto-posts via the Make webhook (bm-socialpilot-webhook, GBP module verified Apr 2026) — keep it in Post now
   _googleCaption: function(raw, town) {
     var t = String(raw || '').replace(/(^|\s)#[\w-]+/g, '').replace(/[ \t]+\n/g, '\n').trim();
     var phone = ''; try { phone = (typeof CompanyInfo !== 'undefined' && CompanyInfo.get('phone')) || ''; } catch (e) {}
+    town = String(town || '').replace(/^(town|village|city|hamlet) of\s+/i, '').toLowerCase().replace(/\b\w/g, function(c) { return c.toUpperCase(); }).trim();
     if (!t) t = 'Tree work done today' + (town ? ' in ' + town : '') + ' by the Second Nature Tree crew.';
-    else if (town && t.toLowerCase().indexOf(String(town).toLowerCase()) < 0) t += '\n\nIn ' + town + '.';
+    else if (town && t.toLowerCase().indexOf(town.toLowerCase()) < 0) t = town + ': ' + t;
     var digits = phone.replace(/\D/g, '');
     if (digits && t.replace(/\D/g, '').indexOf(digits.slice(-7)) < 0) t += '\n\nFree estimates: ' + phone + ' · peekskilltree.com';
     return t.slice(0, 1500);
