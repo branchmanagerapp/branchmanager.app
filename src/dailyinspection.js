@@ -223,6 +223,17 @@ var DailyInspection = {
       html += '</div>';
     }
 
+    // ── KM100 loader service book (standalone page /km100/, Oct 30 2026) ──
+    // The page's access key lives in equipment_info 'km100:link' (tenant RLS, never in this public repo).
+    DailyInspection._fetchKm100Link();
+    html += '<a id="insp-km100-link" href="' + (DailyInspection._km100Url || '/km100/') + '" target="_blank" rel="noopener"'
+      + ' style="display:flex;align-items:center;gap:12px;background:#2b3236;color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;text-decoration:none;min-height:56px;">'
+      + '<span style="font-size:26px;line-height:1;">🚜</span>'
+      + '<span style="flex:1;min-width:0;"><span style="display:block;font-weight:700;font-size:15px;">KM100 loader service book</span>'
+      + '<span style="display:block;font-size:12px;color:#c9cfd2;">Daily check · hour meter · services · manuals</span></span>'
+      + '<span style="background:#f2b705;color:#3a2c00;font-weight:700;font-size:13px;padding:7px 12px;border-radius:8px;white-space:nowrap;">Open</span>'
+      + '</a>';
+
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;">';
 
     // Header / summary
@@ -690,6 +701,18 @@ var DailyInspection = {
       if (window._opsTab === 'pretrip' || window._currentPage === 'pretrip') {
         loadPage(window._currentPage);
       }
+    });
+  },
+  _fetchKm100Link: function() {
+    if (DailyInspection._km100Fetched) return;
+    DailyInspection._km100Fetched = true;
+    if (!window.SB || !SB.from) return;
+    SB.from('equipment_info').select('data').eq('equipment_key', 'km100:link').limit(1).then(function(r) {
+      var k = r && !r.error && r.data && r.data[0] && r.data[0].data && r.data[0].data.k;
+      if (!k) { if (r && r.error) console.warn('km100 link fetch:', r.error.message); return; }
+      DailyInspection._km100Url = '/km100/?k=' + encodeURIComponent(k);
+      var a = document.getElementById('insp-km100-link');
+      if (a) a.href = DailyInspection._km100Url;
     });
   },
   resolveMaint: function(id) {
