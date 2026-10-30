@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2b3236">
+<title>KM100 Tele Service Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+
+/* Layout: one phone-width column, sticky status strip + tab bar; field-manual feel (machine-yellow on graphite) */
+:root{
+  --bg:#f3f2ee; --card:#ffffff; --ink:#1d2124; --muted:#5e666b; --line:#dcdad3;
+  --yellow:#f2b705; --yellow-ink:#3a2c00; --steel:#2b3236;
+  --ok:#2f7d3b; --ok-bg:#e5f2e6; --warn:#a85d00; --warn-bg:#fff1d6; --bad:#b3261e; --bad-bg:#fbe4e2;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15181a; --card:#1e2326; --ink:#eceae4; --muted:#a3abaf; --line:#343b3f;
+  --yellow:#f2b705; --yellow-ink:#2a2000; --steel:#0e1112;
+  --ok:#7fcf88; --ok-bg:#183020; --warn:#f0b257; --warn-bg:#3a2a10; --bad:#ff8a80; --bad-bg:#3d1a18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15181a; --card:#1e2326; --ink:#eceae4; --muted:#a3abaf; --line:#343b3f;
+  --yellow:#f2b705; --yellow-ink:#2a2000; --steel:#0e1112;
+  --ok:#7fcf88; --ok-bg:#183020; --warn:#f0b257; --warn-bg:#3a2a10; --bad:#ff8a80; --bad-bg:#3d1a18; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--steel);color:#fff}
+header.top .wrap{padding-block:14px 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:.01em;line-height:1;text-transform:uppercase}
+.brand small{display:block;font-family:var(--body);font-weight:500;font-size:13px;letter-spacing:0;text-transform:none;color:#c9cfd2;margin-top:4px}
+.meter{display:flex;align-items:center;gap:10px;background:#000;border-radius:8px;padding:6px 8px 6px 12px;border:1px solid #3d464b}
+.meter .digits{font-family:var(--mono);font-size:22px;color:var(--yellow);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.meter .unit{font-size:11px;color:#9aa3a8;text-transform:uppercase;letter-spacing:.08em}
+.meter button{background:var(--yellow);color:var(--yellow-ink);border:0;border-radius:6px;font:700 13px var(--body);padding:7px 10px;cursor:pointer}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--yellow)}
+nav.tabs .wrap{display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs a{font-family:var(--display);font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding:11px 4px 9px;color:var(--yellow-ink);text-decoration:none;border-bottom:4px solid transparent}
+nav.tabs a[aria-current="page"]{border-bottom-color:var(--yellow-ink)}
+nav.tabs a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,label.tick:focus-within{outline:3px solid var(--yellow);outline-offset:2px}
+main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+section[data-tab]{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-weight:800;font-size:24px;text-transform:uppercase;letter-spacing:.02em;margin:6px 0 0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.03em;margin:0;text-wrap:balance}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.banner{border-radius:10px;padding:12px 14px;font-size:15px}
+.banner.info{background:var(--warn-bg);color:var(--ink);border:1px solid var(--line)}
+/* next-service hero */
+.due{border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;border:2px solid var(--line);background:var(--card)}
+.due .label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.due .big{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.05;text-transform:uppercase}
+.due .sub{font-size:15px}
+.due.ok{border-color:var(--ok);background:var(--ok-bg)}
+.due.soon{border-color:var(--warn);background:var(--warn-bg)}
+.due.over{border-color:var(--bad);background:var(--bad-bg)}
+.due.unknown{border-style:dashed}
+.pill{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--line);color:var(--ink)}
+.pill.ok{background:var(--ok);color:var(--card)}.pill.soon{background:var(--warn);color:var(--card)}.pill.over{background:var(--bad);color:var(--card)}
+/* checklists */
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.group-h{background:var(--steel);color:#fff;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;padding:7px 12px}
+label.tick{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;padding:12px;border-top:1px solid var(--line);cursor:pointer;min-height:56px}
+label.tick:first-of-type{border-top:0}
+label.tick input{appearance:none;-webkit-appearance:none;width:28px;height:28px;border:2px solid var(--muted);border-radius:6px;margin:0;display:grid;place-content:center;background:var(--card);cursor:pointer}
+label.tick input::after{content:"";width:14px;height:8px;border-left:3px solid var(--yellow-ink);border-bottom:3px solid var(--yellow-ink);transform:rotate(-45deg) translate(1px,-2px);opacity:0}
+label.tick input:checked{background:var(--yellow);border-color:var(--yellow)}
+label.tick input:checked::after{opacity:1}
+label.tick .t{font-weight:600}
+label.tick .d{font-size:14px;color:var(--muted);display:block;margin-top:2px}
+label.tick .d a{color:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:0;border-radius:8px;padding:13px 16px;font:700 16px var(--body);cursor:pointer;background:var(--yellow);color:var(--yellow-ink);min-height:48px}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn.small{padding:8px 12px;font-size:14px;min-height:38px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 140px}
+.field label{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.03em}
+input[type=number],input[type=text],input[type=date],select,textarea{font:500 17px var(--body);padding:11px 12px;border:2px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+.progress{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.progress span{display:block;height:100%;background:var(--yellow);width:0;transition:width .2s}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--steel);color:#fff;padding:12px 16px;border-radius:10px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+/* tables */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+thead th{border-top:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+.pn{font-family:var(--mono);font-size:14px;white-space:nowrap}
+.flag{font-size:13px;font-weight:700;color:var(--warn)}
+/* parts cards */
+.part{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-top:1px solid var(--line)}
+.part:first-child{border-top:0}
+.part .name{font-weight:700}
+.part .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted)}
+/* photos */
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.slot{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.slot .ph{aspect-ratio:4/3;background:var(--bg);display:grid;place-items:center;color:var(--muted);font-size:13px;text-align:center;padding:6px;max-width:100%}
+.slot .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.slot .cap{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.slot .cap b{font-size:14px}
+.slot .cap span{font-size:12px;color:var(--muted)}
+.upl{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:700 14px var(--body);background:var(--yellow);color:var(--yellow-ink);border-radius:7px;padding:8px 10px;cursor:pointer;min-height:38px}
+.upl input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.thumbs{display:flex;gap:6px;overflow-x:auto}
+.thumbs a img{width:56px;height:42px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
+/* figures */
+figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;max-width:100%}
+figure img{display:block;width:100%;height:auto;min-height:120px;border-radius:4px;background:#f1f1ee}
+figure figcaption{font-size:13px;color:#4a5155}
+.figs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px}
+details>summary{cursor:pointer;padding:13px 14px;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:8px;align-items:center}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:"+";font-family:var(--display);font-size:22px;line-height:1;color:var(--muted)}
+details[open]>summary::after{content:"–"}
+details .in{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
+/* history */
+.hist{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.hist .h{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:11px 14px;border-top:1px solid var(--line)}
+.hist .h:first-child{border-top:0}
+.hist .when{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}
+.hist .what{font-weight:600;min-width:0}
+.hist .what small{display:block;font-weight:400;color:var(--muted);font-size:14px}
+.doc{display:flex;gap:12px;align-items:flex-start;padding:14px;border-top:1px solid var(--line)}
+.doc:first-child{border-top:0}
+.doc .ico{flex:0 0 auto;width:42px;height:52px;border-radius:4px;background:var(--steel);color:var(--yellow);display:grid;place-items:center;font:800 13px var(--display);letter-spacing:.04em}
+.doc .body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.doc a.open{font-weight:700;color:var(--ink)}
+.jumps{display:flex;flex-wrap:wrap;gap:6px}
+.jumps a{font-size:13px;padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink);text-decoration:none;background:var(--bg)}
+.spec{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}
+.spec dt{color:var(--muted)}
+.spec dd{margin:0;font-weight:600;min-width:0}
+.empty{font-size:15px;color:var(--muted);padding:14px;text-align:center}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">KM100 Tele<small>Intrepid mini loader · Kubota D1105-E4B · Second Nature Tree</small></div>
+    <div class="meter" aria-live="polite">
+      <div><div class="digits" id="meterDigits">----.-</div><div class="unit" id="meterWhen">hours · not entered</div></div>
+      <button type="button" id="meterBtn">Update</button>
+    </div>
+  </div>
+</header>
+<nav class="tabs" aria-label="Sections">
+  <div class="wrap">
+    <a href="#today" data-go="today">Today</a>
+    <a href="#service" data-go="service">Service</a>
+    <a href="#parts" data-go="parts">Parts</a>
+    <a href="#manuals" data-go="manuals">Manuals</a>
+  </div>
+</nav>
+
+<main><div class="wrap">
+
+  <div class="banner info" id="keyNote" hidden>This link is missing its access key. Ask Doug for the full KM100 link.</div>
+  <div class="banner info" id="offlineNote" hidden>Can't reach Branch Manager right now. Check your signal and reload — nothing on this page is saved until it connects.</div>
+
+  <!-- HOUR METER EDITOR -->
+  <div class="card" id="meterEdit" hidden>
+    <h3>Enter hour meter reading</h3>
+    <p class="small muted">Read it off the hour counter on the dash (item E on the dashboard diagram in the manual).</p>
+    <div class="row">
+      <div class="field"><label for="meterInput">Hours</label><input id="meterInput" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 48.5"></div>
+      <div class="field" style="flex:0 0 auto;align-self:flex-end"><button class="btn" type="button" id="meterSave">Save hours</button></div>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <section data-tab="today" id="tab-today">
+    <div class="due unknown" id="dueCard">
+      <span class="label">Next service</span>
+      <span class="big" id="dueBig">First service · 50 hrs</span>
+      <span class="sub" id="dueSub">Enter the hour meter reading above to see how close you are.</span>
+    </div>
+
+    <div class="row" style="justify-content:space-between">
+      <h2>Daily check</h2>
+      <span class="pill" id="dailyStatus">Not done today</span>
+    </div>
+    <p class="small muted">Before the first job of the day. Engine cold and off for the first part. If anything fails, tick it anyway only if you fixed it — otherwise leave it and write what's wrong below.</p>
+    <div class="progress" aria-hidden="true"><span id="dailyBar"></span></div>
+    <div id="dailyList"></div>
+    <div class="field"><label for="dailyNote">Problems or notes (leave blank if all good)</label><textarea id="dailyNote" placeholder="e.g. small hydraulic weep at boom cylinder, left front tire low"></textarea></div>
+    <div class="row">
+      <div class="field"><label for="dailyName">Your name</label><input id="dailyName" type="text" autocomplete="name" placeholder="Who did the check"></div>
+    </div>
+    <button class="btn block" type="button" id="dailySave">Save today's check</button>
+
+    <h2>Recent activity</h2>
+    <div class="hist" id="histList"><div class="empty">No checks or services saved yet. Today's check will show up here once saved.</div></div>
+  </section>
+
+  <!-- SERVICE -->
+  <section data-tab="service" id="tab-service" hidden>
+    <h2>Service schedule</h2>
+    <p class="small muted">From the Intrepid user manual, periodic maintenance table (manual p.32). The engine oil change after the first 50 hours is one-time; everything else repeats on the hour meter.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>When</th><th>What gets done</th></tr></thead>
+        <tbody>
+          <tr><td><b>Daily</b></td><td>Grease hinge points &amp; mounting plate pins. Walk-around, fluid levels, tire pressure, belt, pre-filter. (Today tab.)</td></tr>
+          <tr><td><b>First 50</b></td><td>Change engine oil (one time — break-in).</td></tr>
+          <tr><td><b>Every 150</b></td><td>Engine oil + oil filter · air filter (outer + inner) · grease the other lube points · clean engine oil cooler · drain water from fuel filter · check fuel tank for rust/damage.</td></tr>
+          <tr><td><b>Every 300</b></td><td>Everything at 150, plus replace fuel filter and hydraulic filter.</td></tr>
+          <tr><td><b>600, then every 1,200</b></td><td>Replace any safety stickers that are hard to read.</td></tr>
+          <tr><td><b>Every 1,200</b></td><td>Everything at 300, plus drain and replace hydraulic fluid.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row" style="justify-content:space-between">
+      <h2 id="svcTitle">Next: 50-hour service</h2>
+      <span class="pill" id="svcPill">—</span>
+    </div>
+    <div class="field">
+      <label for="svcPick">Service to log</label>
+      <select id="svcPick"></select>
+    </div>
+    <div class="progress" aria-hidden="true"><span id="svcBar"></span></div>
+    <div id="svcList"></div>
+    <div class="row">
+      <div class="field"><label for="svcHours">Hour meter when done</label><input id="svcHours" type="number" inputmode="decimal" step="0.1" min="0"></div>
+      <div class="field"><label for="svcDate">Date</label><input id="svcDate" type="date"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="svcWho">Done by</label><input id="svcWho" type="text" placeholder="Name or shop (e.g. Miniloaders)"></div>
+    </div>
+    <div class="field"><label for="svcNote">Notes · parts used · oil brand</label><textarea id="svcNote" placeholder="e.g. 15W-40 Rotella, filter # off the box, 1 gal"></textarea></div>
+    <button class="btn block" type="button" id="svcSave">Mark this service done</button>
+    <p class="small muted" id="svcHint">You can save with items unticked — they'll be listed as skipped so nobody thinks they were done.</p>
+
+    <h2>Grease points</h2>
+    <div class="figs">
+      <figure><img data-file="img/grease-daily.jpg" alt="Manual diagram: daily grease nipples (A) on the boom, tilt linkage and mounting plate" loading="lazy"><figcaption><b>Daily</b> — hinge points &amp; mounting plate (manual p.35). Grease until it comes out of the bearing; wipe off the extra. NLGI 2 grease.</figcaption></figure>
+      <figure><img data-file="img/grease-150.jpg" alt="Manual diagram: other grease nipples (A) at the articulation and rear frame" loading="lazy"><figcaption><b>Every 150 hrs</b> — the other lube points (manual p.40).</figcaption></figure>
+    </div>
+
+    <h2>Service history</h2>
+    <div class="hist" id="svcHist"><div class="empty">No services logged yet. If Miniloaders or anyone else already did one, log it above with the hours it was done at.</div></div>
+  </section>
+
+  <!-- PARTS -->
+  <section data-tab="parts" id="tab-parts" hidden>
+    <h2>Fluids</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fluid</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td><b>Engine oil</b></td><td>API <b>CD or better</b>. <b>15W-40</b> or <b>10W-30</b> above 14 °F (−10 °C). Colder: see Kubota engine manual. Any heavy-duty diesel oil (CK-4) at the parts store meets this.<br><span class="muted small">Manual p.43. Capacity isn't in the Intrepid manual — fill to the dipstick, don't overfill.</span></td></tr>
+          <tr><td><b>Hydraulic fluid</b></td><td>Total <b>Azolla ZS 46</b> (ISO VG 46 anti-wear hydraulic). Check at sight glass, ~68 °F, to the bottom red mark.</td></tr>
+          <tr><td><b>Coolant</b></td><td>Total <b>Coolelf Auto Supra −26 °C</b> (pre-mixed). Top up to FULL on the reservoir, engine cold.</td></tr>
+          <tr><td><b>Grease</b></td><td><b>NLGI 2</b> general-purpose grease.</td></tr>
+          <tr><td><b>Fuel</b></td><td>Diesel. Tank holds <b>8.7 gal</b> (33 L).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Filters &amp; wear parts</h2>
+    <div class="banner info"><b>Oil filter for the auto-parts store:</b> not confirmed yet. Intrepid's own number is <span class="pn">42011739</span>. The Kubota number most sellers list for the D1105 is <span class="pn">HH164-32430</span>, but sources disagree. Before buying, photograph the filter that's on the machine now (Photos, below) or ask Chris at Miniloaders, and check the number printed on it.</div>
+    <div class="list" id="partsList">
+      <div class="part"><div class="name">Engine oil filter</div><div class="meta"><span>Intrepid <span class="pn">42011739</span></span><span>"Motoroliefilter D1105/1505"</span><span>Every 150 hrs</span></div><div class="small">Kubota numbers seen for D1105: <span class="pn">HH164-32430</span> (a.k.a. 16414-32430) is the most common; others list <span class="pn">HH160-32093</span>. <span class="flag">Unconfirmed — match the number on the old filter.</span></div></div>
+      <div class="part"><div class="name">Air filter — outer</div><div class="meta"><span>Intrepid <span class="pn">42001570</span></span><span>Fleetguard housing</span><span>Every 150 hrs</span></div></div>
+      <div class="part"><div class="name">Air filter — inner (safety)</div><div class="meta"><span>Intrepid <span class="pn">42001571</span></span><span>Every 150 hrs</span></div></div>
+      <div class="part"><div class="name">Fuel filter element</div><div class="meta"><span>Intrepid <span class="pn">42021572</span></span><span>Kit <span class="pn">40048183</span> (Kubota D722/D1105)</span><span>Drain water 150 · replace 300</span></div></div>
+      <div class="part"><div class="name">Fuel pre-filter (by electric lift pump)</div><div class="meta"><span>Intrepid <span class="pn">42021580</span></span><span>Replace with fuel filter</span></div></div>
+      <div class="part"><div class="name">Hydraulic filter</div><div class="meta"><span>Intrepid <span class="pn">42031582</span></span><span>"CS150 10µ" element</span><span>Every 300 hrs</span></div><div class="small">Pre-fill the new filter with hydraulic oil before fitting, or air gets in and the fluid goes cloudy (Chris's troubleshooting notes).</div></div>
+      <div class="part"><div class="name">Cyclone pre-cleaner (air)</div><div class="meta"><span>Intrepid <span class="pn">42001724</span></span><span>Clean daily · replace if damaged</span></div></div>
+      <div class="part"><div class="name">Fan belt</div><div class="meta"><span>Intrepid <span class="pn">60611950</span></span><span>"V-riem D1105/1505"</span><span>Play ¼–⅜″ daily check</span></div></div>
+      <div class="part"><div class="name">Oil pressure switch</div><div class="meta"><span>Kubota <span class="pn">15841-39010</span></span><span>If oil light stays on but pressure is OK</span></div></div>
+    </div>
+    <p class="small muted">Intrepid part numbers are from the KM95/KM100 parts book, rev B (June 2025). Order through Miniloaders: Chris Sleurink, <span class="pn">(513) 237-1732</span>, csleurink@miniloaders.com.</p>
+
+    <h2>Machine</h2>
+    <div class="card">
+      <dl class="spec">
+        <dt>Model</dt><dd>Intrepid KM100 Tele (KM100TE)</dd>
+        <dt>Engine</dt><dd>Kubota D1105-E4B · 3-cyl diesel · 25 hp</dd>
+        <dt>Drive pump</dt><dd>Bosch-Rexroth A10VG28 (28 cc + 11 cc gear pump)</dd>
+        <dt>Hydraulics</dt><dd>8.7 gpm · 2,610 psi</dd>
+        <dt>Weight</dt><dd>2,822 lb (no attachment)</dd>
+        <dt>Dealer</dt><dd>Miniloaders LLC — Chris Sleurink</dd>
+      </dl>
+      <div class="row">
+        <div class="field"><label for="mSerial">Machine serial #</label><input id="mSerial" type="text" placeholder="From the serial plate"></div>
+        <div class="field"><label for="mYear">Model year</label><input id="mYear" type="text" placeholder="2024 or 2026?"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="mEngine">Kubota engine serial #</label><input id="mEngine" type="text" placeholder="From the engine tag"></div>
+        <div class="field"><label for="mStartHrs">Hours when delivered</label><input id="mStartHrs" type="number" inputmode="decimal" step="0.1" min="0"></div>
+      </div>
+      <p class="small muted">Year isn't settled: the Geneva Capital paperwork says 2024; the insurance emails said 2026. The serial plate will tell.</p>
+      <button class="btn" type="button" id="mSave">Save machine info</button>
+    </div>
+
+    <h2>Photos</h2>
+    <p class="small muted">Snap these so the numbers are on file. Tap a slot to take or pick a photo.</p>
+    <div class="slots" id="slots"></div>
+    <p class="small muted" id="photoNote" hidden>Photos upload once the page connects to Branch Manager.</p>
+  </section>
+
+  <!-- MANUALS -->
+  <section data-tab="manuals" id="tab-manuals" hidden>
+    <h2>Manuals</h2>
+    <div class="list">
+      <div class="doc"><div class="ico">PDF</div><div class="body">
+        <a class="open" href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="" target="_blank" rel="noopener">Intrepid user manual (English, 46 pages)</a>
+        <span class="small muted">Operating, daily checks, maintenance, specs. Sent by Chris Sleurink, Oct 13 2026.</span>
+        <div class="jumps">
+          <a href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="#page=30" target="_blank" rel="noopener">Daily checks p.30</a>
+          <a href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="#page=32" target="_blank" rel="noopener">Service table p.32</a>
+          <a href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="#page=36" target="_blank" rel="noopener">Oil &amp; coolant p.36</a>
+          <a href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="#page=38" target="_blank" rel="noopener">Air filter p.38</a>
+          <a href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="#page=41" target="_blank" rel="noopener">Troubleshooting p.41</a>
+          <a href="#" data-file="docs/intrepid-user-manual.pdf" data-frag="#page=43" target="_blank" rel="noopener">Fluids &amp; specs p.43</a>
+        </div>
+      </div></div>
+      <div class="doc"><div class="ico">PDF</div><div class="body">
+        <a class="open" href="#" data-file="docs/km100-parts-book.pdf" data-frag="" target="_blank" rel="noopener">KM100 parts book (Dutch, 86 pages)</a>
+        <span class="small muted">Exploded diagrams + Intrepid part numbers, rev B June 2025. Trimmed to KM100 Tele pages from the full KM95/KM100 book.</span>
+        <div class="jumps">
+          <a href="#" data-file="docs/km100-parts-book.pdf" data-frag="#page=67" target="_blank" rel="noopener">Engine p.67</a>
+          <a href="#" data-file="docs/km100-parts-book.pdf" data-frag="#page=71" target="_blank" rel="noopener">Air filter p.71</a>
+          <a href="#" data-file="docs/km100-parts-book.pdf" data-frag="#page=35" target="_blank" rel="noopener">Rear frame + hyd. filter p.35</a>
+          <a href="#" data-file="docs/km100-parts-book.pdf" data-frag="#page=61" target="_blank" rel="noopener">Cooler p.61</a>
+          <a href="#" data-file="docs/km100-parts-book.pdf" data-frag="#page=5" target="_blank" rel="noopener">Tele boom p.5</a>
+          <a href="#" data-file="docs/km100-parts-book.pdf" data-frag="#page=79" target="_blank" rel="noopener">Front wheel motors p.79</a>
+        </div>
+        <span class="small muted">Dutch words you'll see: motor = engine · filter/luchtfilter = air filter · brandstof = fuel · hydrauliek = hydraulic · giek = boom · cilinder = cylinder · koeler = cooler.</span>
+      </div></div>
+      <div class="doc"><div class="ico">PDF</div><div class="body">
+        <a class="open" href="#" data-file="docs/intrepid-troubleshooting.pdf" data-frag="" target="_blank" rel="noopener">Dealer troubleshooting guide (30 pages)</a>
+        <span class="small muted">Chris's working notes, revised 7-18-2026. KM100 Tele section starts p.12.</span>
+        <div class="jumps">
+          <a href="#" data-file="docs/intrepid-troubleshooting.pdf" data-frag="#page=6" target="_blank" rel="noopener">Cranks, won't start p.6</a>
+          <a href="#" data-file="docs/intrepid-troubleshooting.pdf" data-frag="#page=9" target="_blank" rel="noopener">Oil pressure light p.9</a>
+          <a href="#" data-file="docs/intrepid-troubleshooting.pdf" data-frag="#page=12" target="_blank" rel="noopener">KM100 Tele p.12</a>
+          <a href="#" data-file="docs/intrepid-troubleshooting.pdf" data-frag="#page=22" target="_blank" rel="noopener">No crank after tip-over p.22</a>
+        </div>
+      </div></div>
+    </div>
+
+    <h2>Quick troubleshooting</h2>
+    <details><summary>Won't start — starter doesn't turn</summary><div class="in"><p>Starter motor or flat battery. Call Miniloaders.</p><p class="small muted">If the machine tipped over: do NOT restart. Oil on top of the pistons can wreck the engine. See troubleshooting guide p.22.</p></div></details>
+    <details><summary>Won't start — starter turns</summary><div class="in"><p>1. Out of fuel? 2. Hold the key in the glow-plug (GL) position longer. 3. Put every aux hydraulic lever in neutral.</p><p class="small muted">If you ran it out of fuel, bleed at the fuel filter then the injection pump (guide p.6).</p></div></details>
+    <details><summary>No power</summary><div class="in"><p>Clean the cyclone pre-filter → replace air filter → replace fuel filter → check no aux hydraulic function is switched on. Wrong fuel? Stop and call.</p></div></details>
+    <details><summary>Machine won't drive</summary><div class="in"><p>Check hydraulic fluid at the sight glass and top up. Check the park brake is fully off.</p></div></details>
+    <details><summary>Oil pressure light on</summary><div class="in"><p>Stop the engine and check the dipstick. If the level is fine, have the pressure checked with a gauge; if pressure is OK the switch is bad — Kubota <span class="pn">15841-39010</span>.</p></div></details>
+    <details><summary>Can't connect an attachment's hoses</summary><div class="in"><p>Engine off, then work the hydraulic levers back and forth a few times to bleed pressure. If the attachment side is pressurized, crack its hose fitting slowly — fluid will spray.</p></div></details>
+    <details><summary>Hydraulic fluid looks cloudy</summary><div class="in"><p>Usually air from a hydraulic filter that wasn't pre-filled. Run it a few days and recheck. If still cloudy after oil changes, call Miniloaders.</p></div></details>
+    <details><summary>Machine fell over</summary><div class="in"><p>Keep the seatbelt on, stay on the machine, turn the key OFF. Don't restart it — call Miniloaders.</p></div></details>
+
+    <h2>Where things are</h2>
+    <div class="figs">
+      <figure><img data-file="img/engine-bay.jpg" alt="Opening the engine compartment: lever A, seat cover B" loading="lazy"><figcaption>Open the engine bay: line lever A up with the machine, tip the seat cover B.</figcaption></figure>
+      <figure><img data-file="img/pre-filter.jpg" alt="Cyclone pre-filter at the rear with wing nut A, cover B, housing C" loading="lazy"><figcaption>Cyclone pre-filter at the back: wing nut A, cover B, bowl C. Blow out or rinse; dry before refitting.</figcaption></figure>
+      <figure><img data-file="img/dipstick.jpg" alt="Engine oil dipstick A and oil fill cap B" loading="lazy"><figcaption>Dipstick A, oil fill B. Next to the exhaust — check cold.</figcaption></figure>
+      <figure><img data-file="img/coolant-tank.jpg" alt="Coolant reservoir A" loading="lazy"><figcaption>Coolant reservoir A — between LOW and FULL.</figcaption></figure>
+      <figure><img data-file="img/hyd-sight-glass.jpg" alt="Hydraulic sight glass A with red mark B, filler bolt C and cap D" loading="lazy"><figcaption>Hydraulic sight glass A — to the bottom red mark B. Fill cap D is held by bolt C.</figcaption></figure>
+      <figure><img data-file="img/air-filter-elements.jpg" alt="Air filter housing with outer filter B and inner filter C" loading="lazy"><figcaption>Air filter: outer B, inner C. Cover twists off counter-clockwise after pushing tab up.</figcaption></figure>
+      <figure><img data-file="img/hyd-intake-filter.jpg" alt="Hydraulic intake filter C behind side panel A with drain cap B" loading="lazy"><figcaption>Hydraulic intake filter C behind side panel A; drain cap B.</figcaption></figure>
+    </div>
+  </section>
+
+</div></main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="app.js?v=1"></script>
+</body>
+</html>
