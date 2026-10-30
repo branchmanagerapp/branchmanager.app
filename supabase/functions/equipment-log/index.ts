@@ -59,8 +59,9 @@ const list = (v: unknown) => (Array.isArray(v) ? v.slice(0, 40).map(x => str(x, 
 
 async function rest(path: string, init: RequestInit = {}) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { ...H, 'Content-Type': 'application/json', ...(init.headers || {}) } });
-  if (!r.ok) throw new Error(`db ${r.status}: ${(await r.text()).slice(0, 200)}`);
-  return r.status === 204 ? null : r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(`db ${r.status}: ${text.slice(0, 200)}`);
+  return text ? JSON.parse(text) : null; // writes use return=minimal → 201 with empty body
 }
 async function signMany(paths: string[]) {
   if (!paths.length) return {} as Record<string, string>;
