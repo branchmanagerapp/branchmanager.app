@@ -178,7 +178,9 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
 
   const record = () =>
     `<Say voice="Polly.Matthew-Neural">Thanks for calling Second Nature Tree Service. We can't get to the phone right now. Please leave your name, address, and what you need, and we'll call you back.</Say>` +
-    `<Record maxLength="180" playBeep="true" action="${at("vmdone")}" recordingStatusCallback="${at("vmsaved")}" />`;
+    // Nov 12 2026: transcribe the voicemail (Twilio only transcribes 2-120s, so cap at 120).
+    `<Record maxLength="120" playBeep="true" action="${at("vmdone")}" recordingStatusCallback="${at("vmsaved")}" ` +
+    `transcribe="true" transcribeCallback="${at("vmtext")}" />`;
 
   // AI receptionist (Oct 11 2026) — answers instead of voicemail when nobody picks up.
   // tenants.config.ai_receptionist = { mode: "off" | "test" | "on", test_callers: [E.164], transfer_to: E.164 }
@@ -269,6 +271,41 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
   }
 
   if (step === "vmdone") return xml(`<Say voice="Polly.Matthew-Neural">Thank you. Goodbye.</Say><Hangup/>`);
+
+  // Transcript arrives after vmsaved. Put it on the voicemail row in BM and
+  // email it to the office inbox (internal only — never to the caller).
+  if (step === "vmtext") {
+    const text = p.TranscriptionStatus === "completed" ? (p.TranscriptionText || "").trim() : "";
+    const id = "vm-" + (p.RecordingSid || p.CallSid);
+    const { data: v } = await sb.from("communications").select("from_number,client_id,metadata,body").eq("dialpad_id", id).limit(1);
+    const row = v && v[0];
+    const from = (row && row.from_number) || p.From || "";
+    const who = (await clientName(sb, row ? row.client_id : await findClient(sb, from))) || from || "unknown caller";
+    if (row) {
+      await sb.from("communications").update({
+        body: (row.body || "Voicemail") + (text ? "\n\n" + text : " (no transcript)"),
+        metadata: { ...(row.metadata || {}), transcript: text, transcription_status: p.TranscriptionStatus },
+      }).eq("dialpad_id", id);
+    }
+    const RESEND = Deno.env.get("RESEND_API_KEY") ?? "";
+    if (RESEND) {
+      const rec = (row && row.metadata && row.metadata.recording_url) || "";
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: Deno.env.get("RESEND_FROM_EMAIL") ?? "Second Nature Tree <onboarding@resend.dev>",
+          to: ["info@peekskilltree.com"],
+          subject: `Voicemail from ${who}`,
+          text: `Voicemail on the BM line from ${who}${from && from !== who ? " (" + from + ")" : ""}\n\n` +
+            (text || "(Twilio could not transcribe this one — listen to the recording.)") +
+            (rec ? `\n\nListen: ${rec}` : "") + `\n\nOpen BM: https://branchmanager.app/`,
+        }),
+      });
+      if (!r.ok) console.error("voicemail email failed", r.status, (await r.text()).slice(0, 300));
+    }
+    return new Response("ok");
+  }
 
   if (step === "vmsaved") {
     // The recording-status callback doesn't carry From — get it from the call row.
