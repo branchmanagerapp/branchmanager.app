@@ -6,149 +6,82 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Phone Switch Plan</title>
 <style>
-:root{--bg:#f6f7f4;--card:#fff;--ink:#1d2419;--muted:#5f6b58;--line:#e2e6dc;--green:#1a3c12;--ok:#2e7d32;--warn:#b26a00;--bad:#b3261e;--soft:#eef3ea}
-@media (prefers-color-scheme:dark){:root{--bg:#121510;--card:#1b2017;--ink:#e8ede3;--muted:#a3ad9b;--line:#2c3327;--green:#9fd18a;--ok:#81c784;--warn:#ffb74d;--bad:#ef9a9a;--soft:#222a1d}}
+:root{--bg:#f6f7f4;--card:#fff;--ink:#1d2419;--muted:#5f6b58;--line:#e2e6dc;--green:#1a3c12;--ok:#2e7d32;--todo:#b26a00}
+@media (prefers-color-scheme:dark){:root{--bg:#121510;--card:#1b2017;--ink:#e8ede3;--muted:#a3ad9b;--line:#2c3327;--green:#9fd18a;--ok:#81c784;--todo:#ffb74d}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif}
-main{max-width:720px;margin:0 auto;padding:20px 16px 60px}
-h1{font-size:26px;line-height:1.2;margin:4px 0 6px}
-h2{font-size:19px;margin:30px 0 10px;color:var(--green)}
-h3{font-size:16px;margin:16px 0 6px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:26px;line-height:1.2;margin:4px 0 8px}
+h2{font-size:19px;margin:28px 0 8px;color:var(--green)}
 p{margin:8px 0}
 .sub{color:var(--muted);font-size:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
-.big{font-size:18px;font-weight:600}
-.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;margin-right:6px;vertical-align:1px}
-.t-ok{background:#e3f1e3;color:#1f5e22}.t-warn{background:#fff1dc;color:#7a4a00}.t-bad{background:#fde7e5;color:#8a1c16}.t-q{background:#e6ecf7;color:#26457a}
-@media (prefers-color-scheme:dark){.t-ok{background:#20361f;color:#a5d6a7}.t-warn{background:#3a2c14;color:#ffcc80}.t-bad{background:#3d1d1b;color:#ffb4ab}.t-q{background:#1e2a3d;color:#a9c4f5}}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;vertical-align:top;padding:8px 6px;border-top:1px solid var(--line)}
-th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border-top:none}
-td:first-child{font-weight:600;width:28%}
-ol,ul{padding-left:20px;margin:6px 0}
-li{margin:5px 0}
-.steps li{margin:10px 0}
-.flow{display:flex;flex-direction:column;gap:6px;margin:8px 0}
-.flow div{background:var(--soft);border-radius:8px;padding:8px 10px;font-size:15px}
-.flow .arrow{background:none;text-align:center;padding:0;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
+.big{font-size:19px;font-weight:600;margin:0}
+ol,ul{padding-left:22px;margin:6px 0}
+li{margin:8px 0}
+.ok{color:var(--ok);font-weight:700}
+.todo{color:var(--todo);font-weight:700}
 .src{font-size:13px;color:var(--muted)}
 .src a{color:var(--muted)}
-a{color:var(--green)}
-.callout{border-left:4px solid var(--warn);background:var(--card);padding:10px 14px;border-radius:0 10px 10px 0;margin:12px 0}
-.callout.ok{border-color:var(--ok)}
 </style>
 </head>
 <body>
 <main>
-<p class="sub">Second Nature Tree · written Nov 12, 2026 · internal</p>
-<h1>Moving the business phone from Dialpad to Twilio</h1>
-<p>What changes, what Catherine will notice, how the switch day goes, and where Jobber fits in.</p>
+<p class="sub">Second Nature Tree · updated Nov 12, 2026</p>
+<h1>Switching the phone from Dialpad to Twilio</h1>
 
 <div class="card">
-<p class="big">The short version</p>
+<p class="big">Same number. Customers notice nothing. Everything logged in Branch Manager <i>and</i> Jobber.</p>
+</div>
+
+<h2>The plan</h2>
+<div class="card">
+<ol>
+<li><b>Calls out show 391-5233.</b> You or Catherine tap Call in Branch Manager. Your cell rings, you press 1, and the customer sees (914) 391-5233. This works before the switch.</li>
+<li><b>Move the number.</b> We ask Twilio to take 391-5233 from Dialpad. It takes about 1–2 weeks of paperwork, and the phone keeps working on Dialpad the whole time.</li>
+<li><b>Switch moment.</b> On a quiet day and time we pick, the number flips to Twilio. Catherine keeps the Dialpad app open that day as a backup.</li>
+<li><b>Test, then cancel Dialpad.</b> Test a call, a text and a voicemail. Then cancel Dialpad, before it renews on 3/4/2027.</li>
+</ol>
+</div>
+
+<h2>What changes for Catherine</h2>
+<div class="card">
 <ul>
-<li>Twilio is the phone company. Branch Manager is the screen where calls, texts and voicemails show up. So it's <b>Dialpad → Twilio, and Twilio feeds Branch Manager</b>. Those aren't two different options; it's one setup.</li>
-<li>The number customers call, <b>(914) 391-5233, stays the same</b>. Customers notice nothing.</li>
-<li>For Catherine the big change: <b>calls ring her normal cell phone</b> instead of the Dialpad app, and she <b>presses 1 to answer</b>.</li>
-<li>There is no hour-long outage. The number keeps working on Dialpad until the moment it moves. The risky part is a short window on switch day, so we pick a quiet time.</li>
-<li>Jobber doesn't connect to Dialpad or Twilio on its own. But because we own the Twilio setup, <b>we can send calls into Jobber ourselves</b> (see the Jobber section).</li>
+<li><b>Calls ring her regular cell</b> instead of the Dialpad app. A voice says "Branch Manager call. Press 1 to answer."</li>
+<li>If she misses it, it rings Doug, then goes to voicemail.</li>
+<li><b>Every call, text and voicemail shows up in Jobber</b>, where she already works. Voicemails come typed out.</li>
+<li>She calls customers back from Branch Manager, so they see the business number.</li>
+<li>No Dialpad app anymore. Nothing new to install.</li>
 </ul>
 </div>
 
-<h2>Where things stand today</h2>
+<h2>What changes for customers</h2>
+<div class="card"><p>Nothing. Same number for calls and texts, both in and out.</p></div>
+
+<h2>Where it stands</h2>
 <div class="card">
-<table>
-<tr><th>Piece</th><th>Status</th></tr>
-<tr><td>Test line 914-335-3417</td><td><span class="tag t-ok">Working</span>Live on Twilio since August. Tested with Doug's cell Oct 10–11.</td></tr>
-<tr><td>Texts from BM</td><td><span class="tag t-ok">Working</span>BM has sent through Twilio since Oct 10. Test texts were delivered.</td></tr>
-<tr><td>Texts in</td><td><span class="tag t-ok">Working</span>They land in BM and send an alert text to Doug + Catherine.</td></tr>
-<tr><td>Calls in</td><td><span class="tag t-ok">Working</span>Ring Catherine, then Doug, then voicemail.</td></tr>
-<tr><td>Voicemail</td><td><span class="tag t-ok">Working</span>Saved in BM, play link texted to Doug + Catherine.</td></tr>
-<tr><td>Voicemail transcript</td><td><span class="tag t-ok">Live Nov 12</span>Typed out, saved in BM, emailed to info@peekskilltree.com. Not yet tested with a real call.</td></tr>
-<tr><td>Calling out showing the business number</td><td><span class="tag t-warn">Not built</span>Proposed "call bridge" below. Needs Doug's OK.</td></tr>
-<tr><td>Main number 391-5233</td><td><span class="tag t-q">On Dialpad</span>Untouched. Dialpad renews yearly on 3/4/2027.</td></tr>
-</table>
-<p class="src">Evidence: Twilio call and message logs + BM communications table, pulled Nov 12, 2026.</p>
+<ul>
+<li><span class="ok">Done</span> Texts in and out through Twilio, logged in Branch Manager</li>
+<li><span class="ok">Done</span> Calls ring Catherine → Doug → voicemail</li>
+<li><span class="ok">Done</span> Voicemails typed out and emailed to the office</li>
+<li><span class="ok">Done</span> Every call, text and voicemail copied into Jobber</li>
+<li><span class="todo">Next</span> Calls out showing 391-5233 (step 1)</li>
+<li><span class="todo">Then</span> Move the number (steps 2–4)</li>
+</ul>
+<p class="src">Done items checked Nov 12, 2026 on the test line (914) 335-3417.</p>
 </div>
 
-<h2>How it affects Catherine</h2>
-<div class="card">
-<p><b>Today (Dialpad):</b> Catherine has her own Dialpad login and her own Dialpad number, <b>914-257-3964</b>. She last signed in today. Business calls ring her in the Dialpad app.</p>
-<p><b>After the switch (Twilio):</b></p>
-<table>
-<tr><th>Situation</th><th>What happens</th></tr>
-<tr><td>Customer calls</td><td>Her <b>regular cell</b> (978-621-8013) rings first for about 20 seconds (~4 rings). A voice says <i>"Branch Manager call from [name or number]. Press 1 to answer."</i> She presses 1 and she's talking to the customer.</td></tr>
-<tr><td>Why "press 1"</td><td>Without it, her cell's own voicemail could pick up and swallow the customer's call. We saw exactly that happen in testing on Oct 10.</td></tr>
-<tr><td>She doesn't answer</td><td>It rings Doug next, then goes to the business voicemail. She gets a text with a link to play the message, and the typed-out transcript goes to the office email.</td></tr>
-<tr><td>Caller ID she sees</td><td>The customer's number. The spoken "Branch Manager call" prompt is what tells her it's a business call.</td></tr>
-<tr><td>Customer texts</td><td>Text lands in Branch Manager. Catherine gets an alert text on her cell with the message. She replies from <b>Branch Manager</b> (not her phone's Messages app) so the reply comes from the business number.</td></tr>
-<tr><td>Calling a customer back</td><td>Not solved yet. If she dials from her cell, the customer sees her personal number. Fix = the call bridge below.</td></tr>
-<tr><td>Dialpad app</td><td>She stops using it. Nothing new to install.</td></tr>
-</table>
-<div class="callout"><b>Decision needed: her Dialpad number 914-257-3964.</b> When Dialpad is cancelled, that number dies unless we move it too. If customers know her by that number, port it to Twilio along with the main line (about $1.15/month). If nobody uses it, let it go.</div>
-<div class="callout"><b>Doug also has a Dialpad number, 917-730-2507</b>, which forwards to his cell. Same question.</div>
-</div>
-
-<h2>Calling out with the business number (proposal)</h2>
-<div class="card">
-<p>The simplest way that needs no new app is a <b>call bridge</b>:</p>
-<div class="flow">
-<div>1. Tap <b>Call</b> on a client in Branch Manager</div>
-<div class="arrow">↓</div>
-<div>2. Your own cell rings. Answer and press 1</div>
-<div class="arrow">↓</div>
-<div>3. Twilio dials the customer, who sees <b>(914) 391-5233</b></div>
-</div>
-<p>Cost is roughly 3¢ a minute (two legs at $0.014/min, Twilio's US pricing page). The downside: calls start from BM, not from the phone's own dialer. <span class="tag t-warn">Not built</span> Waiting on Doug's OK.</p>
-</div>
-
-<h2>Switch day: how the move goes</h2>
-<div class="card">
-<p><b>There isn't a long outage.</b> Porting is a paperwork process between phone companies that takes about <b>5–15 days</b>. The whole time, 391-5233 keeps working normally on Dialpad. On the scheduled day and time, the number flips to Twilio.</p>
-<ol class="steps">
-<li><b>Before:</b> Doug gets the port PIN from Dialpad and a recent Dialpad bill. We submit the port to Twilio, and Doug signs the e-form Twilio emails.</li>
-<li><b>Pick the flip time:</b> Twilio lets us choose the date and time. Choose a quiet one, like a winter weekday evening or a weekend morning.</li>
-<li><b>The flip:</b> calls start arriving through Twilio and ringing Catherine's cell the new way. For a short window, some calls may still land on Dialpad, so <b>Catherine keeps the Dialpad app open that day</b>.</li>
-<li><b>Texts right after the flip:</b> we attach the number to the approved texting registration right away. Until that's done, texts sent from BM on the main number can fail (they show as failed in BM, never silently).</li>
-<li><b>Right after:</b> test a call in, a text in, a text out, and a voicemail. Then point BM's sending number at 391-5233.</li>
-<li><b>Only then cancel Dialpad</b>, well before the 3/4/2027 renewal. Dialpad itself says not to cancel until the port is complete.</li>
-</ol>
-<div class="callout ok"><b>Safety net:</b> if anything looks wrong on switch day, Dialpad is still paid for, and the number can be pointed at Doug's cell from the Twilio side in about a minute.</div>
-</div>
-
-<h2>What about Jobber?</h2>
-<div class="card">
-<p>Right: <b>Jobber doesn't plug into Dialpad or Twilio.</b> Jobber's only built-in phone connection is <b>Quo</b> (formerly OpenPhone). There's a paid third-party app, KodaAI, that can listen to Dialpad calls and create Jobber requests.</p>
-<p><b>But we don't need either.</b> Branch Manager already talks to Jobber: it can create Jobber clients and requests through Jobber's API, the same way website leads go in. Since every Twilio call, text and voicemail already passes through our own code, we can add one step: <b>a new caller or a voicemail creates a draft request in Jobber</b>, with the transcript in the notes and tagged "- Claude", so Catherine sees it where she already works.</p>
-<p><span class="tag t-q">Option</span> Not built. It's a small add-on once Doug OKs it, and it never texts or emails the customer.</p>
-<p class="src">Sources: <a href="https://help.getjobber.com/en/articles/jobber-and-quo-integration/">Jobber — Jobber and Quo Integration</a> (updated Oct 28, 2026); <a href="https://secure.getjobber.com/app_marketplace">Jobber App Marketplace</a> (KodaAI listing); <a href="https://www.dialpad.com/integrations/">Dialpad Integrations</a> (no Jobber listed). Checked Nov 12, 2026.</p>
-</div>
-
-<h2>Port checklist (for switch time)</h2>
-<div class="card">
-<p>Twilio's check on Nov 12 (looking only, nothing started): 391-5233 <b>can be ported</b>, and a PIN + account number are required.</p>
-<table>
-<tr><th>Needed</th><th>What we have</th></tr>
-<tr><td>Name on account</td><td>"Second Nature Tree &amp; Lawn" (Dialpad records). Confirm it matches the bill exactly.</td></tr>
-<tr><td>Service address</td><td>1 Highland Indust Park, Ste 1, Peekskill NY 10566 (Dialpad emergency address)</td></tr>
-<tr><td>Account number</td><td>Dialpad Company ID 5756508795183104. Confirm it's what the bill shows.</td></tr>
-<tr><td>Port PIN</td><td>Doug makes it at <a href="https://dialpad.com/portout">dialpad.com/portout</a></td></tr>
-<tr><td>Bill</td><td>A Dialpad bill from the last 30 days</td></tr>
-<tr><td>Signature</td><td>Twilio emails Doug an e-form to sign</td></tr>
-</table>
-<p class="src">Sources: <a href="https://help.dialpad.com/hc/en-us/articles/54832906456219-Port-Out-Dialpad-Numbers">Dialpad — Port Out Dialpad Numbers</a>; <a href="https://www.twilio.com/en-us/guidelines/us/porting">Twilio — US Porting Guidelines</a>. Checked Nov 12, 2026.</p>
-</div>
-
-<h2>Decisions for Doug</h2>
+<h2>What Doug needs to do</h2>
 <div class="card">
 <ol>
-<li>Build the call bridge so you and Catherine can call out showing the business number?</li>
-<li>Keep the ring order Catherine first, then Doug?</li>
-<li>Move Catherine's 914-257-3964 (and Doug's 917-730-2507) too, or let them go?</li>
-<li>Add "calls and voicemails create a draft Jobber request"?</li>
-<li>Pick the switch day and time.</li>
+<li>Answer one call on 391-5233 and type the 6-digit code Twilio reads out. This lets calls out show the business number.</li>
+<li>For the move: get the port PIN at <a href="https://dialpad.com/portout">dialpad.com/portout</a>, plus one recent Dialpad bill.</li>
+<li>Sign the form Twilio emails you.</li>
+<li>Decide: does Catherine's own Dialpad number (914-257-3964) move too, or go away?</li>
 </ol>
 </div>
+
+<p class="src">Sources: <a href="https://help.dialpad.com/hc/en-us/articles/54832906456219-Port-Out-Dialpad-Numbers">Dialpad — Port Out</a> · <a href="https://www.twilio.com/en-us/guidelines/us/porting">Twilio — US porting</a> · <a href="https://support.twilio.com/hc/en-us/articles/223179848-Using-a-Non-Twilio-Number-as-the-Caller-ID-for-Outgoing-Calls">Twilio — caller ID from a non-Twilio number</a> · checked Nov 12, 2026.</p>
 </main>
 </body>
 </html>
