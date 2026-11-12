@@ -1,229 +1,118 @@
-<!doctype html><html lang="en"><head>
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Branch Manager — Go-Live Plan</title>
+<meta name="robots" content="noindex,nofollow">
+<title>Doug + Catherine — What's Next</title>
 <style>
-  :root{--ink:#141a1f;--muted:#5b6672;--line:#e7e9ec;--red:#b3261e;--red-bg:#fdecea;--amber:#8a5a00;--amber-bg:#fef7e6;--blue:#1256a0;--blue-bg:#e8f1fb;--green:#1f7a44;--green-d:#155c33;--green-bg:#e9f6ee;--card:#fff;--bg:#f4f5f7}
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;line-height:1.5;-webkit-text-size-adjust:100%}
-  .wrap{max-width:660px;margin:0 auto;padding:20px 16px 72px}
-  header.hd{padding:26px 20px;border-radius:16px;background:linear-gradient(160deg,#22303a,#141a1f);color:#fff;margin-bottom:16px}
-  header.hd h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
-  header.hd p{margin:10px 0 0;font-size:14px;color:#c3ccd4}
-  .updated{font-size:11.5px;color:#9fb0bd;margin-top:8px}
-  nav.jump{display:flex;gap:7px;margin-bottom:20px;flex-wrap:wrap}
-  nav.jump a{flex:1 1 30%;text-align:center;text-decoration:none;font-weight:700;font-size:12.5px;padding:11px 6px;border-radius:11px}
-  nav.jump a.a1{background:#22303a;color:#fff}
-  nav.jump a.a2{background:var(--green);color:#fff}
-  nav.jump a.a3{background:var(--red);color:#fff}
-  h2.part{font-size:19px;font-weight:800;margin:32px 4px 4px;letter-spacing:-.01em;scroll-margin-top:12px}
-  .part-sub{font-size:13.5px;color:var(--muted);margin:0 4px 14px}
-  h3.sec{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:800;margin:24px 4px 10px}
-  .item{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;margin-bottom:12px}
-  .item.amber{border-left-color:var(--amber)} .item.blue{border-left-color:var(--blue)} .item.grey{border-left-color:#9aa4af} .item.green{border-left-color:var(--green)}
-  .item h4{margin:0 0 6px;font-size:16px;font-weight:800;line-height:1.3}
-  .item .what{font-size:14px;color:#333;margin:0 0 8px}
-  .tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin:0 6px 8px 0}
-  .tag.red{background:var(--red-bg);color:var(--red)} .tag.amber{background:var(--amber-bg);color:var(--amber)} .tag.blue{background:var(--blue-bg);color:var(--blue)} .tag.grey{background:#eceef0;color:#5b6672} .tag.green{background:var(--green-bg);color:var(--green-d)}
-  .st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);display:inline-block;margin-bottom:8px}
-  .cost{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
-  .cost b{color:var(--ink)} .fix{font-size:12.5px;color:var(--green-d);margin-top:6px} .fix b{color:var(--green-d)}
-  .ref{font-size:11.5px;color:#8a94a0;margin-top:6px;font-family:ui-monospace,Menlo,monospace}
-  ol.rules{list-style:none;margin:0;padding:0;counter-reset:r}
-  ol.rules li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px 13px 46px;margin-bottom:10px;position:relative;font-size:14.5px}
-  ol.rules li::before{counter-increment:r;content:counter(r);position:absolute;left:12px;top:13px;width:24px;height:24px;border-radius:50%;background:var(--green-bg);color:var(--green-d);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
-  ol.rules li b{color:var(--ink)} ol.rules.hard li::before{background:var(--red-bg);color:var(--red)}
-  .callout{background:#22303a;color:#eaf0f3;border-radius:12px;padding:16px 18px;font-size:14px;margin:14px 0}
-  .callout b{color:#fff}
-  .solid{background:var(--green-bg);border:1px solid #bfe3cd;border-radius:12px;padding:14px 16px;font-size:13px;color:#1b5133;margin-top:6px}
-  .solid b{color:var(--green-d)} .solid ul{margin:8px 0 0;padding-left:18px} .solid li{margin-bottom:4px}
-  .legend{display:flex;gap:8px;flex-wrap:wrap;margin:2px 4px 16px;font-size:11px}
-  .divider{height:1px;background:var(--line);margin:36px 0 4px}
-  footer{margin-top:26px;padding:18px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:13.5px;color:#333}
-  footer b{color:var(--ink)}
-</style></head><body>
-<div class="wrap">
-<style>
-  .dec{background:#fff;border:2px solid #22303a;border-radius:14px;padding:16px 18px;margin:0 0 16px}
-  .dec h2{margin:0 0 8px;font-size:18px;font-weight:800}
-  .dec p{margin:6px 0;font-size:14.5px}
-  .rec{background:var(--green-bg);border:1px solid #bfe3cd;border-radius:10px;padding:12px 14px;margin:10px 0;font-size:14.5px;color:#1b5133}
-  ol.acts{margin:0;padding-left:22px} ol.acts li{margin-bottom:10px;font-size:14.5px}
-  .who{display:inline-block;font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;margin-right:6px;vertical-align:1px}
-  .who.d{background:#22303a;color:#fff} .who.c{background:var(--blue-bg);color:var(--blue)} .who.x{background:var(--amber-bg);color:var(--amber)}
-  ul.probs{margin:0;padding-left:20px} ul.probs li{margin-bottom:6px;font-size:14px}
-  details.hist{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 14px}
-  details.hist>summary{cursor:pointer;font-weight:800;font-size:15px;padding:12px 0;list-style:none}
-  details.hist>summary::-webkit-details-marker{display:none}
-  details.hist>summary::before{content:"▸ ";} details.hist[open]>summary::before{content:"▾ ";}
+:root{--ink:#141a1f;--muted:#5b6672;--line:#e3e6ea;--bg:#f4f5f7;--card:#fff;--green:#1f7a44;--green-bg:#e9f6ee;--amber:#8a5a00;--amber-bg:#fef4dd;--red:#b3261e;--red-bg:#fdecea;--blue:#1256a0;--blue-bg:#e8f1fb}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding:18px 16px 64px}
+header{background:#1d2a24;color:#fff;border-radius:14px;padding:20px 18px;margin-bottom:14px}
+header h1{margin:0;font-size:21px;line-height:1.25}
+header p{margin:8px 0 0;color:#c9d3cd;font-size:14px}
+.upd{font-size:12px;color:#9fb3a8;margin-top:6px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}
+nav a{flex:1 1 22%;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 4px;font-weight:700;font-size:12.5px;color:var(--ink);text-decoration:none}
+h2{font-size:18px;margin:26px 2px 4px;scroll-margin-top:10px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 2px 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 14px}
+.item{display:grid;grid-template-columns:24px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item input{width:20px;height:20px;margin-top:2px;accent-color:var(--green)}
+.item.done .t{text-decoration:line-through;color:var(--muted)}
+.t{font-weight:600}
+.d{color:var(--muted);font-size:13.5px;margin-top:2px}
+.who{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:999px;padding:2px 8px;margin-right:6px;vertical-align:1px}
+.doug{background:var(--blue-bg);color:var(--blue)}.cat{background:#f3e8fb;color:#6b2c91}.claude{background:#eef0f2;color:#3d4852}.both{background:var(--amber-bg);color:var(--amber)}
+.row{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.tag{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:4px 8px;white-space:nowrap;align-self:start}
+.ok{background:var(--green-bg);color:var(--green)}.warn{background:var(--amber-bg);color:var(--amber)}.bad{background:var(--red-bg);color:var(--red)}
+.money{background:var(--green-bg);border:1px solid #cfe7d8;border-radius:12px;padding:14px;margin-bottom:10px}
+.money b{font-size:20px}
+a{color:var(--blue)}
+details{margin-top:24px}
+summary{font-weight:700;cursor:pointer;padding:6px 2px}
+.foot{color:var(--muted);font-size:12px;margin-top:22px}
 </style>
-  <header class="hd">
-    <h1>Branch Manager: go-live plan</h1>
-    <p><b>Decision (Nov 4): staying on Jobber.</b> No Dec 1 switch. Until we stop using Jobber, Jobber always wins over Branch Manager.</p>
-    <div class="updated">Updated Nov 4, 2026 · v1272</div>
-  </header>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Doug + Catherine: what's next</h1>
+  <p>In order of importance, top first. Tick a box when it's done (the tick stays on your own phone).</p>
+  <div class="upd">Updated Thu Nov 12, 2026 · Claude keeps this current</div>
+</header>
 
-  <section class="dec">
-    <h2>Where things stand</h2>
-    <p><b>Jobber is the real system and always wins.</b> Branch Manager copies it every morning and changes itself to match Jobber, never the other way. If Jobber reuses a quote or job number, Branch Manager takes Jobber's version (fixed Nov 4 for #597). Nov 4: <b>everything matches</b>.</p>
-    <div class="rec"><b>Why we stayed (Nov 4):</b> the Nov 15 test wasn't going to pass: 1 clean match day of 14, 2 of 5 phone screens done, no Twilio test, no Catherine test. <b>Branch Manager keeps doing what Jobber doesn't:</b> truck GPS, fleet and equipment records (KM100 service book), job photos to Google/Facebook/Instagram posts, website leads and the AI receptionist feeding Jobber.</div>
-  </section>
+<nav><a href="#now">Now</a><a href="#switch">Leave Jobber</a><a href="#phones">Phones</a><a href="#marketing">Reviews + posts</a></nav>
 
-  <h2 class="part">Your steps</h2>
-  <p class="part-sub">One at a time, top first.</p>
-  <ol class="acts">
-    <li><span class="who d">Doug</span><b>Twilio phone test.</b> Say "ready to test Twilio." I call and text you; you answer and reply. Reminder set for Oct 11, 9am.</li>
-    <li><span class="who d">Doug</span><b>Phone check, 5 min:</b> app opens without asking for a code · Settings shows <b>v1267</b> at the bottom · make one real quote and tell me the number.</li>
-    
-    <li><span class="who d">Doug</span><b>Natasha (46 Johnson St) is paid but has no invoice anywhere:</b> not in Jobber or BM. Should I add her to Jobber (client + $3,251.25 invoice) so the books have it? · <b>Toni Rosen $3,901.50</b> (BM only): keep or drop?</li>
-    <li><span class="who d">Doug</span><b>Jessica Bernadello #378 is paid</b> (you confirmed). Jobber still shows it as a draft. Open <a href="https://secure.getjobber.com/invoices/153844755">invoice #378 in Jobber</a>, then <b>Collect Payment</b> → $5,093.63. Jobber's API can't record payments.</li>
-    <li><span class="who d">Doug</span><b>Call Jobber</b> to confirm the plan and price (we pay more than the listed price). 15 min.</li>
-  </ol>
-
-  <h2 class="part">My steps</h2>
-  <ol class="acts">
-    <li><span class="who c">Claude</span><b>Finish the 5 Jobber-like screens</b> (Home, Clients, Quote, Job, Invoice), checked side by side with Jobber at phone width. <b>Home done Oct 15 (v1268)</b>: phones now get Jobber's bottom tabs (Home, Schedule, Timesheet, Search, More), the round + button, and the "To do" list. <b>Quote done Oct 15 (v1269)</b>: New Quote on phones follows Jobber's order (Service for, Overview, Product/Service) with a full-width Review and Send and a Save link. Next: Clients, Job, Invoice (waiting on Jobber phone screenshots from Doug). <span class="tag amber" style="margin-left:6px;">IN PROGRESS</span></li>
-    <li><span class="who c">Claude</span><b>Job photos to posts, like CompanyCam</b> (after the 5 screens). In order: (1) fix the nightly camera-roll pickup (broken since Sep 26: the Mac blocks it from reading Photos); (2) connect Facebook, Instagram and Google Business so approved day posts actually go out (none connected today); (3) one-tap crew camera that opens today's job by GPS; (4) review request with the job photos. Nothing posts without your OK. <span class="tag" style="margin-left:6px;">QUEUED Oct 15</span></li>
-    <li><span class="who c">Claude</span><b>Copy Jobber's line-item photos</b> onto the 67 quotes that don't have them in BM yet.</li>
-    <li><span class="who c">Claude</span><b>Daily match check</b> runs at 6:30am; email Mondays, or right away if anything is off. <span class="tag green" style="margin-left:6px;">RUNNING</span> Clean days in a row: 1 (restarted Oct 15 after the Jobber sign-in expired).</li>
-    <li><span class="who c">Claude</span><b>AI receptionist (after the 5 screens).</b> When nobody answers the Twilio line, the AI picks up instead of voicemail: gets name, address, which trees and how urgent; asks about house, wires or road; sends emergencies straight to you; texts the caller a photo link; adds the lead to Jobber like website leads; texts you a summary. Natural voice, not the robot one. Booking estimate visits waits until you say where the schedule lives. Starts after your Twilio phone test. <span class="tag amber" style="margin-left:6px;">QUEUED Oct 11</span></li>
-    <li><span class="who c">Claude</span><b>Move the main number (914-391-5233) from Dialpad to Twilio.</b> Last step, only with your OK.</li>
-  </ol>
-  <ol class="acts" start="1" style="margin-top:10px;">
-    <li style="list-style:none;margin-left:-22px;"><span class="who x">Catherine</span><b>One real quote and invoice on her phone</b>, without help, before Nov 15.</li>
-  </ol>
-
-  <h2 class="part">Working now (tested Oct 10)</h2>
-  <ul class="probs">
-    <li><b>Daily copy from Jobber:</b> invoices, quotes, jobs, clients and requests all match.</li>
-    <li><b>Website leads</b> go into Jobber automatically (client, request, draft quote) and text you and Catherine.</li>
-    <li><b>Texts by alert</b> when a customer opens a quote, approves it, asks for changes, texts the Twilio line, or leaves a voicemail.</li>
-    <li><b>Calls to the Twilio line</b> ring Catherine (~4 rings), then you, then voicemail. You press the number it reads out to answer.</li>
-    <li><b>Customer pages</b> (quote approval, pay, booking form) work at phone width. Customer data is locked: 0 records visible without a login.</li>
-    <li><b>All 963 buttons and 90 screens</b> open with no errors (full sweep, v1263).</li>
-  </ul>
-
-  <h2 class="part">Risks</h2>
-  <ul class="probs">
-    <li><b>Trust.</b> My changes have broken live data before. The guard is the daily match check, not my word.</li>
-    <li><b>No support desk.</b> When BM breaks, it's you and me.</li>
-    <li><b>Catherine's switch</b> waits for the slow season (Dec 1).</li>
-  </ul>
-
-  <details class="hist"><summary>Details, history and rules (tap to open)</summary>
-  <h3 class="sec">Tested Oct 10 by Claude</h3>
-  <ul class="probs">
-    <li><b>All 962 buttons</b> point to real code (2 dead ones fixed: quote ✨ AI-assist, SocialBranch Upload).</li>
-    <li><b>All 90 screens</b> open on desktop with no errors (fixed: Collect Payment was blank, BranchCam crashed).</li>
-    <li><b>Quote save → cloud</b> ✓ (fixed: salesperson + lead source were silently not saving).</li>
-    <li><b>Customer approves + signs on a phone → app turns it into a job</b> ✓. Quote page now shows exact cents, and drafts can't be "approved."</li>
-    <li><b>Customer pay page</b> ✓ at phone width (fixed: line items ran off-screen).</li>
-    <li><b>Website booking form → BM request</b> ✓ (fixed: it forced customers to accept texts; now optional and recorded).</li>
-    <li><b>Money math</b> fixed: drafts and voided invoices were counted as past due / owed; void invoices could flip to "overdue."</li>
-    <li><b>Customer flows smoke test</b> ✓ (load quote, approve, card-payment update). Customer data still locked (0 rows without login).</li>
-    <li>Test records (quotes #569/#570, job #408, request #670) archived or marked spam.</li>
-  </ul>
-
-
-  <h3 class="sec">Also done Oct 10 (afternoon)</h3>
-  <ul class="probs">
-    <li><b>Quotes and jobs now match Jobber</b> — same numbers, statuses, totals, line items (optional items marked). Next new quote #591, next job #332. BM-only old records moved to #2000s; stale "open" BM-only jobs archived (reversible).</li>
-    <li><b>Jobs</b>: BM now shows the same 7 open jobs and 2 needing invoices as Jobber (was dozens of phantom ones).</li>
-    <li><b>Lead alerts</b>: every website lead now texts Doug + Catherine (was silently never sending).</li>
-    <li><b>Website leads now go into Jobber automatically</b> (client + request + draft quote, read back to confirm). Spam / out-of-area leads stay in BM for review. Tested end to end Oct 10. Both estimate forms (branchmanager.app and peekskilltree.com) no longer force customers to accept texts.</li>
-    <li><b>Final sweep Oct 10 (v1263)</b>: 963/963 buttons work · 90/90 screens open, no errors · customer flows OK (load, approve, payment) · lead texts delivered · daily sync matches (invoices 370, quotes 531, jobs 272).</li>
-    <li><b>Evening Oct 10 (v1264–v1266)</b>: fixed a bug that reset 111 jobs to "scheduled" (data restored) · version number now at the bottom of Settings · Home "requires invoicing" now matches Jobber (2: Berger #331, DeConcilio #324) · 6 BM-only $0 draft quotes archived so drafts match Jobber · Sarah Moden-Alliston #382 closed in Jobber.</li>
-    <li><b>Jobber entries by Claude</b>: no "Claude" in anything customer-facing; noted in internal notes only (Catherine's request).</li>
-    <li><b>Money math</b>: a blank tax rate no longer saves quotes with $0 tax when edited.</li>
-  </ul>
-
-
-<div style="background:#22303a;color:#eaf0f3;border-radius:10px;padding:14px 16px;margin:10px 0;font-size:13.5px;line-height:1.6;">
-<b style="color:#f2c46d;">Earlier Oct 10 (replaced by the Nov 15 decision above).</b> Jobber is the source of truth. Branch Manager is <b>not</b> in live use; it only mirrors Jobber. Doug decides in February whether it ever replaces Jobber.<br><br>
-<b>Done Oct 10:</b> every BM invoice synced to Jobber, invoice numbers included (backup taken first). BM-only invoices kept as #2001–2022. The next BM invoice number continues from Jobber's. Truck names fixed, and real truck mileage stored from the shop's repair invoices.<br><br>
-<b>The honest truth:</b> switching won't save money soon. Once you count running costs and upkeep, BM would save far less than the Jobber bill, and only after months of proof. The quick, safe savings are checking whether we're on the right Jobber plan and price.<br><br>
-<b>The plan:</b><br>
-1. <b>Now:</b> call Jobber and confirm the plan and price.<br>
-2. <b>Oct–Nov:</b> no new features. BM copies Jobber daily and emails "matches" or "here's what's off." Fix the known list below.<br>
-3. <b>Dec–Jan (slow season):</b> only after 14 clean days in a row, run BM next to Jobber on real jobs.<br>
-4. <b>Feb — go / no-go:</b> it must lose nothing, get every amount right, have texting approved, and Catherine must be able to use it on her phone. If it passes, switch and keep Jobber's cheapest plan as a backup. If it fails, BM stops trying to replace Jobber and keeps the parts Jobber doesn't do: truck GPS, fleet records, job photos to posts.<br><br>
-<b>Likely failure points if we switched today:</b> a save that never reaches the cloud · no customer texting (carrier approval still pending) · no support desk (only Claude) · retraining Catherine mid-season · one point of failure: only Claude can fix it.</div>
-
-  <!-- ===== SECTION 1 ===== -->
-  <h2 class="part" id="failures">① Where I failed you</h2>
-  <p class="part-sub">Every mistake — no excuses. Worst first. These are mine, not gaps in how you asked.</p>
-  <h3 class="sec">The two that matter most</h3>
-  <div class="item"><span class="tag red">FOUNDATIONAL</span><h4>I built and checked it for desktop — it's a mobile field app</h4><p class="what">Your crew uses this one-handed, on a phone, in a truck. I kept verifying on a desktop that couldn't even shrink to phone width, so mobile broke and I didn't see it.</p><div class="fix"><b>Now:</b> mobile-first every message; your phone screenshot is the sign-off before I say "done."</div></div>
-  <div class="item"><span class="tag red">DATA</span><h4>The Jobber data — I duplicated it, then cleaned it</h4><p class="what">I bulk-imported without checking hard enough — 352 of 358 were already in BM, so I created duplicates. I caught it in the audit and cleaned it.</p><div class="fix"><b>Fixed Jul 12:</b> duplicates removed; the <b>6 truly-missing invoices + 8 jobs</b> kept and numbered sequentially (incl. <b>Al Garone — invoice #396, $8,128.13 paid</b>).</div></div>
-  <h3 class="sec">I said "done" when it wasn't</h3>
-  <div class="item"><span class="tag red">VERIFY</span><h4>The dead Google review link — wrong three times · "we're live" when we weren't</h4><p class="what">I claimed things were verified using a tool that couldn't actually tell, and told you things worked from assumption instead of testing them.</p></div>
-  <div class="item"><span class="tag amber">WRONG TWICE</span><h4>The card fee — I got it wrong in both directions</h4><p class="what">A scan once said the card fee was never shipped, and I wrote that here as an "overclaim." Re-checked line by line Sept 23: the fee <b>is</b> charged (2.9% + $0.30, shown as its own line on the customer pay page since Jul 12, skipped when an invoice is marked to absorb it), and the server charges that full amount. The earlier "correction" was the mistake.</p></div>
-  <h3 class="sec">Mobile things I broke · time I wasted</h3>
-  <div class="item"><span class="tag red">MOBILE</span><h4>Notification panel locked the app · line-items squished · Send button off-screen</h4><p class="what">Phone-only breakages that made the app unusable in the exact moments you needed it in front of someone.</p></div>
-  <div class="item amber"><span class="tag amber">RUSHED</span><h4>Re-deriving accounts, rushing instead of planning</h4><p class="what">Building wrong-from-the-start and redoing it wasted the most of your time. Fixed by the rules below + the queue method.</p></div>
-
-  <div class="divider"></div>
-
-  <!-- ===== SECTION 2 ===== -->
-  <h2 class="part" id="rules">② How we work now — the rules</h2>
-  <p class="part-sub">Enforced on every message + in my long-term memory. Yours to change.</p>
-  <h3 class="sec">The method</h3>
-  <ol class="rules">
-    <li><b>The go-live list is our queue.</b> We pull from the top, one item at a time, to completion — not six half-done things at once.</li>
-    <li><b>Mobile-first, always.</b> Verified at phone width first. <b>Your phone screenshot is the final sign-off.</b></li>
-    <li><b>Plan together, then I execute.</b> One-line plan → you say go → I do it → you verify → next.</li>
-    <li><b>Verify before "done"</b>, and fix it in every place it lives.</li>
-    <li><b>I verify what I can, and say "not now" only when I truly can't</b> — including rendering screens at real phone width (375px) myself and showing you the screenshot before calling a mobile fix done.</li>
-    <li><b>Never make you repeat yourself.</b> Accounts, IDs, tokens live in one map I read first.</li>
-  </ol>
-  <h3 class="sec">Hard lines — I never</h3>
-  <ol class="rules hard">
-    <li><b>Send anything to a customer.</b> I prepare it, hand you the link; <b>you</b> send.</li>
-    <li><b>Turn on automated / marketing email.</b> Off since the May 6 incident.</li>
-    <li><b>Fabricate</b> a number, price, or phone — or guess who a contact is.</li>
-    <li><b>Overclaim.</b> I flag real-data vs assumption, and never call something done from a guess.</li>
-  </ol>
-
-  <div class="divider"></div>
-
-  <!-- ===== SECTION 3 ===== -->
-  <h2 class="part" id="golive">③ What it takes to trust Branch Manager live</h2>
-  <p class="part-sub">Prioritized from three deep code scans. "Reliable" means the ship-blockers below are closed and the mobile pass is confirmed on your phone. Each item says what it costs YOU and the concrete fix, with the code location.</p>
-  <div class="callout"><b>Where it really stands (re-checked Oct 10 against the live app and code):</b> ship-blockers #1–#4 are closed in the code. #6 went live Sept 25 (v1247). Customer data is still locked: with no login, an outsider got 0 rows from 10 tables (tested Oct 10). Still open: #4 and #5 need one check on your phone. Phone-layout fixes #8 (payroll header), #9 (Settings price rows) and #10 (stat tiles on 13 screens) haven't been touched since Sept 23. New: the app's backup invoice-number picker could still jump to #2023 if BM ever creates its own invoice. The real blocker isn't code, it's trust: BM needs an automatic daily check that proves it matches Jobber, not Doug auditing Claude.</div>
-
-  <h3 class="sec">🔴 Ship-blockers — do these first</h3>
-  <div class="item"><span class="tag" style="background:#dcfce7;color:#14532d;">✅ CLOSED Aug 2</span><br><span class="st">Fixed, deployed, and live-verified with a real attack probe: a tampered $0.50 request against a $100 canary invoice was floored to the full $100.00 server-side. All four payment fns (stripe-charge, stripe-webhook, portal-pay-all, invoice-checkout) now compute amounts from real balances, and the webhook refuses to mark paid-in-full on any short payment. Smoke test green.</span><h4>1. A customer could underpay an invoice and it still marked PAID IN FULL — FIXED</h4><p class="what">The online pay link lets the amount be lowered (down to $0.50), and the charge amount isn't re-checked on the server. When payment succeeds, the invoice is flipped to paid / balance $0 <b>regardless of how much was actually paid</b>. So someone could owe $5,000, pay $0.50, and get a "paid in full" receipt.</p><div class="cost"><b>Costs you:</b> real revenue, silently. No evidence anyone's done it — but the hole is open.</div><div class="fix"><b>Fix:</b> compute the charge server-side from the actual invoice balance (your <code>portal-pay-all</code> function already does this correctly — copy it), drop the adjustable amount on the pay link, and only mark "paid" when the amount received covers the balance (otherwise record a partial payment).</div><div class="ref">stripe-webhook, stripe-charge, stripe-create-link</div></div>
-  <div class="item"><span class="tag red">BLOCKER · MONEY</span><br><span class="st">✅ CLOSED Sep 11 (v1220) · quotes/bulk were v1088; the 4 remaining invoice paths incl. mark-complete auto-draft now use the DB allocator · final confirm = two-phone test</span><h4>2. Invoice/quote numbers can silently strand a record on one phone</h4><p class="what">New invoice/quote numbers are picked from what's on <i>that device</i> only. The database enforces "no duplicate numbers," so if two devices pick the same number (or bulk-generation reuses one), the second save is rejected and retries forever — the record lives on that one phone and never reaches the cloud or your books. Bulk invoice generation is especially exposed because it counts rows instead of using the real highest number.</p><div class="cost"><b>Costs you:</b> an invoice you think exists, missing from every other device and your totals.</div><div class="fix"><b>Fix:</b> hand out numbers atomically from the database (the mechanism was written for jobs but never wired in; extend it to invoices/quotes), and fix bulk-generate to use the real max.</div><div class="ref">db.js nextInvNum/nextQuoteNum · invoices.js _doGenerate</div></div>
-  <div class="item"><span class="tag" style="background:#dcfce7;color:#14532d;">✅ DONE (code)</span><br><span class="st">Checked Sept 23: quotes, invoices and bulk-generate now only say ✓ after the save is confirmed (fixed in v1088).</span><h4>3. Quote &amp; invoice saves say "success" without checking the save worked</h4><p class="what">The job screen was fixed to confirm only after the write succeeds — but quote and bulk-invoice saves still show "created/updated ✓" without checking. On a full-storage phone that's the exact way a price silently disappears (the #515 incident).</p><div class="fix"><b>Fix:</b> apply the job screen's verify-then-confirm pattern to quotes and invoices.</div><div class="ref">quotes.js ~2078 · invoices.js ~487</div></div>
-  <div class="item"><span class="tag" style="background:#dcfce7;color:#14532d;">✅ DONE (code)</span><br><span class="st">Checked Sept 23: fixed Jun 18. Last step = open the app on your phone once and confirm it stays signed in.</span><h4>4. The app can look "logged in" while every save fails</h4><p class="what">If your session quietly expires, the app can keep showing you as logged in while writes fail in the background.</p><div class="fix"><b>Fix:</b> a June code change ties "logged in" to a real live session — it needs one real re-test on your actual phone to confirm.</div></div>
-
-  <h3 class="sec">🟠 Data &amp; sync</h3>
-  <div class="item amber"><span class="tag" style="background:#dcfce7;color:#14532d;">✅ DONE (code)</span><br><span class="st">Checked Sept 23: auto-update + red banner are in the app (Jul–Aug). Last step = your phone.</span><h4>5. Stale-version save-drop — mostly handled, needs a real phone check</h4><p class="what">The thing I'd called the #1 blocker: the app now checks its version on load and force-refreshes an out-of-date phone, and shows a <b>loud red banner</b> when a save is rejected instead of silently swallowing it. The scan says this largely closes the old "reverting quote" class.</p><div class="fix"><b>Left to do:</b> confirm on your phone that the auto-update actually fires (open the app, watch it refresh to the current version) — then this drops off the list.</div></div>
-  <div class="item amber"><span class="tag amber">FIXED · NOT LIVE YET</span><br><span class="st">Sept 23: fixed and tested (old code failed the test, new code passes). Saved on GitHub; goes live as v1247 once Doug unlocks updates from the Mac mini.</span><h4>6. A live update from another device can overwrite a newer local edit</h4><p class="what">The background-poll sync checks timestamps before overwriting; the instant "realtime" path doesn't — so a live echo of an older edit can clobber a change you just made. This is the "status flips back" class.</p><div class="fix"><b>Fix:</b> make the realtime path respect the same newer-wins timestamp check the poll path uses.</div><div class="ref">supabase.js _applyRealtime ~564</div></div>
-  <div class="item amber"><span class="tag amber">YOUR DECISION</span><br><span class="st">Nothing to build. Only your call on re-numbering (advice: leave it).</span><h4>7. Jobber data reconciliation</h4><p class="what">Cleaned up tonight — duplicates removed, 6 invoices + 8 jobs backfilled, numbered sequentially so new records continue off the top (next invoice = #400).</p><div class="fix"><b>Your call (documented, not buried):</b> whether to re-map every invoice to its exact original Jobber number. Risky; I'd advise against it.</div></div>
-
-  <h3 class="sec">🔵 Mobile — screen-by-screen punch list (from the scan)</h3>
-  <div class="item blue"><span class="tag amber">PARTLY</span><br><span class="st">Checked at phone width Sept 23: Books ✅ and Messaging ✅ fine. Payroll crew cards work, but the Mon–Sun header still stacks into 8 tall rows above them — small fix, not done yet.</span><h4>8. Three screens are unusable at phone width right now</h4><p class="what"><b>Payroll timesheet</b> (9-column grid → days crush, Total pushed off-screen), <b>Books register</b> (4 wide columns overflow, description collapses to nothing), and <b>Messaging</b> (280px list leaves ~110px for the conversation). These clip instead of scroll.</p><div class="fix"><b>Fix:</b> transpose/opt these into the app's existing mobile patterns (stack or swipe). The primitives already exist — these screens just never opted in.</div><div class="ref">payroll.js:182 · books.js:1116 · messaging.js:128</div></div>
-  <div class="item blue"><span class="tag amber">PARTLY</span><br><span class="st">Checked at phone width Sept 23: invoice + quote line items ✅. Settings → Services &amp; Prices rows still crushed, Edit button cut off — not fixed yet.</span><h4>9. Invoice &amp; quote edit rows squish on a phone</h4><p class="what">The line-item edit rows (Service/Desc/Qty/Rate/Amount) and Settings service/team rows crush to near-illegible at 390px — and these are the screens you use in the field.</p><div class="fix"><b>Fix:</b> stack them the way the quote builder's line items already do (that screen works — copy its treatment).</div><div class="ref">invoices.js:1253 · quotes.js:3717 · settings.js:1045</div></div>
-  <div class="item blue"><span class="tag amber">OPEN</span><br><span class="st">Checked Sept 23: 9 of 22 stat-tile rows stack on phones; 13 still squeeze 4 across. Schedule stays on Month by your choice.</span><h4>10. Stat tiles stuck 4-across → add one class</h4><p class="what">Roughly 18 screens show 4 stat tiles jammed across a phone. The app already has a rule that stacks them 2×2 → 1 — those screens just need the class added. Big visual payoff, tiny effort. Also: Schedule should default to a phone-friendly agenda/week view instead of the tiny month grid.</p></div>
-
-  <h3 class="sec">⚪ Polish &amp; housekeeping</h3>
-  <div class="item grey"><span class="tag" style="background:#dcfce7;color:#14532d;">✅ FEE IS ON</span><br><span class="st">Correction Sept 23: the card fee (2.9% + $0.30, its own line) IS charged since Jul 12 — the old note saying it wasn't was wrong. The customer pay page has no $10k cap ✅; only the old in-app "Open Stripe" button still caps at $9,999.99.</span><h4>11. Card fee + the $9,999.99 cap on the old Stripe button</h4><p class="what">Card payers aren't being surcharged (the code was never shipped), and the online pay link can't take a payment over ~$10k — a problem for big tree-removal invoices.</p><div class="fix"><b>Fix:</b> decide if you want the surcharge (then actually build + verify it), and raise/remove the pay-link cap.</div></div>
-  <div class="item grey"><span class="tag amber">PARTLY</span><br><span class="st">Checked Sept 23: duplicate receipts fixed in code ✅. A GitHub token is still stored in plain text on the Mac mini ❌. Server library versions are mixed (low priority).</span><h4>12. Duplicate receipts can fire on a payment retry · ~75 jobs have no date · weak owner password · a GitHub token sits in plaintext on disk · build-tool dependency updates</h4><p class="what">Smaller hardening items — none customer-breaking, all quick once the blockers are closed.</p></div>
-
-  <div class="solid"><b>✅ What the scans confirmed is already solid (don't regress these):</b>
-    <ul>
-      <li><b>Your customer data is locked down — verified live Jul 12.</b> With the public app key and no login, an outsider gets <b>0 rows</b> from clients, invoices, payments, quotes, jobs, team, and requests; spoofing the tenant header doesn't bypass it. The May 2026 breach is closed. (One deferred, zero-risk-today item: a multi-tenant staff role model, only relevant once you have a second company with crews on the app.)</li>
-      <li>Auto-update + <b>loud red error banner</b> on any rejected save — the old silent-drop is largely closed.</li>
-      <li>Quote approve/decline now shows a real error instead of a fake "success."</li>
-      <li>Payment webhook signature is properly verified; the sensitive admin functions are owner-only.</li>
-      <li><b>No automated customer emails</b> — the marketing-send safety line holds; only owner reports are scheduled.</li>
-      <li>Deleted records stay deleted (no resurrection); edits send only changed fields and refuse to clobber a newer cloud copy.</li>
-    </ul>
-  </div>
-
-  <footer><b>Where we stand, plainly:</b> blockers #1–#4 are closed in the code (Sept 23 re-check). Online payments are safe to use. What remains is #6 going live and the phone-layout fixes (#8–#10). Every item above has a concrete fix and a code location, not a shrug. We work it top-down, one at a time, each confirmed on your phone. I'll update the status pills here as they close, and add the security scan's findings next.</footer>
-  </details>
+<h2 id="now">1 · Now: money and deadlines</h2>
+<p class="sub">Things that cost money or lapse if missed.</p>
+<div class="card">
+  <label class="item" data-k="inland127"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>$127 equipment policy cancels Fri 11/13</div><div class="d">The inland marine policy through Tooher. Pay it or let it go. The email to Lena asking for the pay link is drafted in info@ Gmail, not sent.</div></div></label>
+  <label class="item" data-k="dbl60"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Disability / Paid Family Leave, $60 (overdue)</div><div class="d"><a href="https://www.sslicny.com" target="_blank" rel="noopener">sslicny.com</a> → Quick Service, policy R28686-000. Not in the bank as of 11/12.</div></div></label>
+  <label class="item" data-k="afco"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>AFCO $838.66 due Wed 11/18</div><div class="d">Liability insurance payment plan, account 1217388. Was late last month.</div></div></label>
+  <label class="item" data-k="osorio"><input type="checkbox"><div><div class="t"><span class="who claude">Claude</span>Osorio's insurance certificate, when Marvin sends it</div><div class="d">The last piece of both audits. Claude uploads it to NYSIF and emails it to EXL.</div></div></label>
+  <label class="item" data-k="salestax"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Sales tax due Mon 12/21, about $4,300</div><div class="d">Sep–Nov. Claude builds the exact number from the bank after 11/30.</div></div></label>
 </div>
-<script src="nav-snt.js?v=5" defer></script>
-</body></html>
+
+<h2 id="switch">2 · Leaving Jobber for Branch Manager</h2>
+<p class="sub">The goal: stop paying Jobber, and run everything in our own app, built the way we work.</p>
+<div class="money"><b>$539.71 a month</b> to Jobber now (≈ $6,476 a year). It was $150.96 a month in the spring. From the bank, charges on 9/23 and 10/23.</div>
+<div class="card">
+  <div class="row"><span class="tag ok">done</span><div>Branch Manager copies Jobber every morning: clients, quotes, jobs, invoices, requests. Matched every day 11/4–11/11.</div></div>
+  <div class="row"><span class="tag ok">done</span><div>Customer quote approval, pay page and booking form work on phones. Website leads go into Jobber automatically.</div></div>
+  <div class="row"><span class="tag ok">done</span><div>Phone screens like Jobber's: Home and Quote.</div></div>
+  <div class="row"><span class="tag ok">new</span><div>Branch Manager now copies Jobber's calendar every morning too (from 11/12).</div></div>
+  <div class="row"><span class="tag warn">Claude</span><div>Show those Jobber visits on Branch Manager's Schedule page. In progress.</div></div>
+  <div class="row"><span class="tag warn">your OK</span><div>Review asks like Jobber's (ask after payment, follow up at 3 and 5 days, once per 6 months). Built and tested on a test page; goes live when Doug says so.</div></div>
+  <div class="row"><span class="tag warn">Doug</span><div>Phone screens Clients, Job, Invoice: send Jobber phone screenshots of each (they land in Desktop → Screenshots).</div></div>
+  <div class="row"><span class="tag warn">Catherine</span><div>Make one real quote and one invoice on her phone in Branch Manager, without help.</div></div>
+  <div class="row"><span class="tag warn">both</span><div>Put every booked job on the Jobber calendar (agreed 11/12). Branch Manager mirrors it.</div></div>
+  <div class="row"><span class="tag bad">gap</span><div>Google posts from Branch Manager don't reach Google yet. Only manual posts show.</div></div>
+</div>
+<p class="sub" style="margin-top:10px">When every line above is done and the copy stays clean for 14 days in a row, we pick a switch date in the slow season. Until then Jobber is the real system and always wins.</p>
+
+<h2 id="phones">3 · Phones: Dialpad → Twilio</h2>
+<p class="sub">Same number, 391-5233. Customers notice nothing. Full plan: <a href="https://branchmanager.app/phone-switch-7d41c9.html">phone switch page</a>.</p>
+<div class="card">
+  <div class="row"><span class="tag ok">done</span><div>Texts in and out, calls ringing Catherine → Doug → voicemail, voicemails typed out, everything copied into Jobber. Tested 11/12 on the test line (914) 335-3417.</div></div>
+  <div class="row"><span class="tag ok">paid</span><div>Dialpad: new card on file 11/12. Keep it until the number has moved; cancel before it renews 3/4/2027.</div></div>
+  <label class="item" data-k="twcode" style="border-top:1px solid var(--line)"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Answer one call on 391-5233 and type the 6-digit code Twilio reads out</div><div class="d">Then calls out of Branch Manager show the business number.</div></div></label>
+  <label class="item" data-k="twport"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>For the move: port PIN from <a href="https://dialpad.com/portout" target="_blank" rel="noopener">dialpad.com/portout</a> + one recent Dialpad bill</div><div class="d">Then sign the form Twilio emails. The move takes about 1–2 weeks; the phone keeps working the whole time.</div></div></label>
+  <label class="item" data-k="twcath"><input type="checkbox"><div><div class="t"><span class="who both">Decide</span>Catherine's own Dialpad number (914-257-3964): move it too, or drop it?</div></div></label>
+</div>
+
+<h2 id="marketing">4 · Reviews and posts</h2>
+<div class="card">
+  <div class="row"><span class="tag ok">sent 11/12</span><div>Google review asks to all 37 past clients without a review: 23 by email from Jobber (10:58 AM), 14 by text from Jobber. Don't ask them again before May.</div></div>
+  <div class="row"><span class="tag ok">on</span><div>Jobber asks every new client for a review once their invoice is paid. 73 Google reviews, 5.0.</div></div>
+  <div class="row"><span class="tag warn">Claude</span><div>Check why Jobber's automatic asks haven't produced a review since April.</div></div>
+  <div class="row"><span class="tag warn">Claude</span><div>Fix Google posting, then two job-photo posts a week for Doug to approve.</div></div>
+  <label class="item" data-k="sp" style="border-top:1px solid var(--line)"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Cancel SocialPilot ($30/mo), once Google posting works</div></div></label>
+</div>
+
+<details>
+  <summary>Done lately</summary>
+  <div class="card">
+    <div class="row"><span class="tag ok">11/12</span><div>Review asks sent to 37 · Dialpad paid · George Grant written off ($46.06).</div></div>
+    <div class="row"><span class="tag ok">11/8</span><div>NYSIF workers' comp audit: second upload accepted (payroll, bank statements, tax forms).</div></div>
+    <div class="row"><span class="tag ok">11/4</span><div>NYSIF first upload · EXL liability audit sent · IRS $4,042.44 paid.</div></div>
+  </div>
+</details>
+
+<p class="foot">Sources: bank feed (M&amp;T checking) for costs, Jobber for reviews, texts and campaigns, Branch Manager's daily match log. Older plans (Oct 10 test, Nov 15 switch) are retired. They're in the page history if ever needed.</p>
+</div>
+<script>
+document.querySelectorAll('label.item').forEach(function(l){
+  var k='wn-'+l.dataset.k, cb=l.querySelector('input');
+  try{cb.checked=localStorage.getItem(k)==='1'}catch(e){}
+  l.classList.toggle('done',cb.checked);
+  cb.addEventListener('change',function(){l.classList.toggle('done',cb.checked);try{localStorage.setItem(k,cb.checked?'1':'0')}catch(e){}});
+});
+</script>
+</body>
+</html>
