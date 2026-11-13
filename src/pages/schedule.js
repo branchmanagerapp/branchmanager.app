@@ -534,6 +534,7 @@ var SchedulePage = {
     loadPage('schedule');
   },
   _loadCalEvents: function() {
+    SchedulePage._loadJobberVisits();
     if (window._bmCalEventsLoaded) return;
     var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
     if (!sb) return; // not ready yet — will load on a later render
@@ -558,6 +559,62 @@ var SchedulePage = {
   },
   _getCalEventsForDate: function(dateStr) {
     return (window._bmCalEventsIndex || {})[dateStr] || [];
+  },
+  // v1273: Jobber calendar mirror. The daily copy writes every Jobber visit to
+  // jobber_visits; BM jobs already carry one scheduledDate, so we only show a
+  // visit here when no BM job with the same number sits on that same day.
+  _loadJobberVisits: function() {
+    if (window._bmJobberVisitsLoaded) return;
+    var sb = (typeof SupabaseDB !== 'undefined') ? SupabaseDB.client : null;
+    if (!sb) return;
+    window._bmJobberVisitsLoaded = true;
+    var since = new Date(); since.setDate(since.getDate() - 400);
+    sb.from('jobber_visits').select('id,job_number,client_name,title,start_at,end_at,all_day,completed_at')
+      .not('start_at', 'is', null).gte('start_at', since.toISOString()).limit(2000)
+      .then(function(res) {
+        var idx = {};
+        (res && res.data ? res.data : []).forEach(function(v) {
+          var s = new Date(v.start_at), e = v.end_at ? new Date(v.end_at) : s;
+          if (v.all_day && e > s) e = new Date(e.getTime() - 1000); // all-day ends at 23:59:59 / next midnight
+          var cur = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 12), last = new Date(e.getFullYear(), e.getMonth(), e.getDate(), 12), guard = 0;
+          while (cur <= last && guard < 60) {
+            var ds = SchedulePage._localDateStr(cur);
+            (idx[ds] = idx[ds] || []).push(v);
+            cur.setDate(cur.getDate() + 1); guard++;
+          }
+        });
+        window._bmJobberVisitsIndex = idx;
+        if (typeof loadPage === 'function') loadPage('schedule');
+      }).catch(function() { /* not signed in or table missing — ignore */ });
+  },
+  _getJobberVisitsForDate: function(dateStr, dayJobs) {
+    var list = (window._bmJobberVisitsIndex || {})[dateStr] || [];
+    if (!list.length) return list;
+    var onDay = {};
+    (dayJobs || []).forEach(function(j) { if (j.jobNumber != null) onDay[String(j.jobNumber)] = 1; });
+    return list.filter(function(v) { return v.job_number == null || !onDay[String(v.job_number)]; });
+  },
+  _openJobberVisit: function(jobNumber) {
+    var j = (DB.jobs.getAll() || []).find(function(x) { return String(x.jobNumber) === String(jobNumber); });
+    if (j) JobsPage.showDetail(j.id);
+    else if (typeof UI !== 'undefined' && UI.toast) UI.toast('Job #' + jobNumber + ' is only in Jobber so far');
+  },
+  _renderJobberPill: function(v, big) {
+    var time = (!v.all_day && v.start_at) ? new Date(v.start_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' ', '').toLowerCase() : '';
+    var done = !!v.completed_at;
+    var name = v.client_name || ('#' + (v.job_number || ''));
+    var sub = (v.title || '').replace(name, '').replace(/^\s*[-–—]\s*/, '').replace(/\s*-\s*Claude\s*$/, '');
+    var color = done ? '#4caf50' : '#e07c24';
+    var tip = (time ? time + ' ' : '') + name + (sub ? ' — ' + sub : '') + ' (Jobber calendar' + (done ? ', done' : '') + ')';
+    var click = 'event.stopPropagation();' + (v.job_number != null ? 'SchedulePage._openJobberVisit(' + Number(v.job_number) + ')' : '');
+    if (!big) {
+      return '<div onclick="' + click + '" title="' + UI.esc(tip) + '" style="background:' + color + '1f;border-left:3px solid ' + color + ';border-radius:4px;padding:2px 5px;margin-bottom:3px;font-size:10px;color:#7a3e00;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+        + UI.esc(name) + '</div>';
+    }
+    return '<div onclick="' + click + '" style="background:' + color + '14;border-left:3px solid ' + color + ';border-radius:6px;padding:8px 12px;cursor:pointer;flex:1;min-width:200px;">'
+      + '<div style="font-weight:700;font-size:13px;">' + (time ? '<span style="color:' + color + ';">' + time + '</span> ' : '') + UI.esc(name) + (done ? ' <span style="color:#2e7d32;font-size:11px;">✓ done</span>' : '') + '</div>'
+      + (sub ? '<div style="font-size:12px;color:var(--text-light);">' + UI.esc(sub) + '</div>' : '')
+      + '<div style="font-size:10px;font-weight:700;color:' + color + ';margin-top:3px;letter-spacing:.03em;">JOBBER CALENDAR' + (v.job_number != null ? ' · #' + v.job_number : '') + '</div></div>';
   },
   _eventColor: function(ev) {
     if (ev.color) return ev.color;
@@ -1190,6 +1247,16 @@ var SchedulePage = {
         + '</div>';
     }
 
+    SchedulePage._loadJobberVisits();
+    var jVisits = SchedulePage._getJobberVisitsForDate(dateStr, dayJobs);
+    if (jVisits.length) {
+      html += '<div style="background:#fff8f0;border:1px solid #f5d3b0;border-radius:10px;padding:10px 12px;margin-bottom:12px;">'
+        + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#7a3e00;">Jobber calendar (' + jVisits.length + ')</div>'
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+      jVisits.forEach(function(v) { html += SchedulePage._renderJobberPill(v, true); });
+      html += '</div></div>';
+    }
+
     html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">';
 
     for (var h = 6; h <= 19; h++) {
@@ -1521,6 +1588,7 @@ var SchedulePage = {
           + (jobPhotos.length > 0 ? '<div style="display:flex;gap:2px;margin-top:4px;overflow:hidden;">' + jobPhotos.slice(0, 3).map(function(p) { return '<img src="' + (p.url || p.dataUrl || '') + '" style="width:24px;height:24px;border-radius:3px;object-fit:cover;">'; }).join('') + (jobPhotos.length > 3 ? '<span style="font-size:9px;color:var(--text-light);align-self:center;">+' + (jobPhotos.length - 3) + '</span>' : '') + '</div>' : '')
           + '</div>';
       });
+      SchedulePage._getJobberVisitsForDate(dateStr, dayJobs).forEach(function(v) { html += SchedulePage._renderJobberPill(v, false); });
       // Admin task pills for this day
       var weekAdminTasks = (typeof AdminTasks !== 'undefined') ? AdminTasks.getForDate(dateStr) : [];
       weekAdminTasks.forEach(function(t) {
@@ -1678,6 +1746,7 @@ var SchedulePage = {
       }
       if (SchedulePage._eventsEnabled()) {
         SchedulePage._getCalEventsForDate(dateStr).forEach(function(ev) { html += SchedulePage._renderEventPill(ev); });
+        SchedulePage._getJobberVisitsForDate(dateStr, dayJobs).forEach(function(v) { html += SchedulePage._renderJobberPill(v, false); });
       }
       // v1130: day-recap chip — past days with staged recap photos (Ground
       // Control history migrated to the schedule). Manifest is a one-time ~2KB

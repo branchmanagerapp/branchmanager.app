@@ -1,5 +1,5 @@
 {
-  "version": 1272,
-  "released": "2026-10-30",
-  "notes": "KM100 loader service book card on pre-trip / Crew View (opens /km100/)"
+  "version": 1273,
+  "released": "2026-11-12",
+  "notes": "Schedule: show Jobber calendar visits not already on a BM job (week, month, day)"
 }
