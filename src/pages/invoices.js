@@ -1284,6 +1284,17 @@ var InvoicesPage = {
   },
 
   setStatus: function(id, status) {
+    // v1278: "Paid" opens Record Payment (amount + method) so the payment lands
+    // in the ledger, instead of silently zeroing the balance and auto-emailing
+    // a receipt on every tap.
+    if (status === 'paid' && typeof Payments !== 'undefined' && Payments.renderForInvoice) {
+      var _inv = DB.invoices.getById(id);
+      if (_inv && _inv.status !== 'paid') {
+        UI.closeModal();
+        setTimeout(function() { UI.showModal('Record payment — #' + (_inv.invoiceNumber || ''), Payments.renderForInvoice(id)); }, 50);
+        return;
+      }
+    }
     var updates = { status: status };
     if (status === 'paid') {
       updates.balance = 0;
@@ -1292,10 +1303,6 @@ var InvoicesPage = {
     DB.invoices.update(id, updates);
     UI.toast('Invoice status: ' + status);
     UI.closeModal();
-    // Auto-send receipt if enabled in Settings → Client-Facing Options
-    if (status === 'paid' && localStorage.getItem('bm-auto-receipt') !== 'false') {
-      InvoicesPage._sendReceiptEmail(id);
-    }
     loadPage('invoices');
   },
 

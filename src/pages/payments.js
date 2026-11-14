@@ -71,12 +71,12 @@ var Payments = {
     var key = localStorage.getItem('bm-supabase-key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0cGl2a3FhaHZwbGFweWFnbGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTgxNzIsImV4cCI6MjA4OTY3NDE3Mn0.bQ-wAx4Uu-FyA2ZwsTVfFoU2ZPbeWCmupqV-6ZR9uFI';
     if (!url || !key) { Payments._syncing = false; return; }
     console.debug('[Payments] Fetching from', url);
-    fetch(url + '/rest/v1/payments?select=*&order=date.desc&limit=5000', {
-      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
-    }).then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function(data) {
+    // v1278: use the signed-in Supabase client. The ledger's RLS only lets a
+    // signed-in user of this company read it; the anon key got nothing back.
+    var _p = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client)
+      ? SupabaseDB.client.from('payments').select('*').order('date', { ascending: false }).limit(5000).then(function(res) { if (res.error) throw new Error(res.error.message); return res.data; })
+      : fetch(url + '/rest/v1/payments?select=*&order=date.desc&limit=5000', { headers: { 'apikey': key, 'Authorization': 'Bearer ' + key } }).then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    _p.then(function(data) {
       if (!Array.isArray(data)) { Payments._syncing = false; return; }
       // Convert snake_case to camelCase for the UI
       var converted = data.map(function(row) {
@@ -90,8 +90,10 @@ var Payments = {
           clientId: row.client_id,
           clientName: row.client_name,
           invoiceId: row.invoice_id,
+          invoiceNumber: row.invoice_number,
           source: row.source,
-          notes: row.notes
+          notes: row.notes,
+          note: row.notes
         };
       });
       localStorage.setItem('bm-payments-cache', JSON.stringify(converted));
@@ -455,17 +457,55 @@ var Payments = {
     if (remaining > 0 && !options.hideRecordForm) {
       html += '<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">'
         + '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">Record Payment</div>'
-        + '<div style="display:flex;gap:6px;align-items:end;">'
-        + '<div style="flex:1;"><input type="number" id="pay-amount-' + invoiceId + '" value="' + remaining.toFixed(2) + '" step="0.01" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;"></div>'
-        + '<select id="pay-method-' + invoiceId + '" style="padding:8px;border:2px solid var(--border);border-radius:6px;font-size:13px;">'
-        + '<option value="cash">💵 Cash</option><option value="check">📝 Check</option><option value="card">💳 Card</option><option value="deposit">🏦 Deposit</option></select>'
-        + '<input type="text" id="pay-note-' + invoiceId + '" placeholder="Note (check #, etc)" style="flex:1;padding:8px;border:2px solid var(--border);border-radius:6px;font-size:13px;">'
-        + '<button onclick="Payments.record(\'' + invoiceId + '\')" style="background:var(--green-dark);color:#fff;border:none;padding:8px 14px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap;">Record</button>'
+        // v1278: stacked so it fits a phone (one row squeezed the amount to nothing at 375px)
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        + '<label style="grid-column:1 / -1;font-size:12px;color:var(--text-light);">Amount'
+        + '<input type="number" inputmode="decimal" id="pay-amount-' + invoiceId + '" value="' + remaining.toFixed(2) + '" step="0.01" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;"></label>'
+        + '<select id="pay-method-' + invoiceId + '" style="padding:12px;border:2px solid var(--border);border-radius:8px;font-size:15px;">'
+        + '<option value="check">📝 Check</option><option value="cash">💵 Cash</option><option value="card">💳 Card</option><option value="zelle">Zelle</option><option value="ach bank payment">🏦 Bank / ACH</option><option value="other">Other</option></select>'
+        + '<input type="text" id="pay-note-' + invoiceId + '" placeholder="Check # / note" style="min-width:0;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:15px;">'
+        + '<button onclick="Payments.record(\'' + invoiceId + '\')" style="grid-column:1 / -1;background:var(--green-dark);color:#fff;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">Record payment</button>'
         + '</div></div>';
     }
 
     html += '</div>';
     return html;
+  },
+
+  // v1278: ONE ledger. Every manual payment is a row in the cloud `payments`
+  // table (what the Payments tab and every device read). The per-invoice
+  // localStorage list is kept only as an instant/offline echo, same id.
+  _uuid: function() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
+  },
+  addLedger: function(invoiceId, amount, method, note, dateIso) {
+    var inv = DB.invoices.getById(invoiceId) || {};
+    var row = {
+      id: Payments._uuid(), invoiceId: invoiceId, amount: amount, method: method || 'other', note: note || '',
+      date: dateIso || new Date().toISOString(),
+      user: (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : (localStorage.getItem('bm-co-owner') || 'Owner')
+    };
+    var key = 'bm-payments-' + invoiceId;
+    var all = [];
+    try { all = JSON.parse(localStorage.getItem(key)) || []; } catch (e) {}
+    all.unshift(row);
+    localStorage.setItem(key, JSON.stringify(all));
+    try {
+      if (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) {
+        var tid = (DB.getTenantId && DB.getTenantId()) || null;
+        SupabaseDB.client.from('payments').insert({
+          id: row.id, tenant_id: tid, invoice_id: invoiceId, invoice_number: inv.invoiceNumber || null,
+          client_id: inv.clientId || null, client_name: inv.clientName || null,
+          amount: amount, amount_paid: amount, date: row.date, method: row.method,
+          status: 'completed', source: 'manual', notes: row.note || null
+        }).then(function(res) {
+          if (res && res.error) UI.toast('⚠ Payment saved on this phone only: ' + res.error.message, 'error');
+          else Payments._syncing = false, Payments._syncFromSupabase();
+        });
+      }
+    } catch (e) { console.warn('[Payments] ledger insert failed', e); }
+    return row;
   },
 
   record: function(invoiceId) {
@@ -476,41 +516,33 @@ var Payments = {
 
     var amount = parseFloat(amountEl.value);
     if (!amount || amount <= 0) { UI.toast('Enter amount', 'error'); return; }
-
-    var payment = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
-      invoiceId: invoiceId,
-      amount: amount,
-      method: methodEl ? methodEl.value : 'cash',
-      note: noteEl ? noteEl.value : '',
-      date: new Date().toISOString(),
-      user: (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : (localStorage.getItem('bm-co-owner') || 'Owner')
-    };
-
-    // Save payment
-    var key = 'bm-payments-' + invoiceId;
-    var all = [];
-    try { all = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
-    all.unshift(payment);
-    localStorage.setItem(key, JSON.stringify(all));
+    var method = methodEl ? methodEl.value : 'cash';
+    Payments.addLedger(invoiceId, amount, method, noteEl ? noteEl.value : '');
 
     // Update invoice balance
     var inv = DB.invoices.getById(invoiceId);
+    var nowPaid = false;
     if (inv) {
-      var totalPaid = all.reduce(function(s, p) { return s + (p.amount || 0); }, 0);
-      var newBalance = Math.max(0, (inv.total || 0) - totalPaid);
-      var updates = {
-        amountPaid: totalPaid,
-        balance: newBalance
-      };
+      var totalPaid = Payments.getAll(invoiceId).reduce(function(s, p) { return s + (p.amount || 0); }, 0);
+      var newBalance = Math.max(0, Math.round(((inv.total || 0) - totalPaid) * 100) / 100);
+      var updates = { amountPaid: totalPaid, balance: newBalance, paymentMethod: method };
       if (newBalance <= 0) {
         updates.status = 'paid';
         updates.paidDate = new Date().toISOString();
+        nowPaid = inv.status !== 'paid';
       }
       DB.invoices.update(invoiceId, updates);
     }
 
-    UI.toast('Payment recorded: ' + UI.money(amount) + ' via ' + (methodEl ? methodEl.value : 'cash'));
+    UI.toast('Payment recorded: ' + UI.money(amount) + ' via ' + method);
+    if (typeof UI.closeModal === 'function') UI.closeModal();
+
+    // v1278: a receipt is only emailed when you say so (was automatic).
+    if (nowPaid && typeof InvoicesPage !== 'undefined' && InvoicesPage._sendReceiptEmail) {
+      var c = inv.clientId ? DB.clients.getById(inv.clientId) : null;
+      var email = inv.clientEmail || (c && c.email) || '';
+      if (email && window.confirm('Paid in full. Email a receipt to ' + email + '?')) InvoicesPage._sendReceiptEmail(invoiceId);
+    }
 
     // Refresh
     if (typeof InvoicesPage !== 'undefined') {
@@ -520,7 +552,20 @@ var Payments = {
 
   getAll: function(invoiceId) {
     var key = 'bm-payments-' + invoiceId;
-    try { return JSON.parse(localStorage.getItem(key)) || []; } catch(e) { return []; }
+    var local = [];
+    try { local = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
+    var cloud = [];
+    try {
+      var inv = DB.invoices.getById(invoiceId);
+      var num = inv && inv.invoiceNumber;
+      cloud = (JSON.parse(localStorage.getItem('bm-payments-cache')) || []).filter(function(p) {
+        return p.invoiceId === invoiceId || (!p.invoiceId && num && p.invoiceNumber === num);
+      });
+    } catch (e) {}
+    var seen = {}, out = [];
+    cloud.concat(local).forEach(function(p) { if (p && !seen[p.id]) { seen[p.id] = 1; out.push(p); } });
+    out.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    return out;
   },
 
   // Collect deposit before work starts
@@ -528,22 +573,7 @@ var Payments = {
     var inv = DB.invoices.getById(invoiceId);
     if (!inv) return;
     var depositAmount = Math.round(inv.total * (percentage || 0.5) * 100) / 100;
-
-    var payment = {
-      id: Date.now().toString(36),
-      invoiceId: invoiceId,
-      amount: depositAmount,
-      method: 'deposit',
-      note: percentage * 100 + '% deposit',
-      date: new Date().toISOString(),
-      user: (typeof Auth !== 'undefined' && Auth.user && Auth.user.name) ? Auth.user.name : (localStorage.getItem('bm-co-owner') || 'Owner')
-    };
-
-    var key = 'bm-payments-' + invoiceId;
-    var all = [];
-    try { all = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
-    all.unshift(payment);
-    localStorage.setItem(key, JSON.stringify(all));
+    Payments.addLedger(invoiceId, depositAmount, 'deposit', (percentage || 0.5) * 100 + '% deposit');
 
     DB.invoices.update(invoiceId, {
       amountPaid: depositAmount,

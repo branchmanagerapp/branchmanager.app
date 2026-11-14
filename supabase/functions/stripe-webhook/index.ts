@@ -59,6 +59,26 @@ function buildReceiptHtml(params) {
   const logoBlock = coLogo ? `<img src="${coLogo}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;display:block;margin-bottom:8px;" alt="">` : `<div style="background:rgba(255,255,255,.2);border-radius:8px;width:40px;height:40px;text-align:center;line-height:40px;font-size:20px;margin-bottom:8px;">🌳</div>`;
   return `<div style="background:#f5f6f8;padding:24px 0;">` + `<table style="max-width:560px;margin:0 auto;border-collapse:collapse;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">` + `<tr style="background:#059669;">` + `<td style="padding:20px 26px;width:55%;vertical-align:middle;">` + logoBlock + `<div style="font-size:15px;font-weight:800;color:#fff;">${esc(coName)}</div>` + (coPhone ? `<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:2px;">${esc(coPhone)}</div>` : '') + `</td>` + `<td style="padding:20px 26px;text-align:right;vertical-align:middle;background:#047857;">` + `<div style="font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Receipt</div>` + `<div style="font-size:18px;font-weight:900;color:#fff;">#${esc(invoiceNumber)}</div>` + `<div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:-1px;margin:6px 0 4px;">${totalStr}</div>` + `<div style="font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;display:inline-block;">✓ PAID IN FULL</div>` + `</td>` + `</tr>` + `<tr style="background:#fff;">` + `<td colspan="2" style="padding:20px 26px;">` + `<p style="font-size:15px;font-weight:700;color:#059669;margin:0 0 8px;">Thank you, ${esc(firstName)}! 🎉</p>` + `<p style="font-size:13px;color:#6b7280;line-height:1.6;margin:0;">Your payment of <strong>${totalStr}</strong> was received on ${esc(paidDate)}. Your account is paid in full. This email is your receipt.</p>` + `</td>` + `</tr>` + (liRows ? `<tr style="background:#fff;"><td colspan="2" style="padding:0 26px 8px;">` + `<table style="width:100%;border-collapse:collapse;">` + `<tr style="background:#374151;"><th style="padding:7px 12px;text-align:left;font-size:11px;color:#fff;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Service</th><th style="padding:7px 12px;text-align:right;font-size:11px;color:#fff;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Amount</th></tr>` + liRows + `<tr style="background:#f0fdf4;"><td style="padding:9px 12px;font-weight:700;font-size:14px;color:#166534;">Total Paid</td><td style="padding:9px 12px;text-align:right;font-weight:900;font-size:14px;color:#166534;">${totalStr}</td></tr>` + `</table></td></tr>` : '') + (googleReviewUrl ? `<tr style="background:#f0fdf4;"><td colspan="2" style="padding:16px 26px;text-align:center;border-top:1px solid #d1fae5;">` + `<p style="font-size:13px;color:#374151;margin:0 0 10px;">Happy with our work? It means the world to us! ⭐</p>` + `<a href="${googleReviewUrl}" style="display:inline-block;background:#1a3c12;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">⭐ Leave Us a Google Review</a>` + `</td></tr>` : '') + `<tr style="background:#f9fafb;"><td colspan="2" style="padding:14px 26px;border-top:1px solid #f3f4f6;">` + `<table style="width:100%;border-collapse:collapse;"><tr>` + `<td style="font-size:12px;color:#6b7280;">Questions? Call <strong>${esc(coPhone)}</strong></td>` + (coWebsite ? `<td style="text-align:right;font-size:12px;"><a href="${coWebsite}" style="color:#1a3c12;text-decoration:none;">${esc(coWebsite.replace(/^https?:\/\//, ''))}</a></td>` : '<td></td>') + `</tr></table>` + `</td></tr>` + (socialLinks.length ? `<tr style="background:#f9fafb;"><td colspan="2" style="padding:10px 26px 16px;border-top:1px solid #f3f4f6;text-align:center;">${socialLinks.join('<span style="color:#e5e7eb;margin:0 8px;">|</span>')}</td></tr>` : '') + `</table></div>`;
 }
+// ── Payments ledger (Nov 14 2026) ─────────────────────────────────────────────
+// Every online card payment also gets a row in `payments`, so the Payments tab and
+// each invoice's Payment History show it. Runs only after this event won the
+// first-writer-wins invoice update, and skips if a row for this payment intent +
+// invoice already exists. Never throws: a ledger hiccup must not fail the webhook.
+async function recordLedger(supabase: any, inv: any, amount: number, paymentIntentId: string, paidAt: string) {
+  try {
+    const { data: existing } = await supabase.from('payments').select('id')
+      .eq('invoice_id', inv.id).eq('stripe_payment_id', paymentIntentId).limit(1);
+    if (existing && existing.length) return;
+    const { error } = await supabase.from('payments').insert({
+      tenant_id: inv.tenant_id, invoice_id: inv.id, invoice_number: inv.invoice_number,
+      client_id: inv.client_id, client_name: inv.client_name, amount, amount_paid: amount,
+      date: paidAt, method: 'card', status: 'completed', source: 'stripe',
+      stripe_payment_id: paymentIntentId, notes: 'Paid online (Stripe)'
+    });
+    if (error) console.error('payments ledger insert failed:', error.message);
+  } catch (e) { console.error('payments ledger error:', e); }
+}
+
 // ── Send receipt via send-email edge function ────────────────────────────────
 async function sendReceipt(params) {
   const { toEmail, inv, coConfig } = params;
@@ -271,7 +291,7 @@ serve(async (req)=>{
     if (metaInvoiceIds) {
       const ids = metaInvoiceIds.split(',').map((s)=>s.trim()).filter(Boolean);
       if (ids.length) {
-        const { data: invs, error } = await supabase.from('invoices').select('id, invoice_number, balance, total, status, stripe_payment_id, client_name, client_email, client_id, line_items, subject, paid_date').in('id', ids);
+        const { data: invs, error } = await supabase.from('invoices').select('id, tenant_id, invoice_number, balance, total, status, stripe_payment_id, client_name, client_email, client_id, line_items, subject, paid_date').in('id', ids);
         if (error) {
           console.error('Multi-invoice fetch error:', error);
         } else {
@@ -312,6 +332,7 @@ serve(async (req)=>{
                 continue;
               }
               console.log(`✅ Invoice #${inv.invoice_number} (${inv.client_name}) marked PAID via multi-invoice charge`);
+              await recordLedger(supabase, inv, invBal, paymentIntentId, paidNow);
               // Send receipt to client
               const toEmail = inv.client_email || customerEmail || '';
               if (toEmail) {
@@ -351,7 +372,7 @@ serve(async (req)=>{
     if (clientRef && clientRef.startsWith('INV-')) {
       // Find invoice by invoice number
       const invoiceNumber = parseInt(clientRef.replace('INV-', ''));
-      const { data: invoices, error } = await supabase.from('invoices').select('id, invoice_number, balance, total, status, stripe_payment_id, client_name, client_email, client_id, line_items, subject').eq('invoice_number', invoiceNumber).limit(1);
+      const { data: invoices, error } = await supabase.from('invoices').select('id, tenant_id, invoice_number, balance, total, status, stripe_payment_id, client_name, client_email, client_id, line_items, subject').eq('invoice_number', invoiceNumber).limit(1);
       if (error) {
         console.error('Supabase query error:', error);
         return new Response('DB error', {
@@ -408,6 +429,7 @@ serve(async (req)=>{
           console.log(`↩︎ Race duplicate — invoice #${invoiceNumber} already claimed by ${paymentIntentId}, skipping receipt`);
           return new Response('OK (duplicate)', { status: 200 });
         }
+        await recordLedger(supabase, inv, amountDollars, paymentIntentId, paidAt);
         if (covers) {
           console.log(`✅ Invoice #${invoiceNumber} for ${inv.client_name} marked PAID — $${amountDollars.toFixed(2)}`);
         } else {

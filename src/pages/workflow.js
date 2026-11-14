@@ -313,7 +313,7 @@ var Workflow = {
 
     DB.invoices.update(invoiceId, {
       status: 'paid',
-      amountPaid: inv.total,
+      amountPaid: Number(inv.amountPaid || 0) + (Number(inv.balance) > 0 ? Number(inv.balance) : Number(inv.total || 0)),
       balance: 0,
       paidDate: nowIso,
       paymentMethod: method
@@ -336,15 +336,9 @@ var Workflow = {
       }
     }
 
-    // Log to payment history so Payments.renderForInvoice() shows it
-    var pKey = 'bm-payments-' + invoiceId;
-    var allPmts = [];
-    try { allPmts = JSON.parse(localStorage.getItem(pKey)) || []; } catch(e) {}
-    allPmts.unshift({
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-      invoiceId: invoiceId, amount: inv.total, method: method, note: '', date: nowIso, user: 'Doug'
-    });
-    localStorage.setItem(pKey, JSON.stringify(allPmts));
+    // v1278: record it in the shared payments ledger (cloud), not just this phone.
+    var owed = Number(inv.balance) > 0 ? Number(inv.balance) : Number(inv.total || 0);
+    if (typeof Payments !== 'undefined' && Payments.addLedger) Payments.addLedger(invoiceId, owed, method, '', nowIso);
 
     UI.toast('Invoice #' + (inv.invoiceNumber || '') + ' paid — ' + UI.money(inv.total) + (inv.jobId ? ' · job marked invoiced' : ''));
   },
