@@ -1,5 +1,5 @@
 {
-  "version": 1279,
+  "version": 1280,
   "released": "2026-11-14",
-  "notes": "Broken buttons fixed: expense edit/import sync, portal link, bulk invites, Books CSV, Form Builder publish; no invented approval dates"
+  "notes": "Google posts: send a phone-free caption (Google rejects phone numbers in post text)"
 }

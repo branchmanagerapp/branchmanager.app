@@ -21,6 +21,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { publishNative } from "../_shared/social.ts";
 
+// Nov 14 2026: Google Business Profile rejects posts whose text contains a phone
+// number (posts content policy: use the Call button instead). Google gets the
+// caption with phone numbers removed; Facebook/Instagram keep the full caption.
+const gbpCaption = (c: string) => String(c || "").replace(/\s*(?:[·•|,–-]|\bor\b)?\s*\(?\d{3}\)?[ .-]?\d{3}[ .-]\d{4}/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1500);
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const sb = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -88,6 +93,7 @@ Deno.serve(async (req) => {
         const payload = {
           id: post.id,
           caption: post.caption || "",
+          gbpCaption: gbpCaption(post.caption || ""),
           imageUrl: mediaType === "image" ? (media[0] || "") : "",
           videoUrl: mediaType === "video" ? (media[0] || "") : "",
           mediaUrl: media[0] || "",

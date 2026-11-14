@@ -1,3 +1,8 @@
+
+// Nov 14 2026: Google Business Profile rejects posts whose text contains a phone
+// number (posts content policy: use the Call button instead). Google gets the
+// caption with phone numbers removed; Facebook/Instagram keep the full caption.
+export const gbpCaption = (c: string) => String(c || "").replace(/\s*(?:[·•|,–-]|\bor\b)?\s*\(?\d{3}\)?[ .-]?\d{3}[ .-]\d{4}/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1500);
 // _shared/social.ts — native social publishing for SocialBranch (v1221).
 //
 // Tokens live in tenants.config.social (same pattern as config.bouncie /
@@ -130,6 +135,7 @@ export async function googleAccessToken(refreshToken: string): Promise<string> {
 }
 
 export async function publishGmb(cfg: SocialConfig, caption: string, media: string[]): Promise<NetResult> {
+  caption = gbpCaption(caption);
   const g = cfg.gmb;
   if (!g?.refresh_token) return { ok: false, error: "Google Business not connected" };
   try {

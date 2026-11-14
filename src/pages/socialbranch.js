@@ -835,6 +835,11 @@ var SocialBranch = {
   // ─────────────────────────────────────────────────────────
   // PUBLISH — routes per network to the right backend
   // ─────────────────────────────────────────────────────────
+  // Nov 14 2026: Google Business Profile rejects posts whose text contains a phone
+  // number (posts content policy: use the Call button instead). Google gets the
+  // caption with phone numbers removed; Facebook/Instagram keep the full caption.
+  _gbpCaption: function(c) { return String(c || '').replace(/\s*(?:[·•|,–-]|\bor\b)?\s*\(?\d{3}\)?[ .-]?\d{3}[ .-]\d{4}/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500); },
+
   _publishNow: function(post) {
     var webhook = SocialBranch._webhook();
 
@@ -845,6 +850,7 @@ var SocialBranch = {
       var payload = {
         id: post.id,
         caption: post.caption,
+        gbpCaption: SocialBranch._gbpCaption(post.caption),
         imageUrl: mediaType === 'image' ? (publicMedia[0] || '') : '',
         videoUrl: mediaType === 'video' ? (publicMedia[0] || '') : '',
         mediaUrl: publicMedia[0] || '',

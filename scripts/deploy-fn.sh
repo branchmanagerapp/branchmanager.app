@@ -54,6 +54,10 @@ PUBLIC_FNS=(
   plaid-exchange-token
   plaid-webhook
   plaid-sync-transactions
+  # Nov 14 2026: these were deployed --no-verify-jwt (cron + app call them); keep it that way
+  social-post-runner
+  social-publish
+  social-connect
 )
 
 FN="${1:-}"
