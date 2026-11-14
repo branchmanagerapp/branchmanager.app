@@ -15,7 +15,7 @@ header h1{margin:0;font-size:21px;line-height:1.25}
 header p{margin:8px 0 0;color:#c9d3cd;font-size:14px}
 .upd{font-size:12px;color:#9fb3a8;margin-top:6px}
 nav{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}
-nav a{flex:1 1 22%;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 4px;font-weight:700;font-size:12.5px;color:var(--ink);text-decoration:none}
+nav a{flex:1 1 30%;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 4px;font-weight:700;font-size:12.5px;color:var(--ink);text-decoration:none}
 h2{font-size:18px;margin:26px 2px 4px;scroll-margin-top:10px}
 .sub{color:var(--muted);font-size:13.5px;margin:0 2px 10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 14px}
@@ -44,63 +44,82 @@ summary{font-weight:700;cursor:pointer;padding:6px 2px}
 <header>
   <h1>Doug + Catherine: what's next</h1>
   <p>In order of importance, top first. Tick a box when it's done (the tick stays on your own phone).</p>
-  <div class="upd">Updated Thu Nov 12, 2026 · Claude keeps this current</div>
+  <div class="upd">Updated Sat Nov 14, 2026 · Claude keeps this current</div>
 </header>
 
-<nav><a href="#now">Now</a><a href="#switch">Leave Jobber</a><a href="#phones">Phones</a><a href="#marketing">Reviews + posts</a></nav>
+<nav><a href="#now">Now</a><a href="#sched">Schedule</a><a href="#switch">Leave Jobber</a><a href="#phones">Phones</a><a href="#marketing">Reviews</a><a href="#links">All links</a></nav>
 
 <h2 id="now">1 · Now: money and deadlines</h2>
 <p class="sub">Things that cost money or lapse if missed.</p>
 <div class="card">
-  <div class="row"><span class="tag ok">paid 11/12</span><div>Equipment policy (Acadia, through Tooher) paid in full for the year, $508. Covers the KM100 until 9/15/2027.</div></div>
-  <label class="item" data-k="geneva71" style="border-top:1px solid var(--line)"><input type="checkbox"><div><div class="t"><span class="who claude">Claude</span>Stop Geneva's $71/mo insurance charge on the KM100 loan</div><div class="d">Geneva added it on 11/6 ($1,269.08 instead of $1,192.13) because they never got proof of our policy. Asked Tooher 11/12 to send Geneva the certificate, and asked Geneva to drop the charge and refund it. Done when the December payment is back to about $1,192.</div></div></label>
-  <label class="item" data-k="dbl60"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Disability / Paid Family Leave, $60 (overdue)</div><div class="d"><a href="https://www.sslicny.com" target="_blank" rel="noopener">sslicny.com</a> → Quick Service, policy R28686-000. Not in the bank as of 11/12.</div></div></label>
   <label class="item" data-k="afco"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>AFCO $838.66 due Wed 11/18</div><div class="d">Liability insurance payment plan, account 1217388. Was late last month.</div></div></label>
-  <label class="item" data-k="osorio"><input type="checkbox"><div><div class="t"><span class="who claude">Claude</span>Osorio's insurance certificate, when Marvin sends it</div><div class="d">The last piece of both audits. Claude uploads it to NYSIF and emails it to EXL.</div></div></label>
+  <label class="item" data-k="dbl60"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Disability / Paid Family Leave, $60 (overdue)</div><div class="d"><a href="https://www.sslicny.com" target="_blank" rel="noopener">sslicny.com</a> → Quick Service, policy R28686-000. Waiting on Doug's card.</div></div></label>
+  <label class="item" data-k="geneva-dec"><input type="checkbox"><div><div class="t"><span class="who claude">Claude</span>Check the December Geneva payment is back to about $1,192</div><div class="d">Geneva removed its $71/mo insurance on 11/13 after Tooher sent our certificate. They didn't mention refunding November's extra $76.95; ask if it's still on the December bill.</div></div></label>
+  <label class="item" data-k="osorio"><input type="checkbox"><div><div class="t"><span class="who claude">Claude</span>Osorio's insurance certificate, when Marvin sends it</div><div class="d">The last piece of both audits. Not in yet (checked 11/14).</div></div></label>
   <label class="item" data-k="salestax"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Sales tax due Mon 12/21, about $4,300</div><div class="d">Sep–Nov. Claude builds the exact number from the bank after 11/30.</div></div></label>
 </div>
 
-<h2 id="switch">2 · Leaving Jobber for Branch Manager</h2>
+<h2 id="sched">2 · Schedule and work waiting</h2>
+<p class="sub">From Jobber, checked Sat 11/14. <b>Nothing is on the Jobber calendar after 11/6.</b></p>
+<div class="card">
+  <label class="item" data-k="book3"><input type="checkbox"><div><div class="t"><span class="who both">both</span>Book the 3 approved jobs: $12,354.75</div><div class="d">Gallela #585 $6,285.75 · Lubbers #597 $3,901.50 · Healey #587 $2,167.50. Approved, but no job or date in Jobber yet. Turn each into a job with a date so it shows on both calendars.</div></div></label>
+  <label class="item" data-k="yvonne"><input type="checkbox"><div><div class="t"><span class="who cat">Catherine</span>New lead: Yvonne Davies, 35 Lounsbury Rd (pruning)</div><div class="d">Came in from the website 11/13. Quote #603 started at $0. Needs a visit or a price.</div></div></label>
+  <label class="item" data-k="judy"><input type="checkbox"><div><div class="t"><span class="who cat">Catherine</span>Follow up Judy Hayes, quote #601, $3,034.50</div><div class="d">Sent 10/30, no answer yet.</div></div></label>
+  <label class="item" data-k="hari"><input type="checkbox"><div><div class="t"><span class="who cat">Catherine</span>Hariharan Vijayakumar request, overdue since 10/18</div><div class="d">Andy Jaeger's assessment is done (10/18); his quote still needs writing.</div></div></label>
+  <label class="item" data-k="silverio"><input type="checkbox"><div><div class="t"><span class="who cat">Catherine</span>Silverio Pacifico, firewood (11/5)</div><div class="d">Quote #602 started at $0.</div></div></label>
+  <label class="item" data-k="late2"><input type="checkbox"><div><div class="t"><span class="who both">both</span>Close out 2 old jobs marked late</div><div class="d">Mammamo (9/28) and Bohannon-Sacci (10/5): done and invoiced, or still to do?</div></div></label>
+</div>
+
+<h2 id="switch">3 · Leaving Jobber for Branch Manager</h2>
 <p class="sub">The goal: stop paying Jobber, and run everything in our own app, built the way we work.</p>
 <div class="money"><b>$539.71 a month</b> to Jobber now (≈ $6,476 a year). It was $150.96 a month in the spring. From the bank, charges on 9/23 and 10/23.</div>
 <div class="card">
-  <div class="row"><span class="tag ok">done</span><div>Branch Manager copies Jobber every morning: clients, quotes, jobs, invoices, requests. Matched every day 11/4–11/11.</div></div>
-  <div class="row"><span class="tag ok">done</span><div>Customer quote approval, pay page and booking form work on phones. Website leads go into Jobber automatically.</div></div>
+  <div class="row"><span class="tag ok">10 days</span><div>Branch Manager's morning copy of Jobber matched every day 11/4–11/13. 14 clean days = Tue 11/17 if it holds.</div></div>
+  <div class="row"><span class="tag ok">done</span><div>Customer quote approval, pay page and booking form work on phones. Website leads go into Jobber automatically (Yvonne Davies came in that way 11/13).</div></div>
   <div class="row"><span class="tag ok">done</span><div>Phone screens like Jobber's: Home and Quote.</div></div>
-  <div class="row"><span class="tag ok">new</span><div>Branch Manager now copies Jobber's calendar every morning too (from 11/12).</div></div>
-  <div class="row"><span class="tag ok">done 11/12</span><div>Branch Manager's Schedule page shows Jobber's visits (orange pills, "Jobber calendar"), v1273. Jobber has nothing booked after 11/6 yet.</div></div>
-  <div class="row"><span class="tag warn">your OK</span><div>Review asks like Jobber's (ask after payment, follow up at 3 and 5 days, once per 6 months). Built and tested on a test page; goes live when Doug says so.</div></div>
+  <div class="row"><span class="tag ok">done 11/12</span><div>Schedule page shows Jobber's calendar visits (orange "Jobber calendar" pills), v1273.</div></div>
+  <div class="row"><span class="tag warn">your OK</span><div>Review asks like Jobber's (ask after payment, follow up at 3 and 5 days, once per 6 months). Built and tested; goes live when Doug says so.</div></div>
   <div class="row"><span class="tag warn">Doug</span><div>Phone screens Clients, Job, Invoice: send Jobber phone screenshots of each (they land in Desktop → Screenshots).</div></div>
   <div class="row"><span class="tag warn">Catherine</span><div>Make one real quote and one invoice on her phone in Branch Manager, without help.</div></div>
-  <div class="row"><span class="tag warn">both</span><div>Put every booked job on the Jobber calendar (agreed 11/12). Branch Manager mirrors it.</div></div>
   <div class="row"><span class="tag bad">gap</span><div>Google posts from Branch Manager don't reach Google yet. Only manual posts show.</div></div>
 </div>
 <p class="sub" style="margin-top:10px">When every line above is done and the copy stays clean for 14 days in a row, we pick a switch date in the slow season. Until then Jobber is the real system and always wins.</p>
 
-<h2 id="phones">3 · Phones: Dialpad → Twilio</h2>
+<h2 id="phones">4 · Phones: Dialpad → Twilio</h2>
 <p class="sub">Same number, 391-5233. Customers notice nothing. Full plan: <a href="https://branchmanager.app/phone-switch-7d41c9.html">phone switch page</a>.</p>
 <div class="card">
   <div class="row"><span class="tag ok">done</span><div>Texts in and out, calls ringing Catherine → Doug → voicemail, voicemails typed out, everything copied into Jobber. Tested 11/12 on the test line (914) 335-3417.</div></div>
-  <div class="row"><span class="tag ok">paid</span><div>Dialpad: new card on file 11/12. Keep it until the number has moved; cancel before it renews 3/4/2027.</div></div>
+  <div class="row"><span class="tag ok">paid</span><div>Dialpad: paid for the year 11/12. Keep it until the number has moved; cancel before it renews 3/4/2027.</div></div>
+  <div class="row"><span class="tag warn">note</span><div>Twilio is still a free trial; it ends 2/28/2027. Upgrade to paid before moving the number.</div></div>
   <label class="item" data-k="twcode" style="border-top:1px solid var(--line)"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Answer one call on 391-5233 and type the 6-digit code Twilio reads out</div><div class="d">Then calls out of Branch Manager show the business number.</div></div></label>
   <label class="item" data-k="twport"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>For the move: port PIN from <a href="https://dialpad.com/portout" target="_blank" rel="noopener">dialpad.com/portout</a> + one recent Dialpad bill</div><div class="d">Then sign the form Twilio emails. The move takes about 1–2 weeks; the phone keeps working the whole time.</div></div></label>
   <label class="item" data-k="twcath"><input type="checkbox"><div><div class="t"><span class="who both">Decide</span>Catherine's own Dialpad number (914-257-3964): move it too, or drop it?</div></div></label>
 </div>
 
-<h2 id="marketing">4 · Reviews and posts</h2>
+<h2 id="marketing">5 · Reviews and posts</h2>
 <div class="card">
-  <div class="row"><span class="tag ok">sent 11/12</span><div>Google review asks to all 37 past clients without a review: 23 by email from Jobber (10:58 AM), 14 by text from Jobber. Don't ask them again before May.</div></div>
-  <div class="row"><span class="tag ok">on</span><div>Jobber asks every new client for a review once their invoice is paid. 73 Google reviews, 5.0.</div></div>
-  <div class="row"><span class="tag warn">Claude</span><div>Check why Jobber's automatic asks haven't produced a review since April.</div></div>
+  <div class="row"><span class="tag ok">3 new</span><div>Three new 5-star Google reviews from the 11/12 asks: Jen Zawolski and Harry Wallen (11/12), Diana Castro (11/13). 34 of the 37 haven't reviewed yet; don't ask again before May.</div></div>
+  <label class="item" data-k="reply3" style="border-top:1px solid var(--line)"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Reply "thank you" to the 3 new reviews</div><div class="d"><a href="https://business.google.com/reviews" target="_blank" rel="noopener">Google Business reviews</a>. Google says replies help.</div></div></label>
+  <div class="row"><span class="tag warn">Claude</span><div>Check why Jobber's automatic asks (after payment) haven't produced a review since April.</div></div>
   <div class="row"><span class="tag warn">Claude</span><div>Fix Google posting, then two job-photo posts a week for Doug to approve.</div></div>
   <label class="item" data-k="sp" style="border-top:1px solid var(--line)"><input type="checkbox"><div><div class="t"><span class="who doug">Doug</span>Cancel SocialPilot ($30/mo), once Google posting works</div></div></label>
+</div>
+
+<h2 id="links">6 · All the links</h2>
+<div class="card">
+  <div class="row"><span class="tag ok">app</span><div><a href="https://branchmanager.app">Branch Manager</a>: the app (sign in).</div></div>
+  <div class="row"><span class="tag ok">all</span><div><a href="https://branchmanager.app/hub-570301.html">Everything hub</a>: every site, page and dashboard we've built, in one index.</div></div>
+  <div class="row"><span class="tag ok">site</span><div><a href="https://peekskilltree.com">peekskilltree.com</a> · customer booking form: <a href="https://branchmanager.app/book.html">book.html</a></div></div>
+  <div class="row"><span class="tag ok">jobber</span><div><a href="https://secure.getjobber.com">Jobber</a> (still the real system) · <a href="https://business.google.com">Google Business Profile</a></div></div>
+  <div class="row"><span class="tag ok">plan</span><div><a href="https://branchmanager.app/phone-switch-7d41c9.html">Phone switch plan</a></div></div>
 </div>
 
 <details>
   <summary>Done lately</summary>
   <div class="card">
-    <div class="row"><span class="tag ok">11/12</span><div>Equipment policy paid in full ($508) · Review asks sent to 37 · Dialpad paid · George Grant written off ($46.06).</div></div>
-    <div class="row"><span class="tag ok">11/8</span><div>NYSIF workers' comp audit: second upload accepted (payroll, bank statements, tax forms).</div></div>
+    <div class="row"><span class="tag ok">11/13</span><div>Geneva removed its $71/mo insurance (Tooher sent our certificate) · 2 more Google reviews.</div></div>
+    <div class="row"><span class="tag ok">11/12</span><div>Equipment policy paid in full ($508) · Review asks sent to 37 · Schedule shows Jobber visits (v1273) · Dialpad paid · George Grant written off ($46.06).</div></div>
+    <div class="row"><span class="tag ok">11/8</span><div>NYSIF workers' comp audit: second upload accepted.</div></div>
     <div class="row"><span class="tag ok">11/4</span><div>NYSIF first upload · EXL liability audit sent · IRS $4,042.44 paid.</div></div>
   </div>
 </details>
