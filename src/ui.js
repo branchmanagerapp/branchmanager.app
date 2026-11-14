@@ -684,6 +684,9 @@ var UI = (function() {
 
   return {
     showModal: showModal,
+    // v1279: openModal(html, opts) was called by Clients bulk portal invites and
+    // Books Import CSV but never existed (TypeError / 'UI module not ready').
+    openModal: function(html, opts) { return showModal('', html, Object.assign({ keepModal: true }, opts || {})); },
     modal: modal,
     closeModal: closeModal,
     statusBadge: statusBadge,

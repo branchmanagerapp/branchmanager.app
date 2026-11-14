@@ -134,8 +134,11 @@ var Workflow = {
       if (!q || q.status !== 'approved') return;
       // Stamp the approval date the moment we see an approved quote missing it
       // (mirrors the edge-fn approved_at gap so the date shows immediately).
-      if (!q.approvedAt) {
-        q.approvedAt = q.signedAt || new Date().toISOString();
+      // v1279: only from a real signature time. Stamping "now" invented a date
+      // and rewrote it on every device/boot (quotes approved in Jobber have no
+      // signature here, e.g. #597).
+      if (!q.approvedAt && q.signedAt) {
+        q.approvedAt = q.signedAt;
         DB.quotes.update(q.id, { approvedAt: q.approvedAt });
       }
       if (q.convertedJobId) return;

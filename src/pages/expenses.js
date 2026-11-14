@@ -210,7 +210,7 @@ var ExpensesPage = {
   },
 
   openEditModal: function(id) {
-    var expense = DB.expenses ? DB.expenses.get(id) : null;
+    var expense = DB.expenses ? DB.expenses.getById(id) : null;
     if (!expense) { UI.toast('Expense not found', 'error'); return; }
     document.getElementById('edit-exp-id').value = id;
     // Date: stored as ISO string, extract YYYY-MM-DD portion
@@ -450,13 +450,7 @@ var ExpensesPage = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      if (typeof DB !== 'undefined' && DB.expenses && DB.expenses.add) DB.expenses.add(rec);
-      else {
-        // Fallback: manual localStorage write
-        var arr = JSON.parse(localStorage.getItem('bm-expenses') || '[]');
-        arr.push(rec);
-        localStorage.setItem('bm-expenses', JSON.stringify(arr));
-      }
+      DB.expenses.create(rec);  // v1279: synced to the cloud (was a local write the next pull erased)
       inserted++;
     }
 

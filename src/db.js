@@ -1246,30 +1246,19 @@ var nextJobNum = function() {
   };
 
   // ── Expenses ──
+  // v1279: expenses now use the same synced CRUD as every other table
+  // ('bm-expenses' -> cloud `expenses`). The old hand-rolled version wrote
+  // localStorage only: edits never reached the cloud and imports were wiped by
+  // the next pull (why BM had 4 expenses vs Jobber's 42).
   var expenses = {
-    getAll: function() { try { return JSON.parse(localStorage.getItem('bm-expenses')) || []; } catch(e) { return []; } },
-    count: function() { return expenses.getAll().length; },
-    create: function(r) {
-      var all = expenses.getAll();
-      r.id = r.id || _id();
-      r.date = r.date || _now();
-      all.unshift(r);
-      localStorage.setItem('bm-expenses', JSON.stringify(all));
-      return r;
-    },
-    update: function(id, changes) {
-      var all = expenses.getAll();
-      var idx = all.findIndex(function(r) { return r.id === id; });
-      if (idx < 0) return null;
-      Object.assign(all[idx], changes);
-      localStorage.setItem('bm-expenses', JSON.stringify(all));
-      return all[idx];
-    },
-    remove: function(id) {
-      var all = expenses.getAll().filter(function(r) { return r.id !== id; });
-      localStorage.setItem('bm-expenses', JSON.stringify(all));
-    },
-    getById: function(id) { return expenses.getAll().find(function(r) { return r.id === id; }) || null; }
+    getAll: function() { return getAll('bm-expenses'); },
+    count: function() { return getAll('bm-expenses').length; },
+    create: function(r) { r.date = r.date || _now(); return create('bm-expenses', r); },
+    add: function(r) { return expenses.create(r); },
+    update: function(id, changes, opts) { return update('bm-expenses', id, changes, opts); },
+    remove: function(id) { remove('bm-expenses', id); },
+    getById: function(id) { return getById('bm-expenses', id); },
+    get: function(id) { return getById('bm-expenses', id); }
   };
 
   // ── Payments (read-only — Stripe webhook + manual entry are sources of truth) ──

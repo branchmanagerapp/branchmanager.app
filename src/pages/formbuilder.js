@@ -285,24 +285,21 @@ var FormBuilderPage = {
     var btn = document.getElementById('fb-save-btn');
     if (btn) { btn.textContent = '⏳ Publishing...'; btn.disabled = true; }
 
-    fetch(FormBuilderPage._SUPABASE_URL + '/rest/v1/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': FormBuilderPage._SUPABASE_KEY,
-        'Authorization': 'Bearer ' + FormBuilderPage._SUPABASE_KEY,
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({ key: 'form_config', value: JSON.stringify(cfg) })
-    })
-    .then(function(r) {
-      if (btn) { btn.textContent = '✅ Published!'; btn.disabled = false; setTimeout(function(){ if(btn) btn.textContent = '💾 Save & Publish'; }, 2000); }
-      UI.toast('✅ Form saved — live at peekskilltree.com/contact.html');
-    })
-    .catch(function() {
-      if (btn) { btn.textContent = '💾 Save & Publish'; btn.disabled = false; }
-      UI.toast('⚠️ Saved locally — Supabase sync failed');
-    });
+    // v1279: publish to tenant_settings (key 'bm-booking-form'). The old code
+    // POSTed to a `settings` table that doesn't exist and said "Published"
+    // without checking, so form edits never reached customers.
+    var _done = function(ok, msg) {
+      if (btn) { btn.textContent = ok ? '✅ Published!' : '💾 Save & Publish'; btn.disabled = false; if (ok) setTimeout(function(){ if (btn) btn.textContent = '💾 Save & Publish'; }, 2000); }
+      UI.toast(msg, ok ? undefined : 'error');
+    };
+    var _tid = (typeof DB !== 'undefined' && DB.getTenantId) ? DB.getTenantId() : null;
+    if (!(typeof SupabaseDB !== 'undefined' && SupabaseDB.client) || !_tid) { _done(false, '⚠️ Saved on this device only — sign in to publish'); return; }
+    SupabaseDB.client.from('tenant_settings')
+      .upsert({ tenant_id: _tid, key: 'bm-booking-form', value: JSON.stringify(cfg), updated_at: new Date().toISOString() }, { onConflict: 'tenant_id,key' })
+      .then(function(res) {
+        if (res && res.error) _done(false, '⚠️ Not published: ' + res.error.message);
+        else _done(true, '✅ Published — your booking form now uses these fields');
+      }, function(err) { _done(false, '⚠️ Not published: ' + (err && err.message || err)); });
   },
 
   preview: function() {

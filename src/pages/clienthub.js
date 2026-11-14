@@ -128,7 +128,7 @@ var ClientHub = {
 
   // Send magic-link login email directly to client via portal-auth edge fn
   sendPortalLink: function(clientId) {
-    var c = DB.clients.get(clientId);
+    var c = DB.clients.getById(clientId);
     if (!c || !c.email) { UI.toast('No email on file for this client', 'error'); return; }
     var sb = (typeof SupabaseDB !== 'undefined' && SupabaseDB.client) ? SupabaseDB.client : null;
     var fnUrl = (sb && sb.functionsUrl) ? sb.functionsUrl : 'https://ltpivkqahvplapyagljt.supabase.co/functions/v1';

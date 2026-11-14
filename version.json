@@ -1,5 +1,5 @@
 {
-  "version": 1278,
+  "version": 1279,
   "released": "2026-11-14",
-  "notes": "One payments ledger: Record Payment, Paid button, quick pay and Stripe all write it; receipts only when you confirm"
+  "notes": "Broken buttons fixed: expense edit/import sync, portal link, bulk invites, Books CSV, Form Builder publish; no invented approval dates"
 }
