@@ -1294,6 +1294,9 @@ var nextJobNum = function() {
     getAll: function() { return getAll(KEYS.timeEntries); },
     create: function(data) { return create(KEYS.timeEntries, data); },
     update: function(id, data, opts) { return update(KEYS.timeEntries, id, data, opts); },
+    // v1276: remove was missing, so the manual-entry 'supersede the GPS row'
+    // step silently did nothing and payroll could count a day twice.
+    remove: function(id) { remove(KEYS.timeEntries, id); },
     getByJob: function(jobId) { return getAll(KEYS.timeEntries).filter(function(t) { return t.jobId === jobId; }); },
     getByUser: function(userId, date) {
       return getAll(KEYS.timeEntries).filter(function(t) {

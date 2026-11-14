@@ -634,7 +634,8 @@ var TimeTrackPage = {
     } catch (err) { /* the comparison is a nicety; never block the save */ }
 
     var entry = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+      // v1276: no hand-made id — DB.timeEntries.create assigns a UUID, which
+      // the cloud id column requires.
       userName: emp,
       userId: emp,
       jobId: jobId || null,
@@ -648,15 +649,16 @@ var TimeTrackPage = {
       notes: 'Entered by ' + (TimeTrackPage.currentUser || 'crew') + '.' + gpsNote
     };
 
-    // Save via DB if available, else direct localStorage
-    if (typeof DB !== 'undefined' && DB.timeEntries && DB.timeEntries.add) {
-      DB.timeEntries.add(entry);
-    } else {
-      var key = 'bm-timeentries';
-      var all = [];
-      try { all = JSON.parse(localStorage.getItem(key)) || []; } catch(e) {}
-      all.unshift(entry);
-      localStorage.setItem(key, JSON.stringify(all));
+    // v1276: this called DB.timeEntries.add, which never existed, so every
+    // manual entry fell through to a localStorage key nothing reads
+    // ('bm-timeentries' vs the synced 'bm-time-entries') and never reached the
+    // cloud or payroll, while the toast said "saved". create() is the real
+    // method: it writes the synced key and pushes to Supabase.
+    try {
+      DB.timeEntries.create(entry);
+    } catch (e) {
+      UI.toast('Could not save the entry: ' + (e && e.message || e), 'error');
+      return;
     }
 
     UI.toast('Entry saved: ' + hours.toFixed(1) + ' hrs for ' + emp);
@@ -955,3 +957,31 @@ var TimeTrackPage = {
     return html;
   }
 };
+
+// v1276: rescue manual entries that pre-v1276 builds wrote to the orphan key
+// 'bm-timeentries' (never synced, never read). On load, move each into the real
+// timesheet via DB.timeEntries.create (which pushes to the cloud), then clear
+// the orphan key so it can't run twice.
+(function _rescueOrphanTimeEntries() {
+  function run() {
+    try {
+      var raw = localStorage.getItem('bm-timeentries');
+      if (!raw) return;
+      var rows = [];
+      try { rows = JSON.parse(raw) || []; } catch (e) { rows = []; }
+      if (typeof DB === 'undefined' || !DB.timeEntries || !DB.timeEntries.create) return setTimeout(run, 3000);
+      var moved = 0;
+      rows.forEach(function(r) {
+        if (!r || !r.date || !r.clockIn) return;
+        var copy = Object.assign({}, r);
+        delete copy.id;
+        copy.source = copy.source || 'manual';
+        DB.timeEntries.create(copy);
+        moved++;
+      });
+      localStorage.removeItem('bm-timeentries');
+      if (moved) console.log('[timetrack] rescued ' + moved + ' manual time entr' + (moved === 1 ? 'y' : 'ies') + ' from the old storage key');
+    } catch (e) { console.warn('[timetrack] orphan rescue failed', e); }
+  }
+  setTimeout(run, 8000);
+})();

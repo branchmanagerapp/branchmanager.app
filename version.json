@@ -1,5 +1,5 @@
 {
-  "version": 1275,
+  "version": 1276,
   "released": "2026-11-14",
-  "notes": "Review requests: never sent silently on Mark Complete; one job + confirm only"
+  "notes": "Manual timesheet entries now save to the cloud; GPS row superseded; orphaned entries rescued"
 }
