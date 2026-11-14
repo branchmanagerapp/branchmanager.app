@@ -27,7 +27,7 @@ var AutomationsPage = {
     invoiceFollowup2: { enabled: true, days: 4, channel: 'email', label: 'Invoice follow-up #2' },
     visitReminderText: { enabled: true, hours: 1, channel: 'sms', label: 'Visit reminder (text)' },
     visitReminderEmail: { enabled: true, hours: 24, channel: 'email', label: 'Visit reminder (email)' },
-    reviewRequest: { enabled: true, days: 3, channel: 'email', label: 'Review request' },
+    reviewRequest: { enabled: false, days: 3, channel: 'email', label: 'Review request' },
     requestConfirm: { enabled: true, channel: 'email', label: 'Request received confirmation' },
     bookingConfirm: { enabled: true, channel: 'email', label: 'Booking confirmation' }
   },
@@ -493,16 +493,36 @@ var AutomationsPage = {
       .join('').slice(0, 12);
   },
 
-  runReviewRequests: async function() {
-    var config = AutomationsPage.getConfig();
-    if (!config.reviewRequest || !config.reviewRequest.enabled) {
-      UI.toast('Review requests are disabled — enable in Automations settings', 'warning');
-      return;
+  // v1275: onlyJobId = send for ONE job (the "Send Review Request" button on
+  // a just-completed job). No arg = the bulk run from Settings → Automations.
+  // Either way a person must confirm the exact recipients first; nothing in
+  // the app may fire this silently (audit 11/14: Mark Complete on a fresh
+  // device was emailing every past customer).
+  runReviewRequests: async function(onlyJobId) {
+    var jobs;
+    if (onlyJobId && typeof onlyJobId === 'string') {
+      var one = DB.jobs.getById(onlyJobId);
+      if (!one) return;
+      if (one.reviewSentAt) { UI.toast('Review request already sent for this job', 'warning'); return; }
+      jobs = [one];
+    } else {
+      var config = AutomationsPage.getConfig();
+      if (!config.reviewRequest || !config.reviewRequest.enabled) {
+        UI.toast('Review requests are disabled — enable in Automations settings', 'warning');
+        return;
+      }
+      var cutoff = Date.now() - (config.reviewRequest.days || 3) * 86400000;
+      jobs = DB.jobs.getAll().filter(function(j) {
+        return j.status === 'completed' && !j.reviewSentAt && new Date(j.completedAt || j.updatedAt || j.createdAt).getTime() <= cutoff;
+      });
     }
-    var cutoff = Date.now() - (config.reviewRequest.days || 3) * 86400000;
-    var jobs = DB.jobs.getAll().filter(function(j) {
-      return j.status === 'completed' && !j.reviewSentAt && new Date(j.completedAt || j.updatedAt || j.createdAt).getTime() <= cutoff;
+    var _targets = jobs.filter(function(j) {
+      var c = j.clientId ? DB.clients.getById(j.clientId) : null;
+      return !!(j.clientEmail || (c && c.email));
     });
+    if (!_targets.length) { UI.toast('No review requests to send'); return; }
+    var _names = _targets.slice(0, 8).map(function(j) { return j.clientName || 'client'; }).join(', ') + (_targets.length > 8 ? ', +' + (_targets.length - 8) + ' more' : '');
+    if (!window.confirm('Email a review request to ' + _targets.length + ' customer' + (_targets.length === 1 ? '' : 's') + '?\n\n' + _names)) return;
     var sent = 0, skipped = 0;
     var co = AutomationsPage._co();
     var coName = co.name;

@@ -1,5 +1,5 @@
 {
-  "version": 1274,
+  "version": 1275,
   "released": "2026-11-14",
-  "notes": "Phones get Jobber-style Client and Job screens (Show all details opens the full layout)"
+  "notes": "Review requests: never sent silently on Mark Complete; one job + confirm only"
 }

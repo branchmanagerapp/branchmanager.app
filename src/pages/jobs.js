@@ -1737,23 +1737,14 @@ var JobsPage = {
     DB.jobs.update(id, { status: 'completed', completedAt: new Date().toISOString() });
     UI.closeModal();
 
-    // Silently trigger review request email in background (2s delay so modal renders first)
-    setTimeout(function() {
-      if (typeof AutomationsPage !== 'undefined') {
-        var config = AutomationsPage.getConfig();
-        if (config.reviewRequest && config.reviewRequest.enabled) {
-          var origToast = UI.toast;
-          UI.toast = function(){};
-          try { AutomationsPage.runReviewRequests(); } finally {
-            setTimeout(function() { UI.toast = origToast; }, 100);
-          }
-        }
-      }
-    }, 2000);
+    // v1275: removed the silent background review-request run. It emailed
+    // EVERY eligible past customer whenever a job was completed on a device
+    // with default Automations settings. Review requests now only go out from
+    // the button below (this job only, after a confirm).
 
     // Build modal footer — include review request button if email is configured
     var reviewBtn = (typeof Email !== 'undefined' && Email.isConfigured())
-      ? ' <button class="btn btn-outline" onclick="UI.closeModal();AutomationsPage.runReviewRequests();">📧 Send Review Request</button>'
+      ? ' <button class="btn btn-outline" onclick="UI.closeModal();AutomationsPage.runReviewRequests(\'' + id + '\');">📧 Send Review Request</button>'
       : '';
 
     // Solo path keeps the prompt (Option C). On Yes → invoice is created and
