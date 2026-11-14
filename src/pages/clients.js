@@ -1092,6 +1092,73 @@ var ClientsPage = {
     }
   },
 
+  _showFull: function(id) { ClientsPage._fullDetail = true; ClientsPage.showDetail(id); },
+  _renderPhoneDetail: function(c, id, jobs, quotes, invoices) {
+    var e = UI.esc;
+    var phoneTel = (c.phone || '').replace(/[^0-9+]/g, '');
+    var nameEnc = encodeURIComponent(c.name || '');
+    var live = invoices.filter(function(i) { return i.status !== 'draft' && i.status !== 'void'; });
+    var lifetime = live.reduce(function(s, i) { return s + (Number(i.total) || 0); }, 0);
+    var balance = live.filter(function(i) { return i.status !== 'paid'; }).reduce(function(s, i) { return s + (Number(i.balance != null ? i.balance : i.total) || 0); }, 0);
+    var fmtDate = function(d) { if (!d) return ''; var x = new Date(String(d).length === 10 ? d + 'T12:00:00' : d); return isNaN(x) ? '' : x.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); };
+    var props = [];
+    if (c.address) props.push(c.address);
+    (c.properties || []).forEach(function(p) { var a = typeof p === 'string' ? p : (p && (p.address || p.street)); if (a && props.indexOf(a) < 0) props.push(a); });
+    // Work: quotes, jobs, invoices newest first.
+    var work = [];
+    quotes.forEach(function(q) { work.push({ d: q.createdAt || q.date || '', t: 'Quote #' + (q.quoteNumber || ''), s: q.status, amt: q.total, call: 'QuotesPage.showDetail(\'' + q.id + '\')' }); });
+    jobs.forEach(function(j) { work.push({ d: j.scheduledDate || j.createdAt || '', t: 'Job #' + (j.jobNumber || ''), s: j.status, amt: j.total, call: 'JobsPage.showDetail(\'' + j.id + '\')' }); });
+    invoices.forEach(function(i) { work.push({ d: i.issuedDate || i.createdAt || '', t: 'Invoice #' + (i.invoiceNumber || ''), s: i.status, amt: i.total, call: 'InvoicesPage.showDetail(\'' + i.id + '\')' }); });
+    work.sort(function(a, b) { return String(b.d).localeCompare(String(a.d)); });
+    var cm = function(label, call) { return '<button onclick="document.getElementById(\'jbp-menu\').hidden=true;' + call + '">' + label + '</button>'; };
+    var h = JobsPage._phoneCss()
+      + '<div class="jbp">'
+      + '<div class="jbp-top"><button class="jbp-ico" aria-label="Back" onclick="loadPage(\'clients\',{force:true})">‹</button>'
+      +   '<div class="jbp-top-r">'
+      +     (phoneTel ? '<button class="jbp-ico" aria-label="Call" onclick="Dialpad.call(\'' + phoneTel + '\',\'' + id + '\',decodeURIComponent(\'' + nameEnc + '\'))">✆</button>'
+      +       '<button class="jbp-ico" aria-label="Text" onclick="Dialpad.showTextModal(\'' + id + '\',decodeURIComponent(\'' + nameEnc + '\'),\'' + phoneTel + '\')">✉︎</button>' : '')
+      +   '</div></div>'
+      + '<h1 class="jbp-h1">' + e(c.name || '') + '</h1>'
+      + '<div class="jbp-actions" style="margin-top:12px">'
+      +   '<button class="jbp-btn" onclick="var m=document.getElementById(\'jbp-menu\');m.hidden=!m.hidden;">+ Create</button>'
+      +   '<div id="jbp-menu" class="jbp-menu" hidden style="left:0;right:0">'
+      +     cm('New quote', 'QuotesPage.showForm(null,\'' + id + '\')')
+      +     cm('New job', 'JobsPage.showForm(null,{clientId:\'' + id + '\'})')
+      +     cm('New invoice', 'InvoicesPage.showForm(null,\'' + id + '\')')
+      +   '</div></div>'
+      + '<div class="jbp-tabs"><button class="on" onclick="JobsPage._phoneTab(this,\'client\')">Client</button><button onclick="JobsPage._phoneTab(this,\'work\')">Work</button><button onclick="JobsPage._phoneTab(this,\'notes\')">Notes</button></div>'
+      + '<div class="jbp-pane" data-pane="client">'
+      +   '<div class="jbp-sec"><div class="jbp-h2">Overview</div>'
+      +     '<div class="jbp-lbl" style="margin-top:0">Lifetime value</div><div class="jbp-val">' + UI.money(lifetime) + '</div>'
+      +     '<div class="jbp-lbl">Current balance</div><div class="jbp-val"' + (balance > 0 ? ' style="color:#d93a2b;font-weight:700"' : '') + '>' + UI.money(balance) + '</div></div>'
+      +   '<div class="jbp-band"></div>'
+      +   '<div class="jbp-sec">'
+      +     '<button class="jbp-work" style="border-top:none;padding-top:0" onclick="ClientsPage.showForm(\'' + id + '\')"><b>' + e(c.name || '') + '</b><span style="color:#388523">✎</span></button>'
+      +     (c.phone ? '<div class="jbp-lbl">Phone</div><div class="jbp-val">' + (phoneTel ? '<a href="tel:' + phoneTel + '" style="color:#032b3a">' + e(UI.phone ? UI.phone(c.phone) : c.phone) + '</a>' : e(c.phone)) + '</div>' : '')
+      +     (c.email ? '<div class="jbp-lbl">Email</div><div class="jbp-val" style="word-break:break-all">' + e(c.email) + '</div>' : '')
+      +     '<div class="jbp-lbl">Lead source</div><div class="jbp-val">' + (c.leadSource ? e(c.leadSource) : '—') + '</div>'
+      +     (c.paymentTerms ? '<div class="jbp-lbl">Payment terms</div><div class="jbp-val">' + e(c.paymentTerms) + '</div>' : '')
+      +     '<div class="jbp-lbl">Referred by</div><div class="jbp-val">' + (c.referredBy ? e(c.referredBy) : '—') + '</div>'
+      +   '</div>'
+      +   '<div class="jbp-band"></div>'
+      +   '<div class="jbp-sec"><div class="jbp-h2">Properties</div>'
+      +     (props.length ? props.map(function(a) { return '<a class="jbp-addr" style="border-top:1px solid #eef1f3;padding:12px 0;margin:0" href="https://maps.apple.com/?daddr=' + encodeURIComponent(a) + '" target="_blank" rel="noopener noreferrer"><span>' + e(a) + '</span><span class="jbp-go">➚</span></a>'; }).join('') : '<div class="jbp-muted">No property on file</div>')
+      +   '</div>'
+      +   '<button class="jbp-all" onclick="ClientsPage._showFull(\'' + id + '\')">Show all details</button>'
+      + '</div>'
+      + '<div class="jbp-pane" data-pane="work" hidden><div class="jbp-sec">'
+      +   (work.length ? work.map(function(w) { return '<button class="jbp-work" onclick="' + w.call + '"><span><b>' + e(w.t) + '</b><small>' + e(String(w.s || '').replace(/_/g, ' ')) + (w.d ? ' · ' + fmtDate(w.d) : '') + '</small></span><span style="font-variant-numeric:tabular-nums">' + UI.money(w.amt) + '</span></button>'; }).join('') : '<div class="jbp-muted">No quotes, jobs or invoices yet</div>')
+      + '</div></div>'
+      + '<div class="jbp-pane" data-pane="notes" hidden><div class="jbp-sec">'
+      +   '<textarea id="client-notes-' + id + '" placeholder="Gate code, dog, access, preferences. Saves when you tap away." onblur="ClientsPage._saveNotes(\'' + id + '\', this.value)" style="width:100%;min-height:160px;border:1px solid #dadfe2;border-radius:8px;padding:10px;font-size:16px;font-family:inherit;box-sizing:border-box;">' + e(c.notes || '') + '</textarea>'
+      +   '<span id="notes-status-' + id + '" class="jbp-muted"></span>'
+      + '</div></div>'
+      + '</div>';
+    document.getElementById('pageTitle').textContent = c.name || 'Client';
+    document.getElementById('pageContent').innerHTML = h;
+    var pa = document.getElementById('pageAction'); if (pa) pa.style.display = 'none';
+  },
+
   _showDetailImpl: function(id) {
     console.debug('[ClientsPage.showDetail] called with id:', id);
     if (window.bmRememberDetail) window.bmRememberDetail('clients', id);
@@ -1136,6 +1203,13 @@ var ClientsPage = {
       var parts = c.address.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
       if (parts.length >= 3) townOnly = parts[parts.length - 3];
       else if (parts.length === 2) townOnly = parts[1];
+    }
+
+    // v1274: phones get Jobber's client screen; "Show all details" opens the full layout below.
+    var _fullC = ClientsPage._fullDetail; ClientsPage._fullDetail = false;
+    if (!_fullC && typeof JobsPage !== 'undefined' && JobsPage._isPhone && JobsPage._isPhone()) {
+      ClientsPage._renderPhoneDetail(c, id, clientJobs, clientQuotes, clientInvoices);
+      return;
     }
 
     // previous system-style client detail

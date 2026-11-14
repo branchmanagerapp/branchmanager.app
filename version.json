@@ -1,5 +1,5 @@
 {
-  "version": 1273,
-  "released": "2026-11-12",
-  "notes": "Schedule: show Jobber calendar visits not already on a BM job (week, month, day)"
+  "version": 1274,
+  "released": "2026-11-14",
+  "notes": "Phones get Jobber-style Client and Job screens (Show all details opens the full layout)"
 }

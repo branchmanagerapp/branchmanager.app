@@ -1046,10 +1046,185 @@ var JobsPage = {
     });
   },
 
+  // v1274: phones get Jobber's job screen (status, title, address, start date,
+  // primary action, Job/Notes tabs, line items, totals, visits, overview).
+  // "Show all details" opens the full desktop layout below.
+  _isPhone: function() { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); },
+  _showFull: function(id) { JobsPage._fullDetail = true; JobsPage.showDetail(id); },
+  _renderPhoneDetail: function(j, id) {
+    var client = j.clientId ? DB.clients.getById(j.clientId) : null;
+    var phone = j.clientPhone || (client && client.phone) || '';
+    var phoneTel = phone.replace(/[^0-9+]/g, '');
+    var st = j.status || 'scheduled';
+    var label = st === 'completed' ? (j.invoiceId ? 'Completed' : 'Requires Invoicing') : st === 'in_progress' ? 'Active' : st === 'late' ? 'Late' : st === 'cancelled' ? 'Cancelled' : st === 'archived' ? 'Archived' : st === 'action_required' ? 'Action Required' : 'Upcoming';
+    var dot = { Upcoming:'#4a90e2', Active:'#e07c24', Late:'#d93a2b', 'Requires Invoicing':'#e07c24', Completed:'#388523', Cancelled:'#8a8f93', Archived:'#8a8f93', 'Action Required':'#d93a2b' }[label] || '#4a90e2';
+    var items = j.lineItems || [];
+    var sub = items.reduce(function(s, it) { return s + (Number(it.amount) || (Number(it.qty) || 0) * (Number(it.rate) || 0)); }, 0);
+    var disc = Number(j.discount) || 0;
+    var tax = j.taxAmount != null ? Number(j.taxAmount) : (j.taxRate ? Math.round((sub - disc) * Number(j.taxRate)) / 100 : Math.max(0, (Number(j.total) || 0) - (sub - disc)));
+    if (!items.length) tax = 0;
+    var e = UI.esc;
+    var name = j.clientName || (client && client.name) || '';
+    var fmtDate = function(d) { if (!d) return ''; var x = new Date(String(d).length === 10 ? d + 'T12:00:00' : d); return isNaN(x) ? '' : x.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); };
+    // Visits: BM's own visits, else Jobber's calendar copy, else the scheduled date.
+    var visits = (j.visits || []).map(function(v) { return { date: v.date || v.scheduledDate, time: v.startTime || '', done: v.status === 'completed' }; });
+    if (!visits.length && window._bmJobberVisitsIndex && j.jobNumber != null) {
+      var seen = {};
+      Object.keys(window._bmJobberVisitsIndex).forEach(function(ds) {
+        window._bmJobberVisitsIndex[ds].forEach(function(v) {
+          if (String(v.job_number) !== String(j.jobNumber) || seen[v.id]) return;
+          seen[v.id] = 1;
+          visits.push({ date: v.start_at, time: v.all_day ? '' : new Date(v.start_at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }), done: !!v.completed_at });
+        });
+      });
+    }
+    if (!visits.length && j.scheduledDate) visits.push({ date: j.scheduledDate, time: j.startTime || '', done: st === 'completed' });
+    visits.sort(function(a, b) { return String(a.date).localeCompare(String(b.date)); });
+    var quote = j.quoteId && DB.quotes && DB.quotes.getById ? DB.quotes.getById(j.quoteId) : null;
+
+    var primary = '';
+    if (st === 'scheduled' || st === 'late') {
+      var msg = 'Hi ' + (name.split(' ')[0] || 'there') + ', this is ' + JobsPage._co().name + '. Confirming your tree work' + (j.scheduledDate ? ' on ' + fmtDate(j.scheduledDate) : '') + (j.property ? ' at ' + j.property : '') + '. Reply here with any questions. ' + JobsPage._co().phone;
+      primary = phoneTel ? '<button class="jbp-btn" onclick="Dialpad.showTextModal(\'' + (j.clientId || '') + '\',decodeURIComponent(\'' + encodeURIComponent(name) + '\'),\'' + phoneTel + '\',decodeURIComponent(\'' + encodeURIComponent(msg) + '\'))">Send Booking Confirmation</button>' : '<button class="jbp-btn" onclick="JobsPage._markComplete(\'' + id + '\')">Mark Complete</button>';
+    } else if (st === 'in_progress') {
+      primary = '<button class="jbp-btn" onclick="JobsPage._markComplete(\'' + id + '\')">Mark Complete</button>';
+    } else if (st === 'completed' && !j.invoiceId) {
+      primary = '<button class="jbp-btn" onclick="Workflow.jobToInvoiceAsync(\'' + id + '\').then(function(inv){loadPage(\'invoices\');if(inv)setTimeout(function(){InvoicesPage.showDetail(inv.id);},100);})">Create Invoice</button>';
+    }
+    var menuItem = function(label, call) { return '<button onclick="document.getElementById(\'jbp-menu\').hidden=true;' + call + '">' + label + '</button>'; };
+    var menu = '<div id="jbp-menu" class="jbp-menu" hidden>'
+      + menuItem('Edit job', 'JobsPage.showForm(\'' + id + '\')')
+      + (st !== 'completed' ? menuItem('Mark complete', 'JobsPage._markComplete(\'' + id + '\')') : '')
+      + (phoneTel ? menuItem('Text client', 'Dialpad.showTextModal(\'' + (j.clientId || '') + '\',\'\',\'' + phoneTel + '\')') : '')
+      + (j.crew && j.crew.length ? menuItem('Text crew', 'JobsPage._textCrew(\'' + id + '\')') : '')
+      + menuItem('Job sheet PDF', 'PDF.generateJobSheet(\'' + id + '\')')
+      + (st === 'completed' ? menuItem('Request review', 'JobsPage._requestReview(\'' + id + '\')') : '')
+      + menuItem('Show all details', 'JobsPage._showFull(\'' + id + '\')')
+      + '</div>';
+
+    var h = JobsPage._phoneCss()
+      + '<div class="jbp">'
+      + '<div class="jbp-top"><button class="jbp-ico" aria-label="Back" onclick="loadPage(\'jobs\',{force:true})">‹</button>'
+      +   '<div class="jbp-top-r">' + (phoneTel ? '<a class="jbp-ico" aria-label="Call" href="tel:' + phoneTel + '">✆</a>' : '') + '</div></div>'
+      + '<div class="jbp-status"><span style="background:' + dot + '"></span>' + label + '</div>'
+      + '<h1 class="jbp-h1">Job #' + e(String(j.jobNumber || '')) + ' for ' + e(name) + ' for ' + UI.money(j.total) + '</h1>'
+      + (j.description ? '<div class="jbp-sub">' + e(j.description) + '</div>' : '')
+      + (j.property ? '<a class="jbp-addr" href="https://maps.apple.com/?daddr=' + encodeURIComponent(j.property) + '" target="_blank" rel="noopener noreferrer"><span>' + e(j.property) + '</span><span class="jbp-go">➚</span></a>' : '')
+      + '<div class="jbp-lbl">Start date</div><div class="jbp-val">' + (j.scheduledDate ? fmtDate(j.scheduledDate) + (j.startTime ? ' at ' + e(j.startTime) : '') : 'Not scheduled') + '</div>'
+      + '<div class="jbp-actions">' + primary + '<button class="jbp-more" aria-label="More actions" onclick="var m=document.getElementById(\'jbp-menu\');m.hidden=!m.hidden;">•••</button>' + menu + '</div>'
+      + '<div class="jbp-tabs"><button class="on" onclick="JobsPage._phoneTab(this,\'job\')">Job</button><button onclick="JobsPage._phoneTab(this,\'notes\')">Notes</button></div>'
+      + '<div class="jbp-pane" data-pane="job">'
+      +   '<div class="jbp-sec"><div class="jbp-h2">Instructions</div><div class="jbp-txt">' + (j.instructions ? e(j.instructions) : '<span class="jbp-muted">No instructions</span>') + '</div></div>'
+      +   '<div class="jbp-band"></div>'
+      +   '<div class="jbp-sec"><div class="jbp-muted">Product / Service</div><div class="jbp-h2" style="margin-top:10px">Line items</div>';
+    if (items.length) {
+      items.forEach(function(it) {
+        var qty = Number(it.qty) || 0, rate = Number(it.rate) || 0, amt = Number(it.amount) || qty * rate;
+        h += '<div class="jbp-li"><div class="jbp-li-n">' + e(it.service || 'Item') + '</div>'
+          + (it.description ? '<div class="jbp-li-d">' + e(it.description) + '</div>' : '')
+          + '<div class="jbp-li-p"><span>' + qty + ' × ' + UI.money(rate) + '</span><span>' + UI.money(amt) + '</span></div></div>';
+      });
+    } else {
+      h += '<div class="jbp-txt jbp-muted">No line items</div>';
+    }
+    h += '</div>'
+      + (items.length ? '<div class="jbp-tot"><div><span>Subtotal</span><span>' + UI.money(sub) + '</span></div>'
+          + '<div><span>Discount</span><span class="jbp-green">' + UI.money(disc) + '</span></div>'
+          + '<div><span>Tax' + (j.taxRate ? ' (' + j.taxRate + '%)' : '') + '</span><span class="jbp-green">' + UI.money(tax) + '</span></div></div>' : '')
+      + '<div class="jbp-total"><span>Total</span><span>' + UI.money(j.total) + '</span></div>'
+      + '<div class="jbp-sec"><div class="jbp-h2">Visits</div>';
+    if (visits.length) {
+      visits.forEach(function(v) {
+        h += '<div class="jbp-visit"><div><div class="jbp-v-d">' + fmtDate(v.date) + '</div><div class="jbp-muted">' + (v.time ? e(v.time) : 'Anytime') + '</div></div>'
+          + '<div class="jbp-v-s">' + (v.done ? 'Completed <span style="background:#388523"></span>' : 'Upcoming <span style="background:#4a90e2"></span>') + '</div></div>';
+      });
+    } else {
+      h += '<div class="jbp-txt jbp-muted">No visits scheduled</div>';
+    }
+    h += '</div><div class="jbp-band"></div>'
+      + '<div class="jbp-sec"><div class="jbp-muted">Overview</div>'
+      +   (j.description ? '<div class="jbp-row"><b>' + e(j.description) + '</b></div>' : '')
+      +   '<div class="jbp-lbl">Job number</div><div class="jbp-val">#' + e(String(j.jobNumber || '')) + '</div>'
+      +   '<div class="jbp-lbl">Crew</div><div class="jbp-val">' + (j.crew && j.crew.length ? e(j.crew.join(', ')) : '—') + '</div>'
+      +   (j.clientId ? '<button class="jbp-link" onclick="ClientsPage.showDetail(\'' + j.clientId + '\')"><b>' + e(name) + '</b>' + (j.property ? '<span>' + e(j.property) + '</span>' : '') + '</button>' : '<div class="jbp-row"><b>' + e(name) + '</b></div>')
+      +   (quote ? '<button class="jbp-link" onclick="QuotesPage.showDetail(\'' + quote.id + '\')">Created from quote #' + e(String(quote.quoteNumber || '')) + '</button>' : '')
+      + '</div>'
+      + '<button class="jbp-all" onclick="JobsPage._showFull(\'' + id + '\')">Show all details</button>'
+      + '</div>'
+      + '<div class="jbp-pane" data-pane="notes" hidden><div class="jbp-sec">'
+      +   '<div id="job-note-view-' + id + '" class="jbp-txt">' + (j.notes ? e(j.notes) : '<span class="jbp-muted">No notes yet.</span>') + '</div>'
+      +   '<div id="job-note-edit-' + id + '" style="display:none;"><textarea id="job-note-ta-' + id + '" style="width:100%;min-height:120px;border:1px solid #dadfe2;border-radius:8px;padding:10px;font-size:16px;box-sizing:border-box;">' + e(j.notes || '') + '</textarea>'
+      +   '<div style="display:flex;gap:8px;margin-top:8px;"><button class="jbp-btn" style="flex:1" onclick="JobsPage._saveNote(\'' + id + '\')">Save</button><button class="jbp-more" style="width:auto;padding:0 16px" onclick="JobsPage._cancelNote(\'' + id + '\')">Cancel</button></div></div>'
+      +   '<button class="jbp-link" onclick="JobsPage._editNote(\'' + id + '\')">Edit notes</button>'
+      + '</div></div>'
+      + '</div>';
+    document.getElementById('pageTitle').textContent = 'Job #' + j.jobNumber;
+    document.getElementById('pageContent').innerHTML = h;
+    document.getElementById('pageAction').style.display = 'none';
+    window.scrollTo(0, 0);
+  },
+  _phoneTab: function(btn, which) {
+    var root = btn.closest('.jbp') || document;
+    root.querySelectorAll('.jbp-tabs button').forEach(function(b) { b.classList.toggle('on', b === btn); });
+    root.querySelectorAll('.jbp-pane').forEach(function(p) { p.hidden = p.getAttribute('data-pane') !== which; });
+  },
+  // Shared phone styles for the Jobber-style Job and Client screens (v1274).
+  _phoneCss: function() {
+    return '<style>'
+      + '.jbp{margin:-16px -16px 0;padding:8px 16px 96px;background:#fff;color:#032b3a;font-size:16px;}'
+      + '.jbp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}'
+      + '.jbp-top-r{display:flex;gap:8px;}'
+      + '.jbp-ico{width:44px;height:44px;border-radius:50%;border:1px solid #dadfe2;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:#032b3a;text-decoration:none;cursor:pointer;}'
+      + '.jbp-status{display:flex;align-items:center;gap:8px;font-size:15px;color:#49646f;margin:4px 0 6px;}'
+      + '.jbp-status span{width:12px;height:12px;border-radius:3px;display:inline-block;}'
+      + '.jbp-h1{font-size:24px;line-height:1.25;font-weight:700;margin:0 0 8px;text-wrap:balance;}'
+      + '.jbp-sub{font-size:19px;font-weight:600;color:#49646f;line-height:1.3;margin-bottom:12px;}'
+      + '.jbp-addr{display:flex;justify-content:space-between;gap:12px;color:#032b3a;text-decoration:none;font-size:16px;margin-bottom:14px;}'
+      + '.jbp-go{color:#388523;font-size:18px;}'
+      + '.jbp-lbl{font-size:15px;color:#49646f;margin-top:10px;}'
+      + '.jbp-val{font-size:16px;margin-bottom:4px;}'
+      + '.jbp-actions{position:relative;display:flex;gap:10px;margin:16px 0 8px;}'
+      + '.jbp-btn{flex:1;background:#388523;color:#fff;border:none;border-radius:8px;padding:14px;font-size:17px;font-weight:700;cursor:pointer;}'
+      + '.jbp-more{width:56px;flex:none;background:#fff;border:1px solid #dadfe2;border-radius:8px;font-size:18px;color:#388523;cursor:pointer;}'
+      + '.jbp-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #dadfe2;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:60;min-width:210px;padding:4px 0;}'
+      + '.jbp-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:12px 16px;font-size:16px;color:#032b3a;cursor:pointer;}'
+      + '.jbp-tabs{display:flex;border-bottom:1px solid #dadfe2;margin:14px -16px 0;padding:0 16px;}'
+      + '.jbp-tabs button{flex:1;background:none;border:none;padding:12px 0;font-size:16px;font-weight:600;color:#49646f;border-bottom:3px solid transparent;cursor:pointer;}'
+      + '.jbp-tabs button.on{color:#032b3a;border-bottom-color:#388523;}'
+      + '.jbp-sec{padding:16px 0;}'
+      + '.jbp-h2{font-size:18px;font-weight:700;margin-bottom:8px;}'
+      + '.jbp-txt{font-size:16px;line-height:1.45;white-space:pre-wrap;}'
+      + '.jbp-muted{color:#6a7d84;font-size:15px;}'
+      + '.jbp-band{height:8px;background:#edece8;margin:0 -16px;}'
+      + '.jbp-li{padding:12px 0;border-top:1px solid #eef1f3;}'
+      + '.jbp-li-n{font-weight:700;font-size:16px;}'
+      + '.jbp-li-d{font-size:15px;color:#32464f;margin:2px 0 6px;white-space:pre-wrap;}'
+      + '.jbp-li-p{display:flex;justify-content:space-between;font-size:15px;font-variant-numeric:tabular-nums;}'
+      + '.jbp-tot{border-top:1px solid #dadfe2;margin:0 -16px;padding:4px 16px;}'
+      + '.jbp-tot div{display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;}'
+      + '.jbp-green{color:#388523;}'
+      + '.jbp-total{display:flex;justify-content:space-between;background:#edece8;margin:0 -16px;padding:16px;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;}'
+      + '.jbp-visit{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-top:1px solid #eef1f3;}'
+      + '.jbp-v-d{font-weight:700;font-size:16px;}'
+      + '.jbp-v-s{font-size:14px;color:#49646f;display:flex;align-items:center;gap:6px;}'
+      + '.jbp-v-s span{width:10px;height:10px;border-radius:2px;display:inline-block;}'
+      + '.jbp-row{padding:10px 0;border-bottom:1px solid #eef1f3;font-size:16px;}'
+      + '.jbp-link{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid #eef1f3;padding:14px 0;font-size:16px;color:#032b3a;cursor:pointer;}'
+      + '.jbp-link span{display:block;color:#49646f;font-size:15px;margin-top:2px;}'
+      + '.jbp-all{display:block;width:100%;margin-top:18px;background:#fff;border:1px solid #dadfe2;border-radius:8px;padding:13px;font-size:16px;font-weight:600;color:#388523;cursor:pointer;}'
+      + '.jbp-kv{display:flex;flex-direction:column;gap:2px;padding:8px 0;}'
+      + '.jbp-create{width:100%;margin:6px 0 4px;}'
+      + '.jbp-work{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;background:none;border:none;border-top:1px solid #eef1f3;padding:12px 0;font-size:16px;color:#032b3a;cursor:pointer;}'
+      + '.jbp-work small{display:block;color:#49646f;font-size:14px;margin-top:2px;}'
+      + '</style>';
+  },
+
   showDetail: function(id) {
     var j = DB.jobs.getById(id);
     if (!j) return;
     if (window.bmRememberDetail) window.bmRememberDetail('jobs', id);
+    var _full = JobsPage._fullDetail; JobsPage._fullDetail = false;
+    if (!_full && JobsPage._isPhone()) { JobsPage._renderPhoneDetail(j, id); return; }
 
     var timeEntries = DB.timeEntries ? DB.timeEntries.getAll().filter(function(te) { return te.jobId === id; }) : [];
     var totalHours = timeEntries.reduce(function(s, te) { return s + (te.hours || 0); }, 0);
