@@ -1,5 +1,5 @@
 {
-  "version": 1276,
+  "version": 1277,
   "released": "2026-11-14",
-  "notes": "Manual timesheet entries now save to the cloud; GPS row superseded; orphaned entries rescued"
+  "notes": "Visits in the cloud: multi-day jobs + crew; calendar and job screen show them; Jobber visits copied nightly"
 }

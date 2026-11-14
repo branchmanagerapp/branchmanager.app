@@ -587,12 +587,29 @@ var SchedulePage = {
         if (typeof loadPage === 'function') loadPage('schedule');
       }).catch(function() { /* not signed in or table missing — ignore */ });
   },
+  // v1277: the day's visit pills = BM's own visits (cloud visits table, with
+  // crew) + Jobber calendar copies that BM doesn't already show. A job already
+  // drawn on this day (its scheduledDate) isn't repeated.
   _getJobberVisitsForDate: function(dateStr, dayJobs) {
-    var list = (window._bmJobberVisitsIndex || {})[dateStr] || [];
-    if (!list.length) return list;
-    var onDay = {};
-    (dayJobs || []).forEach(function(j) { if (j.jobNumber != null) onDay[String(j.jobNumber)] = 1; });
-    return list.filter(function(v) { return v.job_number == null || !onDay[String(v.job_number)]; });
+    var onDay = {}, jobOnDay = {};
+    (dayJobs || []).forEach(function(j) { if (j.jobNumber != null) onDay[String(j.jobNumber)] = 1; if (j.id) jobOnDay[j.id] = 1; });
+    var out = [];
+    try {
+      (DB.visits ? DB.visits.forDate(dateStr) : []).forEach(function(r) {
+        var job = r.jobId ? DB.jobs.getById(r.jobId) : null;
+        if (job && jobOnDay[job.id]) return;
+        var n = (typeof Visits !== 'undefined' && Visits._norm) ? Visits._norm(r) : { title: '', crew: [] };
+        var num = job && job.jobNumber != null ? job.jobNumber : null;
+        if (num != null) { if (onDay[String(num)]) return; onDay[String(num)] = 1; }
+        out.push({ bm: true, id: r.id, jobId: r.jobId, job_number: num, client_name: (job && job.clientName) || n.title,
+          title: n.title, start_at: r.startTime ? dateStr + 'T' + r.startTime + ':00' : dateStr + 'T12:00:00',
+          all_day: !r.startTime, completed_at: r.status === 'completed' ? (r.completedAt || 'done') : null, crew: n.crew });
+      });
+    } catch (e) {}
+    ((window._bmJobberVisitsIndex || {})[dateStr] || []).forEach(function(v) {
+      if (v.job_number == null || !onDay[String(v.job_number)]) out.push(v);
+    });
+    return out;
   },
   _openJobberVisit: function(jobNumber) {
     var j = (DB.jobs.getAll() || []).find(function(x) { return String(x.jobNumber) === String(jobNumber); });
@@ -604,17 +621,19 @@ var SchedulePage = {
     var done = !!v.completed_at;
     var name = v.client_name || ('#' + (v.job_number || ''));
     var sub = (v.title || '').replace(name, '').replace(/^\s*[-–—]\s*/, '').replace(/\s*-\s*Claude\s*$/, '');
-    var color = done ? '#4caf50' : '#e07c24';
-    var tip = (time ? time + ' ' : '') + name + (sub ? ' — ' + sub : '') + ' (Jobber calendar' + (done ? ', done' : '') + ')';
-    var click = 'event.stopPropagation();' + (v.job_number != null ? 'SchedulePage._openJobberVisit(' + Number(v.job_number) + ')' : '');
+    var color = done ? '#4caf50' : (v.bm ? '#00796b' : '#e07c24');
+    var crewTxt = v.crew && v.crew.length ? v.crew.join(', ') : '';
+    var tip = (time ? time + ' ' : '') + name + (sub ? ' — ' + sub : '') + (crewTxt ? ' · ' + crewTxt : '') + (v.bm ? ' (visit' : ' (Jobber calendar') + (done ? ', done' : '') + ')';
+    var click = 'event.stopPropagation();' + (v.bm && v.jobId ? 'JobsPage.showDetail(\'' + v.jobId + '\')' : (v.job_number != null ? 'SchedulePage._openJobberVisit(' + Number(v.job_number) + ')' : ''));
     if (!big) {
-      return '<div onclick="' + click + '" title="' + UI.esc(tip) + '" style="background:' + color + '1f;border-left:3px solid ' + color + ';border-radius:4px;padding:2px 5px;margin-bottom:3px;font-size:10px;color:#7a3e00;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
+      return '<div onclick="' + click + '" title="' + UI.esc(tip) + '" style="background:' + color + '1f;border-left:3px solid ' + color + ';border-radius:4px;padding:2px 5px;margin-bottom:3px;font-size:10px;color:' + (v.bm ? '#004d40' : '#7a3e00') + ';font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">'
         + UI.esc(name) + '</div>';
     }
     return '<div onclick="' + click + '" style="background:' + color + '14;border-left:3px solid ' + color + ';border-radius:6px;padding:8px 12px;cursor:pointer;flex:1;min-width:200px;">'
       + '<div style="font-weight:700;font-size:13px;">' + (time ? '<span style="color:' + color + ';">' + time + '</span> ' : '') + UI.esc(name) + (done ? ' <span style="color:#2e7d32;font-size:11px;">✓ done</span>' : '') + '</div>'
       + (sub ? '<div style="font-size:12px;color:var(--text-light);">' + UI.esc(sub) + '</div>' : '')
-      + '<div style="font-size:10px;font-weight:700;color:' + color + ';margin-top:3px;letter-spacing:.03em;">JOBBER CALENDAR' + (v.job_number != null ? ' · #' + v.job_number : '') + '</div></div>';
+      + (crewTxt ? '<div style="font-size:12px;color:var(--text-light);">👷 ' + UI.esc(crewTxt) + '</div>' : '')
+      + '<div style="font-size:10px;font-weight:700;color:' + color + ';margin-top:3px;letter-spacing:.03em;">' + (v.bm ? 'VISIT' : 'JOBBER CALENDAR') + (v.job_number != null ? ' · #' + v.job_number : '') + '</div></div>';
   },
   _eventColor: function(ev) {
     if (ev.color) return ev.color;
@@ -1250,8 +1269,8 @@ var SchedulePage = {
     SchedulePage._loadJobberVisits();
     var jVisits = SchedulePage._getJobberVisitsForDate(dateStr, dayJobs);
     if (jVisits.length) {
-      html += '<div style="background:#fff8f0;border:1px solid #f5d3b0;border-radius:10px;padding:10px 12px;margin-bottom:12px;">'
-        + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#7a3e00;">Jobber calendar (' + jVisits.length + ')</div>'
+      html += '<div style="background:#f3f8f6;border:1px solid #cfe3dc;border-radius:10px;padding:10px 12px;margin-bottom:12px;">'
+        + '<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#004d40;">Visits (' + jVisits.length + ')</div>'
         + '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
       jVisits.forEach(function(v) { html += SchedulePage._renderJobberPill(v, true); });
       html += '</div></div>';

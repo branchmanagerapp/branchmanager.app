@@ -12,6 +12,7 @@ var DB = (function() {
     invoices: 'bm-invoices',
     services: 'bm-services',
     timeEntries: 'bm-time-entries',
+    visits: 'bm-visits',
     settings: 'bm-settings'
   };
 
@@ -265,7 +266,10 @@ var DB = (function() {
     // in v893, so an edit had no path to the cloud by any route. The app showed
     // 0 h locked while Supabase still held 3.75 h auto-bouncie - and the
     // 2-hourly recompute then rewrote it, which is why corrections 'came back'.
-    'bm-time-entries': 'time_entries'
+    'bm-time-entries': 'time_entries',
+    // v1277: visits (multi-day / multi-visit jobs + crew) live in the cloud
+    // `visits` table. Before this they were an array on the job that never synced.
+    'bm-visits': 'visits'
   };
 
   // v976: per-remote-table list of snake_case fields that exist in local records
@@ -1323,6 +1327,26 @@ var nextJobNum = function() {
     }
   };
 
+  // ── Visits (v1277) ──
+  // One row per scheduled day of work on a job: scheduledDate (YYYY-MM-DD),
+  // startTime/endTime ('HH:MM' or ''), crew (array of names), status
+  // ('scheduled' | 'completed'), notes. Synced to the cloud `visits` table.
+  // Copies of Jobber's calendar arrive nightly with notes starting 'Jobber:'.
+  var visits = {
+    getAll: function() { return getAll(KEYS.visits); },
+    getById: function(id) { return getById(KEYS.visits, id); },
+    create: function(data) { return create(KEYS.visits, data); },
+    update: function(id, data, opts) { return update(KEYS.visits, id, data, opts); },
+    remove: function(id) { remove(KEYS.visits, id); },
+    getByJob: function(jobId) {
+      return getAll(KEYS.visits).filter(function(v) { return v.jobId === jobId; })
+        .sort(function(a, b) { return String(a.scheduledDate || '').localeCompare(String(b.scheduledDate || '')) || String(a.startTime || '').localeCompare(String(b.startTime || '')); });
+    },
+    forDate: function(dateStr) {
+      return getAll(KEYS.visits).filter(function(v) { return String(v.scheduledDate || '').slice(0, 10) === dateStr; });
+    }
+  };
+
   // ── Dashboard Stats ──
   var dashboard = {
     getStats: function() {
@@ -1456,6 +1480,7 @@ var nextJobNum = function() {
     services: services,
     expenses: expenses,
     timeEntries: timeEntries,
+    visits: visits,
     team: team,
     dashboard: dashboard,
     importCSV: importCSV,

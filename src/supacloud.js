@@ -12,7 +12,7 @@ var CloudSync = {
   // in this pull list the crew roster was never synced DOWN to other devices.
   // Result: a crew member added on the office laptop never appeared as a crew
   // checkbox on the phone. See _localKeyFor() for its non-standard local key.
-  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments', 'services', 'expenses', 'time_entries', 'team_members'],
+  tables: ['clients', 'requests', 'quotes', 'jobs', 'invoices', 'payments', 'services', 'expenses', 'time_entries', 'team_members', 'visits'],
   syncing: false,
   lastSync: 0,
 

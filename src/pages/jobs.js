@@ -1067,7 +1067,9 @@ var JobsPage = {
     var name = j.clientName || (client && client.name) || '';
     var fmtDate = function(d) { if (!d) return ''; var x = new Date(String(d).length === 10 ? d + 'T12:00:00' : d); return isNaN(x) ? '' : x.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); };
     // Visits: BM's own visits, else Jobber's calendar copy, else the scheduled date.
-    var visits = (j.visits || []).map(function(v) { return { date: v.date || v.scheduledDate, time: v.startTime || '', done: v.status === 'completed' }; });
+    // v1277: BM's own visits now come from the cloud visits table (DB.visits).
+    var fmtTime = function(t) { if (!t) return ''; var p = String(t).split(':'); var hh = +p[0]; return (hh % 12 || 12) + ':' + (p[1] || '00') + (hh < 12 ? ' AM' : ' PM'); };
+    var visits = (typeof Visits !== 'undefined' && Visits.getForJob ? Visits.getForJob(id) : []).map(function(v) { return { date: v.date, time: fmtTime(v.time), done: v.status === 'completed', crew: v.crew || [] }; });
     if (!visits.length && window._bmJobberVisitsIndex && j.jobNumber != null) {
       var seen = {};
       Object.keys(window._bmJobberVisitsIndex).forEach(function(ds) {
@@ -1135,17 +1137,18 @@ var JobsPage = {
       + '<div class="jbp-sec"><div class="jbp-h2">Visits</div>';
     if (visits.length) {
       visits.forEach(function(v) {
-        h += '<div class="jbp-visit"><div><div class="jbp-v-d">' + fmtDate(v.date) + '</div><div class="jbp-muted">' + (v.time ? e(v.time) : 'Anytime') + '</div></div>'
+        h += '<div class="jbp-visit"><div><div class="jbp-v-d">' + fmtDate(v.date) + '</div><div class="jbp-muted">' + (v.time ? e(v.time) : 'Anytime') + (v.crew && v.crew.length ? ' · ' + e(v.crew.join(', ')) : '') + '</div></div>'
           + '<div class="jbp-v-s">' + (v.done ? 'Completed <span style="background:#388523"></span>' : 'Upcoming <span style="background:#4a90e2"></span>') + '</div></div>';
       });
     } else {
       h += '<div class="jbp-txt jbp-muted">No visits scheduled</div>';
     }
+    h += '<button class="jbp-btn" style="margin-top:10px;background:#fff;color:inherit;border:1px solid #d4d9d6" onclick="Visits.showAddForm(\'' + id + '\')">+ Add visit</button>';
     h += '</div><div class="jbp-band"></div>'
       + '<div class="jbp-sec"><div class="jbp-muted">Overview</div>'
       +   (j.description ? '<div class="jbp-row"><b>' + e(j.description) + '</b></div>' : '')
       +   '<div class="jbp-lbl">Job number</div><div class="jbp-val">#' + e(String(j.jobNumber || '')) + '</div>'
-      +   '<div class="jbp-lbl">Crew</div><div class="jbp-val">' + (j.crew && j.crew.length ? e(j.crew.join(', ')) : '—') + '</div>'
+      +   '<div class="jbp-lbl">Crew</div><div class="jbp-val">' + (function() { var c = (j.crew && j.crew.length) ? j.crew.slice() : []; visits.forEach(function(v) { (v.crew || []).forEach(function(n) { if (c.indexOf(n) < 0) c.push(n); }); }); return c.length ? e(c.join(', ')) : '—'; })() + '</div>'
       +   (j.clientId ? '<button class="jbp-link" onclick="ClientsPage.showDetail(\'' + j.clientId + '\')"><b>' + e(name) + '</b>' + (j.property ? '<span>' + e(j.property) + '</span>' : '') + '</button>' : '<div class="jbp-row"><b>' + e(name) + '</b></div>')
       +   (quote ? '<button class="jbp-link" onclick="QuotesPage.showDetail(\'' + quote.id + '\')">Created from quote #' + e(String(quote.quoteNumber || '')) + '</button>' : '')
       + '</div>'
