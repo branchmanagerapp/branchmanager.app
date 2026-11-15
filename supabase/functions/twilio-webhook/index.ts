@@ -322,7 +322,8 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
       if (r.ok) {
         const path = `${p.RecordingSid || p.CallSid}.mp3`;
         await sb.storage.from("voicemails").upload(path, new Uint8Array(await r.arrayBuffer()), { contentType: "audio/mpeg", upsert: true });
-        const { data: s } = await sb.storage.from("voicemails").createSignedUrl(path, 60 * 60 * 24 * 30);
+        // Nov 15 2026: link good for a year (was 30 days, then the Listen link died).
+        const { data: s } = await sb.storage.from("voicemails").createSignedUrl(path, 60 * 60 * 24 * 365);
         rec = (s && s.signedUrl) || "";
       }
     } catch (e) { console.error("voicemail copy failed", e); }
@@ -331,7 +332,7 @@ async function handleVoice(sb: any, step: string, p: Record<string, string>, BAS
     await sb.from("communications").upsert({
       tenant_id: SNT_TENANT, client_id: clientId, channel: "voicemail", direction: "inbound",
       from_number: from, to_number: p.To || "", body: `Voicemail (${p.RecordingDuration || "?"}s)`,
-      status: "received", dialpad_id: "vm-" + (p.RecordingSid || p.CallSid), source: "twilio",
+      status: "received", dialpad_id: "vm-" + (p.RecordingSid || p.CallSid), source: "twilio", recording_url: rec || null,
       date: new Date().toISOString(), metadata: { provider: "twilio", recording_url: rec, twilio_recording_sid: p.RecordingSid, call_sid: p.CallSid },
     }, { onConflict: "dialpad_id" });
     await sb.from("communications").update({ status: "voicemail", body: "Missed call — left voicemail" }).eq("dialpad_id", p.CallSid);
