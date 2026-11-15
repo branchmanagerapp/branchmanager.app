@@ -58,6 +58,10 @@ PUBLIC_FNS=(
   social-post-runner
   social-publish
   social-connect
+  # Twilio calls/texts post here without a Supabase JWT (verify_jwt was already false)
+  twilio-webhook
+  twilio-sms-send
+  jobber-phone-log
 )
 
 FN="${1:-}"
